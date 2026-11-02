@@ -251,7 +251,7 @@ describe('배너 등록·수정 화면', () => {
   it('좁은 화면에서는 미리보기가 입력 위에 오고, 넓은 화면에서는 오른쪽 열에 고정된다', () => {
     const preview = findById(form, 'preview_card')!;
     const classes = String(preview.props.className).split(/\s+/);
-    expect(classes).toEqual(expect.arrayContaining(['order-first', 'lg:order-last', 'hs-editor-preview']));
+    expect(classes).toEqual(expect.arrayContaining(['hs:order-first', 'hs:lg:order-last', 'hs-editor-preview']));
   });
 
   // @scenario surface=form_save_blocked_reason

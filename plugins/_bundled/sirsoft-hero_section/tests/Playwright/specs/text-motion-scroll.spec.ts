@@ -1,6 +1,6 @@
 /**
  * #810 후속 — 문구 등장 효과(떠오르기·글자 하나씩)가 줄을 아래에서 올리는 동안 문구 영역에 세로 스크롤 막대가 생기지 않는다.
- * 넘침은 줄의 배치 높이로 판정해 효과가 밀어낸 만큼은 세지 않고, 세로 스크롤은 실제로 넘칠 때만(`hs__scroll--overflow`) 켠다.
+ * 넘침은 줄의 배치 높이로 판정해 효과가 밀어낸 만큼은 세지 않고, 세로 스크롤은 실제로 넘칠 때만(`hs-slider__scroll--overflow`) 켠다.
  * 정말 긴 문구는 여전히 스크롤로 끝까지 읽는다.
  * @scenario-manifest tests/scenarios/hero-slider.yaml
  *
@@ -37,8 +37,8 @@ async function injectBanners(page: Page): Promise<void> {
 
 /** 활성 장 문구 영역의 상태 */
 const scrollState = (page: Page) => page.evaluate(() => {
-  const el = document.querySelector('section.hs[data-position="home_hero"] .hs__slide--active .hs__scroll') as HTMLElement;
-  return { overflowY: getComputedStyle(el).overflowY, overflowClass: el.classList.contains('hs__scroll--overflow'), tabindex: el.getAttribute('tabindex'), pushed: el.scrollHeight > el.clientHeight + 1 };
+  const el = document.querySelector('section.hs-slider[data-position="home_hero"] .hs-slider__slide--active .hs-slider__scroll') as HTMLElement;
+  return { overflowY: getComputedStyle(el).overflowY, overflowClass: el.classList.contains('hs-slider__scroll--overflow'), tabindex: el.getAttribute('tabindex'), pushed: el.scrollHeight > el.clientHeight + 1 };
 });
 
 for (const viewport of ['desktop', 'mobile'] as const) {
@@ -47,11 +47,11 @@ for (const viewport of ['desktop', 'mobile'] as const) {
     await page.setViewportSize(VIEWPORTS[viewport]);
     await injectBanners(page);
     await gotoUser(page, '/');
-    const active = page.locator('section.hs[data-position="home_hero"] .hs__slide--active');
+    const active = page.locator('section.hs-slider[data-position="home_hero"] .hs-slider__slide--active');
     await expect(active).toHaveAttribute('data-banner-id', '990201', { timeout: 30_000 });
 
     for (const [index, id] of [[0, '990201'], [1, '990202']] as const) {
-      await page.evaluate((n) => (document.querySelector('section.hs[data-position="home_hero"] .swiper') as any).swiper.slideToLoop(n, 0), index);
+      await page.evaluate((n) => (document.querySelector('section.hs-slider[data-position="home_hero"] .swiper') as any).swiper.slideToLoop(n, 0), index);
       await expect(active).toHaveAttribute('data-banner-id', id);
       // 효과(느리게 1초) 재생 중 여러 번 잰다 — 밀린 순간이 있어도 스크롤은 꺼져 있다
       let sawPush = false;
@@ -64,7 +64,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       if (id === '990201') expect(sawPush, '전제: 떠오르기가 재생 중 줄을 영역 밖으로 밀어낸다').toBe(true);
     }
 
-    await page.evaluate(() => (document.querySelector('section.hs[data-position="home_hero"] .swiper') as any).swiper.slideToLoop(2, 0));
+    await page.evaluate(() => (document.querySelector('section.hs-slider[data-position="home_hero"] .swiper') as any).swiper.slideToLoop(2, 0));
     await expect(active).toHaveAttribute('data-banner-id', '990203');
     await expect.poll(() => scrollState(page)).toMatchObject({ overflowY: 'auto', overflowClass: true, tabindex: '0' });
   });

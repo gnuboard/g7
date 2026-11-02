@@ -35,7 +35,7 @@ async function openHome(page: Page, titles: string[]): Promise<number> {
  * @param page 페이지
  */
 async function settle(page: Page): Promise<void> {
-  await expect.poll(() => page.locator('section.hs .hs__track').evaluate((el) => (el as any).swiper?.animating === false)).toBe(true);
+  await expect.poll(() => page.locator('section.hs-slider .hs-slider__track').evaluate((el) => (el as any).swiper?.animating === false)).toBe(true);
 }
 
 // @scenario flow=slider_autoplay_advances, viewport=desktop
@@ -47,10 +47,10 @@ test('키보드 포커스가 남아 있으면 마우스 이탈로 자동 재생�
   created.push(await createBanner(request, managerToken, { title: { ko: b } }));
   await page.setViewportSize(VIEWPORTS.desktop);
   await openHome(page, [a, b]);
-  await page.locator('section.hs .hs__next').focus();
+  await page.locator('section.hs-slider .hs-slider__next').focus();
   await slider(page).hover();
   await page.mouse.move(0, 0);
-  await expect.poll(() => page.locator('section.hs .hs__track').evaluate((el) => (el as any).swiper.autoplay.running)).toBe(false);
+  await expect.poll(() => page.locator('section.hs-slider .hs-slider__track').evaluate((el) => (el as any).swiper.autoplay.running)).toBe(false);
   const current = await activeTitle(page);
   await page.waitForTimeout(7_100);
   expect(await activeTitle(page)).toBe(current);
@@ -92,15 +92,15 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       const count = await openHome(page, [a, b]);
       const order = await slideTitles(page);
       // 자동 재생이 단언 사이에 끼지 않게 멈춘다
-      await page.locator('section.hs .hs__toggle').click();
+      await page.locator('section.hs-slider [data-hs-control="toggle"]').click();
       await settle(page);
       const start = await activeTitle(page);
       const startIndex = order.indexOf(start);
 
       // 휴대폰은 화살표를 감추므로(문구를 가리지 않게) 다음 장의 점을 누른다 — 마지막 장 다음은 첫 장 점
       const next = (i: number) => viewport === 'desktop'
-        ? page.locator('section.hs .hs__next').click()
-        : page.locator('section.hs .hs__pagination button').nth((startIndex + i + 1) % count).click();
+        ? page.locator('section.hs-slider .hs-slider__next').click()
+        : page.locator('section.hs-slider .hs-slider__pagination button').nth((startIndex + i + 1) % count).click();
       const seen: string[] = [];
       for (let i = 0; i < count; i++) {
         await next(i);
@@ -111,10 +111,10 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       // 장 수만큼 넘기면 다시 처음 장 — 끝에서 멈추지 않고 돈다
       expect(seen[seen.length - 1]).toBe(start);
       expect(new Set(seen).size).toBe(count);
-      await expect(page.locator('section.hs .hs__slide--active')).toHaveAttribute('aria-label', `${count}개 중 ${startIndex + 1}번째`);
+      await expect(page.locator('section.hs-slider .hs-slider__slide--active')).toHaveAttribute('aria-label', `${count}개 중 ${startIndex + 1}번째`);
 
-      if (viewport === 'desktop') await page.locator('section.hs .hs__prev').click();
-      else await page.locator('section.hs .hs__pagination button').nth((startIndex - 1 + count) % count).click();
+      if (viewport === 'desktop') await page.locator('section.hs-slider .hs-slider__prev').click();
+      else await page.locator('section.hs-slider .hs-slider__pagination button').nth((startIndex - 1 + count) % count).click();
       await expect.poll(() => activeTitle(page)).toBe(order[(startIndex - 1 + count) % count]);
       expect(errors.filter((e) => !/favicon|analytics/i.test(e))).toEqual([]);
     });
@@ -156,7 +156,7 @@ test.describe('홈 슬라이더 손가락 넘기기 (mobile)', () => {
 
     const count = await openHome(page, [a, b]);
     const order = await slideTitles(page);
-    await page.locator('section.hs .hs__toggle').tap();
+    await page.locator('section.hs-slider [data-hs-control="toggle"]').tap();
     await settle(page);
     const start = await activeTitle(page);
 

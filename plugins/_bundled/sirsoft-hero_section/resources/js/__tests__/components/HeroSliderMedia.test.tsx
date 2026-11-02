@@ -15,14 +15,6 @@ import { swiperState } from '../swiperMock';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
-vi.mock('swiper/css', () => ({}));
-vi.mock('swiper/css/effect-fade', () => ({}));
-vi.mock('swiper/css/navigation', () => ({}));
-vi.mock('swiper/css/pagination', () => ({}));
-vi.mock('swiper/css/effect-cube', () => ({}));
-vi.mock('swiper/css/effect-flip', () => ({}));
-vi.mock('swiper/css/effect-coverflow', () => ({}));
-vi.mock('swiper/css/effect-creative', () => ({}));
 
 const YT = 'abcdefghijk';
 
@@ -95,7 +87,7 @@ describe('HeroSlider 영상 배너', () => {
   // @scenario surface=video_plays_muted_inline
   it('영상 파일 배너는 대표 이미지 위에 소리 없는 화면 안 재생 영상을 두고, 대표 이미지를 첫 화면으로 쓴다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} />);
-    const video = container.querySelector('[data-banner-id="1"] video.hs__video') as HTMLVideoElement;
+    const video = container.querySelector('[data-banner-id="1"] video.hs-slider__video') as HTMLVideoElement;
     expect(video).not.toBeNull();
     expect(video.muted).toBe(true);
     expect(video.hasAttribute('playsinline')).toBe(true);
@@ -103,7 +95,7 @@ describe('HeroSlider 영상 배너', () => {
     expect(video.getAttribute('poster')).toBe('/img/pc-1.jpg');
     expect(video.getAttribute('aria-hidden')).toBe('true');
     // 대체 텍스트는 대표 이미지가 맡는다
-    expect(container.querySelector('[data-banner-id="1"] img.hs__image')?.getAttribute('alt')).toBe('대체 1');
+    expect(container.querySelector('[data-banner-id="1"] img.hs-slider__image')?.getAttribute('alt')).toBe('대체 1');
     expect(play).toHaveBeenCalled();
   });
 
@@ -126,7 +118,7 @@ describe('HeroSlider 영상 배너', () => {
     expect(poster(2)).toBe('/img/pc-2.jpg');
     // 먼 장은 차례가 다가올 때까지 대표 이미지를 받지 않는다(그림 요소처럼 늦게)
     expect(poster(3)).toBeNull();
-    fireEvent.click(container.querySelector('.hs__next')!);
+    fireEvent.click(container.querySelector('.hs-slider__next')!);
     expect(poster(3)).toBe('/img/pc-3.jpg');
   });
 
@@ -144,7 +136,7 @@ describe('HeroSlider 영상 배너', () => {
   // @scenario surface=video_ends_while_hovered
   it('마우스가 올라가 있는 동안 영상이 끝나면 넘기지 않고, 나가면 간격 넘김으로 돌아간다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true }} />);
-    const region = container.querySelector('section.hs')!;
+    const region = container.querySelector('section.hs-slider')!;
     fireEvent.pointerEnter(region, { pointerType: 'mouse' });
     fireEvent.ended(container.querySelector('[data-banner-id="1"] video')!);
     expect(swiperState.instance!.slideNext).not.toHaveBeenCalled();
@@ -156,20 +148,20 @@ describe('HeroSlider 영상 배너', () => {
   it('영상 배너 한 장이면 반복 재생하고, 일시정지 단추를 둔다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1)]} />);
     expect((container.querySelector('video') as HTMLVideoElement).loop).toBe(true);
-    const toggle = container.querySelector('.hs__toggle') as HTMLButtonElement;
+    const toggle = container.querySelector('[data-hs-control="toggle"]') as HTMLButtonElement;
     expect(toggle.getAttribute('aria-label')).toBe('배너 일시정지');
     // 장 번호·화살표는 2장 이상일 때만
-    expect(container.querySelector('.hs__counter')).toBeNull();
-    expect(container.querySelector('.hs__arrow')).toBeNull();
+    expect(container.querySelector('.hs-slider__counter')).toBeNull();
+    expect(container.querySelector('.hs-slider__arrow')).toBeNull();
   });
 
   // @scenario surface=pause_stops_video
   it('일시정지 단추가 영상도 멈추고, 다시 누르면 재생한다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} />);
     play.mockClear();
-    fireEvent.click(container.querySelector('.hs__toggle')!);
+    fireEvent.click(container.querySelector('[data-hs-control="toggle"]')!);
     expect(pause).toHaveBeenCalled();
-    fireEvent.click(container.querySelector('.hs__toggle')!);
+    fireEvent.click(container.querySelector('[data-hs-control="toggle"]')!);
     expect(play).toHaveBeenCalled();
   });
 
@@ -178,10 +170,10 @@ describe('HeroSlider 영상 배너', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} />);
     const video = container.querySelector('[data-banner-id="1"] video') as HTMLVideoElement;
     Object.defineProperty(video, 'currentTime', { configurable: true, writable: true, value: 20 });
-    fireEvent.click(container.querySelector('.hs__toggle')!);
+    fireEvent.click(container.querySelector('[data-hs-control="toggle"]')!);
     expect(pause).toHaveBeenCalled();
     expect(video.currentTime).toBe(20);
-    fireEvent.click(container.querySelector('.hs__next')!);
+    fireEvent.click(container.querySelector('.hs-slider__next')!);
     expect(video.currentTime).toBe(0);
   });
 
@@ -194,9 +186,9 @@ describe('HeroSlider 영상 배너', () => {
     });
     // 아직 영상 장이라 간격 넘김은 멈춰 있고, 단추로 다시 재생하면 재생을 요청한다
     expect(swiperState.instance!.autoplay.running).toBe(false);
-    fireEvent.click(container.querySelector('.hs__toggle')!);
+    fireEvent.click(container.querySelector('[data-hs-control="toggle"]')!);
     play.mockClear();
-    fireEvent.click(container.querySelector('.hs__toggle')!);
+    fireEvent.click(container.querySelector('[data-hs-control="toggle"]')!);
     expect(play).toHaveBeenCalled();
   });
 
@@ -215,7 +207,7 @@ describe('HeroSlider 영상 배너', () => {
     mockMedia({ reduce: true });
     const { container } = render(<HeroSlider banners={[videoBanner(1)]} />);
     expect(play).not.toHaveBeenCalled();
-    const toggle = container.querySelector('.hs__toggle')!;
+    const toggle = container.querySelector('[data-hs-control="toggle"]')!;
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
     expect(toggle.getAttribute('aria-label')).toBe('배너 다시 재생');
     fireEvent.click(toggle);
@@ -228,7 +220,7 @@ describe('HeroSlider 영상 배너', () => {
     const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" />);
     rerender(<HeroSlider banners={[videoBanner(1)]} settings={{ width: 'content' }} position="home_hero" />);
     expect(play).not.toHaveBeenCalled();
-    expect(container.querySelector('.hs__toggle')?.getAttribute('aria-label')).toBe('배너 다시 재생');
+    expect(container.querySelector('[data-hs-control="toggle"]')?.getAttribute('aria-label')).toBe('배너 다시 재생');
   });
 
   // @scenario surface=video_error_falls_back_to_interval
@@ -243,7 +235,7 @@ describe('HeroSlider 영상 배너', () => {
   it('미디어 종류가 이미지면 영상 정보가 있어도 이미지로 그린다', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { media_type: 'image', videos: { pc: { url: '/vid/x.mp4' } } })]} />);
     expect(container.querySelector('video')).toBeNull();
-    expect(container.querySelector('.hs__toggle')).toBeNull();
+    expect(container.querySelector('[data-hs-control="toggle"]')).toBeNull();
   });
 
   describe('유튜브', () => {
@@ -252,8 +244,8 @@ describe('HeroSlider 영상 배너', () => {
       mockConsent(ready(false));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
       expect(container.querySelector('iframe')).toBeNull();
-      expect(container.querySelector('[data-banner-id="1"] img.hs__image')).not.toBeNull();
-      const button = container.querySelector('.hs__youtube-play')!;
+      expect(container.querySelector('[data-banner-id="1"] img.hs-slider__image')).not.toBeNull();
+      const button = container.querySelector('.hs-slider__youtube-play')!;
       expect(button.getAttribute('aria-label')).toBe('유튜브 영상 재생');
       // 동의 전 유튜브 장은 이미지처럼 간격으로 넘긴다
       expect(swiperState.instance!.autoplay.running).toBe(true);
@@ -264,7 +256,7 @@ describe('HeroSlider 영상 배너', () => {
       for (const snapshot of [ready(true), { status: 'none', categories: {} }]) {
         mockConsent(snapshot);
         const { container, unmount } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} />);
-        const frame = container.querySelector('iframe.hs__youtube-frame') as HTMLIFrameElement;
+        const frame = container.querySelector('iframe.hs-slider__youtube-frame') as HTMLIFrameElement;
         expect(frame, JSON.stringify(snapshot)).not.toBeNull();
         const src = new URL(frame.src);
         expect(src.origin).toBe('https://www.youtube-nocookie.com');
@@ -273,7 +265,7 @@ describe('HeroSlider 영상 배너', () => {
         expect(src.searchParams.get('playsinline')).toBe('1');
         expect(src.searchParams.get('enablejsapi')).toBe('1');
         expect(frame.getAttribute('tabindex')).toBe('-1');
-        expect(container.querySelector('.hs__youtube-play')).toBeNull();
+        expect(container.querySelector('.hs-slider__youtube-play')).toBeNull();
         unmount();
       }
     });
@@ -284,14 +276,14 @@ describe('HeroSlider 영상 배너', () => {
       const { container } = render(<HeroSlider banners={[youtubeBanner(1)]} />);
       expect(container.querySelector('iframe')).toBeNull();
       grant(ready(true));
-      expect(container.querySelector('iframe.hs__youtube-frame')).not.toBeNull();
+      expect(container.querySelector('iframe.hs-slider__youtube-frame')).not.toBeNull();
     });
 
     // @scenario surface=youtube_play_button_loads
     it('동의 전이라도 재생 단추를 누르면 그 배너만 불러온다', () => {
       mockConsent(ready(false));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1), youtubeBanner(2)]} />);
-      fireEvent.click(container.querySelector('[data-banner-id="1"] .hs__youtube-play')!);
+      fireEvent.click(container.querySelector('[data-banner-id="1"] .hs-slider__youtube-play')!);
       expect(container.querySelector('[data-banner-id="1"] iframe')).not.toBeNull();
       expect(container.querySelector('[data-banner-id="2"] iframe')).toBeNull();
     });
@@ -300,7 +292,7 @@ describe('HeroSlider 영상 배너', () => {
     it('동의 런타임이 없는 화면(관리자 미리보기)은 동의 전으로 본다', () => {
       const { container } = render(<HeroSlider banners={[youtubeBanner(1)]} />);
       expect(container.querySelector('iframe')).toBeNull();
-      expect(container.querySelector('.hs__youtube-play')).not.toBeNull();
+      expect(container.querySelector('.hs-slider__youtube-play')).not.toBeNull();
     });
 
     // @scenario surface=youtube_ended_message
@@ -327,13 +319,13 @@ describe('HeroSlider 영상 배너', () => {
       expect(frame(2)).not.toBeNull();
       expect(frame(4)).toBeNull();
 
-      fireEvent.click(container.querySelector('.hs__next')!);
+      fireEvent.click(container.querySelector('.hs-slider__next')!);
       expect(frame(4)).toBeNull();
-      fireEvent.click(container.querySelector('.hs__next')!);
+      fireEvent.click(container.querySelector('.hs-slider__next')!);
       expect(frame(4)).not.toBeNull();
       // 한 번 불러온 플레이어는 지나가도 다시 만들지 않는다
-      fireEvent.click(container.querySelector('.hs__next')!);
-      fireEvent.click(container.querySelector('.hs__next')!);
+      fireEvent.click(container.querySelector('.hs-slider__next')!);
+      fireEvent.click(container.querySelector('.hs-slider__next')!);
       expect(frame(2)).not.toBeNull();
     });
 
@@ -345,11 +337,11 @@ describe('HeroSlider 영상 배너', () => {
       const posted = vi.spyOn(frame.contentWindow!, 'postMessage');
       const commands = () => posted.mock.calls.map(([message]) => JSON.parse(message as string).func);
 
-      fireEvent.click(container.querySelector('.hs__toggle')!);
+      fireEvent.click(container.querySelector('[data-hs-control="toggle"]')!);
       expect(commands()).toContain('pauseVideo');
       expect(commands()).not.toContain('seekTo');
 
-      fireEvent.click(container.querySelector('.hs__next')!);
+      fireEvent.click(container.querySelector('.hs-slider__next')!);
       expect(commands()).toContain('seekTo');
     });
 
@@ -358,12 +350,12 @@ describe('HeroSlider 영상 배너', () => {
       mockConsent(ready(true));
       const { container } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
       const frame = container.querySelector('iframe') as HTMLIFrameElement;
-      const box = () => container.querySelector('[data-banner-id="1"] .hs__youtube')!;
-      expect(box().classList.contains('hs__youtube--ready')).toBe(false);
+      const box = () => container.querySelector('[data-banner-id="1"] .hs-slider__youtube')!;
+      expect(box().classList.contains('hs-slider__youtube--ready')).toBe(false);
       act(() => {
         window.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ event: 'onStateChange', info: 1 }), origin: 'https://www.youtube-nocookie.com', source: frame.contentWindow }));
       });
-      expect(box().classList.contains('hs__youtube--ready')).toBe(true);
+      expect(box().classList.contains('hs-slider__youtube--ready')).toBe(true);
     });
 
     // @scenario surface=youtube_timeout_falls_back
@@ -382,7 +374,7 @@ describe('HeroSlider 영상 배너', () => {
       mockConsent(ready(true));
       const { container } = render(<HeroSlider banners={[banner(1, { media_type: 'youtube', youtube_id: 'x" onload="' })]} />);
       expect(container.querySelector('iframe')).toBeNull();
-      expect(container.querySelector('.hs__youtube')).toBeNull();
+      expect(container.querySelector('.hs-slider__youtube')).toBeNull();
     });
   });
 });

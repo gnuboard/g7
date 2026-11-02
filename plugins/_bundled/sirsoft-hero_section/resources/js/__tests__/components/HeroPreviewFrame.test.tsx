@@ -15,14 +15,6 @@ import { frameClass, matchResponsiveKey } from '../../support/editor';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
-vi.mock('swiper/css', () => ({}));
-vi.mock('swiper/css/effect-fade', () => ({}));
-vi.mock('swiper/css/navigation', () => ({}));
-vi.mock('swiper/css/pagination', () => ({}));
-vi.mock('swiper/css/effect-cube', () => ({}));
-vi.mock('swiper/css/effect-flip', () => ({}));
-vi.mock('swiper/css/effect-coverflow', () => ({}));
-vi.mock('swiper/css/effect-creative', () => ({}));
 
 const banners = [{
   id: 1,
@@ -86,8 +78,8 @@ describe('미리보기 구좌 틀', () => {
     expect(iframe.width).toBe('1366');
     const boxes = [...doc.body.querySelectorAll('[data-hs-frame]')];
     expect(boxes.map((b) => b.className)).toEqual(['min-h-screen flex flex-col', 'flex-1', 'min-h-fit max-w-7xl mx-auto px-8']);
-    expect(boxes[2].querySelector('.hs')).not.toBeNull();
-    expect(doc.body.querySelector(':scope > .hs')).toBeNull();
+    expect(boxes[2].querySelector('.hs-slider')).not.toBeNull();
+    expect(doc.body.querySelector(':scope > .hs-slider')).toBeNull();
     const links = [...doc.head.querySelectorAll('link[data-hs-template-css]')].map((l) => l.getAttribute('href'));
     expect(links).toEqual(['/assets/demo-user/css/components.css?v=3']);
   });
@@ -100,7 +92,7 @@ describe('미리보기 구좌 틀', () => {
     expect(iframe.width).toBe('390');
     const boxes = [...doc.body.querySelectorAll('[data-hs-frame]')];
     expect(boxes[2].className).toBe('min-h-fit px-4');
-    expect(boxes[2].querySelector('.hs')).not.toBeNull();
+    expect(boxes[2].querySelector('.hs-slider')).not.toBeNull();
   });
 
   // @scenario surface=preview_frame_slot_inside_device_viewport
@@ -114,7 +106,7 @@ describe('미리보기 구좌 틀', () => {
     expect(iframe.contentDocument).toBe(doc);
     expect([...doc.head.querySelectorAll('link[data-hs-template-css]')].map((l) => l.getAttribute('href'))).toEqual(['/assets/demo-user/css/components.css?v=3']);
     expect(doc.body.querySelectorAll('[data-hs-frame]').length).toBe(3);
-    expect(doc.body.querySelectorAll('.hs').length).toBe(1);
+    expect(doc.body.querySelectorAll('.hs-slider').length).toBe(1);
   });
 
   // @scenario surface=preview_frame_missing_slot_falls_back
@@ -122,7 +114,7 @@ describe('미리보기 구좌 틀', () => {
     for (const props of [{}, { frame, position: 'shop_hero' }, { frame: null, position: 'home_hero' }]) {
       const { doc, view } = mountFrame(<HeroBannerPreview banners={banners} device="pc" {...props} />);
       expect(doc.body.querySelectorAll('[data-hs-frame]').length).toBe(0);
-      expect(doc.body.querySelector('.hs')).not.toBeNull();
+      expect(doc.body.querySelector('.hs-slider')).not.toBeNull();
       expect(doc.head.querySelectorAll('link[data-hs-template-css]').length).toBe(0);
       view.unmount();
     }
@@ -133,10 +125,10 @@ describe('미리보기 구좌 틀', () => {
   it('본문 폭이면 구좌 틀의 본문 상자(기기 폭에 맞는 클래스)로 슬라이더를 감싼다', () => {
     const withContent = { ...frame, positions: { ...frame.positions, home_hero: { ...frame.positions.home_hero, content: { className: 'px-4', responsive: { desktop: 'max-w-7xl mx-auto px-8' } } } } };
     const pc = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={withContent} position="home_hero" />);
-    expect(pc.doc.querySelector('[data-hs-width="content"]')?.className).toBe('hs-frame max-w-7xl mx-auto px-8');
+    expect(pc.doc.querySelector('[data-hs-width="content"]')?.className).toBe('max-w-7xl mx-auto px-8');
     cleanup();
     const mobile = mountFrame(<HeroBannerPreview banners={banners} device="mobile" frame={withContent} position="home_hero" />);
-    expect(mobile.doc.querySelector('[data-hs-width="content"]')?.className).toBe('hs-frame px-4');
+    expect(mobile.doc.querySelector('[data-hs-width="content"]')?.className).toBe('px-4');
   });
 
   // @scenario surface=preview_frame_content_box
@@ -145,7 +137,18 @@ describe('미리보기 구좌 틀', () => {
     const withContent = { ...frame, positions: { ...frame.positions, home_hero: { ...frame.positions.home_hero, content: { className: 'px-4', responsive: { desktop: 'max-w-7xl mx-auto px-8' } } } } };
     const { doc } = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={withContent} position="home_hero" settings={{ width: 'full' }} />);
     expect(doc.querySelector('[data-hs-width]')).toBeNull();
-    expect(doc.querySelector('section.hs')?.className).toContain('hs--full');
-    expect(doc.querySelector('.hs__box')?.className).toBe('hs__box max-w-7xl mx-auto px-8');
+    expect(doc.querySelector('section.hs-slider')?.className).toContain('hs-slider--full');
+    expect(doc.querySelector('.hs-slider__box')?.className).toBe('hs-slider__box max-w-7xl mx-auto px-8');
+  });
+
+  // @scenario surface=preview_frame_slot_inside_device_viewport
+  it('바깥 문서의 색상 테마 중립 표식을 미리보기 문서에도 옮긴다 — 확장 CSS 다크 규칙은 템플릿 .dark 대신 이 표식만 본다', () => {
+    document.documentElement.setAttribute('data-g7-color-scheme', 'dark');
+    try {
+      const { doc } = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={frame} position="home_hero" />);
+      expect(doc.documentElement.getAttribute('data-g7-color-scheme')).toBe('dark');
+    } finally {
+      document.documentElement.removeAttribute('data-g7-color-scheme');
+    }
   });
 });

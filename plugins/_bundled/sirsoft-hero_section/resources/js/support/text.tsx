@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 /**
  * 배너 문구 배치·등장 효과·메뉴 겹침 신호 — 사용자 슬라이더(HeroSlider)와 편집 미리보기가 함께 쓴다.
  *
- * 문구 띠(`.hs__text`, 문구 배경 포함)는 슬라이드 안에서 세로 위치(y%)로 올리고 내린다. 띠 안의 문구 상자(`.hs__textbox`)는
+ * 문구 띠(`.hs-slider__text`, 문구 배경 포함)는 슬라이드 안에서 세로 위치(y%)로 올리고 내린다. 띠 안의 문구 상자(`.hs-slider__textbox`)는
  * 폭(w%)과 가로 위치(x%)로 놓는다. 위치 0 은 왼쪽·위 끝, 100 은 오른쪽·아래 끝, 50 은 가운데라 상자가 배너 밖으로 나가지 않는다.
  * 기본값(x 0 · y 100 · 폭 100)은 종전의 「아래쪽 전폭 문구」와 같은 화면이다.
  */
@@ -124,7 +124,7 @@ export function textMotion(presentation: HeroTextPresentation | null | undefined
 }
 
 /**
- * 문구 영역(`.hs__scroll`)이 실제로 넘치는지 확인합니다 — 등장 효과의 이동(transform)은 빼고 줄의 배치 높이로 잰다.
+ * 문구 영역(`.hs-slider__scroll`)이 실제로 넘치는지 확인합니다 — 등장 효과의 이동(transform)은 빼고 줄의 배치 높이로 잰다.
  * `scrollHeight` 는 「떠오르기」·「글자 하나씩」처럼 줄을 아래에서 올리는 효과가 재생되는 동안 밀린 만큼을 더해, 넘치지 않는 문구도
  * 그 순간에는 넘친다고 본다(스크롤 막대가 잠깐 생기고, 그때 잰 값이 굳으면 탭으로 들어가는 영역으로 남는다).
  *
@@ -182,14 +182,14 @@ export const LetterText: React.FC<{ text: string }> = ({ text }) => {
   const words = text.split(/(\s+)/);
   return (
     <>
-      <span className="hs__sr">{text}</span>
+      <span className="hs-slider__sr">{text}</span>
       <span aria-hidden="true" style={{ '--hs-letter-step': `${Math.round(step * 1000) / 1000}s` } as React.CSSProperties}>
         {words.map((word, w) => (/^\s+$/.test(word) || word === ''
           ? word
           : (
-            <span key={w} className="hs__word">
+            <span key={w} className="hs-slider__word">
               {graphemes(word).map((letter, l) => (
-                <span key={l} className="hs__letter" style={{ '--hs-letter': index++ } as React.CSSProperties}>{letter}</span>
+                <span key={l} className="hs-slider__letter" style={{ '--hs-letter': index++ } as React.CSSProperties}>{letter}</span>
               ))}
             </span>
           )))}
@@ -250,8 +250,8 @@ export function useTextDrag(spot: TextSpot, onMove?: (spot: TextSpot) => void): 
   const travel = (): { x: number; y: number } => {
     const box = boxRef.current;
     const parent = box?.parentElement;
-    const layer = box?.closest<HTMLElement>('.hs__text');
-    const slide = box?.closest<HTMLElement>('.hs__slide');
+    const layer = box?.closest<HTMLElement>('.hs-slider__text');
+    const slide = box?.closest<HTMLElement>('.hs-slider__slide');
     if (!box || !parent || !layer || !slide) {
       return { x: 0, y: 0 };
     }

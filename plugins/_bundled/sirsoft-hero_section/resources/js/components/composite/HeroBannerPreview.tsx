@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { HeroSlider, type HeroBanner, type HeroSliderSettings, type TextSpot } from './HeroSlider';
 import { youtubeIdFromUrl } from '../../support/media';
 import { textOverflows } from '../../support/text';
+import { copySwiperStyles, useSwiperStyles } from '../../support/swiperStyles';
 import { basic, estimateContrast, frameClass, isLightText, localized, sampleImage, translate, type FrameBox, type PreviewFrame, type Rgb } from '../../support/editor';
 
 export type HeroDraft = Partial<Omit<HeroBanner, 'title' | 'eyebrow' | 'description' | 'button_text' | 'image_alt'>> & {
@@ -103,6 +104,9 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
     doc.head.appendChild(reset);
     doc.documentElement.lang = document.documentElement.lang;
     doc.documentElement.className = document.documentElement.className;
+    // 확장 CSS 의 다크 규칙은 템플릿 .dark 대신 코어 중립 표식만 본다 — 바깥 문서 표식을 함께 옮긴다
+    const scheme = document.documentElement.getAttribute('data-g7-color-scheme');
+    if (scheme) doc.documentElement.setAttribute('data-g7-color-scheme', scheme);
     // 스크립트를 막은(sandbox) 문서라 on* 처리 속성은 실행되지 않고 콘솔 오류만 남는다 — 바깥 문서의 리스너로 단다.
     doc.body.addEventListener('click', (event) => { if ((event.target as Element).closest('a')) event.preventDefault(); });
     setBody(doc.body);
@@ -110,7 +114,7 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   /** 슬라이더가 그려진 자리(위쪽 위치·높이·폭)를 잰다 — 템플릿 CSS 가 늦게 오면 그때 다시 잰다. */
   const measure = () => {
     const doc = frame.current?.contentDocument;
-    const hero = doc?.querySelector<HTMLElement>('.hs');
+    const hero = doc?.querySelector<HTMLElement>('.hs-slider');
     if (!doc || !hero) return;
     const rect = hero.getBoundingClientRect();
     if (!rect.height) return;
@@ -119,6 +123,12 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   };
   // about:blank는 삽입 즉시 load가 끝나 ref 부착 전에 이벤트가 지나갈 수 있다.
   useLayoutEffect(() => { setup(); }, []);
+  // Swiper CSS 는 런타임에 실리므로 미리보기를 띄운 뒤에 올 수 있다 — 오면 iframe 에도 넣는다
+  const swiperStyles = useSwiperStyles();
+  useLayoutEffect(() => {
+    const doc = frame.current?.contentDocument;
+    if (swiperStyles && doc && body) copySwiperStyles(doc);
+  }, [swiperStyles, body]);
   // 템플릿 CSS 는 틀(위치 설정 응답)이 오는 때에 맞춘다 — 응답이 미리보기보다 늦게 와도, 위치를 바꿔 틀이 달라져도 실린다.
   const sheets = framed ? (stylesheets ?? []).join('\n') : '';
   useLayoutEffect(() => {
@@ -140,25 +150,25 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   useEffect(() => {
     if (!framed || !body) return;
     measure();
-    const hero = body.querySelector('.hs');
+    const hero = body.querySelector('.hs-slider');
     if (!hero || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measure);
     observer.observe(hero);
     return () => observer.disconnect();
   }, [framed, body, slot, banners, device]);
-  // 이 기기에서 문구가 배너 높이를 넘어 문구 영역(.hs__scroll) 안 스크롤이 생기는지 알린다 — 문구가 바뀌거나 CSS 가 실려 크기가 바뀔 때마다.
+  // 이 기기에서 문구가 배너 높이를 넘어 문구 영역(.hs-slider__scroll) 안 스크롤이 생기는지 알린다 — 문구가 바뀌거나 CSS 가 실려 크기가 바뀔 때마다.
   // 편집 미리보기는 배너 1장이라 넘김 단추가 없지만 사이트에 2장 이상이면 그 자리만큼 문구 영역이 준다 — 잠깐 그 자리를 비워 한 번 더 잰다.
   useEffect(() => {
     if (!onOverflow || !body) return;
-    const hero = body.querySelector<HTMLElement>('.hs');
-    const scroll = hero?.querySelector<HTMLElement>('.hs__scroll');
+    const hero = body.querySelector<HTMLElement>('.hs-slider');
+    const scroll = hero?.querySelector<HTMLElement>('.hs-slider__scroll');
     if (!hero || !scroll) return onOverflow(false);
     const overflows = () => textOverflows(scroll);
     if (overflows()) return onOverflow('alone');
-    if (hero.classList.contains('hs--controlled')) return onOverflow(false);
-    hero.classList.add('hs--controlled');
+    if (hero.classList.contains('hs-slider--controlled')) return onOverflow(false);
+    hero.classList.add('hs-slider--controlled');
     const withControls = overflows();
-    hero.classList.remove('hs--controlled');
+    hero.classList.remove('hs-slider--controlled');
     onOverflow(withControls ? 'controls' : false);
   }, [onOverflow, body, slot, banners, device, box, sheets]);
   // 틀의 높이를 기기 전체(min-h-screen 등)가 아니라 슬라이더 자리만큼으로 잡고, 그 위쪽은 위로 밀어 보이지 않게 한다.
@@ -253,10 +263,10 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
   return <Div className={`hs-preview hs-preview--${device} ${className}`.trim()} data-device={device}>
     {items.length === 0 ? <P className="hs-preview__empty">{emptyText}</P> : <>
       <Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onOverflow={draft ? setOverflow : undefined} onTextMove={onTextMove} replay={replay} />
-      {onTextMove && <P className="form-hint hs-preview__hint" data-hint="text-drag">{translate('admin.form.text_layout.drag_hint')}</P>}
+      {onTextMove && <P className="hs-form-hint hs-preview__hint" data-hint="text-drag">{translate('admin.form.text_layout.drag_hint')}</P>}
       {animated && <Button type="button" className="hs-preview__expand" data-hs-action="replay" onClick={() => setReplay((value) => value + 1)}>{translate('admin.form.text_layout.replay')}</Button>}
-      {draft && overflow && <P className="form-hint hs-preview__hint" data-hint="text-overflow" role="status">{translate(overflow === 'alone' ? 'admin.form.preview.text_overflow' : 'admin.form.preview.text_overflow_controls', { device: device.toUpperCase() })}</P>}
-      {lowContrast.length > 0 && <P className="form-hint hs-preview__hint" data-hint="contrast" role="status">
+      {draft && overflow && <P className="hs-form-hint hs-preview__hint" data-hint="text-overflow" role="status">{translate(overflow === 'alone' ? 'admin.form.preview.text_overflow' : 'admin.form.preview.text_overflow_controls', { device: device.toUpperCase() })}</P>}
+      {lowContrast.length > 0 && <P className="hs-form-hint hs-preview__hint" data-hint="contrast" role="status">
         {translate('admin.form.preview.contrast_low', { parts: lowContrast.map((c) => translate(`admin.form.preview.contrast_${c.part}`, { ratio: String(c.ratio) })).join(' · ') })}
         {' '}
         {isLightText(lowContrast[0].color)
@@ -264,7 +274,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
           : translate('admin.form.preview.contrast_tip_dark', { option: translate('admin.form.presentation.light') })}
       </P>}
       <Button ref={opener} type="button" className="hs-preview__expand" onClick={() => setExpanded(true)}>{translate('admin.form.preview.expand')}</Button>
-      {fallback && <P className="form-hint hs-preview__fallback">{translate('admin.form.preview.fallback', { locale: defaultLocale.toUpperCase() })}</P>}
+      {fallback && <P className="hs-form-hint hs-preview__fallback">{translate('admin.form.preview.fallback', { locale: defaultLocale.toUpperCase() })}</P>}
       {expanded && React.createElement('dialog', {
         ref: dialog, className: 'hs-preview__dialog', 'aria-label': translate('admin.form.preview.expand'),
         onCancel: (event: Event) => { event.preventDefault(); close(); }, onClose: close,

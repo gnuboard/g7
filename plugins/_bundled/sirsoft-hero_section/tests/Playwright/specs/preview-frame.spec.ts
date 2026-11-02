@@ -16,20 +16,20 @@ type Slot = { width: number; height: number; titleFont: string; titleLines: numb
 
 /** 문서 안 히어로 구좌를 잰다(사이트는 페이지 문서, 미리보기는 iframe 문서). 다른 배너가 함께 있으면 그 제목의 슬라이드만 본다. */
 const measure = (root: Document, text: string): Slot => {
-  const hs = root.querySelector('.hs') as HTMLElement;
+  const hs = root.querySelector('.hs-slider') as HTMLElement;
   const rect = hs.getBoundingClientRect();
-  const title = [...hs.querySelectorAll<HTMLElement>('.hs__title')].find((el) => el.textContent === text) as HTMLElement;
-  const desc = (title.parentElement as HTMLElement).querySelector('.hs__description') as HTMLElement;
+  const title = [...hs.querySelectorAll<HTMLElement>('.hs-slider__title')].find((el) => el.textContent === text) as HTMLElement;
+  const desc = (title.parentElement as HTMLElement).querySelector('.hs-slider__description') as HTMLElement;
   const view = root.defaultView!;
   const lines = (el: HTMLElement) => Math.round(el.getBoundingClientRect().height / parseFloat(view.getComputedStyle(el).lineHeight));
-  return { width: rect.width, height: rect.height, titleFont: view.getComputedStyle(title).fontSize, titleLines: lines(title), descLines: lines(desc), full: hs.classList.contains('hs--full') };
+  return { width: rect.width, height: rect.height, titleFont: view.getComputedStyle(title).fontSize, titleLines: lines(title), descLines: lines(desc), full: hs.classList.contains('hs-slider--full') };
 };
 
 /** 실제 사이트에서 그 배너가 든 구좌를 잰다. */
 async function siteSlot(page: Page, path: string, viewport: keyof typeof VIEWPORTS, title: string): Promise<Slot> {
   await page.setViewportSize(VIEWPORTS[viewport]);
   await gotoUser(page, path);
-  await expect(page.locator('.hs .hs__title', { hasText: title }).first()).toBeAttached({ timeout: 30_000 });
+  await expect(page.locator('.hs-slider .hs-slider__title', { hasText: title }).first()).toBeAttached({ timeout: 30_000 });
   await page.waitForTimeout(500);
   return page.evaluate(`(${measure.toString()})(document, ${JSON.stringify(title)})`) as Promise<Slot>;
 }

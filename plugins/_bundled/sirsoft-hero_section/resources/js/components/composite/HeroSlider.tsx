@@ -2,14 +2,8 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectFade, EffectCube, EffectFlip, EffectCoverflow, EffectCreative } from 'swiper/modules';
 import type { Swiper as SwiperInstance, SwiperOptions } from 'swiper';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import 'swiper/css/effect-fade';
-import 'swiper/css/effect-cube';
-import 'swiper/css/effect-flip';
-import 'swiper/css/effect-coverflow';
-import 'swiper/css/effect-creative';
+// Swiper CSS 는 확장 CSS 에 넣지 않고 동봉 자산으로 따로 싣는다 — support/swiperStyles 참조
+import { useSwiperStyles } from '../../support/swiperStyles';
 import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useMarketingConsent, type HeroVideo } from '../../support/media';
 import { LetterText, lineDelay, textMotion, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
@@ -139,6 +133,18 @@ const PAGINATIONS: readonly HeroPagination[] = ['dots', 'progress', 'tabs', 'fra
  */
 const twoDigits = (n: number): string => String(n).padStart(2, '0');
 
+/**
+ * 문구 바탕 클래스 — 「없음」은 바탕 규칙이 없으므로 클래스를 붙이지 않는다(자기 CSS 에 없는 이름을 걸지 않는다).
+ *
+ * @param overlay 배너의 문구 바탕
+ * @returns 앞 공백을 붙인 클래스 또는 빈 문자열
+ */
+const overlayClass = (overlay?: 'none' | 'dark' | 'light'): string => {
+  if (overlay === 'dark') return ' hs-slider__text--dark';
+  if (overlay === 'light') return ' hs-slider__text--light';
+  return '';
+};
+
 export interface HeroSliderProps {
   /** 노출 배너 (공개 API 순서 그대로) */
   banners?: HeroBanner[];
@@ -212,9 +218,9 @@ const EFFECTS: Record<HeroEffect, Partial<SwiperOptions>> = {
   none: { effect: 'slide', speed: 0 },
 };
 
-/** Swiper 기본 화살표 아이콘(navigation 모듈과 같은 SVG) — 이전 단추는 Swiper CSS 가 180° 돌린다 */
+/** Swiper 기본 화살표 아이콘(navigation 모듈과 같은 SVG) — 이전 단추는 CSS 가 180° 돌린다 */
 const ARROW = (
-  <svg className="swiper-navigation-icon" width="11" height="20" viewBox="0 0 11 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <svg className="hs-slider__arrow-icon" width="11" height="20" viewBox="0 0 11 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <path d="M0.38296 20.0762C0.111788 19.805 0.111788 19.3654 0.38296 19.0942L9.19758 10.2796L0.38296 1.46497C0.111788 1.19379 0.111788 0.754138 0.38296 0.482966C0.654131 0.211794 1.09379 0.211794 1.36496 0.482966L10.4341 9.55214C10.8359 9.9539 10.8359 10.6053 10.4341 11.007L1.36496 20.0762C1.09379 20.3474 0.654131 20.3474 0.38296 20.0762Z" fill="currentColor" />
   </svg>
 );
@@ -332,6 +338,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   editorAttrs,
 }) => {
   const count = banners.length;
+  // Swiper CSS 가 실리기 전에는 장들이 세로로 쌓였다가 펴지며 아래 본문을 밀어내므로 같은 자리의 스켈레톤을 둔다
+  const stylesReady = useSwiperStyles();
   // 직전 방문의 그 위치 모양(배너 유무·표시 폭) — 받는 동안의 스켈레톤을 실제와 같은 폭으로, 0건 위치는 아예 그리지 않게
   const remembered = useMemo(() => readMemory(position), [position]);
   const width = settings.width;
@@ -417,12 +425,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
   // 관리자 미리보기(iframe 문서)에서는 Swiper 가 붙지 않는다 — Swiper 14 의 mount 가 요소를 바깥 창의 HTMLElement 로만 확인해
   // iframe 요소면 조용히 초기화를 건너뛴다. 그 인스턴스로 넘기면(자동 넘김 타이머 포함) 요소가 없어 TypeError 가 난다.
-  // 그래서 바깥 문서가 아니면 Swiper 를 부르지 않고 장 번호만 바꿔 CSS(hs--static, --hs-index)로 그 장을 보인다(전환 효과·자동 넘김 없음)
+  // 그래서 바깥 문서가 아니면 Swiper 를 부르지 않고 장 번호만 바꿔 CSS(hs-slider--static, --hs-index)로 그 장을 보인다(전환 효과·자동 넘김 없음)
   const [framed, setFramed] = useState(false);
   useLayoutEffect(() => {
     const doc = regionRef.current?.ownerDocument;
     setFramed(!!doc && doc !== document);
-  }, [count > 0]);
+  }, [count > 0, stylesReady]);
   /** Swiper 를 불러도 되는지 — 파기되지 않았고 요소에 실제로 붙었을 때만 */
   const swiperReady = (instance: SwiperInstance | null): instance is SwiperInstance => !!instance && !instance.destroyed && instance.initialized !== false;
 
@@ -504,32 +512,34 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     ...(framed ? { '--hs-index': index } : {}),
   } as React.CSSProperties;
 
-  if (count === 0) {
-    if (!loading || remembered?.banners === 0) {
+  if (count === 0 || !stylesReady) {
+    if (count === 0 && (!loading || remembered?.banners === 0)) {
       return null;
     }
 
-    // 받는 중 — 슬라이더와 같은 비율·폭(본문 폭이면 본문 상자, 화면 전체면 끝까지)의 자리를 먼저 잡는다. 장식이라 읽지 않는다
+    // 받는 중(또는 Swiper CSS 를 싣는 중) — 슬라이더와 같은 비율·폭(본문 폭이면 본문 상자, 화면 전체면 끝까지)의 자리를 먼저 잡는다.
+    // 배너를 이미 받았으면 그 위치 설정의 폭을 따른다. 장식이라 읽지 않는다
+    const wide = count > 0 ? full : skeletonFull;
     const skeleton = (
       <section
-        className={`hs hs--skeleton hs--${skeletonFull ? 'full' : 'content'}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
+        className={`hs-slider hs-slider--skeleton${wide ? ' hs-slider--full' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
         style={style}
         aria-hidden="true"
         data-position={position}
       >
-        <div className={`hs__text${skeletonFull && box ? ' hs__text--boxed' : ''}`}>
-          {wrapBox(skeletonFull ? box : '', (
-            <div className="hs__skeleton-lines">
-              <span className="hs__skeleton-line hs__skeleton-line--title" />
-              <span className="hs__skeleton-line hs__skeleton-line--description" />
-              <span className="hs__skeleton-line hs__skeleton-line--button" />
+        <div className={`hs-slider__text${wide && box ? ' hs-slider__text--boxed' : ''}`}>
+          {wrapBox(wide ? box : '', (
+            <div className="hs-slider__skeleton-lines">
+              <span className="hs-slider__skeleton-line hs-slider__skeleton-line--title" />
+              <span className="hs-slider__skeleton-line hs-slider__skeleton-line--description" />
+              <span className="hs-slider__skeleton-line hs-slider__skeleton-line--button" />
             </div>
           ))}
         </div>
       </section>
     );
 
-    return !skeletonFull && box ? <div className={`hs-frame ${box}`} data-hs-width="content">{skeleton}</div> : skeleton;
+    return !wide && box ? <div className={box} data-hs-width="content">{skeleton}</div> : skeleton;
   }
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -543,13 +553,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   };
 
   const controls = (count > 1 || hasMedia) && (
-        <div className={`hs__controls${textBox ? ' hs__controls--boxed' : ''}`}>
+        <div className={`hs-slider__controls${textBox ? ' hs-slider__controls--boxed' : ''}`}>
           {/* 장 번호는 점 표시가 보여 주므로 화면에서는 감추고, 방문자가 넘긴 때만 화면 읽기 프로그램에 알린다 */}
-          {count > 1 && <span className="hs__counter" aria-live={live ? 'polite' : 'off'}>{announcement}</span>}
+          {count > 1 && <span className="hs-slider__counter" aria-live={live ? 'polite' : 'off'}>{announcement}</span>}
           {(canAutoplay || hasMedia) && (
             <button
               type="button"
-              className="hs__control hs__toggle"
+              className="hs-slider__control"
+              data-hs-control="toggle"
               aria-pressed={paused}
               aria-label={toggleLabel}
               onClick={() => setPausedChoice(!paused)}
@@ -565,7 +576,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       id={id}
       {...editorAttrs}
       ref={regionRef}
-      className={`hs hs--${effect} hs--${full ? 'full' : 'content'} hs--pagination-${pagination}${framed ? ' hs--static' : ''}${count > 1 ? ' hs--controlled' : ''}${autoplaying ? ' hs--autoplaying' : ''}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
+      className={`hs-slider hs-slider--${effect}${full ? ' hs-slider--full' : ''} hs-slider--pagination-${pagination}${framed ? ' hs-slider--static' : ''}${count > 1 ? ' hs-slider--controlled' : ''}${autoplaying ? ' hs-slider--autoplaying' : ''}${overlayOn ? ' hs-slider--header-overlay' : ''} ${className}`.trim()}
       style={style}
       role="region"
       aria-roledescription={t('sirsoft-hero_section.slider.carousel_role', '캐러셀')}
@@ -588,7 +599,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     >
       <Swiper
         key={`${key}:${effect}`}
-        className="hs__track"
+        className="hs-slider__track"
+        // 장 줄에 자기 클래스를 더한다(Swiper 는 swiper-wrapper 도 그대로 붙인다) — 미리보기 정적 모드가 이 줄을 옮긴다
+        wrapperClass="hs-slider__wrapper"
         modules={[Autoplay, EffectFade, EffectCube, EffectFlip, EffectCoverflow, EffectCreative]}
         loop={count > 1}
         {...EFFECTS[effect]}
@@ -632,45 +645,45 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
       {count > 1 && (
         <>
-          {/* Swiper 기본 화살표·점 모양(navigation·pagination CSS)을 쓰되, 단추는 이름 붙은 button 으로 직접 그린다 —
-              Swiper 모듈은 요소를 바깥 문서에서 찾아 편집 미리보기(iframe)에서는 붙지 않는다 */}
-          <button type="button" className="swiper-button-prev hs__arrow hs__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
-          <button type="button" className="swiper-button-next hs__arrow hs__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
+          {/* Swiper 기본 화살표·점 모양(navigation·pagination CSS 선언을 손 CSS 로 옮겨 자기 클래스에 둠)을 쓰되, 단추는 이름 붙은
+              button 으로 직접 그린다 — Swiper 모듈은 요소를 바깥 문서에서 찾아 편집 미리보기(iframe)에서는 붙지 않는다 */}
+          <button type="button" className="hs-slider__arrow hs-slider__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
+          <button type="button" className="hs-slider__arrow hs-slider__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
           {pagination === 'fraction' ? (
             // 번호 — 장 번호는 슬라이드 이름이 읽어 주므로 화면 읽기에서는 감춘다
-            <div className="hs__pagination hs__fraction" aria-hidden="true">
-              <span className="hs__fraction-current">{twoDigits(index + 1)}</span>
-              <span className="hs__fraction-sep">/</span>
-              <span className="hs__fraction-total">{twoDigits(count)}</span>
+            <div className="hs-slider__pagination hs-slider__fraction" aria-hidden="true">
+              <span className="hs-slider__fraction-current">{twoDigits(index + 1)}</span>
+              <span>/</span>
+              <span data-hs-fraction="total">{twoDigits(count)}</span>
             </div>
           ) : pagination === 'tabs' ? (
             // 배너 이름 탭 — 이름은 보이는 글자(휴대폰에서는 화면 읽기용으로만 남김)가 단추 이름이다
-            <div className="hs__pagination hs__tabs">
+            <div className="hs-slider__pagination hs-slider__tabs">
               {banners.map((banner, i) => (
                 <button
                   key={banner.id}
                   type="button"
-                  className={`hs__tab${i === index ? ' hs__tab--active' : ''}`}
+                  className={`hs-slider__tab${i === index ? ' hs-slider__tab--active' : ''}`}
                   aria-current={i === index ? 'true' : undefined}
                   onClick={() => goTo(i)}
                 >
-                  <span className="hs__tab-track" aria-hidden="true">{i === index && <span className="hs__bullet-fill" />}</span>
-                  <span className="hs__tab-label">{banner.title || banner.image_alt || t('sirsoft-hero_section.slider.go_to', '{{n}}번째 배너로 이동', { n: String(i + 1) })}</span>
+                  <span className="hs-slider__tab-track" aria-hidden="true">{i === index && <span className="hs-slider__bullet-fill" />}</span>
+                  <span className="hs-slider__tab-label">{banner.title || banner.image_alt || t('sirsoft-hero_section.slider.go_to', '{{n}}번째 배너로 이동', { n: String(i + 1) })}</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className={`swiper-pagination swiper-pagination-bullets swiper-pagination-horizontal hs__pagination hs__pagination--${pagination}`}>
+            <div className={`hs-slider__pagination hs-slider__bullets hs-slider__pagination--${pagination}`}>
               {banners.map((banner, i) => (
                 <button
                   key={banner.id}
                   type="button"
-                  className={`swiper-pagination-bullet${i === index ? ' swiper-pagination-bullet-active' : ''}`}
+                  className={`hs-slider__bullet${i === index ? ' hs-slider__bullet--active' : ''}`}
                   aria-label={t('sirsoft-hero_section.slider.go_to', '{{n}}번째 배너로 이동', { n: String(i + 1) })}
                   aria-current={i === index ? 'true' : undefined}
                   onClick={() => goTo(i)}
                 >
-                  {pagination === 'progress' && i === index && <span className="hs__bullet-fill" aria-hidden="true" />}
+                  {pagination === 'progress' && i === index && <span className="hs-slider__bullet-fill" aria-hidden="true" />}
                 </button>
               ))}
             </div>
@@ -680,13 +693,13 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
       {controls && (textBox
         // 화면 전체 폭 — 단추를 본문 상자 오른쪽 끝에 맞춘다. 층은 클릭을 막지 않고 단추만 받는다
-        ? <div className="hs__controls-layer"><div className={`hs__controls-box ${textBox}`}>{controls}</div></div>
+        ? <div className="hs-slider__controls-layer"><div className={`hs-slider__controls-box ${textBox}`}>{controls}</div></div>
         : controls)}
     </section>
   );
 
   // 본문 폭 — 템플릿 본문 상자 안에 그린다(상자를 안 넘겼으면 감싸지 않고 자리 폭을 그대로 쓴다)
-  return !full && box ? <div className={`hs-frame ${box}`} data-hs-width="content">{slider}</div> : slider;
+  return !full && box ? <div className={box} data-hs-width="content">{slider}</div> : slider;
 };
 
 interface HeroSlideProps {
@@ -812,7 +825,7 @@ function siteTone(): 'dark' | 'light' {
  * @returns 감싼 노드
  */
 function wrapBox(box: string, node: React.ReactNode): React.ReactNode {
-  return box ? <div className={`hs__box ${box}`}>{node}</div> : node;
+  return box ? <div className={`hs-slider__box ${box}`}>{node}</div> : node;
 }
 
 /**
@@ -870,12 +883,12 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const main = forceDevice === 'mobile' ? (mobile ?? pc) : pc;
   const media = mediaOf(banner);
   const image = main ? (
-    <picture className="hs__picture">
+    <picture className="hs-slider__picture">
       {!forceDevice && mobile && (
         <source media="(max-width: 767px)" srcSet={mobile.url} width={mobile.width ?? undefined} height={mobile.height ?? undefined} />
       )}
       <img
-        className="hs__image"
+        className="hs-slider__image"
         style={imageStyle}
         src={main.url}
         alt={imageAlt}
@@ -895,32 +908,32 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const drag = useTextDrag(textSpot(focus, device), onTextMove);
   const lines: React.ReactNode[] = [];
   const line = (render: (props: { className: string; style: React.CSSProperties }) => React.ReactNode, extra = '') => {
-    lines.push(render({ className: `hs__line${extra}`, style: lineDelay(motion, lines.length) }));
+    lines.push(render({ className: `hs-slider__line${extra}`, style: lineDelay(motion, lines.length) }));
   };
   const letters = motion.name === 'letters';
   if (banner.eyebrow_visible !== false && banner.eyebrow) {
     line(({ className, style }) => (
-      <p key="eyebrow" className={`hs__eyebrow ${className}`} style={{ ...style, color: banner.eyebrow_color, textAlign: banner.title_align }}>
+      <p key="eyebrow" className={`hs-slider__eyebrow ${className}`} style={{ ...style, color: banner.eyebrow_color, textAlign: banner.title_align }}>
         {letters ? <LetterText text={banner.eyebrow!} /> : banner.eyebrow}
       </p>
-    ), letters ? ' hs__line--letters' : '');
+    ), letters ? ' hs-slider__line--letters' : '');
   }
   if (titleShown) {
     line(({ className, style }) => (
-      <h2 key="title" className={`hs__title ${className}`} style={{ ...style, color: banner.title_color, textAlign: banner.title_align }} aria-hidden={titleSpokenByLink || undefined}>
+      <h2 key="title" className={`hs-slider__title ${className}`} style={{ ...style, color: banner.title_color, textAlign: banner.title_align }} aria-hidden={titleSpokenByLink || undefined}>
         {letters ? <LetterText text={banner.title!} /> : banner.title}
       </h2>
-    ), letters ? ' hs__line--letters' : '');
+    ), letters ? ' hs-slider__line--letters' : '');
   }
   if (banner.description_visible !== false && banner.description) {
     line(({ className, style }) => (
-      <p key="description" className={`hs__description ${className}`} style={{ ...style, color: banner.description_color, textAlign: banner.description_align }}>{banner.description}</p>
+      <p key="description" className={`hs-slider__description ${className}`} style={{ ...style, color: banner.description_color, textAlign: banner.description_align }}>{banner.description}</p>
     ));
   }
   if (hasButton) {
     line(({ className, style }) => (
-      <div key="actions" className={`hs__actions ${className}`} style={{ ...style, textAlign: banner.title_align }}>
-        <a className="hs__button" {...link!} tabIndex={active ? undefined : -1}>{banner.button_text}</a>
+      <div key="actions" className={className} data-hs-line="actions" style={{ ...style, textAlign: banner.title_align }}>
+        <a className="hs-slider__button" {...link!} tabIndex={active ? undefined : -1}>{banner.button_text}</a>
       </div>
     ));
   }
@@ -929,14 +942,14 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
 
   const text = (
     <div
-      className={`hs__text hs__text--${banner.presentation?.overlay ?? 'none'}${textBox ? ' hs__text--boxed' : ''}`}
+      className={`hs-slider__text${overlayClass(banner.presentation?.overlay)}${textBox ? ' hs-slider__text--boxed' : ''}`}
       style={textVars(focus, forceDevice, drag.dragging)}
     >
       {wrapBox(textBox, (
         <div
           key={`motion-${replay}`}
           ref={drag.boxRef}
-          className={`hs__textbox hs__textbox--${motion.name}${wholeLink ? ' hs__text--linked' : ''}${editable ? ' hs__textbox--editable' : ''}${drag.dragging ? ' hs__textbox--dragging' : ''}`}
+          className={`hs-slider__textbox hs-slider__textbox--${motion.name}${wholeLink ? ' hs-slider__text--linked' : ''}${editable ? ' hs-slider__textbox--editable' : ''}${drag.dragging ? ' hs-slider__textbox--dragging' : ''}`}
           style={{ '--hs-anim-duration': `${motion.duration}s` } as React.CSSProperties}
           // 문구를 눌러도 링크로 간다(마우스·손가락). 키보드는 앞의 링크로 간다. 손가락 스크롤·넘기기는 click 을 만들지 않는다
           onClick={wholeLink && !editable ? () => linkRef.current?.click() : undefined}
@@ -949,7 +962,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           } : {})}
         >
           {/* 긴 문구는 이 안에서만 스크롤한다 — 바깥 여백(넘김 컨트롤 자리)에는 글자가 지나가지 않는다 */}
-          <div className={`hs__scroll${overflowing ? ' hs__scroll--overflow' : ''}`} ref={scrollRef} {...(editable ? {} : scrollable)}>{lines}</div>
+          <div className={`hs-slider__scroll${overflowing ? ' hs-slider__scroll--overflow' : ''}`} ref={scrollRef} {...(editable ? {} : scrollable)}>{lines}</div>
         </div>
       ))}
     </div>
@@ -957,7 +970,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
 
   return (
     <div
-      className={`hs__slide${active ? ' hs__slide--active' : ''}${media ? ` hs__slide--${media}` : ''}`}
+      className={`hs-slider__slide${active ? ' hs-slider__slide--active' : ''}${media ? ` hs-slider__slide--${media}` : ''}`}
       role="group"
       aria-roledescription={t('sirsoft-hero_section.slider.slide_role', '슬라이드')}
       aria-label={slideLabel(index, count)}
@@ -966,7 +979,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
       data-index={index}
     >
       {wholeLink && (
-        <a ref={linkRef} className="hs__link" {...link!} aria-label={linkName} tabIndex={active ? undefined : -1} />
+        <a ref={linkRef} className="hs-slider__link" {...link!} aria-label={linkName} tabIndex={active ? undefined : -1} />
       )}
       {image}
       {media === 'video' && (

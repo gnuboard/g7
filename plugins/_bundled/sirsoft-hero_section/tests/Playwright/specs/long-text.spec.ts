@@ -38,19 +38,19 @@ for (const [name, [title, description, button]] of Object.entries(VARIANTS)) {
     for (const viewport of ['desktop', 'tablet', 'mobile'] as const) {
       await page.setViewportSize(VIEWPORTS[viewport]);
       await gotoUser(page, '/');
-      await expect(page.locator('.hs .hs__title', { hasText: marker }).first()).toBeAttached({ timeout: 30_000 });
+      await expect(page.locator('.hs-slider .hs-slider__title', { hasText: marker }).first()).toBeAttached({ timeout: 30_000 });
       await page.waitForTimeout(500);
       const m = await page.evaluate((mark) => {
-        const t = [...document.querySelectorAll<HTMLElement>('.hs .hs__title')].find((el) => el.textContent?.startsWith(mark))!;
-        const text = t.closest('.hs__text') as HTMLElement;
-        const scroll = (t.closest('.hs__scroll') ?? text) as HTMLElement;
-        // 컨트롤은 구좌(.hs) 기준, 문구는 제 슬라이드 기준 좌표로 맞춘다 — 그 슬라이드가 지금 보이는 장이 아니어도 비교된다
-        const hsBox = t.closest('.hs')!.getBoundingClientRect();
-        const ctrl = t.closest('.hs')?.querySelector('.hs__controls')?.getBoundingClientRect() ?? null;
-        const slide = (t.closest('.swiper-slide') ?? t.closest('.hs__slide')) as HTMLElement;
+        const t = [...document.querySelectorAll<HTMLElement>('.hs-slider .hs-slider__title')].find((el) => el.textContent?.startsWith(mark))!;
+        const text = t.closest('.hs-slider__text') as HTMLElement;
+        const scroll = (t.closest('.hs-slider__scroll') ?? text) as HTMLElement;
+        // 컨트롤은 구좌(.hs-slider) 기준, 문구는 제 슬라이드 기준 좌표로 맞춘다 — 그 슬라이드가 지금 보이는 장이 아니어도 비교된다
+        const hsBox = t.closest('.hs-slider')!.getBoundingClientRect();
+        const ctrl = t.closest('.hs-slider')?.querySelector('.hs-slider__controls')?.getBoundingClientRect() ?? null;
+        const slide = (t.closest('.swiper-slide') ?? t.closest('.hs-slider__slide')) as HTMLElement;
         const f = slide.getBoundingClientRect();
         const box = (el: Element | null) => (el ? el.getBoundingClientRect() : null);
-        const parts = [t, text.querySelector('.hs__description'), text.querySelector('.hs__button')].filter(Boolean) as HTMLElement[];
+        const parts = [t, text.querySelector('.hs-slider__description'), text.querySelector('.hs-slider__button')].filter(Boolean) as HTMLElement[];
         return {
           textTop: box(text)!.top - f.top,
           textBottom: box(text)!.bottom - f.top,
@@ -118,16 +118,16 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     created.push(await createBanner(request, managerToken, { title: { ko: shortTitle } }));
 
     await gotoUser(page, '/');
-    const hs = page.locator('section.hs[role="region"]');
-    await expect(hs.locator('.hs__title', { hasText: marker })).toBeAttached({ timeout: 30_000 });
+    const hs = page.locator('section.hs-slider[role="region"]');
+    await expect(hs.locator('.hs-slider__title', { hasText: marker })).toBeAttached({ timeout: 30_000 });
     // 자동 넘김이 단언 사이에 장을 바꾸지 않게 멈춘다
-    if (await hs.locator('.hs__toggle').count()) await hs.locator('.hs__toggle').tap();
-    const slideOf = (text: string) => hs.locator('.hs__slide', { has: page.locator('.hs__title', { hasText: text }) });
+    if (await hs.locator('[data-hs-control="toggle"]').count()) await hs.locator('[data-hs-control="toggle"]').tap();
+    const slideOf = (text: string) => hs.locator('.hs-slider__slide', { has: page.locator('.hs-slider__title', { hasText: text }) });
     // 휴대폰은 화살표를 감추므로 그 장의 점을 누른다
-    await hs.locator('.hs__pagination button').nth(Number(await slideOf(marker).getAttribute('data-index'))).tap();
+    await hs.locator('.hs-slider__pagination button').nth(Number(await slideOf(marker).getAttribute('data-index'))).tap();
     await page.waitForTimeout(700);
-    await expect(slideOf(marker)).toHaveClass(/hs__slide--active/);
-    const scroll = slideOf(marker).locator('.hs__scroll');
+    await expect(slideOf(marker)).toHaveClass(/hs-slider__slide--active/);
+    const scroll = slideOf(marker).locator('.hs-slider__scroll');
     const scrollTop = () => scroll.evaluate((el) => el.scrollTop);
 
     // 넘치는 보이는 장만 탭 순서에 들어오고 배너 제목으로 이름 붙는다. 넘치지 않는 짧은 문구 영역은 그대로다
@@ -135,19 +135,19 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     await expect(scroll).toHaveAttribute('role', 'region');
     // 영역 이름은 제목과 겹쳐 읽히지 않게 「배너 문구」 — 제목은 안의 제목 줄이 읽는다
     await expect(scroll).toHaveAttribute('aria-label', '배너 문구');
-    const short = slideOf(shortTitle).locator('.hs__scroll');
+    const short = slideOf(shortTitle).locator('.hs-slider__scroll');
     await expect(short).not.toHaveAttribute('tabindex', /.*/);
     await expect(short).not.toHaveAttribute('role', /.*/);
 
     // 탭으로 들어가 아래 화살표로 스크롤한다(좌우 화살표는 장 넘김이라 그대로 둔다)
-    await hs.locator('.hs__pagination button').first().focus();
+    await hs.locator('.hs-slider__pagination button').first().focus();
     await page.keyboard.press('Shift+Tab');
     for (let i = 0; i < 6 && !(await scroll.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press('Shift+Tab');
     expect(await scroll.evaluate((el) => el === document.activeElement)).toBe(true);
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('ArrowDown');
     await expect.poll(scrollTop).toBeGreaterThan(0);
-    await expect(slideOf(marker)).toHaveClass(/hs__slide--active/);
+    await expect(slideOf(marker)).toHaveClass(/hs-slider__slide--active/);
     await scroll.evaluate((el) => { el.scrollTop = 0; (el as HTMLElement).blur(); });
 
     // 손가락 세로 쓸기: 문구 영역 안에서 위로 밀면 문구가 스크롤되고 장은 그대로다
@@ -163,7 +163,7 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect.poll(scrollTop).toBeGreaterThan(0);
     await page.waitForTimeout(700);
-    await expect(slideOf(marker)).toHaveClass(/hs__slide--active/);
+    await expect(slideOf(marker)).toHaveClass(/hs-slider__slide--active/);
 
     // 손가락 가로 쓸기: 같은 문구 영역 위에서도 다음 장으로 넘어간다
     const y = Math.round(box.y + box.height / 2);
@@ -174,7 +174,7 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
       await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: Math.round(fromX + ((toX - fromX) * i) / 8), y }] });
     }
     await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await expect(slideOf(marker)).not.toHaveClass(/hs__slide--active/, { timeout: 5_000 });
+    await expect(slideOf(marker)).not.toHaveClass(/hs-slider__slide--active/, { timeout: 5_000 });
     // 보이지 않게 된 장의 문구 영역은 탭 순서에서 빠진다
     await expect(scroll).toHaveAttribute('tabindex', '-1');
   });
@@ -191,21 +191,21 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     created.push(await createBanner(request, managerToken, { title: { ko: fullTitle }, description: { ko: description }, link_url: '/shop/products' }));
 
     await gotoUser(page, '/');
-    const hs = page.locator('section.hs[role="region"]');
-    await expect(hs.locator('.hs__title', { hasText: marker })).toBeAttached({ timeout: 30_000 });
-    if (await hs.locator('.hs__toggle').count()) await hs.locator('.hs__toggle').tap();
-    const slide = hs.locator('.hs__slide', { has: page.locator('.hs__title', { hasText: marker }) });
-    await hs.locator('.hs__pagination button').nth(Number(await slide.getAttribute('data-index'))).tap();
+    const hs = page.locator('section.hs-slider[role="region"]');
+    await expect(hs.locator('.hs-slider__title', { hasText: marker })).toBeAttached({ timeout: 30_000 });
+    if (await hs.locator('[data-hs-control="toggle"]').count()) await hs.locator('[data-hs-control="toggle"]').tap();
+    const slide = hs.locator('.hs-slider__slide', { has: page.locator('.hs-slider__title', { hasText: marker }) });
+    await hs.locator('.hs-slider__pagination button').nth(Number(await slide.getAttribute('data-index'))).tap();
     await page.waitForTimeout(700);
-    await expect(slide).toHaveClass(/hs__slide--active/);
-    const link = slide.locator('a.hs__link');
-    const scroll = slide.locator('.hs__scroll');
+    await expect(slide).toHaveClass(/hs-slider__slide--active/);
+    const link = slide.locator('a.hs-slider__link');
+    const scroll = slide.locator('.hs-slider__scroll');
 
     expect(await scroll.evaluate((el) => el.scrollHeight > el.clientHeight + 1), '전제: 문구가 넘친다').toBe(true);
     // 링크는 비어 있고(문구 영역을 품지 않는다) 제목으로 이름 붙는다. 넘치는 문구 영역은 링크 밖에서 탭 순서에 든다
     await expect(link).toHaveAttribute('aria-label', fullTitle);
     expect(await link.evaluate((el) => el.childElementCount)).toBe(0);
-    expect(await slide.locator('a .hs__scroll, a [tabindex]').count()).toBe(0);
+    expect(await slide.locator('a .hs-slider__scroll, a [tabindex]').count()).toBe(0);
     await expect(scroll).toHaveAttribute('tabindex', '0');
 
     // 탭 순서: 링크 → 문구 영역, 문구 영역에서 ↓ 로 스크롤해도 이동하지 않는다
@@ -232,7 +232,7 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     expect(new URL(page.url()).pathname).toBe('/');
 
     // 문구를 누르면 링크 주소로 간다
-    await slide.locator('.hs__title').tap();
+    await slide.locator('.hs-slider__title').tap();
     await expect(page).toHaveURL(/\/shop\/products/, { timeout: 30_000 });
   });
 });

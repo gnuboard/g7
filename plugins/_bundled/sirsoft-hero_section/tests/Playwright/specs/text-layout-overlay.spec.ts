@@ -35,10 +35,10 @@ async function measure(page: Page) {
   return page.evaluate(() => {
     const root = document.documentElement;
     const header = [...document.querySelectorAll<HTMLElement>('.g7-site-header')].find((e) => e.getBoundingClientRect().height > 0)!;
-    const slide = document.querySelector<HTMLElement>('.hs__slide--active')!;
-    const area = slide.querySelector<HTMLElement>('.hs__textbox')!.parentElement!;
-    const box = slide.querySelector<HTMLElement>('.hs__textbox')!.getBoundingClientRect();
-    const layer = slide.querySelector<HTMLElement>('.hs__text')!.getBoundingClientRect();
+    const slide = document.querySelector<HTMLElement>('.hs-slider__slide--active')!;
+    const area = slide.querySelector<HTMLElement>('.hs-slider__textbox')!.parentElement!;
+    const box = slide.querySelector<HTMLElement>('.hs-slider__textbox')!.getBoundingClientRect();
+    const layer = slide.querySelector<HTMLElement>('.hs-slider__text')!.getBoundingClientRect();
     const s = slide.getBoundingClientRect();
     const a = area.getBoundingClientRect();
     const pad = getComputedStyle(area);
@@ -51,12 +51,12 @@ async function measure(page: Page) {
       headerVar: root.style.getPropertyValue('--g7-header-height'),
       headerBg: getComputedStyle(header).backgroundColor,
       ink: navLink ? getComputedStyle(navLink).color : null,
-      heroTop: Math.round(document.querySelector('section.hs')!.getBoundingClientRect().top),
+      heroTop: Math.round(document.querySelector('section.hs-slider')!.getBoundingClientRect().top),
       slideTop: s.top, slideBottom: s.bottom,
       layerTop: layer.top, layerBottom: layer.bottom,
       boxLeft: box.left, boxRight: box.right, boxWidth: box.width, innerLeft: inner.left, innerRight: inner.right, innerWidth: inner.right - inner.left,
-      lines: [...slide.querySelectorAll<HTMLElement>('.hs__line')].map((l) => ({ cls: l.className, name: getComputedStyle(l).animationName, delay: getComputedStyle(l).animationDelay })),
-      eyebrow: slide.querySelector('.hs__eyebrow')?.textContent ?? null,
+      lines: [...slide.querySelectorAll<HTMLElement>('.hs-slider__line')].map((l) => ({ cls: l.className, name: getComputedStyle(l).animationName, delay: getComputedStyle(l).animationDelay })),
+      eyebrow: slide.querySelector('.hs-slider__eyebrow')?.textContent ?? null,
     };
   });
 }
@@ -71,7 +71,7 @@ test('메뉴 겹치기 — 헤더가 배너 위에 투명하게 올라가고 문
   // PC
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
-  await expect(page.locator('.hs__slide--active .hs__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
+  await expect(page.locator('.hs-slider__slide--active .hs-slider__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
   const pc = await measure(page);
   expect(pc.overlay).toBe('dark');
   expect(pc.active).toBe('dark');
@@ -97,21 +97,21 @@ test('메뉴 겹치기 — 헤더가 배너 위에 투명하게 올라가고 문
   await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-header-overlay-active'))).toBe('dark');
 
   // 둘째 장: 바탕 밝음 → 메뉴 글자 검정, 오른쪽 위, 글자 하나씩(원문은 화면 읽기용으로 한 번)
-  await page.locator('.hs__pagination .swiper-pagination-bullet').nth(1).click();
+  await page.locator('.hs-slider__pagination .hs-slider__bullet').nth(1).click();
   await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('data-header-overlay'))).toBe('light');
   await page.waitForTimeout(1_500);
   const second = await measure(page);
   expect(second.ink).toBe('rgb(17, 24, 39)');
   expect(Math.abs(second.boxRight - second.innerRight)).toBeLessThan(1.5);
   expect(Math.round(second.layerTop - second.slideTop)).toBe(0);
-  expect(await page.locator('.hs__slide--active .hs__title .hs__sr').textContent()).toBe('E2E 둘째 장');
-  expect(await page.locator('.hs__slide--active .hs__title .hs__letter').count()).toBe([...'E2E둘째장'].length);
-  expect(second.lines.find((l) => l.cls.includes('hs__description'))?.name).toBe('hs-text-fade');
+  expect(await page.locator('.hs-slider__slide--active .hs-slider__title .hs-slider__sr').textContent()).toBe('E2E 둘째 장');
+  expect(await page.locator('.hs-slider__slide--active .hs-slider__title .hs-slider__letter').count()).toBe([...'E2E둘째장'].length);
+  expect(second.lines.find((l) => l.cls.includes('hs-slider__description'))?.name).toBe('hs-text-fade');
 
   // 휴대폰 — 휴대폰 자리(오른쪽 위), 툴바 높이
   await page.setViewportSize(VIEWPORTS.mobile);
   await gotoUser(page, '/');
-  await expect(page.locator('.hs__slide--active .hs__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
+  await expect(page.locator('.hs-slider__slide--active .hs-slider__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
   await page.waitForTimeout(1_500);
   const mobile = await measure(page);
   expect(mobile.active).toBe('dark');
@@ -128,7 +128,7 @@ test('본문 폭이면 메뉴 겹치기를 켜도 헤더는 그대로다', async
   await decorate(page, { width: 'content', header_overlay: true, autoplay: false }, { tone: 'dark' });
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
-  await expect(page.locator('.hs__slide--active .hs__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
+  await expect(page.locator('.hs-slider__slide--active .hs-slider__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
   const m = await measure(page);
   expect(m.overlay).toBeNull();
   expect(m.active).toBeNull();
@@ -143,11 +143,11 @@ test('움직임 줄이기면 등장 효과 없이 보인다', async ({ page }) =
   await decorate(page, { width: 'full', header_overlay: false }, { animation: 'zoom', animation_delay: 1 });
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
-  await expect(page.locator('.hs__slide--active .hs__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
+  await expect(page.locator('.hs-slider__slide--active .hs-slider__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
   const m = await measure(page);
   expect(m.overlay).toBeNull();
   expect(m.lines.every((l) => l.name === 'none')).toBe(true);
-  await expect(page.locator('.hs__slide--active .hs__textbox')).toHaveClass(/hs__textbox--none/);
+  await expect(page.locator('.hs-slider__slide--active .hs-slider__textbox')).toHaveClass(/hs-slider__textbox--none/);
 });
 
 /** 수정 화면의 저장 전 표현값을 미리보기 상자 속성과 숫자 칸으로 읽는다 */
@@ -159,7 +159,7 @@ async function padValues(page: Page) {
 }
 
 /** 편집 미리보기(iframe) 안의 문구 상자 */
-const previewBox = (page: Page) => page.frameLocator('#hero_form_preview iframe').first().locator('.hs__textbox');
+const previewBox = (page: Page) => page.frameLocator('#hero_form_preview iframe').first().locator('.hs-slider__textbox');
 
 // @scenario surface=admin_editor_grid_drag_keyboard_save
 // @effects editor_position_persisted, eyebrow_persisted

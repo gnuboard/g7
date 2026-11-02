@@ -60,7 +60,8 @@
         "carousel_role": "캐러셀",
         "slide_role": "슬라이드",
         "slide_label": "{{count}}개 중 {{n}}번째",
-        "text_label": "배너 문구"
+        "text_label": "배너 문구",
+        "styles_label": "배너 슬라이더 모양"
     },
     "admin": {
         "title": "히어로섹션 관리",

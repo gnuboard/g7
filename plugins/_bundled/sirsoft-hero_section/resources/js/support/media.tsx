@@ -207,7 +207,7 @@ export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDe
     <video
       ref={ref}
       key={source.url}
-      className="hs__video"
+      className="hs-slider__video"
       src={source.url}
       poster={poster}
       muted
@@ -291,7 +291,7 @@ export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, tit
       ...(loop ? { loop: '1', playlist: videoId } : {}),
     });
     const frame = host.ownerDocument.createElement('iframe');
-    frame.className = 'hs__youtube-frame';
+    frame.className = 'hs-slider__youtube-frame';
     frame.src = `${YOUTUBE_ORIGIN}/embed/${videoId}?${params.toString()}`;
     frame.title = title;
     frame.allow = 'autoplay; encrypted-media; picture-in-picture';
@@ -368,13 +368,13 @@ export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, tit
   }, [allowed, wanted, playing, active, ready]);
 
   return (
-    <div className={`hs__youtube${ready ? ' hs__youtube--ready' : ''}`}>
-      <div ref={hostRef} className="hs__youtube-host" />
+    <div className={`hs-slider__youtube${ready ? ' hs-slider__youtube--ready' : ''}`}>
+      <div ref={hostRef} className="hs-slider__youtube-host" />
       {!allowed && (
-        <div className="hs__youtube-gate">
+        <div className="hs-slider__youtube-gate">
           <button
             type="button"
-            className="hs__youtube-play"
+            className="hs-slider__youtube-play"
             aria-label={playLabel}
             tabIndex={active ? undefined : -1}
             onClick={(event) => {
@@ -384,7 +384,7 @@ export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, tit
           >
             <span aria-hidden="true">▶</span>
           </button>
-          <span className="hs__youtube-notice">{notice}</span>
+          <span className="hs-slider__youtube-notice">{notice}</span>
         </div>
       )}
     </div>

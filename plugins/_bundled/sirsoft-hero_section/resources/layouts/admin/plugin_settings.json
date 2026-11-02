@@ -77,7 +77,7 @@
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "hs-admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -98,7 +98,7 @@
                         "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
                         "props": {
                             "role": "status",
-                            "className": "alert-warning mt-6"
+                            "className": "hs-alert-warning hs:mt-6"
                         },
                         "children": [
                             {
@@ -106,14 +106,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "lock",
-                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
+                                    "className": "hs:text-xs hs:text-yellow-700 hs:dark:text-yellow-300"
                                 },
                                 "text": "$t:sirsoft-hero_section.plugin_read_only"
                             }
@@ -124,7 +124,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "hs:mt-6 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:shadow-sm hs:border hs:border-gray-200 hs:dark:border-gray-700"
                         },
                         "children": [
                             {
@@ -132,7 +132,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "p-6 space-y-6"
+                                    "className": "hs:p-6 hs:space-y-6"
                                 },
                                 "children": [
                                     {
@@ -140,21 +140,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-3col-responsive"
+                                            "className": "hs-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "hs:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label",
+                                                            "className": "hs-form-label",
                                                             "htmlFor": "hero_section_max_upload_mb"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.label"
@@ -163,7 +163,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "hs-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.hint"
                                                     }
@@ -173,7 +173,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "hs:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -185,7 +185,7 @@
                                                             "name": "max_upload_mb",
                                                             "min": 1,
                                                             "max": 10,
-                                                            "className": "focus:border-transparent",
+                                                            "className": "hs:focus:border-transparent",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     },
@@ -194,7 +194,7 @@
                                                         "name": "P",
                                                         "if": "{{_local.errors?.max_upload_mb}}",
                                                         "props": {
-                                                            "className": "form-error"
+                                                            "className": "hs-form-error"
                                                         },
                                                         "text": "{{_local.errors?.max_upload_mb?.[0]}}"
                                                     },
@@ -204,7 +204,7 @@
                                                         "name": "P",
                                                         "if": "{{!!upload_limit?.data?.upload?.server_limit_mb}}",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "hs-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
                                                     },
@@ -215,7 +215,7 @@
                                                         "if": "{{!!upload_limit?.data?.upload?.server_limit_mb && Number(_local.form?.max_upload_mb ?? 0) > upload_limit.data.upload.server_limit_mb}}",
                                                         "props": {
                                                             "role": "status",
-                                                            "className": "text-sm text-amber-700 dark:text-amber-300"
+                                                            "className": "hs:text-sm hs:text-amber-700 hs:dark:text-amber-300"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
                                                     }
@@ -228,21 +228,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-3col-responsive"
+                                            "className": "hs-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "hs:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label",
+                                                            "className": "hs-form-label",
                                                             "htmlFor": "hero_section_max_video_upload_mb"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.max_video_upload_mb.label"
@@ -251,7 +251,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "hs-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.max_video_upload_mb.hint"
                                                     }
@@ -261,7 +261,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "hs:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -273,7 +273,7 @@
                                                             "name": "max_video_upload_mb",
                                                             "min": 1,
                                                             "max": 100,
-                                                            "className": "focus:border-transparent",
+                                                            "className": "hs:focus:border-transparent",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     },
@@ -282,7 +282,7 @@
                                                         "name": "P",
                                                         "if": "{{_local.errors?.max_video_upload_mb}}",
                                                         "props": {
-                                                            "className": "form-error"
+                                                            "className": "hs-form-error"
                                                         },
                                                         "text": "{{_local.errors?.max_video_upload_mb?.[0]}}"
                                                     },
@@ -293,7 +293,7 @@
                                                         "if": "{{!!upload_limit?.data?.upload?.server_limit_mb && Number(_local.form?.max_video_upload_mb ?? 0) > upload_limit.data.upload.server_limit_mb}}",
                                                         "props": {
                                                             "role": "status",
-                                                            "className": "text-sm text-amber-700 dark:text-amber-300"
+                                                            "className": "hs:text-sm hs:text-amber-700 hs:dark:text-amber-300"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
                                                     }
@@ -306,21 +306,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-3col-responsive"
+                                            "className": "hs-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "hs:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label",
+                                                            "className": "hs-form-label",
                                                             "htmlFor": "hero_section_public_cache_minutes"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.public_cache_minutes.label"
@@ -329,7 +329,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "hs-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.settings.fields.public_cache_minutes.hint"
                                                     }
@@ -339,7 +339,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "hs:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -351,7 +351,7 @@
                                                             "name": "public_cache_minutes",
                                                             "min": 0,
                                                             "max": 60,
-                                                            "className": "focus:border-transparent",
+                                                            "className": "hs:focus:border-transparent",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     },
@@ -360,7 +360,7 @@
                                                         "name": "P",
                                                         "if": "{{_local.errors?.public_cache_minutes}}",
                                                         "props": {
-                                                            "className": "form-error"
+                                                            "className": "hs-form-error"
                                                         },
                                                         "text": "{{_local.errors?.public_cache_minutes?.[0]}}"
                                                     }
@@ -377,7 +377,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky-footer-buttons"
+                            "className": "hs-sticky-footer-buttons"
                         },
                         "children": [
                             {
@@ -392,7 +392,7 @@
                                 ],
                                 "props": {
                                     "href": "/admin/plugins",
-                                    "className": "button btn btn-secondary"
+                                    "className": "hs-button hs-btn hs-btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -475,7 +475,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
+                                    "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5"
                                 },
                                 "children": [
                                     {

@@ -439,6 +439,12 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/partials/plugin_settings/_modal_privacy_targets.g7.html',
         'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/partials/plugin_settings/_policy_version_publish_modal.g7.html',
         'plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/plugin_settings.g7.html',
+        // #810 히어로섹션 — 플러그인 추가 때 이관 목록 등록을 빠뜨린 것을 develop-7.2.0 리베이스 종료 관문에서 찾아 등록
+        'plugins/_bundled/sirsoft-hero_section/resources/extensions/home_hero.g7.html',
+        'plugins/_bundled/sirsoft-hero_section/resources/extensions/shop_hero.g7.html',
+        'plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/hero_section_banner_form.g7.html',
+        'plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/hero_section_banner_list.g7.html',
+        'plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/plugin_settings.g7.html',
         'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-detail.g7.html',
         'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-form.g7.html',
         'plugins/_bundled/sirsoft-marketing/resources/extensions/user-marketing-profile-view.g7.html',

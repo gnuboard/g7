@@ -7,14 +7,6 @@ import { HeroBannerPreview } from '../../components/composite/HeroBannerPreview'
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: {}, EffectFade: {}, EffectCube: {}, EffectFlip: {}, EffectCoverflow: {}, EffectCreative: {} }));
-vi.mock('swiper/css', () => ({}));
-vi.mock('swiper/css/effect-fade', () => ({}));
-vi.mock('swiper/css/navigation', () => ({}));
-vi.mock('swiper/css/pagination', () => ({}));
-vi.mock('swiper/css/effect-cube', () => ({}));
-vi.mock('swiper/css/effect-flip', () => ({}));
-vi.mock('swiper/css/effect-coverflow', () => ({}));
-vi.mock('swiper/css/effect-creative', () => ({}));
 afterEach(() => cleanup());
 
 describe('[case:hero-preview-iframe-init] [case:hero-preview-dialog-escape] 사이트 시간·콘텐츠 언어·실제 viewport', () => {

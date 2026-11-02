@@ -35,18 +35,18 @@ async function injectBanners(page: Page, settings: Record<string, unknown>): Pro
   });
 }
 
-const hs = (page: Page) => page.locator('section.hs[data-position="home_hero"]');
+const hs = (page: Page) => page.locator('section.hs-slider[data-position="home_hero"]');
 
 // @scenario surface=site_pagination_variants
 test('진행 막대 점 — 지금 장 점이 24px 막대로 길어지고 자동 넘김 동안 막대가 차며, 마우스를 올리면 가득 찬 채 멈춘다 (desktop)', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectBanners(page, { autoplay: true, interval_seconds: 7, pagination: 'progress' });
   await gotoUser(page, '/');
-  const active = hs(page).locator('.hs__pagination--progress .swiper-pagination-bullet-active');
+  const active = hs(page).locator('.hs-slider__pagination--progress .hs-slider__bullet--active');
   await expect(active).toHaveCount(1, { timeout: 30_000 });
   await page.mouse.move(5, 5); // 슬라이더 밖
   await expect.poll(() => active.evaluate((el) => el.getBoundingClientRect().width)).toBe(24);
-  const fill = active.locator('.hs__bullet-fill');
+  const fill = active.locator('.hs-slider__bullet-fill');
   const width = () => fill.evaluate((el) => el.getBoundingClientRect().width);
   const first = await width();
   await page.waitForTimeout(1500);
@@ -54,7 +54,7 @@ test('진행 막대 점 — 지금 장 점이 24px 막대로 길어지고 자동
   expect(later, `막대가 찬다 ${first} → ${later}`).toBeGreaterThan(first);
   expect(later).toBeLessThan(24);
   // 다른 점은 10px 그대로
-  expect(await hs(page).locator('.hs__pagination--progress .swiper-pagination-bullet:not(.swiper-pagination-bullet-active)').first().evaluate((el) => el.getBoundingClientRect().width)).toBe(10);
+  expect(await hs(page).locator('.hs-slider__pagination--progress .hs-slider__bullet:not(.hs-slider__bullet--active)').first().evaluate((el) => el.getBoundingClientRect().width)).toBe(10);
 
   await hs(page).hover();
   await expect.poll(width).toBe(24);
@@ -70,18 +70,18 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       // 자동 넘김을 켜 일시정지 단추가 있는 상태에서 겹침을 보고, 장이 넘어가지 않게 먼저 멈춘다
       await injectBanners(page, { autoplay: true, interval_seconds: 7, pagination: 'tabs' });
       await gotoUser(page, '/');
-      const tabs = hs(page).locator('.hs__tabs > button.hs__tab');
+      const tabs = hs(page).locator('.hs-slider__tabs > button.hs-slider__tab');
       await expect(tabs).toHaveCount(3, { timeout: 30_000 });
-      const toggleButton = hs(page).locator('.hs__toggle');
+      const toggleButton = hs(page).locator('[data-hs-control="toggle"]');
       if (viewport === 'mobile') await toggleButton.tap();
       else await toggleButton.click();
       await expect(toggleButton).toHaveAttribute('aria-pressed', 'true');
       // 단추 이름 = 배너 제목(휴대폰에서도)
       await expect(hs(page).getByRole('button', { name: TITLES[2], exact: true })).toHaveCount(1);
-      const labelWidth = await tabs.nth(0).locator('.hs__tab-label').evaluate((el) => el.getBoundingClientRect().width);
+      const labelWidth = await tabs.nth(0).locator('.hs-slider__tab-label').evaluate((el) => el.getBoundingClientRect().width);
       const boxes = await tabs.evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return { h: r.height, w: r.width }; }));
       if (viewport === 'desktop') {
-        await expect(tabs.nth(0).locator('.hs__tab-label')).toBeVisible();
+        await expect(tabs.nth(0).locator('.hs-slider__tab-label')).toBeVisible();
         expect(labelWidth).toBeGreaterThan(20);
       } else {
         expect(labelWidth).toBeLessThanOrEqual(1);
@@ -94,9 +94,9 @@ for (const viewport of ['desktop', 'mobile'] as const) {
 
       if (viewport === 'mobile') await tabs.nth(2).tap();
       else await tabs.nth(2).click();
-      await expect(hs(page).locator('.hs__slide--active')).toHaveAttribute('data-index', '2');
+      await expect(hs(page).locator('.hs-slider__slide--active')).toHaveAttribute('data-index', '2');
       await expect(tabs.nth(2)).toHaveAttribute('aria-current', 'true');
-      await expect(tabs.nth(2).locator('.hs__bullet-fill')).toHaveCount(1);
+      await expect(tabs.nth(2).locator('.hs-slider__bullet-fill')).toHaveCount(1);
     });
   });
 }
@@ -107,12 +107,12 @@ test('번호 — 「01 / 03」을 보이고 넘기면 「02」로 바뀐다 (des
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectBanners(page, { autoplay: false, pagination: 'fraction' });
   await gotoUser(page, '/');
-  const fraction = hs(page).locator('.hs__fraction');
+  const fraction = hs(page).locator('.hs-slider__fraction');
   await expect(fraction).toBeVisible({ timeout: 30_000 });
   await expect(fraction).toHaveText(/01\s*\/\s*03/);
-  await expect(hs(page).locator('.swiper-pagination-bullet')).toHaveCount(0);
-  await hs(page).locator('.hs__next').click();
-  await expect(fraction.locator('.hs__fraction-current')).toHaveText('02');
+  await expect(hs(page).locator('.hs-slider__bullet')).toHaveCount(0);
+  await hs(page).locator('.hs-slider__next').click();
+  await expect(fraction.locator('.hs-slider__fraction-current')).toHaveText('02');
 });
 
 /**
@@ -133,8 +133,8 @@ test('관리자 목록 — 페이징 모양을 고르면 저장 전에 미리보
   const original = await readSettings(request, managerToken);
   const preview = () => page.evaluate(() => {
     const frame = document.querySelector('#hero_preview iframe, .hs-preview iframe') as HTMLIFrameElement | null;
-    const section = frame?.contentDocument?.querySelector('section.hs') as HTMLElement | null;
-    return section ? { tabs: !!section.querySelector('.hs__tabs'), fraction: !!section.querySelector('.hs__fraction'), cls: section.className } : null;
+    const section = frame?.contentDocument?.querySelector('section.hs-slider') as HTMLElement | null;
+    return section ? { tabs: !!section.querySelector('.hs-slider__tabs'), fraction: !!section.querySelector('.hs-slider__fraction'), cls: section.className } : null;
   });
 
   try {
@@ -143,7 +143,7 @@ test('관리자 목록 — 페이징 모양을 고르면 저장 전에 미리보
     await page.goto(`${ADMIN_LIST}?position=home_hero`);
     const select = page.locator('#hero_slider_pagination button').first();
     await expect(select).toBeVisible({ timeout: 30_000 });
-    await expect.poll(async () => (await preview())?.cls ?? '').toContain(`hs--pagination-${original.pagination ?? 'dots'}`);
+    await expect.poll(async () => (await preview())?.cls ?? '').toContain(`hs-slider--pagination-${original.pagination ?? 'dots'}`);
 
     await select.click();
     await page.getByRole('option', { name: '배너 이름 탭', exact: true }).click();
@@ -176,21 +176,21 @@ test('관리자 미리보기 — 자동 넘김 설정이어도 오류 없이 첫
   await page.goto(`${ADMIN_LIST}?position=home_hero`);
   await expect(page.locator('#hero_slider_pagination')).toBeVisible({ timeout: 30_000 });
   const frame = page.frameLocator('#hero_preview iframe, .hs-preview iframe').first();
-  const section = frame.locator('section.hs');
-  await expect(section).toHaveClass(/hs--static/, { timeout: 30_000 });
-  const active = () => section.locator('.hs__slide--active').getAttribute('data-index');
+  const section = frame.locator('section.hs-slider');
+  await expect(section).toHaveClass(/hs-slider--static/, { timeout: 30_000 });
+  const active = () => section.locator('.hs-slider__slide--active').getAttribute('data-index');
   // 자동 넘김 간격(5초)을 두 번 넘겨 기다려도 오류가 없고 장이 그대로다
   await page.waitForTimeout(11_000);
   expect(errors).toEqual([]);
   expect(await active()).toBe('0');
 
-  await section.locator('.hs__next').click();
+  await section.locator('.hs-slider__next').click();
   await expect.poll(active).toBe('1');
   // 저장 전 탭 모양으로 바꿔 탭으로도 옮긴다
   await page.locator('#hero_slider_pagination button').first().click();
   await page.getByRole('option', { name: '배너 이름 탭', exact: true }).click();
-  await expect(section.locator('.hs__tabs > button.hs__tab')).not.toHaveCount(0);
-  await section.locator('.hs__tabs > button.hs__tab').nth(2).click();
+  await expect(section.locator('.hs-slider__tabs > button.hs-slider__tab')).not.toHaveCount(0);
+  await section.locator('.hs-slider__tabs > button.hs-slider__tab').nth(2).click();
   await expect.poll(active).toBe('2');
   // 보이는 장이 실제로 옮겨졌다(줄이 장 번호만큼 왼쪽으로)
   const shift = await section.locator('.swiper-wrapper').evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);

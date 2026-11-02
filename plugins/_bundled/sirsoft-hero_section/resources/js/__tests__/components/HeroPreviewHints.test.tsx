@@ -16,14 +16,6 @@ import { contrastRatio, estimateContrast, OVERLAYS } from '../../support/editor'
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
-vi.mock('swiper/css', () => ({}));
-vi.mock('swiper/css/effect-fade', () => ({}));
-vi.mock('swiper/css/navigation', () => ({}));
-vi.mock('swiper/css/pagination', () => ({}));
-vi.mock('swiper/css/effect-cube', () => ({}));
-vi.mock('swiper/css/effect-flip', () => ({}));
-vi.mock('swiper/css/effect-coverflow', () => ({}));
-vi.mock('swiper/css/effect-creative', () => ({}));
 
 const sample = vi.hoisted(() => ({ rgb: [255, 255, 255] as [number, number, number] | null }));
 vi.mock('../../support/editor', async (importOriginal) => ({
@@ -78,10 +70,10 @@ describe('미리보기 안내', () => {
   });
 
   // @scenario surface=contrast_estimate_hint, case=estimate
-  it('추정에 쓰는 문구 배경 색·불투명도는 hero.css 의 그라데이션 끝값과 같다', () => {
-    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/hero.css'), 'utf8');
+  it('추정에 쓰는 문구 배경 색·불투명도는 main.css 의 그라데이션 끝값과 같다', () => {
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     for (const [overlay, { rgb, alpha }] of Object.entries(OVERLAYS)) {
-      const match = new RegExp(`\\.hs__text--${overlay}\\s*\\{[^}]*rgba\\(([^)]+)\\)`).exec(css);
+      const match = new RegExp(`\\.hs-slider__text--${overlay}\\s*\\{[^}]*rgba\\(([^)]+)\\)`).exec(css);
       expect(match, overlay).not.toBeNull();
       expect(match![1].split(',').map((v) => parseFloat(v))).toEqual([...rgb, alpha]);
     }
@@ -101,7 +93,7 @@ describe('미리보기 안내', () => {
     expect(hint.textContent).toContain('admin.form.preview.contrast_description');
     expect(hint.textContent).toContain('admin.form.preview.contrast_tip_light{"option":"sirsoft-hero_section.admin.form.presentation.dark"}');
     expect(value.title_color).toBe('#FFFFFF');
-    const title = view.container.querySelector('iframe')!.contentDocument!.querySelector<HTMLElement>('.hs__title')!;
+    const title = view.container.querySelector('iframe')!.contentDocument!.querySelector<HTMLElement>('.hs-slider__title')!;
     expect(title.style.color).toBe('rgb(255, 255, 255)');
   });
 
@@ -109,7 +101,7 @@ describe('미리보기 안내', () => {
   it('대비가 충분하거나 사진을 읽지 못하면 대비 안내를 띄우지 않는다', async () => {
     sample.rgb = [0, 0, 0];
     const dark = mount({ draft: draft() });
-    await waitFor(() => expect(dark.container.querySelector('.hs__title')).toBeNull());
+    await waitFor(() => expect(dark.container.querySelector('.hs-slider__title')).toBeNull());
     await new Promise((r) => setTimeout(r, 0));
     expect(dark.container.querySelector('[data-hint="contrast"]')).toBeNull();
     dark.unmount();
@@ -129,14 +121,14 @@ describe('미리보기 안내', () => {
     const frameWindow = view.container.querySelector('iframe')!.contentWindow as unknown as typeof window;
     const height = { scroll: 500, client: 300, lines: 500 };
     vi.spyOn(frameWindow.HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
-      return this.classList.contains('hs__scroll') ? height.scroll : 0;
+      return this.classList.contains('hs-slider__scroll') ? height.scroll : 0;
     });
     // 넘침은 줄의 배치 높이(등장 효과의 이동 제외)로도 확인한다
     vi.spyOn(frameWindow.HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
-      return this.classList.contains('hs__line') ? height.lines : 0;
+      return this.classList.contains('hs-slider__line') ? height.lines : 0;
     });
     vi.spyOn(frameWindow.HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
-      return this.classList.contains('hs__scroll') ? height.client : 0;
+      return this.classList.contains('hs-slider__scroll') ? height.client : 0;
     });
     view.rerender(<HeroBannerPreview locale="ko" defaultLocale="ko" device="pc" draft={draft({ description: { ko: '아주 긴 설명' } })} />);
     const hint = await waitFor(() => {
@@ -147,8 +139,8 @@ describe('미리보기 안내', () => {
     expect(hint.textContent).toContain('admin.form.preview.text_overflow');
     expect(hint.textContent).toContain('"device":"PC"');
     // 문구는 줄이지 않는다
-    expect(view.container.querySelector('iframe')!.contentDocument!.querySelector('.hs__title')!.textContent).toBe('가을 신상품');
-    expect(view.container.querySelector('iframe')!.contentDocument!.querySelector('.hs__description')!.textContent).toBe('아주 긴 설명');
+    expect(view.container.querySelector('iframe')!.contentDocument!.querySelector('.hs-slider__title')!.textContent).toBe('가을 신상품');
+    expect(view.container.querySelector('iframe')!.contentDocument!.querySelector('.hs-slider__description')!.textContent).toBe('아주 긴 설명');
 
     height.scroll = 300;
     view.rerender(<HeroBannerPreview locale="ko" defaultLocale="ko" device="pc" draft={draft({ title: { ko: '짧게' } })} />);
@@ -167,16 +159,16 @@ describe('미리보기 안내', () => {
     sample.rgb = null;
     const view = mount({ draft: draft() });
     const frameWindow = view.container.querySelector('iframe')!.contentWindow as unknown as typeof window;
-    // 넘김 단추 자리(.hs--controlled)를 비우면 문구 영역이 50px 줄어든다
+    // 넘김 단추 자리(.hs-slider--controlled)를 비우면 문구 영역이 50px 줄어든다
     vi.spyOn(frameWindow.HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
-      return this.classList.contains('hs__scroll') ? 280 : 0;
+      return this.classList.contains('hs-slider__scroll') ? 280 : 0;
     });
     vi.spyOn(frameWindow.HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
-      return this.classList.contains('hs__line') ? 280 : 0;
+      return this.classList.contains('hs-slider__line') ? 280 : 0;
     });
     vi.spyOn(frameWindow.HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
-      if (!this.classList.contains('hs__scroll')) return 0;
-      return this.closest('.hs')?.classList.contains('hs--controlled') ? 250 : 300;
+      if (!this.classList.contains('hs-slider__scroll')) return 0;
+      return this.closest('.hs-slider')?.classList.contains('hs-slider--controlled') ? 250 : 300;
     });
     view.rerender(<HeroBannerPreview locale="ko" defaultLocale="ko" device="mobile" draft={draft({ description: { ko: '조금 긴 설명' } })} />);
     const hint = await waitFor(() => {
@@ -186,6 +178,6 @@ describe('미리보기 안내', () => {
     });
     expect(hint.textContent).toContain('admin.form.preview.text_overflow_controls');
     expect(hint.textContent).toContain('"device":"MOBILE"');
-    expect(view.container.querySelector('iframe')!.contentDocument!.querySelector('.hs')!.classList.contains('hs--controlled')).toBe(false);
+    expect(view.container.querySelector('iframe')!.contentDocument!.querySelector('.hs-slider')!.classList.contains('hs-slider--controlled')).toBe(false);
   });
 });

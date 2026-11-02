@@ -79,13 +79,13 @@
     </set-state>
   </init>
   <slot name="content">
-    <div data-ref="hero_list_content" class="admin-page-content">
-      <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-6">
+    <div data-ref="hero_list_content" class="hs-admin-page-content">
+      <div data-ref="page_header" class="hs-flex-between hs:flex-wrap hs:gap-3 hs:mb-6">
         <div>
-          <h1 class="page-title">$t:sirsoft-hero_section.admin.title</h1>
-          <p class="text-label-subtle mt-1">$t:sirsoft-hero_section.admin.description</p>
+          <h1 class="hs-page-title">$t:sirsoft-hero_section.admin.title</h1>
+          <p class="hs-text-label-subtle hs:mt-1">$t:sirsoft-hero_section.admin.description</p>
         </div>
-        <a data-ref="create_button" data-if="{{banners?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}" :mergeQuery="true" class="button btn btn-primary">
+        <a data-ref="create_button" data-if="{{banners?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}" :mergeQuery="true" class="hs-button hs-btn hs-btn-primary">
           <on type="click">
             <!-- 보던 목록 조건(상태·검색·쪽)을 이고 간다 — 등록 화면이 저장·취소 뒤 같은 목록으로 돌아온다 -->
             <navigate :mergeQuery="true">
@@ -97,55 +97,59 @@
         </a>
       </div>
       <!-- 위치 탭 — 다른 위치로 가는 것은 화면 이동이라 링크다(가운데 클릭·새 탭 가능). 건수는 서버 통계 -->
-      <nav data-ref="position_tabs" aria-label="$t:sirsoft-hero_section.admin.position.tabs_label" class="flex flex-wrap items-center gap-2 mb-2">
-        <a data-ref="position_tab_home" href="/admin/plugins/sirsoft-hero_section/banners?position=home_hero" aria-current="{{_computed.currentPosition === 'home_hero' ? 'page' : undefined}}" class="px-4 py-2 rounded-lg text-sm font-medium border {{_computed.currentPosition === 'home_hero' ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+      <nav data-ref="position_tabs" aria-label="$t:sirsoft-hero_section.admin.position.tabs_label" class="hs:flex hs:flex-wrap hs:items-center hs:gap-2 hs:mb-2">
+        <a data-ref="position_tab_home" href="/admin/plugins/sirsoft-hero_section/banners?position=home_hero" aria-current="{{_computed.currentPosition === 'home_hero' ? 'page' : undefined}}" class="hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === 'home_hero' ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}">
           <on type="click">
+            <!-- 사이트 홈 위치로 — 앞 위치에서 고른 배너가 새 위치 목록의 일괄 작업에 섞이지 않게 선택을 비우고 링크 주소로 옮긴다 -->
             <sequence>
               <set-state target="global" :bulkSelectedIds="[]"/>
               <navigate/>
             </sequence>
           </on>
           <span>$t:sirsoft-hero_section.admin.position.home_hero</span>
-          <span class="ml-1 tabular-nums">{{banners?.data?.statistics?.positions?.home_hero ?? ''}}</span>
+          <span class="hs:ml-1 hs:tabular-nums">{{banners?.data?.statistics?.positions?.home_hero ?? ''}}</span>
         </a>
-        <a data-ref="position_tab_shop" href="/admin/plugins/sirsoft-hero_section/banners?position=shop_hero" aria-current="{{_computed.currentPosition === 'shop_hero' ? 'page' : undefined}}" class="px-4 py-2 rounded-lg text-sm font-medium border {{_computed.currentPosition === 'shop_hero' ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+        <a data-ref="position_tab_shop" href="/admin/plugins/sirsoft-hero_section/banners?position=shop_hero" aria-current="{{_computed.currentPosition === 'shop_hero' ? 'page' : undefined}}" class="hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === 'shop_hero' ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}">
           <on type="click">
+            <!-- 쇼핑몰 메인 위치로 — 위와 같이 선택을 비우고 링크 주소로 옮긴다 -->
             <sequence>
               <set-state target="global" :bulkSelectedIds="[]"/>
               <navigate/>
             </sequence>
           </on>
           <span>$t:sirsoft-hero_section.admin.position.shop_hero</span>
-          <span class="ml-1 tabular-nums">{{banners?.data?.statistics?.positions?.shop_hero ?? ''}}</span>
+          <span class="hs:ml-1 hs:tabular-nums">{{banners?.data?.statistics?.positions?.shop_hero ?? ''}}</span>
         </a>
       </nav>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">$t:sirsoft-hero_section.admin.position.hint</p>
+      <p class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mb-6">$t:sirsoft-hero_section.admin.position.hint</p>
       <!-- 활성 사용자 템플릿에 이 위치 자리(확장점)가 없으면 등록해도 사이트에 보이지 않는다 — 미리보기는 그대로 그리되 따로 알린다 -->
-      <div data-ref="slot_missing_notice" data-if="{{position_settings?.data?.editor?.preview_frame?.positions?.[_computed.currentPosition] === null}}" role="status" class="alert-warning mb-6">
-        <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <p class="text-sm text-yellow-800 dark:text-yellow-200">$t:sirsoft-hero_section.admin.list.slot_missing</p>
+      <div data-ref="slot_missing_notice" data-if="{{position_settings?.data?.editor?.preview_frame?.positions?.[_computed.currentPosition] === null}}" role="status" class="hs-alert-warning hs:mb-6">
+        <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
+        <p class="hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.list.slot_missing</p>
       </div>
-      <div data-ref="top_cards" class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div data-ref="top_cards" class="hs:grid hs:grid-cols-1 hs:lg:grid-cols-3 hs:gap-4 hs:mb-6">
         <!-- 미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다) -->
-        <section data-ref="preview_card" aria-labelledby="hero_preview_heading" class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <div class="flex-between flex-wrap gap-2 mb-3">
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h2 id="hero_preview_heading" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-hero_section.admin.preview.title|count={{(preview?.data?.data ?? []).length}}</h2>
+        <section data-ref="preview_card" aria-labelledby="hero_preview_heading" class="hs:lg:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4">
+          <div class="hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3">
+            <div class="hs:flex hs:flex-wrap hs:items-center hs:gap-x-3 hs:gap-y-1">
+              <h2 id="hero_preview_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.preview.title|count={{(preview?.data?.data ?? []).length}}</h2>
               <!-- 실제 사이트 화면 — 관리자 화면을 떠나지 않게 새 창으로 연다 -->
-              <a data-ref="site_link" data-if="{{!!_computed.sitePath}}" href="{{_computed.sitePath}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-700 dark:text-blue-300 underline">
+              <a data-ref="site_link" data-if="{{!!_computed.sitePath}}" href="{{_computed.sitePath}}" target="_blank" rel="noopener noreferrer" class="hs:inline-flex hs:items-center hs:gap-1 hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline">
                 <span>$t:sirsoft-hero_section.admin.preview.open_site</span>
-                <icon name="fa-solid fa-arrow-up-right-from-square" class="text-xs"/>
+                <icon name="fa-solid fa-arrow-up-right-from-square" class="hs:text-xs"/>
               </a>
             </div>
-            <div role="group" aria-label="$t:sirsoft-hero_section.admin.preview.device_label" class="flex gap-1">
-              <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'pc' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+            <div role="group" aria-label="$t:sirsoft-hero_section.admin.preview.device_label" class="hs:flex hs:gap-1">
+              <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="hs:px-3 hs:py-1 hs:text-xs hs:rounded hs:border {{_local.previewDevice === 'pc' ? 'hs:bg-gray-900 hs:text-white hs:border-gray-900 hs:dark:bg-gray-100 hs:dark:text-gray-900' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}">
                 <on type="click">
+                  <!-- 미리보기를 PC 모양으로 — 저장되지 않는 화면 상태다 -->
                   <set-state target="local" previewDevice="pc"/>
                 </on>
                 $t:sirsoft-hero_section.admin.preview.pc
               </button>
-              <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'mobile' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+              <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="hs:px-3 hs:py-1 hs:text-xs hs:rounded hs:border {{_local.previewDevice === 'mobile' ? 'hs:bg-gray-900 hs:text-white hs:border-gray-900 hs:dark:bg-gray-100 hs:dark:text-gray-900' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}">
                 <on type="click">
+                  <!-- 미리보기를 휴대폰 모양으로 — 저장되지 않는 화면 상태다 -->
                   <set-state target="local" previewDevice="mobile"/>
                 </on>
                 $t:sirsoft-hero_section.admin.preview.mobile
@@ -155,35 +159,37 @@
           <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="hero_preview" banners="{{(preview?.data?.data ?? []).map(b =&gt; ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}" settings="{{_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_computed.currentPosition}}" emptyText="{{preview === undefined ? '' : ((banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) &gt; 0 ? $t('sirsoft-hero_section.admin.preview.empty_with_counts', { scheduled: banners?.data?.statistics?.statuses?.scheduled ?? 0, inactive: banners?.data?.statistics?.statuses?.inactive ?? 0, ended: banners?.data?.statistics?.statuses?.ended ?? 0 }) : $t('sirsoft-hero_section.admin.preview.empty'))}}"/>
         </section>
         <!-- 슬라이더 설정 — 이 위치에만 적용 -->
-        <section data-ref="slider_card" aria-labelledby="hero_slider_heading" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-col gap-4">
+        <section data-ref="slider_card" aria-labelledby="hero_slider_heading" class="hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4 hs:flex hs:flex-col hs:gap-4">
           <div>
-            <h2 id="hero_slider_heading" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-hero_section.admin.slider.title</h2>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-hero_section.admin.slider.scope|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}</p>
+            <h2 id="hero_slider_heading" class="hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.slider.title</h2>
+            <p class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1">$t:sirsoft-hero_section.admin.slider.scope|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}</p>
           </div>
-          <label class="flex-between gap-3 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_autoplay">
+          <label class="hs-flex-between hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_autoplay">
             <span>$t:sirsoft-hero_section.admin.slider.autoplay</span>
-            <input type="checkbox" id="hero_slider_autoplay" class="h-4 w-4 rounded text-blue-600" checked="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).autoplay}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+            <input type="checkbox" id="hero_slider_autoplay" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" checked="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).autoplay}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
               <on type="change">
+                <!-- 자동 넘김 — 저장 전 작업본(sliderForm)에만 담는다. 작업본이 다른 위치 것이면 지금 위치 설정에서 새로 시작해 위 미리보기가 바로 바뀐다 -->
                 <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, autoplay: $event.target.checked})}}"/>
               </on>
             </input>
           </label>
-          <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_interval">
+          <label class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_interval">
             <span>$t:sirsoft-hero_section.admin.slider.interval</span>
-            <select id="hero_slider_interval" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).interval_seconds)}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+            <select id="hero_slider_interval" class="hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{String((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).interval_seconds)}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
               <options>
                 <option value="3">$t:sirsoft-hero_section.admin.slider.seconds|n=3</option>
                 <option value="5">$t:sirsoft-hero_section.admin.slider.seconds|n=5</option>
                 <option value="7">$t:sirsoft-hero_section.admin.slider.seconds|n=7</option>
               </options>
               <on type="change">
+                <!-- 넘김 간격(초) — 작업본에 숫자로 담는다 -->
                 <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, interval_seconds: Number($event.target.value)})}}"/>
               </on>
             </select>
           </label>
-          <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_effect">
+          <label class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_effect">
             <span>$t:sirsoft-hero_section.admin.slider.effect</span>
-            <select id="hero_slider_effect" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).effect}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+            <select id="hero_slider_effect" class="hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).effect}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
               <options>
                 <option value="slide">$t:sirsoft-hero_section.admin.slider.effects.slide</option>
                 <option value="fade">$t:sirsoft-hero_section.admin.slider.effects.fade</option>
@@ -194,14 +200,15 @@
                 <option value="none">$t:sirsoft-hero_section.admin.slider.effects.none</option>
               </options>
               <on type="change">
+                <!-- 전환 효과 — 작업본에 담아 저장 전에 미리보기로 확인한다 -->
                 <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, effect: $event.target.value})}}"/>
               </on>
             </select>
           </label>
           <!-- 페이징 모양 — 고르면 저장 전에 위 미리보기가 바로 바뀐다(배너 2장 이상일 때 보인다) -->
-          <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_pagination">
+          <label class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_pagination">
             <span>$t:sirsoft-hero_section.admin.slider.pagination</span>
-            <select id="hero_slider_pagination" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).pagination ?? 'dots'}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+            <select id="hero_slider_pagination" class="hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).pagination ?? 'dots'}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
               <options>
                 <option value="dots">$t:sirsoft-hero_section.admin.slider.paginations.dots</option>
                 <option value="progress">$t:sirsoft-hero_section.admin.slider.paginations.progress</option>
@@ -209,37 +216,40 @@
                 <option value="fraction">$t:sirsoft-hero_section.admin.slider.paginations.fraction</option>
               </options>
               <on type="change">
+                <!-- 페이징 모양 — 작업본에 담는다 -->
                 <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, pagination: $event.target.value})}}"/>
               </on>
             </select>
-            <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.pagination_hint</span>
+            <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.pagination_hint</span>
           </label>
           <!-- 표시 폭 — 고르면 저장 전에 위 미리보기가 바로 바뀐다 -->
-          <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_width">
+          <label class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_width">
             <span>$t:sirsoft-hero_section.admin.slider.width</span>
-            <select id="hero_slider_width" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content'}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+            <select id="hero_slider_width" class="hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content'}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
               <options>
                 <option value="content">$t:sirsoft-hero_section.admin.slider.widths.content</option>
                 <option value="full">$t:sirsoft-hero_section.admin.slider.widths.full</option>
               </options>
               <on type="change">
+                <!-- 표시 폭 — 작업본에 담는다 -->
                 <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, width: $event.target.value})}}"/>
               </on>
             </select>
-            <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.width_hint</span>
+            <span class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.width_hint</span>
           </label>
           <!-- 메뉴 겹치기 — 화면 전체 폭일 때만 사이트에 적용된다(본문 폭이면 메뉴 양옆이 배너 밖이라 글자가 묻힌다). 본문 폭에서도 켜 둘 수는 있고 안내만 한다 -->
-          <label class="flex-between gap-3 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_header_overlay">
+          <label class="hs-flex-between hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_slider_header_overlay">
             <span>$t:sirsoft-hero_section.admin.slider.header_overlay</span>
-            <input type="checkbox" id="hero_slider_header_overlay" class="h-4 w-4 rounded text-blue-600" checked="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+            <input type="checkbox" id="hero_slider_header_overlay" class="hs:h-4 hs:w-4 hs:rounded hs:text-blue-600" checked="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
               <on type="change">
+                <!-- 메뉴 겹치기 — 작업본에 담는다(사이트 적용은 화면 전체 폭일 때만, 본문 폭이면 안내만) -->
                 <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, header_overlay: $event.target.checked})}}"/>
               </on>
             </input>
           </label>
-          <p data-ref="header_overlay_hint" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.header_overlay_hint</p>
-          <p data-ref="header_overlay_needs_full" data-if="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true &amp;&amp; ((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content') !== 'full'}}" role="status" class="text-xs text-amber-700 dark:text-amber-300">$t:sirsoft-hero_section.admin.slider.header_overlay_needs_full</p>
-          <button type="button" data-ref="slider_save_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="btn btn-primary flex-center gap-1.5" disabled="{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect &amp;&amp; (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') &amp;&amp; (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true) &amp;&amp; (_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots'))}}">
+          <p data-ref="header_overlay_hint" class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.header_overlay_hint</p>
+          <p data-ref="header_overlay_needs_full" data-if="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true &amp;&amp; ((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content') !== 'full'}}" role="status" class="hs:text-xs hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.slider.header_overlay_needs_full</p>
+          <button type="button" data-ref="slider_save_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5" disabled="{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect &amp;&amp; (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') &amp;&amp; (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true) &amp;&amp; (_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots'))}}">
             <on type="click">
               <!-- 설정 저장 — 진행 깃발은 성공·실패 양쪽에서 푼다. 작업본은 비우지 않는다: 다시 받은 서버 값과 같아지면 저장 버튼이 저절로 잠긴다(비우면 재조회 도착 전 옛 값이 잠깐 보인다). 작업본은 위치를 함께 들고 있어 다른 위치 탭에서는 쓰이지 않는다 -->
               <sequence>
@@ -258,16 +268,16 @@
                 </api-call>
               </sequence>
             </on>
-            <icon data-if="{{_local.sliderSaving}}" name="spinner" class="spinner-sm"/>
+            <icon data-if="{{_local.sliderSaving}}" name="spinner" class="hs-spinner-sm"/>
             <span>$t:sirsoft-hero_section.admin.slider.save</span>
           </button>
         </section>
       </div>
       <!-- 필터 줄 — 상태·제목 검색·순서 변경 -->
-      <div data-ref="filter_bar" class="flex flex-wrap items-end gap-3 mb-4">
-        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_filter_status">
+      <div data-ref="filter_bar" class="hs:flex hs:flex-wrap hs:items-end hs:gap-3 hs:mb-4">
+        <label class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300" htmlFor="hero_filter_status">
           <span>$t:sirsoft-hero_section.admin.list.status_filter</span>
-          <select id="hero_filter_status" class="w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.status}}">
+          <select id="hero_filter_status" class="hs:w-36 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{_local.filter.status}}">
             <options>
               <option value="">$t:sirsoft-hero_section.admin.status.all</option>
               <option value="active">$t:sirsoft-hero_section.admin.status.active</option>
@@ -276,6 +286,7 @@
               <option value="inactive">$t:sirsoft-hero_section.admin.status.inactive</option>
             </options>
             <on type="change">
+              <!-- 상태 필터 — 고르는 즉시 검색한다(검색어와 달리 Enter 를 기다리지 않는다) -->
               <sequence>
                 <set-state target="local" filter.status="{{$event.target.value}}"/>
                 <action-ref name="searchBanners"/>
@@ -283,10 +294,11 @@
             </on>
           </select>
         </label>
-        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]" htmlFor="hero_filter_search">
+        <label class="hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300 hs:flex-1 hs:min-w-[12rem]" htmlFor="hero_filter_search">
           <span>$t:sirsoft-hero_section.admin.list.search</span>
-          <input type="search" id="hero_filter_search" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.search}}" placeholder="$t:sirsoft-hero_section.admin.list.search_placeholder">
+          <input type="search" id="hero_filter_search" class="hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{_local.filter.search}}" placeholder="$t:sirsoft-hero_section.admin.list.search_placeholder">
             <on type="change">
+              <!-- 검색어는 담기만 한다 — 검색은 Enter 에서(아래 블록) -->
               <set-state target="local" filter.search="{{$event.target.value}}"/>
             </on>
             <on type="keydown" key="Enter">
@@ -294,14 +306,14 @@
             </on>
           </input>
         </label>
-        <button type="button" data-ref="search_button" class="btn btn-secondary">
+        <button type="button" data-ref="search_button" class="hs-btn hs-btn-secondary">
           <on type="click">
             <action-ref name="searchBanners"/>
           </on>
           $t:sirsoft-hero_section.admin.list.search_button
         </button>
-        <div class="flex-1"/>
-        <button type="button" data-ref="reorder_button" data-if="{{banners?.data?.abilities?.can_update === true &amp;&amp; (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) &gt; 1}}" class="btn btn-secondary flex-center gap-2" disabled="{{_global.reorderLoading}}">
+        <div class="hs:flex-1"/>
+        <button type="button" data-ref="reorder_button" data-if="{{banners?.data?.abilities?.can_update === true &amp;&amp; (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) &gt; 1}}" class="hs-btn hs-btn-secondary hs-flex-center hs:gap-2" disabled="{{_global.reorderLoading}}">
           <on type="click">
             <!-- 순서 변경 창 열기 — 이 위치 배너 전체를 받아 작업본·원본으로 담는다 -->
             <sequence>
@@ -318,17 +330,18 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_global.reorderLoading}}" name="spinner" class="spinner-sm"/>
-          <icon data-if="{{!_global.reorderLoading}}" name="fa-solid fa-arrow-down-short-wide" class="text-base"/>
+          <icon data-if="{{_global.reorderLoading}}" name="spinner" class="hs-spinner-sm"/>
+          <icon data-if="{{!_global.reorderLoading}}" name="fa-solid fa-arrow-down-short-wide" class="hs:text-base"/>
           <span>$t:sirsoft-hero_section.admin.reorder.button</span>
         </button>
       </div>
       <!-- 일괄 작업 줄 — 선택이 있을 때만 -->
-      <div data-ref="bulk_action_bar" data-if="{{(_global.bulkSelectedIds ?? []).length &gt; 0}}" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
-        <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-hero_section.admin.list.selected|count={{(_global.bulkSelectedIds ?? []).length}}</span>
-        <div class="flex-1"/>
-        <button type="button" data-ref="bulk_show_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+      <div data-ref="bulk_action_bar" data-if="{{(_global.bulkSelectedIds ?? []).length &gt; 0}}" class="hs-flex-center hs:bg-gray-100 hs:dark:bg-gray-700/50 hs:border hs:border-gray-200 hs:dark:border-gray-600 hs:rounded-lg hs:p-3 hs:mb-4 hs:flex-wrap hs:gap-3">
+        <span class="hs-text-body hs:font-medium hs:whitespace-nowrap">$t:sirsoft-hero_section.admin.list.selected|count={{(_global.bulkSelectedIds ?? []).length}}</span>
+        <div class="hs:flex-1"/>
+        <button type="button" data-ref="bulk_show_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="hs:px-3 hs:py-1.5 hs:text-sm hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:bg-white hs:dark:bg-gray-800 hs:text-gray-700 hs:dark:text-gray-300 hs:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
+            <!-- 일괄 노출 — 처리 중에는 단추를 잠그고, 끝나면 선택을 비운 뒤 목록·미리보기를 다시 받는다 -->
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/bulk-status" method="PATCH">
@@ -348,8 +361,9 @@
           </on>
           $t:sirsoft-hero_section.admin.list.bulk_show
         </button>
-        <button type="button" data-ref="bulk_hide_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+        <button type="button" data-ref="bulk_hide_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="hs:px-3 hs:py-1.5 hs:text-sm hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:bg-white hs:dark:bg-gray-800 hs:text-gray-700 hs:dark:text-gray-300 hs:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
+            <!-- 일괄 비노출 — 일괄 노출과 같은 흐름이다(is_active false) -->
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/bulk-status" method="PATCH">
@@ -369,16 +383,16 @@
           </on>
           $t:sirsoft-hero_section.admin.list.bulk_hide
         </button>
-        <button type="button" data-ref="bulk_delete_button" data-if="{{banners?.data?.abilities?.can_delete === true}}" class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+        <button type="button" data-ref="bulk_delete_button" data-if="{{banners?.data?.abilities?.can_delete === true}}" class="hs:px-3 hs:py-1.5 hs:text-sm hs:border hs:border-red-300 hs:dark:border-red-600 hs:text-red-700 hs:dark:text-red-400 hs:rounded-lg hs:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <open-modal target="hero_bulk_delete_modal"/>
           </on>
           $t:sirsoft-hero_section.admin.list.bulk_delete
         </button>
       </div>
-      <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-3">
-        <span class="text-label">$t:sirsoft-hero_section.admin.list.total|count={{banners?.data?.pagination?.total ?? 0}}</span>
-        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}">
+      <div data-ref="table_header_bar" class="hs-flex-between hs:flex-wrap hs:gap-3 hs:mb-3">
+        <span class="hs-text-label">$t:sirsoft-hero_section.admin.list.total|count={{banners?.data?.pagination?.total ?? 0}}</span>
+        <select name="sortBy" aria-label="$t:common.sort_order" class="hs:w-40 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm" value="{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}">
           <options>
             <option value="sort_order:asc">$t:sirsoft-hero_section.admin.list.sort.sort_order</option>
             <option value="status:asc">$t:sirsoft-hero_section.admin.list.sort.status</option>
@@ -397,12 +411,13 @@
         </select>
       </div>
       <!-- 첫 배너 안내 — 이 위치에 배너가 하나도 없을 때만. 조건으로 걸러 0건인 것과 구분한다(그때는 표 빈 문구) -->
-      <div data-ref="empty_position_card" data-if="{{banners !== undefined &amp;&amp; (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) === 0}}" class="flex flex-col items-center gap-3 mb-4 px-4 py-8 text-center bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-        <icon name="fa-regular fa-image" class="text-3xl text-gray-400 dark:text-gray-500"/>
-        <p class="text-base font-medium text-gray-900 dark:text-white">$t:sirsoft-hero_section.admin.list.empty_position.title|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}</p>
-        <p class="text-sm text-gray-600 dark:text-gray-300">$t:sirsoft-hero_section.admin.list.empty_position.sizes</p>
-        <a data-ref="empty_create_link" data-if="{{banners?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}" :mergeQuery="true" class="button btn btn-primary">
+      <div data-ref="empty_position_card" data-if="{{banners !== undefined &amp;&amp; (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) === 0}}" class="hs:flex hs:flex-col hs:items-center hs:gap-3 hs:mb-4 hs:px-4 hs:py-8 hs:text-center hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-dashed hs:border-gray-300 hs:dark:border-gray-600">
+        <icon name="fa-regular fa-image" class="hs:text-3xl hs:text-gray-400 hs:dark:text-gray-500"/>
+        <p class="hs:text-base hs:font-medium hs:text-gray-900 hs:dark:text-white">$t:sirsoft-hero_section.admin.list.empty_position.title|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}</p>
+        <p class="hs:text-sm hs:text-gray-600 hs:dark:text-gray-300">$t:sirsoft-hero_section.admin.list.empty_position.sizes</p>
+        <a data-ref="empty_create_link" data-if="{{banners?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}" :mergeQuery="true" class="hs-button hs-btn hs-btn-primary">
           <on type="click">
+            <!-- 빈 위치에서 등록 화면으로 — 지금 목록 주소의 쿼리(위치)를 이어 붙인다 -->
             <navigate :mergeQuery="true">
               <query/>
             </navigate>
@@ -416,33 +431,33 @@
         <blur-until-loaded sources="banners"/>
         <column field="thumbnail" header="$t:sirsoft-hero_section.admin.list.column.image" width="120px">
           <cell>
-            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" alt="" class="w-24 h-8 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>
-            <span data-if="{{!row.thumbnail}}" class="text-xs text-gray-400 dark:text-gray-500">-</span>
+            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" alt="" class="hs:w-24 hs:h-8 hs:object-cover hs:rounded hs:border hs:border-gray-200 hs:dark:border-gray-700" loading="lazy"/>
+            <span data-if="{{!row.thumbnail}}" class="hs:text-xs hs:text-gray-400 hs:dark:text-gray-500">-</span>
           </cell>
         </column>
         <column field="title_localized" header="$t:sirsoft-hero_section.admin.list.column.title">
           <cell>
-            <div class="flex flex-col gap-1 min-w-0">
-              <a href="/admin/plugins/sirsoft-hero_section/banners/{{row.id}}/edit" class="font-medium text-gray-900 dark:text-white hover:underline truncate">
+            <div class="hs:flex hs:flex-col hs:gap-1 hs:min-w-0">
+              <a href="/admin/plugins/sirsoft-hero_section/banners/{{row.id}}/edit" class="hs:font-medium hs:text-gray-900 hs:dark:text-white hs:hover:underline hs:truncate">
                 <on type="click">
                   <navigate/>
                 </on>
                 {{row.title_localized}}
               </a>
-              <div class="flex flex-wrap gap-1">
-                <span data-each="locale in row.title_locales ?? []" class="px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 uppercase">{{locale}}</span>
+              <div class="hs:flex hs:flex-wrap hs:gap-1">
+                <span data-each="locale in row.title_locales ?? []" class="hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-gray-100 hs:text-gray-600 hs:dark:bg-gray-700 hs:dark:text-gray-300 hs:uppercase">{{locale}}</span>
                 <!-- 제작 상태(표 행마다 반복되므로 id 를 달지 않는다) — 제목이 빈 사이트 언어(기본 언어로 대신 보임), 모바일 이미지 없음(PC 이미지를 세로로 잘라 씀), 버튼 문구만 있고 주소 없음(버튼이 안 보임) -->
-                <span data-each="locale in (position_settings?.data?.editor?.locales ?? []).filter(l =&gt; !(row.title_locales ?? []).includes(l))" class="px-1.5 py-0.5 text-[11px] rounded border border-dashed border-amber-400 text-amber-700 dark:border-amber-500 dark:text-amber-300">$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{locale.toUpperCase()}}</span>
-                <span data-ref="media_badge" data-if="{{row.media_type === 'youtube' || row.media_type === 'video'}}" class="px-1.5 py-0.5 text-[11px] rounded bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{{row.media_type === 'youtube' ? '$t:sirsoft-hero_section.admin.list.badge.youtube' : '$t:sirsoft-hero_section.admin.list.badge.video'}}</span>
-                <span data-if="{{row.has_mobile_image === false}}" class="px-1.5 py-0.5 text-[11px] rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">$t:sirsoft-hero_section.admin.list.badge.mobile_fallback</span>
-                <span data-if="{{row.button_without_link === true}}" class="px-1.5 py-0.5 text-[11px] rounded bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-hero_section.admin.list.badge.button_without_link</span>
+                <span data-each="locale in (position_settings?.data?.editor?.locales ?? []).filter(l =&gt; !(row.title_locales ?? []).includes(l))" class="hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:border hs:border-dashed hs:border-amber-400 hs:text-amber-700 hs:dark:border-amber-500 hs:dark:text-amber-300">$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{locale.toUpperCase()}}</span>
+                <span data-ref="media_badge" data-if="{{row.media_type === 'youtube' || row.media_type === 'video'}}" class="hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-purple-50 hs:text-purple-700 hs:dark:bg-purple-900/30 hs:dark:text-purple-300">{{row.media_type === 'youtube' ? '$t:sirsoft-hero_section.admin.list.badge.youtube' : '$t:sirsoft-hero_section.admin.list.badge.video'}}</span>
+                <span data-if="{{row.has_mobile_image === false}}" class="hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-blue-50 hs:text-blue-700 hs:dark:bg-blue-900/30 hs:dark:text-blue-300">$t:sirsoft-hero_section.admin.list.badge.mobile_fallback</span>
+                <span data-if="{{row.button_without_link === true}}" class="hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-amber-50 hs:text-amber-800 hs:dark:bg-amber-900/30 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.list.badge.button_without_link</span>
               </div>
             </div>
           </cell>
         </column>
         <column field="period" header="$t:sirsoft-hero_section.admin.list.column.period" width="220px">
           <cell>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{row.display_period === 'range' ? (row.starts_at_display + ' ~ ' + row.ends_at_display) : $t('sirsoft-hero_section.admin.list.always')}}</span>
+            <span class="hs:text-sm hs:text-gray-700 hs:dark:text-gray-300">{{row.display_period === 'range' ? (row.starts_at_display + ' ~ ' + row.ends_at_display) : $t('sirsoft-hero_section.admin.list.always')}}</span>
           </cell>
         </column>
         <column field="status" header="$t:sirsoft-hero_section.admin.list.column.status" width="110px">
@@ -452,7 +467,7 @@
         </column>
         <column field="sort_order" header="$t:sirsoft-hero_section.admin.list.column.order" width="70px">
           <cell>
-            <span class="tabular-nums text-sm text-gray-600 dark:text-gray-400">{{row.sort_order + 1}}</span>
+            <span class="hs:tabular-nums hs:text-sm hs:text-gray-600 hs:dark:text-gray-400">{{row.sort_order + 1}}</span>
           </cell>
         </column>
         <column field="created_at_display" header="$t:sirsoft-hero_section.admin.list.column.created_at" width="170px"/>
@@ -462,9 +477,11 @@
           <item id="delete" label="$t:sirsoft-hero_section.admin.list.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onSelectionChange">
+          <!-- 표에서 고른 배너를 일괄 작업 줄이 읽는 전역 선택으로 옮긴다 -->
           <set-state target="global" bulkSelectedIds="{{$args[0]}}"/>
         </on>
         <on type="change" event="onPageChange">
+          <!-- 쪽 이동 — 다른 쪽에서 고른 배너가 남지 않게 선택을 비우고, 주소의 page 만 바꿔 다시 받는다(덮개는 표 본문만) -->
           <sequence>
             <set-state target="global" :bulkSelectedIds="[]"/>
             <navigate path="/admin/plugins/sirsoft-hero_section/banners" :replace="true" :mergeQuery="true" transition_overlay_target="hero_banner_datagrid__body">
@@ -473,6 +490,7 @@
           </sequence>
         </on>
         <on type="action" event="onRowAction">
+          <!-- 행 메뉴 — 수정은 목록 조건을 유지한 채 수정 화면으로, 삭제는 대상 배너를 담고 확인 창을 연다 -->
           <switch>
             <case when="edit">
               <navigate path="/admin/plugins/sirsoft-hero_section/banners/{{$args[1].id}}/edit" :mergeQuery="true">
@@ -491,22 +509,23 @@
   <modal>
     <!-- 한 건 영구 삭제 확인 — 이미지 파일까지 지워져 되돌릴 수 없다. 잠시 내리려면 비노출을 쓰도록 안내한다 -->
     <modal data-type="composite" data-ref="hero_delete_modal" title="$t:sirsoft-hero_section.admin.delete.title" size="medium">
-      <div class="flex flex-col gap-3">
-        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-hero_section.admin.delete.message|title={{_global.targetBanner?.title_localized ?? ''}}</p>
-        <div class="alert-warning">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-          <p class="text-xs text-yellow-800 dark:text-yellow-200">$t:sirsoft-hero_section.admin.delete.warning</p>
+      <div class="hs:flex hs:flex-col hs:gap-3">
+        <p class="hs:text-gray-700 hs:dark:text-gray-300">$t:sirsoft-hero_section.admin.delete.message|title={{_global.targetBanner?.title_localized ?? ''}}</p>
+        <div class="hs-alert-warning">
+          <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
+          <p class="hs:text-xs hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.delete.warning</p>
         </div>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+      <div class="hs-modal-footer-buttons">
+        <button type="button" class="hs-btn hs-btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isDeleting}}">
+        <button type="button" class="hs-flex-center hs:gap-2 hs:px-4 hs:py-2 hs:bg-red-600 hs:dark:bg-red-600 hs:text-white hs:rounded-lg hs:hover:bg-red-700 hs:disabled:opacity-50" disabled="{{_global.isDeleting}}">
           <on type="click">
+            <!-- 삭제 확정 — 처리 중 잠금. 성공하면 대상·선택을 비우고 창을 닫은 뒤 목록·미리보기를 다시 받는다 -->
             <sequence>
               <set-state target="global" :isDeleting="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/{{_global.targetBanner?.id}}" method="DELETE">
@@ -524,7 +543,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_global.isDeleting}}" name="spinner" class="hs-spinner-sm"/>
           <span>$t:common.delete</span>
         </button>
       </div>
@@ -533,22 +552,23 @@
   <modal>
     <!-- 선택한 여러 건 영구 삭제 확인 -->
     <modal data-type="composite" data-ref="hero_bulk_delete_modal" title="$t:sirsoft-hero_section.admin.delete.bulk_title" size="medium">
-      <div class="flex flex-col gap-3">
-        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-hero_section.admin.delete.bulk_message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
-        <div class="alert-warning">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-          <p class="text-xs text-yellow-800 dark:text-yellow-200">$t:sirsoft-hero_section.admin.delete.warning</p>
+      <div class="hs:flex hs:flex-col hs:gap-3">
+        <p class="hs:text-gray-700 hs:dark:text-gray-300">$t:sirsoft-hero_section.admin.delete.bulk_message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
+        <div class="hs-alert-warning">
+          <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
+          <p class="hs:text-xs hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.delete.warning</p>
         </div>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkWorking}}">
+      <div class="hs-modal-footer-buttons">
+        <button type="button" class="hs-btn hs-btn-secondary" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <close-modal/>
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+        <button type="button" class="hs-flex-center hs:gap-2 hs:px-4 hs:py-2 hs:bg-red-600 hs:dark:bg-red-600 hs:text-white hs:rounded-lg hs:hover:bg-red-700 hs:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
+            <!-- 일괄 삭제 확정 — 고른 배너 전부를 한 번에 지우고, 성공하면 선택을 비우고 창을 닫은 뒤 목록·미리보기를 다시 받는다 -->
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/bulk" method="DELETE">
@@ -567,7 +587,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="hs-spinner-sm"/>
           <span>$t:common.delete</span>
         </button>
       </div>
@@ -582,43 +602,47 @@
           <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
         </sequence>
       </on>
-      <div data-ref="reorder_modal_content" class="flex flex-col gap-3">
-        <p class="text-label">$t:sirsoft-hero_section.admin.reorder.description</p>
-        <div data-ref="reorder_list_frame" class="max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
-          <div data-ref="reorder_list" class="divide-y divide-gray-200 dark:divide-gray-700">
+      <div data-ref="reorder_modal_content" class="hs:flex hs:flex-col hs:gap-3">
+        <p class="hs-text-label">$t:sirsoft-hero_section.admin.reorder.description</p>
+        <div data-ref="reorder_list_frame" class="hs:max-h-[70vh] hs:overflow-y-auto hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700">
+          <div data-ref="reorder_list" class="hs:divide-y hs:divide-gray-200 hs:dark:divide-gray-700">
             <sortable source="{{(_global.reorderItems ?? []).map((r, i) =&gt; ({...r, _idx: i}))}}" item-var="row" item-key="id" index-var="rIdx" strategy="verticalList" handle="[data-drag-handle]"/>
             <item-template>
-              <div data-testid="hero-reorder-row-{{row.id}}" class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800">
-                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-hero_section.admin.reorder.drag_handle', { name: row.title })}}" class="hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
-                  <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
+              <div data-testid="hero-reorder-row-{{row.id}}" class="hs:flex hs:items-center hs:gap-3 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-800">
+                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-hero_section.admin.reorder.drag_handle', { name: row.title })}}" class="hs:hidden hs-hidden hs:md:flex hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300">
+                  <icon name="fa-solid fa-grip-vertical" class="hs:text-sm"/>
                 </div>
-                <span class="w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">{{row._idx + 1}}</span>
-                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" alt="" class="w-16 h-6 object-cover rounded"/>
-                <span class="truncate flex-1 font-medium text-gray-900 dark:text-gray-100">{{row.title}}</span>
+                <span class="hs:w-6 hs:text-right hs:text-sm hs:tabular-nums hs:text-gray-500 hs:dark:text-gray-400">{{row._idx + 1}}</span>
+                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" alt="" class="hs:w-16 hs:h-6 hs:object-cover hs:rounded"/>
+                <span class="hs:truncate hs:flex-1 hs:font-medium hs:text-gray-900 hs:dark:text-gray-100">{{row.title}}</span>
                 <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-hero_section.admin.status.' + row.status)}}" :showIcon="false"/>
-                <button data-testid="hero-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_up', { name: row.title })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
+                <button data-testid="hero-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_up', { name: row.title })}}" class="hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
                   <on type="click">
+                    <!-- 한 칸 위로 — 이웃과 자리를 맞바꾸고 이전 저장 오류 안내를 지운다(저장은 [저장]에서) -->
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}" :reorderError="null"/>
                   </on>
-                  <icon name="fa-solid fa-chevron-up" class="text-xs"/>
+                  <icon name="fa-solid fa-chevron-up" class="hs:text-xs"/>
                 </button>
-                <button data-testid="hero-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_down', { name: row.title })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
+                <button data-testid="hero-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_down', { name: row.title })}}" class="hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
                   <on type="click">
+                    <!-- 한 칸 아래로 — 이웃과 자리를 맞바꾸고 이전 저장 오류 안내를 지운다 -->
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}" :reorderError="null"/>
                   </on>
-                  <icon name="fa-solid fa-chevron-down" class="text-xs"/>
+                  <icon name="fa-solid fa-chevron-down" class="hs:text-xs"/>
                 </button>
               </div>
             </item-template>
             <on event="onSortEnd">
+              <!-- 끌어 놓은 순서를 작업 목록에 반영한다 — 표시에 쓰는 필드만 남기고 이전 오류 안내를 지운다 -->
               <set-state target="global" reorderItems="{{$sortedItems.map(r =&gt; ({id: r.id, title: r.title, status: r.status, thumbnail: r.thumbnail}))}}" :reorderError="null"/>
             </on>
           </div>
         </div>
-        <div data-ref="reorder_error_box" data-if="{{!!_global.reorderError}}" role="alert" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">{{_global.reorderError}}</div>
-        <div class="modal-footer-buttons">
-          <button type="button" class="btn btn-secondary" disabled="{{_global.reorderSaving}}">
+        <div data-ref="reorder_error_box" data-if="{{!!_global.reorderError}}" role="alert" class="hs:rounded-lg hs:border hs:border-red-200 hs:dark:border-red-800 hs:bg-red-50 hs:dark:bg-red-900/20 hs:px-4 hs:py-3 hs:text-sm hs:text-red-700 hs:dark:text-red-300">{{_global.reorderError}}</div>
+        <div class="hs-modal-footer-buttons">
+          <button type="button" class="hs-btn hs-btn-secondary" disabled="{{_global.reorderSaving}}">
             <on type="click">
+              <!-- 취소 — 창을 닫고 순서 작업본·원본·오류를 비운다(저장하지 않음) -->
               <sequence>
                 <close-modal target="hero_reorder_modal"/>
                 <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
@@ -626,7 +650,7 @@
             </on>
             <span>$t:common.cancel</span>
           </button>
-          <button data-testid="hero-reorder-save" type="button" :lockRepeatClick="true" class="btn btn-primary flex-center gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
+          <button data-testid="hero-reorder-save" type="button" :lockRepeatClick="true" class="hs-btn hs-btn-primary hs-flex-center hs:gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
             <on type="click">
               <!-- 저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다 -->
               <sequence>
@@ -654,7 +678,7 @@
                 </api-call>
               </sequence>
             </on>
-            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="spinner-sm"/>
+            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="hs-spinner-sm"/>
             <span>$t:sirsoft-hero_section.admin.reorder.save</span>
           </button>
         </div>

@@ -43,7 +43,7 @@ async function homeTitles(page: Page, viewport: keyof typeof VIEWPORTS, position
   await gotoUser(page, path);
   // 공개 API 응답을 기다리지 않고 슬라이드가 붙기를 기다린다 — 응답이 엔진 캐시로 채워지면 네트워크 응답이 없어 30초를
   // 다 쓰고, 응답이 와도 슬라이더 번들·Swiper 가 붙기 전일 수 있다(갱신 직후 첫 방문). 배너가 없는 위치면 그냥 지나간다.
-  await expect.poll(() => page.locator(`section.hs[data-position="${position}"] [data-index]`).count(), { timeout: 15_000 })
+  await expect.poll(() => page.locator(`section.hs-slider[data-position="${position}"] [data-index]`).count(), { timeout: 15_000 })
     .toBeGreaterThan(0).catch(() => undefined);
   await page.waitForTimeout(500);
   return slideTitles(page);
@@ -258,7 +258,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       expect(upload.status()).toBe(201);
       const next = (await upload.json()).data.url as string;
       // 저장 전 미리보기는 올린 이미지를 그린다(임시 이미지도 공개 주소로 열린다)
-      await expect(page.locator('section[aria-labelledby="hero_form_preview_heading"]').frameLocator('iframe').locator(`img.hs__image[src="${next}"]`)).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('section[aria-labelledby="hero_form_preview_heading"]').frameLocator('iframe').locator(`img.hs-slider__image[src="${next}"]`)).toBeVisible({ timeout: 20_000 });
 
       // 올리기만 해서는 사용자 화면이 바뀌지 않는다
       expect(await publicImage()).toBe(before);
@@ -272,7 +272,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       // 옛 이미지는 지워졌다
       expect((await request.get(before!)).status()).toBe(404);
       expect(await homeTitles(page, viewport)).toContain(title);
-      await expect(page.locator(`section.hs img.hs__image[src="${next}"]`)).toHaveCount(1);
+      await expect(page.locator(`section.hs-slider img.hs-slider__image[src="${next}"]`)).toHaveCount(1);
       expect(errors.filter((e) => !/favicon/i.test(e))).toEqual([]);
     });
   });

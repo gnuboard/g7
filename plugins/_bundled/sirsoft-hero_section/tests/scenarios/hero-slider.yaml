@@ -38,6 +38,7 @@ axes:
     - carousel_labels_follow_locale
     - motion_does_not_make_text_scroll
     - preview_static_without_swiper
+    - swiper_styles_vendor_asset
     - index_resets_when_banners_change
     - first_image_eager_rest_lazy
     - next_slide_preloaded_before_transition
@@ -56,6 +57,7 @@ effects:
 test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroBannerPreview.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSwiperStyles.test.tsx
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/swiper-ui.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/loading-skeleton.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/slider-a11y.spec.ts

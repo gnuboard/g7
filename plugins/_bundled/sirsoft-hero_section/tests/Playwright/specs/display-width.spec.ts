@@ -36,22 +36,22 @@ const SIZES = { ...VIEWPORTS, wide: { width: 2400, height: 1200 } } as const;
 async function measureSite(page: Page, path: string, viewport: keyof typeof SIZES, title: string): Promise<Measure> {
   await page.setViewportSize(SIZES[viewport]);
   await gotoUser(page, path);
-  await expect(page.locator('.hs .hs__title', { hasText: title }).first()).toBeAttached({ timeout: 30_000 });
+  await expect(page.locator('.hs-slider .hs-slider__title', { hasText: title }).first()).toBeAttached({ timeout: 30_000 });
   await page.waitForTimeout(500);
   return page.evaluate((text) => {
-    const hs = document.querySelector('section.hs') as HTMLElement;
+    const hs = document.querySelector('section.hs-slider') as HTMLElement;
     const r = hs.getBoundingClientRect();
     const main = document.getElementById('main_content') as HTMLElement;
     const style = getComputedStyle(main);
     const m = main.getBoundingClientRect();
-    const titleEl = [...hs.querySelectorAll<HTMLElement>('.hs__title')].find((el) => el.textContent === text) as HTMLElement;
+    const titleEl = [...hs.querySelectorAll<HTMLElement>('.hs-slider__title')].find((el) => el.textContent === text) as HTMLElement;
     // 넘김 트랙은 장마다 옆으로 밀려 있다 — 제목 위치는 그 장 안에서 잰 뒤 슬라이더 왼쪽 기준으로 옮긴다
-    const slide = titleEl.closest('.hs__slide') as HTMLElement;
+    const slide = titleEl.closest('.hs-slider__slide') as HTMLElement;
     return {
       hsLeft: r.left, hsWidth: r.width, hsHeight: r.height, pageWidth: document.documentElement.clientWidth,
       boxLeft: m.left + parseFloat(style.paddingLeft), boxWidth: m.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
-      titleLeft: r.left + titleEl.getBoundingClientRect().left - slide.getBoundingClientRect().left, full: hs.classList.contains('hs--full'),
-      controlsRight: (hs.querySelector('.hs__controls') as HTMLElement | null)?.getBoundingClientRect().right ?? null,
+      titleLeft: r.left + titleEl.getBoundingClientRect().left - slide.getBoundingClientRect().left, full: hs.classList.contains('hs-slider--full'),
+      controlsRight: (hs.querySelector('.hs-slider__controls') as HTMLElement | null)?.getBoundingClientRect().right ?? null,
     };
   }, title);
 }
@@ -107,8 +107,8 @@ test('관리자 목록 — 표시 폭을 고르면 저장 전에 미리보기가
 
   const preview = () => page.evaluate(() => {
     const frame = document.querySelector('#hero_preview iframe, .hs-preview iframe') as HTMLIFrameElement | null;
-    const hs = frame?.contentDocument?.querySelector('section.hs') as HTMLElement | null;
-    return hs ? { full: hs.classList.contains('hs--full'), width: hs.getBoundingClientRect().width, viewport: Number(frame!.getAttribute('width')) } : null;
+    const hs = frame?.contentDocument?.querySelector('section.hs-slider') as HTMLElement | null;
+    return hs ? { full: hs.classList.contains('hs-slider--full'), width: hs.getBoundingClientRect().width, viewport: Number(frame!.getAttribute('width')) } : null;
   });
 
   try {

@@ -75,11 +75,11 @@ const youtubeBanner = (poster: unknown) => ({
 });
 
 /** 슬라이더의 활성 장 번호 */
-const realIndex = (page: Page) => page.evaluate(() => (document.querySelector('section.hs .swiper') as HTMLElement & { swiper: any })?.swiper?.realIndex ?? -1);
+const realIndex = (page: Page) => page.evaluate(() => (document.querySelector('section.hs-slider .swiper') as HTMLElement & { swiper: any })?.swiper?.realIndex ?? -1);
 
 /** 활성 장 영상의 재생 상태 */
 const videoState = (page: Page) => page.evaluate(() => {
-  const video = document.querySelector('.hs__slide--active video.hs__video') as HTMLVideoElement | null;
+  const video = document.querySelector('.hs-slider__slide--active video.hs-slider__video') as HTMLVideoElement | null;
   return video ? { paused: video.paused, time: video.currentTime, muted: video.muted, inline: video.playsInline } : null;
 });
 
@@ -97,7 +97,7 @@ test('영상 파일 배너는 소리 없이 화면 안에서 재생되고, 끝�
   await injectBanners(page, (poster) => [videoBanner(poster)], { autoplay: true, interval_seconds: 7, effect: 'slide' });
   await page.reload();
 
-  await expect(page.locator('.hs__slide--active video.hs__video')).toBeAttached({ timeout: 20_000 });
+  await expect(page.locator('.hs-slider__slide--active video.hs-slider__video')).toBeAttached({ timeout: 20_000 });
   await expect.poll(async () => (await videoState(page))?.time ?? 0, { timeout: 10_000 }).toBeGreaterThan(0.2);
   const playing = await videoState(page);
   expect(playing).toMatchObject({ paused: false, muted: true, inline: true });
@@ -154,11 +154,11 @@ test('영상을 받는 중(재생 시작 전)에 다른 배너로 넘겼다 돌�
   });
   await page.reload();
 
-  await expect(page.locator('.hs__slide--active video.hs__video')).toBeAttached({ timeout: 20_000 });
-  await page.locator('section.hs .hs__next').click();
+  await expect(page.locator('.hs-slider__slide--active video.hs-slider__video')).toBeAttached({ timeout: 20_000 });
+  await page.locator('section.hs-slider .hs-slider__next').click();
   await expect.poll(() => realIndex(page), { timeout: 5_000 }).toBe(1);
   await page.waitForTimeout(700);
-  await page.locator('section.hs .hs__prev').click();
+  await page.locator('section.hs-slider .hs-slider__prev').click();
   await expect.poll(() => realIndex(page), { timeout: 5_000 }).toBe(0);
   await page.mouse.move(0, 0);
   await expect.poll(async () => (await videoState(page))?.time ?? 0, { timeout: 15_000 }).toBeGreaterThan(0.2);
@@ -180,7 +180,7 @@ test('휴대폰에서는 영상 대표 이미지로 모바일 이미지만 받�
   await injectBanners(page, () => [{ ...videoBanner(null), images }], { autoplay: false, effect: 'slide' });
   await page.reload();
 
-  await expect(page.locator('.hs__slide--active video.hs__video')).toHaveAttribute('poster', '/e2e-hero-media/m.png', { timeout: 20_000 });
+  await expect(page.locator('.hs-slider__slide--active video.hs-slider__video')).toHaveAttribute('poster', '/e2e-hero-media/m.png', { timeout: 20_000 });
   await expect.poll(() => requested).toContain('/e2e-hero-media/m.png');
   await page.waitForTimeout(1_000);
   expect(requested).not.toContain('/e2e-hero-media/pc.png');
@@ -215,7 +215,7 @@ test('유튜브 배너는 마케팅 동의 전에는 대표 이미지와 재생 
   await injectBanners(page, (poster) => [youtubeBanner(poster)], { autoplay: false });
   await gotoUser(page, '/');
 
-  await expect(page.locator('.hs__slide--active img.hs__image')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.hs-slider__slide--active img.hs-slider__image')).toBeVisible({ timeout: 20_000 });
   // 새 브라우저(동의 기록 없음) — 동의 관리 플러그인이 켜져 있으면 동의 전, 꺼져 있으면(none) 바로 불러온다. 어느 쪽이든 단언한다
   await expect.poll(() => page.evaluate(() => (window as any).G7Core?.consent?.getSnapshot?.()?.status ?? 'missing'), { timeout: 10_000 }).not.toBe('unknown');
   const consent = await page.evaluate(() => (window as any).G7Core?.consent?.getSnapshot?.() ?? null);
@@ -226,12 +226,12 @@ test('유튜브 배너는 마케팅 동의 전에는 대표 이미지와 재생 
     expect(consent?.categories?.marketing ?? false).toBe(false);
     await expect(play).toBeVisible();
     await expect(page.getByText('재생하면 YouTube 에서 영상을 불러옵니다.')).toBeVisible();
-    await expect(page.locator('iframe.hs__youtube-frame')).toHaveCount(0);
+    await expect(page.locator('iframe.hs-slider__youtube-frame')).toHaveCount(0);
     expect(youtubeRequests).toEqual([]);
     await play.click();
   }
 
-  const frame = page.locator('.hs__slide--active iframe.hs__youtube-frame');
+  const frame = page.locator('.hs-slider__slide--active iframe.hs-slider__youtube-frame');
   await expect(frame).toBeAttached();
   const src = new URL((await frame.getAttribute('src'))!);
   expect(src.origin).toBe('https://www.youtube-nocookie.com');

@@ -84,7 +84,7 @@ export function frameClass(box: FrameBox, width: number): string {
 
 export type Rgb = [number, number, number];
 
-/** 문구 배경의 가장 진한 색과 불투명도 — hero.css `.hs__text--dark`·`.hs__text--light` 그라데이션 끝값과 같다. */
+/** 문구 배경의 가장 진한 색과 불투명도 — main.css `.hs-slider__text--dark`·`.hs-slider__text--light` 그라데이션 끝값과 같다. */
 export const OVERLAYS: Record<string, { rgb: Rgb; alpha: number }> = {
   dark: { rgb: [0, 0, 0], alpha: 0.78 },
   light: { rgb: [255, 255, 255], alpha: 0.9 },

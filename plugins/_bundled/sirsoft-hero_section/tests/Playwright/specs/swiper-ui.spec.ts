@@ -24,7 +24,7 @@ async function saveSettings(request: APIRequestContext, token: string, settings:
 
 /** 쇼핑몰 메인 슬라이더의 Swiper 상태 */
 const state = (page: Page) => page.evaluate(() => {
-  const el = document.querySelector('section.hs .swiper') as HTMLElement & { swiper: any };
+  const el = document.querySelector('section.hs-slider .swiper') as HTMLElement & { swiper: any };
   return { effect: el.swiper.params.effect, loop: el.swiper.params.loop, realIndex: el.swiper.realIndex, animating: el.swiper.animating, classes: el.className };
 });
 
@@ -50,35 +50,37 @@ test('추가 효과 4종이 무한 반복으로 넘어가고, 화살표·점·�
     for (const effect of ['cube', 'flip', 'coverflow', 'creative'] as const) {
       await saveSettings(request, managerToken, { ...original, autoplay: false, effect });
       await gotoUser(page, '/shop/products');
-      await expect(page.locator('section.hs .hs__pagination button').first()).toBeVisible({ timeout: 30_000 });
-      const count = await page.locator('section.hs .hs__pagination button').count();
+      await expect(page.locator('section.hs-slider .hs-slider__pagination button').first()).toBeVisible({ timeout: 30_000 });
+      const count = await page.locator('section.hs-slider .hs-slider__pagination button').count();
       const s = await state(page);
       expect(s.effect, effect).toBe(effect);
       expect(s.loop).toBe(true);
       expect(s.classes).toContain(`swiper-${effect}`);
 
       // 첫 장에서 이전 화살표 → 마지막 장(무한 반복), 다음 화살표 → 첫 장
-      await page.locator('section.hs .hs__prev').click();
+      await page.locator('section.hs-slider .hs-slider__prev').click();
       await settle(page, count - 1);
-      await page.locator('section.hs .hs__next').click();
+      await page.locator('section.hs-slider .hs-slider__next').click();
       await settle(page, 0);
       // 점 → 그 장, aria-current 가 따라간다
-      await page.locator('section.hs .hs__pagination button').nth(1).click();
+      await page.locator('section.hs-slider .hs-slider__pagination button').nth(1).click();
       await settle(page, 1);
-      await expect(page.locator('section.hs .hs__pagination button').nth(1)).toHaveAttribute('aria-current', 'true');
+      await expect(page.locator('section.hs-slider .hs-slider__pagination button').nth(1)).toHaveAttribute('aria-current', 'true');
     }
 
     // PC 마우스 끌기 — 오른쪽에서 왼쪽으로 끌면 다음 장
     await saveSettings(request, managerToken, { ...original, autoplay: false, effect: 'slide' });
     await gotoUser(page, '/shop/products');
-    await expect(page.locator('section.hs .hs__pagination button').first()).toBeVisible({ timeout: 30_000 });
-    expect(await page.evaluate(() => getComputedStyle(document.querySelector('section.hs .swiper-wrapper') as HTMLElement).cursor)).toBe('grab');
-    const box = (await page.locator('section.hs').boundingBox())!;
+    await expect(page.locator('section.hs-slider .hs-slider__pagination button').first()).toBeVisible({ timeout: 30_000 });
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('section.hs-slider .swiper-wrapper') as HTMLElement).cursor)).toBe('grab');
+    const box = (await page.locator('section.hs-slider').boundingBox())!;
     const y = box.y + box.height * 0.3;
-    await page.mouse.move(box.x + box.width * 0.7, y);
+    // 폭의 65% 를 끈다 — Swiper 는 300ms 넘게 끈 「긴 끌기」를 폭의 절반(longSwipesRatio 0.5)을 넘어야 넘기므로, 딱 50% 면
+    // 끄는 시간이 300ms 언저리에서 갈려 넘어가기도 되돌아오기도 한다(실측 307~321ms)
+    await page.mouse.move(box.x + box.width * 0.8, y);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width * 0.45, y, { steps: 8 });
-    await page.mouse.move(box.x + box.width * 0.2, y, { steps: 8 });
+    await page.mouse.move(box.x + box.width * 0.5, y, { steps: 8 });
+    await page.mouse.move(box.x + box.width * 0.15, y, { steps: 8 });
     await page.mouse.up();
     await settle(page, 1);
   } finally {
@@ -108,20 +110,20 @@ async function injectThreeSlides(page: Page): Promise<void> {
 }
 
 /** 자동 넘김이 돌고 있는지(Swiper autoplay.running) */
-const autoplayRunning = (page: Page) => page.evaluate(() => (document.querySelector('section.hs .swiper') as HTMLElement & { swiper: any }).swiper.autoplay.running);
+const autoplayRunning = (page: Page) => page.evaluate(() => (document.querySelector('section.hs-slider .swiper') as HTMLElement & { swiper: any }).swiper.autoplay.running);
 
 // @scenario surface=pointer_click_does_not_hold_autoplay
 test('마우스로 화살표를 누르고 나가면 자동 넘김이 다시 돌고, 단추 표시도 「재생 중」 그대로다(데스크톱)', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectThreeSlides(page);
   await gotoUser(page, '/');
-  await expect(page.locator('section.hs .hs__pagination button')).toHaveCount(3, { timeout: 30_000 });
+  await expect(page.locator('section.hs-slider .hs-slider__pagination button')).toHaveCount(3, { timeout: 30_000 });
 
-  await page.locator('section.hs .hs__next').click();
+  await page.locator('section.hs-slider .hs-slider__next').click();
   await settle(page, 1);
   await page.mouse.move(0, 0);
   await expect.poll(() => autoplayRunning(page), { timeout: 5_000 }).toBe(true);
-  await expect(page.locator('section.hs .hs__toggle')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('section.hs-slider [data-hs-control="toggle"]')).toHaveAttribute('aria-pressed', 'false');
   await expect.poll(() => state(page).then((s) => s.realIndex), { timeout: 8_000 }).toBe(2);
 });
 
@@ -132,9 +134,9 @@ test.describe('휴대폰 점 탭 뒤 자동 넘김', () => {
   test('휴대폰에서 점을 탭해 옮긴 뒤에도 자동 넘김이 계속 돈다', async ({ page }) => {
     await injectThreeSlides(page);
     await gotoUser(page, '/');
-    await expect(page.locator('section.hs .hs__pagination button')).toHaveCount(3, { timeout: 30_000 });
+    await expect(page.locator('section.hs-slider .hs-slider__pagination button')).toHaveCount(3, { timeout: 30_000 });
 
-    await page.locator('section.hs .hs__pagination button').nth(1).tap();
+    await page.locator('section.hs-slider .hs-slider__pagination button').nth(1).tap();
     await settle(page, 1);
     await expect.poll(() => autoplayRunning(page), { timeout: 5_000 }).toBe(true);
     await expect.poll(() => state(page).then((s) => s.realIndex), { timeout: 8_000 }).toBe(2);
@@ -151,10 +153,10 @@ test('휴대폰에서는 화살표를 감추고(문구를 가리지 않게) 점 
     await saveSettings(request, managerToken, { ...original, autoplay: false, effect: 'slide' });
     await page.setViewportSize(VIEWPORTS.mobile);
     await gotoUser(page, '/shop/products');
-    await expect(page.locator('section.hs .hs__pagination button').first()).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('section.hs .hs__prev')).toBeHidden();
-    await expect(page.locator('section.hs .hs__next')).toBeHidden();
-    await page.locator('section.hs .hs__pagination button').nth(1).click();
+    await expect(page.locator('section.hs-slider .hs-slider__pagination button').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('section.hs-slider .hs-slider__prev')).toBeHidden();
+    await expect(page.locator('section.hs-slider .hs-slider__next')).toBeHidden();
+    await page.locator('section.hs-slider .hs-slider__pagination button').nth(1).click();
     await settle(page, 1);
   } finally {
     await saveSettings(request, managerToken, original);

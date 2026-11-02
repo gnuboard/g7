@@ -60,7 +60,8 @@
         "carousel_role": "carousel",
         "slide_role": "slide",
         "slide_label": "{{n}} of {{count}}",
-        "text_label": "Banner text"
+        "text_label": "Banner text",
+        "styles_label": "Banner slider styles"
     },
     "admin": {
         "title": "Hero Section",

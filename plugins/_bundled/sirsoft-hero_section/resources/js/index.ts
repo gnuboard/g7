@@ -6,7 +6,7 @@
  * 코어 레지스트리에 등록한다.
  * 커스텀 액션 핸들러는 없다 — 관리자 화면은 엔진 기본 액션으로 충분하다.
  */
-import '../css/hero.css';
+import '../css/main.css';
 import { HeroSlider } from './components/composite/HeroSlider';
 import { HeroBannerPreview } from './components/composite/HeroBannerPreview';
 import { HeroPeriodHint } from './components/composite/HeroPeriodHint';

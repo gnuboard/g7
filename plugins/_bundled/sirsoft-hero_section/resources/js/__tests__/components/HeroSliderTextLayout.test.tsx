@@ -17,14 +17,6 @@ import { swiperState } from '../swiperMock';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
-vi.mock('swiper/css', () => ({}));
-vi.mock('swiper/css/effect-fade', () => ({}));
-vi.mock('swiper/css/navigation', () => ({}));
-vi.mock('swiper/css/pagination', () => ({}));
-vi.mock('swiper/css/effect-cube', () => ({}));
-vi.mock('swiper/css/effect-flip', () => ({}));
-vi.mock('swiper/css/effect-coverflow', () => ({}));
-vi.mock('swiper/css/effect-creative', () => ({}));
 
 const banner = (id: number, extra: Partial<HeroBanner> = {}): HeroBanner => ({
   id,
@@ -73,20 +65,20 @@ describe('문구 자리·머리글·등장 효과', () => {
   // @scenario surface=slider_text_default_compat
   it('표현값이 없으면 종전 화면(왼쪽 아래·전폭·위에서 아래로 짙어지는 배경)이고 효과가 없다', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { presentation: null })]} />);
-    const text = style(container.querySelector('.hs__text'));
+    const text = style(container.querySelector('.hs-slider__text'));
     expect(text.getPropertyValue('--hs-tx-pc')).toBe('0');
     expect(text.getPropertyValue('--hs-ty-pc')).toBe('100');
     expect(text.getPropertyValue('--hs-ty-mobile')).toBe('100');
     expect(text.getPropertyValue('--hs-tw')).toBe('100');
     expect(text.getPropertyValue('--hs-shade-pc')).toBe('to bottom');
-    expect(container.querySelector('.hs__textbox')?.className).toContain('hs__textbox--none');
+    expect(container.querySelector('.hs-slider__textbox')?.className).toContain('hs-slider__textbox--none');
   });
 
   // @scenario surface=slider_text_spot_by_device
   it('PC·휴대폰 자리를 따로 싣고, 위쪽 문구는 배경이 위로 짙어진다. 미리보기 기기 고정이면 그 기기 값을 두 칸에 넣는다', () => {
     const presentation = { text_pc_x: 50, text_pc_y: 20, text_mobile_x: 100, text_mobile_y: 80, text_width: 60 };
     const { container, unmount } = render(<HeroSlider banners={[banner(1, { presentation })]} />);
-    const text = style(container.querySelector('.hs__text'));
+    const text = style(container.querySelector('.hs-slider__text'));
     expect([text.getPropertyValue('--hs-tx-pc'), text.getPropertyValue('--hs-ty-pc')]).toEqual(['50', '20']);
     expect([text.getPropertyValue('--hs-tx-mobile'), text.getPropertyValue('--hs-ty-mobile')]).toEqual(['100', '80']);
     expect(text.getPropertyValue('--hs-shade-pc')).toBe('to top');
@@ -95,51 +87,51 @@ describe('문구 자리·머리글·등장 효과', () => {
     unmount();
 
     const forced = render(<HeroSlider banners={[banner(1, { presentation })]} forceDevice="mobile" />);
-    const vars = style(forced.container.querySelector('.hs__text'));
+    const vars = style(forced.container.querySelector('.hs-slider__text'));
     expect([vars.getPropertyValue('--hs-tx-pc'), vars.getPropertyValue('--hs-ty-pc')]).toEqual(['100', '80']);
   });
 
   // @scenario surface=slider_eyebrow
   it('머리글은 제목 위에 그 색·제목 정렬로 보이고, 숨기거나 비우면 그리지 않는다', () => {
     const { container, rerender } = render(<HeroSlider banners={[banner(1)]} />);
-    const lines = [...container.querySelectorAll('.hs__line')];
-    expect(lines.map((l) => l.className.split(' ')[0])).toEqual(['hs__eyebrow', 'hs__title', 'hs__description', 'hs__actions']);
+    const lines = [...container.querySelectorAll('.hs-slider__line')];
+    expect(lines.map((l) => l.getAttribute('data-hs-line') ?? l.className.split(' ')[0])).toEqual(['hs-slider__eyebrow', 'hs-slider__title', 'hs-slider__description', 'actions']);
     expect(style(lines[0]).color).toBe('rgb(253, 230, 138)');
     expect(style(lines[0]).textAlign).toBe('center');
     rerender(<HeroSlider banners={[banner(1, { eyebrow_visible: false })]} />);
-    expect(container.querySelector('.hs__eyebrow')).toBeNull();
+    expect(container.querySelector('.hs-slider__eyebrow')).toBeNull();
     rerender(<HeroSlider banners={[banner(1, { eyebrow: '' })]} />);
-    expect(container.querySelector('.hs__eyebrow')).toBeNull();
+    expect(container.querySelector('.hs-slider__eyebrow')).toBeNull();
   });
 
   // @scenario surface=slider_motion_stagger
   it('등장 효과는 그려지는 줄만 세어 시작 지연 + 0.2초씩 늦추고, 속도를 줄 길이로 쓴다', () => {
     const presentation = { animation: 'rise', animation_speed: 'slow', animation_delay: 0.5 };
     const { container } = render(<HeroSlider banners={[banner(1, { presentation, description: '' })]} />);
-    const box = container.querySelector('.hs__textbox') as HTMLElement;
-    expect(box.className).toContain('hs__textbox--rise');
+    const box = container.querySelector('.hs-slider__textbox') as HTMLElement;
+    expect(box.className).toContain('hs-slider__textbox--rise');
     expect(box.style.getPropertyValue('--hs-anim-duration')).toBe('1s');
-    expect([...container.querySelectorAll<HTMLElement>('.hs__line')].map((l) => l.style.getPropertyValue('--hs-line-delay'))).toEqual(['0.5s', '0.7s', '0.9s']);
+    expect([...container.querySelectorAll<HTMLElement>('.hs-slider__line')].map((l) => l.style.getPropertyValue('--hs-line-delay'))).toEqual(['0.5s', '0.7s', '0.9s']);
   });
 
   // @scenario surface=slider_motion_letters
   it('글자 하나씩은 머리글·제목을 글자로 나누고(읽기 원문은 한 번), 설명·버튼은 줄 단위다', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { title: '가을 신상', presentation: { animation: 'letters' } })]} />);
-    const title = container.querySelector('.hs__title')!;
-    expect(title.querySelector('.hs__sr')?.textContent).toBe('가을 신상');
+    const title = container.querySelector('.hs-slider__title')!;
+    expect(title.querySelector('.hs-slider__sr')?.textContent).toBe('가을 신상');
     expect(title.querySelector('[aria-hidden="true"]')).not.toBeNull();
-    expect([...title.querySelectorAll('.hs__letter')].map((l) => l.textContent)).toEqual(['가', '을', '신', '상']);
-    expect(title.querySelectorAll('.hs__word')).toHaveLength(2);
-    expect(title.className).toContain('hs__line--letters');
-    expect(container.querySelector('.hs__description')?.className).not.toContain('hs__line--letters');
-    expect(container.querySelector('.hs__description .hs__letter')).toBeNull();
+    expect([...title.querySelectorAll('.hs-slider__letter')].map((l) => l.textContent)).toEqual(['가', '을', '신', '상']);
+    expect(title.querySelectorAll('.hs-slider__word')).toHaveLength(2);
+    expect(title.className).toContain('hs-slider__line--letters');
+    expect(container.querySelector('.hs-slider__description')?.className).not.toContain('hs-slider__line--letters');
+    expect(container.querySelector('.hs-slider__description .hs-slider__letter')).toBeNull();
   });
 
   // @scenario surface=slider_motion_reduced
   it('움직임 줄이기와 모르는 효과 이름은 효과 없음이다', () => {
     mockReducedMotion(true);
     const { container } = render(<HeroSlider banners={[banner(1, { presentation: { animation: 'zoom' } })]} />);
-    expect(container.querySelector('.hs__textbox')?.className).toContain('hs__textbox--none');
+    expect(container.querySelector('.hs-slider__textbox')?.className).toContain('hs-slider__textbox--none');
     expect(textMotion({ animation: 'spin' }, false).name).toBe('none');
     expect(textMotion({ animation: 'fade', animation_delay: 9 }, false).delay).toBe(2);
   });
@@ -172,7 +164,7 @@ describe('메뉴 겹침 신호', () => {
     const banners = [banner(1, { presentation: { tone: 'dark' } }), banner(2, { presentation: { tone: 'light' } })];
     const { container, unmount } = render(<HeroSlider banners={banners} settings={{ width: 'full', header_overlay: true }} />);
     expect(overlay()).toBe('dark');
-    expect(container.querySelector('section.hs')?.className).toContain('hs--header-overlay');
+    expect(container.querySelector('section.hs-slider')?.className).toContain('hs-slider--header-overlay');
     act(() => { swiperState.instance?.slideNext(); });
     expect(overlay()).toBe('light');
     unmount();
@@ -191,7 +183,7 @@ describe('메뉴 겹침 신호', () => {
     for (const element of cases) {
       const { container, unmount } = render(element);
       expect(overlay()).toBeNull();
-      expect(container.querySelector('.hs--header-overlay')).toBeNull();
+      expect(container.querySelector('.hs-slider--header-overlay')).toBeNull();
       unmount();
     }
   });
@@ -200,7 +192,7 @@ describe('메뉴 겹침 신호', () => {
   it('받는 동안에는 힌트(화면 전체 + 겹침)대로 스켈레톤도 메뉴 밑으로 넣고, 바탕은 사이트 다크 모드를 따른다', () => {
     document.documentElement.classList.add('dark');
     const { container, rerender } = render(<HeroSlider banners={[]} loading skeletonWidth="full" skeletonOverlay position="home_hero" />);
-    expect(container.querySelector('.hs--skeleton')?.className).toContain('hs--header-overlay');
+    expect(container.querySelector('.hs-slider--skeleton')?.className).toContain('hs-slider--header-overlay');
     expect(overlay()).toBe('dark');
     rerender(<HeroSlider banners={[banner(1, { presentation: { tone: 'light' } })]} settings={{ width: 'full', header_overlay: true }} position="home_hero" />);
     expect(overlay()).toBe('light');
@@ -219,9 +211,9 @@ describe('편집 미리보기 — 문구 옮기기', () => {
     const onTextMove = vi.fn();
     const presentation = { text_mobile_x: 5, text_mobile_y: 95 };
     const { container } = render(<HeroSlider banners={[banner(1, { presentation })]} forceDevice="mobile" onTextMove={onTextMove} />);
-    const box = container.querySelector('.hs__textbox') as HTMLElement;
+    const box = container.querySelector('.hs-slider__textbox') as HTMLElement;
     expect(box.tabIndex).toBe(0);
-    expect(box.className).toContain('hs__textbox--editable');
+    expect(box.className).toContain('hs-slider__textbox--editable');
     expect(box.getAttribute('aria-label')).toContain('5');
     fireEvent.keyDown(box, { key: 'ArrowRight' });
     expect(onTextMove).toHaveBeenLastCalledWith({ x: 6, y: 95 }, 'mobile');
@@ -234,18 +226,18 @@ describe('편집 미리보기 — 문구 옮기기', () => {
   // @scenario surface=editor_text_keyboard
   it('사이트 화면(콜백 없음)에서는 문구 상자를 옮길 수 없다', () => {
     const { container } = render(<HeroSlider banners={[banner(1)]} />);
-    const box = container.querySelector('.hs__textbox') as HTMLElement;
+    const box = container.querySelector('.hs-slider__textbox') as HTMLElement;
     expect(box.hasAttribute('tabindex')).toBe(false);
-    expect(box.className).not.toContain('hs__textbox--editable');
+    expect(box.className).not.toContain('hs-slider__textbox--editable');
   });
 
   // @scenario surface=editor_text_drag
   it('끌면 움직인 만큼(옮길 거리 대비 %) 화면에서만 따라오고 놓을 때 한 번 알린다', () => {
     const onTextMove = vi.fn();
     const { container } = render(<HeroSlider banners={[banner(1, { presentation: { text_pc_x: 0, text_pc_y: 100, text_width: 50 } })]} forceDevice="pc" onTextMove={onTextMove} />);
-    const box = container.querySelector('.hs__textbox') as HTMLElement;
-    const slide = container.querySelector('.hs__slide') as HTMLElement;
-    const layer = container.querySelector('.hs__text') as HTMLElement;
+    const box = container.querySelector('.hs-slider__textbox') as HTMLElement;
+    const slide = container.querySelector('.hs-slider__slide') as HTMLElement;
+    const layer = container.querySelector('.hs-slider__text') as HTMLElement;
     // jsdom 은 크기를 재지 않는다 — 띠 안 폭 1000 · 상자 500 → 가로 500px, 슬라이드 400 · 띠 200 → 세로 200px 옮길 수 있다
     Object.defineProperty(layer, 'clientWidth', { value: 1000 });
     Object.defineProperty(box, 'offsetWidth', { value: 500 });
@@ -253,7 +245,7 @@ describe('편집 미리보기 — 문구 옮기기', () => {
     Object.defineProperty(layer, 'offsetHeight', { value: 200 });
     fireEvent.pointerDown(box, { button: 0, pointerId: 1, clientX: 100, clientY: 300 });
     fireEvent.pointerMove(box, { pointerId: 1, clientX: 350, clientY: 200 });
-    expect(style(container.querySelector('.hs__text')).getPropertyValue('--hs-tx-pc')).toBe('50');
+    expect(style(container.querySelector('.hs-slider__text')).getPropertyValue('--hs-tx-pc')).toBe('50');
     expect(onTextMove).not.toHaveBeenCalled();
     fireEvent.pointerUp(box, { pointerId: 1, clientX: 350, clientY: 200 });
     expect(onTextMove).toHaveBeenCalledTimes(1);
@@ -263,9 +255,9 @@ describe('편집 미리보기 — 문구 옮기기', () => {
   // @scenario surface=slider_motion_stagger
   it('효과 다시 보기 값이 바뀌면 문구 상자를 새로 그린다', () => {
     const { container, rerender } = render(<HeroSlider banners={[banner(1, { presentation: { animation: 'fade' } })]} forceDevice="pc" replay={0} />);
-    const before = container.querySelector('.hs__textbox');
+    const before = container.querySelector('.hs-slider__textbox');
     rerender(<HeroSlider banners={[banner(1, { presentation: { animation: 'fade' } })]} forceDevice="pc" replay={1} />);
-    expect(container.querySelector('.hs__textbox')).not.toBe(before);
+    expect(container.querySelector('.hs-slider__textbox')).not.toBe(before);
   });
 });
 

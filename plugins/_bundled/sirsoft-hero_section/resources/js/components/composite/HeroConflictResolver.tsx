@@ -1,3 +1,4 @@
+// audit:allow extension-dist-source-literal-sync 중첩 템플릿 리터럴 안 객체(text_spot 의 pc·mobile·width)를 압축기가 공백 없이 `,mobile:` 로 내보내 소스의 ", mobile: " 와 글자가 달라질 뿐이다 — --production 재빌드 두 번 동일로 실측, stale 아님
 import React, { useEffect, useMemo, useState } from 'react';
 import { basic, translate } from '../../support/editor';
 import { youtubeIdFromUrl } from '../../support/media';
@@ -199,12 +200,12 @@ export const HeroConflictResolver: React.FC<HeroConflictResolverProps> = ({ base
   const t = (key: string) => translate(`admin.form.conflict_merge.${key}`);
   return <Div className="hs-conflict" role="group" aria-label={t('title')}>
     <P className="hs-conflict__title">{t('title')}</P>
-    <P className="form-hint">{rows.length ? t('hint') : t('no_differences')}</P>
+    <P className="hs-form-hint">{rows.length ? t('hint') : t('no_differences')}</P>
     {rows.map(({ group, change, staleMine }) => {
       const label = translate(`admin.form.conflict_merge.fields.${group.field}`);
       const name = `hs-conflict-${group.field}`;
       return <Div key={group.field} className={`hs-conflict__row hs-conflict__row--${change}`} data-conflict-field={group.field} data-change={change} role="radiogroup" aria-label={label}>
-        <Div className="hs-conflict__head"><Span className="hs-conflict__label">{label}</Span><Span className="hs-conflict__badge">{t(`change.${change}`)}</Span></Div>
+        <Div className="hs-conflict__head"><Span>{label}</Span><Span className="hs-conflict__badge">{t(`change.${change}`)}</Span></Div>
         {(['mine', 'latest'] as Choice[]).map((side) => <Label key={side} className="hs-conflict__option">
           <Input
             type="radio" name={name} value={side} checked={choices[group.field] === side}
@@ -213,12 +214,12 @@ export const HeroConflictResolver: React.FC<HeroConflictResolverProps> = ({ base
           />
           <Span className="hs-conflict__side">{t(side)}</Span>
           <Span className="hs-conflict__value">{display(group, side === 'mine' ? mine : latest, locales)}</Span>
-          {side === 'mine' && staleMine ? <Span className="form-hint hs-conflict__stale">{t(group.kind === 'media' ? 'stale_video' : 'stale_image')}</Span> : null}
+          {side === 'mine' && staleMine ? <Span className="hs-form-hint">{t(group.kind === 'media' ? 'stale_video' : 'stale_image')}</Span> : null}
         </Label>)}
       </Div>;
     })}
-    {!ready && <P className="form-error" role="status">{t('choose_all')}</P>}
-    <Button type="button" className="btn btn-primary hs-conflict__apply" disabled={!ready || !latest} onClick={apply}>{t('apply')}</Button>
+    {!ready && <P className="hs-form-error" role="status">{t('choose_all')}</P>}
+    <Button type="button" className="hs-btn hs-btn-primary hs-conflict__apply" disabled={!ready || !latest} onClick={apply}>{t('apply')}</Button>
   </Div>;
 };
 

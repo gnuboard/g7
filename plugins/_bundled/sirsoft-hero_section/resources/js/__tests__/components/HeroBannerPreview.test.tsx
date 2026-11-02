@@ -12,14 +12,6 @@ import { HeroBannerPreview } from '../../components/composite/HeroBannerPreview'
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
-vi.mock('swiper/css', () => ({}));
-vi.mock('swiper/css/effect-fade', () => ({}));
-vi.mock('swiper/css/navigation', () => ({}));
-vi.mock('swiper/css/pagination', () => ({}));
-vi.mock('swiper/css/effect-cube', () => ({}));
-vi.mock('swiper/css/effect-flip', () => ({}));
-vi.mock('swiper/css/effect-coverflow', () => ({}));
-vi.mock('swiper/css/effect-creative', () => ({}));
 
 const banners = [{
   id: 1,
@@ -40,7 +32,7 @@ describe('HeroBannerPreview', () => {
     fireEvent.load(pcFrame);
     const pcBody = pcFrame.contentDocument!.body;
     expect(pcFrame.width).toBe('1366');
-    expect(pcBody.querySelector('.hs')).not.toBeNull();
+    expect(pcBody.querySelector('.hs-slider')).not.toBeNull();
     expect(pcBody.querySelector('img')?.getAttribute('src')).toBe('/pc.jpg');
     expect(pcBody.querySelector('source')).toBeNull();
     pc.unmount();
@@ -54,7 +46,7 @@ describe('HeroBannerPreview', () => {
     mobile.unmount();
 
     const empty = render(<HeroBannerPreview banners={[]} emptyText="노출 중인 배너가 없습니다" />);
-    expect(empty.container.querySelector('.hs')).toBeNull();
+    expect(empty.container.querySelector('.hs-slider')).toBeNull();
     expect(empty.container.textContent).toContain('노출 중인 배너가 없습니다');
   });
 });

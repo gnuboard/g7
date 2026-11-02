@@ -30,18 +30,18 @@ async function reloadSlow(page: Page, path: string): Promise<void> {
   await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('sirsoft-hero_section:')).forEach((k) => localStorage.removeItem(k)));
   await delayHero(page, 2_500);
   await page.reload();
-  await expect(page.locator('section.hs.hs--skeleton')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 10_000 });
 }
 
 /** 슬라이더 자리·본문 시작 위치를 잰다. */
 const measure = (page: Page) => page.evaluate(() => {
-  const hs = document.querySelector('section.hs') as HTMLElement;
+  const hs = document.querySelector('section.hs-slider') as HTMLElement;
   const r = hs.getBoundingClientRect();
   const main = document.getElementById('main_content') as HTMLElement;
   return {
-    skeleton: hs.classList.contains('hs--skeleton'),
+    skeleton: hs.classList.contains('hs-slider--skeleton'),
     hidden: hs.getAttribute('aria-hidden'),
-    full: hs.classList.contains('hs--full'),
+    full: hs.classList.contains('hs-slider--full'),
     left: Math.round(r.left),
     width: Math.round(r.width),
     height: Math.round(r.height * 10) / 10,
@@ -69,8 +69,8 @@ for (const viewport of ['desktop', 'mobile'] as const) {
     expect(before.hidden).toBe('true');
     expect(before.height).toBeGreaterThan(0);
 
-    await expect(page.locator('section.hs:not(.hs--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
-    await expect(page.locator('section.hs.hs--skeleton')).toHaveCount(0);
+    await expect(page.locator('section.hs-slider:not(.hs-slider--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toHaveCount(0);
     const after = await measure(page);
     // 같은 자리·같은 크기 — 본문 시작 위치가 그대로다(저장소가 비어 있어도 첫 로드 힌트로 폭이 맞는다)
     expect(after.full).toBe(before.full);
@@ -79,7 +79,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
     expect(Math.abs(after.height - before.height)).toBeLessThan(1);
     expect(after.mainTop).toBe(before.mainTop);
     // 실제 배너는 서서히 나타난다
-    expect(await page.evaluate(() => getComputedStyle(document.querySelector('section.hs') as HTMLElement).animationName)).toBe('hs-appear');
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('section.hs-slider') as HTMLElement).animationName)).toBe('hs-appear');
   });
 }
 
@@ -88,7 +88,7 @@ test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으�
   const memory = () => page.evaluate(() => JSON.parse(localStorage.getItem('sirsoft-hero_section:slot:home_hero') ?? 'null'));
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
-  await expect(page.locator('section.hs:not(.hs--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 30_000 });
+  await expect(page.locator('section.hs-slider:not(.hs-slider--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 30_000 });
   const remembered = await memory();
   expect(remembered.banners).toBeGreaterThan(0);
 
@@ -98,8 +98,8 @@ test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으�
     await route.fulfill({ status: 500, contentType: 'application/json', body: '{"success":false}' });
   });
   await page.reload();
-  await expect(page.locator('section.hs.hs--skeleton')).toBeVisible({ timeout: 10_000 });
-  await expect(page.locator('section.hs')).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('section.hs-slider')).toHaveCount(0, { timeout: 15_000 });
   // 개인정보 동의 전에는 사이트가 새로 열 때 저장소를 비우기도 한다(그러면 null) — 어느 쪽이든 실패를 「0건」으로 남기면 안 된다
   expect((await memory())?.banners ?? null).not.toBe(0);
 
@@ -107,8 +107,8 @@ test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으�
   await page.unrouteAll({ behavior: 'ignoreErrors' });
   await delayHero(page, 2_500);
   await page.reload();
-  await expect(page.locator('section.hs.hs--skeleton')).toBeVisible({ timeout: 10_000 });
-  await expect(page.locator('section.hs:not(.hs--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
+  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('section.hs-slider:not(.hs-slider--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
   await page.unrouteAll({ behavior: 'ignoreErrors' });
 });
 
@@ -124,7 +124,7 @@ test('표시 폭을 바꿔 저장하면 다음 새로고침의 스켈레톤도 �
     expect(full.left).toBe(0);
     expect(full.width).toBe(full.pageWidth);
     // 늦춘 응답이 끝난 뒤(실제 배너가 그려진 뒤) 다음 이동을 한다
-    await expect(page.locator('section.hs:not(.hs--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator('section.hs-slider:not(.hs-slider--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
     await page.unroute(HERO_API);
 
     await saveSettings(request, managerToken, { ...original, width: 'content' });
@@ -133,7 +133,7 @@ test('표시 폭을 바꿔 저장하면 다음 새로고침의 스켈레톤도 �
     expect(content.full).toBe(false);
     expect(content.left).toBeGreaterThan(0);
     expect(content.width).toBeLessThan(content.pageWidth);
-    await expect(page.locator('section.hs:not(.hs--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator('section.hs-slider:not(.hs-slider--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
   } finally {
     await page.unrouteAll({ behavior: 'ignoreErrors' });
     await saveSettings(request, managerToken, original);

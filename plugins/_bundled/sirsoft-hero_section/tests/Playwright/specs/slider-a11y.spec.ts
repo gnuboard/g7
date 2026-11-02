@@ -42,7 +42,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       await page.setViewportSize(VIEWPORTS[viewport]);
       await injectBanners(page);
       await gotoUser(page, '/');
-      const bullets = page.locator('section.hs .hs__pagination button.swiper-pagination-bullet');
+      const bullets = page.locator('section.hs-slider .hs-slider__pagination button.hs-slider__bullet');
       await expect(bullets).toHaveCount(3, { timeout: 30_000 });
 
       const boxes = await bullets.evaluateAll((els) => els.map((el) => {
@@ -73,7 +73,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       const dotTop = await bullets.nth(2).evaluate((el) => el.getBoundingClientRect().top + 5);
       if (viewport === 'mobile') await page.touchscreen.tap(last.cx + 11, dotTop);
       else await page.mouse.click(last.cx + 11, dotTop);
-      await expect(page.locator('section.hs .hs__slide--active')).toHaveAttribute('data-index', '2');
+      await expect(page.locator('section.hs-slider .hs-slider__slide--active')).toHaveAttribute('data-index', '2');
     });
   });
 }
@@ -84,8 +84,8 @@ test('화면 읽기 프로그램은 제목을 한 번만 읽고, 장 번호는 �
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectBanners(page);
   await gotoUser(page, '/');
-  const hs = page.locator('section.hs[role="region"]');
-  const active = hs.locator('.hs__slide--active');
+  const hs = page.locator('section.hs-slider[role="region"]');
+  const active = hs.locator('.hs-slider__slide--active');
   await expect(active).toHaveAttribute('data-index', '0', { timeout: 30_000 });
 
   await expect(hs).toHaveAttribute('aria-roledescription', '캐러셀');
@@ -100,12 +100,12 @@ test('화면 읽기 프로그램은 제목을 한 번만 읽고, 장 번호는 �
   await expect(active.getByRole('img')).toHaveCount(0);
   await expect(active.getByText(`${TITLES[0]} 설명`)).toBeVisible();
   // 제목 글자는 화면에 그대로 보인다
-  await expect(active.locator('.hs__title')).toBeVisible();
+  await expect(active.locator('.hs-slider__title')).toBeVisible();
 
   // 알림 칸은 처음엔 비어 있다(훑어 읽기에서 장 번호를 두 번 듣지 않게)
-  const counter = hs.locator('.hs__counter');
+  const counter = hs.locator('.hs-slider__counter');
   await expect(counter).toHaveText('');
-  await hs.locator('.hs__next').click();
+  await hs.locator('.hs-slider__next').click();
   await expect(active).toHaveAttribute('data-index', '1');
   await expect(counter).toHaveText('3개 중 2번째');
   await expect(counter).toHaveText('', { timeout: 6_000 });
@@ -116,12 +116,12 @@ test('사이트 언어를 영어로 바꾸면 캐러셀·슬라이드 역할과 
   await page.setViewportSize(VIEWPORTS.desktop);
   await injectBanners(page);
   await gotoUser(page, '/');
-  const hs = page.locator('section.hs[role="region"]');
-  await expect(hs.locator('.hs__slide--active')).toHaveAttribute('aria-label', '3개 중 1번째', { timeout: 30_000 });
+  const hs = page.locator('section.hs-slider[role="region"]');
+  await expect(hs.locator('.hs-slider__slide--active')).toHaveAttribute('aria-label', '3개 중 1번째', { timeout: 30_000 });
 
   await page.evaluate(() => (window as any).G7Core.locale.change('en'));
   await expect(hs).toHaveAttribute('aria-roledescription', 'carousel', { timeout: 20_000 });
-  const active = hs.locator('.hs__slide--active');
+  const active = hs.locator('.hs-slider__slide--active');
   await expect(active).toHaveAttribute('aria-roledescription', 'slide');
   await expect(active).toHaveAttribute('aria-label', '1 of 3');
 });

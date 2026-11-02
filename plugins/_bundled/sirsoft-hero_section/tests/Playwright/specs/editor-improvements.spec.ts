@@ -62,7 +62,7 @@ test('기기·콘텐츠 언어·확대·초점 설정을 저장하고 새로고�
   created.push(id);
   await edit(page, managerToken, id);
   await expect(page.locator('iframe')).toHaveAttribute('width', '1366');
-  await expect(page.frameLocator('iframe').locator('img.hs__image')).toBeVisible();
+  await expect(page.frameLocator('iframe').locator('img.hs-slider__image')).toBeVisible();
   await page.locator('#preview_device_mobile').click();
   await expect(page.locator('iframe')).toHaveAttribute('width', '390');
   await page.locator('.hs-editor-language select').selectOption('en');

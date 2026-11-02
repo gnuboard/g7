@@ -172,7 +172,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "hs-admin-page-content"
                 },
                 "children": [
                     {
@@ -180,7 +180,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between flex-wrap gap-3 mb-6"
+                            "className": "hs-flex-between hs:flex-wrap hs:gap-3 hs:mb-6"
                         },
                         "children": [
                             {
@@ -191,7 +191,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "hs-page-title"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.title"
                                     },
@@ -199,7 +199,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-label-subtle mt-1"
+                                            "className": "hs-text-label-subtle hs:mt-1"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.description"
                                     }
@@ -224,7 +224,7 @@
                                 "props": {
                                     "href": "/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}",
                                     "mergeQuery": true,
-                                    "className": "button btn btn-primary"
+                                    "className": "hs-button hs-btn hs-btn-primary"
                                 },
                                 "children": [
                                     {
@@ -251,7 +251,7 @@
                         "name": "Nav",
                         "props": {
                             "aria-label": "$t:sirsoft-hero_section.admin.position.tabs_label",
-                            "className": "flex flex-wrap items-center gap-2 mb-2"
+                            "className": "hs:flex hs:flex-wrap hs:items-center hs:gap-2 hs:mb-2"
                         },
                         "children": [
                             {
@@ -260,6 +260,7 @@
                                 "name": "A",
                                 "actions": [
                                     {
+                                        "comment": "사이트 홈 위치로 — 앞 위치에서 고른 배너가 새 위치 목록의 일괄 작업에 섞이지 않게 선택을 비우고 링크 주소로 옮긴다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -279,7 +280,7 @@
                                 "props": {
                                     "href": "/admin/plugins/sirsoft-hero_section/banners?position=home_hero",
                                     "aria-current": "{{_computed.currentPosition === 'home_hero' ? 'page' : undefined}}",
-                                    "className": "px-4 py-2 rounded-lg text-sm font-medium border {{_computed.currentPosition === 'home_hero' ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                    "className": "hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === 'home_hero' ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}"
                                 },
                                 "children": [
                                     {
@@ -291,7 +292,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "ml-1 tabular-nums"
+                                            "className": "hs:ml-1 hs:tabular-nums"
                                         },
                                         "text": "{{banners?.data?.statistics?.positions?.home_hero ?? ''}}"
                                     }
@@ -303,6 +304,7 @@
                                 "name": "A",
                                 "actions": [
                                     {
+                                        "comment": "쇼핑몰 메인 위치로 — 위와 같이 선택을 비우고 링크 주소로 옮긴다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -322,7 +324,7 @@
                                 "props": {
                                     "href": "/admin/plugins/sirsoft-hero_section/banners?position=shop_hero",
                                     "aria-current": "{{_computed.currentPosition === 'shop_hero' ? 'page' : undefined}}",
-                                    "className": "px-4 py-2 rounded-lg text-sm font-medium border {{_computed.currentPosition === 'shop_hero' ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                    "className": "hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === 'shop_hero' ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}"
                                 },
                                 "children": [
                                     {
@@ -334,7 +336,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "ml-1 tabular-nums"
+                                            "className": "hs:ml-1 hs:tabular-nums"
                                         },
                                         "text": "{{banners?.data?.statistics?.positions?.shop_hero ?? ''}}"
                                     }
@@ -346,7 +348,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-6"
+                            "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mb-6"
                         },
                         "text": "$t:sirsoft-hero_section.admin.position.hint"
                     },
@@ -358,7 +360,7 @@
                         "if": "{{position_settings?.data?.editor?.preview_frame?.positions?.[_computed.currentPosition] === null}}",
                         "props": {
                             "role": "status",
-                            "className": "alert-warning mb-6"
+                            "className": "hs-alert-warning hs:mb-6"
                         },
                         "children": [
                             {
@@ -366,14 +368,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "triangle-exclamation",
-                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-sm text-yellow-800 dark:text-yellow-200"
+                                    "className": "hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.slot_missing"
                             }
@@ -384,7 +386,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6"
+                            "className": "hs:grid hs:grid-cols-1 hs:lg:grid-cols-3 hs:gap-4 hs:mb-6"
                         },
                         "children": [
                             {
@@ -394,21 +396,21 @@
                                 "name": "Section",
                                 "props": {
                                     "aria-labelledby": "hero_preview_heading",
-                                    "className": "lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                                    "className": "hs:lg:col-span-2 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-between flex-wrap gap-2 mb-3"
+                                            "className": "hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex flex-wrap items-center gap-x-3 gap-y-1"
+                                                    "className": "hs:flex hs:flex-wrap hs:items-center hs:gap-x-3 hs:gap-y-1"
                                                 },
                                                 "children": [
                                                     {
@@ -416,7 +418,7 @@
                                                         "name": "H2",
                                                         "props": {
                                                             "id": "hero_preview_heading",
-                                                            "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                                            "className": "hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.admin.preview.title|count={{(preview?.data?.data ?? []).length}}"
                                                     },
@@ -430,7 +432,7 @@
                                                             "href": "{{_computed.sitePath}}",
                                                             "target": "_blank",
                                                             "rel": "noopener noreferrer",
-                                                            "className": "inline-flex items-center gap-1 text-sm text-blue-700 dark:text-blue-300 underline"
+                                                            "className": "hs:inline-flex hs:items-center hs:gap-1 hs:text-sm hs:text-blue-700 hs:dark:text-blue-300 hs:underline"
                                                         },
                                                         "children": [
                                                             {
@@ -443,7 +445,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "fa-solid fa-arrow-up-right-from-square",
-                                                                    "className": "text-xs"
+                                                                    "className": "hs:text-xs"
                                                                 }
                                                             }
                                                         ]
@@ -456,7 +458,7 @@
                                                 "props": {
                                                     "role": "group",
                                                     "aria-label": "$t:sirsoft-hero_section.admin.preview.device_label",
-                                                    "className": "flex gap-1"
+                                                    "className": "hs:flex hs:gap-1"
                                                 },
                                                 "children": [
                                                     {
@@ -465,6 +467,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "미리보기를 PC 모양으로 — 저장되지 않는 화면 상태다",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -476,7 +479,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "aria-pressed": "{{_local.previewDevice === 'pc'}}",
-                                                            "className": "px-3 py-1 text-xs rounded border {{_local.previewDevice === 'pc' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                                            "className": "hs:px-3 hs:py-1 hs:text-xs hs:rounded hs:border {{_local.previewDevice === 'pc' ? 'hs:bg-gray-900 hs:text-white hs:border-gray-900 hs:dark:bg-gray-100 hs:dark:text-gray-900' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.admin.preview.pc"
                                                     },
@@ -486,6 +489,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "미리보기를 휴대폰 모양으로 — 저장되지 않는 화면 상태다",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -497,7 +501,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "aria-pressed": "{{_local.previewDevice === 'mobile'}}",
-                                                            "className": "px-3 py-1 text-xs rounded border {{_local.previewDevice === 'mobile' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                                            "className": "hs:px-3 hs:py-1 hs:text-xs hs:rounded hs:border {{_local.previewDevice === 'mobile' ? 'hs:bg-gray-900 hs:text-white hs:border-gray-900 hs:dark:bg-gray-100 hs:dark:text-gray-900' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}"
                                                         },
                                                         "text": "$t:sirsoft-hero_section.admin.preview.mobile"
                                                     }
@@ -527,7 +531,7 @@
                                 "name": "Section",
                                 "props": {
                                     "aria-labelledby": "hero_slider_heading",
-                                    "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-col gap-4"
+                                    "className": "hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700 hs:p-4 hs:flex hs:flex-col hs:gap-4"
                                 },
                                 "children": [
                                     {
@@ -539,7 +543,7 @@
                                                 "name": "H2",
                                                 "props": {
                                                     "id": "hero_slider_heading",
-                                                    "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                                    "className": "hs:text-base hs:font-semibold hs:text-gray-900 hs:dark:text-white"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.title"
                                             },
@@ -547,7 +551,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.scope|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}"
                                             }
@@ -557,7 +561,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "flex-between gap-3 text-sm text-gray-700 dark:text-gray-300",
+                                            "className": "hs-flex-between hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300",
                                             "htmlFor": "hero_slider_autoplay"
                                         },
                                         "children": [
@@ -571,6 +575,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "자동 넘김 — 저장 전 작업본(sliderForm)에만 담는다. 작업본이 다른 위치 것이면 지금 위치 설정에서 새로 시작해 위 미리보기가 바로 바뀐다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -582,7 +587,7 @@
                                                 "props": {
                                                     "type": "checkbox",
                                                     "id": "hero_slider_autoplay",
-                                                    "className": "h-4 w-4 rounded text-blue-600",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
                                                     "checked": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).autoplay}}",
                                                     "disabled": "{{banners?.data?.abilities?.can_update !== true}}"
                                                 }
@@ -593,7 +598,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300",
+                                            "className": "hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300",
                                             "htmlFor": "hero_slider_interval"
                                         },
                                         "children": [
@@ -607,6 +612,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "넘김 간격(초) — 작업본에 숫자로 담는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -617,7 +623,7 @@
                                                 ],
                                                 "props": {
                                                     "id": "hero_slider_interval",
-                                                    "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                     "value": "{{String((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).interval_seconds)}}",
                                                     "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
                                                     "options": [
@@ -642,7 +648,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300",
+                                            "className": "hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300",
                                             "htmlFor": "hero_slider_effect"
                                         },
                                         "children": [
@@ -656,6 +662,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "전환 효과 — 작업본에 담아 저장 전에 미리보기로 확인한다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -666,7 +673,7 @@
                                                 ],
                                                 "props": {
                                                     "id": "hero_slider_effect",
-                                                    "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                     "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).effect}}",
                                                     "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
                                                     "options": [
@@ -708,7 +715,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300",
+                                            "className": "hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300",
                                             "htmlFor": "hero_slider_pagination"
                                         },
                                         "children": [
@@ -722,6 +729,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "페이징 모양 — 작업본에 담는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -732,7 +740,7 @@
                                                 ],
                                                 "props": {
                                                     "id": "hero_slider_pagination",
-                                                    "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                     "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).pagination ?? 'dots'}}",
                                                     "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
                                                     "options": [
@@ -759,7 +767,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.pagination_hint"
                                             }
@@ -770,7 +778,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300",
+                                            "className": "hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300",
                                             "htmlFor": "hero_slider_width"
                                         },
                                         "children": [
@@ -784,6 +792,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "표시 폭 — 작업본에 담는다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -794,7 +803,7 @@
                                                 ],
                                                 "props": {
                                                     "id": "hero_slider_width",
-                                                    "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                     "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content'}}",
                                                     "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
                                                     "options": [
@@ -813,7 +822,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
                                                 },
                                                 "text": "$t:sirsoft-hero_section.admin.slider.width_hint"
                                             }
@@ -824,7 +833,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "flex-between gap-3 text-sm text-gray-700 dark:text-gray-300",
+                                            "className": "hs-flex-between hs:gap-3 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300",
                                             "htmlFor": "hero_slider_header_overlay"
                                         },
                                         "children": [
@@ -838,6 +847,7 @@
                                                 "name": "Input",
                                                 "actions": [
                                                     {
+                                                        "comment": "메뉴 겹치기 — 작업본에 담는다(사이트 적용은 화면 전체 폭일 때만, 본문 폭이면 안내만)",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -849,7 +859,7 @@
                                                 "props": {
                                                     "type": "checkbox",
                                                     "id": "hero_slider_header_overlay",
-                                                    "className": "h-4 w-4 rounded text-blue-600",
+                                                    "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
                                                     "checked": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true}}",
                                                     "disabled": "{{banners?.data?.abilities?.can_update !== true}}"
                                                 }
@@ -861,7 +871,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                            "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.slider.header_overlay_hint"
                                     },
@@ -872,7 +882,7 @@
                                         "if": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true && ((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content') !== 'full'}}",
                                         "props": {
                                             "role": "status",
-                                            "className": "text-xs text-amber-700 dark:text-amber-300"
+                                            "className": "hs:text-xs hs:text-amber-700 hs:dark:text-amber-300"
                                         },
                                         "text": "$t:sirsoft-hero_section.admin.slider.header_overlay_needs_full"
                                     },
@@ -953,7 +963,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-primary flex-center gap-1.5",
+                                            "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5",
                                             "disabled": "{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay && Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) && _local.sliderForm.effect === _computed.currentSettings.effect && (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') && (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true) && (_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots'))}}"
                                         },
                                         "children": [
@@ -963,7 +973,7 @@
                                                 "if": "{{_local.sliderSaving}}",
                                                 "props": {
                                                     "name": "spinner",
-                                                    "className": "spinner-sm"
+                                                    "className": "hs-spinner-sm"
                                                 }
                                             },
                                             {
@@ -983,14 +993,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex flex-wrap items-end gap-3 mb-4"
+                            "className": "hs:flex hs:flex-wrap hs:items-end hs:gap-3 hs:mb-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Label",
                                 "props": {
-                                    "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300",
+                                    "className": "hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300",
                                     "htmlFor": "hero_filter_status"
                                 },
                                 "children": [
@@ -1004,6 +1014,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "상태 필터 — 고르는 즉시 검색한다(검색어와 달리 Enter 를 기다리지 않는다)",
                                                 "type": "change",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -1022,7 +1033,7 @@
                                         ],
                                         "props": {
                                             "id": "hero_filter_status",
-                                            "className": "w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                            "className": "hs:w-36 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                             "value": "{{_local.filter.status}}",
                                             "options": [
                                                 {
@@ -1054,7 +1065,7 @@
                                 "type": "basic",
                                 "name": "Label",
                                 "props": {
-                                    "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]",
+                                    "className": "hs:flex hs:flex-col hs:gap-1 hs:text-sm hs:text-gray-700 hs:dark:text-gray-300 hs:flex-1 hs:min-w-[12rem]",
                                     "htmlFor": "hero_filter_search"
                                 },
                                 "children": [
@@ -1068,6 +1079,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "검색어는 담기만 한다 — 검색은 Enter 에서(아래 블록)",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -1084,7 +1096,7 @@
                                         "props": {
                                             "type": "search",
                                             "id": "hero_filter_search",
-                                            "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                            "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                             "value": "{{_local.filter.search}}",
                                             "placeholder": "$t:sirsoft-hero_section.admin.list.search_placeholder"
                                         }
@@ -1103,7 +1115,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "className": "hs-btn hs-btn-secondary"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.search_button"
                             },
@@ -1111,7 +1123,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-1"
+                                    "className": "hs:flex-1"
                                 }
                             },
                             {
@@ -1177,7 +1189,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-secondary flex-center gap-2",
+                                    "className": "hs-btn hs-btn-secondary hs-flex-center hs:gap-2",
                                     "disabled": "{{_global.reorderLoading}}"
                                 },
                                 "children": [
@@ -1187,7 +1199,7 @@
                                         "if": "{{_global.reorderLoading}}",
                                         "props": {
                                             "name": "spinner",
-                                            "className": "spinner-sm"
+                                            "className": "hs-spinner-sm"
                                         }
                                     },
                                     {
@@ -1196,7 +1208,7 @@
                                         "if": "{{!_global.reorderLoading}}",
                                         "props": {
                                             "name": "fa-solid fa-arrow-down-short-wide",
-                                            "className": "text-base"
+                                            "className": "hs:text-base"
                                         }
                                     },
                                     {
@@ -1215,14 +1227,14 @@
                         "name": "Div",
                         "if": "{{(_global.bulkSelectedIds ?? []).length > 0}}",
                         "props": {
-                            "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
+                            "className": "hs-flex-center hs:bg-gray-100 hs:dark:bg-gray-700/50 hs:border hs:border-gray-200 hs:dark:border-gray-600 hs:rounded-lg hs:p-3 hs:mb-4 hs:flex-wrap hs:gap-3"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-body font-medium whitespace-nowrap"
+                                    "className": "hs-text-body hs:font-medium hs:whitespace-nowrap"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.selected|count={{(_global.bulkSelectedIds ?? []).length}}"
                             },
@@ -1230,7 +1242,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-1"
+                                    "className": "hs:flex-1"
                                 }
                             },
                             {
@@ -1240,6 +1252,7 @@
                                 "if": "{{banners?.data?.abilities?.can_update === true}}",
                                 "actions": [
                                     {
+                                        "comment": "일괄 노출 — 처리 중에는 단추를 잠그고, 끝나면 선택을 비운 뒤 목록·미리보기를 다시 받는다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1312,7 +1325,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50",
+                                    "className": "hs:px-3 hs:py-1.5 hs:text-sm hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:bg-white hs:dark:bg-gray-800 hs:text-gray-700 hs:dark:text-gray-300 hs:disabled:opacity-50",
                                     "disabled": "{{_global.isBulkWorking}}"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.bulk_show"
@@ -1324,6 +1337,7 @@
                                 "if": "{{banners?.data?.abilities?.can_update === true}}",
                                 "actions": [
                                     {
+                                        "comment": "일괄 비노출 — 일괄 노출과 같은 흐름이다(is_active false)",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1396,7 +1410,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50",
+                                    "className": "hs:px-3 hs:py-1.5 hs:text-sm hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:bg-white hs:dark:bg-gray-800 hs:text-gray-700 hs:dark:text-gray-300 hs:disabled:opacity-50",
                                     "disabled": "{{_global.isBulkWorking}}"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.bulk_hide"
@@ -1415,7 +1429,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg disabled:opacity-50",
+                                    "className": "hs:px-3 hs:py-1.5 hs:text-sm hs:border hs:border-red-300 hs:dark:border-red-600 hs:text-red-700 hs:dark:text-red-400 hs:rounded-lg hs:disabled:opacity-50",
                                     "disabled": "{{_global.isBulkWorking}}"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.bulk_delete"
@@ -1427,14 +1441,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between flex-wrap gap-3 mb-3"
+                            "className": "hs-flex-between hs:flex-wrap hs:gap-3 hs:mb-3"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-label"
+                                    "className": "hs-text-label"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.total|count={{banners?.data?.pagination?.total ?? 0}}"
                             },
@@ -1474,7 +1488,7 @@
                                 "props": {
                                     "name": "sortBy",
                                     "aria-label": "$t:common.sort_order",
-                                    "className": "w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                    "className": "hs:w-40 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                     "value": "{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}",
                                     "options": [
                                         {
@@ -1505,7 +1519,7 @@
                         "name": "Div",
                         "if": "{{banners !== undefined && (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) === 0}}",
                         "props": {
-                            "className": "flex flex-col items-center gap-3 mb-4 px-4 py-8 text-center bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-600"
+                            "className": "hs:flex hs:flex-col hs:items-center hs:gap-3 hs:mb-4 hs:px-4 hs:py-8 hs:text-center hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-dashed hs:border-gray-300 hs:dark:border-gray-600"
                         },
                         "children": [
                             {
@@ -1513,14 +1527,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "fa-regular fa-image",
-                                    "className": "text-3xl text-gray-400 dark:text-gray-500"
+                                    "className": "hs:text-3xl hs:text-gray-400 hs:dark:text-gray-500"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-base font-medium text-gray-900 dark:text-white"
+                                    "className": "hs:text-base hs:font-medium hs:text-gray-900 hs:dark:text-white"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.empty_position.title|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}"
                             },
@@ -1528,7 +1542,7 @@
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-sm text-gray-600 dark:text-gray-300"
+                                    "className": "hs:text-sm hs:text-gray-600 hs:dark:text-gray-300"
                                 },
                                 "text": "$t:sirsoft-hero_section.admin.list.empty_position.sizes"
                             },
@@ -1539,6 +1553,7 @@
                                 "if": "{{banners?.data?.abilities?.can_create === true}}",
                                 "actions": [
                                     {
+                                        "comment": "빈 위치에서 등록 화면으로 — 지금 목록 주소의 쿼리(위치)를 이어 붙인다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -1550,7 +1565,7 @@
                                 "props": {
                                     "href": "/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}",
                                     "mergeQuery": true,
-                                    "className": "button btn btn-primary"
+                                    "className": "hs-button hs-btn hs-btn-primary"
                                 },
                                 "children": [
                                     {
@@ -1581,6 +1596,7 @@
                         },
                         "actions": [
                             {
+                                "comment": "표에서 고른 배너를 일괄 작업 줄이 읽는 전역 선택으로 옮긴다",
                                 "type": "change",
                                 "event": "onSelectionChange",
                                 "handler": "setState",
@@ -1590,6 +1606,7 @@
                                 }
                             },
                             {
+                                "comment": "쪽 이동 — 다른 쪽에서 고른 배너가 남지 않게 선택을 비우고, 주소의 page 만 바꿔 다시 받는다(덮개는 표 본문만)",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "sequence",
@@ -1616,6 +1633,7 @@
                                 ]
                             },
                             {
+                                "comment": "행 메뉴 — 수정은 목록 조건을 유지한 채 수정 화면으로, 삭제는 대상 배너를 담고 확인 창을 연다",
                                 "type": "action",
                                 "event": "onRowAction",
                                 "handler": "switch",
@@ -1696,7 +1714,7 @@
                                             "props": {
                                                 "src": "{{row.thumbnail?.url}}",
                                                 "alt": "",
-                                                "className": "w-24 h-8 object-cover rounded border border-gray-200 dark:border-gray-700",
+                                                "className": "hs:w-24 hs:h-8 hs:object-cover hs:rounded hs:border hs:border-gray-200 hs:dark:border-gray-700",
                                                 "loading": "lazy"
                                             }
                                         },
@@ -1705,7 +1723,7 @@
                                             "name": "Span",
                                             "if": "{{!row.thumbnail}}",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "hs:text-xs hs:text-gray-400 hs:dark:text-gray-500"
                                             },
                                             "text": "-"
                                         }
@@ -1719,7 +1737,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-col gap-1 min-w-0"
+                                                "className": "hs:flex hs:flex-col hs:gap-1 hs:min-w-0"
                                             },
                                             "children": [
                                                 {
@@ -1733,7 +1751,7 @@
                                                     ],
                                                     "props": {
                                                         "href": "/admin/plugins/sirsoft-hero_section/banners/{{row.id}}/edit",
-                                                        "className": "font-medium text-gray-900 dark:text-white hover:underline truncate"
+                                                        "className": "hs:font-medium hs:text-gray-900 hs:dark:text-white hs:hover:underline hs:truncate"
                                                     },
                                                     "text": "{{row.title_localized}}"
                                                 },
@@ -1741,7 +1759,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex flex-wrap gap-1"
+                                                        "className": "hs:flex hs:flex-wrap hs:gap-1"
                                                     },
                                                     "children": [
                                                         {
@@ -1752,7 +1770,7 @@
                                                                 "item_var": "locale"
                                                             },
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 uppercase"
+                                                                "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-gray-100 hs:text-gray-600 hs:dark:bg-gray-700 hs:dark:text-gray-300 hs:uppercase"
                                                             },
                                                             "text": "{{locale}}"
                                                         },
@@ -1765,7 +1783,7 @@
                                                                 "item_var": "locale"
                                                             },
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-[11px] rounded border border-dashed border-amber-400 text-amber-700 dark:border-amber-500 dark:text-amber-300"
+                                                                "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:border hs:border-dashed hs:border-amber-400 hs:text-amber-700 hs:dark:border-amber-500 hs:dark:text-amber-300"
                                                             },
                                                             "text": "$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{locale.toUpperCase()}}"
                                                         },
@@ -1775,7 +1793,7 @@
                                                             "name": "Span",
                                                             "if": "{{row.media_type === 'youtube' || row.media_type === 'video'}}",
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-[11px] rounded bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                                                                "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-purple-50 hs:text-purple-700 hs:dark:bg-purple-900/30 hs:dark:text-purple-300"
                                                             },
                                                             "text": "{{row.media_type === 'youtube' ? '$t:sirsoft-hero_section.admin.list.badge.youtube' : '$t:sirsoft-hero_section.admin.list.badge.video'}}"
                                                         },
@@ -1784,7 +1802,7 @@
                                                             "name": "Span",
                                                             "if": "{{row.has_mobile_image === false}}",
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-[11px] rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                                                "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-blue-50 hs:text-blue-700 hs:dark:bg-blue-900/30 hs:dark:text-blue-300"
                                                             },
                                                             "text": "$t:sirsoft-hero_section.admin.list.badge.mobile_fallback"
                                                         },
@@ -1793,7 +1811,7 @@
                                                             "name": "Span",
                                                             "if": "{{row.button_without_link === true}}",
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-[11px] rounded bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                                                "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-amber-50 hs:text-amber-800 hs:dark:bg-amber-900/30 hs:dark:text-amber-300"
                                                             },
                                                             "text": "$t:sirsoft-hero_section.admin.list.badge.button_without_link"
                                                         }
@@ -1812,7 +1830,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                "className": "hs:text-sm hs:text-gray-700 hs:dark:text-gray-300"
                                             },
                                             "text": "{{row.display_period === 'range' ? (row.starts_at_display + ' ~ ' + row.ends_at_display) : $t('sirsoft-hero_section.admin.list.always')}}"
                                         }
@@ -1843,7 +1861,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "tabular-nums text-sm text-gray-600 dark:text-gray-400"
+                                                "className": "hs:tabular-nums hs:text-sm hs:text-gray-600 hs:dark:text-gray-400"
                                             },
                                             "text": "{{row.sort_order + 1}}"
                                         }
@@ -1876,14 +1894,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-3"
+                        "className": "hs:flex hs:flex-col hs:gap-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "hs:text-gray-700 hs:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-hero_section.admin.delete.message|title={{_global.targetBanner?.title_localized ?? ''}}"
                         },
@@ -1891,7 +1909,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "alert-warning"
+                                "className": "hs-alert-warning"
                             },
                             "children": [
                                 {
@@ -1899,14 +1917,14 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "triangle-exclamation",
-                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                        "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-yellow-800 dark:text-yellow-200"
+                                        "className": "hs:text-xs hs:text-yellow-800 hs:dark:text-yellow-200"
                                     },
                                     "text": "$t:sirsoft-hero_section.admin.delete.warning"
                                 }
@@ -1918,7 +1936,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "hs-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -1932,7 +1950,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "hs-btn hs-btn-secondary",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "text": "$t:common.cancel"
@@ -1942,6 +1960,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "삭제 확정 — 처리 중 잠금. 성공하면 대상·선택을 비우고 창을 닫은 뒤 목록·미리보기를 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -2014,7 +2033,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50",
+                                "className": "hs-flex-center hs:gap-2 hs:px-4 hs:py-2 hs:bg-red-600 hs:dark:bg-red-600 hs:text-white hs:rounded-lg hs:hover:bg-red-700 hs:disabled:opacity-50",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "children": [
@@ -2024,7 +2043,7 @@
                                     "if": "{{_global.isDeleting}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "hs-spinner-sm"
                                     }
                                 },
                                 {
@@ -2052,14 +2071,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-3"
+                        "className": "hs:flex hs:flex-col hs:gap-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "hs:text-gray-700 hs:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-hero_section.admin.delete.bulk_message|count={{(_global.bulkSelectedIds ?? []).length}}"
                         },
@@ -2067,7 +2086,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "alert-warning"
+                                "className": "hs-alert-warning"
                             },
                             "children": [
                                 {
@@ -2075,14 +2094,14 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "triangle-exclamation",
-                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                        "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-yellow-800 dark:text-yellow-200"
+                                        "className": "hs:text-xs hs:text-yellow-800 hs:dark:text-yellow-200"
                                     },
                                     "text": "$t:sirsoft-hero_section.admin.delete.warning"
                                 }
@@ -2094,7 +2113,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "hs-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -2108,7 +2127,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "hs-btn hs-btn-secondary",
                                 "disabled": "{{_global.isBulkWorking}}"
                             },
                             "text": "$t:common.cancel"
@@ -2118,6 +2137,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "일괄 삭제 확정 — 고른 배너 전부를 한 번에 지우고, 성공하면 선택을 비우고 창을 닫은 뒤 목록·미리보기를 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -2192,7 +2212,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50",
+                                "className": "hs-flex-center hs:gap-2 hs:px-4 hs:py-2 hs:bg-red-600 hs:dark:bg-red-600 hs:text-white hs:rounded-lg hs:hover:bg-red-700 hs:disabled:opacity-50",
                                 "disabled": "{{_global.isBulkWorking}}"
                             },
                             "children": [
@@ -2202,7 +2222,7 @@
                                     "if": "{{_global.isBulkWorking}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "hs-spinner-sm"
                                     }
                                 },
                                 {
@@ -2253,14 +2273,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-3"
+                        "className": "hs:flex hs:flex-col hs:gap-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-label"
+                                "className": "hs-text-label"
                             },
                             "text": "$t:sirsoft-hero_section.admin.reorder.description"
                         },
@@ -2269,7 +2289,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                                "className": "hs:max-h-[70vh] hs:overflow-y-auto hs:rounded-lg hs:border hs:border-gray-200 hs:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -2289,7 +2309,7 @@
                                         "name": "Div",
                                         "props": {
                                             "data-testid": "hero-reorder-row-{{row.id}}",
-                                            "className": "flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800"
+                                            "className": "hs:flex hs:items-center hs:gap-3 hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-800"
                                         },
                                         "children": [
                                             {
@@ -2299,7 +2319,7 @@
                                                     "data-drag-handle": true,
                                                     "aria-hidden": "true",
                                                     "title": "{{$t('sirsoft-hero_section.admin.reorder.drag_handle', { name: row.title })}}",
-                                                    "className": "hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                                    "className": "hs:hidden hs-hidden hs:md:flex hs:cursor-grab hs:text-gray-400 hs:hover:text-gray-600 hs:dark:text-gray-500 hs:dark:hover:text-gray-300"
                                                 },
                                                 "children": [
                                                     {
@@ -2307,7 +2327,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-grip-vertical",
-                                                            "className": "text-sm"
+                                                            "className": "hs:text-sm"
                                                         }
                                                     }
                                                 ]
@@ -2316,7 +2336,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400"
+                                                    "className": "hs:w-6 hs:text-right hs:text-sm hs:tabular-nums hs:text-gray-500 hs:dark:text-gray-400"
                                                 },
                                                 "text": "{{row._idx + 1}}"
                                             },
@@ -2327,14 +2347,14 @@
                                                 "props": {
                                                     "src": "{{row.thumbnail}}",
                                                     "alt": "",
-                                                    "className": "w-16 h-6 object-cover rounded"
+                                                    "className": "hs:w-16 hs:h-6 hs:object-cover hs:rounded"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "truncate flex-1 font-medium text-gray-900 dark:text-gray-100"
+                                                    "className": "hs:truncate hs:flex-1 hs:font-medium hs:text-gray-900 hs:dark:text-gray-100"
                                                 },
                                                 "text": "{{row.title}}"
                                             },
@@ -2352,6 +2372,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "한 칸 위로 — 이웃과 자리를 맞바꾸고 이전 저장 오류 안내를 지운다(저장은 [저장]에서)",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -2365,7 +2386,7 @@
                                                     "data-testid": "hero-reorder-up-{{row.id}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-hero_section.admin.reorder.move_up', { name: row.title })}}",
-                                                    "className": "flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed",
+                                                    "className": "hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === 0}}"
                                                 },
                                                 "children": [
@@ -2374,7 +2395,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-chevron-up",
-                                                            "className": "text-xs"
+                                                            "className": "hs:text-xs"
                                                         }
                                                     }
                                                 ]
@@ -2384,6 +2405,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "한 칸 아래로 — 이웃과 자리를 맞바꾸고 이전 저장 오류 안내를 지운다",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -2397,7 +2419,7 @@
                                                     "data-testid": "hero-reorder-down-{{row.id}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-hero_section.admin.reorder.move_down', { name: row.title })}}",
-                                                    "className": "flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed",
+                                                    "className": "hs-flex-center hs:w-10 hs:h-10 hs:shrink-0 hs:text-gray-500 hs:hover:text-gray-800 hs:dark:text-gray-400 hs:dark:hover:text-gray-100 hs:rounded hs:hover:bg-gray-100 hs:dark:hover:bg-gray-700 hs:disabled:opacity-40 hs:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}"
                                                 },
                                                 "children": [
@@ -2406,7 +2428,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-chevron-down",
-                                                            "className": "text-xs"
+                                                            "className": "hs:text-xs"
                                                         }
                                                     }
                                                 ]
@@ -2415,6 +2437,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "끌어 놓은 순서를 작업 목록에 반영한다 — 표시에 쓰는 필드만 남기고 이전 오류 안내를 지운다",
                                             "event": "onSortEnd",
                                             "handler": "setState",
                                             "params": {
@@ -2425,7 +2448,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                                        "className": "hs:divide-y hs:divide-gray-200 hs:dark:divide-gray-700"
                                     }
                                 }
                             ]
@@ -2437,7 +2460,7 @@
                             "if": "{{!!_global.reorderError}}",
                             "props": {
                                 "role": "alert",
-                                "className": "rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300"
+                                "className": "hs:rounded-lg hs:border hs:border-red-200 hs:dark:border-red-800 hs:bg-red-50 hs:dark:bg-red-900/20 hs:px-4 hs:py-3 hs:text-sm hs:text-red-700 hs:dark:text-red-300"
                             },
                             "text": "{{_global.reorderError}}"
                         },
@@ -2445,7 +2468,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "modal-footer-buttons"
+                                "className": "hs-modal-footer-buttons"
                             },
                             "children": [
                                 {
@@ -2453,6 +2476,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "취소 — 창을 닫고 순서 작업본·원본·오류를 비운다(저장하지 않음)",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -2474,7 +2498,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-secondary",
+                                        "className": "hs-btn hs-btn-secondary",
                                         "disabled": "{{_global.reorderSaving}}"
                                     },
                                     "children": [
@@ -2589,7 +2613,7 @@
                                         "data-testid": "hero-reorder-save",
                                         "type": "button",
                                         "lockRepeatClick": true,
-                                        "className": "btn btn-primary flex-center gap-2",
+                                        "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-2",
                                         "disabled": "{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i => i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}"
                                     },
                                     "children": [
@@ -2599,7 +2623,7 @@
                                             "if": "{{_global.reorderSaving}}",
                                             "props": {
                                                 "name": "spinner",
-                                                "className": "spinner-sm"
+                                                "className": "hs-spinner-sm"
                                             }
                                         },
                                         {

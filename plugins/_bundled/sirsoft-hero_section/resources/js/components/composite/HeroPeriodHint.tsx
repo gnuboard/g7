@@ -24,9 +24,9 @@ export const HeroPeriodHint: React.FC<HeroPeriodHintProps> = ({ period = 'always
     return () => window.clearInterval(timer);
   }, [serverNow]);
   const P = basic('P', 'p');
-  if (!timezone || !clock.base) return <P className="form-hint">{translate('admin.form.period.clock_loading')}</P>;
+  if (!timezone || !clock.base) return <P className="hs-form-hint">{translate('admin.form.period.clock_loading')}</P>;
   const status = periodStatus(period, active, start, end, timezone, Date.parse(clock.base) + clock.elapsed);
-  return <P className="form-hint" data-period-status={status}>
+  return <P className="hs-form-hint" data-period-status={status}>
     {translate('admin.form.period.timezone', { timezone })}{' · '}
     {status === 'incomplete' ? translate('admin.form.period.incomplete') : translate('admin.form.period.hint', { status: translate(`admin.status.${status}`) })}
   </P>;
