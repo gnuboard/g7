@@ -177,7 +177,7 @@ export const PopupConflictResolver: React.FC<PopupConflictResolverProps> = ({ ba
   const t = (key: string) => translate('sirsoft-popup.admin.form.conflict_merge.' + key);
   return <Div className="g7pp-conflict" role="group" aria-label={t('title')}>
     <P className="g7pp-conflict__title">{t('title')}</P>
-    <P className="form-hint">{rows.length ? t('hint') : t('no_differences')}</P>
+    <P className="g7pp-form-hint">{rows.length ? t('hint') : t('no_differences')}</P>
     {rows.map(({ group, change, staleMine }) => {
       const label = translate('sirsoft-popup.admin.form.conflict_merge.fields.' + group.field);
       const name = `g7pp-conflict-${group.field}`;
@@ -189,14 +189,14 @@ export const PopupConflictResolver: React.FC<PopupConflictResolverProps> = ({ ba
             disabled={side === 'mine' && staleMine}
             onChange={() => setPicked((prev) => ({ ...prev, [group.field]: side }))}
           />
-          <Span className="g7pp-conflict__side">{t(side)}</Span>
+          <Span>{t(side)}</Span>
           <Span className="g7pp-conflict__value">{display(group, side === 'mine' ? mine : latest, locales)}</Span>
-          {side === 'mine' && staleMine ? <Span className="form-hint g7pp-conflict__stale">{t('stale_image')}</Span> : null}
+          {side === 'mine' && staleMine ? <Span className="g7pp-form-hint" data-conflict-stale="">{t('stale_image')}</Span> : null}
         </Label>)}
       </Div>;
     })}
-    {!ready && <P className="form-error" role="status">{t('choose_all')}</P>}
-    <Button type="button" className="btn btn-primary g7pp-conflict__apply" disabled={!ready || !latest} onClick={apply}>{t('apply')}</Button>
+    {!ready && <P className="g7pp-form-error" role="status">{t('choose_all')}</P>}
+    <Button type="button" className="g7pp-btn g7pp-btn-primary" data-conflict-action="apply" disabled={!ready || !latest} onClick={apply}>{t('apply')}</Button>
   </Div>;
 };
 

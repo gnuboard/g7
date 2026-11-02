@@ -41,13 +41,13 @@ export const PopupPeriodHint: React.FC<PopupPeriodHintProps> = ({ period = 'alwa
 
   const P = basic('P', 'p');
   if (!timezone || !clock.base) {
-    return <P className="form-hint">{translate('sirsoft-popup.admin.form.period.clock_loading')}</P>;
+    return <P className="g7pp-form-hint">{translate('sirsoft-popup.admin.form.period.clock_loading')}</P>;
   }
 
   const status = periodStatus(period, active, start, end, timezone, Date.parse(clock.base) + clock.elapsed);
 
   return (
-    <P className="form-hint" data-period-status={status}>
+    <P className="g7pp-form-hint" data-period-status={status}>
       {translate('sirsoft-popup.admin.form.period.timezone', { timezone })}{' · '}
       {status === 'incomplete' ? translate('sirsoft-popup.admin.form.period.incomplete') : translate('sirsoft-popup.admin.form.period.hint', { status: translate('sirsoft-popup.admin.status.' + status) })}
     </P>

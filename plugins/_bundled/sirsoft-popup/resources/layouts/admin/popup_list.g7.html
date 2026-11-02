@@ -80,23 +80,23 @@
     </set-state>
   </init>
   <slot name="content">
-    <div data-ref="popup_list_content" class="admin-page-content">
-      <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-6">
+    <div data-ref="popup_list_content" class="g7pp-admin-page-content">
+      <div data-ref="page_header" class="g7pp-flex-between gpp:flex-wrap gpp:gap-3 gpp:mb-6">
         <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
-          <h1 class="page-title">$t:sirsoft-popup.admin.title</h1>
-          <p class="text-label-subtle mt-1">$t:sirsoft-popup.admin.description</p>
+          <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
+          <h1 class="g7pp-page-title">$t:sirsoft-popup.admin.title</h1>
+          <p class="g7pp-text-label-subtle gpp:mt-1">$t:sirsoft-popup.admin.description</p>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="gpp:flex gpp:flex-wrap gpp:gap-2">
           <!-- 설정 화면은 코어 플러그인 설정 권한(core.plugins.update)이 있어야 열린다 -->
-          <a data-ref="settings_link" data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="button btn btn-secondary flex-center gap-1.5">
+          <a data-ref="settings_link" data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="g7pp-button g7pp-btn g7pp-btn-secondary g7pp-flex-center gpp:gap-1.5">
             <on type="click">
               <navigate/>
             </on>
             <icon name="gear" size="sm"/>
             <span>$t:sirsoft-popup.admin.actions.settings</span>
           </a>
-          <a data-ref="create_button" data-if="{{popups?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-popup/popups/create" :mergeQuery="true" class="button btn btn-primary flex-center gap-1.5">
+          <a data-ref="create_button" data-if="{{popups?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-popup/popups/create" :mergeQuery="true" class="g7pp-button g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-1.5">
             <on type="click">
               <!-- 보던 목록 조건을 이고 간다 — 등록 화면이 저장·취소 뒤 같은 목록으로 돌아온다 -->
               <navigate :mergeQuery="true">
@@ -109,39 +109,39 @@
         </div>
       </div>
       <!-- 지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(결정 R10) -->
-      <section data-ref="summary_card" aria-labelledby="popup_summary_heading" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6 flex flex-col lg:flex-row lg:items-center gap-4">
-        <div class="lg:w-1/5 shrink-0">
-          <h2 id="popup_summary_heading" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-popup.admin.summary.title|count={{(summary?.data?.data ?? []).length}}</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-popup.admin.summary.order_hint</p>
+      <section data-ref="summary_card" aria-labelledby="popup_summary_heading" class="gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-col gpp:lg:flex-row gpp:lg:items-center gpp:gap-4">
+        <div class="gpp:lg:w-1/5 gpp:shrink-0">
+          <h2 id="popup_summary_heading" class="gpp:text-base gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white">$t:sirsoft-popup.admin.summary.title|count={{(summary?.data?.data ?? []).length}}</h2>
+          <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mt-1">$t:sirsoft-popup.admin.summary.order_hint</p>
         </div>
-        <p data-if="{{summary !== undefined &amp;&amp; (summary?.data?.data ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400 flex-1">$t:sirsoft-popup.admin.summary.empty</p>
-        <ol data-ref="summary_items" data-if="{{(summary?.data?.data ?? []).length &gt; 0}}" class="flex flex-wrap items-start gap-3 flex-1">
-          <li data-each="item, idx in summary?.data?.data ?? []" class="w-20">
+        <p data-if="{{summary !== undefined &amp;&amp; (summary?.data?.data ?? []).length === 0}}" class="gpp:text-sm gpp:text-gray-500 gpp:dark:text-gray-400 gpp:flex-1">$t:sirsoft-popup.admin.summary.empty</p>
+        <ol data-ref="summary_items" data-if="{{(summary?.data?.data ?? []).length &gt; 0}}" class="gpp:flex gpp:flex-wrap gpp:items-start gpp:gap-3 gpp:flex-1">
+          <li data-each="item, idx in summary?.data?.data ?? []" class="gpp:w-20">
             <!-- 누르면 그 팝업의 수정 화면 — 보던 목록 조건(상태·기기·검색·쪽)을 이고 가 저장·취소 뒤 같은 목록으로 돌아온다.
               수정 권한이 없으면(조회 전용) 수정 화면이 403 이라 링크를 걸지 않는다 -->
-            <a data-if="{{item.abilities?.can_update !== false}}" href="/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit" title="{{item.title}}" aria-label="$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}" class="g7pp-summary-link flex flex-col items-center gap-1 rounded p-0.5 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <a data-if="{{item.abilities?.can_update !== false}}" href="/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit" title="{{item.title}}" aria-label="$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}" class="g7pp-summary-link gpp:flex gpp:flex-col gpp:items-center gpp:gap-1 gpp:rounded gpp:p-0.5 gpp:hover:bg-gray-50 gpp:dark:hover:bg-gray-700/50">
               <on type="click">
                 <navigate path="/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit" :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
-              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="g7pp-summary-link__thumb w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>
-              <span data-if="{{!item.thumbnail}}" class="w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1 g7pp-summary-link__thumb">$t:sirsoft-popup.admin.content_type.html</span>
-              <span class="text-xs text-gray-700 dark:text-gray-300 tabular-nums g7pp-summary-link__label">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
+              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="g7pp-summary-link__thumb gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
+              <span data-if="{{!item.thumbnail}}" class="gpp:w-16 gpp:h-20 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:bg-white gpp:dark:bg-gray-700 gpp:text-[11px] gpp:text-gray-500 gpp:dark:text-gray-300 gpp:text-center gpp:px-1 g7pp-summary-link__thumb">$t:sirsoft-popup.admin.content_type.html</span>
+              <span class="gpp:text-xs gpp:text-gray-700 gpp:dark:text-gray-300 gpp:tabular-nums g7pp-summary-link__label">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
             </a>
-            <div data-if="{{item.abilities?.can_update === false}}" title="{{item.title}}" class="flex flex-col items-center gap-1 p-0.5">
-              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>
-              <span data-if="{{!item.thumbnail}}" class="w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1">$t:sirsoft-popup.admin.content_type.html</span>
-              <span class="text-xs text-gray-700 dark:text-gray-300 tabular-nums">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
-              <span class="sr-only">{{item.title}}</span>
+            <div data-if="{{item.abilities?.can_update === false}}" title="{{item.title}}" class="gpp:flex gpp:flex-col gpp:items-center gpp:gap-1 gpp:p-0.5">
+              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
+              <span data-if="{{!item.thumbnail}}" class="gpp:w-16 gpp:h-20 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:bg-white gpp:dark:bg-gray-700 gpp:text-[11px] gpp:text-gray-500 gpp:dark:text-gray-300 gpp:text-center gpp:px-1">$t:sirsoft-popup.admin.content_type.html</span>
+              <span class="gpp:text-xs gpp:text-gray-700 gpp:dark:text-gray-300 gpp:tabular-nums">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
+              <span class="gpp:sr-only">{{item.title}}</span>
             </div>
           </li>
         </ol>
-        <div data-ref="summary_settings" data-if="{{!!_computed.settings}}" class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+        <div data-ref="summary_settings" data-if="{{!!_computed.settings}}" class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300">
           <span>$t:sirsoft-popup.admin.summary.pc|position={{$t('sirsoft-popup.settings.pc_position.' + _computed.settings.pc_position)}}|width={{_computed.settings.pc_width}}|height={{_computed.settings.pc_height}}</span>
           <span>$t:sirsoft-popup.admin.summary.mobile|style={{$t('sirsoft-popup.settings.mobile_style.' + _computed.settings.mobile_style)}}</span>
           <span>$t:sirsoft-popup.admin.summary.close|dismiss={{_computed.settings.dismiss_mode === 'close' ? $t('sirsoft-popup.settings.dismiss.close') : (_computed.settings.dismiss_mode === 'days' ? $t('sirsoft-popup.layer.dismiss_days', { days: _computed.settings.dismiss_days }) : $t('sirsoft-popup.layer.dismiss_today'))}}|dim={{_computed.settings.dim_background ? $t('sirsoft-popup.admin.summary.dim_on') : $t('sirsoft-popup.admin.summary.dim_off')}}</span>
-          <a data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+          <a data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline">
             <on type="click">
               <navigate/>
             </on>
@@ -150,10 +150,10 @@
         </div>
       </section>
       <!-- 필터 줄 — 상태·기기·제목 검색·순서 변경 -->
-      <div data-ref="filter_bar" class="flex flex-wrap items-end gap-3 mb-4">
-        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_filter_status">
+      <div data-ref="filter_bar" class="gpp:flex gpp:flex-wrap gpp:items-end gpp:gap-3 gpp:mb-4">
+        <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300" htmlFor="popup_filter_status">
           <span>$t:sirsoft-popup.admin.list.status_filter</span>
-          <select id="popup_filter_status" class="w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.status}}">
+          <select id="popup_filter_status" class="gpp:w-36 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm" value="{{_local.filter.status}}">
             <options>
               <option value="">$t:sirsoft-popup.admin.status.all</option>
               <option value="active">$t:sirsoft-popup.admin.status.active</option>
@@ -169,9 +169,9 @@
             </on>
           </select>
         </label>
-        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_filter_device">
+        <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300" htmlFor="popup_filter_device">
           <span>$t:sirsoft-popup.admin.list.device_filter</span>
-          <select id="popup_filter_device" class="w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.device}}">
+          <select id="popup_filter_device" class="gpp:w-36 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm" value="{{_local.filter.device}}">
             <options>
               <option value="">$t:sirsoft-popup.admin.device.all</option>
               <option value="pc">$t:sirsoft-popup.admin.device.shown_on_pc</option>
@@ -185,9 +185,9 @@
             </on>
           </select>
         </label>
-        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]" htmlFor="popup_filter_search">
+        <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300 gpp:flex-1 gpp:min-w-[12rem]" htmlFor="popup_filter_search">
           <span>$t:sirsoft-popup.admin.list.search</span>
-          <input type="search" id="popup_filter_search" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.search}}" placeholder="$t:sirsoft-popup.admin.list.search_placeholder">
+          <input type="search" id="popup_filter_search" class="gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm" value="{{_local.filter.search}}" placeholder="$t:sirsoft-popup.admin.list.search_placeholder">
             <on type="change">
               <set-state target="local" filter.search="{{$event.target.value}}"/>
             </on>
@@ -196,14 +196,14 @@
             </on>
           </input>
         </label>
-        <button type="button" data-ref="search_button" class="btn btn-secondary">
+        <button type="button" data-ref="search_button" class="g7pp-btn g7pp-btn-secondary">
           <on type="click">
             <action-ref name="searchPopups"/>
           </on>
           $t:sirsoft-popup.admin.list.search_button
         </button>
-        <div class="flex-1"/>
-        <button type="button" data-ref="reorder_button" data-if="{{popups?.data?.abilities?.can_update === true &amp;&amp; (popups?.data?.statistics?.total ?? 0) &gt; 1}}" class="btn btn-secondary flex-center gap-2" disabled="{{_global.reorderLoading}}">
+        <div class="gpp:flex-1"/>
+        <button type="button" data-ref="reorder_button" data-if="{{popups?.data?.abilities?.can_update === true &amp;&amp; (popups?.data?.statistics?.total ?? 0) &gt; 1}}" class="g7pp-btn g7pp-btn-secondary g7pp-flex-center gpp:gap-2" disabled="{{_global.reorderLoading}}">
           <on type="click">
             <!-- 순서 변경 창 열기 — 팝업 전체를 받아 작업본·원본으로 담는다 -->
             <sequence>
@@ -220,16 +220,16 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_global.reorderLoading}}" name="spinner" class="spinner-sm"/>
-          <icon data-if="{{!_global.reorderLoading}}" name="fa-solid fa-arrow-down-short-wide" class="text-base"/>
+          <icon data-if="{{_global.reorderLoading}}" name="spinner" class="g7pp-spinner-sm"/>
+          <icon data-if="{{!_global.reorderLoading}}" name="fa-solid fa-arrow-down-short-wide" class="gpp:text-base"/>
           <span>$t:sirsoft-popup.admin.reorder.button</span>
         </button>
       </div>
       <!-- 일괄 작업 줄 — 선택이 있을 때만 -->
-      <div data-ref="bulk_action_bar" data-if="{{(_global.bulkSelectedIds ?? []).length &gt; 0}}" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
-        <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-popup.admin.list.selected|count={{(_global.bulkSelectedIds ?? []).length}}</span>
-        <div class="flex-1"/>
-        <button type="button" data-ref="bulk_show_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+      <div data-ref="bulk_action_bar" data-if="{{(_global.bulkSelectedIds ?? []).length &gt; 0}}" class="g7pp-flex-center gpp:bg-gray-100 gpp:dark:bg-gray-700/50 gpp:border gpp:border-gray-200 gpp:dark:border-gray-600 gpp:rounded-lg gpp:p-3 gpp:mb-4 gpp:flex-wrap gpp:gap-3">
+        <span class="g7pp-text-body gpp:font-medium gpp:whitespace-nowrap">$t:sirsoft-popup.admin.list.selected|count={{(_global.bulkSelectedIds ?? []).length}}</span>
+        <div class="gpp:flex-1"/>
+        <button type="button" data-ref="bulk_show_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:bg-white gpp:dark:bg-gray-800 gpp:text-gray-700 gpp:dark:text-gray-300 gpp:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
@@ -249,7 +249,7 @@
           </on>
           $t:sirsoft-popup.admin.list.bulk_show
         </button>
-        <button type="button" data-ref="bulk_hide_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+        <button type="button" data-ref="bulk_hide_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:bg-white gpp:dark:bg-gray-800 gpp:text-gray-700 gpp:dark:text-gray-300 gpp:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
@@ -269,22 +269,22 @@
           </on>
           $t:sirsoft-popup.admin.list.bulk_hide
         </button>
-        <button type="button" data-ref="bulk_copy_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+        <button type="button" data-ref="bulk_copy_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:bg-white gpp:dark:bg-gray-800 gpp:text-gray-700 gpp:dark:text-gray-300 gpp:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <open-modal target="popup_bulk_copy_modal"/>
           </on>
           $t:sirsoft-popup.admin.list.bulk_copy
         </button>
-        <button type="button" data-ref="bulk_delete_button" data-if="{{popups?.data?.abilities?.can_delete === true}}" class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+        <button type="button" data-ref="bulk_delete_button" data-if="{{popups?.data?.abilities?.can_delete === true}}" class="gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-red-300 gpp:dark:border-red-600 gpp:text-red-700 gpp:dark:text-red-400 gpp:rounded-lg gpp:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <open-modal target="popup_bulk_delete_modal"/>
           </on>
           $t:sirsoft-popup.admin.list.bulk_delete
         </button>
       </div>
-      <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-3">
-        <span class="text-label">$t:sirsoft-popup.admin.list.total|count={{popups?.data?.pagination?.total ?? 0}}</span>
-        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}">
+      <div data-ref="table_header_bar" class="g7pp-flex-between gpp:flex-wrap gpp:gap-3 gpp:mb-3">
+        <span class="g7pp-text-label">$t:sirsoft-popup.admin.list.total|count={{popups?.data?.pagination?.total ?? 0}}</span>
+        <select name="sortBy" aria-label="$t:common.sort_order" class="gpp:w-40 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm" value="{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}">
           <options>
             <option value="sort_order:asc">$t:sirsoft-popup.admin.list.sort.sort_order</option>
             <option value="status:asc">$t:sirsoft-popup.admin.list.sort.status</option>
@@ -307,40 +307,40 @@
         <blur-until-loaded sources="popups"/>
         <column field="thumbnail" header="$t:sirsoft-popup.admin.list.column.preview" width="80px">
           <cell>
-            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" alt="" class="w-12 h-14 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>
-            <span data-if="{{!row.thumbnail}}" class="w-12 h-14 flex-center rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] text-gray-500 dark:text-gray-400 text-center">$t:sirsoft-popup.admin.content_type.html_short</span>
+            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" alt="" class="gpp:w-12 gpp:h-14 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700" loading="lazy"/>
+            <span data-if="{{!row.thumbnail}}" class="gpp:w-12 gpp:h-14 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:bg-white gpp:dark:bg-gray-800 gpp:text-[10px] gpp:text-gray-500 gpp:dark:text-gray-400 gpp:text-center">$t:sirsoft-popup.admin.content_type.html_short</span>
           </cell>
         </column>
         <column field="title" header="$t:sirsoft-popup.admin.list.column.title">
           <cell>
-            <div class="flex flex-col gap-1 min-w-0">
-              <a href="/admin/plugins/sirsoft-popup/popups/{{row.id}}/edit" class="font-medium text-gray-900 dark:text-white hover:underline truncate">
+            <div class="gpp:flex gpp:flex-col gpp:gap-1 gpp:min-w-0">
+              <a href="/admin/plugins/sirsoft-popup/popups/{{row.id}}/edit" class="gpp:font-medium gpp:text-gray-900 gpp:dark:text-white gpp:hover:underline gpp:truncate">
                 <on type="click">
                   <navigate/>
                 </on>
                 {{row.title}}
               </a>
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{$t('sirsoft-popup.admin.content_type.' + row.content_type)}}{{(row.filled_locales ?? []).length &gt; 0 ? ' · ' + (row.filled_locales ?? []).map(l =&gt; _global.appConfig?.localeNames?.[l] ?? l.toUpperCase()).join(' · ') : ''}}</span>
+              <span class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400">{{$t('sirsoft-popup.admin.content_type.' + row.content_type)}}{{(row.filled_locales ?? []).length &gt; 0 ? ' · ' + (row.filled_locales ?? []).map(l =&gt; _global.appConfig?.localeNames?.[l] ?? l.toUpperCase()).join(' · ') : ''}}</span>
             </div>
           </cell>
         </column>
         <column field="routes" header="$t:sirsoft-popup.admin.list.column.pages" width="190px">
           <cell>
-            <span data-if="{{row.page_scope !== 'routes'}}" class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.page_scope.all</span>
-            <div data-if="{{row.page_scope === 'routes'}}" class="flex flex-wrap gap-1">
-              <code data-each="route in (row.routes ?? []).slice(0, 3)" class="px-1.5 py-0.5 text-xs rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200">{{route}}</code>
-              <span data-if="{{(row.routes ?? []).length &gt; 3}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-popup.admin.list.more_routes|count={{(row.routes ?? []).length - 3}}</span>
+            <span data-if="{{row.page_scope !== 'routes'}}" class="gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300">$t:sirsoft-popup.admin.page_scope.all</span>
+            <div data-if="{{row.page_scope === 'routes'}}" class="gpp:flex gpp:flex-wrap gpp:gap-1">
+              <code data-each="route in (row.routes ?? []).slice(0, 3)" class="gpp:px-1.5 gpp:py-0.5 gpp:text-xs gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-600 gpp:bg-gray-50 gpp:dark:bg-gray-700 gpp:text-gray-800 gpp:dark:text-gray-200">{{route}}</code>
+              <span data-if="{{(row.routes ?? []).length &gt; 3}}" class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400">$t:sirsoft-popup.admin.list.more_routes|count={{(row.routes ?? []).length - 3}}</span>
             </div>
           </cell>
         </column>
         <column field="device" header="$t:sirsoft-popup.admin.list.column.device" width="80px">
           <cell>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{$t('sirsoft-popup.admin.device.' + row.device)}}</span>
+            <span class="gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300">{{$t('sirsoft-popup.admin.device.' + row.device)}}</span>
           </cell>
         </column>
         <column field="period" header="$t:sirsoft-popup.admin.list.column.period" width="210px">
           <cell>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{row.display_period === 'range' ? (row.starts_at_display + ' ~ ' + row.ends_at_display) : $t('sirsoft-popup.admin.period.always')}}</span>
+            <span class="gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300">{{row.display_period === 'range' ? (row.starts_at_display + ' ~ ' + row.ends_at_display) : $t('sirsoft-popup.admin.period.always')}}</span>
           </cell>
         </column>
         <column field="status" header="$t:sirsoft-popup.admin.list.column.status" width="100px">
@@ -350,7 +350,7 @@
         </column>
         <column field="sort_order" header="$t:sirsoft-popup.admin.list.column.order" width="60px">
           <cell>
-            <span class="tabular-nums text-sm text-gray-600 dark:text-gray-400">{{row.sort_order + 1}}</span>
+            <span class="gpp:tabular-nums gpp:text-sm gpp:text-gray-600 gpp:dark:text-gray-400">{{row.sort_order + 1}}</span>
           </cell>
         </column>
         <column field="created_at_display" header="$t:sirsoft-popup.admin.list.column.created_at" width="160px"/>
@@ -413,21 +413,21 @@
   <modal>
     <!-- 한 건 영구 삭제 확인 — 이미지 파일까지 지워져 되돌릴 수 없다. 잠시 내리려면 비노출을 쓰도록 안내한다 -->
     <modal data-type="composite" data-ref="popup_delete_modal" title="$t:sirsoft-popup.admin.delete.title" size="medium">
-      <div class="flex flex-col gap-3">
-        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.delete.message|title={{_global.targetPopup?.title ?? ''}}</p>
-        <div class="alert-warning">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-          <p class="text-xs text-yellow-800 dark:text-yellow-200">$t:sirsoft-popup.admin.delete.warning</p>
+      <div class="gpp:flex gpp:flex-col gpp:gap-3">
+        <p class="gpp:text-gray-700 gpp:dark:text-gray-300">$t:sirsoft-popup.admin.delete.message|title={{_global.targetPopup?.title ?? ''}}</p>
+        <div class="g7pp-alert-warning">
+          <icon name="triangle-exclamation" class="gpp:text-xl gpp:text-amber-600 gpp:dark:text-amber-400 gpp:flex-shrink-0"/>
+          <p class="gpp:text-xs gpp:text-yellow-800 gpp:dark:text-yellow-200">$t:sirsoft-popup.admin.delete.warning</p>
         </div>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+      <div class="g7pp-modal-footer-buttons">
+        <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isDeleting}}">
+        <button type="button" class="g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50" disabled="{{_global.isDeleting}}">
           <on type="click">
             <sequence>
               <set-state target="global" :isDeleting="true"/>
@@ -445,7 +445,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_global.isDeleting}}" name="spinner" class="g7pp-spinner-sm"/>
           <span>$t:common.delete</span>
         </button>
       </div>
@@ -454,21 +454,21 @@
   <modal>
     <!-- 선택한 여러 건 영구 삭제 확인 -->
     <modal data-type="composite" data-ref="popup_bulk_delete_modal" title="$t:sirsoft-popup.admin.delete.bulk_title" size="medium">
-      <div class="flex flex-col gap-3">
-        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.delete.bulk_message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
-        <div class="alert-warning">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-          <p class="text-xs text-yellow-800 dark:text-yellow-200">$t:sirsoft-popup.admin.delete.warning</p>
+      <div class="gpp:flex gpp:flex-col gpp:gap-3">
+        <p class="gpp:text-gray-700 gpp:dark:text-gray-300">$t:sirsoft-popup.admin.delete.bulk_message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
+        <div class="g7pp-alert-warning">
+          <icon name="triangle-exclamation" class="gpp:text-xl gpp:text-amber-600 gpp:dark:text-amber-400 gpp:flex-shrink-0"/>
+          <p class="gpp:text-xs gpp:text-yellow-800 gpp:dark:text-yellow-200">$t:sirsoft-popup.admin.delete.warning</p>
         </div>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkWorking}}">
+      <div class="g7pp-modal-footer-buttons">
+        <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <close-modal/>
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+        <button type="button" class="g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
@@ -487,7 +487,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="g7pp-spinner-sm"/>
           <span>$t:common.delete</span>
         </button>
       </div>
@@ -496,15 +496,15 @@
   <modal>
     <!-- 복사 확인 — 복사본은 비활성으로 맨 뒤에 붙는다(같은 팝업이 사용자 화면에 두 번 뜨지 않게, 결정 R2) -->
     <modal data-type="composite" data-ref="popup_bulk_copy_modal" title="$t:sirsoft-popup.admin.copy.title" size="medium">
-      <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.copy.message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
-      <div class="modal-footer-buttons">
-        <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkWorking}}">
+      <p class="gpp:text-gray-700 gpp:dark:text-gray-300">$t:sirsoft-popup.admin.copy.message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
+      <div class="g7pp-modal-footer-buttons">
+        <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <close-modal/>
           </on>
           $t:common.cancel
         </button>
-        <button type="button" data-ref="bulk_copy_confirm" class="btn btn-primary flex-center gap-2" disabled="{{_global.isBulkWorking}}">
+        <button type="button" data-ref="bulk_copy_confirm" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
@@ -523,7 +523,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="g7pp-spinner-sm"/>
           <span>$t:sirsoft-popup.admin.copy.confirm</span>
         </button>
       </div>
@@ -538,31 +538,31 @@
           <close-modal target="popup_reorder_modal"/>
         </sequence>
       </on>
-      <div data-ref="reorder_modal_content" class="flex flex-col gap-3">
-        <p class="text-label">$t:sirsoft-popup.admin.reorder.description</p>
-        <div data-ref="reorder_list_frame" class="max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
-          <div data-ref="reorder_list" class="divide-y divide-gray-200 dark:divide-gray-700">
+      <div data-ref="reorder_modal_content" class="gpp:flex gpp:flex-col gpp:gap-3">
+        <p class="g7pp-text-label">$t:sirsoft-popup.admin.reorder.description</p>
+        <div data-ref="reorder_list_frame" class="gpp:max-h-[70vh] gpp:overflow-y-auto gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700">
+          <div data-ref="reorder_list" class="gpp:divide-y gpp:divide-gray-200 gpp:dark:divide-gray-700">
             <sortable source="{{(_global.reorderItems ?? []).map((r, i) =&gt; ({...r, _idx: i}))}}" item-var="row" item-key="id" index-var="rIdx" strategy="verticalList" handle="[data-drag-handle]"/>
             <item-template>
-              <div data-testid="popup-reorder-row-{{row.id}}" class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800">
-                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-popup.admin.reorder.drag_handle', { name: row.title })}}" class="hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
-                  <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
+              <div data-testid="popup-reorder-row-{{row.id}}" class="gpp:flex gpp:items-center gpp:gap-3 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-800">
+                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-popup.admin.reorder.drag_handle', { name: row.title })}}" class="gpp:hidden g7pp-hidden gpp:md:flex gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300">
+                  <icon name="fa-solid fa-grip-vertical" class="gpp:text-sm"/>
                 </div>
-                <span class="w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">{{row._idx + 1}}</span>
-                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" alt="" class="w-8 h-10 object-cover rounded"/>
-                <span class="truncate flex-1 font-medium text-gray-900 dark:text-gray-100">{{row.title}}</span>
+                <span class="gpp:w-6 gpp:text-right gpp:text-sm gpp:tabular-nums gpp:text-gray-500 gpp:dark:text-gray-400">{{row._idx + 1}}</span>
+                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" alt="" class="gpp:w-8 gpp:h-10 gpp:object-cover gpp:rounded"/>
+                <span class="gpp:truncate gpp:flex-1 gpp:font-medium gpp:text-gray-900 gpp:dark:text-gray-100">{{row.title}}</span>
                 <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-popup.admin.status.' + row.status)}}" :showIcon="false"/>
-                <button data-testid="popup-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
+                <button data-testid="popup-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
                   <on type="click">
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}" :reorderError="null"/>
                   </on>
-                  <icon name="fa-solid fa-chevron-up" class="text-xs"/>
+                  <icon name="fa-solid fa-chevron-up" class="gpp:text-xs"/>
                 </button>
-                <button data-testid="popup-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_down', { name: row.title })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
+                <button data-testid="popup-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_down', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
                   <on type="click">
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}" :reorderError="null"/>
                   </on>
-                  <icon name="fa-solid fa-chevron-down" class="text-xs"/>
+                  <icon name="fa-solid fa-chevron-down" class="gpp:text-xs"/>
                 </button>
               </div>
             </item-template>
@@ -571,9 +571,9 @@
             </on>
           </div>
         </div>
-        <div data-ref="reorder_error_box" data-if="{{!!_global.reorderError}}" role="alert" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">{{_global.reorderError}}</div>
-        <div class="modal-footer-buttons">
-          <button type="button" class="btn btn-secondary" disabled="{{_global.reorderSaving}}">
+        <div data-ref="reorder_error_box" data-if="{{!!_global.reorderError}}" role="alert" class="gpp:rounded-lg gpp:border gpp:border-red-200 gpp:dark:border-red-800 gpp:bg-red-50 gpp:dark:bg-red-900/20 gpp:px-4 gpp:py-3 gpp:text-sm gpp:text-red-700 gpp:dark:text-red-300">{{_global.reorderError}}</div>
+        <div class="g7pp-modal-footer-buttons">
+          <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.reorderSaving}}">
             <on type="click">
               <sequence>
                 <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
@@ -582,7 +582,7 @@
             </on>
             <span>$t:common.cancel</span>
           </button>
-          <button data-testid="popup-reorder-save" type="button" :lockRepeatClick="true" class="btn btn-primary flex-center gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
+          <button data-testid="popup-reorder-save" type="button" :lockRepeatClick="true" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
             <on type="click">
               <!-- 저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다 -->
               <sequence>
@@ -601,7 +601,7 @@
                 </api-call>
               </sequence>
             </on>
-            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="spinner-sm"/>
+            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="g7pp-spinner-sm"/>
             <span>$t:common.save</span>
           </button>
         </div>

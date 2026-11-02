@@ -114,35 +114,35 @@
     <set-state target="global" tempKey="{{$uuid()}}"/>
   </init>
   <slot name="content">
-    <div data-ref="popup_form_content" class="admin-page-content">
-      <div data-ref="page_header" class="page-header">
+    <div data-ref="popup_form_content" class="g7pp-admin-page-content">
+      <div data-ref="page_header" class="g7pp-page-header">
         <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
-          <h1 class="page-title">{{_local.form?.id ? '$t:sirsoft-popup.admin.form.edit_title' : '$t:sirsoft-popup.admin.form.create_title'}}</h1>
+          <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
+          <h1 class="g7pp-page-title">{{_local.form?.id ? '$t:sirsoft-popup.admin.form.edit_title' : '$t:sirsoft-popup.admin.form.create_title'}}</h1>
         </div>
       </div>
-      <div id="popup_form_errors" data-ref="validation_error_banner" data-if="{{_local.errors}}" role="alert" class="alert-danger">
-        <icon name="triangle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size="md"/>
+      <div id="popup_form_errors" data-ref="validation_error_banner" data-if="{{_local.errors}}" role="alert" class="g7pp-alert-danger">
+        <icon name="triangle-exclamation" class="gpp:text-red-600 gpp:dark:text-red-400 gpp:flex-shrink-0 gpp:mt-0.5" size="md"/>
         <div>
-          <h3 class="text-sm font-medium text-red-800 dark:text-red-200">$t:sirsoft-popup.admin.form.validation_error</h3>
-          <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) =&gt; Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-            <li class="text-sm text-red-700 dark:text-red-300">{{message}}</li>
+          <h3 class="gpp:text-sm gpp:font-medium gpp:text-red-800 gpp:dark:text-red-200">$t:sirsoft-popup.admin.form.validation_error</h3>
+          <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) =&gt; Array.isArray(messages) ? messages : [messages])" class="gpp:mt-2 gpp:list-disc gpp:list-inside gpp:space-y-1">
+            <li class="gpp:text-sm gpp:text-red-700 gpp:dark:text-red-300">{{message}}</li>
           </ul>
         </div>
       </div>
-      <div data-ref="popup_form_columns" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div data-ref="popup_form_columns" class="gpp:grid gpp:grid-cols-1 gpp:lg:grid-cols-3 gpp:gap-6">
         <!-- 미리보기 — 휴대폰 폭에서는 맨 위(시안 모바일 보드), 넓은 화면에서는 오른쪽 -->
-        <section id="popup_form_preview" data-ref="preview_card" aria-labelledby="popup_form_preview_heading" class="admin-card self-start order-first lg:order-last lg:sticky top-4">
-          <div class="flex-between flex-wrap gap-2 mb-3">
-            <h2 id="popup_form_preview_heading" class="card-title">$t:sirsoft-popup.admin.preview.title</h2>
-            <div role="group" aria-label="$t:sirsoft-popup.admin.preview.device_label" class="flex gap-1">
-              <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'pc' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+        <section id="popup_form_preview" data-ref="preview_card" aria-labelledby="popup_form_preview_heading" class="g7pp-admin-card gpp:self-start gpp:order-first gpp:lg:order-last gpp:lg:sticky gpp:top-4">
+          <div class="g7pp-flex-between gpp:flex-wrap gpp:gap-2 gpp:mb-3">
+            <h2 id="popup_form_preview_heading" class="g7pp-card-title">$t:sirsoft-popup.admin.preview.title</h2>
+            <div role="group" aria-label="$t:sirsoft-popup.admin.preview.device_label" class="gpp:flex gpp:gap-1">
+              <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'pc' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}">
                 <on type="click">
                   <set-state target="local" previewDevice="pc"/>
                 </on>
                 $t:sirsoft-popup.admin.preview.pc
               </button>
-              <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'mobile' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+              <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'mobile' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}">
                 <on type="click">
                   <set-state target="local" previewDevice="mobile"/>
                 </on>
@@ -150,37 +150,37 @@
               </button>
             </div>
           </div>
-          <label data-if="{{(display_settings?.data?.editor?.locales ?? []).length &gt; 1}}" class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 mb-2" htmlFor="popup_preview_locale">
+          <label data-if="{{(display_settings?.data?.editor?.locales ?? []).length &gt; 1}}" class="gpp:flex gpp:items-center gpp:gap-2 gpp:text-xs gpp:text-gray-600 gpp:dark:text-gray-300 gpp:mb-2" htmlFor="popup_preview_locale">
             <span>$t:sirsoft-popup.admin.preview.locale</span>
-            <select id="popup_preview_locale" class="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs" value="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}" options="{{(display_settings?.data?.editor?.locales ?? []).map(l =&gt; ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}">
+            <select id="popup_preview_locale" class="gpp:px-2 gpp:py-1 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded gpp:text-xs" value="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}" options="{{(display_settings?.data?.editor?.locales ?? []).map(l =&gt; ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}">
               <on type="change">
                 <set-state target="local" previewLocale="{{$event.target.value}}"/>
               </on>
             </select>
           </label>
           <sirsoft-popup.popup-preview data-type="composite" data-ref="form_preview" form="{{_local.form}}" settings="{{display_settings?.data?.settings ?? null}}" device="{{_local.previewDevice}}" locale="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}" defaultLocale="{{display_settings?.data?.editor?.default_locale ?? $locale}}"/>
-          <p data-if="{{_local.previewDevice === 'mobile' &amp;&amp; _computed.isImage &amp;&amp; !!_local.form?.images?.pc &amp;&amp; !_local.form?.images?.mobile}}" class="form-hint mt-2">$t:sirsoft-popup.admin.preview.mobile_falls_back</p>
-          <p data-if="{{!!display_settings?.data?.settings}}" class="form-hint mt-2">$t:sirsoft-popup.admin.preview.based_on|summary={{_local.previewDevice === 'mobile' ? $t('sirsoft-popup.settings.mobile_style.' + display_settings.data.settings.mobile_style) : $t('sirsoft-popup.settings.pc_position.' + display_settings.data.settings.pc_position) + ' · ' + display_settings.data.settings.pc_width + '×' + display_settings.data.settings.pc_height}}</p>
-          <a data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+          <p data-if="{{_local.previewDevice === 'mobile' &amp;&amp; _computed.isImage &amp;&amp; !!_local.form?.images?.pc &amp;&amp; !_local.form?.images?.mobile}}" class="g7pp-form-hint gpp:mt-2">$t:sirsoft-popup.admin.preview.mobile_falls_back</p>
+          <p data-if="{{!!display_settings?.data?.settings}}" class="g7pp-form-hint gpp:mt-2">$t:sirsoft-popup.admin.preview.based_on|summary={{_local.previewDevice === 'mobile' ? $t('sirsoft-popup.settings.mobile_style.' + display_settings.data.settings.mobile_style) : $t('sirsoft-popup.settings.pc_position.' + display_settings.data.settings.pc_position) + ' · ' + display_settings.data.settings.pc_width + '×' + display_settings.data.settings.pc_height}}</p>
+          <a data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline">
             <on type="click">
               <navigate/>
             </on>
             $t:sirsoft-popup.admin.preview.settings_link
           </a>
         </section>
-        <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="0" class="lg:col-span-2 flex flex-col gap-6">
+        <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="0" class="gpp:lg:col-span-2 gpp:flex gpp:flex-col gpp:gap-6">
           <!-- 기본 정보 — 관리용 제목은 관리자 목록에만 보인다(다국어 아님) -->
-          <section data-ref="basic_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-popup.admin.form.section.basic</h2>
-            <div class="row-stack">
+          <section data-ref="basic_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.admin.form.section.basic</h2>
+            <div class="g7pp-row-stack">
               <div data-ref="field_title">
-                <label class="form-label" htmlFor="popup_title">
+                <label class="g7pp-form-label" htmlFor="popup_title">
                   <span>$t:sirsoft-popup.admin.form.title</span>
-                  <span class="text-required">*</span>
+                  <span class="g7pp-text-required">*</span>
                 </label>
-                <input type="text" id="popup_title" name="title" :maxLength="100" class="input w-full" placeholder="$t:sirsoft-popup.admin.form.title_placeholder"/>
-                <p data-if="{{_local.errors?.title}}" class="form-error">{{_local.errors?.title?.[0] ?? ''}}</p>
-                <p data-if="{{!_local.errors?.title}}" class="form-hint">$t:sirsoft-popup.admin.form.title_hint</p>
+                <input type="text" id="popup_title" name="title" :maxLength="100" class="g7pp-input gpp:w-full" placeholder="$t:sirsoft-popup.admin.form.title_placeholder"/>
+                <p data-if="{{_local.errors?.title}}" class="g7pp-form-error">{{_local.errors?.title?.[0] ?? ''}}</p>
+                <p data-if="{{!_local.errors?.title}}" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.title_hint</p>
               </div>
               <div data-ref="field_is_active">
                 <toggle data-type="composite" label="$t:sirsoft-popup.admin.form.is_active" name="is_active"/>
@@ -188,9 +188,9 @@
             </div>
           </section>
           <!-- 내용 — 유형과 언어 탭. 비운 언어는 사용자 화면에서 사이트 기본 언어 내용으로 보인다 -->
-          <section data-ref="content_card" class="admin-card">
-            <div class="flex-between flex-wrap gap-3 mb-3">
-              <h2 class="card-title mb-0">$t:sirsoft-popup.admin.form.section.content</h2>
+          <section data-ref="content_card" class="g7pp-admin-card">
+            <div class="g7pp-flex-between gpp:flex-wrap gpp:gap-3 gpp:mb-3">
+              <h2 class="g7pp-card-title gpp:mb-0">$t:sirsoft-popup.admin.form.section.content</h2>
               <radio-group data-type="composite" name="content_type" :inline="true" label="$t:sirsoft-popup.admin.form.content_type">
                 <prop name="options">
                   <item label="$t:sirsoft-popup.admin.content_type.image" value="image"/>
@@ -198,14 +198,14 @@
                 </prop>
               </radio-group>
             </div>
-            <p class="form-hint mb-4">$t:sirsoft-popup.admin.form.locale_hint</p>
-            <div data-ref="image_fields" data-if="{{_computed.isImage}}" class="row-stack">
+            <p class="g7pp-form-hint gpp:mb-4">$t:sirsoft-popup.admin.form.locale_hint</p>
+            <div data-ref="image_fields" data-if="{{_computed.isImage}}" class="g7pp-row-stack">
               <div data-ref="field_pc_image">
-                <label class="form-label">
+                <label class="g7pp-form-label">
                   <span>$t:sirsoft-popup.admin.form.image.pc</span>
-                  <span class="text-required">*</span>
+                  <span class="g7pp-text-required">*</span>
                 </label>
-                <p class="form-hint mb-2">$t:sirsoft-popup.admin.form.image.pc_hint|width={{_computed.pcWidth}}|height={{_computed.pcHeight}}|width2={{_computed.pcWidth * 2}}|height2={{_computed.pcHeight * 2}}|mb={{_computed.uploadMb}}</p>
+                <p class="g7pp-form-hint gpp:mb-2">$t:sirsoft-popup.admin.form.image.pc_hint|width={{_computed.pcWidth}}|height={{_computed.pcHeight}}|width2={{_computed.pcWidth * 2}}|height2={{_computed.pcHeight * 2}}|mb={{_computed.uploadMb}}</p>
                 <!-- 업로드는 임시 묶음에만 들어가고, 빼기는 화면에서만 뺀다 — 팝업 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다 -->
                 <file-uploader data-type="composite" data-ref="pc_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp,.gif" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}" uploadParams="{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}">
                   <prop name="apiEndpoints">
@@ -227,16 +227,16 @@
                   </on>
                 </file-uploader>
                 <!-- 이미지는 잘리지 않게 담기므로 여백은 크기가 아니라 비율이 다를 때 생긴다 — 2배 크기(960×1040)는 경고하지 않고, 비율 차 2% 안은 같다고 본다 -->
-                <p data-if="{{_computed.pcSizeMismatch}}" data-ref="pc_size_warning" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-popup.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended={{_computed.pcWidth + ':' + _computed.pcHeight}}</p>
-                <p data-if="{{_local.errors?.temp_key || _local.errors?.pc_image_id || _local.errors?.pc_image}}" class="form-error">{{_local.errors?.temp_key?.[0] ?? _local.errors?.pc_image_id?.[0] ?? _local.errors?.pc_image?.[0] ?? ''}}</p>
+                <p data-if="{{_computed.pcSizeMismatch}}" data-ref="pc_size_warning" class="gpp:mt-2 gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300">$t:sirsoft-popup.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended={{_computed.pcWidth + ':' + _computed.pcHeight}}</p>
+                <p data-if="{{_local.errors?.temp_key || _local.errors?.pc_image_id || _local.errors?.pc_image}}" class="g7pp-form-error">{{_local.errors?.temp_key?.[0] ?? _local.errors?.pc_image_id?.[0] ?? _local.errors?.pc_image?.[0] ?? ''}}</p>
               </div>
               <div data-ref="field_mobile_image">
-                <label class="form-label">
+                <label class="g7pp-form-label">
                   <span>$t:sirsoft-popup.admin.form.image.mobile</span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-popup.admin.form.optional</span>
+                  <span class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400">$t:sirsoft-popup.admin.form.optional</span>
                 </label>
                 <!-- 모바일 창 크기는 기기마다 달라 대략의 비율로 안내한다 — 하단 시트는 화면 너비 × 380px 안팎(거의 1:1), 화면 중앙은 좌우 24px 여백 × 420px 안팎(거의 4:5) -->
-                <p data-ref="mobile_image_hint" class="form-hint mb-2">$t:sirsoft-popup.admin.form.image.mobile_hint|ratio={{_computed.mobileRatio}}|example={{_computed.mobileExample}}|mb={{_computed.uploadMb}}</p>
+                <p data-ref="mobile_image_hint" class="g7pp-form-hint gpp:mb-2">$t:sirsoft-popup.admin.form.image.mobile_hint|ratio={{_computed.mobileRatio}}|example={{_computed.mobileExample}}|mb={{_computed.uploadMb}}</p>
                 <file-uploader data-type="composite" data-ref="mobile_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp,.gif" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}" uploadParams="{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}">
                   <prop name="apiEndpoints">
                     <field name="upload" value="/api/plugins/sirsoft-popup/admin/popup-images"/>
@@ -256,45 +256,45 @@
                     <set-state target="local" :form.images.mobile="null" :hasChanges="true"/>
                   </on>
                 </file-uploader>
-                <p data-if="{{_local.errors?.mobile_image_id}}" class="form-error">{{_local.errors?.mobile_image_id?.[0] ?? ''}}</p>
+                <p data-if="{{_local.errors?.mobile_image_id}}" class="g7pp-form-error">{{_local.errors?.mobile_image_id?.[0] ?? ''}}</p>
               </div>
               <!-- 이미지 위 글 상자 — 사용자 레이어와 같은 프레임 위에서 끌어 놓는다. 위치·서식은 언어 공통, 글만 언어별.
                 편집기가 값 전체를 콜백으로 돌려주므로 자동 변경 감지가 없어 hasChanges 를 직접 올린다 -->
               <div data-ref="field_overlays">
-                <label class="form-label">$t:sirsoft-popup.admin.form.overlay.title</label>
-                <p class="form-hint">$t:sirsoft-popup.admin.form.overlay.hint</p>
-                <p class="form-hint mb-2">$t:sirsoft-popup.admin.form.overlay.alt_hint</p>
+                <label class="g7pp-form-label">$t:sirsoft-popup.admin.form.overlay.title</label>
+                <p class="g7pp-form-hint">$t:sirsoft-popup.admin.form.overlay.hint</p>
+                <p class="g7pp-form-hint gpp:mb-2">$t:sirsoft-popup.admin.form.overlay.alt_hint</p>
                 <sirsoft-popup.popup-overlay-editor data-type="composite" data-ref="overlay_editor" value="{{_local.form?.overlays ?? null}}" images="{{_local.form?.images ?? null}}" locales="{{display_settings?.data?.editor?.locales ?? []}}" defaultLocale="{{display_settings?.data?.editor?.default_locale ?? $locale}}" localeNames="{{_global.appConfig?.localeNames ?? null}}" errors="{{_local.errors ?? null}}" disabled="{{_local.isSaving}}">
                   <on type="change" event="onChange">
                     <set-state target="local" form.overlays="{{$args[0]}}" :hasChanges="true"/>
                   </on>
                 </sirsoft-popup.popup-overlay-editor>
-                <p data-if="{{!!_computed.overlayError}}" data-ref="overlay_error" class="form-error">$t:sirsoft-popup.admin.form.overlay.error|message={{_computed.overlayError}}</p>
+                <p data-if="{{!!_computed.overlayError}}" data-ref="overlay_error" class="g7pp-form-error">$t:sirsoft-popup.admin.form.overlay.error|message={{_computed.overlayError}}</p>
               </div>
               <div data-ref="field_image_alt">
-                <label class="form-label">$t:sirsoft-popup.admin.form.image_alt</label>
+                <label class="g7pp-form-label">$t:sirsoft-popup.admin.form.image_alt</label>
                 <!-- 비운 언어는 기본 언어 대체 텍스트로 나간다 — 그 값을 자리표시로 보여 대체됨을 알린다 -->
                 <multilingual-input data-type="composite" name="image_alt" layout="tabs" :maxLength="200" placeholder="{{_local.form?.image_alt?.[display_settings?.data?.editor?.default_locale ?? $locale] ?? ''}}" error="{{_local.errors?.image_alt?.[0] ?? ''}}"/>
-                <p class="form-hint">$t:sirsoft-popup.admin.form.image_alt_hint</p>
+                <p class="g7pp-form-hint">$t:sirsoft-popup.admin.form.image_alt_hint</p>
               </div>
               <div data-ref="field_link_url">
-                <label class="form-label" htmlFor="popup_link_url">
+                <label class="g7pp-form-label" htmlFor="popup_link_url">
                   <span>$t:sirsoft-popup.admin.form.link_url</span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-popup.admin.form.link_url_optional</span>
+                  <span class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400">$t:sirsoft-popup.admin.form.link_url_optional</span>
                 </label>
-                <input type="text" id="popup_link_url" name="link_url" :maxLength="2048" placeholder="/event/autumn" class="input w-full min-w-[200px]"/>
-                <p data-if="{{_local.errors?.link_url}}" class="form-error">{{_local.errors?.link_url?.[0] ?? ''}}</p>
-                <p data-if="{{!_local.errors?.link_url}}" class="form-hint">$t:sirsoft-popup.admin.form.link_url_hint</p>
-                <div class="mt-2">
+                <input type="text" id="popup_link_url" name="link_url" :maxLength="2048" placeholder="/event/autumn" class="g7pp-input gpp:w-full gpp:min-w-[200px]"/>
+                <p data-if="{{_local.errors?.link_url}}" class="g7pp-form-error">{{_local.errors?.link_url?.[0] ?? ''}}</p>
+                <p data-if="{{!_local.errors?.link_url}}" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.link_url_hint</p>
+                <div class="gpp:mt-2">
                   <toggle data-type="composite" label="$t:sirsoft-popup.admin.form.link_new_window" name="link_new_window"/>
                 </div>
               </div>
             </div>
-            <div data-ref="html_fields" data-if="{{!_computed.isImage}}" class="row-stack">
+            <div data-ref="html_fields" data-if="{{!_computed.isImage}}" class="g7pp-row-stack">
               <div data-ref="field_body_html">
-                <label class="form-label">
+                <label class="g7pp-form-label">
                   <span>$t:sirsoft-popup.admin.form.body_html</span>
-                  <span class="text-required">*</span>
+                  <span class="g7pp-text-required">*</span>
                 </label>
                 <!-- 에디터 플러그인(예: CKEditor5)이 켜져 있으면 그 에디터가 이 자리를 대신하고, 없으면 기본 입력창이다(페이지 관리 폼과 같은 확장점).
                   편집기는 처음 그려질 때 값을 받으므로 수정 화면은 원본이 온 뒤에 그린다 -->
@@ -309,41 +309,41 @@
                     </html-editor>
                   </default>
                 </extension-point>
-                <p data-if="{{_local.errors?.body_html || _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]}}" class="form-error">{{_local.errors?.body_html?.[0] ?? _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]?.[0] ?? ''}}</p>
-                <p class="form-hint">$t:sirsoft-popup.admin.form.editor_hint</p>
+                <p data-if="{{_local.errors?.body_html || _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]}}" class="g7pp-form-error">{{_local.errors?.body_html?.[0] ?? _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]?.[0] ?? ''}}</p>
+                <p class="g7pp-form-hint">$t:sirsoft-popup.admin.form.editor_hint</p>
               </div>
             </div>
           </section>
           <!-- 노출 조건 — 노출 페이지(전체·라우트 지정)·대상·기기 -->
-          <section data-ref="condition_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-popup.admin.form.section.condition</h2>
-            <div class="row-stack">
+          <section data-ref="condition_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.admin.form.section.condition</h2>
+            <div class="g7pp-row-stack">
               <!-- 노출 페이지 — 라우트 지정은 경로 경계 하위 포함(/shop 은 /shop·/shop/… , /shopping 은 아님), / 는 홈만.
                 경로 입력 안내(routeInputError)는 서버 검증과 같은 규칙을 미리 알린다: / 로 시작, //·?·#·*·공백 없음, 중복 없음, 20개까지 -->
               <div data-ref="field_page_scope" role="group" aria-label="$t:sirsoft-popup.admin.form.page_scope">
-                <span class="form-label block" aria-hidden="true">$t:sirsoft-popup.admin.form.page_scope</span>
+                <span class="g7pp-form-label gpp:block" aria-hidden="true">$t:sirsoft-popup.admin.form.page_scope</span>
                 <radio-group data-type="composite" name="page_scope" :inline="true">
                   <prop name="options">
                     <item label="$t:sirsoft-popup.admin.page_scope.all" value="all"/>
                     <item label="$t:sirsoft-popup.admin.page_scope.routes" value="routes"/>
                   </prop>
                 </radio-group>
-                <div data-ref="routes_editor" data-if="{{_local.form?.page_scope === 'routes'}}" class="mt-3 flex flex-col gap-2">
-                  <ul data-ref="route_chips" aria-label="$t:sirsoft-popup.admin.form.routes_label" class="flex flex-wrap gap-2">
-                    <li data-each="route, rIdx in _local.form?.routes ?? []" class="flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
-                      <code class="text-xs text-gray-800 dark:text-gray-100">{{route}}</code>
-                      <button type="button" aria-label="{{$t('sirsoft-popup.admin.form.route_remove', { route: route })}}" class="flex-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100">
+                <div data-ref="routes_editor" data-if="{{_local.form?.page_scope === 'routes'}}" class="gpp:mt-3 gpp:flex gpp:flex-col gpp:gap-2">
+                  <ul data-ref="route_chips" aria-label="$t:sirsoft-popup.admin.form.routes_label" class="gpp:flex gpp:flex-wrap gpp:gap-2">
+                    <li data-each="route, rIdx in _local.form?.routes ?? []" class="gpp:flex gpp:items-center gpp:gap-1 gpp:pl-2 gpp:pr-1 gpp:py-0.5 gpp:rounded-full gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:bg-gray-50 gpp:dark:bg-gray-700">
+                      <code class="gpp:text-xs gpp:text-gray-800 gpp:dark:text-gray-100">{{route}}</code>
+                      <button type="button" aria-label="{{$t('sirsoft-popup.admin.form.route_remove', { route: route })}}" class="g7pp-flex-center gpp:w-8 gpp:h-8 gpp:rounded-full gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100">
                         <on type="click">
                           <set-state target="local" form.routes="{{(_local.form?.routes ?? []).filter((r, i) =&gt; i !== rIdx)}}" :hasChanges="true"/>
                         </on>
-                        <icon name="xmark" class="text-xs"/>
+                        <icon name="xmark" class="gpp:text-xs"/>
                       </button>
                     </li>
                   </ul>
-                  <div class="flex flex-wrap items-end gap-2">
-                    <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]" htmlFor="popup_route_input">
+                  <div class="gpp:flex gpp:flex-wrap gpp:items-end gpp:gap-2">
+                    <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300 gpp:flex-1 gpp:min-w-[12rem]" htmlFor="popup_route_input">
                       <span>$t:sirsoft-popup.admin.form.route_add_label</span>
-                      <input type="text" id="popup_route_input" data-ref="route_input" class="input" placeholder="/board" value="{{_local.routeInput}}" aria-invalid="{{_computed.routeInputError !== ''}}" aria-describedby="popup_route_hint">
+                      <input type="text" id="popup_route_input" data-ref="route_input" class="g7pp-input" placeholder="/board" value="{{_local.routeInput}}" aria-invalid="{{_computed.routeInputError !== ''}}" aria-describedby="popup_route_hint">
                         <on type="change">
                           <set-state target="local" routeInput="{{$event.target.value}}"/>
                         </on>
@@ -352,21 +352,21 @@
                         </on>
                       </input>
                     </label>
-                    <button type="button" data-ref="route_add_button" class="btn btn-secondary" disabled="{{_computed.routeDraft === '' || _computed.routeInputError !== ''}}">
+                    <button type="button" data-ref="route_add_button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_computed.routeDraft === '' || _computed.routeInputError !== ''}}">
                       <on type="click">
                         <set-state target="local" form.routes="{{[...(_local.form?.routes ?? []), _computed.routeDraft.length &gt; 1 &amp;&amp; _computed.routeDraft.endsWith('/') ? _computed.routeDraft.slice(0, -1) : _computed.routeDraft]}}" routeInput="" :hasChanges="true"/>
                       </on>
                       $t:sirsoft-popup.admin.form.route_add
                     </button>
                   </div>
-                  <p data-if="{{_computed.routeInputError !== ''}}" role="status" class="form-error">{{$t('sirsoft-popup.admin.form.route_errors.' + _computed.routeInputError)}}</p>
-                  <p data-if="{{_local.errors?.routes || Object.keys(_local.errors ?? {}).some(k =&gt; k.startsWith('routes.'))}}" class="form-error">{{_local.errors?.routes?.[0] ?? Object.entries(_local.errors ?? {}).find(([k]) =&gt; k.startsWith('routes.'))?.[1]?.[0] ?? ''}}</p>
-                  <p id="popup_route_hint" class="form-hint">$t:sirsoft-popup.admin.form.route_hint</p>
+                  <p data-if="{{_computed.routeInputError !== ''}}" role="status" class="g7pp-form-error">{{$t('sirsoft-popup.admin.form.route_errors.' + _computed.routeInputError)}}</p>
+                  <p data-if="{{_local.errors?.routes || Object.keys(_local.errors ?? {}).some(k =&gt; k.startsWith('routes.'))}}" class="g7pp-form-error">{{_local.errors?.routes?.[0] ?? Object.entries(_local.errors ?? {}).find(([k]) =&gt; k.startsWith('routes.'))?.[1]?.[0] ?? ''}}</p>
+                  <p id="popup_route_hint" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.route_hint</p>
                 </div>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="gpp:grid gpp:grid-cols-1 gpp:md:grid-cols-2 gpp:gap-4">
                 <div data-ref="field_audience" role="group" aria-label="$t:sirsoft-popup.admin.form.audience">
-                  <span class="form-label block" aria-hidden="true">$t:sirsoft-popup.admin.form.audience</span>
+                  <span class="g7pp-form-label gpp:block" aria-hidden="true">$t:sirsoft-popup.admin.form.audience</span>
                   <radio-group data-type="composite" name="audience" :inline="true">
                     <prop name="options">
                       <item label="$t:sirsoft-popup.admin.audience.all" value="all"/>
@@ -376,7 +376,7 @@
                   </radio-group>
                 </div>
                 <div data-ref="field_device" role="group" aria-label="$t:sirsoft-popup.admin.form.device">
-                  <span class="form-label block" aria-hidden="true">$t:sirsoft-popup.admin.form.device</span>
+                  <span class="g7pp-form-label gpp:block" aria-hidden="true">$t:sirsoft-popup.admin.form.device</span>
                   <radio-group data-type="composite" name="device" :inline="true">
                     <prop name="options">
                       <item label="$t:sirsoft-popup.admin.device.all" value="all"/>
@@ -389,38 +389,38 @@
             </div>
           </section>
           <!-- 노출 기간 — 상시 또는 기간 지정. 상태는 저장하지 않고 볼 때마다 서버가 기간으로 계산한다 -->
-          <section data-ref="period_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-popup.admin.form.section.period</h2>
-            <div class="row-stack">
+          <section data-ref="period_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.admin.form.section.period</h2>
+            <div class="g7pp-row-stack">
               <radio-group data-type="composite" name="display_period" :inline="true">
                 <prop name="options">
                   <item label="$t:sirsoft-popup.admin.period.always" value="always"/>
                   <item label="$t:sirsoft-popup.admin.period.range" value="range"/>
                 </prop>
               </radio-group>
-              <div data-ref="period_range" data-if="{{_local.form?.display_period === 'range'}}" class="flex flex-wrap items-center gap-2">
-                <input type="datetime-local" name="starts_at_local" aria-label="$t:sirsoft-popup.admin.form.starts_at" class="input w-52">
-                  <responsive on="portable" class="input w-full"/>
+              <div data-ref="period_range" data-if="{{_local.form?.display_period === 'range'}}" class="gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-2">
+                <input type="datetime-local" name="starts_at_local" aria-label="$t:sirsoft-popup.admin.form.starts_at" class="g7pp-input gpp:w-52">
+                  <responsive on="portable" class="g7pp-input gpp:w-full"/>
                 </input>
-                <span class="text-label-subtle">~</span>
-                <input type="datetime-local" name="ends_at_local" aria-label="$t:sirsoft-popup.admin.form.ends_at" class="input w-52">
-                  <responsive on="portable" class="input w-full"/>
+                <span class="g7pp-text-label-subtle">~</span>
+                <input type="datetime-local" name="ends_at_local" aria-label="$t:sirsoft-popup.admin.form.ends_at" class="g7pp-input gpp:w-52">
+                  <responsive on="portable" class="g7pp-input gpp:w-full"/>
                 </input>
               </div>
-              <p data-if="{{_local.errors?.starts_at}}" class="form-error">{{_local.errors?.starts_at?.[0] ?? ''}}</p>
-              <p data-if="{{_local.errors?.ends_at}}" class="form-error">{{_local.errors?.ends_at?.[0] ?? ''}}</p>
-              <p class="form-hint">$t:sirsoft-popup.admin.form.period_hint</p>
+              <p data-if="{{_local.errors?.starts_at}}" class="g7pp-form-error">{{_local.errors?.starts_at?.[0] ?? ''}}</p>
+              <p data-if="{{_local.errors?.ends_at}}" class="g7pp-form-error">{{_local.errors?.ends_at?.[0] ?? ''}}</p>
+              <p class="g7pp-form-hint">$t:sirsoft-popup.admin.form.period_hint</p>
               <sirsoft-popup.popup-period-hint data-type="composite" data-ref="period_hint" period="{{_local.form?.display_period}}" active="{{_local.form?.is_active !== false}}" start="{{_local.form?.starts_at_local}}" end="{{_local.form?.ends_at_local}}" timezone="{{display_settings?.data?.editor?.timezone}}" serverNow="{{display_settings?.data?.editor?.server_now}}"/>
             </div>
           </section>
-          <p data-if="{{_local.pcUploadBlocked || _local.mobileUploadBlocked}}" role="status" class="form-hint">$t:sirsoft-popup.admin.form.upload_pending</p>
+          <p data-if="{{_local.pcUploadBlocked || _local.mobileUploadBlocked}}" role="status" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.upload_pending</p>
           <!-- 동시 수정 충돌(409) — 입력은 그대로 두고, 같은 창에서 최신본을 따로 받아 항목별로 비교한다(#810 과 같은 방식).
             적용하면 최신본 위에 고른 내 값만 얹은 폼(최신 revision)으로 바뀐다 -->
-          <div data-ref="conflict_panel" data-if="{{_local.conflict}}" role="alert" class="alert-danger">
-            <div class="flex flex-col gap-2 w-full min-w-0">
+          <div data-ref="conflict_panel" data-if="{{_local.conflict}}" role="alert" class="g7pp-alert-danger">
+            <div class="gpp:flex gpp:flex-col gpp:gap-2 gpp:w-full gpp:min-w-0">
               <p>$t:sirsoft-popup.admin.conflict.message</p>
-              <div class="flex flex-wrap items-center gap-3">
-                <button type="button" data-ref="conflict_load_button" class="btn btn-secondary flex-center gap-1.5" disabled="{{_local.conflictLoading}}">
+              <div class="gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-3">
+                <button type="button" data-ref="conflict_load_button" class="g7pp-btn g7pp-btn-secondary g7pp-flex-center gpp:gap-1.5" disabled="{{_local.conflictLoading}}">
                   <on type="click">
                     <sequence>
                       <set-state target="local" :conflictLoading="true" :conflictLoadError="false"/>
@@ -434,12 +434,12 @@
                       </api-call>
                     </sequence>
                   </on>
-                  <icon data-if="{{_local.conflictLoading}}" name="spinner" class="spinner-sm"/>
+                  <icon data-if="{{_local.conflictLoading}}" name="spinner" class="g7pp-spinner-sm"/>
                   <span>{{_local.conflictLoadError ? '$t:sirsoft-popup.admin.form.conflict_merge.retry' : (_local.conflictLatest ? '$t:sirsoft-popup.admin.form.conflict_merge.reload' : '$t:sirsoft-popup.admin.form.conflict_merge.load')}}</span>
                 </button>
-                <a href="/admin/plugins/sirsoft-popup/popups/{{route.id}}/edit" target="_blank" rel="noopener noreferrer" class="underline">$t:sirsoft-popup.admin.conflict.open_latest</a>
+                <a href="/admin/plugins/sirsoft-popup/popups/{{route.id}}/edit" target="_blank" rel="noopener noreferrer" class="gpp:underline">$t:sirsoft-popup.admin.conflict.open_latest</a>
               </div>
-              <p data-ref="conflict_load_error" data-if="{{_local.conflictLoadError}}" role="status" class="form-error">$t:sirsoft-popup.admin.form.conflict_merge.load_failed</p>
+              <p data-ref="conflict_load_error" data-if="{{_local.conflictLoadError}}" role="status" class="g7pp-form-error">$t:sirsoft-popup.admin.form.conflict_merge.load_failed</p>
               <sirsoft-popup.popup-conflict-resolver data-type="composite" data-ref="conflict_resolver" data-if="{{!!_local.conflictLatest}}" base="{{_local.conflictBase ?? popup?.data ?? null}}" mine="{{_local.form}}" latest="{{_local.conflictLatest}}" locales="{{display_settings?.data?.editor?.locales ?? []}}">
                 <on type="change" event="onApply">
                   <set-state target="local" form="{{$args[0]}}" conflictBase="{{_local.conflictLatest}}" :conflictLatest="null" :conflict="false" :errors="null" :hasChanges="true"/>
@@ -447,8 +447,8 @@
               </sirsoft-popup.popup-conflict-resolver>
             </div>
           </div>
-          <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
-            <a href="/admin/plugins/sirsoft-popup/popups" :mergeQuery="true" data-ref="footer_cancel_button" class="button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
+          <div data-ref="footer_buttons" class="g7pp-sticky-footer-buttons-between">
+            <a href="/admin/plugins/sirsoft-popup/popups" :mergeQuery="true" data-ref="footer_cancel_button" class="g7pp-button g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:text-gray-700 gpp:dark:text-gray-200 gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:hover:bg-gray-50 gpp:dark:hover:bg-gray-700 gpp:font-medium gpp:transition-colors">
               <on type="click">
                 <!-- 목록으로 — 보던 조건(상태·기기·검색·쪽)을 이고 간다 -->
                 <navigate :mergeQuery="true">
@@ -457,7 +457,7 @@
               </on>
               <span>$t:sirsoft-popup.admin.form.cancel</span>
             </a>
-            <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (_computed.isImage &amp;&amp; (_local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc))}}" class="btn btn-primary flex-center gap-1.5">
+            <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (_computed.isImage &amp;&amp; (_local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc))}}" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-1.5">
               <on type="click">
                 <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다.
                   직접 작성형은 이미지·alt·링크를 보내도 서버가 빼고, 이미지형으로 저장하면 본문을 비운다 -->
@@ -480,7 +480,7 @@
                   </api-call>
                 </sequence>
               </on>
-              <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+              <icon data-if="{{_local.isSaving}}" name="spinner" class="g7pp-spinner-sm"/>
               <span data-if="{{!_local.isSaving}}">$t:sirsoft-popup.admin.form.save</span>
               <span data-if="{{_local.isSaving}}">$t:sirsoft-popup.admin.form.saving</span>
             </button>

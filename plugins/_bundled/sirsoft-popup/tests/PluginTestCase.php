@@ -72,7 +72,6 @@ abstract class PluginTestCase extends TestCase
         $this->app->register(PopupServiceProvider::class);
         // 설치본이 없어 코어 TranslationServiceProvider 가 plugins/<id>/lang 을 싣지 않으므로 _bundled 의 lang 을 직접 싣는다
         app('translator')->addNamespace('sirsoft-popup', $this->getPluginBasePath().'/lang');
-        $this->runMigrationsIfNeeded();
         $this->registerPluginRoutes();
 
         $this->snapshotHookManager();
@@ -89,6 +88,22 @@ abstract class PluginTestCase extends TestCase
         $this->restoreHookManager();
 
         parent::tearDown();
+    }
+
+    /**
+     * 시험 트랜잭션을 열기 전에 테이블부터 맞춥니다.
+     *
+     * `DatabaseTransactions` 는 트레이트 준비 단계에서 트랜잭션을 연다. 그 뒤에 마이그레이션(DDL)을 돌리면 MySQL 이
+     * 트랜잭션을 암묵 커밋해, 시험 DB 를 새로 만든 직후 첫 시험의 데이터가 되돌려지지 않고 남는다(2026-11-02 리베이스 뒤 실측:
+     * 남은 팝업 4건이 다음 시험들의 목록·공개 응답을 흔들어 40건 실패).
+     *
+     * @return array<class-string, class-string> 준비한 트레이트
+     */
+    protected function setUpTraits()
+    {
+        $this->runMigrationsIfNeeded();
+
+        return parent::setUpTraits();
     }
 
     /**

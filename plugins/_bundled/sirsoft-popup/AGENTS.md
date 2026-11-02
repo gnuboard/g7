@@ -97,7 +97,7 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-popup` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 새 클래스는 `gpp:…`(접두 Tailwind)·`g7pp-…`(자기 손 CSS)로만 쓰고 플러그인을 다시 빌드한다 — 템플릿 클래스를 그대로 쓰면 audit `extension-class-self-contained` 가 막는다(변환기 `scripts/extension-css/convert-layout-classes.mjs` 가 템플릿 클래스를 옮겨 준다)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 경로 판정을 바꾸면 PHP `Support/RoutePath` 와 TS `resources/js/lib/popupVisibility.ts` 를 함께 바꾸고 양쪽 표본 테스트(`RoutePathTest`·`popupVisibility.test.ts`)를 같이 고친다

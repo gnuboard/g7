@@ -185,7 +185,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "g7pp-admin-page-content"
                 },
                 "children": [
                     {
@@ -193,7 +193,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between flex-wrap gap-3 mb-6"
+                            "className": "g7pp-flex-between gpp:flex-wrap gpp:gap-3 gpp:mb-6"
                         },
                         "children": [
                             {
@@ -204,7 +204,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1"
                                         },
                                         "text": "$t:sirsoft-popup.admin.breadcrumb"
                                     },
@@ -212,7 +212,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "g7pp-page-title"
                                         },
                                         "text": "$t:sirsoft-popup.admin.title"
                                     },
@@ -220,7 +220,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-label-subtle mt-1"
+                                            "className": "g7pp-text-label-subtle gpp:mt-1"
                                         },
                                         "text": "$t:sirsoft-popup.admin.description"
                                     }
@@ -230,7 +230,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap gap-2"
+                                    "className": "gpp:flex gpp:flex-wrap gpp:gap-2"
                                 },
                                 "children": [
                                     {
@@ -247,7 +247,7 @@
                                         ],
                                         "props": {
                                             "href": "/admin/plugins/sirsoft-popup/settings",
-                                            "className": "button btn btn-secondary flex-center gap-1.5"
+                                            "className": "g7pp-button g7pp-btn g7pp-btn-secondary g7pp-flex-center gpp:gap-1.5"
                                         },
                                         "children": [
                                             {
@@ -284,7 +284,7 @@
                                         "props": {
                                             "href": "/admin/plugins/sirsoft-popup/popups/create",
                                             "mergeQuery": true,
-                                            "className": "button btn btn-primary flex-center gap-1.5"
+                                            "className": "g7pp-button g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-1.5"
                                         },
                                         "children": [
                                             {
@@ -313,14 +313,14 @@
                         "name": "Section",
                         "props": {
                             "aria-labelledby": "popup_summary_heading",
-                            "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6 flex flex-col lg:flex-row lg:items-center gap-4"
+                            "className": "gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-col gpp:lg:flex-row gpp:lg:items-center gpp:gap-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "lg:w-1/5 shrink-0"
+                                    "className": "gpp:lg:w-1/5 gpp:shrink-0"
                                 },
                                 "children": [
                                     {
@@ -328,7 +328,7 @@
                                         "name": "H2",
                                         "props": {
                                             "id": "popup_summary_heading",
-                                            "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                            "className": "gpp:text-base gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-popup.admin.summary.title|count={{(summary?.data?.data ?? []).length}}"
                                     },
@@ -336,7 +336,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mt-1"
                                         },
                                         "text": "$t:sirsoft-popup.admin.summary.order_hint"
                                     }
@@ -347,7 +347,7 @@
                                 "name": "P",
                                 "if": "{{summary !== undefined && (summary?.data?.data ?? []).length === 0}}",
                                 "props": {
-                                    "className": "text-sm text-gray-500 dark:text-gray-400 flex-1"
+                                    "className": "gpp:text-sm gpp:text-gray-500 gpp:dark:text-gray-400 gpp:flex-1"
                                 },
                                 "text": "$t:sirsoft-popup.admin.summary.empty"
                             },
@@ -357,7 +357,7 @@
                                 "name": "Ol",
                                 "if": "{{(summary?.data?.data ?? []).length > 0}}",
                                 "props": {
-                                    "className": "flex flex-wrap items-start gap-3 flex-1"
+                                    "className": "gpp:flex gpp:flex-wrap gpp:items-start gpp:gap-3 gpp:flex-1"
                                 },
                                 "children": [
                                     {
@@ -369,7 +369,7 @@
                                             "index_var": "idx"
                                         },
                                         "props": {
-                                            "className": "w-20"
+                                            "className": "gpp:w-20"
                                         },
                                         "children": [
                                             {
@@ -392,7 +392,7 @@
                                                     "href": "/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit",
                                                     "title": "{{item.title}}",
                                                     "aria-label": "$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}",
-                                                    "className": "g7pp-summary-link flex flex-col items-center gap-1 rounded p-0.5 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                                    "className": "g7pp-summary-link gpp:flex gpp:flex-col gpp:items-center gpp:gap-1 gpp:rounded gpp:p-0.5 gpp:hover:bg-gray-50 gpp:dark:hover:bg-gray-700/50"
                                                 },
                                                 "children": [
                                                     {
@@ -402,7 +402,7 @@
                                                         "props": {
                                                             "src": "{{item.thumbnail?.url}}",
                                                             "alt": "",
-                                                            "className": "g7pp-summary-link__thumb w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700",
+                                                            "className": "g7pp-summary-link__thumb gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700",
                                                             "loading": "lazy"
                                                         }
                                                     },
@@ -411,7 +411,7 @@
                                                         "name": "Span",
                                                         "if": "{{!item.thumbnail}}",
                                                         "props": {
-                                                            "className": "w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1 g7pp-summary-link__thumb"
+                                                            "className": "gpp:w-16 gpp:h-20 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:bg-white gpp:dark:bg-gray-700 gpp:text-[11px] gpp:text-gray-500 gpp:dark:text-gray-300 gpp:text-center gpp:px-1 g7pp-summary-link__thumb"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.content_type.html"
                                                     },
@@ -419,7 +419,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-xs text-gray-700 dark:text-gray-300 tabular-nums g7pp-summary-link__label"
+                                                            "className": "gpp:text-xs gpp:text-gray-700 gpp:dark:text-gray-300 gpp:tabular-nums g7pp-summary-link__label"
                                                         },
                                                         "text": "{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}"
                                                     }
@@ -431,7 +431,7 @@
                                                 "if": "{{item.abilities?.can_update === false}}",
                                                 "props": {
                                                     "title": "{{item.title}}",
-                                                    "className": "flex flex-col items-center gap-1 p-0.5"
+                                                    "className": "gpp:flex gpp:flex-col gpp:items-center gpp:gap-1 gpp:p-0.5"
                                                 },
                                                 "children": [
                                                     {
@@ -441,7 +441,7 @@
                                                         "props": {
                                                             "src": "{{item.thumbnail?.url}}",
                                                             "alt": "",
-                                                            "className": "w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700",
+                                                            "className": "gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700",
                                                             "loading": "lazy"
                                                         }
                                                     },
@@ -450,7 +450,7 @@
                                                         "name": "Span",
                                                         "if": "{{!item.thumbnail}}",
                                                         "props": {
-                                                            "className": "w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1"
+                                                            "className": "gpp:w-16 gpp:h-20 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:bg-white gpp:dark:bg-gray-700 gpp:text-[11px] gpp:text-gray-500 gpp:dark:text-gray-300 gpp:text-center gpp:px-1"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.content_type.html"
                                                     },
@@ -458,7 +458,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-xs text-gray-700 dark:text-gray-300 tabular-nums"
+                                                            "className": "gpp:text-xs gpp:text-gray-700 gpp:dark:text-gray-300 gpp:tabular-nums"
                                                         },
                                                         "text": "{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}"
                                                     },
@@ -466,7 +466,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "sr-only"
+                                                            "className": "gpp:sr-only"
                                                         },
                                                         "text": "{{item.title}}"
                                                     }
@@ -482,7 +482,7 @@
                                 "name": "Div",
                                 "if": "{{!!_computed.settings}}",
                                 "props": {
-                                    "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300"
+                                    "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300"
                                 },
                                 "children": [
                                     {
@@ -512,7 +512,7 @@
                                         ],
                                         "props": {
                                             "href": "/admin/plugins/sirsoft-popup/settings",
-                                            "className": "font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                                            "className": "gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline"
                                         },
                                         "text": "$t:sirsoft-popup.admin.summary.change_settings"
                                     }
@@ -526,14 +526,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex flex-wrap items-end gap-3 mb-4"
+                            "className": "gpp:flex gpp:flex-wrap gpp:items-end gpp:gap-3 gpp:mb-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Label",
                                 "props": {
-                                    "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300",
+                                    "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300",
                                     "htmlFor": "popup_filter_status"
                                 },
                                 "children": [
@@ -565,7 +565,7 @@
                                         ],
                                         "props": {
                                             "id": "popup_filter_status",
-                                            "className": "w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                            "className": "gpp:w-36 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm",
                                             "value": "{{_local.filter.status}}",
                                             "options": [
                                                 {
@@ -597,7 +597,7 @@
                                 "type": "basic",
                                 "name": "Label",
                                 "props": {
-                                    "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300",
+                                    "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300",
                                     "htmlFor": "popup_filter_device"
                                 },
                                 "children": [
@@ -629,7 +629,7 @@
                                         ],
                                         "props": {
                                             "id": "popup_filter_device",
-                                            "className": "w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                            "className": "gpp:w-36 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm",
                                             "value": "{{_local.filter.device}}",
                                             "options": [
                                                 {
@@ -653,7 +653,7 @@
                                 "type": "basic",
                                 "name": "Label",
                                 "props": {
-                                    "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]",
+                                    "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300 gpp:flex-1 gpp:min-w-[12rem]",
                                     "htmlFor": "popup_filter_search"
                                 },
                                 "children": [
@@ -683,7 +683,7 @@
                                         "props": {
                                             "type": "search",
                                             "id": "popup_filter_search",
-                                            "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                            "className": "gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm",
                                             "value": "{{_local.filter.search}}",
                                             "placeholder": "$t:sirsoft-popup.admin.list.search_placeholder"
                                         }
@@ -702,7 +702,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "className": "g7pp-btn g7pp-btn-secondary"
                                 },
                                 "text": "$t:sirsoft-popup.admin.list.search_button"
                             },
@@ -710,7 +710,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-1"
+                                    "className": "gpp:flex-1"
                                 }
                             },
                             {
@@ -776,7 +776,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-secondary flex-center gap-2",
+                                    "className": "g7pp-btn g7pp-btn-secondary g7pp-flex-center gpp:gap-2",
                                     "disabled": "{{_global.reorderLoading}}"
                                 },
                                 "children": [
@@ -786,7 +786,7 @@
                                         "if": "{{_global.reorderLoading}}",
                                         "props": {
                                             "name": "spinner",
-                                            "className": "spinner-sm"
+                                            "className": "g7pp-spinner-sm"
                                         }
                                     },
                                     {
@@ -795,7 +795,7 @@
                                         "if": "{{!_global.reorderLoading}}",
                                         "props": {
                                             "name": "fa-solid fa-arrow-down-short-wide",
-                                            "className": "text-base"
+                                            "className": "gpp:text-base"
                                         }
                                     },
                                     {
@@ -814,14 +814,14 @@
                         "name": "Div",
                         "if": "{{(_global.bulkSelectedIds ?? []).length > 0}}",
                         "props": {
-                            "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
+                            "className": "g7pp-flex-center gpp:bg-gray-100 gpp:dark:bg-gray-700/50 gpp:border gpp:border-gray-200 gpp:dark:border-gray-600 gpp:rounded-lg gpp:p-3 gpp:mb-4 gpp:flex-wrap gpp:gap-3"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-body font-medium whitespace-nowrap"
+                                    "className": "g7pp-text-body gpp:font-medium gpp:whitespace-nowrap"
                                 },
                                 "text": "$t:sirsoft-popup.admin.list.selected|count={{(_global.bulkSelectedIds ?? []).length}}"
                             },
@@ -829,7 +829,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-1"
+                                    "className": "gpp:flex-1"
                                 }
                             },
                             {
@@ -902,7 +902,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50",
+                                    "className": "gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:bg-white gpp:dark:bg-gray-800 gpp:text-gray-700 gpp:dark:text-gray-300 gpp:disabled:opacity-50",
                                     "disabled": "{{_global.isBulkWorking}}"
                                 },
                                 "text": "$t:sirsoft-popup.admin.list.bulk_show"
@@ -977,7 +977,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50",
+                                    "className": "gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:bg-white gpp:dark:bg-gray-800 gpp:text-gray-700 gpp:dark:text-gray-300 gpp:disabled:opacity-50",
                                     "disabled": "{{_global.isBulkWorking}}"
                                 },
                                 "text": "$t:sirsoft-popup.admin.list.bulk_hide"
@@ -996,7 +996,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50",
+                                    "className": "gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:bg-white gpp:dark:bg-gray-800 gpp:text-gray-700 gpp:dark:text-gray-300 gpp:disabled:opacity-50",
                                     "disabled": "{{_global.isBulkWorking}}"
                                 },
                                 "text": "$t:sirsoft-popup.admin.list.bulk_copy"
@@ -1015,7 +1015,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg disabled:opacity-50",
+                                    "className": "gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-red-300 gpp:dark:border-red-600 gpp:text-red-700 gpp:dark:text-red-400 gpp:rounded-lg gpp:disabled:opacity-50",
                                     "disabled": "{{_global.isBulkWorking}}"
                                 },
                                 "text": "$t:sirsoft-popup.admin.list.bulk_delete"
@@ -1027,14 +1027,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between flex-wrap gap-3 mb-3"
+                            "className": "g7pp-flex-between gpp:flex-wrap gpp:gap-3 gpp:mb-3"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-label"
+                                    "className": "g7pp-text-label"
                                 },
                                 "text": "$t:sirsoft-popup.admin.list.total|count={{popups?.data?.pagination?.total ?? 0}}"
                             },
@@ -1074,7 +1074,7 @@
                                 "props": {
                                     "name": "sortBy",
                                     "aria-label": "$t:common.sort_order",
-                                    "className": "w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                    "className": "gpp:w-40 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm",
                                     "value": "{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}",
                                     "options": [
                                         {
@@ -1314,7 +1314,7 @@
                                             "props": {
                                                 "src": "{{row.thumbnail?.url}}",
                                                 "alt": "",
-                                                "className": "w-12 h-14 object-cover rounded border border-gray-200 dark:border-gray-700",
+                                                "className": "gpp:w-12 gpp:h-14 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700",
                                                 "loading": "lazy"
                                             }
                                         },
@@ -1323,7 +1323,7 @@
                                             "name": "Span",
                                             "if": "{{!row.thumbnail}}",
                                             "props": {
-                                                "className": "w-12 h-14 flex-center rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] text-gray-500 dark:text-gray-400 text-center"
+                                                "className": "gpp:w-12 gpp:h-14 g7pp-flex-center gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:bg-white gpp:dark:bg-gray-800 gpp:text-[10px] gpp:text-gray-500 gpp:dark:text-gray-400 gpp:text-center"
                                             },
                                             "text": "$t:sirsoft-popup.admin.content_type.html_short"
                                         }
@@ -1337,7 +1337,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-col gap-1 min-w-0"
+                                                "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:min-w-0"
                                             },
                                             "children": [
                                                 {
@@ -1351,7 +1351,7 @@
                                                     ],
                                                     "props": {
                                                         "href": "/admin/plugins/sirsoft-popup/popups/{{row.id}}/edit",
-                                                        "className": "font-medium text-gray-900 dark:text-white hover:underline truncate"
+                                                        "className": "gpp:font-medium gpp:text-gray-900 gpp:dark:text-white gpp:hover:underline gpp:truncate"
                                                     },
                                                     "text": "{{row.title}}"
                                                 },
@@ -1359,7 +1359,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400"
                                                     },
                                                     "text": "{{$t('sirsoft-popup.admin.content_type.' + row.content_type)}}{{(row.filled_locales ?? []).length > 0 ? ' · ' + (row.filled_locales ?? []).map(l => _global.appConfig?.localeNames?.[l] ?? l.toUpperCase()).join(' · ') : ''}}"
                                                 }
@@ -1377,7 +1377,7 @@
                                             "name": "Span",
                                             "if": "{{row.page_scope !== 'routes'}}",
                                             "props": {
-                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                "className": "gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300"
                                             },
                                             "text": "$t:sirsoft-popup.admin.page_scope.all"
                                         },
@@ -1386,7 +1386,7 @@
                                             "name": "Div",
                                             "if": "{{row.page_scope === 'routes'}}",
                                             "props": {
-                                                "className": "flex flex-wrap gap-1"
+                                                "className": "gpp:flex gpp:flex-wrap gpp:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -1397,7 +1397,7 @@
                                                         "item_var": "route"
                                                     },
                                                     "props": {
-                                                        "className": "px-1.5 py-0.5 text-xs rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                                        "className": "gpp:px-1.5 gpp:py-0.5 gpp:text-xs gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-600 gpp:bg-gray-50 gpp:dark:bg-gray-700 gpp:text-gray-800 gpp:dark:text-gray-200"
                                                     },
                                                     "text": "{{route}}"
                                                 },
@@ -1406,7 +1406,7 @@
                                                     "name": "Span",
                                                     "if": "{{(row.routes ?? []).length > 3}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-popup.admin.list.more_routes|count={{(row.routes ?? []).length - 3}}"
                                                 }
@@ -1423,7 +1423,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                "className": "gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300"
                                             },
                                             "text": "{{$t('sirsoft-popup.admin.device.' + row.device)}}"
                                         }
@@ -1438,7 +1438,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                "className": "gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300"
                                             },
                                             "text": "{{row.display_period === 'range' ? (row.starts_at_display + ' ~ ' + row.ends_at_display) : $t('sirsoft-popup.admin.period.always')}}"
                                         }
@@ -1469,7 +1469,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "tabular-nums text-sm text-gray-600 dark:text-gray-400"
+                                                "className": "gpp:tabular-nums gpp:text-sm gpp:text-gray-600 gpp:dark:text-gray-400"
                                             },
                                             "text": "{{row.sort_order + 1}}"
                                         }
@@ -1502,14 +1502,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-3"
+                        "className": "gpp:flex gpp:flex-col gpp:gap-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "gpp:text-gray-700 gpp:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-popup.admin.delete.message|title={{_global.targetPopup?.title ?? ''}}"
                         },
@@ -1517,7 +1517,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "alert-warning"
+                                "className": "g7pp-alert-warning"
                             },
                             "children": [
                                 {
@@ -1525,14 +1525,14 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "triangle-exclamation",
-                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                        "className": "gpp:text-xl gpp:text-amber-600 gpp:dark:text-amber-400 gpp:flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-yellow-800 dark:text-yellow-200"
+                                        "className": "gpp:text-xs gpp:text-yellow-800 gpp:dark:text-yellow-200"
                                     },
                                     "text": "$t:sirsoft-popup.admin.delete.warning"
                                 }
@@ -1544,7 +1544,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "g7pp-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -1558,7 +1558,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "g7pp-btn g7pp-btn-secondary",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "text": "$t:common.cancel"
@@ -1631,7 +1631,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50",
+                                "className": "g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "children": [
@@ -1641,7 +1641,7 @@
                                     "if": "{{_global.isDeleting}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "g7pp-spinner-sm"
                                     }
                                 },
                                 {
@@ -1669,14 +1669,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-3"
+                        "className": "gpp:flex gpp:flex-col gpp:gap-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "gpp:text-gray-700 gpp:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-popup.admin.delete.bulk_message|count={{(_global.bulkSelectedIds ?? []).length}}"
                         },
@@ -1684,7 +1684,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "alert-warning"
+                                "className": "g7pp-alert-warning"
                             },
                             "children": [
                                 {
@@ -1692,14 +1692,14 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "triangle-exclamation",
-                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                        "className": "gpp:text-xl gpp:text-amber-600 gpp:dark:text-amber-400 gpp:flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-yellow-800 dark:text-yellow-200"
+                                        "className": "gpp:text-xs gpp:text-yellow-800 gpp:dark:text-yellow-200"
                                     },
                                     "text": "$t:sirsoft-popup.admin.delete.warning"
                                 }
@@ -1711,7 +1711,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "g7pp-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -1725,7 +1725,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "g7pp-btn g7pp-btn-secondary",
                                 "disabled": "{{_global.isBulkWorking}}"
                             },
                             "text": "$t:common.cancel"
@@ -1800,7 +1800,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50",
+                                "className": "g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50",
                                 "disabled": "{{_global.isBulkWorking}}"
                             },
                             "children": [
@@ -1810,7 +1810,7 @@
                                     "if": "{{_global.isBulkWorking}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "g7pp-spinner-sm"
                                     }
                                 },
                                 {
@@ -1838,7 +1838,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-700 dark:text-gray-300"
+                        "className": "gpp:text-gray-700 gpp:dark:text-gray-300"
                     },
                     "text": "$t:sirsoft-popup.admin.copy.message|count={{(_global.bulkSelectedIds ?? []).length}}"
                 },
@@ -1846,7 +1846,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "g7pp-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -1860,7 +1860,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "g7pp-btn g7pp-btn-secondary",
                                 "disabled": "{{_global.isBulkWorking}}"
                             },
                             "text": "$t:common.cancel"
@@ -1936,7 +1936,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-primary flex-center gap-2",
+                                "className": "g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2",
                                 "disabled": "{{_global.isBulkWorking}}"
                             },
                             "children": [
@@ -1946,7 +1946,7 @@
                                     "if": "{{_global.isBulkWorking}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "g7pp-spinner-sm"
                                     }
                                 },
                                 {
@@ -1997,14 +1997,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-3"
+                        "className": "gpp:flex gpp:flex-col gpp:gap-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-label"
+                                "className": "g7pp-text-label"
                             },
                             "text": "$t:sirsoft-popup.admin.reorder.description"
                         },
@@ -2013,7 +2013,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                                "className": "gpp:max-h-[70vh] gpp:overflow-y-auto gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -2033,7 +2033,7 @@
                                         "name": "Div",
                                         "props": {
                                             "data-testid": "popup-reorder-row-{{row.id}}",
-                                            "className": "flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800"
+                                            "className": "gpp:flex gpp:items-center gpp:gap-3 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-800"
                                         },
                                         "children": [
                                             {
@@ -2043,7 +2043,7 @@
                                                     "data-drag-handle": true,
                                                     "aria-hidden": "true",
                                                     "title": "{{$t('sirsoft-popup.admin.reorder.drag_handle', { name: row.title })}}",
-                                                    "className": "hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                                    "className": "gpp:hidden g7pp-hidden gpp:md:flex gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300"
                                                 },
                                                 "children": [
                                                     {
@@ -2051,7 +2051,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-grip-vertical",
-                                                            "className": "text-sm"
+                                                            "className": "gpp:text-sm"
                                                         }
                                                     }
                                                 ]
@@ -2060,7 +2060,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400"
+                                                    "className": "gpp:w-6 gpp:text-right gpp:text-sm gpp:tabular-nums gpp:text-gray-500 gpp:dark:text-gray-400"
                                                 },
                                                 "text": "{{row._idx + 1}}"
                                             },
@@ -2071,14 +2071,14 @@
                                                 "props": {
                                                     "src": "{{row.thumbnail}}",
                                                     "alt": "",
-                                                    "className": "w-8 h-10 object-cover rounded"
+                                                    "className": "gpp:w-8 gpp:h-10 gpp:object-cover gpp:rounded"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "truncate flex-1 font-medium text-gray-900 dark:text-gray-100"
+                                                    "className": "gpp:truncate gpp:flex-1 gpp:font-medium gpp:text-gray-900 gpp:dark:text-gray-100"
                                                 },
                                                 "text": "{{row.title}}"
                                             },
@@ -2109,7 +2109,7 @@
                                                     "data-testid": "popup-reorder-up-{{row.id}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}",
-                                                    "className": "flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed",
+                                                    "className": "g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === 0}}"
                                                 },
                                                 "children": [
@@ -2118,7 +2118,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-chevron-up",
-                                                            "className": "text-xs"
+                                                            "className": "gpp:text-xs"
                                                         }
                                                     }
                                                 ]
@@ -2141,7 +2141,7 @@
                                                     "data-testid": "popup-reorder-down-{{row.id}}",
                                                     "type": "button",
                                                     "aria-label": "{{$t('sirsoft-popup.admin.reorder.move_down', { name: row.title })}}",
-                                                    "className": "flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed",
+                                                    "className": "g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed",
                                                     "disabled": "{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}"
                                                 },
                                                 "children": [
@@ -2150,7 +2150,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-chevron-down",
-                                                            "className": "text-xs"
+                                                            "className": "gpp:text-xs"
                                                         }
                                                     }
                                                 ]
@@ -2169,7 +2169,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                                        "className": "gpp:divide-y gpp:divide-gray-200 gpp:dark:divide-gray-700"
                                     }
                                 }
                             ]
@@ -2181,7 +2181,7 @@
                             "if": "{{!!_global.reorderError}}",
                             "props": {
                                 "role": "alert",
-                                "className": "rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300"
+                                "className": "gpp:rounded-lg gpp:border gpp:border-red-200 gpp:dark:border-red-800 gpp:bg-red-50 gpp:dark:bg-red-900/20 gpp:px-4 gpp:py-3 gpp:text-sm gpp:text-red-700 gpp:dark:text-red-300"
                             },
                             "text": "{{_global.reorderError}}"
                         },
@@ -2189,7 +2189,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "modal-footer-buttons"
+                                "className": "g7pp-modal-footer-buttons"
                             },
                             "children": [
                                 {
@@ -2218,7 +2218,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-secondary",
+                                        "className": "g7pp-btn g7pp-btn-secondary",
                                         "disabled": "{{_global.reorderSaving}}"
                                     },
                                     "children": [
@@ -2297,7 +2297,7 @@
                                         "data-testid": "popup-reorder-save",
                                         "type": "button",
                                         "lockRepeatClick": true,
-                                        "className": "btn btn-primary flex-center gap-2",
+                                        "className": "g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2",
                                         "disabled": "{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i => i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}"
                                     },
                                     "children": [
@@ -2307,7 +2307,7 @@
                                             "if": "{{_global.reorderSaving}}",
                                             "props": {
                                                 "name": "spinner",
-                                                "className": "spinner-sm"
+                                                "className": "g7pp-spinner-sm"
                                             }
                                         },
                                         {

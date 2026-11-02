@@ -282,43 +282,43 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
   const Label = basic('Label', 'label');
   const Input = basic('Input', 'input');
   const Textarea = basic('Textarea', 'textarea');
-  const tab = (active: boolean) => `px-3 py-1 text-xs rounded border ${active ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}`;
+  const tab = (active: boolean) => `gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border ${active ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}`;
 
   if (!pcImage) {
-    return <Div className="g7pp-ov-editor" data-overlay-editor=""><P className="form-hint">{t('need_pc_image')}</P></Div>;
+    return <Div data-overlay-editor=""><P className="g7pp-form-hint">{t('need_pc_image')}</P></Div>;
   }
 
   const textOf = (box: OverlayBox) => box.text?.[locale]?.trim() ? box.text[locale] : (box.text?.[baseLocale] ?? '');
   const isFallback = (box: OverlayBox) => locale !== baseLocale && !box.text?.[locale]?.trim();
 
-  return <Div className="g7pp-ov-editor flex flex-col gap-3" data-overlay-editor="">
-    <Div className="flex-between flex-wrap gap-2">
-      {mobileImage ? <Div role="group" aria-label={t('device_label')} className="flex gap-1">
+  return <Div className="gpp:flex gpp:flex-col gpp:gap-3" data-overlay-editor="">
+    <Div className="g7pp-flex-between gpp:flex-wrap gpp:gap-2">
+      {mobileImage ? <Div role="group" aria-label={t('device_label')} className="gpp:flex gpp:gap-1">
         {(['pc', 'mobile'] as Device[]).map((d) => <Button key={d} type="button" className={tab(device === d)} aria-pressed={device === d} data-overlay-device={d}
           onClick={() => { setDeviceChoice(d); setSelectedId(null); }}>{t('device.' + d)}</Button>)}
       </Div> : <Span />}
-      <Button type="button" className="btn btn-secondary btn-sm" data-overlay-action="add" disabled={!editable || boxes.length >= MAX_BOXES} onClick={add}>{t('add')}</Button>
+      <Button type="button" className="g7pp-btn g7pp-btn-secondary" data-overlay-action="add" disabled={!editable || boxes.length >= MAX_BOXES} onClick={add}>{t('add')}</Button>
     </Div>
-    {editable && boxes.length >= MAX_BOXES && <P className="form-hint" role="status">{t('limit', { max: MAX_BOXES })}</P>}
-    {device === 'mobile' && <Div className="flex flex-wrap items-center gap-2">
+    {editable && boxes.length >= MAX_BOXES && <P className="g7pp-form-hint" role="status">{t('limit', { max: MAX_BOXES })}</P>}
+    {device === 'mobile' && <Div className="gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-2">
       {separate
-        ? <Button type="button" className="btn btn-secondary btn-sm" data-overlay-action="use-pc" disabled={disabled} onClick={() => { emit({ pc, mobile: null }); setSelectedId(null); }}>{t('use_pc')}</Button>
+        ? <Button type="button" className="g7pp-btn g7pp-btn-secondary" data-overlay-action="use-pc" disabled={disabled} onClick={() => { emit({ pc, mobile: null }); setSelectedId(null); }}>{t('use_pc')}</Button>
         : <>
-          <P className="form-hint">{t('uses_pc')}</P>
-          <Button type="button" className="btn btn-secondary btn-sm" data-overlay-action="copy-pc" disabled={disabled} onClick={() => emit({ pc, mobile: pc.map((box) => ({ ...box, text: { ...box.text }, bg: box.bg ? { ...box.bg } : null })) })}>{t('copy_pc')}</Button>
+          <P className="g7pp-form-hint">{t('uses_pc')}</P>
+          <Button type="button" className="g7pp-btn g7pp-btn-secondary" data-overlay-action="copy-pc" disabled={disabled} onClick={() => emit({ pc, mobile: pc.map((box) => ({ ...box, text: { ...box.text }, bg: box.bg ? { ...box.bg } : null })) })}>{t('copy_pc')}</Button>
         </>}
     </Div>}
-    <Div role="group" aria-label={t('backdrop_label')} className="flex flex-wrap items-center gap-1">
-      <Span className="text-xs text-gray-600 dark:text-gray-300 mr-1">{t('backdrop_label')}</Span>
+    <Div role="group" aria-label={t('backdrop_label')} className="gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-1">
+      <Span className="gpp:text-xs gpp:text-gray-600 gpp:dark:text-gray-300 gpp:mr-1">{t('backdrop_label')}</Span>
       {(['checker', 'light', 'dark'] as CanvasBackdrop[]).map((b) => <Button key={b} type="button" className={tab(backdrop === b)} aria-pressed={backdrop === b} data-overlay-backdrop={b}
         onClick={() => setBackdrop(b)}>{t('backdrop.' + b)}</Button>)}
     </Div>
-    <P className="form-hint" id="g7pp-ov-canvas-hint">{t('canvas_hint')}</P>
-    {ratioChange && ratioChange.device === device && <Div role="status" data-overlay-warning="ratio" className="flex flex-wrap items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+    <P className="g7pp-form-hint" id="g7pp-ov-canvas-hint">{t('canvas_hint')}</P>
+    {ratioChange && ratioChange.device === device && <Div role="status" data-overlay-warning="ratio" className="gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-2 gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300">
       <Span>{t('ratio_changed', { from: ratioText(ratioChange.from), to: ratioText(ratioChange.to) })}</Span>
-      <Button type="button" className="btn btn-secondary btn-sm" data-overlay-action="ratio-ack" onClick={() => { ratioBase.current[device] = ratioChange.to; setRatioChange(null); }}>{t('ratio_ack')}</Button>
+      <Button type="button" className="g7pp-btn g7pp-btn-secondary" data-overlay-action="ratio-ack" onClick={() => { ratioBase.current[device] = ratioChange.to; setRatioChange(null); }}>{t('ratio_ack')}</Button>
     </Div>}
-    {boxes.some((box) => overflow[box.id]?.length) && <Div role="status" data-overlay-warning="overflow" className="text-sm text-amber-700 dark:text-amber-300">
+    {boxes.some((box) => overflow[box.id]?.length) && <Div role="status" data-overlay-warning="overflow" className="gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300">
       {boxes.map((box, i) => (overflow[box.id]?.length ? <P key={box.id}>{t('overflow', { n: i + 1, languages: overflow[box.id].map(nameOf).join(', ') })}</P> : null))}
     </Div>}
     {/* 캔버스 — 사용자 레이어와 같은 프레임. 상자만 누르고 끌 수 있다(레이어에서는 누름을 받지 않음) */}
@@ -358,89 +358,89 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
       </ImageFrame>}
     </div>
     {!selected
-      ? <P className="form-hint">{t('no_selection')}</P>
-      : <Div className="g7pp-ov-editor__panel flex flex-col gap-3" data-overlay-panel={selected.id}>
-        {languages.length > 1 && <Div role="tablist" aria-label={t('locale_label')} className="flex flex-wrap gap-1">
+      ? <P className="g7pp-form-hint">{t('no_selection')}</P>
+      : <Div className="gpp:flex gpp:flex-col gpp:gap-3" data-overlay-panel={selected.id}>
+        {languages.length > 1 && <Div role="tablist" aria-label={t('locale_label')} className="gpp:flex gpp:flex-wrap gpp:gap-1">
           {languages.map((code) => <Button key={code} type="button" role="tab" aria-selected={locale === code} className={tab(locale === code)} data-overlay-locale={code} onClick={() => setLocale(code)}>
             {localeNames?.[code] ?? code.toUpperCase()}
           </Button>)}
         </Div>}
         <Div>
-          <Label className="form-label" htmlFor="g7pp-ov-text">{t('text')}{isFallback(selected) ? <Span className="ml-2 text-xs text-gray-500 dark:text-gray-400" data-overlay-fallback="">{t('fallback')}</Span> : null}</Label>
-          <Textarea id="g7pp-ov-text" className="input w-full" rows={3} maxLength={MAX_TEXT} value={selected.text?.[locale] ?? ''} placeholder={locale !== baseLocale ? (selected.text?.[baseLocale] ?? '') : ''}
+          <Label className="g7pp-form-label" htmlFor="g7pp-ov-text">{t('text')}{isFallback(selected) ? <Span className="gpp:ml-2 gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400" data-overlay-fallback="">{t('fallback')}</Span> : null}</Label>
+          <Textarea id="g7pp-ov-text" className="g7pp-input gpp:w-full" rows={3} maxLength={MAX_TEXT} value={selected.text?.[locale] ?? ''} placeholder={locale !== baseLocale ? (selected.text?.[baseLocale] ?? '') : ''}
             onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
               const text = { ...selected.text };
               if (event.target.value === '') delete text[locale]; else text[locale] = event.target.value;
               patch(selected.id, { text });
             }} />
-          <P className="form-hint">{t('text_hint')}</P>
+          <P className="g7pp-form-hint">{t('text_hint')}</P>
         </Div>
-        <Div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Label className="flex items-center gap-2 text-sm">
-            <Span className="w-24 shrink-0">{t('size')}</Span>
+        <Div className="gpp:grid gpp:grid-cols-1 gpp:sm:grid-cols-2 gpp:gap-3">
+          <Label className="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm">
+            <Span className="gpp:w-24 gpp:shrink-0">{t('size')}</Span>
             <Input type="range" min={MIN_SIZE} max={MAX_SIZE} step={0.5} value={selected.size} aria-label={t('size')} data-overlay-field="size"
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => patch(selected.id, { size: Number(event.target.value) })} />
-            <Span className="tabular-nums text-xs">{selected.size}</Span>
+            <Span className="gpp:tabular-nums gpp:text-xs">{selected.size}</Span>
           </Label>
           {shownOnPhone && (() => {
             // 작은 휴대폰에서 이미지가 보이는 폭 기준 예상 글자 크기 — 너무 작으면 알린다
             const px = Math.round(selected.size * PHONE_IMAGE_WIDTH) / 100;
             const small = px < PHONE_MIN_TEXT_PX;
-            return <P className={`text-xs sm:col-span-2 ${small ? 'text-amber-700 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400'}`} data-overlay-phone-size={px} data-small={small || undefined}>
+            return <P className={`gpp:text-xs gpp:sm:col-span-2 ${small ? 'gpp:text-amber-700 gpp:dark:text-amber-300' : 'gpp:text-gray-500 gpp:dark:text-gray-400'}`} data-overlay-phone-size={px} data-small={small || undefined}>
               {t('phone_size', { width: PHONE_IMAGE_WIDTH, px })}{small ? ` ${t('phone_small')}` : ''}
             </P>;
           })()}
-          <Label className="flex items-center gap-2 text-sm">
-            <Span className="w-24 shrink-0">{t('color')}</Span>
+          <Label className="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm">
+            <Span className="gpp:w-24 gpp:shrink-0">{t('color')}</Span>
             <Input type="color" value={selected.color.toLowerCase()} aria-label={t('color')} data-overlay-field="color"
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => patch(selected.id, { color: event.target.value.toUpperCase() })} />
             {/* 흰색처럼 바탕과 같은 색이면 색 칸만으로는 알아보기 어려워 값을 함께 보인다 */}
-            <Span className="tabular-nums text-xs">{selected.color}</Span>
+            <Span className="gpp:tabular-nums gpp:text-xs">{selected.color}</Span>
           </Label>
-          <Label className="flex items-center gap-2 text-sm">
+          <Label className="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm">
             <Input type="checkbox" checked={selected.bold} data-overlay-field="bold" onChange={(event: React.ChangeEvent<HTMLInputElement>) => patch(selected.id, { bold: event.target.checked })} />
             <Span>{t('bold')}</Span>
           </Label>
-          <Label className="flex items-center gap-2 text-sm">
+          <Label className="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm">
             <Input type="checkbox" checked={selected.shadow} data-overlay-field="shadow" onChange={(event: React.ChangeEvent<HTMLInputElement>) => patch(selected.id, { shadow: event.target.checked })} />
             <Span>{t('shadow')}</Span>
           </Label>
         </Div>
-        <Div role="group" aria-label={t('align_label')} className="flex gap-1">
+        <Div role="group" aria-label={t('align_label')} className="gpp:flex gpp:gap-1">
           {(['left', 'center', 'right'] as OverlayAlign[]).map((align) => <Button key={align} type="button" className={tab(selected.align === align)} aria-pressed={selected.align === align} data-overlay-align={align}
             onClick={() => patch(selected.id, { align })}>{t('align.' + align)}</Button>)}
         </Div>
-        <Div className="flex flex-wrap items-center gap-3">
-          <Label className="flex items-center gap-2 text-sm">
+        <Div className="gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-3">
+          <Label className="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm">
             <Input type="checkbox" checked={!!selected.bg} data-overlay-field="bg" onChange={(event: React.ChangeEvent<HTMLInputElement>) => patch(selected.id, { bg: event.target.checked ? { color: '#000000', opacity: 40 } : null })} />
             <Span>{t('bg')}</Span>
           </Label>
           {selected.bg && <>
-            <Label className="flex items-center gap-2 text-sm">
+            <Label className="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm">
               <Span>{t('bg_color')}</Span>
               <Input type="color" value={selected.bg.color.toLowerCase()} aria-label={t('bg_color')} data-overlay-field="bg_color"
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => patch(selected.id, { bg: { ...selected.bg!, color: event.target.value.toUpperCase() } })} />
             </Label>
-            <Label className="flex items-center gap-2 text-sm">
+            <Label className="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm">
               <Span>{t('bg_opacity')}</Span>
               <Input type="range" min={0} max={MAX_OPACITY} step={5} value={selected.bg.opacity} aria-label={t('bg_opacity')} data-overlay-field="bg_opacity"
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => patch(selected.id, { bg: { ...selected.bg!, opacity: Number(event.target.value) } })} />
-              <Span className="tabular-nums text-xs">{selected.bg.opacity}%</Span>
+              <Span className="gpp:tabular-nums gpp:text-xs">{selected.bg.opacity}%</Span>
             </Label>
           </>}
           {selected.bg && (() => {
             // 바탕이 반투명하면 이미지가 흰색·검은색일 때 중 나쁜 쪽으로 잰다
             const ratio = boxContrast(selected)!;
             const low = ratio < MIN_CONTRAST;
-            return <P className={`text-xs w-full ${low ? 'text-amber-700 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400'}`} data-overlay-contrast={ratio} data-low={low || undefined}>
+            return <P className={`gpp:text-xs gpp:w-full ${low ? 'gpp:text-amber-700 gpp:dark:text-amber-300' : 'gpp:text-gray-500 gpp:dark:text-gray-400'}`} data-overlay-contrast={ratio} data-low={low || undefined}>
               {t('contrast', { ratio })}{low ? ` ${t('contrast_low', { min: MIN_CONTRAST })}` : ''}
             </P>;
           })()}
         </Div>
-        <Div className="flex flex-wrap gap-2">
-          <Button type="button" className="btn btn-secondary btn-sm" data-overlay-action="forward" disabled={boxes[boxes.length - 1]?.id === selected.id} onClick={() => reorder(selected.id, 1)}>{t('forward')}</Button>
-          <Button type="button" className="btn btn-secondary btn-sm" data-overlay-action="backward" disabled={boxes[0]?.id === selected.id} onClick={() => reorder(selected.id, -1)}>{t('backward')}</Button>
-          <Button type="button" className="btn btn-danger btn-sm" data-overlay-action="delete" onClick={() => remove(selected.id)}>{t('delete')}</Button>
+        <Div className="gpp:flex gpp:flex-wrap gpp:gap-2">
+          <Button type="button" className="g7pp-btn g7pp-btn-secondary" data-overlay-action="forward" disabled={boxes[boxes.length - 1]?.id === selected.id} onClick={() => reorder(selected.id, 1)}>{t('forward')}</Button>
+          <Button type="button" className="g7pp-btn g7pp-btn-secondary" data-overlay-action="backward" disabled={boxes[0]?.id === selected.id} onClick={() => reorder(selected.id, -1)}>{t('backward')}</Button>
+          <Button type="button" className="g7pp-btn g7pp-btn-danger" data-overlay-action="delete" onClick={() => remove(selected.id)}>{t('delete')}</Button>
         </Div>
       </Div>}
   </Div>;

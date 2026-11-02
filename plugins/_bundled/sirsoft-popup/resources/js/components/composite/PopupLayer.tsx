@@ -23,7 +23,7 @@ const PURIFY_CONFIG = {
   ADD_ATTR: ['target'],
 };
 
-/** 장 전환 시간(ms) — `popup.css` 의 `.g7pp-slide--moving` transition 과 같은 값 */
+/** 장 전환 시간(ms) — `main.css` 의 `.g7pp-slide--moving` transition 과 같은 값 */
 export const SLIDE_MS = 300;
 
 /** 끌기 시작 판정 거리(px) — 장 넘김은 이만큼 움직인 뒤 가로 성분이 세로보다 크면 끌기(아니면 세로 스크롤), 창 옮기기는 이만큼 움직이면 끌기(못 미치면 단추 클릭) */
@@ -52,13 +52,13 @@ export const MAX_DOTS_MOBILE = 5;
 /** 캡슐 안 단추 하나의 누르는 폭(px) — 점·일시정지 모두 44px(명세 접근성) */
 const CONTROL_HIT_PX = 44;
 
-/** 캡슐이 점·일시정지 말고 차지하는 폭(px) — 캡슐 안쪽 여백 4px × 2 + 본문 가장자리와 띄우는 12px × 2(`popup.css` 의 `.g7pp-pager`) */
+/** 캡슐이 점·일시정지 말고 차지하는 폭(px) — 캡슐 안쪽 여백 4px × 2 + 본문 가장자리와 띄우는 12px × 2(`main.css` 의 `.g7pp-pager`) */
 const PAGER_CHROME_PX = 32;
 
 /** 옮긴 창이 화면 가장자리와 남기는 여백(px) */
 const MOVE_EDGE_PX = 8;
 
-/** 레이어 층(z-index) — `popup.css` 의 `.g7pp-root` 와 같은 값. 이 층 이상인 화면 위 고정 요소(헤더 등)는 창을 덮는다 */
+/** 레이어 층(z-index) — `main.css` 의 `.g7pp-root` 와 같은 값. 이 층 이상인 화면 위 고정 요소(헤더 등)는 창을 덮는다 */
 const LAYER_Z = 40;
 
 /** 위아래 고정 요소 사이가 좁을 때 줄이는 본문 높이의 하한(px) */
@@ -1191,6 +1191,7 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobi
     return (
       <div
         ref={scrollRef}
+        // audit:allow extension-class-self-contained ck-content 는 CKEditor 라이브러리 본문 CSS 가 거는 이름이다 — 편집기 플러그인이 있으면 그 본문 서식이 그대로 읽히게 함께 둔다
         className="g7pp-html ck-content"
         data-popup-scroll=""
         role={overflowing ? 'region' : undefined}

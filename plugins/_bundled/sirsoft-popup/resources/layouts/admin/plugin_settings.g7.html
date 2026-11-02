@@ -31,64 +31,64 @@
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="g7pp-admin-page-content-responsive">
       <!-- PageHeader 는 돌아가기 props 가 없다 — 목록으로 가는 링크를 머리 위에 따로 둔다 -->
-      <a data-ref="back_to_list_link" href="/admin/plugins/sirsoft-popup/popups" class="inline-flex items-center gap-1 mb-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+      <a data-ref="back_to_list_link" href="/admin/plugins/sirsoft-popup/popups" class="gpp:inline-flex gpp:items-center gpp:gap-1 gpp:mb-2 gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline">
         <on type="click">
           <navigate/>
         </on>
         <span aria-hidden="true">‹</span>
         <span>$t:sirsoft-popup.settings.back_to_list</span>
       </a>
-      <p data-ref="settings_breadcrumb" class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-popup.settings.breadcrumb</p>
+      <p data-ref="settings_breadcrumb" class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1">$t:sirsoft-popup.settings.breadcrumb</p>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-popup.settings.title" description="$t:sirsoft-popup.settings.description"/>
-      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
-        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-popup.plugin_read_only</span>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="g7pp-alert-warning gpp:mt-6">
+        <icon name="lock" class="gpp:text-xl gpp:text-amber-600 gpp:dark:text-amber-400 gpp:flex-shrink-0"/>
+        <span class="gpp:text-xs gpp:text-yellow-700 gpp:dark:text-yellow-300">$t:sirsoft-popup.plugin_read_only</span>
       </div>
-      <div data-ref="settings_columns" class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div data-ref="settings_cards" class="lg:col-span-2 flex flex-col gap-6">
+      <div data-ref="settings_columns" class="gpp:mt-6 gpp:grid gpp:grid-cols-1 gpp:lg:grid-cols-3 gpp:gap-6">
+        <div data-ref="settings_cards" class="gpp:lg:col-span-2 gpp:flex gpp:flex-col gpp:gap-6">
           <!-- PC 표시 — 위치(중앙/좌상단 좌표)와 내용 영역 크기 -->
-          <section data-ref="pc_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-popup.settings.pc.title</h2>
-            <div class="row-stack">
+          <section data-ref="pc_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.pc.title</h2>
+            <div class="g7pp-row-stack">
               <div data-ref="field_pc_position" role="group" aria-label="$t:sirsoft-popup.settings.pc.position">
-                <span class="form-label block" aria-hidden="true">$t:sirsoft-popup.settings.pc.position</span>
+                <span class="g7pp-form-label gpp:block" aria-hidden="true">$t:sirsoft-popup.settings.pc.position</span>
                 <radio-group data-type="composite" name="pc_position" :inline="true" disabled="{{_computed.isPluginReadOnly}}">
                   <prop name="options">
                     <item label="$t:sirsoft-popup.settings.pc_position.center" value="center"/>
                     <item label="$t:sirsoft-popup.settings.pc_position.coords" value="coords"/>
                   </prop>
                 </radio-group>
-                <div data-ref="pc_coords" data-if="{{_local.form?.pc_position === 'coords'}}" class="mt-3 flex flex-wrap gap-4">
-                  <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_pc_left">
+                <div data-ref="pc_coords" data-if="{{_local.form?.pc_position === 'coords'}}" class="gpp:mt-3 gpp:flex gpp:flex-wrap gpp:gap-4">
+                  <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300" htmlFor="popup_pc_left">
                     <span>$t:sirsoft-popup.settings.pc.left</span>
-                    <input type="number" id="popup_pc_left" name="pc_left" :min="0" :max="2000" class="input w-32" disabled="{{_computed.isPluginReadOnly}}"/>
+                    <input type="number" id="popup_pc_left" name="pc_left" :min="0" :max="2000" class="g7pp-input gpp:w-32" disabled="{{_computed.isPluginReadOnly}}"/>
                   </label>
-                  <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_pc_top">
+                  <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300" htmlFor="popup_pc_top">
                     <span>$t:sirsoft-popup.settings.pc.top</span>
-                    <input type="number" id="popup_pc_top" name="pc_top" :min="0" :max="2000" class="input w-32" disabled="{{_computed.isPluginReadOnly}}"/>
+                    <input type="number" id="popup_pc_top" name="pc_top" :min="0" :max="2000" class="g7pp-input gpp:w-32" disabled="{{_computed.isPluginReadOnly}}"/>
                   </label>
                 </div>
-                <p data-if="{{_local.errors?.pc_left || _local.errors?.pc_top}}" class="form-error">{{_local.errors?.pc_left?.[0] ?? _local.errors?.pc_top?.[0] ?? ''}}</p>
+                <p data-if="{{_local.errors?.pc_left || _local.errors?.pc_top}}" class="g7pp-form-error">{{_local.errors?.pc_left?.[0] ?? _local.errors?.pc_top?.[0] ?? ''}}</p>
               </div>
-              <div data-ref="field_pc_size" class="flex flex-wrap items-end gap-4">
-                <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_pc_width">
+              <div data-ref="field_pc_size" class="gpp:flex gpp:flex-wrap gpp:items-end gpp:gap-4">
+                <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300" htmlFor="popup_pc_width">
                   <span>$t:sirsoft-popup.settings.pc.width</span>
-                  <input type="number" id="popup_pc_width" name="pc_width" :min="240" :max="1200" class="input w-32" disabled="{{_computed.isPluginReadOnly}}"/>
+                  <input type="number" id="popup_pc_width" name="pc_width" :min="240" :max="1200" class="g7pp-input gpp:w-32" disabled="{{_computed.isPluginReadOnly}}"/>
                 </label>
-                <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_pc_height">
+                <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300" htmlFor="popup_pc_height">
                   <span>$t:sirsoft-popup.settings.pc.height</span>
-                  <input type="number" id="popup_pc_height" name="pc_height" :min="200" :max="1000" class="input w-32" disabled="{{_computed.isPluginReadOnly}}"/>
+                  <input type="number" id="popup_pc_height" name="pc_height" :min="200" :max="1000" class="g7pp-input gpp:w-32" disabled="{{_computed.isPluginReadOnly}}"/>
                 </label>
-                <p class="form-hint">$t:sirsoft-popup.settings.pc.size_hint</p>
+                <p class="g7pp-form-hint">$t:sirsoft-popup.settings.pc.size_hint</p>
               </div>
-              <p data-if="{{_local.errors?.pc_width || _local.errors?.pc_height}}" class="form-error">{{_local.errors?.pc_width?.[0] ?? _local.errors?.pc_height?.[0] ?? ''}}</p>
+              <p data-if="{{_local.errors?.pc_width || _local.errors?.pc_height}}" class="g7pp-form-error">{{_local.errors?.pc_width?.[0] ?? _local.errors?.pc_height?.[0] ?? ''}}</p>
             </div>
           </section>
           <!-- 모바일 표시 — 화면 중앙 / 하단 시트형 -->
-          <section data-ref="mobile_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-popup.settings.mobile.title</h2>
+          <section data-ref="mobile_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.mobile.title</h2>
             <radio-group data-type="composite" name="mobile_style" :inline="true" disabled="{{_computed.isPluginReadOnly}}" label="$t:sirsoft-popup.settings.mobile.title">
               <prop name="options">
                 <item label="$t:sirsoft-popup.settings.mobile_style.center" value="center"/>
@@ -96,19 +96,19 @@
               </prop>
             </radio-group>
             <!-- RadioGroup 선택지는 설명을 그리지 않는다 — 고른 방식의 설명을 아래에 둔다 -->
-            <p data-ref="mobile_style_desc" class="form-hint mt-2">{{$t('sirsoft-popup.settings.mobile_style.' + (_local.form?.mobile_style === 'center' ? 'center' : 'sheet') + '_desc')}}</p>
+            <p data-ref="mobile_style_desc" class="g7pp-form-hint gpp:mt-2">{{$t('sirsoft-popup.settings.mobile_style.' + (_local.form?.mobile_style === 'center' ? 'center' : 'sheet') + '_desc')}}</p>
           </section>
           <!-- 배경·캐러셀 — 자동 넘김을 끄면 간격을 잠근다 -->
-          <section data-ref="behavior_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-popup.settings.behavior.title</h2>
-            <div class="row-stack">
+          <section data-ref="behavior_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.behavior.title</h2>
+            <div class="g7pp-row-stack">
               <toggle data-type="composite" label="$t:sirsoft-popup.settings.behavior.dim_background" name="dim_background" disabled="{{_computed.isPluginReadOnly}}"/>
               <toggle data-type="composite" label="$t:sirsoft-popup.settings.behavior.close_on_backdrop" name="close_on_backdrop" disabled="{{_computed.isPluginReadOnly}}"/>
-              <div class="flex flex-wrap items-end gap-4">
+              <div class="gpp:flex gpp:flex-wrap gpp:items-end gpp:gap-4">
                 <toggle data-type="composite" label="$t:sirsoft-popup.settings.behavior.autoplay" name="autoplay" disabled="{{_computed.isPluginReadOnly}}"/>
-                <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_autoplay_interval">
+                <label class="gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300" htmlFor="popup_autoplay_interval">
                   <span>$t:sirsoft-popup.settings.behavior.interval</span>
-                  <select id="popup_autoplay_interval" data-ref="autoplay_interval_select" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String(_local.form?.autoplay_interval ?? 6)}}" disabled="{{_computed.isPluginReadOnly || _local.form?.autoplay === false}}">
+                  <select id="popup_autoplay_interval" data-ref="autoplay_interval_select" class="gpp:w-32 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm" value="{{String(_local.form?.autoplay_interval ?? 6)}}" disabled="{{_computed.isPluginReadOnly || _local.form?.autoplay === false}}">
                     <options>
                       <option value="4">$t:sirsoft-popup.settings.behavior.seconds|n=4</option>
                       <option value="6">$t:sirsoft-popup.settings.behavior.seconds|n=6</option>
@@ -123,9 +123,9 @@
             </div>
           </section>
           <!-- 닫기 옵션 — 「보지 않기」는 그때 보이던 팝업들을 그 기간 동안 숨기고, 그 뒤 새로 등록한 팝업은 바로 보인다(결정 D3) -->
-          <section data-ref="dismiss_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-popup.settings.dismiss.title</h2>
-            <div class="row-stack">
+          <section data-ref="dismiss_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.dismiss.title</h2>
+            <div class="g7pp-row-stack">
               <radio-group data-type="composite" name="dismiss_mode" disabled="{{_computed.isPluginReadOnly}}" label="$t:sirsoft-popup.settings.dismiss.title">
                 <prop name="options">
                   <item label="$t:sirsoft-popup.settings.dismiss.today" value="today"/>
@@ -133,47 +133,47 @@
                   <item label="$t:sirsoft-popup.settings.dismiss.close" value="close"/>
                 </prop>
               </radio-group>
-              <label data-ref="dismiss_days_field" data-if="{{_local.form?.dismiss_mode === 'days'}}" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_dismiss_days">
-                <input type="number" id="popup_dismiss_days" name="dismiss_days" :min="1" :max="30" aria-label="$t:sirsoft-popup.settings.dismiss.days_label" class="input w-24" disabled="{{_computed.isPluginReadOnly}}"/>
+              <label data-ref="dismiss_days_field" data-if="{{_local.form?.dismiss_mode === 'days'}}" class="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300" htmlFor="popup_dismiss_days">
+                <input type="number" id="popup_dismiss_days" name="dismiss_days" :min="1" :max="30" aria-label="$t:sirsoft-popup.settings.dismiss.days_label" class="g7pp-input gpp:w-24" disabled="{{_computed.isPluginReadOnly}}"/>
                 <span>$t:sirsoft-popup.settings.dismiss.days_unit</span>
               </label>
-              <p data-if="{{_local.errors?.dismiss_days}}" class="form-error">{{_local.errors?.dismiss_days?.[0] ?? ''}}</p>
-              <p class="form-hint">$t:sirsoft-popup.settings.dismiss.hint</p>
+              <p data-if="{{_local.errors?.dismiss_days}}" class="g7pp-form-error">{{_local.errors?.dismiss_days?.[0] ?? ''}}</p>
+              <p class="g7pp-form-hint">$t:sirsoft-popup.settings.dismiss.hint</p>
             </div>
           </section>
           <!-- 업로드·캐시 — 운영자가 서버 사정에 맞춰 바꾸는 값(#810 과 같은 안내) -->
-          <section data-ref="operation_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-popup.settings.operation.title</h2>
-            <div class="row-stack">
+          <section data-ref="operation_card" class="g7pp-admin-card">
+            <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.operation.title</h2>
+            <div class="g7pp-row-stack">
               <div data-ref="field_max_upload_mb">
-                <label class="form-label" htmlFor="popup_max_upload_mb">$t:sirsoft-popup.settings.fields.max_upload_mb.label</label>
-                <input type="number" id="popup_max_upload_mb" name="max_upload_mb" :min="1" :max="10" class="input w-32" disabled="{{_computed.isPluginReadOnly}}"/>
-                <p class="form-hint">$t:sirsoft-popup.settings.fields.max_upload_mb.hint</p>
-                <p data-if="{{_local.errors?.max_upload_mb}}" class="form-error">{{_local.errors?.max_upload_mb?.[0] ?? ''}}</p>
-                <p data-ref="server_upload_limit" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb}}" class="form-hint">$t:sirsoft-popup.settings.fields.max_upload_mb.server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
-                <p data-ref="server_upload_limit_warning" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb &amp;&amp; Number(_local.form?.max_upload_mb ?? 0) &gt; upload_limit.data.upload.server_limit_mb}}" role="status" class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-popup.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
+                <label class="g7pp-form-label" htmlFor="popup_max_upload_mb">$t:sirsoft-popup.settings.fields.max_upload_mb.label</label>
+                <input type="number" id="popup_max_upload_mb" name="max_upload_mb" :min="1" :max="10" class="g7pp-input gpp:w-32" disabled="{{_computed.isPluginReadOnly}}"/>
+                <p class="g7pp-form-hint">$t:sirsoft-popup.settings.fields.max_upload_mb.hint</p>
+                <p data-if="{{_local.errors?.max_upload_mb}}" class="g7pp-form-error">{{_local.errors?.max_upload_mb?.[0] ?? ''}}</p>
+                <p data-ref="server_upload_limit" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb}}" class="g7pp-form-hint">$t:sirsoft-popup.settings.fields.max_upload_mb.server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
+                <p data-ref="server_upload_limit_warning" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb &amp;&amp; Number(_local.form?.max_upload_mb ?? 0) &gt; upload_limit.data.upload.server_limit_mb}}" role="status" class="gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300">$t:sirsoft-popup.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
               </div>
               <div data-ref="field_public_cache_minutes">
-                <label class="form-label" htmlFor="popup_public_cache_minutes">$t:sirsoft-popup.settings.fields.public_cache_minutes.label</label>
-                <input type="number" id="popup_public_cache_minutes" name="public_cache_minutes" :min="0" :max="60" class="input w-32" disabled="{{_computed.isPluginReadOnly}}"/>
-                <p class="form-hint">$t:sirsoft-popup.settings.fields.public_cache_minutes.hint</p>
-                <p data-if="{{_local.errors?.public_cache_minutes}}" class="form-error">{{_local.errors?.public_cache_minutes?.[0] ?? ''}}</p>
+                <label class="g7pp-form-label" htmlFor="popup_public_cache_minutes">$t:sirsoft-popup.settings.fields.public_cache_minutes.label</label>
+                <input type="number" id="popup_public_cache_minutes" name="public_cache_minutes" :min="0" :max="60" class="g7pp-input gpp:w-32" disabled="{{_computed.isPluginReadOnly}}"/>
+                <p class="g7pp-form-hint">$t:sirsoft-popup.settings.fields.public_cache_minutes.hint</p>
+                <p data-if="{{_local.errors?.public_cache_minutes}}" class="g7pp-form-error">{{_local.errors?.public_cache_minutes?.[0] ?? ''}}</p>
               </div>
             </div>
           </section>
         </div>
         <!-- 미리보기 — 표본 팝업 3장을 지금 입력한 표시 방식으로 그린다(저장 전 값) -->
-        <section data-ref="preview_card" aria-labelledby="popup_settings_preview_heading" class="admin-card self-start">
-          <div class="flex-between flex-wrap gap-2 mb-3">
-            <h2 id="popup_settings_preview_heading" class="card-title mb-0">$t:sirsoft-popup.admin.preview.title</h2>
-            <div role="group" aria-label="$t:sirsoft-popup.admin.preview.device_label" class="flex gap-1">
-              <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'pc' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+        <section data-ref="preview_card" aria-labelledby="popup_settings_preview_heading" class="g7pp-admin-card gpp:self-start">
+          <div class="g7pp-flex-between gpp:flex-wrap gpp:gap-2 gpp:mb-3">
+            <h2 id="popup_settings_preview_heading" class="g7pp-card-title gpp:mb-0">$t:sirsoft-popup.admin.preview.title</h2>
+            <div role="group" aria-label="$t:sirsoft-popup.admin.preview.device_label" class="gpp:flex gpp:gap-1">
+              <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'pc' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}">
                 <on type="click">
                   <set-state target="local" previewDevice="pc"/>
                 </on>
                 $t:sirsoft-popup.admin.preview.pc
               </button>
-              <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'mobile' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+              <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'mobile' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}">
                 <on type="click">
                   <set-state target="local" previewDevice="mobile"/>
                 </on>
@@ -184,14 +184,14 @@
           <sirsoft-popup.popup-preview data-type="composite" data-ref="settings_preview" settings="{{({ ...(_local.form ?? {}), pc_left: Number(_local.form?.pc_left ?? 80), pc_top: Number(_local.form?.pc_top ?? 120), pc_width: Number(_local.form?.pc_width ?? 480), pc_height: Number(_local.form?.pc_height ?? 520), dismiss_days: Number(_local.form?.dismiss_days ?? 7) })}}" device="{{_local.previewDevice}}"/>
         </section>
       </div>
-      <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <a href="/admin/plugins/sirsoft-popup/popups" data-ref="cancel_button" class="button btn btn-secondary">
+      <div data-ref="footer_buttons" class="g7pp-sticky-footer-buttons">
+        <a href="/admin/plugins/sirsoft-popup/popups" data-ref="cancel_button" class="g7pp-button g7pp-btn g7pp-btn-secondary">
           <on type="click">
             <navigate/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-1.5">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다(공개 캐시는 서버가 비운다). 실패하면 필드 오류를 칸 아래에 보이고 사유를 알린다 -->
             <sequence>

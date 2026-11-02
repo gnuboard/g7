@@ -58,7 +58,7 @@ describe('PopupConflictResolver', () => {
     expect(row(container, 'audience')?.getAttribute('data-change')).toBe('theirs');
     expect((row(container, 'audience')?.querySelector('input[value="latest"]') as HTMLInputElement).checked).toBe(true);
     expect(row(container, 'device')).toBeNull();
-    expect((container.querySelector('.g7pp-conflict__apply') as HTMLButtonElement).disabled).toBe(false);
+    expect((container.querySelector('[data-conflict-action="apply"]') as HTMLButtonElement).disabled).toBe(false);
   });
 
   // @scenario surface=conflict_resolver_both_changed_requires_choice
@@ -66,7 +66,7 @@ describe('PopupConflictResolver', () => {
     const mine = { ...base, title: '내 제목' };
     const latest = { ...base, revision: 2, title: '남의 제목' };
     const { container, getByText } = render(<PopupConflictResolver base={base} mine={mine} latest={latest} locales={['ko']} />);
-    const apply = container.querySelector('.g7pp-conflict__apply') as HTMLButtonElement;
+    const apply = container.querySelector('[data-conflict-action="apply"]') as HTMLButtonElement;
 
     expect(row(container, 'title')?.getAttribute('data-change')).toBe('both');
     expect(apply.disabled).toBe(true);
@@ -84,7 +84,7 @@ describe('PopupConflictResolver', () => {
     const { container } = render(<PopupConflictResolver base={base} mine={mine} latest={latest} locales={['ko']} onApply={onApply} />);
 
     fireEvent.click(row(container, 'link')?.querySelector('input[value="latest"]') as HTMLInputElement);
-    fireEvent.click(container.querySelector('.g7pp-conflict__apply') as HTMLButtonElement);
+    fireEvent.click(container.querySelector('[data-conflict-action="apply"]') as HTMLButtonElement);
 
     const [merged, nextBase] = onApply.mock.calls[0];
     expect(merged.revision).toBe(2);
@@ -102,7 +102,7 @@ describe('PopupConflictResolver', () => {
 
     expect((pcRow.querySelector('input[value="mine"]') as HTMLInputElement).disabled).toBe(true);
     expect((pcRow.querySelector('input[value="latest"]') as HTMLInputElement).checked).toBe(true);
-    expect(pcRow.querySelector('.g7pp-conflict__stale')).not.toBeNull();
+    expect(pcRow.querySelector('[data-conflict-stale]')).not.toBeNull();
   });
 
   // @scenario surface=conflict_overlays_compared_as_one_item
@@ -124,7 +124,7 @@ describe('PopupConflictResolver', () => {
     expect(container.querySelectorAll('[data-conflict-field^="overlays"]')).toHaveLength(1);
 
     fireEvent.click(overlaysRow.querySelector('input[value="mine"]') as HTMLInputElement);
-    fireEvent.click(container.querySelector('.g7pp-conflict__apply') as HTMLButtonElement);
+    fireEvent.click(container.querySelector('[data-conflict-action="apply"]') as HTMLButtonElement);
     expect(onApply.mock.calls[0][0].overlays).toEqual(mine.overlays);
     expect(onApply.mock.calls[0][0].revision).toBe(2);
   });

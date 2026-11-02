@@ -476,6 +476,11 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/user_mypage_order_receipt.g7.html',
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/user_order_complete_receipt.g7.html',
         'plugins/_bundled/sirsoft-pay_nicepayments/resources/layouts/admin/plugin_settings.g7.html',
+        // #812 팝업 플러그인 신규(2026-11-02 develop-7.2.0 리베이스 뒤 등록 — 옛 tip·새 base 명단 모두 없음)
+        'plugins/_bundled/sirsoft-popup/resources/extensions/popup_layer.g7.html',
+        'plugins/_bundled/sirsoft-popup/resources/layouts/admin/plugin_settings.g7.html',
+        'plugins/_bundled/sirsoft-popup/resources/layouts/admin/popup_form.g7.html',
+        'plugins/_bundled/sirsoft-popup/resources/layouts/admin/popup_list.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/admin_user_detail_social_tab.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/admin_user_list_social_column.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/admin_user_list_social_filter.g7.html',

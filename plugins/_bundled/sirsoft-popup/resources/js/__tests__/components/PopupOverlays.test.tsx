@@ -133,7 +133,7 @@ describe('이미지 위 글 상자 — 사용자 레이어', () => {
   // @effects image_link_and_swipe_unchanged
   it('상자는 누름·글자 선택을 받지 않고 링크 밖에 있어, 상자 위 누름은 덮는 링크로·상자 위 끌기는 장 넘김으로 간다', () => {
     vi.useFakeTimers();
-    const css = readFileSync(resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const css = readFileSync(resolve(__dirname, '../../../css/main.css'), 'utf8');
     const rule = css.match(/\.g7pp-overlay \{[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('pointer-events: none');
     expect(rule).toContain('user-select: none');
@@ -227,7 +227,7 @@ describe('이미지 위 글 상자 — 관리자 미리보기', () => {
 });
 
 describe('이미지 위 글 상자 — 경계·구형 브라우저', () => {
-  const css = readFileSync(resolve(__dirname, '../../../css/popup.css'), 'utf8');
+  const css = readFileSync(resolve(__dirname, '../../../css/main.css'), 'utf8');
 
   // @scenario surface=layer_clips_boxes_to_image
   it('이미지 프레임은 넘친 글을 이미지 경계에서 자르고, 편집기 캔버스만 넘친 부분을 보인다', () => {

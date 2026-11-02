@@ -5,7 +5,7 @@
  * 관리자 보조 컴포넌트(미리보기·저장 후 상태 안내·동시 수정 충돌 비교·이미지 위 글 상자 편집기)를 코어 레지스트리에 등록한다.
  * 커스텀 액션 핸들러는 없다 — 관리자 화면은 엔진 기본 액션으로 충분하다.
  */
-import '../css/popup.css';
+import '../css/main.css';
 import { PopupLayer } from './components/composite/PopupLayer';
 import { PopupPreview } from './components/composite/PopupPreview';
 import { PopupPeriodHint } from './components/composite/PopupPeriodHint';

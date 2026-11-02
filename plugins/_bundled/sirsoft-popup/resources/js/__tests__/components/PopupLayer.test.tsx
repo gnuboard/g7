@@ -368,7 +368,7 @@ describe('PopupLayer', () => {
   it('열릴 때 포커스를 받는 창 자체에는 고리를 그리지 않는다 — 브라우저가 첫 진입의 스크립트 포커스를 focus-visible 로 보아 창 둘레가 파랗게 보였다', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
 
     // 창은 조작 요소가 아니라 포커스를 담는 그릇이다 — 고리는 안의 단추(닫기·점·화살표 등)에만 둔다
     expect(css).not.toMatch(/\.g7pp-dialog:focus(-visible)?\s*\{/);
@@ -569,7 +569,7 @@ describe('PopupLayer', () => {
   it('점은 작게 보여도 누르는 영역(점·일시정지·이전·다음 단추)은 가로·세로 44px 이상이고, 캡슐은 한 줄이다', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     const rule = (selector: string) => css.match(new RegExp(`(^|\\n)\\${selector}\\s*\\{[^}]*\\}`))?.[0] ?? '';
 
     expect(rule('.g7pp-dot')).toMatch(/min-width:\s*44px;/);
@@ -591,10 +591,11 @@ describe('PopupLayer', () => {
       const fs = await import('node:fs');
       const path = await import('node:path');
 
-      return fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+      return fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     };
 
     /** 줄 맨 앞에서 시작하는 규칙 하나(없으면 '') */
+    const DARK = ':is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))';
     const ruleOf = (css: string, selector: string) => css.match(new RegExp(`(^|\\n)${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{[^}]*\\}`))?.[0] ?? '';
 
     // @scenario surface=pager_overlays_body_bottom
@@ -634,7 +635,8 @@ describe('PopupLayer', () => {
       expect(rule).toMatch(/z-index:\s*2;/);
       expect(ruleOf(css, '.g7pp-arrow')).toMatch(/z-index:\s*2;/);
       // 다크 모드에서도 캡슐 바탕이 따로 있다(어두운 본문 위에서 테두리로 구분)
-      expect(ruleOf(css, '.dark .g7pp-pager')).toMatch(/box-shadow:/);
+      // 다크는 템플릿 .dark 가 아니라 사이트 중립 표식(<html data-g7-color-scheme="dark">)으로 읽는다
+      expect(ruleOf(css, `.g7pp-pager${DARK}`)).toMatch(/box-shadow:/);
     });
 
     // @scenario surface=pager_dots_or_counter_by_device
@@ -787,7 +789,7 @@ describe('PopupLayer', () => {
   it('레이어는 GDPR 배너(z-50) 아래 층 — 스타일 파일이 z-index 40 을 준다', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     const root = css.match(/\.g7pp-root\s*\{[^}]*\}/)?.[0] ?? '';
 
     expect(root).toMatch(/z-index:\s*40;/);
@@ -1016,7 +1018,7 @@ describe('PopupLayer', () => {
       expect(slideX(container, 1)).toBe('');
       const fs = await import('node:fs');
       const path = await import('node:path');
-      const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+      const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
       expect(css.match(/\.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/touch-action:\s*pan-y/);
       // 직접 작성형 본문은 스크롤 영역이라 브라우저가 위 값을 거기서 끊어 읽는다 — 본문과 그 안에도 다시 둔다
       expect(css.match(/\.g7pp-body--paged \.g7pp-html,\s*\.g7pp-body--paged \.g7pp-html \*\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/touch-action:\s*pan-y/);
@@ -1138,7 +1140,7 @@ describe('PopupLayer', () => {
 
       const fs = await import('node:fs');
       const path = await import('node:path');
-      const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+      const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
       expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.g7pp-slide--moving\s*\{\s*transition:\s*transform/);
       expect(css).not.toMatch(/g7pp-fade/);
     });
@@ -1281,7 +1283,7 @@ describe('PopupLayer', () => {
       const fs = await import('node:fs');
       const path = await import('node:path');
 
-      return fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+      return fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     };
 
     beforeEach(() => {

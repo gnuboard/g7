@@ -202,7 +202,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "g7pp-admin-page-content"
                 },
                 "children": [
                     {
@@ -210,7 +210,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "page-header"
+                            "className": "g7pp-page-header"
                         },
                         "children": [
                             {
@@ -221,7 +221,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1"
                                         },
                                         "text": "$t:sirsoft-popup.admin.breadcrumb"
                                     },
@@ -229,7 +229,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "g7pp-page-title"
                                         },
                                         "text": "{{_local.form?.id ? '$t:sirsoft-popup.admin.form.edit_title' : '$t:sirsoft-popup.admin.form.create_title'}}"
                                     }
@@ -245,7 +245,7 @@
                         "props": {
                             "id": "popup_form_errors",
                             "role": "alert",
-                            "className": "alert-danger"
+                            "className": "g7pp-alert-danger"
                         },
                         "children": [
                             {
@@ -253,7 +253,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "triangle-exclamation",
-                                    "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5",
+                                    "className": "gpp:text-red-600 gpp:dark:text-red-400 gpp:flex-shrink-0 gpp:mt-0.5",
                                     "size": "md"
                                 }
                             },
@@ -265,7 +265,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                            "className": "gpp:text-sm gpp:font-medium gpp:text-red-800 gpp:dark:text-red-200"
                                         },
                                         "text": "$t:sirsoft-popup.admin.form.validation_error"
                                     },
@@ -278,14 +278,14 @@
                                             "item_var": "message"
                                         },
                                         "props": {
-                                            "className": "mt-2 list-disc list-inside space-y-1"
+                                            "className": "gpp:mt-2 gpp:list-disc gpp:list-inside gpp:space-y-1"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Li",
                                                 "props": {
-                                                    "className": "text-sm text-red-700 dark:text-red-300"
+                                                    "className": "gpp:text-sm gpp:text-red-700 gpp:dark:text-red-300"
                                                 },
                                                 "text": "{{message}}"
                                             }
@@ -300,7 +300,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-6"
+                            "className": "gpp:grid gpp:grid-cols-1 gpp:lg:grid-cols-3 gpp:gap-6"
                         },
                         "children": [
                             {
@@ -311,14 +311,14 @@
                                 "props": {
                                     "id": "popup_form_preview",
                                     "aria-labelledby": "popup_form_preview_heading",
-                                    "className": "admin-card self-start order-first lg:order-last lg:sticky top-4"
+                                    "className": "g7pp-admin-card gpp:self-start gpp:order-first gpp:lg:order-last gpp:lg:sticky gpp:top-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-between flex-wrap gap-2 mb-3"
+                                            "className": "g7pp-flex-between gpp:flex-wrap gpp:gap-2 gpp:mb-3"
                                         },
                                         "children": [
                                             {
@@ -326,7 +326,7 @@
                                                 "name": "H2",
                                                 "props": {
                                                     "id": "popup_form_preview_heading",
-                                                    "className": "card-title"
+                                                    "className": "g7pp-card-title"
                                                 },
                                                 "text": "$t:sirsoft-popup.admin.preview.title"
                                             },
@@ -336,7 +336,7 @@
                                                 "props": {
                                                     "role": "group",
                                                     "aria-label": "$t:sirsoft-popup.admin.preview.device_label",
-                                                    "className": "flex gap-1"
+                                                    "className": "gpp:flex gpp:gap-1"
                                                 },
                                                 "children": [
                                                     {
@@ -356,7 +356,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "aria-pressed": "{{_local.previewDevice === 'pc'}}",
-                                                            "className": "px-3 py-1 text-xs rounded border {{_local.previewDevice === 'pc' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                                            "className": "gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'pc' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.preview.pc"
                                                     },
@@ -377,7 +377,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "aria-pressed": "{{_local.previewDevice === 'mobile'}}",
-                                                            "className": "px-3 py-1 text-xs rounded border {{_local.previewDevice === 'mobile' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                                            "className": "gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'mobile' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.preview.mobile"
                                                     }
@@ -390,7 +390,7 @@
                                         "name": "Label",
                                         "if": "{{(display_settings?.data?.editor?.locales ?? []).length > 1}}",
                                         "props": {
-                                            "className": "flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 mb-2",
+                                            "className": "gpp:flex gpp:items-center gpp:gap-2 gpp:text-xs gpp:text-gray-600 gpp:dark:text-gray-300 gpp:mb-2",
                                             "htmlFor": "popup_preview_locale"
                                         },
                                         "children": [
@@ -414,7 +414,7 @@
                                                 ],
                                                 "props": {
                                                     "id": "popup_preview_locale",
-                                                    "className": "px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs",
+                                                    "className": "gpp:px-2 gpp:py-1 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded gpp:text-xs",
                                                     "value": "{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}",
                                                     "options": "{{(display_settings?.data?.editor?.locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
                                                 }
@@ -438,7 +438,7 @@
                                         "name": "P",
                                         "if": "{{_local.previewDevice === 'mobile' && _computed.isImage && !!_local.form?.images?.pc && !_local.form?.images?.mobile}}",
                                         "props": {
-                                            "className": "form-hint mt-2"
+                                            "className": "g7pp-form-hint gpp:mt-2"
                                         },
                                         "text": "$t:sirsoft-popup.admin.preview.mobile_falls_back"
                                     },
@@ -447,7 +447,7 @@
                                         "name": "P",
                                         "if": "{{!!display_settings?.data?.settings}}",
                                         "props": {
-                                            "className": "form-hint mt-2"
+                                            "className": "g7pp-form-hint gpp:mt-2"
                                         },
                                         "text": "$t:sirsoft-popup.admin.preview.based_on|summary={{_local.previewDevice === 'mobile' ? $t('sirsoft-popup.settings.mobile_style.' + display_settings.data.settings.mobile_style) : $t('sirsoft-popup.settings.pc_position.' + display_settings.data.settings.pc_position) + ' · ' + display_settings.data.settings.pc_width + '×' + display_settings.data.settings.pc_height}}"
                                     },
@@ -463,7 +463,7 @@
                                         ],
                                         "props": {
                                             "href": "/admin/plugins/sirsoft-popup/settings",
-                                            "className": "text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                                            "className": "gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline"
                                         },
                                         "text": "$t:sirsoft-popup.admin.preview.settings_link"
                                     }
@@ -477,7 +477,7 @@
                                 "trackChanges": true,
                                 "debounce": 0,
                                 "props": {
-                                    "className": "lg:col-span-2 flex flex-col gap-6"
+                                    "className": "gpp:lg:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"
                                 },
                                 "children": [
                                     {
@@ -486,14 +486,14 @@
                                         "type": "basic",
                                         "name": "Section",
                                         "props": {
-                                            "className": "admin-card"
+                                            "className": "g7pp-admin-card"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "H2",
                                                 "props": {
-                                                    "className": "card-title"
+                                                    "className": "g7pp-card-title"
                                                 },
                                                 "text": "$t:sirsoft-popup.admin.form.section.basic"
                                             },
@@ -501,7 +501,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "row-stack"
+                                                    "className": "g7pp-row-stack"
                                                 },
                                                 "children": [
                                                     {
@@ -513,7 +513,7 @@
                                                                 "type": "basic",
                                                                 "name": "Label",
                                                                 "props": {
-                                                                    "className": "form-label",
+                                                                    "className": "g7pp-form-label",
                                                                     "htmlFor": "popup_title"
                                                                 },
                                                                 "children": [
@@ -526,7 +526,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-required"
+                                                                            "className": "g7pp-text-required"
                                                                         },
                                                                         "text": "*"
                                                                     }
@@ -540,7 +540,7 @@
                                                                     "id": "popup_title",
                                                                     "name": "title",
                                                                     "maxLength": 100,
-                                                                    "className": "input w-full",
+                                                                    "className": "g7pp-input gpp:w-full",
                                                                     "placeholder": "$t:sirsoft-popup.admin.form.title_placeholder"
                                                                 }
                                                             },
@@ -549,7 +549,7 @@
                                                                 "name": "P",
                                                                 "if": "{{_local.errors?.title}}",
                                                                 "props": {
-                                                                    "className": "form-error"
+                                                                    "className": "g7pp-form-error"
                                                                 },
                                                                 "text": "{{_local.errors?.title?.[0] ?? ''}}"
                                                             },
@@ -558,7 +558,7 @@
                                                                 "name": "P",
                                                                 "if": "{{!_local.errors?.title}}",
                                                                 "props": {
-                                                                    "className": "form-hint"
+                                                                    "className": "g7pp-form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.title_hint"
                                                             }
@@ -589,21 +589,21 @@
                                         "type": "basic",
                                         "name": "Section",
                                         "props": {
-                                            "className": "admin-card"
+                                            "className": "g7pp-admin-card"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-between flex-wrap gap-3 mb-3"
+                                                    "className": "g7pp-flex-between gpp:flex-wrap gpp:gap-3 gpp:mb-3"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "H2",
                                                         "props": {
-                                                            "className": "card-title mb-0"
+                                                            "className": "g7pp-card-title gpp:mb-0"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.form.section.content"
                                                     },
@@ -632,7 +632,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "form-hint mb-4"
+                                                    "className": "g7pp-form-hint gpp:mb-4"
                                                 },
                                                 "text": "$t:sirsoft-popup.admin.form.locale_hint"
                                             },
@@ -642,7 +642,7 @@
                                                 "name": "Div",
                                                 "if": "{{_computed.isImage}}",
                                                 "props": {
-                                                    "className": "row-stack"
+                                                    "className": "g7pp-row-stack"
                                                 },
                                                 "children": [
                                                     {
@@ -654,7 +654,7 @@
                                                                 "type": "basic",
                                                                 "name": "Label",
                                                                 "props": {
-                                                                    "className": "form-label"
+                                                                    "className": "g7pp-form-label"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -666,7 +666,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-required"
+                                                                            "className": "g7pp-text-required"
                                                                         },
                                                                         "text": "*"
                                                                     }
@@ -676,7 +676,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "form-hint mb-2"
+                                                                    "className": "g7pp-form-hint gpp:mb-2"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.image.pc_hint|width={{_computed.pcWidth}}|height={{_computed.pcHeight}}|width2={{_computed.pcWidth * 2}}|height2={{_computed.pcHeight * 2}}|mb={{_computed.uploadMb}}"
                                                             },
@@ -761,7 +761,7 @@
                                                                 "name": "P",
                                                                 "if": "{{_computed.pcSizeMismatch}}",
                                                                 "props": {
-                                                                    "className": "mt-2 text-sm text-amber-700 dark:text-amber-300"
+                                                                    "className": "gpp:mt-2 gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended={{_computed.pcWidth + ':' + _computed.pcHeight}}"
                                                             },
@@ -770,7 +770,7 @@
                                                                 "name": "P",
                                                                 "if": "{{_local.errors?.temp_key || _local.errors?.pc_image_id || _local.errors?.pc_image}}",
                                                                 "props": {
-                                                                    "className": "form-error"
+                                                                    "className": "g7pp-form-error"
                                                                 },
                                                                 "text": "{{_local.errors?.temp_key?.[0] ?? _local.errors?.pc_image_id?.[0] ?? _local.errors?.pc_image?.[0] ?? ''}}"
                                                             }
@@ -785,7 +785,7 @@
                                                                 "type": "basic",
                                                                 "name": "Label",
                                                                 "props": {
-                                                                    "className": "form-label"
+                                                                    "className": "g7pp-form-label"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -797,7 +797,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400"
                                                                         },
                                                                         "text": "$t:sirsoft-popup.admin.form.optional"
                                                                     }
@@ -809,7 +809,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "form-hint mb-2"
+                                                                    "className": "g7pp-form-hint gpp:mb-2"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.image.mobile_hint|ratio={{_computed.mobileRatio}}|example={{_computed.mobileExample}}|mb={{_computed.uploadMb}}"
                                                             },
@@ -891,7 +891,7 @@
                                                                 "name": "P",
                                                                 "if": "{{_local.errors?.mobile_image_id}}",
                                                                 "props": {
-                                                                    "className": "form-error"
+                                                                    "className": "g7pp-form-error"
                                                                 },
                                                                 "text": "{{_local.errors?.mobile_image_id?.[0] ?? ''}}"
                                                             }
@@ -907,7 +907,7 @@
                                                                 "type": "basic",
                                                                 "name": "Label",
                                                                 "props": {
-                                                                    "className": "form-label"
+                                                                    "className": "g7pp-form-label"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.overlay.title"
                                                             },
@@ -915,7 +915,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "form-hint"
+                                                                    "className": "g7pp-form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.overlay.hint"
                                                             },
@@ -923,7 +923,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "form-hint mb-2"
+                                                                    "className": "g7pp-form-hint gpp:mb-2"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.overlay.alt_hint"
                                                             },
@@ -959,7 +959,7 @@
                                                                 "name": "P",
                                                                 "if": "{{!!_computed.overlayError}}",
                                                                 "props": {
-                                                                    "className": "form-error"
+                                                                    "className": "g7pp-form-error"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.overlay.error|message={{_computed.overlayError}}"
                                                             }
@@ -974,7 +974,7 @@
                                                                 "type": "basic",
                                                                 "name": "Label",
                                                                 "props": {
-                                                                    "className": "form-label"
+                                                                    "className": "g7pp-form-label"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.image_alt"
                                                             },
@@ -994,7 +994,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "form-hint"
+                                                                    "className": "g7pp-form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.image_alt_hint"
                                                             }
@@ -1009,7 +1009,7 @@
                                                                 "type": "basic",
                                                                 "name": "Label",
                                                                 "props": {
-                                                                    "className": "form-label",
+                                                                    "className": "g7pp-form-label",
                                                                     "htmlFor": "popup_link_url"
                                                                 },
                                                                 "children": [
@@ -1022,7 +1022,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400"
                                                                         },
                                                                         "text": "$t:sirsoft-popup.admin.form.link_url_optional"
                                                                     }
@@ -1037,7 +1037,7 @@
                                                                     "name": "link_url",
                                                                     "maxLength": 2048,
                                                                     "placeholder": "/event/autumn",
-                                                                    "className": "input w-full min-w-[200px]"
+                                                                    "className": "g7pp-input gpp:w-full gpp:min-w-[200px]"
                                                                 }
                                                             },
                                                             {
@@ -1045,7 +1045,7 @@
                                                                 "name": "P",
                                                                 "if": "{{_local.errors?.link_url}}",
                                                                 "props": {
-                                                                    "className": "form-error"
+                                                                    "className": "g7pp-form-error"
                                                                 },
                                                                 "text": "{{_local.errors?.link_url?.[0] ?? ''}}"
                                                             },
@@ -1054,7 +1054,7 @@
                                                                 "name": "P",
                                                                 "if": "{{!_local.errors?.link_url}}",
                                                                 "props": {
-                                                                    "className": "form-hint"
+                                                                    "className": "g7pp-form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.link_url_hint"
                                                             },
@@ -1062,7 +1062,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "mt-2"
+                                                                    "className": "gpp:mt-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1085,7 +1085,7 @@
                                                 "name": "Div",
                                                 "if": "{{!_computed.isImage}}",
                                                 "props": {
-                                                    "className": "row-stack"
+                                                    "className": "g7pp-row-stack"
                                                 },
                                                 "children": [
                                                     {
@@ -1097,7 +1097,7 @@
                                                                 "type": "basic",
                                                                 "name": "Label",
                                                                 "props": {
-                                                                    "className": "form-label"
+                                                                    "className": "g7pp-form-label"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1109,7 +1109,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-required"
+                                                                            "className": "g7pp-text-required"
                                                                         },
                                                                         "text": "*"
                                                                     }
@@ -1163,7 +1163,7 @@
                                                                 "name": "P",
                                                                 "if": "{{_local.errors?.body_html || _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]}}",
                                                                 "props": {
-                                                                    "className": "form-error"
+                                                                    "className": "g7pp-form-error"
                                                                 },
                                                                 "text": "{{_local.errors?.body_html?.[0] ?? _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]?.[0] ?? ''}}"
                                                             },
@@ -1171,7 +1171,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "form-hint"
+                                                                    "className": "g7pp-form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.editor_hint"
                                                             }
@@ -1187,14 +1187,14 @@
                                         "type": "basic",
                                         "name": "Section",
                                         "props": {
-                                            "className": "admin-card"
+                                            "className": "g7pp-admin-card"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "H2",
                                                 "props": {
-                                                    "className": "card-title"
+                                                    "className": "g7pp-card-title"
                                                 },
                                                 "text": "$t:sirsoft-popup.admin.form.section.condition"
                                             },
@@ -1202,7 +1202,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "row-stack"
+                                                    "className": "g7pp-row-stack"
                                                 },
                                                 "children": [
                                                     {
@@ -1219,7 +1219,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "form-label block",
+                                                                    "className": "g7pp-form-label gpp:block",
                                                                     "aria-hidden": "true"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.form.page_scope"
@@ -1248,7 +1248,7 @@
                                                                 "name": "Div",
                                                                 "if": "{{_local.form?.page_scope === 'routes'}}",
                                                                 "props": {
-                                                                    "className": "mt-3 flex flex-col gap-2"
+                                                                    "className": "gpp:mt-3 gpp:flex gpp:flex-col gpp:gap-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1257,7 +1257,7 @@
                                                                         "name": "Ul",
                                                                         "props": {
                                                                             "aria-label": "$t:sirsoft-popup.admin.form.routes_label",
-                                                                            "className": "flex flex-wrap gap-2"
+                                                                            "className": "gpp:flex gpp:flex-wrap gpp:gap-2"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1269,14 +1269,14 @@
                                                                                     "index_var": "rIdx"
                                                                                 },
                                                                                 "props": {
-                                                                                    "className": "flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                                                                                    "className": "gpp:flex gpp:items-center gpp:gap-1 gpp:pl-2 gpp:pr-1 gpp:py-0.5 gpp:rounded-full gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:bg-gray-50 gpp:dark:bg-gray-700"
                                                                                 },
                                                                                 "children": [
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Code",
                                                                                         "props": {
-                                                                                            "className": "text-xs text-gray-800 dark:text-gray-100"
+                                                                                            "className": "gpp:text-xs gpp:text-gray-800 gpp:dark:text-gray-100"
                                                                                         },
                                                                                         "text": "{{route}}"
                                                                                     },
@@ -1297,7 +1297,7 @@
                                                                                         "props": {
                                                                                             "type": "button",
                                                                                             "aria-label": "{{$t('sirsoft-popup.admin.form.route_remove', { route: route })}}",
-                                                                                            "className": "flex-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
+                                                                                            "className": "g7pp-flex-center gpp:w-8 gpp:h-8 gpp:rounded-full gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100"
                                                                                         },
                                                                                         "children": [
                                                                                             {
@@ -1305,7 +1305,7 @@
                                                                                                 "name": "Icon",
                                                                                                 "props": {
                                                                                                     "name": "xmark",
-                                                                                                    "className": "text-xs"
+                                                                                                    "className": "gpp:text-xs"
                                                                                                 }
                                                                                             }
                                                                                         ]
@@ -1318,14 +1318,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex flex-wrap items-end gap-2"
+                                                                            "className": "gpp:flex gpp:flex-wrap gpp:items-end gpp:gap-2"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Label",
                                                                                 "props": {
-                                                                                    "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]",
+                                                                                    "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300 gpp:flex-1 gpp:min-w-[12rem]",
                                                                                     "htmlFor": "popup_route_input"
                                                                                 },
                                                                                 "children": [
@@ -1363,7 +1363,7 @@
                                                                                         "props": {
                                                                                             "type": "text",
                                                                                             "id": "popup_route_input",
-                                                                                            "className": "input",
+                                                                                            "className": "g7pp-input",
                                                                                             "placeholder": "/board",
                                                                                             "value": "{{_local.routeInput}}",
                                                                                             "aria-invalid": "{{_computed.routeInputError !== ''}}",
@@ -1390,7 +1390,7 @@
                                                                                 ],
                                                                                 "props": {
                                                                                     "type": "button",
-                                                                                    "className": "btn btn-secondary",
+                                                                                    "className": "g7pp-btn g7pp-btn-secondary",
                                                                                     "disabled": "{{_computed.routeDraft === '' || _computed.routeInputError !== ''}}"
                                                                                 },
                                                                                 "text": "$t:sirsoft-popup.admin.form.route_add"
@@ -1403,7 +1403,7 @@
                                                                         "if": "{{_computed.routeInputError !== ''}}",
                                                                         "props": {
                                                                             "role": "status",
-                                                                            "className": "form-error"
+                                                                            "className": "g7pp-form-error"
                                                                         },
                                                                         "text": "{{$t('sirsoft-popup.admin.form.route_errors.' + _computed.routeInputError)}}"
                                                                     },
@@ -1412,7 +1412,7 @@
                                                                         "name": "P",
                                                                         "if": "{{_local.errors?.routes || Object.keys(_local.errors ?? {}).some(k => k.startsWith('routes.'))}}",
                                                                         "props": {
-                                                                            "className": "form-error"
+                                                                            "className": "g7pp-form-error"
                                                                         },
                                                                         "text": "{{_local.errors?.routes?.[0] ?? Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('routes.'))?.[1]?.[0] ?? ''}}"
                                                                     },
@@ -1421,7 +1421,7 @@
                                                                         "name": "P",
                                                                         "props": {
                                                                             "id": "popup_route_hint",
-                                                                            "className": "form-hint"
+                                                                            "className": "g7pp-form-hint"
                                                                         },
                                                                         "text": "$t:sirsoft-popup.admin.form.route_hint"
                                                                     }
@@ -1433,7 +1433,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                            "className": "gpp:grid gpp:grid-cols-1 gpp:md:grid-cols-2 gpp:gap-4"
                                                         },
                                                         "children": [
                                                             {
@@ -1449,7 +1449,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "form-label block",
+                                                                            "className": "g7pp-form-label gpp:block",
                                                                             "aria-hidden": "true"
                                                                         },
                                                                         "text": "$t:sirsoft-popup.admin.form.audience"
@@ -1491,7 +1491,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "form-label block",
+                                                                            "className": "g7pp-form-label gpp:block",
                                                                             "aria-hidden": "true"
                                                                         },
                                                                         "text": "$t:sirsoft-popup.admin.form.device"
@@ -1532,14 +1532,14 @@
                                         "type": "basic",
                                         "name": "Section",
                                         "props": {
-                                            "className": "admin-card"
+                                            "className": "g7pp-admin-card"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "H2",
                                                 "props": {
-                                                    "className": "card-title"
+                                                    "className": "g7pp-card-title"
                                                 },
                                                 "text": "$t:sirsoft-popup.admin.form.section.period"
                                             },
@@ -1547,7 +1547,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "row-stack"
+                                                    "className": "g7pp-row-stack"
                                                 },
                                                 "children": [
                                                     {
@@ -1574,7 +1574,7 @@
                                                         "name": "Div",
                                                         "if": "{{_local.form?.display_period === 'range'}}",
                                                         "props": {
-                                                            "className": "flex flex-wrap items-center gap-2"
+                                                            "className": "gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-2"
                                                         },
                                                         "children": [
                                                             {
@@ -1583,7 +1583,7 @@
                                                                 "responsive": {
                                                                     "portable": {
                                                                         "props": {
-                                                                            "className": "input w-full"
+                                                                            "className": "g7pp-input gpp:w-full"
                                                                         }
                                                                     }
                                                                 },
@@ -1591,14 +1591,14 @@
                                                                     "type": "datetime-local",
                                                                     "name": "starts_at_local",
                                                                     "aria-label": "$t:sirsoft-popup.admin.form.starts_at",
-                                                                    "className": "input w-52"
+                                                                    "className": "g7pp-input gpp:w-52"
                                                                 }
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-label-subtle"
+                                                                    "className": "g7pp-text-label-subtle"
                                                                 },
                                                                 "text": "~"
                                                             },
@@ -1608,7 +1608,7 @@
                                                                 "responsive": {
                                                                     "portable": {
                                                                         "props": {
-                                                                            "className": "input w-full"
+                                                                            "className": "g7pp-input gpp:w-full"
                                                                         }
                                                                     }
                                                                 },
@@ -1616,7 +1616,7 @@
                                                                     "type": "datetime-local",
                                                                     "name": "ends_at_local",
                                                                     "aria-label": "$t:sirsoft-popup.admin.form.ends_at",
-                                                                    "className": "input w-52"
+                                                                    "className": "g7pp-input gpp:w-52"
                                                                 }
                                                             }
                                                         ]
@@ -1626,7 +1626,7 @@
                                                         "name": "P",
                                                         "if": "{{_local.errors?.starts_at}}",
                                                         "props": {
-                                                            "className": "form-error"
+                                                            "className": "g7pp-form-error"
                                                         },
                                                         "text": "{{_local.errors?.starts_at?.[0] ?? ''}}"
                                                     },
@@ -1635,7 +1635,7 @@
                                                         "name": "P",
                                                         "if": "{{_local.errors?.ends_at}}",
                                                         "props": {
-                                                            "className": "form-error"
+                                                            "className": "g7pp-form-error"
                                                         },
                                                         "text": "{{_local.errors?.ends_at?.[0] ?? ''}}"
                                                     },
@@ -1643,7 +1643,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "g7pp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.form.period_hint"
                                                     },
@@ -1670,7 +1670,7 @@
                                         "if": "{{_local.pcUploadBlocked || _local.mobileUploadBlocked}}",
                                         "props": {
                                             "role": "status",
-                                            "className": "form-hint"
+                                            "className": "g7pp-form-hint"
                                         },
                                         "text": "$t:sirsoft-popup.admin.form.upload_pending"
                                     },
@@ -1682,14 +1682,14 @@
                                         "if": "{{_local.conflict}}",
                                         "props": {
                                             "role": "alert",
-                                            "className": "alert-danger"
+                                            "className": "g7pp-alert-danger"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex flex-col gap-2 w-full min-w-0"
+                                                    "className": "gpp:flex gpp:flex-col gpp:gap-2 gpp:w-full gpp:min-w-0"
                                                 },
                                                 "children": [
                                                     {
@@ -1701,7 +1701,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex flex-wrap items-center gap-3"
+                                                            "className": "gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-3"
                                                         },
                                                         "children": [
                                                             {
@@ -1750,7 +1750,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "btn btn-secondary flex-center gap-1.5",
+                                                                    "className": "g7pp-btn g7pp-btn-secondary g7pp-flex-center gpp:gap-1.5",
                                                                     "disabled": "{{_local.conflictLoading}}"
                                                                 },
                                                                 "children": [
@@ -1760,7 +1760,7 @@
                                                                         "if": "{{_local.conflictLoading}}",
                                                                         "props": {
                                                                             "name": "spinner",
-                                                                            "className": "spinner-sm"
+                                                                            "className": "g7pp-spinner-sm"
                                                                         }
                                                                     },
                                                                     {
@@ -1777,7 +1777,7 @@
                                                                     "href": "/admin/plugins/sirsoft-popup/popups/{{route.id}}/edit",
                                                                     "target": "_blank",
                                                                     "rel": "noopener noreferrer",
-                                                                    "className": "underline"
+                                                                    "className": "gpp:underline"
                                                                 },
                                                                 "text": "$t:sirsoft-popup.admin.conflict.open_latest"
                                                             }
@@ -1790,7 +1790,7 @@
                                                         "if": "{{_local.conflictLoadError}}",
                                                         "props": {
                                                             "role": "status",
-                                                            "className": "form-error"
+                                                            "className": "g7pp-form-error"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.form.conflict_merge.load_failed"
                                                     },
@@ -1831,7 +1831,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "sticky-footer-buttons-between"
+                                            "className": "g7pp-sticky-footer-buttons-between"
                                         },
                                         "children": [
                                             {
@@ -1852,7 +1852,7 @@
                                                 "props": {
                                                     "href": "/admin/plugins/sirsoft-popup/popups",
                                                     "mergeQuery": true,
-                                                    "className": "button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                                    "className": "g7pp-button g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:text-gray-700 gpp:dark:text-gray-200 gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:hover:bg-gray-50 gpp:dark:hover:bg-gray-700 gpp:font-medium gpp:transition-colors"
                                                 },
                                                 "children": [
                                                     {
@@ -1951,7 +1951,7 @@
                                                 "props": {
                                                     "type": "button",
                                                     "disabled": "{{_local.isSaving || (_computed.isImage && (_local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc))}}",
-                                                    "className": "btn btn-primary flex-center gap-1.5"
+                                                    "className": "g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-1.5"
                                                 },
                                                 "children": [
                                                     {
@@ -1960,7 +1960,7 @@
                                                         "if": "{{_local.isSaving}}",
                                                         "props": {
                                                             "name": "spinner",
-                                                            "className": "spinner-sm"
+                                                            "className": "g7pp-spinner-sm"
                                                         }
                                                     },
                                                     {

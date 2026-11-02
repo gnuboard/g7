@@ -87,7 +87,7 @@ describe('PopupPreview', () => {
 
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     const body = css.match(/\.g7pp-root--preview \.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '';
     expect(body).toContain('var(--g7pp-frame-h');
     expect(body).not.toMatch(/100%/);
@@ -115,7 +115,7 @@ describe('PopupPreview', () => {
 
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     expect(css.match(/\.g7pp-root--preview \.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '').toContain('calc(var(--g7pp-frame-h, 800px) - 116px)');
   });
 

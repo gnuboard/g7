@@ -621,6 +621,8 @@ test.describe('관리자 화면', () => {
 
     await authenticatePage(page, managerToken);
     await page.goto(`${ADMIN_LIST}?per_page=1&sort_by=created_at&sort_order=desc&page=1`);
+    // 검색칸은 플러그인 자기 CSS(gpp: 접두 빌드)로 최소 폭 12rem 을 받는다 — 관리자 템플릿 CSS 에 기대면 빠지는 규칙이다
+    await expect(page.locator('label[for="popup_filter_search"]')).toHaveCSS('min-width', '192px');
     const pager = page.getByRole('navigation', { name: '페이지네이션' });
     await expect(pager).toBeVisible();
     await pager.getByRole('link', { name: '페이지 2', exact: true }).click();

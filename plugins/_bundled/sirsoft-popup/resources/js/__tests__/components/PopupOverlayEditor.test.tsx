@@ -429,9 +429,9 @@ describe('PopupOverlayEditor', () => {
     expect(canvas().className).toContain('g7pp-ov-editor__canvas--light');
 
     // 바탕색은 사용자 레이어의 팝업 바탕(--g7pp-bg)과 같은 값이다
-    const css = readFileSync(resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const css = readFileSync(resolve(__dirname, '../../../css/main.css'), 'utf8');
     const light = css.match(/--g7pp-bg: (#[0-9a-f]{6});/i)?.[1];
-    const dark = css.match(/\.dark \.g7pp-root \{\s*--g7pp-bg: (#[0-9a-f]{6});/i)?.[1];
+    const dark = css.match(/\.g7pp-root:is\(\[data-g7-color-scheme=\"dark\"\][^{]*\{\s*--g7pp-bg: (#[0-9a-f]{6});/i)?.[1];
     expect(css).toMatch(new RegExp(`canvas--light \\{\\s*background: ${light};`, 'i'));
     expect(css).toMatch(new RegExp(`canvas--dark \\{\\s*background: ${dark};`, 'i'));
   });
