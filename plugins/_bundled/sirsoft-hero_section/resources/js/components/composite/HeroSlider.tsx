@@ -11,7 +11,7 @@ import 'swiper/css/effect-flip';
 import 'swiper/css/effect-coverflow';
 import 'swiper/css/effect-creative';
 import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useMarketingConsent, type HeroVideo } from '../../support/media';
-import { LetterText, lineDelay, textMotion, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
+import { LetterText, lineDelay, textMotion, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
 export type { HeroVideo } from '../../support/media';
 export type { HeroTextPresentation, TextSpot } from '../../support/text';
@@ -118,7 +118,26 @@ export interface HeroSliderSettings {
    * 메뉴가 배너 위에 투명하게 겹치게 하고, 문구는 템플릿이 알려 준 메뉴 높이(`--g7-header-height`)만큼 아래에서 시작한다.
    */
   header_overlay?: boolean;
+
+  /**
+   * 페이징 모양 — 점(dots, 기본) · 진행 막대 점(progress, 지금 장 점이 길어지고 자동 넘김까지 남은 시간이 찬다) ·
+   * 배너 이름 탭(tabs, 장마다 배너 제목과 진행 막대, 휴대폰에서는 막대만) · 번호(fraction, 「01 / 05」). 모르는 값은 점.
+   */
+  pagination?: HeroPagination;
 }
+
+/** 페이징 모양 — 서버 Enum `SlidePagination` 과 같다 */
+export type HeroPagination = 'dots' | 'progress' | 'tabs' | 'fraction';
+
+const PAGINATIONS: readonly HeroPagination[] = ['dots', 'progress', 'tabs', 'fraction'];
+
+/**
+ * 장 번호를 두 자리로 맞춥니다(「01 / 05」).
+ *
+ * @param n 장 번호(1부터)
+ * @returns 두 자리 이상 문자열
+ */
+const twoDigits = (n: number): string => String(n).padStart(2, '0');
 
 export interface HeroSliderProps {
   /** 노출 배너 (공개 API 순서 그대로) */
@@ -333,6 +352,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const effect: HeroEffect = reduced ? 'none' : (requested in EFFECTS ? requested : 'slide');
   const interval = Math.max(1, Number(settings.interval_seconds ?? 5)) * 1000;
   const canAutoplay = (settings.autoplay ?? true) && count > 1 && !reduced;
+  const pagination: HeroPagination = PAGINATIONS.includes(settings.pagination as HeroPagination) ? settings.pagination as HeroPagination : 'dots';
 
   const [index, setIndex] = useState(0);
   // 영상이 있는 배너 묶음 — 움직임 줄이기면 멈춘 채 시작하고 단추로 재생한다. 사이트는 받는 중(배너 없음)으로 먼저 그리므로
@@ -527,7 +547,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       id={id}
       {...editorAttrs}
       ref={regionRef}
-      className={`hs hs--${effect} hs--${full ? 'full' : 'content'}${count > 1 ? ' hs--controlled' : ''}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
+      className={`hs hs--${effect} hs--${full ? 'full' : 'content'} hs--pagination-${pagination}${count > 1 ? ' hs--controlled' : ''}${autoplaying ? ' hs--autoplaying' : ''}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
       style={style}
       role="region"
       aria-roledescription={t('sirsoft-hero_section.slider.carousel_role', '캐러셀')}
@@ -560,6 +580,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         autoplay={canAutoplay ? { delay: interval, disableOnInteraction: false } : false}
         onSwiper={setSwiper}
         onRealIndexChange={(instance: SwiperInstance) => setIndex(instance.realIndex)}
+        // 진행 막대 — 자동 넘김까지 지난 비율(0~1)을 CSS 변수로만 흘린다(매 프레임 다시 그리지 않게)
+        onAutoplayTimeLeft={(_instance: SwiperInstance, _left: number, remaining: number) => {
+          regionRef.current?.style.setProperty('--hs-progress', String(Math.min(1, Math.max(0, 1 - remaining))));
+        }}
       >
         {banners.map((banner, i) => (
           <SwiperSlide key={banner.id}>
@@ -594,18 +618,45 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               Swiper 모듈은 요소를 바깥 문서에서 찾아 편집 미리보기(iframe)에서는 붙지 않는다 */}
           <button type="button" className="swiper-button-prev hs__arrow hs__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>{ARROW}</button>
           <button type="button" className="swiper-button-next hs__arrow hs__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>{ARROW}</button>
-          <div className="swiper-pagination swiper-pagination-bullets swiper-pagination-horizontal hs__pagination">
-            {banners.map((banner, i) => (
-              <button
-                key={banner.id}
-                type="button"
-                className={`swiper-pagination-bullet${i === index ? ' swiper-pagination-bullet-active' : ''}`}
-                aria-label={t('sirsoft-hero_section.slider.go_to', '{{n}}번째 배너로 이동', { n: String(i + 1) })}
-                aria-current={i === index ? 'true' : undefined}
-                onClick={() => goTo(i)}
-              />
-            ))}
-          </div>
+          {pagination === 'fraction' ? (
+            // 번호 — 장 번호는 슬라이드 이름이 읽어 주므로 화면 읽기에서는 감춘다
+            <div className="hs__pagination hs__fraction" aria-hidden="true">
+              <span className="hs__fraction-current">{twoDigits(index + 1)}</span>
+              <span className="hs__fraction-sep">/</span>
+              <span className="hs__fraction-total">{twoDigits(count)}</span>
+            </div>
+          ) : pagination === 'tabs' ? (
+            // 배너 이름 탭 — 이름은 보이는 글자(휴대폰에서는 화면 읽기용으로만 남김)가 단추 이름이다
+            <div className="hs__pagination hs__tabs">
+              {banners.map((banner, i) => (
+                <button
+                  key={banner.id}
+                  type="button"
+                  className={`hs__tab${i === index ? ' hs__tab--active' : ''}`}
+                  aria-current={i === index ? 'true' : undefined}
+                  onClick={() => goTo(i)}
+                >
+                  <span className="hs__tab-track" aria-hidden="true">{i === index && <span className="hs__bullet-fill" />}</span>
+                  <span className="hs__tab-label">{banner.title || banner.image_alt || t('sirsoft-hero_section.slider.go_to', '{{n}}번째 배너로 이동', { n: String(i + 1) })}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className={`swiper-pagination swiper-pagination-bullets swiper-pagination-horizontal hs__pagination hs__pagination--${pagination}`}>
+              {banners.map((banner, i) => (
+                <button
+                  key={banner.id}
+                  type="button"
+                  className={`swiper-pagination-bullet${i === index ? ' swiper-pagination-bullet-active' : ''}`}
+                  aria-label={t('sirsoft-hero_section.slider.go_to', '{{n}}번째 배너로 이동', { n: String(i + 1) })}
+                  aria-current={i === index ? 'true' : undefined}
+                  onClick={() => goTo(i)}
+                >
+                  {pagination === 'progress' && i === index && <span className="hs__bullet-fill" aria-hidden="true" />}
+                </button>
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -782,7 +833,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
     if (!element) {
       return;
     }
-    const measure = () => setOverflowing(element.scrollHeight > element.clientHeight + 1);
+    const measure = () => setOverflowing(textOverflows(element));
     measure();
     if (typeof ResizeObserver === 'undefined') {
       return;
@@ -880,7 +931,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           } : {})}
         >
           {/* 긴 문구는 이 안에서만 스크롤한다 — 바깥 여백(넘김 컨트롤 자리)에는 글자가 지나가지 않는다 */}
-          <div className="hs__scroll" ref={scrollRef} {...(editable ? {} : scrollable)}>{lines}</div>
+          <div className={`hs__scroll${overflowing ? ' hs__scroll--overflow' : ''}`} ref={scrollRef} {...(editable ? {} : scrollable)}>{lines}</div>
         </div>
       ))}
     </div>

@@ -147,4 +147,43 @@ class BannerEditorMigrationTest extends PluginTestCase
             DB::purge('hero_text_smoke');
         }
     }
+
+    /**
+     * 페이징 모양 마이그레이션의 up→down→up 에서 기존 위치 설정은 점(dots)으로 채워지고 위치 설정을 읽는 Repository 가 그대로 돈다.
+     *
+     * @scenario case=pagination_migration_roundtrip
+     *
+     * @return void 반환값 없음
+     */
+    public function test_pagination_migration_roundtrip_keeps_existing_rows(): void
+    {
+        $original = DB::getDefaultConnection();
+        config(['database.connections.hero_page_smoke' => array_replace(config('database.connections.'.$original), [
+            'prefix' => 'h8_'.bin2hex(random_bytes(3)).'_', 'prefix_indexes' => true,
+        ])]);
+        DB::setDefaultConnection('hero_page_smoke');
+        try {
+            foreach (glob(dirname(__DIR__, 3).'/database/migrations/*.php') as $file) {
+                (require $file)->up();
+            }
+            $migration = require dirname(__DIR__, 3).'/database/migrations/2026_11_02_000008_add_pagination_to_hero_section_position_settings.php';
+            $migration->down();
+            $this->assertFalse(Schema::hasColumn('hero_section_position_settings', 'pagination'));
+
+            // 페이징 컬럼이 없던 때의 행
+            DB::table('hero_section_position_settings')->insert(['position' => 'shop_hero', 'autoplay' => 1, 'interval_seconds' => 7, 'effect' => 'fade', 'width' => 'full', 'header_overlay' => 1, 'created_at' => now(), 'updated_at' => now()]);
+
+            $migration->up();
+            $migration->up();
+            $setting = app(PositionSettingRepositoryInterface::class)->findByPosition('shop_hero');
+            $this->assertSame('dots', $setting->toSettings()['pagination']);
+            $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'fade', 'width' => 'full', 'header_overlay' => true, 'pagination' => 'dots'], $setting->toSettings());
+        } finally {
+            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+                Schema::dropIfExists($table);
+            }
+            DB::setDefaultConnection($original);
+            DB::purge('hero_page_smoke');
+        }
+    }
 }

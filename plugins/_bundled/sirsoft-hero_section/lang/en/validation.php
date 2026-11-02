@@ -71,6 +71,7 @@ return [
         'interval_seconds' => 'interval',
         'effect' => 'effect',
         'width' => 'width',
+        'pagination' => 'pagination style',
         'header_overlay' => 'menu overlay',
         'ids' => 'selected banners',
         'ids_item' => 'selected banner',

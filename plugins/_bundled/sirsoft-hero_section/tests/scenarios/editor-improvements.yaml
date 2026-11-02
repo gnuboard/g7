@@ -7,6 +7,7 @@ axes:
     - revision_conflict
     - presentation_roundtrip
     - text_layout_migration_roundtrip
+    - pagination_migration_roundtrip
     - bulk_revision_conflict
     - site_clock_metadata
     - migration_roundtrip

@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Http\Requests\Admin;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\HeroSection\Enums\SlideEffect;
+use Plugins\Sirsoft\HeroSection\Enums\SlidePagination;
 use Plugins\Sirsoft\HeroSection\Enums\SlideWidth;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 
@@ -38,6 +39,8 @@ class UpdatePositionSettingRequest extends FormRequest
             'width' => ['sometimes', 'required', Rule::enum(SlideWidth::class)],
             // 메뉴 겹치기 — 생략하면 지금 값 유지(처음 저장이면 꺼짐). 화면 전체 폭일 때만 사이트에 적용되지만 본문 폭에서도 저장은 받는다
             'header_overlay' => ['sometimes', 'required', 'boolean'],
+            // 페이징 모양 — 생략하면 지금 값 유지(처음 저장이면 점)
+            'pagination' => ['sometimes', 'required', Rule::enum(SlidePagination::class)],
         ];
     }
 
@@ -54,6 +57,7 @@ class UpdatePositionSettingRequest extends FormRequest
             'effect' => __('sirsoft-hero_section::validation.attributes.effect'),
             'width' => __('sirsoft-hero_section::validation.attributes.width'),
             'header_overlay' => __('sirsoft-hero_section::validation.attributes.header_overlay'),
+            'pagination' => __('sirsoft-hero_section::validation.attributes.pagination'),
         ];
     }
 }

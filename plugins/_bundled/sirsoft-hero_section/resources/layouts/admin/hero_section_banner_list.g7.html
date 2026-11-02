@@ -32,7 +32,7 @@
   <data-source id="position_settings" label_key="$t:sirsoft-hero_section.editor.data_source.position_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
   <computed name="currentPosition">{{query.position || 'home_hero'}}</computed>
   <computed name="sitePath">{{position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? ''}}</computed>
-  <computed name="currentSettings">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false} }}</computed>
+  <computed name="currentSettings">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots'} }}</computed>
   <init-local>
     <field name="filter">
       <field name="search" value=""/>
@@ -198,6 +198,22 @@
               </on>
             </select>
           </label>
+          <!-- 페이징 모양 — 고르면 저장 전에 위 미리보기가 바로 바뀐다(배너 2장 이상일 때 보인다) -->
+          <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_pagination">
+            <span>$t:sirsoft-hero_section.admin.slider.pagination</span>
+            <select id="hero_slider_pagination" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).pagination ?? 'dots'}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="dots">$t:sirsoft-hero_section.admin.slider.paginations.dots</option>
+                <option value="progress">$t:sirsoft-hero_section.admin.slider.paginations.progress</option>
+                <option value="tabs">$t:sirsoft-hero_section.admin.slider.paginations.tabs</option>
+                <option value="fraction">$t:sirsoft-hero_section.admin.slider.paginations.fraction</option>
+              </options>
+              <on type="change">
+                <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, pagination: $event.target.value})}}"/>
+              </on>
+            </select>
+            <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.pagination_hint</span>
+          </label>
           <!-- 표시 폭 — 고르면 저장 전에 위 미리보기가 바로 바뀐다 -->
           <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_width">
             <span>$t:sirsoft-hero_section.admin.slider.width</span>
@@ -223,7 +239,7 @@
           </label>
           <p data-ref="header_overlay_hint" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.header_overlay_hint</p>
           <p data-ref="header_overlay_needs_full" data-if="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true &amp;&amp; ((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content') !== 'full'}}" role="status" class="text-xs text-amber-700 dark:text-amber-300">$t:sirsoft-hero_section.admin.slider.header_overlay_needs_full</p>
-          <button type="button" data-ref="slider_save_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="btn btn-primary flex-center gap-1.5" disabled="{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect &amp;&amp; (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') &amp;&amp; (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true))}}">
+          <button type="button" data-ref="slider_save_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="btn btn-primary flex-center gap-1.5" disabled="{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect &amp;&amp; (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') &amp;&amp; (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true) &amp;&amp; (_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots'))}}">
             <on type="click">
               <!-- 설정 저장 — 진행 깃발은 성공·실패 양쪽에서 푼다. 작업본은 비우지 않는다: 다시 받은 서버 값과 같아지면 저장 버튼이 저절로 잠긴다(비우면 재조회 도착 전 옛 값이 잠깐 보인다). 작업본은 위치를 함께 들고 있어 다른 위치 탭에서는 쓰이지 않는다 -->
               <sequence>
@@ -238,7 +254,7 @@
                     <set-state target="local" :sliderSaving="false"/>
                     <toast type="error" message="{{error.message}}"/>
                   </fail>
-                  <body autoplay="{{_local.sliderForm.autoplay}}" interval_seconds="{{Number(_local.sliderForm.interval_seconds)}}" effect="{{_local.sliderForm.effect}}" width="{{_local.sliderForm.width ?? 'content'}}" header_overlay="{{_local.sliderForm.header_overlay === true}}"/>
+                  <body autoplay="{{_local.sliderForm.autoplay}}" interval_seconds="{{Number(_local.sliderForm.interval_seconds)}}" effect="{{_local.sliderForm.effect}}" width="{{_local.sliderForm.width ?? 'content'}}" header_overlay="{{_local.sliderForm.header_overlay === true}}" pagination="{{_local.sliderForm.pagination ?? 'dots'}}"/>
                 </api-call>
               </sequence>
             </on>

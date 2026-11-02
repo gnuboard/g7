@@ -47,5 +47,6 @@ return [
         'youtube_id' => 'YouTube動画ID',
         'eyebrow' => 'ヘッダー',
         'header_overlay' => 'メニュー重複',
+        'pagination' => 'ページング表示',
     ],
 ];

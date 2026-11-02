@@ -457,6 +457,8 @@ describe('HeroSlider', () => {
     // jsdom 은 배치를 하지 않는다 — 문구 영역의 내용 높이만 넘침 여부에 따라 흉내 낸다
     Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get() { return this.classList.contains('hs__scroll') && overflow ? 500 : 100; } });
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get() { return 100; } });
+    // 넘침은 줄의 배치 높이로 판정한다(등장 효과의 이동은 빼고) — 줄 높이도 함께 흉내 낸다
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get() { return this.classList.contains('hs__line') && overflow ? 500 : 0; } });
 
     try {
       const { container } = render(<HeroSlider banners={[banner(1), banner(2, { title: '' })]} settings={{ autoplay: false }} />);
@@ -467,6 +469,8 @@ describe('HeroSlider', () => {
         ['0', 'region', '배너 문구'],
         ['-1', 'region', '배너 문구'],
       ]);
+      // 넘칠 때만 세로 스크롤을 켠다(CSS hs__scroll--overflow)
+      expect(scrolls().every((el) => el.classList.contains('hs__scroll--overflow'))).toBe(true);
 
       // 화면 폭이 넓어져 더는 넘치지 않으면 속성을 모두 거둔다
       overflow = false;
@@ -475,12 +479,92 @@ describe('HeroSlider', () => {
         expect(el.hasAttribute('tabindex')).toBe(false);
         expect(el.hasAttribute('role')).toBe(false);
         expect(el.hasAttribute('aria-label')).toBe(false);
+        expect(el.classList.contains('hs__scroll--overflow')).toBe(false);
       }
     } finally {
       delete (HTMLElement.prototype as any).scrollHeight;
       delete (HTMLElement.prototype as any).clientHeight;
+      delete (HTMLElement.prototype as any).offsetHeight;
       (globalThis as any).ResizeObserver = OriginalObserver;
     }
+  });
+
+  // @scenario surface=motion_does_not_make_text_scroll
+  // @effects long_text_not_lost
+  it('등장 효과가 줄을 아래에서 올리는 동안 밀린 만큼으로는 넘친다고 보지 않는다 — 스크롤 막대·탭 진입 영역이 생기지 않는다', () => {
+    // 떠오르기(translateY 20px) 재생 중: 스크롤 높이는 118 이지만 줄의 실제 배치 높이는 100 으로 영역(107) 안이다
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get() { return this.classList.contains('hs__scroll') ? 118 : 0; } });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get() { return this.classList.contains('hs__scroll') ? 107 : 0; } });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get() { return this.classList.contains('hs__line') ? 100 : 0; } });
+    try {
+      const { container } = render(<HeroSlider banners={[banner(1, { description_visible: false, presentation: { animation: 'rise' } })]} settings={{ autoplay: false }} />);
+      expect(container.querySelector('.hs__textbox--rise')).not.toBeNull();
+      const scroll = container.querySelector('.hs__scroll') as HTMLElement;
+      expect(scroll.classList.contains('hs__scroll--overflow')).toBe(false);
+      expect(scroll.hasAttribute('tabindex')).toBe(false);
+      expect(scroll.hasAttribute('role')).toBe(false);
+    } finally {
+      delete (HTMLElement.prototype as any).scrollHeight;
+      delete (HTMLElement.prototype as any).clientHeight;
+      delete (HTMLElement.prototype as any).offsetHeight;
+    }
+  });
+
+  // @scenario surface=slider_pagination_dots_default
+  it('페이징 모양이 없거나 모르는 값이면 종전 점이다', () => {
+    for (const pagination of [undefined, 'bullets']) {
+      const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, pagination: pagination as any }} />);
+      expect(container.querySelector('section')?.className).toContain('hs--pagination-dots');
+      expect(container.querySelectorAll('.hs__pagination--dots > button.swiper-pagination-bullet')).toHaveLength(2);
+      expect(container.querySelector('.hs__bullet-fill, .hs__tabs, .hs__fraction')).toBeNull();
+      cleanup();
+    }
+  });
+
+  // @scenario surface=slider_pagination_progress
+  it('진행 막대 점은 지금 장 점에만 막대를 넣고, 자동 넘김의 지난 비율을 CSS 변수로 흘리며, 자동 넘김이 멈추면 가득 찬 채로 둔다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 5, pagination: 'progress' }} />);
+    const section = container.querySelector('section') as HTMLElement;
+    const bullets = () => Array.from(container.querySelectorAll<HTMLButtonElement>('.hs__pagination--progress > button.swiper-pagination-bullet'));
+    expect(bullets().map((b) => !!b.querySelector('.hs__bullet-fill'))).toEqual([true, false, false]);
+    // 이름은 점과 같다
+    expect(bullets()[1].getAttribute('aria-label')).toBe('2번째 배너로 이동');
+    expect(section.className).toContain('hs--autoplaying');
+    // Swiper 가 남은 비율 0.4 를 알리면 지난 비율 0.6
+    act(() => { swiperState.props?.onAutoplayTimeLeft?.(swiperState.instance, 2000, 0.4); });
+    expect(section.style.getPropertyValue('--hs-progress')).toBe('0.6');
+    act(() => { swiperState.instance?.slideNext(); });
+    expect(bullets().map((b) => !!b.querySelector('.hs__bullet-fill'))).toEqual([false, true, false]);
+    // 마우스를 올리면 자동 넘김이 멈추고 막대는 가득 찬 채(CSS: hs--autoplaying 이 빠짐)
+    fireEvent.pointerEnter(section, { pointerType: 'mouse' });
+    expect(section.className).not.toContain('hs--autoplaying');
+  });
+
+  // @scenario surface=slider_pagination_tabs
+  it('배너 이름 탭은 장마다 배너 제목을 보이는 이름으로 단 단추이고, 누르면 그 장으로 간다 — 제목이 없으면 대체 문구, 그것도 없으면 「n번째 배너로 이동」', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2, { title: '' }), banner(3, { title: '', image_alt: '' })]} settings={{ autoplay: false, pagination: 'tabs' }} />);
+    const tabs = Array.from(container.querySelectorAll<HTMLButtonElement>('.hs__tabs > button.hs__tab'));
+    expect(tabs.map((tab) => tab.querySelector('.hs__tab-label')?.textContent)).toEqual(['제목 1', '대체 2', '3번째 배너로 이동']);
+    // 보이는 글자가 곧 단추 이름이다(따로 aria-label 을 달지 않는다)
+    expect(tabs.every((tab) => !tab.hasAttribute('aria-label') && tab.getAttribute('type') === 'button')).toBe(true);
+    expect(tabs.map((tab) => tab.getAttribute('aria-current'))).toEqual(['true', null, null]);
+    expect(tabs[0].querySelector('.hs__tab-track .hs__bullet-fill')).not.toBeNull();
+    fireEvent.click(tabs[2]);
+    expect(swiperState.instance?.slideToLoop).toHaveBeenCalledWith(2);
+    expect(tabs.map((tab) => tab.getAttribute('aria-current'))).toEqual([null, null, 'true']);
+    expect(tabs[0].querySelector('.hs__bullet-fill')).toBeNull();
+    expect(container.querySelector('.swiper-pagination-bullet')).toBeNull();
+  });
+
+  // @scenario surface=slider_pagination_fraction
+  it('번호는 「01 / 03」을 보이고 장이 바뀌면 따라가며, 장 번호는 슬라이드 이름이 읽으므로 화면 읽기에서는 감춘다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false, pagination: 'fraction' }} />);
+    const fraction = container.querySelector('.hs__fraction') as HTMLElement;
+    expect(fraction.getAttribute('aria-hidden')).toBe('true');
+    expect([fraction.querySelector('.hs__fraction-current')?.textContent, fraction.querySelector('.hs__fraction-total')?.textContent]).toEqual(['01', '03']);
+    fireEvent.click(container.querySelector('.hs__next') as HTMLElement);
+    expect(fraction.querySelector('.hs__fraction-current')?.textContent).toBe('02');
+    expect(container.querySelector('.swiper-pagination-bullet, .hs__tab')).toBeNull();
   });
 
   // @scenario surface=index_resets_when_banners_change

@@ -42,7 +42,7 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | position | string | `home_hero` | 위치 키 |
-| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 그 위치 슬라이더 설정(`width`: `content` 본문 폭·`full` 화면 전체) |
+| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 그 위치 슬라이더 설정(`width`: `content` 본문 폭·`full` 화면 전체, `header_overlay`, `pagination`: `dots`·`progress`·`tabs`·`fraction`) |
 | banners[] | array | `[{"id":659,"title":"Autumn Arrivals","description":"최대 30…` | 지금 노출 중인 배너(순서대로, 0건이면 빈 배열) |
 | banners[].id | integer | `659` | 배너 식별자 |
 | banners[].title | string | `Autumn Arrivals` | 요청 언어로 고른 제목(요청 언어 → 기본 언어 → en) |
@@ -117,12 +117,12 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 
 **설명**
 
-사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,width,height}, mobile|null}, media_type, youtube_id|null, videos{pc{url,mime}, mobile|null}|null}]}`. `youtube_id` 는 `media_type` 이 `youtube` 일 때만, `videos` 는 `video` 일 때만 싣는다(종류를 바꿔도 남은 값이 사이트에 나가지 않게). `images.pc` 는 영상 배너에서도 대표 이미지다. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 120회 제한.
+사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width, header_overlay, pagination}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,width,height}, mobile|null}, media_type, youtube_id|null, videos{pc{url,mime}, mobile|null}|null}]}`. `youtube_id` 는 `media_type` 이 `youtube` 일 때만, `videos` 는 `video` 일 때만 싣는다(종류를 바꿔도 남은 값이 사이트에 나가지 않게). `images.pc` 는 영상 배너에서도 대표 이미지다. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 120회 제한.
 
 
 ## 이미지 표시
 
-`banners[].presentation`에는 기기별 초점 좌표(pc_x, pc_y, mobile_x, mobile_y; 0~100 정수)와 문구 배경(overlay: none/dark/light)이 들어갑니다. 기존 배너는 중앙 초점 50과 배경 없음으로 응답합니다. 문구 자리(`text_pc_x`·`text_pc_y`·`text_mobile_x`·`text_mobile_y`, 0~100)·문구 상자 폭(`text_width` %)·등장 효과(`animation`·`animation_speed`·`animation_delay`)·바탕 밝기(`tone` dark/light)도 같은 객체에 있고, 저장하지 않은 배너는 왼쪽 아래·전폭·효과 없음·어두움(종전 화면)입니다. 머리글은 `banners[].eyebrow`(요청 언어 문구, 없으면 빈 문자열)·`eyebrow_visible`·`eyebrow_color` 입니다. `settings.header_overlay`(boolean)는 위치 설정의 메뉴 겹치기이며, 사용자 슬라이더는 `width` 가 `full` 일 때만 이 값을 씁니다. 사용자 슬라이더와 관리자 미리보기는 이 값을 같은 방식으로 사용합니다.
+`banners[].presentation`에는 기기별 초점 좌표(pc_x, pc_y, mobile_x, mobile_y; 0~100 정수)와 문구 배경(overlay: none/dark/light)이 들어갑니다. 기존 배너는 중앙 초점 50과 배경 없음으로 응답합니다. 문구 자리(`text_pc_x`·`text_pc_y`·`text_mobile_x`·`text_mobile_y`, 0~100)·문구 상자 폭(`text_width` %)·등장 효과(`animation`·`animation_speed`·`animation_delay`)·바탕 밝기(`tone` dark/light)도 같은 객체에 있고, 저장하지 않은 배너는 왼쪽 아래·전폭·효과 없음·어두움(종전 화면)입니다. 머리글은 `banners[].eyebrow`(요청 언어 문구, 없으면 빈 문자열)·`eyebrow_visible`·`eyebrow_color` 입니다. `settings.header_overlay`(boolean)는 위치 설정의 메뉴 겹치기이며, 사용자 슬라이더는 `width` 가 `full` 일 때만 이 값을 씁니다. `settings.pagination` 은 페이징 모양(`dots` 점 기본·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호)입니다. 사용자 슬라이더와 관리자 미리보기는 이 값을 같은 방식으로 사용합니다.
 
 `GET /api/plugins/sirsoft-hero_section/hero?position=home_hero`에서 확인한 기존 배너의 표시 설정 예시(응답의 해당 부분):
 

@@ -46,7 +46,7 @@ _단건 응답: 위치 목록·위치별 슬라이더 설정·업로드 한도._
 | positions[].key | string | `home_hero` | 위치 키 |
 | positions[].extension_point | string | `home_hero` | 템플릿 확장점 이름(위치 키와 같음) |
 | positions[].label_key | string | `sirsoft-hero_section.admin.position.h…` | 화면 이름 번역 키 |
-| positions[].settings | object | `{"autoplay":true,"interval_seconds":5,"effect":"slide","width":"content"}` | `autoplay`·`interval_seconds`(3·5·7)·`effect`(`slide`·`fade`·`cube`·`flip`·`coverflow`·`creative`·`none`)·`width`(`content`·`full`), 저장 전이면 기본값 |
+| positions[].settings | object | `{"autoplay":true,"interval_seconds":5,"effect":"slide","width":"content"}` | `autoplay`·`interval_seconds`(3·5·7)·`effect`(`slide`·`fade`·`cube`·`flip`·`coverflow`·`creative`·`none`)·`width`(`content`·`full`)·`header_overlay`(boolean)·`pagination`(`dots`·`progress`·`tabs`·`fraction`), 저장 전이면 기본값 |
 | upload.max_mb | integer | `5` | 플러그인 설정의 이미지 최대 용량(MB) |
 | upload.server_limit_mb | integer | `2` | PHP `upload_max_filesize`·`post_max_size` 중 작은 값(MB) |
 | upload.effective_mb | integer | `2` | 실제로 받을 수 있는 크기 = 둘 중 작은 값 — 업로더 `maxSize`·안내에 쓴다 |
@@ -170,7 +170,7 @@ _단건 응답: 저장한 위치 설정._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | position | string | `home_hero` | 위치 키 |
-| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 저장된 `autoplay`·`interval_seconds`·`effect`·`width` |
+| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 저장된 `autoplay`·`interval_seconds`·`effect`·`width`·`header_overlay`·`pagination` |
 
 **응답 예시**
 
@@ -201,7 +201,7 @@ _단건 응답: 저장한 위치 설정._
 
 **설명**
 
-위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·cube·flip·coverflow·creative·none), `width`(선택, `content` 본문 폭·`full` 화면 전체 — 빼면 지금 값을 유지하고 처음 저장이면 `content`), `header_overlay`(선택 boolean, 메뉴 겹치기 — 빼면 지금 값을 유지하고 처음 저장이면 `false`. 사이트에는 `full` 일 때만 적용되지만 저장은 받는다). 처음 저장하면 행을 만든다. 모르는 위치는 404. 그 위치 공개 캐시는 즉시 비워진다.
+위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·cube·flip·coverflow·creative·none), `width`(선택, `content` 본문 폭·`full` 화면 전체 — 빼면 지금 값을 유지하고 처음 저장이면 `content`), `header_overlay`(선택 boolean, 메뉴 겹치기 — 빼면 지금 값을 유지하고 처음 저장이면 `false`. 사이트에는 `full` 일 때만 적용되지만 저장은 받는다), `pagination`(선택, 페이징 모양 `dots` 점·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호 — 빼면 지금 값을 유지하고 처음 저장이면 `dots`). 처음 저장하면 행을 만든다. 모르는 위치는 404. 그 위치 공개 캐시는 즉시 비워진다.
 
 
 ## 편집 화면 메타

@@ -140,12 +140,12 @@ class PositionSettingControllerTest extends PluginTestCase
     public function test_upsert(): void
     {
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade'])
-            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade', 'width' => 'content', 'header_overlay' => false]);
+            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots']);
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none'])
             ->assertOk();
 
         $this->assertSame(1, PositionSetting::query()->where('position', 'shop_hero')->count());
-        $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
+        $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots'], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
         $this->assertSame(0, PositionSetting::query()->where('position', 'home_hero')->count());
     }
 
@@ -174,11 +174,11 @@ class PositionSettingControllerTest extends PluginTestCase
         });
 
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content'])
-            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false]);
+            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots']);
 
         $this->assertTrue($raced);
         $this->assertSame(1, PositionSetting::query()->where('position', 'shop_hero')->count());
-        $this->assertSame(['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
+        $this->assertSame(['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots'], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
         $this->assertSame([7, 'fade', 'full'], [$snapshot['interval_seconds'] ?? null, $snapshot['effect'] ?? null, $snapshot['width'] ?? null]);
     }
 
@@ -221,5 +221,35 @@ class PositionSettingControllerTest extends PluginTestCase
 
         $this->assertSame('full', PositionSetting::query()->where('position', 'home_hero')->first()->toSettings()['width']);
         $this->assertSame('full', $this->getJson($this->api('/hero?position=home_hero'))->assertOk()->json('data.settings.width'));
+    }
+
+    /**
+     * 페이징 모양은 dots·progress·tabs·fraction 만 받는다. 저장하면 공개 응답 설정에 실리고, 빼고 저장하면 지금 값을 그대로 둔다.
+     * 처음 저장 전(행 없음)과 기존 행은 점(dots)이다.
+     *
+     * @scenario surface=position_settings_pagination
+     *
+     * @return void 반환값 없음
+     */
+    public function test_pagination_saved_validated_and_kept_when_omitted(): void
+    {
+        $url = $this->api('/admin/position-settings/home_hero');
+        $base = ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide'];
+
+        $this->assertSame('dots', $this->getJson($this->api('/hero?position=home_hero'))->assertOk()->json('data.settings.pagination'));
+        $this->actingAs($this->admin)->putJson($url, $base + ['pagination' => 'bullets'])
+            ->assertStatus(422)->assertJsonValidationErrors(['pagination']);
+
+        foreach (['progress', 'tabs', 'fraction', 'dots'] as $pagination) {
+            $this->actingAs($this->admin)->putJson($url, $base + ['pagination' => $pagination])
+                ->assertOk()->assertJsonPath('data.settings.pagination', $pagination);
+            $this->assertSame($pagination, $this->getJson($this->api('/hero?position=home_hero'))->assertOk()->json('data.settings.pagination'));
+        }
+
+        $this->actingAs($this->admin)->putJson($url, $base + ['pagination' => 'tabs'])->assertOk();
+        $this->actingAs($this->admin)->putJson($url, ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade'])
+            ->assertOk()->assertJsonPath('data.settings.pagination', 'tabs');
+        $this->assertSame('tabs', PositionSetting::query()->where('position', 'home_hero')->first()->toSettings()['pagination']);
+        $this->assertSame('dots', $this->getJson($this->api('/hero?position=shop_hero'))->assertOk()->json('data.settings.pagination'));
     }
 }

@@ -46,6 +46,7 @@ return [
         'interval_seconds' => 'Interval (seconds)',
         'effect' => 'Effect',
         'width' => 'Width',
+        'pagination' => 'Pagination style',
         'header_overlay' => 'Menu overlay',
     ],
 ];

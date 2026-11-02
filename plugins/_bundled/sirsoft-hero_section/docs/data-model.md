@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | `Banner` | `hero_section_banners` | 26 | images→BannerImage | - |
 | `BannerImage` | `hero_section_banner_images` | 13 | banner→Banner | - |
-| `PositionSetting` | `hero_section_position_settings` | 7 | - | - |
+| `PositionSetting` | `hero_section_position_settings` | 8 | - | - |
 <!-- @generated:models END -->
 
 <!-- @intent START -->
@@ -35,7 +35,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 7개.
+마이그레이션 8개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -46,6 +46,7 @@
 | `2026_10_30_000005_add_width_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
 | `2026_10_30_000006_add_media_to_hero_section_banners.php` | - | `hero_section_banners`, `hero_section_banner_images` | ✅ |
 | `2026_10_31_000007_add_eyebrow_and_header_overlay_to_hero_section.php` | - | `hero_section_banners`, `hero_section_position_settings` | ✅ |
+| `2026_11_02_000008_add_pagination_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -66,6 +67,7 @@
 | `HeroPosition` | `string` | 2 | `home_hero`, `shop_hero` |
 | `MediaKind` | `string` | 2 | `image`, `video` |
 | `SlideEffect` | `string` | 7 | `slide`, `fade`, `cube`, `flip`, `coverflow`, `creative`, `none` |
+| `SlidePagination` | `string` | 4 | `dots`, `progress`, `tabs`, `fraction` |
 | `SlideWidth` | `string` | 2 | `content`, `full` |
 | `TextAlign` | `string` | 3 | `left`, `center`, `right` |
 | `TextAnimation` | `string` | 8 | `none`, `rise`, `fade`, `left`, `right`, `zoom`, `blur`, `letters` |

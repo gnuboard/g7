@@ -75,6 +75,7 @@ axes:
     - position_settings_default_when_missing
     - position_settings_upsert
     - position_settings_concurrent_first_save
+    - position_settings_pagination
     - position_settings_interval_enum
 
 effects:

@@ -112,7 +112,15 @@
             "header_overlay": "Menu overlay",
             "header_overlay_hint": "Lays the site menu transparently over the banner. The menu gets its background back when visitors scroll down, and its text color follows the background set for each banner.",
             "header_overlay_needs_full": "Menu overlay only applies on the site when the width is \"Full screen width\".",
-            "save": "Save settings"
+            "save": "Save settings",
+            "pagination": "Pagination style",
+            "paginations": {
+                "dots": "Dots",
+                "progress": "Dots with progress bar",
+                "tabs": "Banner name tabs",
+                "fraction": "Number (01 / 05)"
+            },
+            "pagination_hint": "Shown when there are two or more banners. The progress bar shows the time left until the next banner; banner name tabs show only bars on phones."
         },
         "list": {
             "create": "Add banner",

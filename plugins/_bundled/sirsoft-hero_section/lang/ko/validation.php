@@ -71,6 +71,7 @@ return [
         'interval_seconds' => '전환 간격',
         'effect' => '전환 효과',
         'width' => '표시 폭',
+        'pagination' => '페이징 모양',
         'header_overlay' => '메뉴 겹치기',
         'ids' => '선택한 배너',
         'ids_item' => '선택한 배너',

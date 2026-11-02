@@ -14,9 +14,9 @@ class PositionSetting extends Model
     /**
      * 행이 없을 때 쓰는 기본값
      *
-     * @var array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool}
+     * @var array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool, pagination: string}
      */
-    public const DEFAULTS = ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide', 'width' => 'content', 'header_overlay' => false];
+    public const DEFAULTS = ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots'];
 
     /**
      * 허용 전환 간격(초)
@@ -37,7 +37,7 @@ class PositionSetting extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['position', 'autoplay', 'interval_seconds', 'effect', 'width', 'header_overlay', 'updated_by'];
+    protected $fillable = ['position', 'autoplay', 'interval_seconds', 'effect', 'width', 'header_overlay', 'pagination', 'updated_by'];
 
     /**
      * 활동 로그 변경 추적 필드
@@ -50,6 +50,7 @@ class PositionSetting extends Model
         'effect' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.effect', 'type' => 'text'],
         'width' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.width', 'type' => 'text'],
         'header_overlay' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.header_overlay', 'type' => 'boolean'],
+        'pagination' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.pagination', 'type' => 'text'],
     ];
 
     /**
@@ -69,7 +70,7 @@ class PositionSetting extends Model
     /**
      * 슬라이더 설정 값만 배열로 반환합니다.
      *
-     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool} 설정 값
+     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool, pagination: string} 설정 값
      */
     public function toSettings(): array
     {
@@ -79,6 +80,7 @@ class PositionSetting extends Model
             'effect' => (string) $this->effect,
             'width' => (string) ($this->width ?? self::DEFAULTS['width']),
             'header_overlay' => (bool) ($this->header_overlay ?? self::DEFAULTS['header_overlay']),
+            'pagination' => (string) ($this->pagination ?? self::DEFAULTS['pagination']),
         ];
     }
 }

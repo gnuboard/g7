@@ -248,6 +248,25 @@ describe('히어로섹션 목록 화면', () => {
     }
   });
 
+  // @scenario surface=admin_pagination_setting
+  it('페이징 모양(점·진행 막대 점·배너 이름 탭·번호)을 고르면 작업본에 담겨 미리보기가 저장 전에 따라가고, 저장 본문에 실리며 바뀐 것이 없으면 잠긴다', () => {
+    const select = collect(list, (n) => n.props?.id === 'hero_slider_pagination')[0];
+    expect(select.name).toBe('Select');
+    // 서버 Enum(SlidePagination)과 같은 4개
+    expect(select.props.options.map((o: { value: string }) => o.value)).toEqual(['dots', 'progress', 'tabs', 'fraction']);
+    expect(select.props.value).toContain("pagination ?? 'dots'");
+    expect(select.props.disabled).toContain('can_update !== true');
+    expect(json(actionsOf(select, 'setState'))).toContain('pagination: $event.target.value');
+    const button = findById(list, 'slider_save_button')!;
+    expect(json(actionsOf(button, 'apiCall')[0])).toContain("\"pagination\":\"{{_local.sliderForm.pagination ?? 'dots'}}\"");
+    expect(button.props.disabled).toContain("(_local.sliderForm.pagination ?? 'dots') === (_computed.currentSettings.pagination ?? 'dots')");
+    for (const lang of [ko, en] as any[]) {
+      expect(lang.admin.slider.pagination).toBeTruthy();
+      expect(lang.admin.slider.pagination_hint).toBeTruthy();
+      for (const key of ['dots', 'progress', 'tabs', 'fraction']) expect(lang.admin.slider.paginations[key]).toBeTruthy();
+    }
+  });
+
   // @scenario surface=list_preview_empty_message
   // @scenario surface=list_empty_states_distinguished
   it('미리보기는 받는 중에는 빈 문구를 비우고, 노출 중인 배너가 0건이면 안내를 보인다 — 배너는 있는데 지금 노출이 없으면 예약·비노출·종료 건수를 함께', () => {

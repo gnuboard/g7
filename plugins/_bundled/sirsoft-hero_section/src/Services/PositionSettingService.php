@@ -101,7 +101,7 @@ class PositionSettingService
      * 한 위치의 설정 값을 반환합니다(행이 없으면 기본값).
      *
      * @param  HeroPosition  $position  위치
-     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool} 설정 값
+     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool, pagination: string} 설정 값
      */
     public function settingsFor(HeroPosition $position): array
     {
@@ -112,7 +112,7 @@ class PositionSettingService
      * 위치 설정을 저장합니다.
      *
      * @param  HeroPosition  $position  위치
-     * @param  array{autoplay: bool, interval_seconds: int, effect: string, width?: string, header_overlay?: bool}  $data  검증된 설정 값 (width·header_overlay 를 빼면 지금 값 유지)
+     * @param  array{autoplay: bool, interval_seconds: int, effect: string, width?: string, header_overlay?: bool, pagination?: string}  $data  검증된 설정 값 (width·header_overlay·pagination 을 빼면 지금 값 유지)
      * @param  int|null  $actorId  바꾼 회원 ID
      * @return PositionSetting 저장된 설정 행
      */

@@ -306,7 +306,7 @@ class HeroControllerTest extends PluginTestCase
     {
         PositionSetting::query()->create(['position' => 'home_hero', 'autoplay' => false, 'interval_seconds' => 7, 'effect' => 'fade']);
 
-        $this->assertSame(['autoplay' => false, 'interval_seconds' => 7, 'effect' => 'fade', 'width' => 'content', 'header_overlay' => false], $this->hero()->json('data.settings'));
+        $this->assertSame(['autoplay' => false, 'interval_seconds' => 7, 'effect' => 'fade', 'width' => 'content', 'header_overlay' => false, 'pagination' => 'dots'], $this->hero()->json('data.settings'));
     }
 
     /**

@@ -68,6 +68,7 @@ return [
         'eyebrow_visible' => 'ヘッダー表示',
         'eyebrow_color' => 'ヘッダー色',
         'header_overlay' => 'メニュー重なり',
+        'pagination' => 'ページネーション表示',
     ],
     'pc_video' => [
         'required' => '動画ファイル(PC)をアップロードしてください。モバイル用動画がない場合はPC動画を使用します。',

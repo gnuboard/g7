@@ -36,6 +36,7 @@ axes:
     - title_read_once
     - pagination_bullet_target_24px
     - carousel_labels_follow_locale
+    - motion_does_not_make_text_scroll
     - index_resets_when_banners_change
     - first_image_eager_rest_lazy
     - next_slide_preloaded_before_transition
@@ -57,3 +58,4 @@ test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/swiper-ui.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/loading-skeleton.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/slider-a11y.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/text-motion-scroll.spec.ts

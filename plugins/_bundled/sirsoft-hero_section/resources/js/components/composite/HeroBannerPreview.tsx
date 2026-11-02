@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HeroSlider, type HeroBanner, type HeroSliderSettings, type TextSpot } from './HeroSlider';
 import { youtubeIdFromUrl } from '../../support/media';
+import { textOverflows } from '../../support/text';
 import { basic, estimateContrast, frameClass, isLightText, localized, sampleImage, translate, type FrameBox, type PreviewFrame, type Rgb } from '../../support/editor';
 
 export type HeroDraft = Partial<Omit<HeroBanner, 'title' | 'eyebrow' | 'description' | 'button_text' | 'image_alt'>> & {
@@ -152,7 +153,7 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
     const hero = body.querySelector<HTMLElement>('.hs');
     const scroll = hero?.querySelector<HTMLElement>('.hs__scroll');
     if (!hero || !scroll) return onOverflow(false);
-    const overflows = () => scroll.scrollHeight > scroll.clientHeight + 1;
+    const overflows = () => textOverflows(scroll);
     if (overflows()) return onOverflow('alone');
     if (hero.classList.contains('hs--controlled')) return onOverflow(false);
     hero.classList.add('hs--controlled');

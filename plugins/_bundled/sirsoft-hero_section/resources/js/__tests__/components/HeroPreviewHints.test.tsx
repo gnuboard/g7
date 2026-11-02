@@ -127,9 +127,13 @@ describe('미리보기 안내', () => {
     expect(view.container.querySelector('[data-hint="text-overflow"]')).toBeNull();
     // 슬라이더는 iframe 문서에 그려지므로 그 창의 원형에서 높이를 흉내 낸다
     const frameWindow = view.container.querySelector('iframe')!.contentWindow as unknown as typeof window;
-    const height = { scroll: 500, client: 300 };
+    const height = { scroll: 500, client: 300, lines: 500 };
     vi.spyOn(frameWindow.HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
       return this.classList.contains('hs__scroll') ? height.scroll : 0;
+    });
+    // 넘침은 줄의 배치 높이(등장 효과의 이동 제외)로도 확인한다
+    vi.spyOn(frameWindow.HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('hs__line') ? height.lines : 0;
     });
     vi.spyOn(frameWindow.HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
       return this.classList.contains('hs__scroll') ? height.client : 0;
@@ -149,6 +153,13 @@ describe('미리보기 안내', () => {
     height.scroll = 300;
     view.rerender(<HeroBannerPreview locale="ko" defaultLocale="ko" device="pc" draft={draft({ title: { ko: '짧게' } })} />);
     await waitFor(() => expect(view.container.querySelector('[data-hint="text-overflow"]')).toBeNull());
+
+    // 「효과 다시 보기」 중 줄이 아래에서 올라오며 스크롤 높이만 늘어난 경우는 넘침으로 안내하지 않는다
+    height.scroll = 320;
+    height.lines = 280;
+    view.rerender(<HeroBannerPreview locale="ko" defaultLocale="ko" device="pc" draft={draft({ title: { ko: '효과 재생 중' } })} />);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(view.container.querySelector('[data-hint="text-overflow"]')).toBeNull();
   });
 
   // @scenario surface=long_text_overflow_hint, case=with_controls
@@ -159,6 +170,9 @@ describe('미리보기 안내', () => {
     // 넘김 단추 자리(.hs--controlled)를 비우면 문구 영역이 50px 줄어든다
     vi.spyOn(frameWindow.HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
       return this.classList.contains('hs__scroll') ? 280 : 0;
+    });
+    vi.spyOn(frameWindow.HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('hs__line') ? 280 : 0;
     });
     vi.spyOn(frameWindow.HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) {
       if (!this.classList.contains('hs__scroll')) return 0;

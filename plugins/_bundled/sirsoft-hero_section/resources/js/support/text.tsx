@@ -124,6 +124,29 @@ export function textMotion(presentation: HeroTextPresentation | null | undefined
 }
 
 /**
+ * 문구 영역(`.hs__scroll`)이 실제로 넘치는지 확인합니다 — 등장 효과의 이동(transform)은 빼고 줄의 배치 높이로 잰다.
+ * `scrollHeight` 는 「떠오르기」·「글자 하나씩」처럼 줄을 아래에서 올리는 효과가 재생되는 동안 밀린 만큼을 더해, 넘치지 않는 문구도
+ * 그 순간에는 넘친다고 본다(스크롤 막대가 잠깐 생기고, 그때 잰 값이 굳으면 탭으로 들어가는 영역으로 남는다).
+ *
+ * @param element 문구 영역
+ * @returns 줄 배치 높이가 영역 높이를 넘으면 true
+ */
+export function textOverflows(element: HTMLElement): boolean {
+  if (element.scrollHeight <= element.clientHeight + 1) {
+    return false;
+  }
+  const lines = Array.from(element.children) as HTMLElement[];
+  if (lines.length === 0) {
+    return false;
+  }
+  const first = lines[0];
+  const last = lines[lines.length - 1];
+  const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+  const padding = (parseFloat(style?.paddingTop ?? '') || 0) + (parseFloat(style?.paddingBottom ?? '') || 0);
+  return last.offsetTop + last.offsetHeight - first.offsetTop + padding > element.clientHeight + 1;
+}
+
+/**
  * 줄 순번의 등장 지연 CSS 변수를 만듭니다.
  *
  * @param motion 등장 효과
