@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
 
 export interface DropdownMenuItemProps {
@@ -146,7 +147,7 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
     return (
       <a
         role="menuitem"
-        href={link.href}
+        href={sitePath(link.href)}
         {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
         className={itemClassName}
         style={style}

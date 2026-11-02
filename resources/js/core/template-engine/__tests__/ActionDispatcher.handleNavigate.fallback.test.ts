@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { Logger } from '../../utils/Logger';
+import { Router } from '../../routing/Router';
 
 vi.mock('../../auth/AuthManager', () => ({
   AuthManager: {
@@ -306,6 +307,168 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
 
       expect(mockWindowOpen).not.toHaveBeenCalled();
       expect(mockLocationAssign).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── 사이트 밖 목적지는 라우트 대조 전에 미등록으로 본다 (실제 Router) ─────────────
+  //
+  // 라우터 대조는 연속 슬래시를 하나로 접는다(engine-v1.84.0). 그래서 `//evil.example/board/free` 가
+  // `/evil.example/board/free` 로 접혀 `*/board/:slug`(언어 접두 자리에 `/evil.example`)에 **맞아 버리고**,
+  // 미등록 폴백(같은 출처 게이트)을 건너뛰어 SPA 이동으로 갔다 — 브라우저는 `pushState('//evil.example/…')`
+  // 를 교차 출처로 막아 SecurityError 가 처리되지 않은 채 남았다. 위 블록은 `match` 를 null 로 모의해
+  // 이 갈래를 밟지 못하므로 여기서는 실제 Router 로 대조한다.
+  describe('사이트 밖 목적지 — 실제 Router 대조에서도 같은 출처 게이트로 간다', () => {
+    let router: Router;
+
+    beforeEach(() => {
+      router = new Router('test-template');
+      router.setRoutes([
+        { path: '*/board/:slug', layout: 'board_index' },
+        { path: '*/admin/users', layout: 'admin_users' },
+      ]);
+      (window as any).__templateApp = { getRouter: () => router };
+    });
+
+    afterEach(() => {
+      delete (window as any).G7Config;
+    });
+
+    const offsite: ReadonlyArray<readonly [string, string]> = [
+      ['protocol-relative', '//evil.example/board/free'],
+      ['슬래시 3개', '///evil.example/board/free'],
+      ['백슬래시 authority', '/\\evil.example/board/free'],
+      ['탭 삽입', '/\t/board/free'],
+      ['쿼리를 단 protocol-relative', '//evil.example/board/free?x=1'],
+    ];
+
+    // @scenario route=matched, fallback=default
+    // @effects offsite_target_skips_route_match
+    it.each(offsite)('%s 은 라우트에 접혀 맞아도 SPA 이동하지 않고 폴백 게이트에서 거부된다', async (_label, path) => {
+      // 전제: 실제 라우터는 이 주소를 라우트에 맞춘다(연속 슬래시 접기) — 이 시험이 밟는 갈래
+      if (path.startsWith('//')) {
+        expect(router.match(path.split('?')[0])).not.toBeNull();
+      }
+
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path },
+      });
+
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
+    // @scenario route=unmatched, fallback=disabled
+    // @effects offsite_target_refused_without_fallback
+    it('fallback: false 여도 사이트 밖 목적지로 SPA 이동하지 않는다', async () => {
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '//evil.example/board/free', fallback: false },
+      });
+
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+    });
+
+    // @scenario route=router_missing, fallback=default
+    // @effects offsite_target_refused_without_fallback
+    it('라우터가 없는 단계에서도 사이트 밖 목적지로 SPA 이동하지 않는다', async () => {
+      (window as any).__templateApp = undefined;
+
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '//evil.example/board/free' },
+      });
+
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+    });
+
+    const inSite: ReadonlyArray<readonly [string, string]> = [
+      ['정규 경로', '/board/free'],
+      ['언어 접두 경로', '/ko/board/free'],
+      ['경로 중간 연속 슬래시', '/board//free'],
+      ['끝 슬래시', '/board/free/'],
+    ];
+
+    // @scenario route=matched, fallback=default
+    // @effects matched_route_navigates_in_app
+    it.each(inSite)('%s 은 종전대로 SPA 이동한다 (과차단 없음)', async (_label, path) => {
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path },
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith(path, { replace: false });
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+    });
+
+    // @scenario route=matched, fallback=default
+    // @effects offsite_target_skips_route_match
+    it('하위 폴더 배치에서도 사이트 밖 목적지는 거부되고, 같은 출처 전체 주소는 접두사를 벗겨 SPA 이동한다', async () => {
+      (window as any).G7Config = { basePath: '/g7' };
+
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path: '//evil.example/board/free' },
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path: 'http://localhost/g7/board/free' },
+      });
+      expect(mockNavigate).toHaveBeenCalledWith('/board/free', { replace: false });
+    });
+
+    // @scenario route=matched, fallback=default
+    // @effects subpath_prefixed_path_strips_mount_prefix
+    it('하위 폴더 배치에서 접두사를 품은 루트 상대 경로(`/g7/board/free`)는 벗겨 대조하고 SPA 이동한다 (D1)', async () => {
+      (window as any).G7Config = { basePath: '/g7' };
+
+      for (const [path, expected] of [
+        ['/g7/board/free', '/board/free'],
+        ['/g7/board/free?page=2', '/board/free?page=2'],
+        ['/g7/board/free#list', '/board/free#list'],
+      ] as const) {
+        mockNavigate.mockClear();
+        await dispatcher.dispatchAction({ type: 'click', handler: 'navigate', params: { path } });
+        expect(mockNavigate).toHaveBeenCalledWith(expected, { replace: false });
+      }
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
+    // @scenario route=matched, fallback=default
+    // @effects subpath_prefixed_path_strips_mount_prefix
+    it('접두사 경계가 아닌 경로(`/g7abc/…`)·이미 벗겨진 경로·루트 설치는 벗기지 않는다 (D1)', async () => {
+      (window as any).G7Config = { basePath: '/g7' };
+      await dispatcher.dispatchAction({ type: 'click', handler: 'navigate', params: { path: '/g7abc/board/free' } });
+      expect(mockNavigate).toHaveBeenLastCalledWith('/g7abc/board/free', { replace: false });
+      await dispatcher.dispatchAction({ type: 'click', handler: 'navigate', params: { path: '/board/free' } });
+      expect(mockNavigate).toHaveBeenLastCalledWith('/board/free', { replace: false });
+
+      delete (window as any).G7Config;
+      await dispatcher.dispatchAction({ type: 'click', handler: 'navigate', params: { path: '/g7/board/free' } });
+      expect(mockNavigate).toHaveBeenLastCalledWith('/g7/board/free', { replace: false });
+    });
+
+    // @scenario route=matched, fallback=default
+    // @effects offsite_target_skips_route_match
+    it('접두사를 벗긴 결과가 `//host` 이면 사이트 밖 판정이 이동을 막는다(같은 출처 전체 주소와 같은 판정) (D1)', async () => {
+      (window as any).G7Config = { basePath: '/g7' };
+      await dispatcher.dispatchAction({ type: 'click', handler: 'navigate', params: { path: '/g7//evil.example/board/free' } });
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+      expect(mockWindowOpen).not.toHaveBeenCalled();
     });
   });
 });

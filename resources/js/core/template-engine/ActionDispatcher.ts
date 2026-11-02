@@ -40,7 +40,7 @@ import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
-import { stripBasePrefix, withBasePrefix } from '../support/assetUrl';
+import { basePrefix, normalizeForOriginCheck, stripBasePrefix, withBasePrefix } from '../support/assetUrl';
 import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback } from '../support/navPolicy';
 import { armLeaveGuardBypass, runWithLeaveGuardBypass } from '../routing/LeaveGuard';
 import {
@@ -3514,6 +3514,13 @@ export class ActionDispatcher {
     const sameOriginPath = toSameOriginNavPath(target);
     if (sameOriginPath !== null) {
       target = stripBasePrefix(sameOriginPath);
+    } else if (basePrefix() !== '' && !this.isOffSiteNavTarget(target)) {
+      // 루트 상대 경로가 마운트 접두사를 품었으면(`/g7/board/free/2849` — 링크 컴포넌트가 그린 href, 서버가 접두사를
+      // 붙여 준 주소) 전체 주소와 같이 벗긴다. 벗기지 않으면 접두사째 라우트에 대조해 미등록으로 읽고, 폴백 openWindow
+      // `_self` 로 문서 전체를 다시 불렀다(루트 설치는 같은 클릭이 SPA). 경계 없는 `/g7abc` 와 이미 벗겨진 경로는
+      // `stripBasePrefix` 가 그대로 두고, 히스토리에 실을 때는 Router 가 `withBasePrefix` 로 한 번 붙인다.
+      // 사이트 밖 판정(`//`·스킴)은 벗기기 전에 먼저 돈다 — 벗긴 결과가 `//host` 면 아래 같은 판정이 이동을 막는다 (engine-v1.87.0)
+      target = stripBasePrefix(target);
     }
     // 다른 화면으로 가기 전에 대기 중인 디바운스 입력을 반영한다 — 이벤트 액션 경로는 이미 그렇게 하지만
     // `G7Core.dispatch(navigate)`(관리자 사이드바·링크 `navigateTo`)는 그대로 이탈 가드 판정에 들어가, 폼 변경이
@@ -3638,6 +3645,13 @@ export class ActionDispatcher {
       return;
     }
 
+    // 사이트 밖 목적지는 SPA 이동(`pushState`)으로 갈 수 없다 — 폴백을 끈(`fallback: false`) 이동이나 라우트가
+    // 아직 없는 부팅 단계도 여기서 멈춘다. 종전에는 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.87.0)
+    if (this.isOffSiteNavTarget(finalPath)) {
+      logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
+      return;
+    }
+
     // navigate 함수 확인
     if (!context.navigate) {
       throw new ActionError(
@@ -3661,6 +3675,22 @@ export class ActionDispatcher {
 
     // 이동 후 스크롤 위치 적용 (기본: 상단)
     this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
+  }
+
+  /**
+   * navigate 목적지가 사이트 밖을 가리키는지 판정합니다 (engine-v1.87.0).
+   *
+   * 브라우저 URL 파서와 같은 정규화(`normalizeForOriginCheck` — 탭·개행 제거, 백슬래시 → 슬래시, 선행 슬래시 접기)를
+   * 거친 값이 `//`(프로토콜 상대) 로 시작하거나 스킴을 가지면 사이트 밖이다. 경로 중간의 연속 슬래시(`/board//free`)와
+   * 상대 경로는 여기서 거르지 않는다 — 앞은 사이트 안 경로이고, 뒤는 종전 판정(폴백 sink)이 맡는다.
+   *
+   * @param path navigate 목적지(경로·쿼리)
+   * @returns 사이트 밖 목적지면 true
+   */
+  private isOffSiteNavTarget(path: string): boolean {
+    if (typeof path !== 'string') return false;
+    const normalized = normalizeForOriginCheck(path.trim());
+    return normalized.startsWith('//') || /^[a-z][a-z0-9+.\-]*:/i.test(normalized);
   }
 
   /**
@@ -3708,7 +3738,10 @@ export class ActionDispatcher {
     }
 
     const pathname = finalPath.split('?')[0];
-    if (router.match(pathname)) {
+    // 사이트 밖 목적지(`//host`·백슬래시·제어 문자 변형·스킴)는 대조하지 않고 미등록으로 본다 — 라우터 대조는
+    // 연속 슬래시를 접어(engine-v1.84.0) `//evil/board/x` 를 `*/board/:slug` 에 맞춰 버리고, 그러면 폴백의
+    // 같은 출처 게이트를 건너뛰어 `pushState` 가 교차 출처 SecurityError 를 던졌다 (engine-v1.87.0)
+    if (!this.isOffSiteNavTarget(pathname) && router.match(pathname)) {
       // 현재 템플릿에 등록된 경로 — 정상 navigate
       return null;
     }

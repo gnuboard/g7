@@ -149,8 +149,9 @@ class ConsoleOutputTranslationCatalogTest extends TestCase
 
         $problems = [];
         foreach ($keys as $key => $usedIn) {
-            // `__('domain.group.'.$kind)` 처럼 뒤를 이어 붙이는 동적 키의 앞부분은 판정하지 않는다
-            if (str_ends_with($key, '.')) {
+            // `__('domain.group.'.$kind)`·`__('domain.group.state_'.$action)` 처럼 뒤를 이어 붙이는
+            // 동적 키의 앞부분은 판정하지 않는다 — 리터럴이 `.` 나 `_` 에서 끊기면 완성된 키가 아니다
+            if (str_ends_with($key, '.') || str_ends_with($key, '_')) {
                 continue;
             }
 

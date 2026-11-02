@@ -27,6 +27,9 @@ effects:
   - unmatched_fallback_refuses_external_origins   # 미등록 경로 fallback 이 외부 오리진(스킴, //, 백슬래시, 제어 문자 우회)으로 나가지 않는다
   - unmatched_fallback_still_opens_in_site_paths   # 사이트 안 미등록 경로와 경로 중간 연속 슬래시는 과차단 없이 fallback 된다
   - open_window_sink_refuses_external_origins   # openWindow 직접 호출(같은 탭, 새 탭)도 같은 오리진 게이트를 지난다
+  - offsite_target_skips_route_match   # 사이트 밖 목적지(//host, 백슬래시, 제어 문자)는 연속 슬래시 접기로 라우트에 맞아도 대조 전에 미등록으로 보아 같은 출처 게이트로 간다(실제 Router, 하위 폴더 포함)
+  - offsite_target_refused_without_fallback   # fallback: false 나 라우터 없는 단계에서도 사이트 밖 목적지로 SPA 이동(pushState)하지 않는다
+  - subpath_prefixed_path_strips_mount_prefix   # 하위 폴더 배치에서 접두사를 품은 루트 상대 목적지(`/g7/board/free`)는 벗겨 대조한다. 경계 없는 `/g7abc`, 벗겨진 경로, 루트 설치는 그대로
 
 test_files:
   - resources/js/core/template-engine/__tests__/ActionDispatcher.handleNavigate.fallback.test.ts

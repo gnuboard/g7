@@ -121,8 +121,9 @@ class TemplateStandaloneModulesTest extends TestCase
         ], $this->manifest['integrations']['modules'] ?? null);
         $this->assertSame(['sirsoft-daum_postcode' => '>=1.0.0'], $this->manifest['integrations']['plugins'] ?? null);
 
-        // 옛 코어에서도 설치된다 — 단독 사용 판정 키가 없으면 「모두 켜짐」으로 본다(P5)
-        $this->assertSame('>=7.1.1', $this->manifest['g7_version']);
+        // 7.2.0 계열 sirsoft-basic 의 코어 요구 판(7.1.x 계열 develop 판은 `>=7.1.1`). 단독 사용 판정 키가
+        // 없는 코어에서 「모두 켜짐」으로 보는 규칙(P5)은 그대로다.
+        $this->assertSame('>=7.2.0', $this->manifest['g7_version']);
     }
 
     /**

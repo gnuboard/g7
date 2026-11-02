@@ -6,6 +6,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
@@ -448,7 +449,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                     >
                       {link ? (
                         <a
-                          href={link.href}
+                          href={sitePath(link.href)}
                           className="flex items-start gap-3 flex-1 min-w-0"
                           onClick={(event) => {
                             // 줄(바깥 Div)의 클릭 처리가 다시 부르지 않게 여기서 멈춘다 — 수정키 클릭은 브라우저에 맡긴다

@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, mergeQueryIntoHref, useLocationSearch } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조
@@ -209,6 +210,14 @@ export const Pagination: React.FC<PaginationProps> = ({
     }
   };
 
+  /**
+   * 그리는 href 에 사이트 마운트 접두사를 붙인다 — 하위 폴더 설치(`/g7`)에서 가운데 클릭·「새 탭에서 열기」·링크 복사가
+   * 이 값을 그대로 열므로 접두사가 없으면 사이트 밖으로 간다(#609). 보통 클릭은 onPageChange 라 href 를 쓰지 않는다.
+   * `sitePath()` 는 멱등이고 쿼리만인 주소(`?page=2`)·바깥 주소는 그대로 돌려준다.
+   */
+  const sitePathOrUndefined = (href: string | undefined): string | undefined =>
+    href === undefined ? undefined : sitePath(href);
+
   /** 페이지 번호의 주소 — pageHref 가 없으면 undefined(단추로 그린다) */
   const hrefFor = (page: number): string | undefined => {
     if (!pageHref) return undefined;
@@ -270,7 +279,7 @@ export const Pagination: React.FC<PaginationProps> = ({
     return (
       <a
         key={opts.key}
-        href={hrefFor(opts.page)}
+        href={sitePathOrUndefined(hrefFor(opts.page))}
         className={linkClass(opts.className)}
         aria-label={opts.ariaLabel}
         aria-current={opts.ariaCurrent}
