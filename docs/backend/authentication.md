@@ -234,7 +234,7 @@ public static function passwordAuthDecision(?PasswordAuthDecision $decision, arr
 | --- | --- |
 | 가입 | 확장이 `AuthService::register($data, ['issue_token' => false])` 로 비밀번호·토큰 없이 만든다(동의 기록·역할·가입 훅·본인인증 정책은 그대로). 공개 가입 API 는 비밀번호 필수 그대로 |
 | 비밀번호 로그인 | 항상 실패(`invalid_credentials`). 틀린 시도를 세지 않아 계정이 잠기지 않는다 — 응답은 같아 비밀번호 부재가 드러나지 않는다 |
-| 비밀번호 처음 설정 | 마이페이지 비밀번호 변경·정보 수정 API 는 현재 비밀번호 없이 받는다(보내면 `prohibited` 422). 비밀번호 재설정 메일도 설정 경로로 쓰인다 |
+| 비밀번호 처음 설정 | 마이페이지 비밀번호 변경·정보 수정 API 는 현재 비밀번호 없이 받는다(보내면 그 값은 버린다 — 옛 화면 호환, 본인 확인은 본인인증 정책). 비밀번호 재설정 메일도 설정 경로로 쓰인다 |
 | 비밀번호 만료 정책 | 비대상 — 판정·배치 후보·사전 안내·만료 처리(토큰 회수)·로그인 변경 관문·관리자 지정 변경 요구에서 빠진다 |
 | 본인 재확인 | 아래 「민감 작업 재확인」 |
 
@@ -251,7 +251,23 @@ public static function passwordAuthDecision(?PasswordAuthDecision $decision, arr
   같은 목적을 지원하는 다음 제공자로 넘어간다 — 제공자가 `UserScopedIdentityProviderInterface::canChallengeUser(User)` 로 답한다.
   이 계약을 구현하지 않은 제공자(휴대폰 본인확인 등)는 폴백으로 고르지 않고, 운영자가 그 목적에 지정했을 때만 쓴다.
   응답 `render_hint=external_redirect` 면 화면은 `redirect_url`(회사 계정 다시 로그인 등)로 갔다가 `?verification_token=` 을 들고 돌아와 원래 요청을 다시 보낸다.
-- 비밀번호 없는 회원이 `password` 를 보내면 **422** `user.password_not_set`, 토큰이 무효면 **422** `user.reauthentication_invalid`.
+- 토큰이 무효(남의 것·이미 씀·만료·다른 목적)면 **422** `user.reauthentication_invalid`.
+
+#### 비밀번호 칸으로 오는 옛 화면 (7.2.0)
+
+비밀번호 없는 회원을 모르는 옛 화면(7.1.x 템플릿)은 비밀번호 칸에 무엇이든 넣어 보낸다. 서버는 그 값을 쓰지 않는다.
+
+| 요청 | 비밀번호 없는 회원일 때 |
+| --- | --- |
+| `POST /api/me/verify-password` `{password}` | **428** 본인인증 요구 |
+| `POST /api/admin/settings/regenerate-app-key` `{password}` | **428** 본인인증 요구 |
+| `PUT /api/admin/users/{본인}` 에 `password` + 채운 `current_password`, `verification_token` 없음 | **428** 본인인증 요구(다른 입력 오류가 있으면 그 422 가 먼저). `current_password` 를 비워 보내면 종전대로 `verification_token` 필수 422 |
+| `PUT /api/me/password` · `PUT /api/me` 의 `current_password` | 버린다(보내지 않은 것과 같다). 본인 확인은 본인인증 정책 `core.profile.password_change` |
+
+428 의 `verification` 은 목적 `sensitive_action`, 정책 키 `core.reauthentication`(정책 표의 행이 아니다 — challenge 요청에 실려 와도 무시된다),
+`provider_id` 없음(수단은 challenge 를 시작할 때 서버가 회원별로 고른다), `return_request` = 원 요청(경로+쿼리)이다. 엔진의 본인인증 가로채기가
+템플릿 인증 창을 열고, 확인이 끝나면 `?verification_token=` 을 붙여 같은 본문으로 원 요청을 다시 보낸다 — 관문은 위 토큰 규칙(본인·목적·1회)으로
+통과시킨다. 비밀번호 있는 회원과 새 화면(7.2.0)의 계약은 바뀌지 않는다.
 
 ---
 

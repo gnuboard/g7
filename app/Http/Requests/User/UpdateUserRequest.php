@@ -21,6 +21,13 @@ class UpdateUserRequest extends FormRequest
     use ChecksPasswordReuse;
 
     /**
+     * 비밀번호 없는 관리자의 본인 수정 요청이 옛 화면(현재 비밀번호 칸을 채워 보냄)에서 왔는지 여부.
+     *
+     * 참이면 토큰 누락을 검증 오류(422) 대신 본인인증 요구(428)로 답한다.
+     */
+    private bool $legacyPasswordReauth = false;
+
+    /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool 항상 true (권한은 permission 미들웨어에서 검증)
@@ -42,6 +49,16 @@ class UpdateUserRequest extends FormRequest
     {
         if ($this->has('role_ids') && $this->has('roles')) {
             $this->getInputSource()->remove('roles');
+        }
+
+        // 비밀번호 없는 관리자가 본인 계정을 고치며 현재 비밀번호를 보냈다 = 그 회원을 모르는 옛 화면(7.1.x)이다(칸이 보여
+        // 무엇이든 넣는다). 대조할 비밀번호가 없으니 값은 버리고, 토큰 없이 비밀번호를 정하려 하면 422 대신 본인인증을
+        // 요구한다(passedValidation, 428) — 엔진이 인증 창을 열고 확인이 끝나면 토큰을 붙여 이 요청을 다시 보낸다.
+        // 현재 비밀번호를 비워 보낸 요청(새 화면)은 종전 계약(토큰 필수 422) 그대로다.
+        if ($this->isSelfUpdate() && $this->targetUser()?->hasPassword() === false && $this->has('current_password')) {
+            $current = $this->input('current_password');
+            $this->legacyPasswordReauth = is_string($current) && $current !== '';
+            $this->getInputSource()->remove('current_password');
         }
     }
 
@@ -102,7 +119,8 @@ class UpdateUserRequest extends FormRequest
         if ($this->isSelfUpdate()) {
             if ($this->targetUser()?->hasPassword() === false) {
                 $rules['current_password'] = ['prohibited'];
-                $rules['verification_token'] = ['required_with:password', 'nullable', 'string', 'max:128', function (string $attribute, mixed $value, \Closure $fail) {
+                // 옛 화면은 토큰을 모른다 — 누락은 검증 오류로 끊지 않고 passedValidation 이 본인인증(428)으로 받는다.
+                $rules['verification_token'] = [...($this->legacyPasswordReauth ? [] : ['required_with:password']), 'nullable', 'string', 'max:128', function (string $attribute, mixed $value, \Closure $fail) {
                     if (! is_string($value) || $value === '') {
                         return;
                     }
@@ -150,12 +168,22 @@ class UpdateUserRequest extends FormRequest
     /**
      * 검증이 모두 통과하면 재확인 토큰을 소비합니다 (한 번만 쓸 수 있게).
      *
+     * 옛 화면에서 온 비밀번호 첫 설정이 토큰 없이 왔으면 본인인증을 요구한다(428) — 다른 입력 오류가 먼저 보이도록 검증이
+     * 모두 통과한 뒤에 건다.
+     *
      * @return void
+     *
+     * @throws \App\Exceptions\IdentityVerificationRequiredException 옛 화면의 비밀번호 첫 설정에 토큰이 없을 때
      */
     protected function passedValidation(): void
     {
         $token = $this->input('verification_token');
         $target = $this->targetUser();
+        $password = $this->input('password');
+
+        if ($this->legacyPasswordReauth && is_string($password) && $password !== '' && (! is_string($token) || $token === '')) {
+            throw app(ReauthenticationService::class)->challengeFor($this);
+        }
 
         if ($this->isSelfUpdate() && $target !== null && is_string($token) && $token !== '') {
             app(ReauthenticationService::class)->consume($target, ['verification_token' => $token]);

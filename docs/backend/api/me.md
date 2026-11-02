@@ -290,7 +290,7 @@ HTTP/1.1 200
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
-| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18). 비밀번호가 없는 회원(외부 인증 전용)은 보내지 않는다(보내면 422 `prohibited`, 7.2.0) |
+| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18). 비밀번호가 없는 회원(외부 인증 전용)이 보내면 그 값은 버린다(보내지 않은 것과 같다, 7.2.0) |
 | language | body | string | 아니오 | — | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |

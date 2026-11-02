@@ -8,6 +8,7 @@
 
 ### Added
 
+- 7.1.x 화면으로 만든 옛 템플릿에서 비밀번호 없는 회원이 정보 수정 진입 확인과 비밀번호 첫 설정을 마칠 때 보이는 안내(`core.compat.*`)의 일본어 번역을 추가했습니다.
 - 운영자가 발송 수단을 켜서 만든 빈 알림 템플릿을 내용 없이 켤 때의 거절 안내(받는 사람 먼저, 본문 먼저) 일본어 번역을 추가했습니다.
 - 본인 확인 시작 요청의 「시작한 화면 범위」 항목 이름 일본어 번역을 추가했습니다(`validation.attributes.scope`).
 - 번들 일괄 업데이트에서 처리하지 못한 항목 목록과 다시 실행 안내(`extensions.commands.bundled_update.item_process_aborted`·`failed_items_header`·`failed_item_labels.*`·`child_aborted`)의 일본어 번역을 추가했습니다.

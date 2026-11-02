@@ -124,32 +124,9 @@ try {
         return;
     }
 
-    // 설치 워커가 병합 전 .env(와 runtime.php 주입 값)로 만든 설정 캐시를 병합 전에 지운다 — .env 쓰기 직후 이
-    // 프로세스가 끊겨도(php artisan serve 는 .env 변경을 보고 서버를 다시 띄운다) 병합 전 값의 캐시가 남지 않는다.
-    // 캐시를 지웠으므로 공유 본문(installer_finalize_env)의 「캐시가 있을 때만 다시 굽기」는 건너뛰고, 아래에서
-    // 병합된 .env 로 다시 만든다. PHP 경로는 상태 파일에 있으므로 본문이 상태를 지우기 전에 읽는다.
-    $finalizePhpBinary = installer_php_binary_from_state(getInstallationState());
-    if (! installerClearConfigCache()) {
-        addLog('[finalize-env] 설정 캐시 삭제 FAILED: path='.installerConfigCachePath());
-    }
-
-    // 본문은 웹·터미널 공유 함수(includes/env-finalize.php) — 결과 문구는 installation.log 에 남는다.
-    $finalizeResult = installer_finalize_env();
-
-    // 설정 캐시를 병합된 .env 로 다시 만든다 (설치를 config 캐시 켜진 상태로 시작). 실패하면 캐시 없이 둔다 —
-    // 다음 요청이 병합된 .env 로 부팅한다.
-    if ($finalizeResult['success'] && ! $finalizeResult['already']) {
-        $configCacheRebuild = installerRebuildConfigCache($finalizePhpBinary);
-        if ($configCacheRebuild['rebuilt']) {
-            addLog('[finalize-env] 설정 캐시 다시 생성 완료');
-        } else {
-            addLog(sprintf(
-                '[finalize-env] 설정 캐시 다시 생성 실패 — 캐시 없이 병합된 .env 로 부팅한다: exit=%s, output=%s',
-                $configCacheRebuild['exit_code'] === null ? 'n/a' : (string) $configCacheRebuild['exit_code'],
-                mb_substr($configCacheRebuild['output'], 0, 500),
-            ));
-        }
-    }
+    // 본문은 웹·터미널 공유 함수(includes/env-finalize.php) — 병합 전 설정 캐시 삭제, 병합, runtime.php 삭제,
+    // 병합된 .env 로 설정 캐시 다시 만들기(실패하면 캐시 없이 둔다)까지 한다. 결과 문구는 installation.log 에 남는다.
+    installer_finalize_env();
 } catch (Throwable $e) {
     // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
     addLog('[finalize-env] unexpected exception: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());

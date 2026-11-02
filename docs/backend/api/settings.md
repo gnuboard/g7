@@ -1134,7 +1134,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| password | body | string | verification_token 이 없으면 예 | — | 최고관리자 비밀번호 — 비밀번호가 없는 관리자가 보내면 422 `user.password_not_set` |
+| password | body | string | verification_token 이 없으면 예 | — | 최고관리자 비밀번호 — 비밀번호가 없는 관리자가 보내면 값은 쓰지 않고 **428** 본인인증 요구(목적 `sensitive_action`, `return_request` = 이 요청)로 답한다(7.2.0) |
 | verification_token | body | string | 아니오 | 최대 128자 | 비밀번호가 없는 관리자(외부 인증 전용)의 대체 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰(본인 것·1회) (7.2.0) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.regenerate_app_key_validation_rules`). 최고관리자 검사는 라우트 미들웨어(`super.admin` — 회원의 최고관리자 표지 `is_super`)가 한다.
@@ -1180,6 +1180,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthorized | 본문 `password` 가 요청자 본인의 비밀번호와 일치하지 않는 경우 (`settings.invalid_password`) |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없거나, 최고관리자(`is_super`)가 아닌 관리자인 경우 (`auth.super_admin_required`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 428 | Precondition Required | 비밀번호가 없는 관리자가 `password` 로 확인하려 한 경우 (`error_code`: `identity_verification_required`) — 확인 뒤 `?verification_token=` 을 붙여 같은 요청을 다시 보낸다 (7.2.0) |
 | 500 | Internal Server Error | `.env` 기록/config 캐시 재생성 실패 (`settings.app_key_regenerate_failed`) |
 
 <!-- @generated:end -->

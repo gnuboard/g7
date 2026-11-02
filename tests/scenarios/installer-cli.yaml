@@ -61,7 +61,8 @@ effects:
 
   # 결함 ⑥ — .env 확정 뒤 설정 캐시 재생성
   - finalize_rebuilds_config_cache_after_env_merge
-  - finalize_skips_rebuild_without_config_cache
+  - finalize_rebuilds_config_cache_even_without_prior_cache
+  - finalize_leaves_no_stale_config_cache_on_rebuild_failure
   # 완료 요약 .env 권한 안내 — 웹 완료 화면과 같은 두 선택지(--web-user 설치는 640)
   - cli_env_hardening_hint_matches_web_completion
   # 결함 ⑥ 의 폴링 경로 — 완료 표식 뒤 마무리 작업(설정·라우트 캐시·정적 게시)이 끝나야 완료 처리

@@ -367,7 +367,7 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 
 | 이름 | 종류 | 동작 |
 | --- | --- | --- |
-| `custom.screen` | 그룹 | `canonical.host`(정식 주소 이동) → `MarkBotRequest`(봇 표식) → `analytics.bots`(봇 방문 기록) → `analytics.fallback`(서버 방문 집계) |
+| `custom.screen` | 그룹 | `canonical.host`(정식 주소 이동) → `canonical.path`(끝·연속 슬래시 GET·HEAD 를 정규형으로 301) → `MarkBotRequest`(봇 표식) → `analytics.bots`(봇 방문 기록) → `analytics.fallback`(서버 방문 집계) |
 | `custom.auth` | 별칭 (`RequireScreenUser`) | `ScreenAuth::user()` 가 없으면 로그인 화면(`ScreenUrl` 키 `auth.login`)으로 `?redirect=` 를 붙여 보내고, JSON 요청이면 401 |
 | `custom.admin` | 별칭 (`RequireScreenAdmin`) | 비회원은 관리자 로그인(`admin.login`)으로, 관리자가 아닌 회원은 403 |
 

@@ -27,7 +27,7 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| password | body | string | verification_token 이 없으면 예 | — | 비밀번호 — 비밀번호가 없는 회원(외부 인증 전용)이 보내면 422 `user.password_not_set` |
+| password | body | string | verification_token 이 없으면 예(비밀번호 없는 회원은 아니오) | — | 비밀번호 — 비밀번호가 없는 회원(외부 인증 전용)이 보내면 값은 쓰지 않고 **428** 본인인증 요구(목적 `sensitive_action`, `return_request` = 이 요청)로 답한다. 화면이 확인 뒤 `?verification_token=` 을 붙여 다시 보내면 통과(7.2.0) |
 | verification_token | body | string | 아니오 | 최대 128자 | 비밀번호가 없는 회원의 대체 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰. 본인 것·미사용·미만료여야 하고 통과하면 소비된다(무효면 422 `user.reauthentication_invalid`) (7.2.0) |
 
 **요청 예시**
@@ -64,6 +64,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | --- | --- | --- |
 | 401 | 비밀번호 불일치 | 전달한 `password` 가 저장된 해시와 일치하지 않는 경우 (`message`: 비밀번호가 일치하지 않습니다.) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 428 | 본인인증 필요 | 비밀번호가 없는 회원이 `password` 로 확인하려 하거나 아무것도 없이(빈 본문) 온 경우 (`error_code`: `identity_verification_required`, `verification.purpose`: `sensitive_action`) — 확인 뒤 `?verification_token=` 을 붙여 같은 요청을 다시 보낸다 (7.2.0) |
 | 500 | 비밀번호 확인 실패 | 확인 처리 중 예기치 못한 예외가 발생한 경우 (`message`: 비밀번호 확인에 실패했습니다.) |
 
 <!-- @generated:end -->

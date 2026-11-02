@@ -248,10 +248,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // 개발자 화면(routes/custom.php, #792) 묶음 — G7 화면 catch-all 과 같은 순서 계약을 따른다:
-        // 정식 주소 이동 → 봇 표식(SEO 렌더 없이 표식만) → 봇 기록 → 서버 폴백 집계(봇 표식이 있으면 세지 않음).
+        // 정식 주소 이동(호스트 → 끝·연속 슬래시) → 봇 표식(SEO 렌더 없이 표식만) → 봇 기록 → 서버 폴백 집계(봇 표식이 있으면 세지 않음).
         // 사용자 템플릿 의존성 검사(template.dependencies)는 넣지 않는다 — 템플릿이 없어도 개발자 화면은 뜬다.
         $middleware->group('custom.screen', [
             'canonical.host',
+            'canonical.path',
             MarkBotRequest::class,
             'analytics.bots',
             'analytics.fallback',

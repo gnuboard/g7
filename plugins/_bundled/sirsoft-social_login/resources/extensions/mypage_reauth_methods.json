@@ -54,7 +54,7 @@
                         "className": "sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300",
                         "role": "status"
                     },
-                    "text": "$t:mypage.profile.reauth_unavailable"
+                    "text": "$t:core.compat.reauth.unavailable"
                 }
             ]
         }

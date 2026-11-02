@@ -1444,7 +1444,7 @@ HTTP/1.1 200
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 비밀번호 — **다른 회원**이면 재사용 검사 없이 정하고 그 회원은 다음 로그인 때 바꿔야 하며 모든 기기가 로그아웃된다. **본인**이면 재사용 금지가 걸리고 현재 기기만 남는다(#736) |
-| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19). 본인에게 비밀번호가 없으면(외부 인증 전용) 보내지 않는다(422 `prohibited`) |
+| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19). 본인에게 비밀번호가 없으면(외부 인증 전용) 대조할 값이 없어 버린다. 이때 값을 채워 보내고(옛 화면) `verification_token` 이 없으면 422 대신 **428** 본인인증 요구(목적 `sensitive_action`, `return_request` = 이 요청)로 답한다(7.2.0) |
 | verification_token | body | string | 비밀번호 없는 본인 계정에 password 를 보낼 때 | 최대 128자 | 비밀번호가 없는 관리자가 자기 비밀번호를 처음 정할 때의 본인 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰(본인 것·1회, 검증을 모두 통과하면 소비) (7.2.0) |
 | password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
@@ -1610,6 +1610,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.users.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지 — 마지막 관리자 본인의 admin 역할 제거 시도 시 `user.last_admin_role_cannot_remove` 포함) |
+| 428 | Precondition Required | 비밀번호가 없는 관리자가 본인 계정에 `password` 와 채운 `current_password` 를 보내고 `verification_token` 이 없는 경우(옛 화면) — 다른 검증을 모두 통과한 뒤에만. 확인 뒤 `?verification_token=` 을 붙여 같은 요청을 다시 보낸다 (7.2.0) |
 | 500 | Internal Server Error | 수정 중 예외 발생 (`user.update_failed`, `errors.error` 에 예외 메시지) |
 
 <!-- @generated:end -->

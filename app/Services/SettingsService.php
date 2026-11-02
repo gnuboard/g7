@@ -1505,6 +1505,8 @@ class SettingsService
      *
      * @param  array{password?: string|null, verification_token?: string|null}  $credentials  재확인 입력
      * @return array 결과 (success, app_key 또는 error·status)
+     *
+     * @throws \App\Exceptions\IdentityVerificationRequiredException 비밀번호 없는 관리자가 비밀번호로 확인하려 할 때 (428)
      */
     public function regenerateAppKey(array $credentials): array
     {
@@ -1513,8 +1515,10 @@ class SettingsService
             ? app(ReauthenticationService::class)->verify($admin, $credentials)
             : ReauthenticationService::MISSING;
 
+        // 비밀번호 없는 관리자가 비밀번호 칸으로 왔다 = 그 회원을 모르는 옛 화면(7.1.x)이다. 본인인증을 요구한다(428) —
+        // 엔진이 인증 창을 열고 확인이 끝나면 토큰을 붙여 이 요청을 다시 보낸다. \Error 계열이라 호출자 catch 를 지나친다.
         if ($check === ReauthenticationService::PASSWORD_NOT_SET) {
-            return ['success' => false, 'error' => __('user.password_not_set'), 'status' => 422];
+            throw app(ReauthenticationService::class)->challengeFor(request());
         }
 
         if ($check === ReauthenticationService::TOKEN_INVALID) {

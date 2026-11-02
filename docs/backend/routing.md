@@ -202,7 +202,7 @@ Laravel 라우터는 `path()` 로 매칭하므로 `/admin/`·`/board//free` 도 
 템플릿 라우트 판정·SEO 렌더·SEO 캐시 키·방문 통계는 요청 경로 문자열을 쓰는데, `getPathInfo()`·`getRequestUri()`
 는 끝 `/` 와 `//` 를 그대로 남긴다. 그대로 두면 같은 화면이 두 갈래가 된다(웹 서버에 따라 `/admin/` 이 404).
 
-그래서 화면 셸 라우트 두 묶음(admin catch-all · user catch-all)에 `canonical.path` 미들웨어를 붙인다.
+그래서 화면 셸 라우트 두 묶음(admin catch-all · user catch-all)과 개발자 화면 묶음(`custom.screen`, `routes/custom.php`)에 `canonical.path` 미들웨어를 붙인다.
 
 - **GET·HEAD 만** 이동한다. 다른 메서드는 통과한다.
 - 끝 `/` 를 떼고(루트 제외) 연속 `/` 를 하나로 줄인 주소로 **301** 한다. 쿼리스트링은 원문 그대로 붙인다(순서 보존).

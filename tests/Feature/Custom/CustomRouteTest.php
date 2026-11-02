@@ -7,6 +7,7 @@ use App\Models\Analytics\AnalyticsVisit;
 use App\Seo\BotDetector;
 use App\Seo\TemplateRouteResolver;
 use App\Support\Custom\CustomRoutes;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
@@ -14,6 +15,7 @@ use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Testing\TestResponse;
 use Mockery;
 use Tests\TestCase;
 
@@ -80,6 +82,38 @@ PHP);
 
         $route = app('router')->getRoutes()->match(Request::create('/board/free'));
         $this->assertContains(CustomRoutes::MIDDLEWARE_GROUP, $route->middleware());
+    }
+
+    /**
+     * custom 화면도 끝·연속 슬래시 GET 을 정규형으로 301 하고, 다른 메서드는 그대로 받습니다(웹 서버와 무관하게 G7 화면과 같은 동작).
+     *
+     * @scenario case=canonical_path
+     *
+     * @effects custom_screen_trailing_slash_redirects
+     *
+     * @return void 반환값 없음
+     */
+    public function test_custom_screen_redirects_trailing_and_double_slash(): void
+    {
+        $this->loadCustomRoutes(<<<'PHP'
+<?php
+use Illuminate\Support\Facades\Route;
+Route::get('/hello-page', fn () => 'custom-hello');
+Route::get('/hello-page/sub', fn () => 'custom-sub');
+Route::post('/hello-form', fn () => 'custom-posted');
+PHP);
+
+        // 시험 클라이언트(get·post)는 끝 슬래시를 잘라 보내므로 원문 URI 그대로 커널에 보낸다
+        $trailing = $this->sendRaw('/hello-page/?b=2&a=1');
+        $trailing->assertStatus(301);
+        $this->assertStringEndsWith('/hello-page?b=2&a=1', (string) $trailing->headers->get('Location'), '쿼리스트링은 원문 순서 그대로');
+
+        $double = $this->sendRaw('/hello-page//sub');
+        $double->assertStatus(301);
+        $this->assertStringEndsWith('/hello-page/sub', (string) $double->headers->get('Location'));
+
+        $this->sendRaw('/hello-page')->assertOk()->assertSeeText('custom-hello');
+        $this->sendRaw('/hello-form/', 'POST')->assertOk()->assertSeeText('custom-posted');
     }
 
     /**
@@ -418,6 +452,25 @@ PHP);
         $this->assertSame(['/api/evil'], array_column($result['rejected'], 'uri'));
         $this->assertCount($before, app('router')->getRoutes()->getRoutes());
         $this->assertSame(app('router'), \Illuminate\Support\Facades\Route::getFacadeRoot());
+    }
+
+    /**
+     * 원문 요청 URI 그대로 HTTP 커널에 요청을 보냅니다 — 끝·연속 슬래시를 잘라 내지 않습니다.
+     *
+     * @param  string  $requestUri  경로와 쿼리 원문 (예: `/hello-page/?b=2&a=1`)
+     * @param  string  $method  HTTP 메서드
+     * @return TestResponse 응답
+     */
+    private function sendRaw(string $requestUri, string $method = 'GET'): TestResponse
+    {
+        $query = (string) parse_url('http://x'.$requestUri, PHP_URL_QUERY);
+        $request = Request::create(config('app.url').'/', $method);
+        $request->server->set('REQUEST_URI', $requestUri);
+        $request->server->set('QUERY_STRING', $query);
+        parse_str($query, $params);
+        $request->query->replace($params);
+
+        return TestResponse::fromBaseResponse($this->app->make(HttpKernel::class)->handle($request), $request);
     }
 
     /**

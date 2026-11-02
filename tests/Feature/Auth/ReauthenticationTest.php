@@ -102,7 +102,8 @@ class ReauthenticationTest extends TestCase
         $this->as($holder, 'POST', '/api/me/verify-password', ['password' => 'wrong'])->assertStatus(401);
 
         $passwordless = $this->passwordless();
-        $this->as($passwordless, 'POST', '/api/me/verify-password', ['password' => 'x'])->assertStatus(422);
+        // 비밀번호 칸으로 오면(옛 화면) 본인인증 요구 428 — 토큰 재요청 흐름은 LegacyReauthChallengeTest
+        $this->as($passwordless, 'POST', '/api/me/verify-password', ['password' => 'x'])->assertStatus(428);
         $this->as($passwordless, 'POST', '/api/me/verify-password', ['verification_token' => $this->verifiedToken($passwordless)])->assertOk();
     }
 
@@ -152,11 +153,11 @@ class ReauthenticationTest extends TestCase
     }
 
     /**
-     * 앱 키 재생성 관문 — 비밀번호 없는 최고관리자가 비밀번호를 보내면 「비밀번호 미설정」, 남의 토큰이면 거절한다.
+     * 앱 키 재생성 관문 — 비밀번호 없는 최고관리자가 비밀번호를 보내면 본인인증 요구(428), 남의 토큰이면 거절한다.
      *
      * @scenario gate=regenerate_app_key, password=none, method=password|other_token
      *
-     * @effects app_key_gate_reports_not_set, app_key_gate_rejects_other_token
+     * @effects app_key_gate_challenges_passwordless, app_key_gate_rejects_other_token
      *
      * @return void 반환값 없음
      */
@@ -166,14 +167,14 @@ class ReauthenticationTest extends TestCase
         $super = $this->superAdmin();
 
         $this->as($super, 'POST', '/api/admin/settings/regenerate-app-key', ['password' => 'anything'])
-            ->assertStatus(422)
-            ->assertJsonPath('message', __('user.password_not_set'));
+            ->assertStatus(428)
+            ->assertJsonPath('error_code', 'identity_verification_required');
 
         $this->as($super, 'POST', '/api/admin/settings/regenerate-app-key', ['verification_token' => $this->verifiedToken($this->passwordless())])
             ->assertStatus(422)
             ->assertJsonPath('message', __('user.reauthentication_invalid'));
 
-        // 위 두 요청이 422 까지 갔다 = 최고관리자 관문을 통과했다. 코어에 최고관리자 역할이 없어도 통과해야 한다.
+        // 위 두 요청이 428·422 까지 갔다 = 최고관리자 관문을 통과했다. 코어에 최고관리자 역할이 없어도 통과해야 한다.
         $this->assertFalse(Role::where('identifier', 'super_admin')->exists());
 
         // 통과 판정은 서비스로 잰다 — 실제 재생성은 환경 파일을 다시 쓰므로 여기서 하지 않는다.
@@ -212,9 +213,11 @@ class ReauthenticationTest extends TestCase
     /**
      * 관리자 본인 정보 수정 — 비밀번호 없는 관리자는 현재 비밀번호 대신 본인 인증 토큰으로 비밀번호를 처음 정한다.
      *
+     * 현재 비밀번호를 채워 보낸 요청(옛 화면)은 그 값을 버리고 본인인증 요구(428)로 받는다.
+     *
      * @scenario gate=admin_self_update, password=none, method=none|current_password|token
      *
-     * @effects admin_self_update_requires_token_for_passwordless, admin_self_update_sets_first_password
+     * @effects admin_self_update_requires_token_for_passwordless, admin_self_update_challenges_legacy_current_password, admin_self_update_sets_first_password
      *
      * @return void 반환값 없음
      */
@@ -238,8 +241,8 @@ class ReauthenticationTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['verification_token']);
         $this->as($admin, 'PUT', '/api/admin/users/'.$admin->uuid, $payload + ['current_password' => 'x'])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['current_password']);
+            ->assertStatus(428)
+            ->assertJsonPath('error_code', 'identity_verification_required');
         $this->assertFalse($admin->fresh()->hasPassword());
 
         $token = $this->verifiedToken($admin);

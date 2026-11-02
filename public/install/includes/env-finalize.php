@@ -15,23 +15,16 @@
 
 if (! function_exists('installer_finalize_rebuild_config_cache')) {
     /**
-     * 확정한 .env 로 설정 캐시를 다시 굽는다 (`php artisan config:cache`).
+     * 확정한 .env 로 설정 캐시를 새 artisan 프로세스로 다시 만든다 — 만들지 못하면 캐시를 지운다.
      *
-     * @return bool 성공 여부
+     * 본체는 installerRebuildConfigCache() 다. 시험이 artisan 대신 기록 함수로 바꿔 끼우는 자리로 둔다.
+     *
+     * @param  string  $phpBinary  artisan 을 띄울 PHP 실행 경로
+     * @return array{rebuilt: bool, exit_code: int|null, output: string} 다시 만들었는지, 종료 코드, 명령 출력
      */
-    function installer_finalize_rebuild_config_cache(): bool
+    function installer_finalize_rebuild_config_cache(string $phpBinary): array
     {
-        $phpBinary = function_exists('getPhpBinary') ? getPhpBinary() : 'php';
-        $previous = getcwd();
-        chdir(BASE_PATH);
-        $output = [];
-        $code = 1;
-        exec(escapeshellarg($phpBinary).' artisan config:cache 2>&1', $output, $code);
-        if ($previous !== false) {
-            chdir($previous);
-        }
-
-        return $code === 0;
+        return installerRebuildConfigCache($phpBinary);
     }
 }
 
@@ -55,6 +48,18 @@ if (! function_exists('installer_finalize_env')) {
             // 멱등성: runtime.php 부재 → 이미 finalize 된 상태
             if ($runtime === null) {
                 return ['success' => true, 'already' => true, 'messages' => $messages];
+            }
+
+            // 설정 캐시는 웹·터미널이 같은 방식으로 다룬다 — 병합 전에 지우고, 병합·runtime.php 삭제 뒤 늘 새로 만들고,
+            // 만들지 못하면 캐시 없이 둔다(다음 요청은 병합된 .env 로 부팅). 설치 워커·config_cache 작업이 만든 캐시는
+            // 병합 전 .env(설치 미완료 표식)와 runtime.php 주입 값을 담는다. 먼저 지워 두면 .env 쓰기 직후 프로세스가
+            // 끊겨도(php artisan serve 는 .env 변경을 보고 서버를 다시 띄운다) 병합 전 값의 캐시가 남지 않는다.
+            // PHP 경로는 상태 파일에 있으므로 상태를 지우기 전에 읽는다.
+            $phpBinary = function_exists('installer_php_binary_from_state')
+                ? installer_php_binary_from_state(getInstallationState())
+                : 'php';
+            if (! installerClearConfigCache()) {
+                $log('[finalize-env] 설정 캐시 삭제 FAILED: path='.installerConfigCachePath());
             }
 
             $envPath = BASE_PATH.'/.env';
@@ -113,15 +118,16 @@ if (! function_exists('installer_finalize_env')) {
                 $log('[finalize-env] runtime.php 삭제 완료');
             }
 
-            // 설정 캐시 다시 굽기 — config_cache 작업은 .env 확정 전에 돌아 installer_completed=false 같은
-            // 확정 전 값이 캐시에 남는다. 캐시가 켜진 앱은 .env 를 다시 읽지 않으므로 확정한 .env 로 다시 굽는다.
-            // runtime.php 를 지운 뒤에 굽는다 — 남아 있으면 Provider 가 그 값을 캐시에 다시 섞는다.
-            // 캐시 파일이 없으면(config_cache 실패) 새로 켜지 않는다.
-            if (is_file(BASE_PATH.'/bootstrap/cache/config.php')) {
-                $log(installer_finalize_rebuild_config_cache()
-                    ? '[finalize-env] config 캐시 재생성 완료'
-                    : '[finalize-env] config 캐시 재생성 FAILED — php artisan config:cache 를 실행하세요');
-            }
+            // 설정 캐시를 병합된 .env 로 다시 만든다(설치를 설정 캐시가 켜진 상태로 끝낸다).
+            // runtime.php 를 지운 뒤에 만든다 — 남아 있으면 Provider 가 그 값을 캐시에 다시 섞는다.
+            $rebuild = installer_finalize_rebuild_config_cache($phpBinary);
+            $log($rebuild['rebuilt']
+                ? '[finalize-env] 설정 캐시 다시 생성 완료'
+                : sprintf(
+                    '[finalize-env] 설정 캐시 다시 생성 실패 — 캐시 없이 병합된 .env 로 부팅한다: exit=%s, output=%s',
+                    $rebuild['exit_code'] === null ? 'n/a' : (string) $rebuild['exit_code'],
+                    mb_substr($rebuild['output'], 0, 500),
+                ));
 
             // state.json 삭제 — 남는 모든 경로에서는 비밀 필드를 제거해 재저장한다 (이슈 #465).
             // .env 머지가 이미 성공한 뒤라 state.config 가 더는 필요하지 않다.

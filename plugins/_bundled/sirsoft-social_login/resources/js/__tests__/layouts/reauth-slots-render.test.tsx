@@ -30,6 +30,8 @@ import reauthMethods from '../../../extensions/mypage_reauth_methods.json';
 import changePasswordReauth from '../../../extensions/mypage_change_password_reauth.json';
 import ko from '../../../lang/ko.json';
 import koMypage from '../../../../../../../templates/_bundled/sirsoft-basic/lang/partial/ko/mypage.json';
+// 재확인 안내는 템플릿 키가 아니라 코어 키(core.compat.*)를 쓴다 — 7.1.x 옛 템플릿에서도 문구가 보이게
+import koCompat from '../../../../../../../lang/partial/ko/compat.json';
 
 /** 태그 하나를 그리는 시험용 컴포넌트 */
 const Passthrough = (tag: keyof React.JSX.IntrinsicElements) => {
@@ -103,7 +105,7 @@ async function renderFragment(fragment: any, accounts: Record<string, unknown>, 
   utils = createLayoutTest(wrap(fragment, `test_${fragment.extension_point}`), {
     auth: { isAuthenticated: true, user: { id: 7, name: '회원' }, authType: 'user' },
     locale: 'ko',
-    translations: { 'sirsoft-social_login': ko, mypage: koMypage },
+    translations: { 'sirsoft-social_login': ko, mypage: koMypage, core: { compat: koCompat } },
     componentRegistry: setupRegistry(),
     // 바깥 화면(비밀번호 변경)의 내 정보 데이터소스 `user` — 코어가 고를 재확인 수단(`reauth_provider`)을 싣는다
     ...(user ? { initialData: { user: { data: user } } } : {}),

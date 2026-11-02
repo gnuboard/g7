@@ -26,6 +26,7 @@ use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
+use App\Support\LayoutCompat\LegacyContractShim;
 use App\Support\LayoutEmptyObjects;
 use Composer\Semver\Semver;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -202,6 +203,12 @@ class LayoutExtensionService
 
         // scripts 배열 초기화 (기존 scripts 유지)
         $scripts = $layout['scripts'] ?? [];
+
+        // 0. 옛 템플릿 호환 — 7.1.x 화면 계약으로 만든 템플릿에 7.2.0 의 확장점·로그인 인계·재인증 자리를 채운다.
+        //    확장점이 생겨야 1단계가 그 자리에 조각을 붙인다. 편집 모드는 건너뛴다(저장 때 심 노드가 원본에 섞이지 않게).
+        if (! $withSourceMeta) {
+            $layout = (new LegacyContractShim)->apply($layout, $templateId);
+        }
 
         // 1. Extension Point 처리
         $layout = $this->applyExtensionPoints($layout, $templateId, $scripts, $withSourceMeta);
@@ -1657,7 +1664,14 @@ class LayoutExtensionService
     public function isExtensionApplicableToTemplate(array $content, int $templateId): bool
     {
         if (isset($content['extension_point'])) {
-            return $this->layoutRepository->hasExtensionPoint($templateId, $content['extension_point']);
+            if ($this->layoutRepository->hasExtensionPoint($templateId, $content['extension_point'])) {
+                return true;
+            }
+
+            // 옛 템플릿 호환 — 7.2.0 확장점이 없는 옛 화면도 서빙 때 심이 자리를 채우므로, 호스트 화면이 있으면 등록해 둔다
+            $host = LegacyContractShim::EXTENSION_POINT_HOSTS[$content['extension_point']] ?? null;
+
+            return $host !== null && $this->layoutRepository->exists($templateId, $host);
         }
 
         if (isset($content['target_layout'])) {
