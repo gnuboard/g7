@@ -2,8 +2,10 @@
 
 namespace Plugins\Sirsoft\HeroSection\Tests\Unit\Listeners;
 
+use App\Extension\HookArgumentSerializer;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Plugins\Sirsoft\HeroSection\Listeners\BannerActivityLogListener;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
@@ -72,6 +74,38 @@ class BannerActivityLogListenerTest extends PluginTestCase
         $rows = DB::table('activity_logs')->where('action', 'hero_banner.bulk_status')->orderBy('loggable_id')->get();
         $this->assertSame([$a->id, $b->id], $rows->pluck('loggable_id')->map(fn ($id) => (int) $id)->all());
         $this->assertSame('sirsoft-hero_section::activity_log.description.hero_banner_bulk_hide', $rows[0]->description_key);
+    }
+
+    /**
+     * [case:backend-63] 일괄 비노출 기록은 변경 시점 스냅숏으로 남긴다 — 리스너는 큐에서 늦게 돌아, 그 사이 배너가 지워지거나 다시 고쳐져도
+     * 건마다 그때의 위치·이름과 사용 여부 변경(켬 → 끔)이 남아야 한다.
+     *
+     * @scenario surface=bulk_status_logged_from_snapshot
+     *
+     * @effects activity_log_per_item
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_status_logs_from_snapshot_when_queue_runs_late(): void
+    {
+        $a = Banner::factory()->create(['position' => 'home_hero', 'is_active' => true, 'title' => ['ko' => '가']]);
+        $b = Banner::factory()->create(['position' => 'home_hero', 'is_active' => true, 'title' => ['ko' => '나']]);
+        $snapshots = [$a->id => $a->fresh()->toArray(), $b->id => $b->fresh()->toArray()];
+
+        // 큐가 돌기 전에 한 건은 지워지고, 한 건은 다른 위치로 옮겨졌다
+        $b->delete();
+        DB::table('hero_section_banners')->where('id', $a->id)->update(['position' => 'shop_hero']);
+
+        $args = HookArgumentSerializer::deserialize(HookArgumentSerializer::serialize([[$a->id, $b->id], false, $snapshots]));
+        app(BannerActivityLogListener::class)->handleBulkStatus(...$args);
+
+        $rows = DB::table('activity_logs')->where('action', 'hero_banner.bulk_status')->orderBy('loggable_id')->get()->keyBy('loggable_id');
+        $this->assertSame([$a->id, $b->id], $rows->keys()->map(fn ($id) => (int) $id)->all());
+        $this->assertSame(Banner::class, $rows[$b->id]->loggable_type);
+        $this->assertSame('home_hero', json_decode($rows[$a->id]->description_params, true)['position']);
+        $this->assertSame('나', json_decode($rows[$b->id]->properties, true)['name']['ko'] ?? null);
+        $changes = json_decode($rows[$b->id]->changes, true);
+        $this->assertSame([['is_active', true, false]], array_map(fn ($c) => [$c['field'], $c['old'], $c['new']], $changes));
     }
 
     /**

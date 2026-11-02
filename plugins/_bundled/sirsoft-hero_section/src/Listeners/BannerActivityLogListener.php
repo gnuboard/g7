@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
-use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 
 /**
  * 히어로섹션 활동 로그 — 배너 등록·수정·삭제·일괄(항목별)·순서·이미지·위치 설정을 기록한다.
@@ -103,28 +102,37 @@ class BannerActivityLogListener implements HookListenerInterface
     /**
      * 일괄 노출·비노출을 건마다 기록합니다.
      *
+     * 이 리스너는 큐에서 늦게 돈다 — 그 사이 배너가 지워지거나 다시 고쳐질 수 있으므로 DB 를 다시 읽지 않고, 서비스가 잠근 행에서
+     * 뜬 변경 시점 스냅숏으로 남긴다(일괄 삭제와 같은 방식). 바뀐 값은 사용 여부 하나다.
+     *
      * @param  array<int, int>  $ids  배너 ID 목록
      * @param  bool  $isActive  바꾼 사용 여부
-     * @param  array<int, array<string, mixed>>  $snapshots  바꾸기 전 값
+     * @param  array<int, array<string, mixed>>  $snapshots  바꾸기 전 값 (배너 ID => toArray)
      * @return void 반환값 없음
      */
     public function handleBulkStatus(array $ids, bool $isActive, array $snapshots = []): void
     {
-        $banners = app(BannerRepositoryInterface::class)->findMany($ids)->keyBy('id');
-
-        $this->perItem(function () use ($ids, $banners, $snapshots, $isActive) {
+        $this->perItem(function () use ($ids, $snapshots, $isActive) {
             foreach ($ids as $id) {
-                $banner = $banners->get($id);
-                if ($banner === null) {
+                $snapshot = $snapshots[$id] ?? null;
+                if (! is_array($snapshot)) {
                     continue;
                 }
 
+                $before = (bool) ($snapshot['is_active'] ?? false);
                 $this->logActivity('hero_banner.bulk_status', [
-                    'loggable' => $banner,
+                    'loggable_type' => Banner::class,
+                    'loggable_id' => (int) $id,
                     'description_key' => self::KEY.($isActive ? 'hero_banner_bulk_show' : 'hero_banner_bulk_hide'),
-                    'description_params' => ['banner_id' => $id, 'position' => $banner->position],
-                    'changes' => ChangeDetector::detect($banner, $snapshots[$id] ?? null),
-                    'properties' => ['name' => $banner->title],
+                    'description_params' => ['banner_id' => (int) $id, 'position' => $snapshot['position'] ?? null],
+                    'changes' => $before === $isActive ? null : [[
+                        'field' => 'is_active',
+                        'label_key' => Banner::$activityLogFields['is_active']['label_key'],
+                        'old' => $before,
+                        'new' => $isActive,
+                        'type' => 'boolean',
+                    ]],
+                    'properties' => ['name' => $snapshot['title'] ?? null],
                 ]);
             }
         });
