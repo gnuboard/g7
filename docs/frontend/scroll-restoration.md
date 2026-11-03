@@ -174,6 +174,12 @@ template.json 은 템플릿 업데이트 때 바뀐다. 사이트별로 고칠 �
 `containers` 는 배열이라 통째로 교체된다. 템플릿 기본값(`#right_content_area` 등)을 상속받는 화면에서 영역을 하나 더
 적을 때는 상속값도 함께 적는다.
 
+```html
+<meta :scroll_restoration='{"containers":["#right_content_area","#common_info_list"]}'/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "meta": {
