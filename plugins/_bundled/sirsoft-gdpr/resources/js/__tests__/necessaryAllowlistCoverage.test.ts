@@ -514,6 +514,10 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
     // 「파기돼도 된다」는 판단이 아니라 **스캐너가 못 읽는 지점의 기록**이다.
     // 정렬된 문자열로 비교하므로 순서는 도출 결과(사전순)를 따른다.
     {
+        site: 'MEMORY_KEY + position ← plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroSlider.tsx',
+        reason: '히어로섹션 위치별 직전 모양(`sirsoft-hero_section:slot:<위치>` = 배너 유무·표시 폭) — 받는 동안의 스켈레톤 폭을 맞추는 보조 기억이다. functional 미동의 파기로 지워져도 다음 방문에 스켈레톤이 기본 폭으로 잡힐 뿐이라 허용목록에 넣지 않는다.',
+    },
+    {
         site: '`${namespace}${FONT_SIZE_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
         reason: '편집기 글꼴 크기 — `g7le.codeEditor.<레이아웃>.fontSize`. 접두사 `g7le.*` 로 파기 면제.',
     },

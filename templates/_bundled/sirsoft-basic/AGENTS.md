@@ -223,9 +223,9 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 339개 | `vitest.config.ts` |
+| Vitest | 341개 | `vitest.config.ts` |
 | Playwright | 34개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 142개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 143개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

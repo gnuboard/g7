@@ -1,0 +1,98 @@
+feature: 팝업 관리 → 사용자 화면 반영 E2E
+
+description: |
+  개발 사이트에 설치한 플러그인으로 관리자가 등록·수정한 팝업이 사용자 화면에 조건대로 뜨는지 실제 브라우저로 확인한다.
+  사양이 만든 데이터만 바꾸고 fixture 가 지운다(운영 팝업을 다시 저장하지 않음). 공개 API 응답이 아니라 그 응답이 그린 요소를 기다린다.
+  ko-KR 로케일·실제 UA 고정, trace on-first-retry. 봇 UA 는 서버 렌더 화면에 레이어가 없음을, GDPR 동시 흐름은 배너가 가려지지 않음을,
+  비활성화 흐름은 플러그인을 끄면 레이어가 즉시 사라짐을 본다. 다크 모드는 데스크톱·모바일 각 1회 대비를 본다.
+  끌어서 넘기기는 데스크톱 마우스(끌다 놓은 새 창 링크가 열리지 않고 글자가 선택되지 않음)·모바일 실제 터치 입력으로 본다.
+  창 옮기기는 데스크톱 하단 바의 「닫기」 위에서 마우스로 눌러 끌어(닫히지 않음·헤더와 배너 사이·장 그대로·다른 페이지에서 원래 자리, 끌지 않은
+  「닫기」는 닫음), 모바일 하단 시트는 손잡이가 없고 하단 바를 실제 터치로 끌어 내려도 움직이거나 닫히지 않으며 「닫기」로 닫힌다(쿠키 없음, 새로고침하면 다시 뜸).
+  넘김 컨트롤은 데스크톱(1280×800)·모바일에서 본문 안 아래쪽 가운데 캡슐로 보이고(별도 띠·아래 줄 화살표 없음, 이전·다음은 본문 양옆),
+  이미지 링크 장에서 캡슐을 눌러도 링크로 가지 않으며, 점(장이 적을 때) 또는 [다음 팝업](많을 때 「n / N」)을 눌러 넘긴다.
+
+axes:
+  flow:
+    - admin_creates_image_popup_shows_on_home
+    - route_scope_shows_on_child_not_on_prefix_sibling
+    - audience_member_only
+    - device_mobile_only
+    - carousel_order_follows_reorder
+    - dismiss_today_hides_then_new_popup_shows
+    - close_hides_across_spa_navigation
+    - gdpr_banner_visible_with_popup
+    - html_popup_with_editor_content
+    - locale_switch_changes_alt_and_body
+    - link_without_alt_hides_admin_title
+    - dark_mode_contrast
+    - bot_user_agent_gets_no_layer
+    - plugin_deactivate_hides_layer
+    - read_only_admin_cannot_edit
+    - admin_preview_shows_content
+    - admin_preview_follows_editor_typing
+    - admin_summary_expands_beyond_first_items
+    - admin_save_lock_reason_shown
+    - admin_preview_actual_size
+    - admin_actual_preview_shows_latest_body
+    - admin_actual_preview_mobile_scrolls_to_popup
+    - drag_to_next_slide
+    - move_window
+    - pager_overlay_controls
+    - admin_list_paginates
+    - admin_summary_item_opens_edit
+  viewport: [desktop, mobile]
+
+exclusions:
+  - flow: link_without_alt_hides_admin_title
+    viewport: mobile
+    reason: 공개 응답과 덮는 링크 이름은 화면 폭과 무관 — 데스크톱에서 한 번 확인한다
+  - flow: admin_summary_item_opens_edit
+    viewport: mobile
+    reason: 요약 항목 링크는 폭과 무관한 한 노드 — 관리자 데스크톱에서 한 번 확인한다
+  - flow: admin_list_paginates
+    viewport: mobile
+    reason: 페이지 이동 줄은 표·카드 보기 모두 같은 DataGrid 페이저 한 곳에서 그린다 — 켜짐 여부는 폭과 무관
+  - flow: carousel_order_follows_reorder
+    viewport: mobile
+    reason: 순서 저장은 관리자 데스크톱에서 한 번 확인하면 충분 — 사용자 반영은 다른 흐름이 모바일로 본다
+  - flow: read_only_admin_cannot_edit
+    viewport: mobile
+    reason: 권한 게이트는 화면 폭과 무관
+  - flow: bot_user_agent_gets_no_layer
+    viewport: mobile
+    reason: 봇 판정은 UA 로만 하고 폭과 무관
+  - flow: plugin_deactivate_hides_layer
+    viewport: mobile
+    reason: 생애주기 흐름은 폭과 무관
+  - flow: admin_preview_shows_content
+    viewport: mobile
+    reason: 미리보기 틀 높이는 관리자 창 폭과 무관(틀 안 PC·모바일 전환을 데스크톱 한 흐름에서 함께 잰다)
+  - flow: admin_summary_expands_beyond_first_items
+    viewport: desktop
+    reason: 요약이 목록을 밀어내는 문제는 휴대폰 폭에서 드러난다 — 펼침·접힘 동작은 폭과 무관해 휴대폰에서 한 번 잰다
+  - flow: admin_save_lock_reason_shown
+    viewport: desktop
+    reason: 잠금 이유 문구·aria 연결은 폭과 무관하고, 단추 줄이 갈라지는 문제는 휴대폰 폭에서 드러난다 — 휴대폰에서 한 번 잰다
+  - flow: admin_actual_preview_shows_latest_body
+    viewport: mobile
+    reason: 실제 크기 창이 최신 본문을 읽는 경로는 상태 읽기라 폭과 무관 — 데스크톱에서 수정·등록을 함께 잰다
+  - flow: admin_actual_preview_mobile_scrolls_to_popup
+    viewport: desktop
+    reason: 데스크톱은 1280 틀이 창 안에 들어와 스크롤이 생기지 않는다 — 틀이 칸보다 큰 휴대폰에서 잰다
+  - flow: admin_preview_actual_size
+    viewport: mobile
+    reason: 실제 크기 창은 관리자 창보다 큰 틀을 스크롤로 보이는 동작이라 폭과 무관 — 데스크톱에서 배율 1 을 잰다
+  - flow: admin_preview_follows_editor_typing
+    viewport: mobile
+    reason: 편집기 → 미리보기 동기화는 상태 구독 경로라 관리자 창 폭과 무관 — 데스크톱에서 한 번 잰다
+
+effects:
+  - user_screen_reflects_admin_change
+  - test_data_cleaned_up
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/admin-popup-to-user.spec.ts
+  - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/popup-conditions-and-lifecycle.spec.ts
+  - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/popup-refresh.spec.ts
+
+# 예약 갱신은 별도 spec에서 desktop/mobile 2개 변종을 검증한다.

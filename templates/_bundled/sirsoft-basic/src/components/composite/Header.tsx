@@ -42,6 +42,7 @@ import { SlotContainer } from './SlotContainer';
 // NotificationCenter 컴포넌트 import
 import { NotificationCenter, type NotificationItem } from './NotificationCenter';
 import { getLocaleDisplayName } from '../../support/localeName';
+import { useHeaderOverlayController } from '../../support/headerOverlay';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -232,6 +233,9 @@ const Header: React.FC<HeaderProps> = ({
   const langOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const langPendingFocusRef = useRef<number | null>(null);
 
+  // 메뉴 겹침 — 화면 맨 위 배너가 `data-header-overlay` 로 알리면 헤더 높이를 알리고 맨 위에서만 투명하게 한다(모바일 툴바 포함, main.css)
+  useHeaderOverlayController();
+
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준 — 위지윅 overrideWidth 호환)
   const G7Core = (window as any).G7Core;
   const useResponsive = G7Core?.useResponsive;
@@ -407,7 +411,7 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <HeaderBasic
       {...((editorAttrs ?? {}) as Record<string, never>)}
-      className={`sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}
+      className={`g7-site-header sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}
     >
       {/* 상단 바 */}
       <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -1,0 +1,415 @@
+{
+  "editor": {
+    "data_source": {
+      "settings": "ヒーローセクション設定",
+      "banner": "バナー詳細",
+      "banners": "バナー一覧",
+      "preview": "配信中バナープレビュー",
+      "position_settings": "位置·スライダー設定",
+      "upload_limit": "アップロード制限",
+      "heroSectionHome": "サイトホーム配信バナー",
+      "heroSectionShop": "ショッピングモールメイン配信バナー"
+    },
+    "state": {
+      "with_data": "バナーあり",
+      "empty_data": "バナーなし",
+      "delete_confirm": "削除確認",
+      "bulk_delete_confirm": "一括削除確認",
+      "reorder_open": "順序変更ウィンドウ"
+    },
+    "palette": {
+      "group": "ヒーローセクション",
+      "hero_slider": {
+        "label": "ヒーローバナースライダー"
+      }
+    }
+  },
+  "settings": {
+    "title": "ヒーローセクション設定",
+    "description": "バナー画像アップロード制限とユーザー画面バナーキャッシュ時間を設定します。",
+    "fields": {
+      "max_upload_mb": {
+        "label": "画像最大容量(MB)",
+        "hint": "バナー画像1枚の最大容量です(1~10)。サーバーPHPのupload_max_filesize·post_max_sizeより大きく設定しても、その値を超えるファイルはアップロードされません。",
+        "server_limit": "現在のサーバー制限: {{mb}}MB",
+        "over_server_limit": "設定値がサーバー制限({{mb}}MB)より大きいです。この制限を超えるファイルはアップロードされません。"
+      },
+      "public_cache_minutes": {
+        "label": "ユーザー画面バナーキャッシュ時間(分)",
+        "hint": "0の場合、キャッシュを使用しません(0~60)。バナーを保存·削除、または順序を変更するとすぐに反映され、予約開始·終了時刻にもキャッシュが先に有効期限切れになります。"
+      },
+      "max_video_upload_mb": {
+        "label": "動画最大容量(MB)",
+        "hint": "バナー動画ファイル(MP4·WEBM)1つの最大容量です(1~100)。サーバーPHPのupload_max_filesize·post_max_sizeより大きく設定しても、その値を超えるファイルはアップロードされません。"
+      }
+    }
+  },
+  "plugin_read_only": "このプラグイン設定を編集する権限がないため、読み取り専用で表示されています。",
+  "slider": {
+    "label": "メインバナー",
+    "previous": "前のバナー",
+    "next": "次のバナー",
+    "pause": "自動送信一時停止",
+    "play": "自動送信再開",
+    "go_to": "{{n}}番目のバナーに移動",
+    "youtube_play": "YouTube動画再生",
+    "youtube_title": "YouTube動画:{{title}}",
+    "youtube_notice": "再生するとYouTubeから動画を読み込みます。",
+    "media_play": "バナーを再度再生",
+    "media_pause": "バナーを一時停止",
+    "carousel_role": "カルーセル",
+    "slide_role": "スライド",
+    "slide_label": "{{count}}個中{{n}}番目",
+    "text_label": "バナーテキスト",
+    "styles_label": "バナースライダーの外観"
+  },
+  "admin": {
+    "title": "ヒーローセクション管理",
+    "description": "サイトホーム·ショッピングモールメイン上部に表示されるバナーを位置別に管理します。",
+    "position": {
+      "tabs_label": "配信位置",
+      "home_hero": "サイトホーム",
+      "shop_hero": "ショッピングモールメイン",
+      "hint": "位置はユーザーテンプレートが開放したヒーローセクション場所(拡張点)です。"
+    },
+    "status": {
+      "all": "すべて",
+      "active": "配信中",
+      "scheduled": "予約",
+      "ended": "終了",
+      "inactive": "無効化"
+    },
+    "preview": {
+      "title": "現在配信中{{count}}個",
+      "device_label": "プレビューデバイス",
+      "pc": "PC",
+      "mobile": "モバイル",
+      "empty": "配信中のバナーがありません。",
+      "open_site": "サイトで表示",
+      "empty_with_counts": "現在表示中のバナーがありません。(予約 {{scheduled}}件 · 非表示 {{inactive}}件 · 終了 {{ended}}件)"
+    },
+    "slider": {
+      "title": "スライダー設定",
+      "scope": "{{position}}位置のみに適用されます。",
+      "autoplay": "自動送信",
+      "interval": "送信間隔",
+      "seconds": "{{n}}秒",
+      "effect": "トランジション効果",
+      "effects": {
+        "slide": "スライド",
+        "fade": "フェード",
+        "none": "なし",
+        "cube": "キューブ",
+        "flip": "フリップ",
+        "coverflow": "カバーフロー",
+        "creative": "重ねてスライド"
+      },
+      "save": "設定保存",
+      "width": "表示幅",
+      "widths": {
+        "content": "本文幅に合わせる",
+        "full": "画面全体幅"
+      },
+      "width_hint": "画面全体幅は画像を画面端まで広げ、タイトル・ボタンは本文幅に合わせます。画面が1920pxより広い場合、高さ640pxで止まり、画像のフォーカスポイントを基準に上下が切り取られます。",
+      "header_overlay": "メニュー重ね合わせ",
+      "header_overlay_hint": "サイト上部メニューをバナーの上に透明に重ね合わせます。画面をスクロール下すると、メニューは元の背景に戻り、メニューの文字色はバナーごとに設定された背景の明るさに従います。",
+      "header_overlay_needs_full": "メニュー重ね合わせは表示幅が「画面全体幅」のときのみサイトに適用されます。",
+      "pagination": "ページング表示",
+      "paginations": {
+        "dots": "ドット",
+        "progress": "進行状況バーのドット",
+        "tabs": "バナー名タブ",
+        "fraction": "番号 (01 / 05)"
+      },
+      "pagination_hint": "バナーが2枚以上の場合に表示されます。進行状況バーは次のバナーに移動するまでの残り時間を表示し、バナー名タブはモバイルではバーのみ表示されます。"
+    },
+    "list": {
+      "create": "バナー登録",
+      "status_filter": "ステータス",
+      "search": "タイトル検索",
+      "search_placeholder": "バナータイトル",
+      "search_button": "検索",
+      "total": "合計{{count}}件",
+      "selected": "{{count}}個選択されました",
+      "bulk_show": "配信",
+      "bulk_hide": "非配信",
+      "bulk_delete": "削除",
+      "empty": "登録されたバナーがありません。",
+      "always": "常時",
+      "sort": {
+        "sort_order": "配信順序",
+        "status": "ステータス順",
+        "created_desc": "最近登録順",
+        "created_asc": "古い登録順"
+      },
+      "column": {
+        "image": "画像",
+        "title": "タイトル",
+        "period": "配信期間",
+        "status": "ステータス",
+        "order": "順序",
+        "created_at": "登録日"
+      },
+      "action": {
+        "edit": "編集",
+        "delete": "削除"
+      },
+      "empty_filtered": "条件に合うバナーがありません。ステータスまたは検索キーワードを変更してみてください。",
+      "slot_missing": "現在使用しているサイトテンプレートでこのバナー枠が見つかりませんでした。バナーを登録してもサイトに表示されない可能性があります。",
+      "empty_position": {
+        "title": "{{position}}に登録されたバナーがありません。",
+        "sizes": "推奨画像サイズ: PC 1920×640、モバイル 750×1000(モバイル画像がない場合は PC 画像を縦にカットして使用します)。",
+        "create": "最初のバナー登録"
+      },
+      "badge": {
+        "locale_missing": "{{lang}} タイトル未入力",
+        "mobile_fallback": "モバイル: PC 画像を使用",
+        "button_without_link": "ボタン非表示: リンク未設定",
+        "youtube": "YouTube",
+        "video": "動画"
+      }
+    },
+    "reorder": {
+      "button": "順序変更",
+      "title": "バナー順序変更",
+      "description": "ドラッグして移動するか、↑↓ボタンで順序を変更した後、[保存]をクリックしてください。ユーザー画面とプレビューの順序が一緒に変わります。",
+      "drag_handle": "{{name}} ドラッグして移動",
+      "move_up": "{{name}} 上へ",
+      "move_down": "{{name}} 下へ",
+      "save": "保存"
+    },
+    "delete": {
+      "title": "バナー削除",
+      "message": "「{{title}}」バナーを削除しますか?",
+      "bulk_title": "選択したバナー削除",
+      "bulk_message": "選択したバナー {{count}}個を削除しますか?",
+      "warning": "削除すると、バナーとPC·モバイル画像が直ちに削除され、復元できません。一時的に非表示にする場合は非表示機能をご使用ください。"
+    },
+    "form": {
+      "create_title": "バナー登録",
+      "edit_title": "バナー編集",
+      "description": "バナーの文言·画像·リンク·表示期間を設定します。プレビューは保存前の入力値です。",
+      "validation_error": "入力値を確認してください。",
+      "section": {
+        "basic": "基本情報",
+        "text": "文言",
+        "image": "画像",
+        "link": "リンク",
+        "period": "表示期間",
+        "media": "メディア"
+      },
+      "position": "表示位置",
+      "position_hint": "現在のユーザーテンプレートが提供するヒーローセクションの位置です。",
+      "is_active": "使用",
+      "is_active_hint": "オフにすると、期間に関わらずユーザー画面に表示されません(無効)。",
+      "locale_hint": "サイトで有効な言語ごとに入力できます。入力しない言語は、サイトの基本言語の文言が表示されます。",
+      "title": "タイトル",
+      "title_placeholder": "バナー タイトル",
+      "visible": "表示",
+      "align_label": "配置",
+      "align": {
+        "left": "左",
+        "center": "中央",
+        "right": "右"
+      },
+      "title_color": "タイトル色",
+      "title_color_code": "タイトル色コード",
+      "description_label": "説明",
+      "description_placeholder": "タイトルの下に表示される説明",
+      "description_color": "説明色",
+      "description_color_code": "説明色コード",
+      "button_text": "ボタンテキスト",
+      "button_text_placeholder": "例：詳しく見る",
+      "button_text_hint": "入力すると、ボタンのみがリンクになり、空のままにするとバナー全体がリンクになります。",
+      "image_alt": "画像代替テキスト",
+      "image_alt_hint": "画面が見えない訪問者に読み上げる説明です。空のままにするとタイトルが読み上げられます。",
+      "image": {
+        "pc": "PC画像",
+        "pc_hint": "推奨 1920×640 · 最大 {{mb}}MB · JPG·PNG·WEBP",
+        "mobile": "モバイル画像",
+        "mobile_hint": "選択可 · 推奨 750×1000 · 最大 {{mb}}MB · 登録しない場合、モバイルでもPC画像が使用されます。",
+        "size_mismatch": "アップロードされた画像は {{width}}×{{height}} です。推奨サイズ({{recommended}})と異なるため、画面によっては切り取られて表示される可能性があります。"
+      },
+      "link_url": "移動するアドレス",
+      "link_url_placeholder": "/shop または https://example.com",
+      "link_url_hint": "サイト内パス(/で始まる)またはhttp(s)アドレスのみ使用できます。",
+      "link_new_window": "新しいウィンドウで開く",
+      "period": {
+        "always": "常時",
+        "range": "期間指定",
+        "starts_at": "表示開始",
+        "ends_at": "表示終了",
+        "hint": "今すぐ保存すると、「{{status}}」ステータスで表示されます。",
+        "clock_loading": "サイトの時間情報を読み込み中です。",
+        "timezone": "サイトタイムゾーン：{{timezone}}",
+        "incomplete": "開始と終了の日時を入力してください。"
+      },
+      "preview": {
+        "title": "プレビュー",
+        "empty": "PC画像をアップロードするとプレビューが表示されます。",
+        "language": "プレビュー言語",
+        "frame": "{{device}} バナー プレビュー",
+        "expand": "大きく表示",
+        "close": "閉じる",
+        "fallback": "入力されていない文言は、デフォルト言語({{locale}})などで代わりに表示されます。",
+        "text_overflow": "{{device}}画面では、文言がバナーの高さを超えます。文言は切り取られず、文言領域内をスクロールすると最後まで表示されますが、一度に表示させるには文言を短くしてください。保存はそのまま行えます。",
+        "contrast_low": "文字が背景に埋もれて読みにくくなる可能性があります — {{parts}}。写真全体の平均明るさと文言の背景として推定された値であるため、文言の背後にある写真の実際の明るさに異なる場合があります。プレビューで確認してください。文字色は自動的には変更されません。",
+        "contrast_title": "タイトルコントラスト 約 {{ratio}}:1(推奨 3:1以上)",
+        "contrast_description": "説明コントラスト 約 {{ratio}}:1(推奨 4.5:1以上)",
+        "contrast_tip_light": "明るい文字は、文言背景を「{{option}}」に選択するか、写真の暗い部分に文言がくるようにすると、よく見えます。",
+        "contrast_tip_dark": "暗い文字は、文言背景を「{{option}}」に選択するか、文字色を白系に変更すると、よく見えます。",
+        "text_overflow_controls": "{{device}}画面では、同じ位置に複数のバナーが表示され、スキップボタンが表示される場合、テキストがバナーの高さを超えます。テキストは切り取られず、テキスト領域内をスクロールすると最後まで表示されますが、一度に表示するにはテキストを短くしてください。保存はそのままできます。"
+      },
+      "cancel": "キャンセル",
+      "save": "保存",
+      "saving": "保存中…",
+      "upload_pending": "画像をアップロードしています。失敗したファイルは再試行するか削除した後、保存してください。",
+      "conflict": "別の管理者が先に編集しました。入力内容は保存されています。最新のバナーを別のタブで確認し、変更内容を比較してください。",
+      "conflict_compare": "最新のバナーを別のタブで確認",
+      "presentation": {
+        "title": "画像表示とテキスト背景",
+        "hint": "PCは1920×640、モバイルは750×1000の比率で表示されます。モバイル画像がない場合はPC画像をトリミングして使用します。左右・上下のフォーカスを移動して、重要な部分が表示されるようにしてください。",
+        "pc_x": "PC画像左右フォーカス",
+        "pc_y": "PC画像上下フォーカス",
+        "mobile_x": "モバイル画像左右フォーカス",
+        "mobile_y": "モバイル画像上下フォーカス",
+        "overlay": "テキスト背景",
+        "none": "なし",
+        "dark": "ダーク背景",
+        "light": "ライト背景"
+      },
+      "conflict_merge": {
+        "title": "最新版と自分の変更を比較",
+        "hint": "別の管理者が変更した項目は最新値を、自分が変更した項目は自分の値をあらかじめ選択しています。両方変更した項目は直接選択した後に適用し、内容を確認してから再度保存してください。",
+        "no_differences": "自分の入力と最新版が同じです。適用すると最新版を基準として再度保存できます。",
+        "load": "最新版を読み込んで比較",
+        "reload": "最新版を再度読み込む",
+        "retry": "再度試行",
+        "load_failed": "最新版を読み込むことができませんでした。入力した内容はそのままです。再度試行してください。",
+        "apply": "選択した値で適用",
+        "choose_all": "両方変更した項目をすべて選択してから適用することができます。",
+        "mine": "自分の変更",
+        "latest": "最新版",
+        "stale_image": "別の管理者がすでに変更または削除した画像のため、再度使用することはできません。",
+        "yes": "使用",
+        "no": "使用しない",
+        "empty": "なし",
+        "shown": "表示",
+        "hidden": "非表示",
+        "new_window": "新しいウィンドウ",
+        "change": {
+          "theirs": "別の管理者が変更",
+          "mine": "自分が変更",
+          "both": "両方変更 — 選択が必要"
+        },
+        "fields": {
+          "position": "表示位置",
+          "is_active": "使用有無",
+          "period": "表示期間",
+          "title": "タイトル",
+          "description": "説明",
+          "button_text": "ボタンテキスト",
+          "image_alt": "画像代替テキスト",
+          "title_style": "タイトル表示·色·配置",
+          "description_style": "説明表示·色·配置",
+          "presentation": "画像フォーカス·テキスト背景",
+          "link": "リンク",
+          "pc_image": "PC画像",
+          "mobile_image": "モバイル画像",
+          "eyebrow": "見出し",
+          "eyebrow_style": "見出し表示",
+          "media": "メディア(種類·YouTubeアドレス·動画)"
+        },
+        "text_spot": "文言 PC {{pc}} / モバイル {{mobile}} · 幅 {{width}}%",
+        "stale_video": "別の管理者がすでに変更または削除した動画のため、再度使用することはできません。"
+      },
+      "button_needs_link": "移動先アドレスを入力すると、ボタンがサイトに表示されます。アドレスなしで保存すると、ボタンテキストは表示されません。",
+      "link_behavior": {
+        "button": "サイトではボタンをクリックするとこのアドレスに移動します。",
+        "whole": "ボタンテキストがないため、サイトではバナー全体をクリックするとこのアドレスに移動します。",
+        "none": "移動先アドレスがないため、サイトでバナーをクリックしても移動しません。"
+      },
+      "save_blocked": {
+        "pc_image": "PC 画像をアップロードすると保存できます。",
+        "go_pc_image": "PC 画像欄に移動",
+        "pc_video": "PC動画をアップロードする必要があります。",
+        "go_pc_video": "PC動画欄に移動",
+        "youtube": "YouTubeアドレスを入力する必要があります。",
+        "go_youtube": "YouTubeアドレス欄に移動"
+      },
+      "media": {
+        "type": "メディアの種類",
+        "image": "画像",
+        "youtube": "YouTube動画",
+        "video": "動画ファイル",
+        "image_hint": "下にアップロードした画像をバナーとして表示します。",
+        "youtube_hint": "YouTube動画を音なしで自動再生し、動画が終わると次のバナーに移ります。訪問者がクッキー(マーケティング)に同意する前は、代表画像と再生ボタンのみが表示されます。",
+        "video_hint": "アップロードした動画を音なしで自動再生し、動画が終わると次のバナーに移ります(バナーが1つの場合は繰り返し再生)。",
+        "youtube_url": "YouTubeアドレス",
+        "youtube_url_hint": "動画ページアドレスまたは共有アドレスをそのまま貼り付けてください。例: https://www.youtube.com/watch?v=…·https://youtu.be/…·ショーツアドレス",
+        "pc_video": "PC動画",
+        "pc_video_hint": "最大{{mb}}MB·MP4·WEBM·横向き動画(16:9など)を推奨します。",
+        "mobile_video": "モバイル動画",
+        "mobile_video_hint": "選択·最大{{mb}}MB·MP4·WEBM·アップロードしない場合は携帯電話でもPC動画が再生されます。",
+        "poster_hint": "動画バナーではこの画像が代表画像です。動画を受信している間、動きを減らす機能をオンにした訪問者、(YouTube)クッキー同意前に動画の代わりに表示されます。"
+      },
+      "eyebrow": "見出し",
+      "eyebrow_placeholder": "例：秋の新商品",
+      "eyebrow_color": "見出し色",
+      "eyebrow_color_code": "見出し色コード",
+      "eyebrow_hint": "タイトルの上に小さく表示される1行です（選択可能）。配置はタイトルに従います。",
+      "text_layout": {
+        "title": "文言位置・効果",
+        "hint": "文言の位置はPC・モバイルで別々に設定します。右側のプレビューで文言をドラッグして移動することもできます。",
+        "spot_label": "文言位置",
+        "device_pc": "PC位置",
+        "device_mobile": "モバイル位置",
+        "grid_label": "文言位置クイック選択",
+        "x": "横",
+        "y": "縦",
+        "spot": {
+          "top_left": "左上",
+          "top_center": "中央上",
+          "top_right": "右上",
+          "middle_left": "左中央",
+          "middle_center": "中央",
+          "middle_right": "右中央",
+          "bottom_left": "左下",
+          "bottom_center": "中央下",
+          "bottom_right": "右下"
+        },
+        "width": "文言ボックス幅 {{width}}%",
+        "width_hint": "バナー幅（画面全体幅の場合は本文幅）に対する文言ボックスの最大幅です。狭くするとテキスト行が短くなります。",
+        "animation": "登場効果",
+        "animations": {
+          "none": "なし",
+          "rise": "下から浮き上がる",
+          "fade": "ゆっくり",
+          "left": "左から",
+          "right": "右から",
+          "zoom": "拡大",
+          "blur": "ぼやけ消える",
+          "letters": "文字ずつ"
+        },
+        "speed": "速度",
+        "speeds": {
+          "slow": "遅い",
+          "normal": "普通",
+          "fast": "速い"
+        },
+        "delay": "開始遅延（秒）",
+        "animation_hint": "バナーが表示されるたびに、見出し→タイトル→説明→ボタンの順に0.2秒ずつ遅れて表示されます。「文字ずつ」は見出し・タイトルのみに使用され、説明・ボタンはゆっくり表示されます。モーション削減をオンにしている訪問者には効果なしで表示されます。",
+        "tone": "バナー背景の明るさ",
+        "tones": {
+          "dark": "暗い（メニュー文字白色）",
+          "light": "明るい（メニュー文字黒色）"
+        },
+        "tone_hint": "位置設定で「メニュー重ね合わせ」をオンにするとこのバナーが表示されている間、サイト上部メニューの文字色が変わります。",
+        "drag_role": "移動可能な文言",
+        "drag_label": "文言位置 横 {{x}}%、縦 {{y}}% — ドラッグするか矢印キーで移動します",
+        "drag_hint": "プレビューの文言をドラッグするか、文言を押してから矢印キー（Shift と一緒に10%ずつ）で移動できます。",
+        "replay": "効果をもう一度表示"
+      }
+    }
+  }
+}

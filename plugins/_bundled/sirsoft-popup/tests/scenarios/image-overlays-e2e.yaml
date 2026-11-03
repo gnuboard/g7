@@ -1,0 +1,37 @@
+feature: 팝업 이미지 위 글 상자 — 관리자 배치 → 사용자 화면 E2E
+
+description: |
+  관리자가 등록 화면 편집기에서 글 상자를 놓고 저장하면, 사용자 화면의 이미지 위 같은 비율 자리(±1%)에 같은 글이 보이는지 실제 브라우저로 본다.
+  사양이 API 로 만든 팝업만 쓰고 afterAll 에서 지운다. 상자 위를 눌러도 이미지 링크로 가고, 상자 위에서 손가락으로 밀어도 장이 넘어가는지,
+  언어를 바꾸면 상자 글이 바뀌는지, 모바일 이미지를 따로 올리면 모바일 배치가 따로 쓰이는지 확인한다.
+
+axes:
+  flow:
+    - admin_places_boxes_shows_on_user
+    - mobile_separate_layout
+    - box_click_follows_image_link
+    - swipe_on_box_changes_slide
+    - locale_switch_changes_box_text
+  viewport: [desktop, mobile]
+
+exclusions:
+  - flow: mobile_separate_layout
+    viewport: desktop
+    reason: 모바일 배치는 휴대폰 폭에서만 쓰인다 — 데스크톱은 admin_places_boxes_shows_on_user 가 PC 배치를 본다
+  - flow: box_click_follows_image_link
+    viewport: mobile
+    reason: 상자가 누름을 받지 않는 것은 CSS 한 곳(pointer-events)이라 폭과 무관 — 손가락 입력은 swipe_on_box_changes_slide 가 본다
+  - flow: swipe_on_box_changes_slide
+    viewport: desktop
+    reason: 데스크톱 마우스 끌기는 기존 drag_to_next_slide 가 보고, 상자 위 손가락 밀기만 새 경계다
+  - flow: locale_switch_changes_box_text
+    viewport: mobile
+    reason: 언어 선택은 서버 응답 한 곳에서 갈리고 폭과 무관
+
+effects:
+  - boxes_follow_image_scale
+  - image_link_and_swipe_unchanged
+  - test_data_cleaned_up
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/popup-image-overlays.spec.ts

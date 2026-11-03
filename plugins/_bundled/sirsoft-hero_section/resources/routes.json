@@ -1,0 +1,32 @@
+{
+    "version": "1.0.0",
+    "routes": [
+        {
+            "path": "*/admin/plugins/sirsoft-hero_section/banners",
+            "layout": "hero_section_banner_list",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-hero_section.admin.title",
+                "permission": "sirsoft-hero_section.banners.read"
+            }
+        },
+        {
+            "path": "*/admin/plugins/sirsoft-hero_section/banners/create",
+            "layout": "hero_section_banner_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-hero_section.admin.form.create_title",
+                "permission": "sirsoft-hero_section.banners.update"
+            }
+        },
+        {
+            "path": "*/admin/plugins/sirsoft-hero_section/banners/:id/edit",
+            "layout": "hero_section_banner_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-hero_section.admin.form.edit_title",
+                "permission": "sirsoft-hero_section.banners.update"
+            }
+        }
+    ]
+}

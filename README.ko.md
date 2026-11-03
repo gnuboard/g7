@@ -469,7 +469,9 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 | **sirsoft-koreaexim** | 수출입은행 환율 자동 갱신·갱신 이력 |
 | **sirsoft-ckeditor5** | CKEditor 5 에디터 |
 | **sirsoft-gdpr** | 개인정보 보호(GDPR) |
+| **sirsoft-popup** | 공지·프로모션 팝업 레이어 |
 | **sirsoft-message_bizppurio** | 비즈뿌리오 메시지 발송 (문자·카카오 알림톡) |
+| **sirsoft-hero_section** | 히어로섹션(메인 배너) 관리·사용자 화면 슬라이더 |
 
 ### 템플릿
 
@@ -491,12 +493,14 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 | **g7-plugin-sirsoft-ckeditor5-ja** | CKEditor5 플러그인 일본어 |
 | **g7-plugin-sirsoft-daum_postcode-ja** | 다음 우편번호 플러그인 일본어 |
 | **g7-plugin-sirsoft-gdpr-ja** | 개인정보 보호(GDPR) 플러그인 일본어 |
+| **g7-plugin-sirsoft-hero_section-ja** | 히어로섹션 플러그인 일본어 |
 | **g7-plugin-sirsoft-marketing-ja** | 마케팅 플러그인 일본어 |
 | **g7-plugin-sirsoft-koreaexim-ja** | 수출입은행 환율 플러그인 일본어 |
 | **g7-plugin-sirsoft-message_bizppurio-ja** | 비즈뿌리오 메시지 발송 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG이니시스 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | 나이스페이먼츠 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP 결제 플러그인 일본어 |
+| **g7-plugin-sirsoft-popup-ja** | 팝업 플러그인 일본어 |
 | **g7-plugin-sirsoft-social_login-ja** | 소셜 로그인 플러그인 일본어 |
 | **g7-plugin-sirsoft-sso-ja** | SSO 연동 플러그인 일본어 |
 | **g7-plugin-sirsoft-tosspayments-ja** | 토스페이먼츠 플러그인 일본어 |

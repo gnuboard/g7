@@ -1,0 +1,23 @@
+feature: 저장되지 않은 임시 이미지 정리 명령
+
+description: |
+  등록·수정 화면에서 올렸지만 저장하지 않은 이미지(popup_id null + temp_key)를 기간이 지나면 지운다(#810 과 같은 방식).
+  파일 삭제 실패는 행을 남겨 다음 회차에 재시도하고, days<1 이면 아무것도 지우지 않는다.
+
+axes:
+  surface:
+    - deletes_old_orphans
+    - keeps_recent_orphans
+    - keeps_linked_images
+    - dry_run_deletes_nothing
+    - days_below_one_refuses
+    - limit_caps_batch
+    - file_delete_failure_keeps_row
+    - schedule_registered_daily
+
+effects:
+  - orphan_files_removed
+  - result_logged
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Console/PruneTempImagesCommandTest.php
