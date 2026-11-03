@@ -166,7 +166,7 @@ class ExtensionSettingsMirror
                 return [];
             }
 
-            return $this->stripSensitive(
+            return SensitiveSettingMask::strip(
                 $settingsService->getAllSettings(),
                 $this->resolveModuleSchema($identifier),
             );
@@ -199,13 +199,8 @@ class ExtensionSettingsMirror
                 return [];
             }
 
-            $settings = app(PluginSettingsService::class)->get($identifier);
-
-            if (! is_array($settings)) {
-                return [];
-            }
-
-            return $this->stripSensitive($settings, $plugin->getSettingsSchema());
+            // 민감 필드는 담지 않으므로 복호화부터 하지 않는다 — 값의 형태는 get() 에서 민감 키를 뺀 것과 같다(#860)
+            return app(PluginSettingsService::class)->getForMirror($identifier);
         } catch (\Throwable $e) {
             Log::warning("플러그인 환경설정 로딩 실패: {$identifier}", [
                 'error' => $e->getMessage(),
@@ -213,45 +208,6 @@ class ExtensionSettingsMirror
 
             return [];
         }
-    }
-
-    /**
-     * 스키마에서 `sensitive: true` 로 선언된 필드를 제거합니다.
-     *
-     * 미러는 봇 전용 화면 생성기가 키 제한 없이 조회하는 경로이므로, 민감값이 실리면
-     * 레이아웃이 그 키를 참조하는 순간 평문이 봇 HTML 로 나갑니다. 브라우저 경로는
-     * 애초에 제외 중이라 화면만 봐서는 드러나지 않는 비대칭입니다.
-     *
-     * @param  array<string, mixed>  $settings  설정 배열
-     * @param  array<string, mixed>  $schema  설정 스키마
-     * @return array<string, mixed> 민감 항목이 제거된 설정
-     */
-    private function stripSensitive(array $settings, array $schema): array
-    {
-        foreach ($schema as $field => $config) {
-            if (! is_array($config)) {
-                continue;
-            }
-
-            if ($config['sensitive'] ?? false) {
-                unset($settings[$field]);
-
-                continue;
-            }
-
-            // 카테고리형 스키마 (category.field) 지원
-            if (! isset($settings[$field]) || ! is_array($settings[$field])) {
-                continue;
-            }
-
-            $nested = array_filter($config, 'is_array');
-
-            if ($nested !== []) {
-                $settings[$field] = $this->stripSensitive($settings[$field], $nested);
-            }
-        }
-
-        return $settings;
     }
 
     /**

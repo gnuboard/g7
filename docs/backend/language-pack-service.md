@@ -219,6 +219,8 @@ invalidate 가 무효화하는 캐시:
 - `activePacksCache` (활성 언어팩 컬렉션)
 - `activeCoreLocalesCache` (코어 활성 locale 배열)
 
+`LanguagePackService::getActiveLocales()` 는 DB 를 따로 조회하지 않고 레지스트리의 `getActivePacks('core')` 결과에서 locale 을 뽑습니다(7.1.5) — 같은 요청에서 레지스트리가 이미 읽어 둔 목록을 다시 쓰고, 무효화도 위 `invalidate()` 하나로 함께 따라갑니다.
+
 ## 트러블슈팅
 
 **Q. 활성화 후에도 trans() 가 새 locale 키를 못 찾습니다.**

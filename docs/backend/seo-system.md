@@ -58,6 +58,8 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | SeoCacheManagerInterface | 캐시 저장/조회/무효화 |
 | SitemapContributorInterface | 확장별 Sitemap URL 기여 |
 
+> `SeoRendererInterface` 구현과 `SeoCacheRegenerator` 는 요청·큐 작업 단위(`scoped`)로 바인딩된다(7.1.5). 렌더러가 플러그인 설정 서비스를 생성자로 받으므로, 싱글톤이면 큐 워커가 첫 작업의 플러그인 설정을 재시작 전까지 SEO HTML 에 쓴다. 다른 SEO 클래스는 싱글톤이다.
+
 ### 코어 클래스 (`app/Seo/`)
 
 | 클래스 | 역할 |

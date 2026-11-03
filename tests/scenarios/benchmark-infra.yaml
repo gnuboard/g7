@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: cross product 면제 전용. 10축 전개 61,200 조합은 docblock @scenario 1:1 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files 4종(커맨드 표면 + 축 실행기 단위 + 프로파일 VO/Enum 계약 + 확장 선언 통합)으로 커버한다. effects 54건은 전수 @effects 마킹돼 있어 이 면제 줄을 지워도 effects 검사는 통과한다 — 면제가 숨기는 항목 없음.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: cross product 면제 전용. 10축 전개 61,200 조합은 docblock @scenario 1:1 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files 4종(커맨드 표면 + 축 실행기 단위 + 프로파일 VO/Enum 계약 + 확장 선언 통합)으로 커버한다. effects 64건은 전수 @effects 마킹돼 있어 이 면제 줄을 지워도 effects 검사는 통과한다 — 면제가 숨기는 항목 없음.
 
 feature: benchmark_infra
 
@@ -34,7 +34,7 @@ description: |
 
 axes:
   source: [core_config, module_declaration, plugin_declaration]
-  axis_type: [list, screen, write, batch]
+  axis_type: [list, screen, write, batch, boot]
   selection: [profile_key, qualified_key, axis_filter, all, none]
   declaration_validity: [valid, missing_type, unknown_type, missing_required_option, closure_callback]
   key_collision: [unique, ambiguous_short_key]
@@ -106,6 +106,12 @@ effects:
   - peak_memory_before_and_after_are_both_reported
   - batch_axis_reports_nonzero_exit_code_as_partial_measurement
   - unregistered_command_is_skipped_with_reason
+  # ── 부팅 축 (P0, #860) ──
+  - boot_axis_spawns_fresh_process_per_run_with_web_runtime
+  - boot_axis_discards_first_run_and_reports_median_and_counts
+  - boot_axis_reports_varying_query_counts_across_runs
+  - boot_axis_skips_with_reason_when_probe_output_unreadable
+  - boot_axis_issues_committed_token_and_discards_it_after_run
   # ── 안전장치 (P0) ──
   - mutating_axes_refuse_without_allow_write
   - screen_mutation_verdict_follows_http_method
@@ -132,6 +138,8 @@ test_files:
   - tests/Feature/Console/BenchCommandTest.php
   # 코어 — 축 실행기 단위 (화면 내부 요청·쿼리 수집·쓰기 prepare 분리·배치 메모리)
   - tests/Unit/Benchmark/BenchmarkAxisRunnerTest.php
+  # 코어 — 부팅 축 실행기 (자식 프로세스 실행·출력 해석·토큰 정리)
+  - tests/Unit/Benchmark/BootAxisRunnerTest.php
   # 코어 — 프로파일 VO / 축 Enum 계약
   - tests/Unit/Benchmark/BenchmarkProfileTest.php
   # 이커머스 — 확장 선언 + 주문 생성 쓰기 축 대상

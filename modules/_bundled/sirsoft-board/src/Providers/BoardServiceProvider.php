@@ -127,22 +127,28 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     {
         parent::boot();
 
-        $this->registerRateLimiters();
+        // 요청 처리에 끼어드는 부수효과는 활성일 때만 건다 (#730 게이트, #860)
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            $this->registerRateLimiters();
+        }
 
         // Artisan 커맨드 등록
         if ($this->app->runningInConsole()) {
             $this->commands($this->commands);
         }
 
-        // Sitemap 기여자 등록
-        $this->app->booted(function () {
-            if ($this->app->bound(SitemapGenerator::class)) {
-                // Repository 주입을 위해 컨테이너로 해석합니다.
-                $this->app->make(SitemapGenerator::class)->registerContributor(
-                    $this->app->make(BoardSitemapContributor::class)
-                );
-            }
-        });
+        // Sitemap 기여자 등록 — 생성기를 처음 해석할 때(사이트맵 생성·SEO 화면) 붙는다. 이미 해석돼 있으면 바로
+        // 붙는다. 부팅마다 생성기·기여자·리포지토리를 만들지 않는다 (#860). 비활성이면 걸지 않는다(#730 게이트).
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            $this->callAfterResolving(SitemapGenerator::class, function (SitemapGenerator $generator): void {
+                try {
+                    // Repository 주입을 위해 컨테이너로 해석합니다.
+                    $generator->registerContributor($this->app->make(BoardSitemapContributor::class));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            });
+        }
     }
 
     /**

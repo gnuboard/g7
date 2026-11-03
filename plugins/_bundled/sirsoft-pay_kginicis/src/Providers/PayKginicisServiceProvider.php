@@ -56,7 +56,10 @@ class PayKginicisServiceProvider extends BasePluginServiceProvider
         // Laravel 의 EncryptCookies 미들웨어 대상에서 제외 (암호화 시 PG callback
         // 응답에서 평문으로 직접 발급한 값이 EncryptCookies 의 복호화 실패로 폐기되는 것 방지).
         // 값 동기화: IssuesReceiptCookie::RECEIPT_COOKIE_NAME 과 동일해야 함.
-        EncryptCookies::except(['kginicis_receipt_token']);
+        // 비활성이면 걸지 않는다 (#730 게이트, #860)
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            EncryptCookies::except(['kginicis_receipt_token']);
+        }
     }
 
     /**

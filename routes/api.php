@@ -1,5 +1,6 @@
 <?php
 
+use App\Broadcasting\BroadcastChannelRegistrar;
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController;
 use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
@@ -270,6 +271,9 @@ Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request
     if (config('broadcasting.default') === 'null') {
         abort(403);
     }
+
+    // 채널 인가 콜백(코어·활성 확장)은 부팅이 아니라 여기서 한 번 등록한다 (#860)
+    app(BroadcastChannelRegistrar::class)->ensureRegistered();
 
     return Broadcast::auth($request);
 })->name('api.broadcasting.auth');

@@ -39,6 +39,17 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     private ?array $defaultsCache = null;
 
     /**
+     * 설정 기본값 파일 프로세스 메모 — [경로·mtime·크기] 키 => 해석 결과.
+     *
+     * 저장소는 부팅 중에도 여러 번 만들어지는데(설정 미러·드라이버 설정·워커 갱신) 기본값 파일(약 30KB)은
+     * 그때마다 같은 내용이다. 키에 mtime·크기를 넣어 코어 업데이트·settings:install 로 파일이 바뀌면
+     * 같은 프로세스에서도 다시 읽는다(#860).
+     *
+     * @var array{key: string, data: array<string, mixed>}|null
+     */
+    private static ?array $defaultsFileMemo = null;
+
+    /**
      * 메모리 캐시
      *
      * @var array<string, array<string, mixed>>|null
@@ -501,7 +512,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
      */
     private function loadDefaultsFile(): void
     {
-        $path = config_path(self::DEFAULTS_FILE);
+        $path = $this->defaultsPath();
 
         if (! file_exists($path)) {
             Log::error('설정 기본값 파일을 찾을 수 없습니다. settings:install 명령을 실행하세요.', ['path' => $path]);
@@ -510,9 +521,18 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             return;
         }
 
+        clearstatcache(true, $path);
+        $memoKey = $path."\0".@filemtime($path)."\0".@filesize($path);
+
+        if (self::$defaultsFileMemo !== null && self::$defaultsFileMemo['key'] === $memoKey) {
+            $this->defaultsCache = self::$defaultsFileMemo['data'];
+
+            return;
+        }
+
         try {
-            $content = file_get_contents($path);
-            $data = json_decode($content, true);
+            $content = $this->readDefaultsFile($path);
+            $data = json_decode((string) $content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 Log::error('설정 기본값 파일 JSON 파싱 실패', [
@@ -524,10 +544,33 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             }
 
             $this->defaultsCache = $data;
+            // 정상 해석한 결과만 메모한다 — 읽기·파싱 실패의 빈 기본값을 프로세스 내내 붙잡지 않게
+            self::$defaultsFileMemo = ['key' => $memoKey, 'data' => $data];
         } catch (\Exception $e) {
             Log::error('설정 기본값 파일 로드 실패', ['error' => $e->getMessage()]);
             $this->defaultsCache = ['_meta' => ['categories' => []], 'defaults' => [], 'frontend_schema' => []];
         }
+    }
+
+    /**
+     * 설정 기본값 파일 경로를 반환합니다.
+     *
+     * @return string 기본값 파일 절대 경로
+     */
+    protected function defaultsPath(): string
+    {
+        return config_path(self::DEFAULTS_FILE);
+    }
+
+    /**
+     * 설정 기본값 파일 내용을 읽습니다.
+     *
+     * @param  string  $path  파일 경로
+     * @return string|false 파일 내용 (실패 시 false)
+     */
+    protected function readDefaultsFile(string $path): string|false
+    {
+        return file_get_contents($path);
     }
 
     /**

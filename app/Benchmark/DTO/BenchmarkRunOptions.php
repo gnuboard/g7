@@ -19,6 +19,7 @@ final readonly class BenchmarkRunOptions
      * @param  bool  $allowWrite  데이터 변경 축 실행 허용
      * @param  string|null  $asUser  계측에 사용할 기존 계정 (ID 또는 이메일, screen 축)
      * @param  int  $perPage  목록/화면 1페이지 건수
+     * @param  bool  $runsExplicit  `--runs` 를 직접 지정했는지 (boot 축은 미지정 시 프로파일 기본 회차를 씀)
      */
     public function __construct(
         public array $offsets = [0],
@@ -29,6 +30,7 @@ final readonly class BenchmarkRunOptions
         public bool $allowWrite = false,
         public ?string $asUser = null,
         public int $perPage = 20,
+        public bool $runsExplicit = false,
     ) {}
 
     /**
@@ -47,6 +49,7 @@ final readonly class BenchmarkRunOptions
             'allow_write' => $this->allowWrite,
             'as_user' => $this->asUser,
             'per_page' => $this->perPage,
+            'runs_explicit' => $this->runsExplicit,
         ];
     }
 }

@@ -528,7 +528,8 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * 브로드캐스트 채널 정의를 반환합니다.
      *
      * 모듈에서 WebSocket 실시간 채널이 필요한 경우 오버라이드합니다.
-     * 반환된 채널은 ModuleManager가 자동으로 Broadcast::channel()에 등록합니다.
+     * 반환된 채널은 모듈이 활성일 때 채널 인가 요청(`/api/broadcasting/auth`)에서 코어가
+     * Broadcast::channel()에 등록합니다(7.1.5 부터 부팅 때가 아니라 인가 요청 때).
      *
      * 네이밍 규칙: module.{identifier}.{resource}.{param}
      *

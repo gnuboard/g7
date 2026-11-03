@@ -10,6 +10,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Testing\Fakes\EventFake;
 
 class HookManager implements HookManagerInterface
 {
@@ -18,6 +19,18 @@ class HookManager implements HookManagerInterface
     private static array $filters = [];
 
     private static array $dispatching = [];
+
+    /**
+     * `hook.*` 미러를 등록한 이벤트 디스패처 집합 (디스패처가 사라지면 같이 사라진다).
+     *
+     * @var \WeakMap<object, true>|null
+     */
+    private static ?\WeakMap $mirroredDispatchers = null;
+
+    /**
+     * 필터 등록이 바뀔 때마다 올라가는 번호 — 필터 결과를 요청 안에서 메모하는 쪽이 비교한다(#860).
+     */
+    private static int $filterRevision = 0;
 
     /**
      * 구 훅 이름 사용 경고를 이미 남긴 훅 이름 집합 — 요청마다 한 번씩만 경고합니다.
@@ -134,13 +147,66 @@ class HookManager implements HookManagerInterface
 
         self::$hooks[$hookName][$priority][] = $callback;
 
-        // Laravel 이벤트 시스템에도 등록 (가드 래핑으로 doAction 실행 중 중복 방지)
-        Event::listen("hook.{$hookName}", function (...$args) use ($hookName, $callback) {
-            if (! empty(self::$dispatching[$hookName])) {
-                return; // doAction() 내부 배열에서 이미 실행됨 → 스킵
-            }
-            call_user_func_array($callback, $args);
+        // Laravel 이벤트 시스템에도 미러 (외부 Event::dispatch("hook.x") 용) — 디스패처당 와일드카드 1개
+        self::ensureWildcardMirror();
+    }
+
+    /**
+     * 현재 이벤트 디스패처에 `hook.*` 와일드카드 미러를 한 번만 등록합니다 (#860).
+     *
+     * 콜백마다 이름 리스너를 걸던 방식은 요청마다 액션 수만큼 리스너를 쌓았다. 등록 여부는 디스패처 객체별로
+     * 기억한다 — 새 앱·테스트마다 새 디스패처가 생기므로 정적 bool 로는 안 된다. `Event::fake()` 는 실제
+     * 디스패처를 감싸 리스너 등록을 그대로 넘기므로, 감싼 쪽이 아니라 실제 디스패처를 키로 써서 같은
+     * 디스패처에 미러가 두 번 걸리지(= 외부 dispatch 시 액션 2회) 않게 한다.
+     *
+     * @return void 없음
+     */
+    private static function ensureWildcardMirror(): void
+    {
+        $events = Event::getFacadeRoot();
+        while ($events instanceof EventFake) {
+            $events = $events->dispatcher;
+        }
+
+        if (! is_object($events)) {
+            return;
+        }
+
+        self::$mirroredDispatchers ??= new \WeakMap;
+        if (isset(self::$mirroredDispatchers[$events])) {
+            return;
+        }
+        self::$mirroredDispatchers[$events] = true;
+
+        $events->listen('hook.*', static function (string $event, array $payload): void {
+            self::runMirroredAction(substr($event, 5), $payload);
         });
+    }
+
+    /**
+     * 외부에서 보낸 `hook.{이름}` 이벤트로 그 훅의 액션 콜백을 실행합니다.
+     *
+     * doAction() 실행 중이면 배열에서 이미 실행했으므로 건너뛴다(가드 — 이중 실행 방지).
+     *
+     * @param  string  $hookName  Hook 이름
+     * @param  array  $payload  이벤트 인수
+     * @return void 없음
+     */
+    private static function runMirroredAction(string $hookName, array $payload): void
+    {
+        if (! empty(self::$dispatching[$hookName]) || empty(self::$hooks[$hookName])) {
+            return;
+        }
+
+        $hooks = self::$hooks[$hookName];
+        ksort($hooks);
+        $args = array_values($payload);
+
+        foreach ($hooks as $callbacks) {
+            foreach ($callbacks as $callback) {
+                call_user_func_array($callback, $args);
+            }
+        }
     }
 
     /**
@@ -162,6 +228,22 @@ class HookManager implements HookManagerInterface
         }
 
         self::$filters[$filterName][$priority][] = $callback;
+        self::$filterRevision++;
+    }
+
+    /**
+     * 필터 등록 변경 번호를 반환합니다.
+     *
+     * addFilter·removeFilter·clearFilter·resetAll 때마다 올라간다. 필터 결과를 요청 안에서 메모하는 쪽은
+     * 이 값이 그대로일 때만 메모를 쓴다(내부 전용).
+     *
+     * @internal
+     *
+     * @return int 변경 번호
+     */
+    public static function filterRevision(): int
+    {
+        return self::$filterRevision;
     }
 
     /**
@@ -233,8 +315,7 @@ class HookManager implements HookManagerInterface
             }
         }
 
-        // Laravel 이벤트 시스템에서도 제거
-        Event::forget("hook.{$hookName}");
+        // 미러는 와일드카드가 배열을 읽으므로 배열에서 지우면 끝 — 같은 훅의 외부 Event::listen 리스너는 남긴다
     }
 
     /**
@@ -254,6 +335,8 @@ class HookManager implements HookManagerInterface
                 }
             }
         }
+
+        self::$filterRevision++;
     }
 
     /**
@@ -303,6 +386,8 @@ class HookManager implements HookManagerInterface
         if (isset(self::$filters[$filterName])) {
             unset(self::$filters[$filterName]);
         }
+
+        self::$filterRevision++;
     }
 
     /**
@@ -317,6 +402,7 @@ class HookManager implements HookManagerInterface
         self::$hooks = [];
         self::$filters = [];
         self::$dispatching = [];
+        self::$filterRevision++;
     }
 
     /**

@@ -76,7 +76,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -135,6 +134,11 @@ class ModuleManager implements ModuleManagerInterface
      * _bundled 디렉토리의 모듈 메타데이터 (identifier => metadata)
      */
     protected array $bundledModules = [];
+
+    /**
+     * _pending / _bundled 메타를 이번 로드 주기에 읽었는지 — 처음 읽힐 때까지 미룬다(#860)
+     */
+    protected bool $pendingAndBundledLoaded = false;
 
     protected string $pendingModulesPath;
 
@@ -269,9 +273,6 @@ class ModuleManager implements ModuleManagerInterface
 
                         // 훅 리스너 자동 등록
                         $this->registerModuleHookListeners($module);
-
-                        // 브로드캐스트 채널 자동 등록
-                        $this->registerModuleChannels($module);
                     }
                 } else {
                     // 진입 파일은 있는데 클래스가 없다(네임스페이스 오타 등) — 조용히 빠지지 않게 경고 (7.1.3)
@@ -284,8 +285,11 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         // _pending / _bundled 디렉토리의 모듈 메타데이터 로드
-        $this->loadPendingModules();
-        $this->loadBundledModules();
+        // _pending / _bundled 메타는 관리 목록·업데이트 확인처럼 실제로 쓰는 곳이 처음 읽을 때 로드한다 — 부팅마다
+        // 미설치 번들 매니페스트까지 읽지 않게(#860). 다시 load 하면 지연 상태를 처음으로 돌린다.
+        $this->pendingModules = [];
+        $this->bundledModules = [];
+        $this->pendingAndBundledLoaded = false;
     }
 
     /**
@@ -302,7 +306,7 @@ class ModuleManager implements ModuleManagerInterface
 
         foreach ($pending as $identifier => $metadata) {
             // 이미 활성 디렉토리에 로드된 모듈은 제외
-            if (isset($this->modules[$identifier])) {
+            if (isset($this->modules[$identifier]) || isset($this->pendingModules[$identifier])) {
                 continue;
             }
 
@@ -324,12 +328,31 @@ class ModuleManager implements ModuleManagerInterface
 
         foreach ($bundled as $identifier => $metadata) {
             // 이미 활성 디렉토리 또는 pending에 로드된 모듈은 제외
-            if (isset($this->modules[$identifier]) || isset($this->pendingModules[$identifier])) {
+            if (isset($this->modules[$identifier]) || isset($this->pendingModules[$identifier]) || isset($this->bundledModules[$identifier])) {
                 continue;
             }
 
             $this->bundledModules[$identifier] = $metadata;
         }
+    }
+
+    /**
+     * _pending / _bundled 모듈 메타데이터를 처음 읽힐 때 한 번 로드합니다.
+     *
+     * 읽는 것은 매니페스트 JSON 뿐이다 — 번들 사본의 진입 클래스를 require 하지 않는다(재선언 Fatal 선례).
+     * 이미 메모리에 있는 키는 덮지 않는다(같은 주기에 갱신·재로드된 항목 보존).
+     *
+     * @return void 반환값 없음
+     */
+    protected function ensurePendingAndBundledLoaded(): void
+    {
+        if ($this->pendingAndBundledLoaded) {
+            return;
+        }
+
+        $this->pendingAndBundledLoaded = true;
+        $this->loadPendingModules();
+        $this->loadBundledModules();
     }
 
     /**
@@ -339,6 +362,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     public function getPendingModules(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         return $this->pendingModules;
     }
 
@@ -349,6 +374,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     public function getBundledModules(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         return $this->bundledModules;
     }
 
@@ -1311,6 +1338,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     public function getUninstalledModules(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $uninstalledModules = [];
         // 캐시된 설치된 모듈 identifier 목록 활용
         // 진행 중 상태에 멈춘 행도 미설치가 아니다 — 목록에 같은 확장이 두 번 나오지 않게(7.1.1 출시 전)
@@ -1412,6 +1441,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     public function getInstalledModulesWithDetails(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $installedModules = [];
         $moduleRecords = $this->moduleRepository->getAllKeyedByIdentifier();
         $locale = app()->getLocale();
@@ -1644,6 +1675,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     protected function getModuleInfoFromMetadata(string $moduleName): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         // pending/bundled 메타데이터 확인
         $isPending = isset($this->pendingModules[$moduleName]);
         $isBundled = isset($this->bundledModules[$moduleName]);
@@ -3558,47 +3591,6 @@ class ModuleManager implements ModuleManagerInterface
     }
 
     /**
-     * 모듈의 브로드캐스트 채널을 등록합니다.
-     *
-     * 모듈의 getChannels() 메서드에서 정의한 채널을
-     * Broadcast::channel()로 자동 등록합니다.
-     *
-     * @param  ModuleInterface  $module  모듈 인스턴스
-     * @return void 반환값 없음
-     */
-    protected function registerModuleChannels(ModuleInterface $module): void
-    {
-        if (! method_exists($module, 'getChannels')) {
-            return;
-        }
-
-        $activeIdentifiers = self::getActiveModuleIdentifiers();
-        if (! in_array($module->getIdentifier(), $activeIdentifiers, true)) {
-            return;
-        }
-
-        $channels = $module->getChannels();
-
-        foreach ($channels as $channelName => $config) {
-            $permission = $config['permission'] ?? null;
-
-            Broadcast::channel($channelName, function ($user, ...$params) use ($permission) {
-                if ($permission) {
-                    return $user->hasPermission($permission);
-                }
-
-                return true;
-            });
-
-            Log::info('모듈 브로드캐스트 채널 등록 완료', [
-                'channel' => $channelName,
-                'module' => $module->getIdentifier(),
-                'permission' => $permission,
-            ]);
-        }
-    }
-
-    /**
      * GitHub에서 모듈의 최신 버전을 가져옵니다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
@@ -4294,6 +4286,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     protected function reloadModule(string $moduleName): bool
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $moduleDir = $this->modulesPath.DIRECTORY_SEPARATOR.$moduleName;
         $moduleFile = $moduleDir.DIRECTORY_SEPARATOR.'module.php';
 
@@ -4415,6 +4409,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     public function checkModuleUpdate(string $identifier, ?string $source = null): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $record = $this->moduleRepository->findByIdentifier($identifier);
         if (! $record) {
             return $this->buildModuleUpdateResponse(false, null, null, null, null);
@@ -4505,6 +4501,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     private function bundledModuleUpdateCandidate(string $identifier, ?string $activeRequiredCoreVersion): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $meta = $this->bundledModules[$identifier]
             ?? (ExtensionPendingHelper::loadBundledExtensions($this->modulesPath, 'module.json')[$identifier] ?? null);
         $version = is_array($meta) ? ($meta['version'] ?? null) : null;
@@ -5289,6 +5287,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     private function resolveForceUpdateSource(string $identifier): ?string
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledModules[$identifier])) {
             return 'bundled';
         }
@@ -5315,6 +5315,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     private function getBundledVersion(string $identifier): ?string
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledModules[$identifier]['version'])) {
             return $this->bundledModules[$identifier]['version'];
         }
@@ -5332,6 +5334,8 @@ class ModuleManager implements ModuleManagerInterface
      */
     private function findBundledModuleManifest(string $identifier): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledModules[$identifier])) {
             return $this->bundledModules[$identifier];
         }

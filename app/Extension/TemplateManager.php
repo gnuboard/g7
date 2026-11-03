@@ -112,6 +112,11 @@ class TemplateManager implements TemplateManagerInterface
     protected array $bundledTemplates = [];
 
     /**
+     * _pending / _bundled 메타를 이번 로드 주기에 읽었는지 — 처음 읽힐 때까지 미룬다(#860)
+     */
+    protected bool $pendingAndBundledLoaded = false;
+
+    /**
      * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고 (#712 — {@see takeLastLayoutWarnings()})
      *
      * @var array<int, array{file: string, partial: string, reason: string, message: string}>
@@ -271,11 +276,11 @@ class TemplateManager implements TemplateManagerInterface
             }
         }
 
-        // _pending 디렉토리 로드
-        $this->loadPendingTemplates();
-
-        // _bundled 디렉토리 로드
-        $this->loadBundledTemplates();
+        // _pending / _bundled 메타는 관리 목록·업데이트 확인처럼 실제로 쓰는 곳이 처음 읽을 때 로드한다 — 부팅마다
+        // 미설치 번들 매니페스트까지 읽지 않게(#860). 다시 load 하면 지연 상태를 처음으로 돌린다.
+        $this->pendingTemplates = [];
+        $this->bundledTemplates = [];
+        $this->pendingAndBundledLoaded = false;
     }
 
     /**
@@ -292,7 +297,7 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($pending as $identifier => $metadata) {
             // 이미 활성 디렉토리에 로드된 템플릿은 제외
-            if (isset($this->templates[$identifier])) {
+            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier])) {
                 continue;
             }
 
@@ -314,12 +319,31 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($bundled as $identifier => $metadata) {
             // 이미 활성 디렉토리 또는 pending에 로드된 템플릿은 제외
-            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier])) {
+            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier]) || isset($this->bundledTemplates[$identifier])) {
                 continue;
             }
 
             $this->bundledTemplates[$identifier] = $metadata;
         }
+    }
+
+    /**
+     * _pending / _bundled 템플릿 메타데이터를 처음 읽힐 때 한 번 로드합니다.
+     *
+     * 읽는 것은 매니페스트 JSON 뿐이다 — 번들 사본의 진입 클래스를 require 하지 않는다(재선언 Fatal 선례).
+     * 이미 메모리에 있는 키는 덮지 않는다(같은 주기에 갱신·재로드된 항목 보존).
+     *
+     * @return void 반환값 없음
+     */
+    protected function ensurePendingAndBundledLoaded(): void
+    {
+        if ($this->pendingAndBundledLoaded) {
+            return;
+        }
+
+        $this->pendingAndBundledLoaded = true;
+        $this->loadPendingTemplates();
+        $this->loadBundledTemplates();
     }
 
     /**
@@ -329,6 +353,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getPendingTemplates(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         return $this->pendingTemplates;
     }
 
@@ -339,6 +365,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getBundledTemplates(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         return $this->bundledTemplates;
     }
 
@@ -1065,6 +1093,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getIntegrationConstraints(string $identifier): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $template = $this->templates[$identifier]
             ?? $this->pendingTemplates[$identifier]
             ?? $this->bundledTemplates[$identifier]
@@ -1090,6 +1120,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getUninstalledTemplates(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $uninstalledTemplates = [];
         // 캐시된 설치된 템플릿 identifier 목록 활용
         // 진행 중 상태에 멈춘 행도 미설치가 아니다 — 목록에 같은 확장이 두 번 나오지 않게(7.1.1 출시 전)
@@ -1181,6 +1213,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getInstalledTemplatesWithDetails(): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $installedTemplates = [];
         $templateRecords = $this->templateRepository->getAllKeyedByIdentifier();
         $locale = app()->getLocale();
@@ -1331,6 +1365,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function getTemplateInfoFromMetadata(string $templateName): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $metadata = $this->pendingTemplates[$templateName] ?? $this->bundledTemplates[$templateName] ?? null;
 
         if (! $metadata) {
@@ -2843,6 +2879,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function copyToActiveFromSource(string $templateName, ?\Closure $onProgress = null, bool $force = false): void
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
 
         // _pending에서 찾기
@@ -2880,6 +2918,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function reloadTemplate(string $templateName): void
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $directory = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
         $templateFile = $directory.DIRECTORY_SEPARATOR.'template.json';
 
@@ -2951,6 +2991,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function checkTemplateUpdate(string $identifier, ?string $source = null): array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
             return $this->buildTemplateUpdateResponse(false, null, null, null, null);
@@ -3041,6 +3083,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function bundledTemplateUpdateCandidate(string $identifier, ?string $activeRequiredCoreVersion): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         $meta = $this->bundledTemplates[$identifier]
             ?? (ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json')[$identifier] ?? null);
         $version = is_array($meta) ? ($meta['version'] ?? null) : null;
@@ -3657,6 +3701,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function resolveForceUpdateSource(string $identifier): ?string
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledTemplates[$identifier])) {
             return 'bundled';
         }
@@ -3685,6 +3731,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function getBundledVersion(string $identifier): ?string
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledTemplates[$identifier]['version'])) {
             return $this->bundledTemplates[$identifier]['version'];
         }
@@ -3702,6 +3750,8 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function findBundledTemplateManifest(string $identifier): ?array
     {
+        $this->ensurePendingAndBundledLoaded();
+
         if (isset($this->bundledTemplates[$identifier])) {
             return $this->bundledTemplates[$identifier];
         }

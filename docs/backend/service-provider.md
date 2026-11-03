@@ -462,6 +462,39 @@ if (! config('app.installer_completed') && ! Schema::hasTable('notification_defi
 
 활성 언어팩(ja 등)의 번역 경로는 `LanguagePackServiceProvider` 의 booted 콜백에서 등록된다. 그보다 앞선 `register()`·`boot()`(예: `CoreServiceProvider` 의 확장 자동 비활성화 판정)에서 `Log::warning(__('…'))` 처럼 문구를 바로 만들면 사이트 언어가 ja 여도 폴백(ko) 문구로 기록된다. 부팅 중에도 불리는 번역 문구 로그는 `App\Support\BootDeferredLog::warning()`·`info()` 에 번역 키·치환값·맥락을 넘긴다 — 부팅 중이면 언어팩 등록 직후 사이트 언어로 한 번 남기고(언어팩이 없거나 설치 전이어도 비운다), booted 뒤에는 바로 남긴다.
 
+### 비활성 확장의 boot 부수효과 게이트 (`isExtensionActive`, 7.1.5)
+
+비활성 확장도 프로바이더는 등록된다 — 바인딩·번역·morphMap·명령은 설치 시더·관리 화면·다른 코드가 쓰기 때문이다. 그러나 **요청 처리에 끼어드는 부수효과**는 비활성 확장이 걸면 안 된다. `AbstractExtensionServiceProvider::isExtensionActive()` 가 그 판정이다.
+
+| 구분 | 예 | 처리 |
+| ------ | ------ | ------ |
+| (가) 다른 코드가 참조할 수 있는 선언 | 바인딩·scoped 등록, 번역, morphMap, config, 명령 등록 | 그대로 |
+| (나) 요청·큐 처리에 끼어드는 부수효과 | `RateLimiter::for`, `EncryptCookies::except`, `Queue::before/after`, 사이트맵 기여자, 요청마다 쓰는 `resolving` 콜백(알림 채널 드라이버 등록 포함 — 비활성 확장의 채널은 코어가 사용 가능 채널에서 먼저 빼므로 발송 경로가 드라이버를 찾지 않는다) | 게이트 안 |
+
+```php
+public function boot(): void
+{
+    parent::boot();
+
+    // method_exists 가드: 7.1.4 이하 코어에는 메서드가 없다 — 그때는 지금처럼 실행된다
+    if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+        EncryptCookies::except(['my_receipt_token']);
+    }
+}
+```
+
+- 판정은 새 판정식이 아니라 코어 상태 목록(`getActiveModuleIdentifiers()`·`getActivePluginIdentifiers()`, 요청 메모 경유)을 본다.
+- 상태를 알 수 없으면 **참**이다 — 설치 미완료, 스키마를 바꾸는 artisan 명령, 코어 업데이트 중, 조회 실패.
+- 활성화 요청 안에서는 프로바이더가 상태를 쓰기 전에 이미 부팅돼 있으므로, 부수효과는 활성화 **다음 요청**의 첫 부팅부터 걸린다.
+- 제3자 확장에 강제하지는 않는다. 게이트를 쓰지 않은 확장은 7.1.4 까지처럼 상태와 무관하게 부수효과를 건다. 번들 확장의 가드 사용은 `BundledProviderActiveGateCompatTest` 가 잠근다.
+- 7.1.5 부터 기반 프로바이더에 `protected` 메서드 `isExtensionActive(): bool`·`activeIdentifiersForGate(): ?array` 가 있다. 확장 프로바이더가 같은 이름의 메서드를 이미 선언했다면 가시성(`private`)이나 반환형이 다를 때 PHP 가 클래스를 읽지 못하므로, 다른 이름으로 바꾼다.
+
+### 요청 단위 메모 (scoped)
+
+부팅·요청 처리에서 같은 값을 여러 번 읽는 객체는 `$this->app->scoped()` 로 두고 인스턴스에 메모한다(활성 확장 목록 `ExtensionStatusMemo`, 확장 미들웨어 레지스트리, 플러그인 설정 서비스, 동의 관리 매니저 등). scoped 인스턴스는 웹 요청마다 새로 만들어지고 큐 워커는 작업마다 비우므로 상주 프로세스에서도 옛 값이 남지 않는다. 같은 요청에서 값이 바뀌는 경로(상태 캐시 무효화·설정 저장)는 메모를 직접 비운다.
+
+> 시험에서 scoped 로 바뀐 클래스를 `$this->app->instance()` 로 바꿔 끼우면, 큐 워커처럼 `forgetScopedInstances()` 를 부르는 경로에서 그 목이 사라진다. 그런 시험은 `$this->app->scoped(클래스, fn () => $목)` 으로 묶는다.
+
 ### 주의사항
 
 - **인스톨러 설치 완료 시점에 `INSTALLER_COMPLETED=true` 가 `.env` 에 기록되어야 함** — G7 인스톨러(`public/install/includes/task-runner.php`)는 이를 이미 수행

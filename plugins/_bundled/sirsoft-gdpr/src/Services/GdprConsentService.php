@@ -12,6 +12,7 @@ use Plugins\Sirsoft\Gdpr\Models\GdprUserConsent;
 use Plugins\Sirsoft\Gdpr\Models\GdprUserConsentHistory;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentRepositoryInterface;
+use Plugins\Sirsoft\Gdpr\Support\GdprConsentReadMemo;
 
 /**
  * GDPR 동의 서비스
@@ -42,6 +43,42 @@ class GdprConsentService
         private readonly CookieCategoryService $categoryService,
         private ?GdprPolicyVersionService $policyVersionService = null,
     ) {}
+
+    /**
+     * 회원의 동의 행을 읽습니다 — 쿠키 동의 판정 3종이 한 요청에서 같은 행을 다시 읽지 않게 요청 메모 (#860).
+     *
+     * @param  int  $userId  회원 ID
+     * @return Collection 동의 행
+     */
+    private function userConsentRows(int $userId): Collection
+    {
+        $memo = GdprConsentReadMemo::current();
+
+        return $memo->userConsentRows[$userId] ??= $this->statusRepository->getAllByUserId($userId);
+    }
+
+    /**
+     * 게스트 세션의 동의 내역을 읽습니다 (요청 안 메모).
+     *
+     * @param  string  $sessionId  게스트 세션 ID
+     * @return Collection 동의 내역
+     */
+    private function sessionHistoryRows(string $sessionId): Collection
+    {
+        $memo = GdprConsentReadMemo::current();
+
+        return $memo->sessionHistoryRows[$sessionId] ??= $this->historyRepository->getBySessionId($sessionId);
+    }
+
+    /**
+     * 동의 조회 메모를 비웁니다 — 동의를 쓰는 경로가 쓴 직후 부릅니다(이벤트 없는 대량 쓰기 포함).
+     *
+     * @return void 반환값 없음
+     */
+    private function forgetConsentReads(): void
+    {
+        GdprConsentReadMemo::forgetConsentRows();
+    }
 
     /**
      * 현재 발행된 정책 버전 정수의 문자열 형태를 반환합니다.
@@ -165,6 +202,8 @@ class GdprConsentService
                 'user_agent' => substr((string) request()->userAgent(), 0, 500),
             ]);
         }
+
+        $this->forgetConsentReads();
 
         $hookName = $value
             ? self::PLUGIN_ID.'.consent.granted'
@@ -326,6 +365,8 @@ class GdprConsentService
             $this->statusRepository->deleteByUserId($userId);
             $this->historyRepository->anonymizeForUser($userId);
         });
+
+        $this->forgetConsentReads();
     }
 
     /**
@@ -414,6 +455,7 @@ class GdprConsentService
             $data = HookManager::applyFilters(self::PLUGIN_ID.'.consent.filter_update_data', $data, $userId, $consentKey);
 
             $updated = $this->statusRepository->upsert($userId, $consentKey, $data);
+            $this->forgetConsentReads();
 
             $this->historyRepository->record([
                 'user_id' => $userId,
@@ -451,7 +493,7 @@ class GdprConsentService
         $currentVersion = $this->getCurrentPolicyVersion();
 
         if ($userId !== null) {
-            $consents = $this->statusRepository->getAllByUserId($userId);
+            $consents = $this->userConsentRows($userId);
             foreach ($consents as $consent) {
                 if (str_starts_with((string) $consent->consent_key, 'cookie_')
                     && (string) $consent->policy_version === $currentVersion) {
@@ -466,7 +508,7 @@ class GdprConsentService
             return false;
         }
 
-        $histories = $this->historyRepository->getBySessionId($sessionId);
+        $histories = $this->sessionHistoryRows($sessionId);
         foreach ($histories as $h) {
             if (str_starts_with((string) $h->consent_key, 'cookie_')
                 && (string) $h->policy_version === $currentVersion) {
@@ -494,7 +536,7 @@ class GdprConsentService
     public function hasAnyConsentHistory(?int $userId, ?string $sessionId): bool
     {
         if ($userId !== null) {
-            $consents = $this->statusRepository->getAllByUserId($userId);
+            $consents = $this->userConsentRows($userId);
             foreach ($consents as $consent) {
                 if (str_starts_with((string) $consent->consent_key, 'cookie_')) {
                     return true;
@@ -508,7 +550,7 @@ class GdprConsentService
             return false;
         }
 
-        $histories = $this->historyRepository->getBySessionId($sessionId);
+        $histories = $this->sessionHistoryRows($sessionId);
         foreach ($histories as $h) {
             if (str_starts_with((string) $h->consent_key, 'cookie_')) {
                 return true;
@@ -538,7 +580,7 @@ class GdprConsentService
         $result = [];
 
         if ($userId !== null) {
-            $consents = $this->statusRepository->getAllByUserId($userId);
+            $consents = $this->userConsentRows($userId);
             foreach ($consents as $consent) {
                 $key = (string) $consent->consent_key;
                 if (! str_starts_with($key, 'cookie_')) {
@@ -559,7 +601,7 @@ class GdprConsentService
         }
 
         // 게스트: history 는 append-only 이므로 가장 최근 action 만 사용
-        $histories = $this->historyRepository->getBySessionId($sessionId);
+        $histories = $this->sessionHistoryRows($sessionId);
         foreach ($histories as $h) {
             $key = (string) $h->consent_key;
             if (! str_starts_with($key, 'cookie_')) {

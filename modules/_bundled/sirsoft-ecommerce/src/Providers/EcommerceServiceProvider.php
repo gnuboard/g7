@@ -309,8 +309,12 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         parent::boot();
 
         $this->registerClaimMorphMap();
-        $this->registerRateLimiters();
-        $this->registerQueueJobScopeReset();
+
+        // 요청·큐 처리에 끼어드는 부수효과는 활성일 때만 건다 (#730 게이트, #860)
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            $this->registerRateLimiters();
+            $this->registerQueueJobScopeReset();
+        }
 
         // Artisan 커맨드 등록
         if ($this->app->runningInConsole()) {
@@ -321,15 +325,18 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // Module::getMiddleware() 가 targets=['/'](무명 User SSR 셸 URI 패턴)로 선언하고,
         // 코어 ExtensionMiddlewareGate 가 요청 시점에 실행한다. (SP Kernel 직접 조작 제거)
 
-        // Sitemap 기여자 등록
-        $this->app->booted(function () {
-            if ($this->app->bound(SitemapGenerator::class)) {
-                // Repository 주입을 위해 컨테이너로 해석합니다.
-                $this->app->make(SitemapGenerator::class)->registerContributor(
-                    $this->app->make(EcommerceSitemapContributor::class)
-                );
-            }
-        });
+        // Sitemap 기여자 등록 — 생성기를 처음 해석할 때(사이트맵 생성·SEO 화면) 붙는다. 이미 해석돼 있으면 바로
+        // 붙는다. 부팅마다 생성기·기여자·리포지토리를 만들지 않는다 (#860). 비활성이면 걸지 않는다(#730 게이트).
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            $this->callAfterResolving(SitemapGenerator::class, function (SitemapGenerator $generator): void {
+                try {
+                    // Repository 주입을 위해 컨테이너로 해석합니다.
+                    $generator->registerContributor($this->app->make(EcommerceSitemapContributor::class));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            });
+        }
     }
 
     /**

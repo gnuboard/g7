@@ -1129,6 +1129,13 @@ class Module extends AbstractModule
                 'order' => [['created_at', 'desc'], ['id', 'desc']],
                 'soft_delete' => true,
             ],
+            // 요청 1건을 새 프로세스에서 처음부터 처리하는 부팅 비용 — 코어 boot 축(7.1.5)이 없는 코어에서는
+            // 알 수 없는 축으로 경고만 남고 이 선언만 빠진다
+            'boot_board_menu' => [
+                'type' => 'boot',
+                'label' => '게시판 메뉴 API 부팅',
+                'uri' => '/api/modules/sirsoft-board/boards/board-menu',
+            ],
         ];
     }
 

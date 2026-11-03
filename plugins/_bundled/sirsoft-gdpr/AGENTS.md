@@ -113,7 +113,12 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 
 **요청마다 반복되는 게이팅**: `CookieConsentMiddleware`(web/api 그룹에 prepend)가 응답 직전
 `GdprConsentService::getCurrentCookieConsents()` 로 현재 functional 동의 여부를 조회하고,
-미동의면 strictly-necessary 4종을 제외한 모든 Set-Cookie 헤더를 응답에서 제거합니다. 이
+미동의면 strictly-necessary 4종을 제외한 모든 Set-Cookie 헤더를 응답에서 제거합니다. 지울
+후보(허용목록 밖·파기 아님)가 하나도 없는 응답은 동의를 조회하지 않고 그대로 통과합니다(1.1.4).
+한 요청 안에서 미들웨어·동의 제공자·동의 현황 리소스가 묻는 현재 정책 버전과 같은 주체의 동의
+행은 요청 단위 보관함 `Support\GdprConsentReadMemo`(scoped)에 한 번만 읽어 둡니다 — 정책 버전·
+동의 행·이력 모델이 저장·삭제되면 비우고, 이벤트 없는 대량 쓰기 뒤에는 `GdprConsentService` 가
+직접 비웁니다. 서비스 자체는 지금처럼 필요할 때마다 만듭니다. 이
 서버측 게이팅과 별개로, 클라이언트에서는 `data-gdpr-category` 속성이 붙은 스크립트/iframe 과
 분석/마케팅 카테고리 도메인 매칭 리소스가 동의 전까지 로드되지 않습니다.
 

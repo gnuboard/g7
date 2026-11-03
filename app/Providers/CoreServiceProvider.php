@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Benchmark\Axes\BatchAxisRunner;
+use App\Benchmark\Axes\BootAxisRunner;
 use App\Benchmark\Axes\ListAxisRunner;
 use App\Benchmark\Axes\ScreenAxisRunner;
 use App\Benchmark\Axes\WriteAxisRunner;
@@ -76,6 +77,7 @@ use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
+use App\Extension\Support\ExtensionStatusMemo;
 use App\Extension\Support\IntegrationReverseIndex;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
@@ -133,6 +135,7 @@ use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Services\NotificationRecipientCapability;
+use App\Services\PluginSettingsService;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
@@ -191,6 +194,7 @@ class CoreServiceProvider extends ServiceProvider
             ScreenAxisRunner::class,
             WriteAxisRunner::class,
             BatchAxisRunner::class,
+            BootAxisRunner::class,
         ], 'benchmark.axes');
 
         $this->app->when(BenchCommand::class)
@@ -308,7 +312,7 @@ class CoreServiceProvider extends ServiceProvider
         });
 
         // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다 (#639)
-        $this->app->singleton(ConsentManager::class);
+        $this->app->scoped(ConsentManager::class);
 
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);
@@ -333,8 +337,9 @@ class CoreServiceProvider extends ServiceProvider
             return new CoreCacheDriver(config('cache.default'));
         });
 
-        // 확장 선언 미들웨어 self-gate 인덱스 (요청 내 인덱스 1회 빌드 → singleton)
-        $this->app->singleton(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
+        // 확장 선언 미들웨어 self-gate 인덱스 — 요청 내 인덱스 1회 빌드. scoped 라서 인덱스·해석 메모가
+        // 요청·큐 잡이 끝나면 버려진다(프로세스 수명이면 워커가 옛 인덱스를 붙잡는다, #860)
+        $this->app->scoped(ExtensionMiddlewareRegistryInterface::class, ExtensionMiddlewareRegistry::class);
 
         // 알림 수신자 권한 판정 (수신자 수만큼 같은 권한을 재조회하지 않도록 요청·잡 수명 메모 → scoped).
         // singleton 이면 큐 워커가 재시작될 때까지 메모가 남아, 권한을 뺏긴 사람도 관리자 링크를 계속
@@ -354,6 +359,13 @@ class CoreServiceProvider extends ServiceProvider
 
         // 선택 연동 역맵 — 목록 행마다 「연동 중인 확장」을 실을 때 켜진 확장 조회를 요청·작업당 한 번으로 줄인다(7.1.4)
         $this->app->scoped(IntegrationReverseIndex::class);
+
+        // 활성·설치 확장 목록 메모 — 부팅 경로가 요청마다 수십 번 읽는 목록을 저장소 조회 한 번으로 줄인다(#860)
+        $this->app->scoped(ExtensionStatusMemo::class);
+
+        // 플러그인 설정 서비스 — 요청 단위로 하나. 소비자마다 새로 만들면 같은 요청에서 설정 파일을 여러 번 읽고,
+        // 한 소비자가 저장한 값을 먼저 읽어 둔 다른 소비자가 모른다. scoped 라 큐 잡마다 새로 읽는다(#860)
+        $this->app->scoped(PluginSettingsService::class);
 
         // 확장 매니저 등록 (모듈/플러그인 공통 기능)
         $this->app->singleton(ExtensionManager::class, function ($app) {
@@ -774,7 +786,14 @@ class CoreServiceProvider extends ServiceProvider
     {
         try {
             $driverRegistry = $this->app->make(DriverRegistryService::class);
-            $configRepository = $this->app->make(JsonConfigRepository::class);
+            // 코어 설정 저장소 싱글톤이 같은 구현이면 그것을 쓴다 — 새로 만들면 설정 파일을 다시 읽는다(#860).
+            // 구현 클래스를 직접 바인딩해 둔 경우(교체·시험)는 그 바인딩을 따른다.
+            $configRepository = $this->app->bound(JsonConfigRepository::class)
+                ? $this->app->make(JsonConfigRepository::class)
+                : $this->app->make(ConfigRepositoryInterface::class);
+            if (! $configRepository instanceof JsonConfigRepository) {
+                $configRepository = $this->app->make(JsonConfigRepository::class);
+            }
 
             foreach ($driverRegistry->getCategories() as $category) {
                 $settingsKey = $driverRegistry->getSettingsKey($category);
