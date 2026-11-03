@@ -33,6 +33,7 @@ effects:
   - navigate_transition_overlay_target_param_gated_by_replace
   - navigate_refetch_data_sources_survives_editor_roundtrip
   - navigate_fallback_path_survives_editor_roundtrip
+  - navigate_return_scroll_and_scroll_options_survive_editor_roundtrip
   - navigate_refetch_data_sources_survives_editor_save_e2e
   - switch_cases_param_locked_advanced
   - nested_action_containers_use_action_list_not_advanced

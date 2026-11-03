@@ -165,6 +165,52 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
 
   /**
    * @scenario catalog_aspect=param_widget
+   * @effects editor_core_catalog_lists_every_core_handler, navigate_return_scroll_and_scroll_options_survive_editor_roundtrip
+   */
+  it('navigate 의 returnScroll·scrollBehavior·bypassLeaveGuard 는 편집기 칸으로 보이고 폼 왕복 뒤에도 남는다 (engine-v1.85.0)', () => {
+    // returnScroll = 이 이동으로 떠나는 화면에 뒤로 가기로 돌아올 때의 스크롤 동작(engine-v1.85.0). build 틀에 없는 키는
+    // 편집기 폼으로 그 navigate 를 열어 적용·저장할 때 빠진다 — 결제 → 완료 이동의 returnScroll:"top" 이 사라지면
+    // 완료 화면에서 뒤로 가기로 결제 화면에 돌아올 때 옛 위치로 복원된다. scrollBehavior(부드러운 스크롤)·
+    // bypassLeaveGuard(저장 뒤 이동의 이탈 확인 생략)도 같은 이유로 칸·틀에 둔다.
+    const params = CORE_ACTION_RECIPES.navigate.params ?? [];
+    const returnScroll = params.find((p) => p.key === 'returnScroll');
+    expect(returnScroll?.widget).toBe('select');
+    expect((returnScroll?.options ?? []).map((o) => (o as { value: unknown }).value)).toEqual(['restore', 'top', 'none']);
+    expect(returnScroll?.label).toBe('$t:layout_editor.action_recipe.navigate.param_return_scroll');
+    expect(params.find((p) => p.key === 'scrollBehavior')?.widget).toBe('select');
+    expect(params.find((p) => p.key === 'bypassLeaveGuard')?.widget).toBe('toggle');
+
+    const normalized = normalizeActionRecipes(CORE_ACTION_RECIPES);
+    const recipe = normalized.find((r) => r.id === 'navigate')!;
+
+    // 기존 navigate 를 열었다 그대로 적용하면 세 키가 같은 값으로 남는다
+    const action = {
+      handler: 'navigate',
+      params: {
+        path: '/shop/orders/complete',
+        scroll: 'top',
+        scrollBehavior: 'smooth',
+        returnScroll: 'top',
+        bypassLeaveGuard: true,
+      },
+    };
+    const card = resolveActionCard(action, normalized);
+    expect(card.kind).toBe('preset');
+    if (card.kind === 'preset') {
+      expect(card.values.returnScroll).toBe('top');
+      const rebuilt = buildAction(normalized.find((r) => r.id === card.recipeId)!, card.values) as { params?: Record<string, unknown> };
+      expect(rebuilt.params).toEqual(action.params);
+    }
+
+    // 칸을 비워 두면(상속) 키 자체가 없다 — 화면·템플릿 설정을 따른다
+    const plain = buildAction(recipe, { path: '/board' }) as { params?: Record<string, unknown> };
+    expect(plain.params).not.toHaveProperty('returnScroll');
+    expect(plain.params).not.toHaveProperty('scrollBehavior');
+    expect(plain.params).not.toHaveProperty('bypassLeaveGuard');
+  });
+
+  /**
+   * @scenario catalog_aspect=param_widget
    * @effects editor_core_catalog_lists_every_core_handler, switch_cases_param_locked_advanced
    */
   it('switch 의 cases 는 advanced 잠금 — cases 는 객체맵(Record)이라 action-list 로 표현 불가', () => {

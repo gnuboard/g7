@@ -6,7 +6,18 @@
     "meta": {
         "leave_guard": "{{_global.panelMode === 'edit' || _global.panelMode === 'create' || _global.panelMode === 'copy'}}",
         "title": "$t:sirsoft-ecommerce.admin.common_info.title",
-        "description": "$t:sirsoft-ecommerce.admin.common_info.description"
+        "description": "$t:sirsoft-ecommerce.admin.common_info.description",
+        "scroll_restoration": {
+            "containers": [
+                "#right_content_area",
+                "#common_info_list"
+            ],
+            "snapshot": {
+                "state": [
+                    "_global.infiniteScroll"
+                ]
+            }
+        }
     },
     "data_sources": [
         {

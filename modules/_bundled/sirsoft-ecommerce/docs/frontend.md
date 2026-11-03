@@ -362,6 +362,10 @@
 
 관리자 클레임 상세의 창(진행 방식 전환·대리 철회·신청 내용 수정·환불 실행)은 입력값을 `_global` 에 모은다 — 모달은 부모 `_local` 을 읽지 못하므로, 여는 핸들러가 대상 신청서를 `_global` 문맥에 두고 실행 핸들러가 거기서 읽는다.
 
+### 더보기 목록의 뒤로 가기 스크롤 복원
+
+관리자 「상품 공통정보」(`admin_ecommerce_product_common_info_index`)와 「상품정보제공고시」(`admin_ecommerce_product_notice_index`)는 더보기(`append-data-source`)로 목록을 늘리고 다음 쪽 번호를 공유 키 `_global.infiniteScroll` 에 둡니다. 코어 엔진(engine-v1.85.0, 코어 [scroll-restoration.md](../../../../docs/frontend/scroll-restoration.md))은 뒤로 가기 때 늘어난 목록을 스냅샷으로 되살리는데, 쪽 번호는 다른 화면(배송정책 폼 등)이 1로 되돌리므로 두 화면 레이아웃 meta 의 `scroll_restoration.snapshot.state` 에 `_global.infiniteScroll` 을 적어 함께 되돌립니다 — 빠지면 되살린 여러 쪽 목록에서 다음 더보기가 이미 받은 쪽을 다시 받아 같은 행이 두 번 붙습니다. 목록은 창이 아니라 목록 영역 안에서 스크롤되므로 `containers` 에 목록 영역(`#common_info_list`·`#template_list`)을 적고, `containers` 는 통째로 교체되므로 관리자 템플릿 기본값인 본문 영역 `#right_content_area` 도 함께 적습니다(1.3.4). 덧붙이는 소스가 모두 열 때 받는 소스(`auto_fetch: false`)인 배송정책 폼의 모달 목록은 엔진이 스냅샷을 심지 않으므로 대상이 아닙니다. 새로 더보기 + 공유 쪽 번호를 쓰는 화면을 만들면 같은 선언을 둡니다 — `resources/js/__tests__/layouts/infinite-list-scroll-restoration.test.ts` 가 레이아웃 소스에서 대상 화면을 기계로 찾아 선언 누락을 잡습니다.
+
 ### 비동기 응답 뒤 오류 화면을 부르는 핸들러
 
 자기 API 를 기다린 **뒤** 오류 화면(`showErrorPage`)·이동·상태 쓰기를 하는 핸들러는 시작할 때 화면 표식을 잡아 두고(`captureRouteGeneration()` — 경로+쿼리, 엔진이 `G7Core.navigation.getRouteGeneration()` 을 내면 그 경로 세대도 함께 잡아 나갔다가 같은 주소로 돌아온 경우도 가른다), 응답이 왔을 때 `isSameRouteGeneration()` 이 거짓이면 아무것도 하지 않는다(`initClaimEdit`). 엔진 `showErrorPage` 는 부른 시점의 경로 세대를 출처로 보므로, 응답을 기다리는 사이 사용자가 다른 화면으로 옮긴 뒤 부르면 그 새 화면을 404 로 덮는다. 데이터소스 오류 처리에서 불린 핸들러가 다시 dispatch 할 때는 받은 문맥을 `G7Core.dispatch(action, { componentContext: context })` 로 넘겨, 문맥의 `data.__routeGeneration`(그 fetch 를 시작한 세대)을 엔진이 쓰게 한다(`claimApplyOrderMissing`). 코어 내부(`window.__templateApp`)는 읽지 않는다. 또 init_actions 안에서는 `showErrorPage` 를 기다리지 않는다 — 렌더 전 단계라 본문 칸이 아직 없어 서로를 기다린다.

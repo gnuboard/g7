@@ -102,7 +102,31 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
         widget: 'select',
         options: [{ value: 'top' }, { value: 'preserve' }, { value: 'none' }],
       },
+      {
+        // 스크롤 애니메이션(engine-v1.37.0) — build 틀에 없으면 편집기 폼 저장이 이 값을 지운다.
+        key: 'scrollBehavior',
+        label: `$t:${L}.navigate.param_scroll_behavior`,
+        widget: 'select',
+        options: [
+          { value: 'instant', label: `$t:${L}.navigate.scroll_behavior_instant` },
+          { value: 'smooth', label: `$t:${L}.navigate.scroll_behavior_smooth` },
+        ],
+      },
+      {
+        // 이 이동으로 떠나는 화면에 뒤로 가기로 돌아올 때의 스크롤 동작(engine-v1.85.0). 비우면 그 화면·템플릿
+        // 설정(meta.scroll_restoration)을 따른다. 선택자 값(`#id`)은 엔진이 받지만 칸은 세 가지만 고른다.
+        key: 'returnScroll',
+        label: `$t:${L}.navigate.param_return_scroll`,
+        widget: 'select',
+        options: [
+          { value: 'restore', label: `$t:${L}.navigate.return_scroll_restore` },
+          { value: 'top', label: `$t:${L}.navigate.return_scroll_top` },
+          { value: 'none', label: `$t:${L}.navigate.return_scroll_none` },
+        ],
+      },
       { key: 'replace', label: `$t:${L}.navigate.param_replace`, widget: 'toggle' },
+      // 저장 뒤 이동 등 레이아웃 이탈 확인(meta.leave_guard)을 이 이동에 한해 묻지 않는다(engine-v1.82.0).
+      { key: 'bypassLeaveGuard', label: `$t:${L}.navigate.param_bypass_leave_guard`, widget: 'toggle' },
       {
         key: 'transition_overlay_target',
         label: `$t:${L}.navigate.param_overlay_target`,
@@ -127,7 +151,10 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
         query: '{{query}}',
         mergeQuery: '{{mergeQuery}}',
         scroll: '{{scroll}}',
+        scrollBehavior: '{{scrollBehavior}}',
+        returnScroll: '{{returnScroll}}',
         replace: '{{replace}}',
+        bypassLeaveGuard: '{{bypassLeaveGuard}}',
         transition_overlay_target: '{{transition_overlay_target}}',
         refetch_data_sources: '{{refetch_data_sources}}',
       },

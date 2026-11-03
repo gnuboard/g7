@@ -41,6 +41,7 @@ import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetr
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback } from '../support/navPolicy';
 import { armLeaveGuardBypass, runWithLeaveGuardBypass } from '../routing/LeaveGuard';
+import { notifyScreenScroll, runWithReturnScroll } from '../routing/ScrollMemory';
 import {
   applyQueryValues,
   getEventAnchor,
@@ -1313,6 +1314,9 @@ export class ActionDispatcher {
           return;
         }
       }
+
+      // 화면이 직접 옮기는 스크롤 — 뒤로 가기 복원이 이 위치를 덮지 않게 알린다 (@since engine-v1.85.0)
+      notifyScreenScroll();
 
       // scrollContainer가 지정된 경우 해당 컨테이너 내에서만 스크롤
       if (scrollContainer) {
@@ -3536,9 +3540,11 @@ export class ActionDispatcher {
     // bypassLeaveGuard: 저장 성공 뒤 이동 등은 레이아웃 이탈 가드를 묻지 않는다 — 문맥의 navigate 래퍼가 옵션을
     // 버려도 닿도록 동기 범위로 감싼다 (engine-v1.82.0)
     const navigateFn = context.navigate;
-    const started = params.bypassLeaveGuard === true
+    // returnScroll: 이 이동으로 떠나는 화면에 뒤로 가기로 돌아올 때의 스크롤 동작(restore·top·none·선택자).
+    // 라우터가 이탈 가드를 통과한 뒤에만 그 항목에 붙인다 — 문맥의 navigate 래퍼가 옵션을 버려도 닿게 동기 범위로 감싼다 (engine-v1.85.0)
+    const started = runWithReturnScroll(params.returnScroll, () => (params.bypassLeaveGuard === true
       ? runWithLeaveGuardBypass(() => navigateFn(finalPath, { replace: params.replace === true, bypassLeaveGuard: true }))
-      : navigateFn(finalPath, { replace: params.replace === true });
+      : navigateFn(finalPath, { replace: params.replace === true })));
 
     // 이탈 가드에서 머무르기를 골랐다 — 화면이 그대로이므로 스크롤도 옮기지 않는다 (engine-v1.82.0)
     if (started === false) {
@@ -3695,6 +3701,8 @@ export class ActionDispatcher {
     if (effective === 'preserve') {
       return;
     }
+    // 화면이 직접 옮기는 스크롤 — 진행 중인 뒤로 가기 복원이 이 위치를 덮지 않게 알린다 (@since engine-v1.85.0)
+    notifyScreenScroll();
 
     // 기본값 'instant' — CSS scroll-behavior: smooth 가 전역 적용된 환경에서도
     // 페이지 전환 시 즉시 스크롤되도록 'auto' 대신 'instant' 사용.

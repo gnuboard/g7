@@ -50,6 +50,9 @@ effects:
   - locked_set_absent_from_shipped_catalog
   - shipped_catalog_items_pass_save_validation
   - shipped_catalog_contains_view_mode_pattern
+  - shipped_catalog_contains_scroll_positions_key   # 코어 스크롤 위치(sessionStorage) — engine-v1.85.0
+  - upgrade_appends_scroll_positions_key_when_absent
+  - upgrade_leaves_allowlist_untouched_when_scroll_key_present
   - shipped_catalog_contains_analytics_opt_out_cookie
 
   # 업그레이드 스텝 (기설치본 백필)
@@ -150,6 +153,7 @@ test_files:
   - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/GdprAdminSettingsControllerTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/SeedNecessaryStorageAllowlistTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/AppendViewModeToNecessaryAllowlistTest.php
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/AppendScrollPositionsToNecessaryAllowlistTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/AppendAnalyticsOptOutToNecessaryAllowlistTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/RemoveExtensionOwnedKeysFromNecessaryAllowlistTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Support/ProvidedNecessaryStorageTest.php

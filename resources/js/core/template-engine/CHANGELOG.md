@@ -5,6 +5,32 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.85.0] - 2026-11-03
+
+### Added
+
+- 뒤로/앞으로 가기·새로고침 스크롤 위치 복원(`routing/ScrollMemory.ts`) — 브라우저 기본 복원(`history.scrollRestoration = 'auto'`)을 끄고 히스토리 항목(Navigation API `currentEntry.key`, 없으면 주소)마다 창·내부 스크롤 영역 위치를 기억했다가, 뒤로/앞으로 가기로 돌아온 화면을 다시 그린 뒤 문서가 그 위치를 담을 만큼 자라면 되돌린다. 높이가 바뀌거나 위치가 밀리면 다시 맞추고, **이 화면의 데이터를 다 받은 뒤** 600ms 동안 변화가 없거나 최대 대기(기본 5초)가 지나거나 사용자가 휠·터치·키·포인터로 만지면 끝낸다. 새 화면으로 가는 이동(navigate)은 종전대로 navigate `scroll`(기본 맨 위)을 따른다. 새로고침 복원은 sessionStorage `g7_scroll_positions`(sirsoft-gdpr 1.1.4 필수 저장 허용목록 등재).
+- 설정 `scroll_restoration` — `mode`(`restore`·`top`·`none`·`#선택자`) · `on_reload` · `wait`(`height` 높이 대기 / `data` 데이터를 다 받은 뒤) · `timeout_ms` · `containers`(함께 기억할 내부 스크롤 영역) · `snapshot`(`enabled`·`ttl_seconds`·`revalidate`·`item_key`·`state`). 엔진 기본값 → template.json(`/api/templates/{id}/config.json`) → 베이스 레이아웃 meta → 화면 meta(서버가 깊게 병합) 순으로 적은 키만 덮어쓴다(`mergeScrollRestorationConfig`).
+- navigate 액션 `returnScroll` — 이 이동으로 **떠나는 화면**에 뒤로 가기로 돌아올 때의 동작. 이탈 가드에서 머무르기를 고르면 붙지 않는다(`runWithReturnScroll` 동기 범위).
+- 먼저 스크롤을 가져간 쪽을 따른다 — 뒤로/앞으로 가기·새로고침 표시부터 복원 시작 전까지 사용자 입력(휠·터치·키·포인터)이나 화면의 스크롤 액션(`scrollIntoView`, `navigate` 의 `scroll` — `notifyScreenScroll`)이 있으면 복원하지 않고, 복원 중 스크롤 액션은 복원을 멈춘다. `mode` 는 `restore`·`top`·`none`·`#`·`.`·`[` 로 시작하는 선택자만 받고, 그 밖의 값은 경고와 함께 버린다. 스냅샷 유효 시간은 처음 기억한 때부터 잰다(되살려 오가도 늘어나지 않음).
+- 더보기 스냅샷(`template-engine/dataSourceSnapshot.ts`) — `appendDataSource`(`G7Core.dataSource.updateData` append·prepend)로 늘어난 데이터소스를 화면을 떠날 때 그 항목 키로 기억했다가(최근 10항목, 메모리), 돌아오면 유효 시간(기본 600초) 안이고 화면 언어·계정이 같고 진입 때 자동으로 받는 소스(`auto_fetch !== false`)일 때 그 데이터로 먼저 그린다. 다시 받은 첫 묶음은 `item_key`(기본 `id`)로 대조해 바뀐 항목을 갈아끼우고, 첫 묶음에서 스냅샷과 처음 겹치는 항목보다 앞의 새 항목은 앞에 붙인다. 다시 받기 실패·대체 값(`kept`)이면 스냅샷을 버린다. 심는 시점은 화면 초기화(init_global·init_local·init_actions) 뒤 첫 렌더 직전.
+- `snapshot.state` — 스냅샷과 함께 기억했다가 되돌릴 진행 상태 경로(`_global.…`·`_local.…`). 더보기의 다음 쪽 번호처럼 목록 길이와 맞아야 하는 값을 화면 초기화 뒤 첫 렌더 직전에 되돌린다(공유 키를 다른 화면이 1로 되돌리면 다음 더보기가 받은 쪽을 다시 받아 행이 중복됐다).
+- 레이아웃 편집기 — 페이지 설정 [스크롤] 탭(`ScrollRestorationForm` — 칸별 상속 출처 표시, 베이스 레이아웃에서 고치면 템플릿 기본값), 「다른 페이지로 이동」 액션 편집에 「돌아올 때 스크롤」·「스크롤 애니메이션」·「이탈 확인 묻지 않기」 칸(레시피 입력·저장 틀 양쪽). 편집 모드에서는 스크롤 기억·복원을 끈다.
+
+### Changed
+
+- 페이지 설정이 meta 를 저장할 때 영속 meta 에는 이 화면이 직접 적은 `scroll_restoration` 만 남긴다(베이스에서 물려받은 값이 화면 값으로 굳지 않게).
+
+### Fixed
+
+- 모바일에서 홈을 내린 뒤 상품을 눌렀다가 뒤로 가면 맨 위로 가던 문제 — 돌아온 화면이 데이터를 다시 받느라 popstate 직후 짧아 브라우저 기본 복원이 실패했다(개발 서버 390×844 실측: 홈 2,742px → 상품 → 뒤로 = 0, 홈 높이 약 1초에 걸쳐 3,416 → 5,574px; 측정마다 결과가 달랐다). 수정 후 로컬 실측: 2,742px → 상품 → 뒤로 = 2,742px(눌렀던 카드 화면 위 300px 그대로, 0.4초), 연속 왕복 3,198 → 3,198, 관리자 상품 목록 본문 영역 2,000px → 수정 → 뒤로 = 2,000px, 동의 전 새로고침 1,700 → 1,700. 발생: 엔진에 스크롤 복원이 처음부터 없었다(브라우저 기본 동작 의존).
+- 「레이아웃 편집기에서 다른 페이지로 이동 동작을 열어 저장하면 `scrollBehavior`·`bypassLeaveGuard` 값이 사라지던」 문제 — 레시피 저장 틀에 없는 인자를 버렸다.
+- 레이아웃 편집기 페이지 설정 [기본 정보]·[검색엔진] 탭 저장이 병합본 meta 를 통째로 영속해 베이스 레이아웃의 SEO 가 화면 값으로 굳던 문제(기존 결함) — 서버 `mergeSeo` 와 같은 규칙으로 이 화면이 적은 키·베이스와 달라진 키만 남긴다(`page-settings/seoOwnValue.ts`). 실 편집기 저장 실측: 화면 `data_sources` 에 베이스 `boards`·`vars` 가 더해지지 않음.
+
+구현 중 실측으로 찾아 고친 결함(출시 전): 돌아온 직후 뼈대 화면이 이미 목표만큼 길면 그 위치에서 0.85초 만에 끝나고, 데이터가 와 위쪽이 바뀐 뒤 스크롤 앵커링이 위치를 4,501 로 옮겨 그 값이 다시 기억을 오염시켰다 → 데이터 준비 신호(`notifyScrollRestoreDataReady`) 전에는 끝내지 않는다. 사례 전수 대조(색인 389건, 위험 7)로 찾은 방어 — 스냅샷 init 뒤 주입(setState 사례 9) · 밀린 뒤로 가기에서 앞 화면 값이 스냅샷으로 오염되지 않게 심을 때 늘어남 표시(state-global 7·12) · `auto_fetch:false` 소스 제외(state-global 11) · 실패 시 스냅샷 폐기(state-global 8) · 대체 값·계정·언어 변경 시 폐기(cache 21) · 복원 시작 전 세대 검사. 편집 모드에서 끈 뒤 `history.scrollRestoration` 을 `auto` 로 되돌림. `returnScroll` 이 항목 기록에 남아, 같은 화면을 다음에 일반 링크로 떠났다 돌아와도 계속 맨 위로 가던 것 → 새 이동은 늘 덮어쓴다(뒤로/앞으로 가기로 떠날 때만 유지).
+
+회귀 잠금: `routing/__tests__/Router.scrollRestoration.test.ts`(18) · `__tests__/TemplateApp.scrollRestoration.test.ts`(10 — 실 TemplateApp·Router: 늦게 자라는 홈·뼈대가 이미 긴 화면·더보기 스냅샷·`snapshot.state`·대체 값·계정 변경·`wait:"data"`·설정 층) · `template-engine/__tests__/dataSourceSnapshot.test.ts`(7) — 수정 전 엔진(HEAD 작업 사본)에서 Router·TemplateApp 18 중 13 red, 뼈대 경우 red(4,658 ≠ 2,500) · 편집기 `ScrollRestorationForm.test.tsx`(15)·셸·왕복·레시피 · E2E `tests/Playwright/specs/scroll-restoration.spec.ts`(3) · 이커머스 `infinite-list-scroll-restoration.test.ts`(소스에서 기계 도출한 더보기 화면 선언) · 매니페스트 `tests/scenarios/client-router-scroll-restoration.yaml`
+
 ## [engine-v1.84.1] - 2026-10-31
 
 ### Fixed

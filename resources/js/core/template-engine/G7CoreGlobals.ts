@@ -73,6 +73,7 @@ import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from
 import { getSiteLocale, pickLocalized } from '../support/localeTag';
 import { isPlainLeftClick, mergeQueryIntoHref, mergeRelForTarget, resolveInternalHref, subscribeLocationSearch, useLocationSearch, type LinkClickLike } from './navigationLinks';
 import { configureLeaveGuard, isLeaveGuarded } from '../routing/LeaveGuard';
+import { markDataSourceGrown } from './dataSourceSnapshot';
 import {
   notifyAssetFailure,
   drainExternalAssetFailures,
@@ -2892,6 +2893,9 @@ function initDataSourceAPI(G7Core: any): void {
       } else {
         templateApp.setDataSource(dataSourceId, mergedArray, { merge: false });
       }
+
+      // 더보기로 늘어났다 — 화면을 떠날 때 스냅샷으로 기억해 뒤로 가기로 돌아오면 그 길이로 되살린다 (@since engine-v1.85.0)
+      markDataSourceGrown(dataSourceId, dataPath || null);
 
       logger.log(`G7Core.dataSource.updateData: '${dataSourceId}'에 ${newData.length}개 항목 ${mode === 'prepend' ? '앞에' : '뒤에'} 추가됨`);
       return true;

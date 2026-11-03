@@ -53,6 +53,14 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 1.1.1 까지 설치 시점에 굳은 계산값과 운영자 목록의 `g7_order_*`(이커머스 1.3.2+ 가 직접 제공)는 1.1.2
 업그레이드가 걷어냅니다.
 
+코어 엔진의 뒤로 가기·새로고침 스크롤 기억(sessionStorage `g7_scroll_positions`, 코어 engine-v1.85.0)은 출하
+카탈로그의 세션 저장소 목록에 있습니다(1.1.4). 동의 전에도 새로고침 뒤 보던 위치로 돌아가야 하는 화면 상태라
+필수로 분류했고, 이미 설치된 사이트는 `Upgrade_1_1_4` 가 운영자 목록의 세션 저장소 칸에 없을 때만
+덧붙이며 다른 항목은 건드리지 않습니다. 필수 카테고리 고지 문구 4곳은 고치지 않았습니다 — 문구가 「… 쿠키 동의
+기록 등」으로 범주만 적고 `g7_filters_*`·`g7.identity.redirectStash` 같은 개별 키를 열거하지 않으며, 이 키를
+기능 쿠키라고 안내한 곳도 없으므로 고지가 실제 동작과 어긋나지 않습니다(아래 금지 표 「저장소 허용목록만 고치고
+동의 안내 문구는 그대로 두기」가 막는 것은 그 어긋남이다).
+
 그래서 **판정 목록은 하나**입니다. 서버(`CookieConsentMiddleware`)와 클라이언트 셋
 (`storageInterceptor` · `cookieInterceptor` · `functionalCleaner`)이 같은 설정을 같은 매칭 규칙
 (`Support\NecessaryAllowlist` ↔ `plugins/_bundled/sirsoft-gdpr/resources/js/necessaryAllowlist.ts`)으로 읽습니다. 예전에는
@@ -205,7 +213,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 50개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| PHPUnit | 52개 | `plugins/_bundled/sirsoft-gdpr/tests` |
 | Vitest | 38개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 43개 | `tests/scenarios` |

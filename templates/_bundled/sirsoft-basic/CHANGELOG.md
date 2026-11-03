@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.3.1] - 2026-11-02
+
+### Added
+
+- 뒤로/앞으로 가기·새로고침 스크롤 복원 초깃값(`template.json` `scroll_restoration`)을 둡니다 — 목록·홈을 내린 뒤 다른 화면에 갔다가 뒤로 가면 보던 위치로, 더보기로 늘린 목록은 늘어난 길이 그대로 돌아옵니다(코어 엔진 engine-v1.85.0 이상). 레이아웃 편집기에서 베이스 레이아웃 페이지 설정으로 바꿀 수 있습니다.
+
 ## [1.3.0] - 2026-11-01
 
 ### Added

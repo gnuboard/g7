@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-11-02
+
+### Added
+
+- 코어 7.1.5 의 레이아웃 편집기 페이지 설정 [스크롤] 탭(뒤로/앞으로 가기·새로고침 스크롤 복원 — `layout_editor.page_settings.tab.scroll`·`layout_editor.scroll_restoration.*`)과 「다른 페이지로 이동」 동작의 「뒤로 가기로 이 화면에 돌아올 때 스크롤」·「스크롤 애니메이션」·「이탈 확인 묻지 않기」 칸(`layout_editor.action_recipe.navigate.*`) 문구의 일본어 번역을 추가했습니다. 없으면 일본어 편집기에서 이 문구가 키 그대로 보입니다.
+- 코어 7.1.5 의 레이아웃 저장 검증에서 스크롤 복원 설정(`meta.scroll_restoration`)의 항목명(`validation.attributes.layout_meta_scroll_restoration*`) 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 항목명이 키 그대로 보입니다.
+
 ## [1.1.3] - 2026-11-01
 
 ### Added

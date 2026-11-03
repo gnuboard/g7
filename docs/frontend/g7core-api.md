@@ -329,6 +329,9 @@ useEffect(() => {
 
 ## 데이터소스 관리 (G7Core.dataSource)
 
+> `G7Core.dataSource.updateData(id, path, items, 'append' | 'prepend')` 로 늘린 데이터소스는 뒤로/앞으로 가기 스크롤 복원의
+> 더보기 스냅샷 대상이 된다(engine-v1.85.0+) — [scroll-restoration.md](scroll-restoration.md#더보기-목록-스냅샷-snapshot).
+
 데이터소스의 조회, 설정, refetch를 관리하는 API입니다.
 
 > **engine-v1.5.0+** 추가

@@ -55,6 +55,25 @@ import { buildProgressiveDataInit, isSameScreen, type RenderedScreen } from './t
 import { beginLocaleSwitchHandoff, closeLocaleSwitchHandoff, clearLocaleSwitchHandoff } from './template-engine/localeSwitchHandoff';
 import { createPublicApi, createTracker, type TrackerHandle } from './analytics';
 import { defaultConsentRuntimeDeps, getConsentRuntime, installConsentRuntime } from './consent';
+import {
+    mergeScrollRestorationConfig,
+    notifyScrollRestoreDataReady,
+    resumeScrollSaving,
+    runScrollRestore,
+    setActiveScrollContainers,
+    setScrollMemoryDisabled,
+    takeScrollRestoreTicket,
+    type ScrollRestorationConfig,
+    type ScrollRestoreTicket,
+} from './routing/ScrollMemory';
+import {
+    captureGrownDataSources,
+    markDataSourceGrown,
+    mergeSnapshotWithFresh,
+    unmarkDataSourceGrown,
+    takeDataSourceSnapshots,
+    type TakenSnapshot,
+} from './template-engine/dataSourceSnapshot';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
  */
@@ -392,6 +411,10 @@ export class TemplateApp {
     private localeSwitchConsumed = false;
     /** 템플릿 레벨 에러 핸들링 설정 */
     private templateErrorHandling: ErrorHandlingMap | null = null;
+    /** 템플릿 config.json 의 `scroll_restoration` (뒤로/앞으로 가기·새로고침 스크롤 기본값) @since engine-v1.85.0 */
+    private templateScrollRestoration: unknown = null;
+    /** 지금 화면의 합친 스크롤 복원 설정 — 떠날 때 스냅샷과 함께 기억할 상태 경로를 읽는다 @since engine-v1.85.0 */
+    private currentScrollConfig: ScrollRestorationConfig | null = null;
     /** 현재 WebSocket 구독 키 (라우트 변경 시 해제용) */
     private currentWebSocketSubscriptions: string[] = [];
     /** 확장 기능 캐시 버전 (모듈/플러그인 활성화 시 갱신됨) */
@@ -777,6 +800,9 @@ export class TemplateApp {
                 }
             }
 
+            // 템플릿 레벨 스크롤 복원 기본값 (@since engine-v1.85.0) — 레이아웃 meta·이동 액션이 덮어쓴다
+            this.templateScrollRestoration = templateConfig?.scroll_restoration ?? null;
+
             // 템플릿 레벨 에러 핸들링 설정 저장 및 ErrorHandlingResolver에 등록
             if (templateConfig?.errorHandling) {
                 this.templateErrorHandling = templateConfig.errorHandling;
@@ -938,6 +964,8 @@ export class TemplateApp {
             // fetch 가 발생하며, 후속 Phase 에서 라우트 의존 기능 도입 시 회귀 위험이 있다.
             if (typeof window !== 'undefined' && checkLayoutEditorMode(window.location.pathname)) {
                 logger.log('Layout editor mode detected — skipping router match');
+                // 편집 모드에서는 스크롤 기억·복원을 끈다 — 편집 중 위치가 튀지 않게 (@since engine-v1.85.0)
+                setScrollMemoryDisabled(true);
                 await renderTemplate({
                     containerId: 'app',
                     layoutJson: { components: [] } as any,
@@ -1101,6 +1129,40 @@ export class TemplateApp {
      * 라우트 변경 핸들러
      */
     private async handleRouteChange(route: Route): Promise<void> {
+        // 이 이동의 스크롤 복원 정보(뒤로/앞으로 가기·새로고침이면 기억한 위치) — 라우터가 표시한 직후 동기로 가져간다 (@since engine-v1.85.0)
+        const scrollTicket = takeScrollRestoreTicket();
+        let scrollConfig: ScrollRestorationConfig | null = null;
+        // 떠나는 화면에서 더보기로 늘어난 데이터소스를 그 항목 키로 기억한다 — 돌아오면 그 데이터로 먼저 그린다 (@since engine-v1.85.0)
+        if (scrollTicket !== null) {
+            captureGrownDataSources(
+                scrollTicket.fromKey,
+                (id) => this.currentFetchedData[id],
+                this.currentScrollConfig?.snapshot.state ?? [],
+                (path) => this.readScrollStatePath(path),
+                this.scrollSnapshotContext(),
+            );
+        }
+        let dataSnapshots: TakenSnapshot = { sources: new Map(), state: {} };
+        /** 스냅샷이 있으면 다시 받은 값에 반영한다(revalidate 끄면 스냅샷 그대로) */
+        const applySnapshot = (id: string, fresh: unknown): unknown => {
+            const snapshot = dataSnapshots.sources.get(id);
+            if (!snapshot || scrollConfig === null) {
+                return fresh;
+            }
+            return scrollConfig.snapshot.revalidate
+                ? mergeSnapshotWithFresh(snapshot, fresh, scrollConfig.snapshot.item_key)
+                : snapshot.data;
+        };
+        let scrollRestoreStarted = false;
+        const startScrollRestore = (ticket: ScrollRestoreTicket | null, config: ScrollRestorationConfig | null): void => {
+            // 더 새 화면 처리가 시작됐으면 이 화면의 복원으로 새 화면 스크롤을 옮기지 않는다
+            if (scrollRestoreStarted || ticket === null || config === null || routeChangeId !== this.currentRouteChangeId) {
+                return;
+            }
+            scrollRestoreStarted = true;
+            void runScrollRestore(ticket, config);
+        };
+
         // 언어 전환이 엔진을 다시 올리는 중이면 새 엔진·핸들러 준비를 기다린다 (engine-v1.79.0) —
         // 기다리지 않으면 내려간 엔진에 데이터 갱신과 init_actions 가 닿는다
         if (this.localeSwitchEngineReady) {
@@ -1195,6 +1257,15 @@ export class TemplateApp {
             }
 
             logger.log('Layout loaded:', layoutData);
+
+            // 스크롤 복원 설정 — 템플릿 기본값 위에 이 화면의 meta 를 덮어쓴다(이동 액션 returnScroll 은 기억에 실려 온다) (@since engine-v1.85.0)
+            scrollConfig = mergeScrollRestorationConfig(this.templateScrollRestoration, (layoutData as any)?.meta?.scroll_restoration);
+            setActiveScrollContainers(scrollConfig.containers);
+            this.currentScrollConfig = scrollConfig;
+            // 뒤로/앞으로 가기로 돌아온 화면 — 유효 시간 안의 더보기 스냅샷을 가져온다 (@since engine-v1.85.0)
+            if (scrollTicket !== null && scrollTicket.type === 'pop' && scrollConfig.snapshot.enabled && scrollConfig.mode !== 'none') {
+                dataSnapshots = takeDataSourceSnapshots(scrollTicket.key, scrollConfig.snapshot.ttl_seconds, this.scrollSnapshotContext());
+            }
 
             // 1.4 확장 컴포넌트 등록 누락 관측 (렌더 전에 원인을 가리킨다)
             this.reportMissingExtensionComponents(layoutData);
@@ -1440,6 +1511,19 @@ export class TemplateApp {
                         };
                     }
                 });
+
+                // 더보기 스냅샷 — 다시 받은 첫 묶음을 스냅샷 목록에 반영해 늘어난 길이로 그린다 (@since engine-v1.85.0)
+                // 받기에 실패해 대체 값(kept: 마지막 값·fallback)을 받은 소스는 스냅샷을 버린다 — 권한이 바뀐 뒤 앞 계정 목록을
+                // 다시 그리지 않게(트러블슈팅 cache 사례 21 과 같은 축)
+                for (const [id, snapshot] of [...dataSnapshots.sources]) {
+                    const result = results.find((r) => r.id === id);
+                    if (blockingData[id] === undefined || result?.kept) {
+                        dataSnapshots.sources.delete(id);
+                        continue;
+                    }
+                    blockingData[id] = applySnapshot(id, blockingData[id]);
+                    markDataSourceGrown(id, snapshot.path, snapshot.savedAt);
+                }
 
                 // initLocal/initGlobal/initIsolated 처리 (blocking 데이터 소스)
                 // 다른 화면이면 앞 화면 _local 과 병합하지 않는다 — 이 시점에는 아직 _local 을 비우기 전이라, 종전에는
@@ -1787,6 +1871,32 @@ export class TemplateApp {
             };
             this.renderedTransitionOverlay = layoutData.transition_overlay ?? null;
 
+            // 더보기 스냅샷과 함께 기억한 진행 상태(다음 쪽 번호 등)를 되돌린다 — 화면 초기화(init_global·init_local·init_actions)가
+            // 끝난 뒤라야 초기화가 덮지 않는다. 되살린 목록 길이와 맞춰 다음 더보기가 받은 쪽을 다시 받지 않게 (@since engine-v1.85.0)
+            // 더보기 스냅샷 — progressive 소스는 받기 전부터 스냅샷 데이터로 그려 높이를 확보한다(받으면 반영). init 이 끝난 이 자리에서
+            // 심어 init_actions 는 앞으로 가기와 같은 값(받기 전)을 본다. 자동으로 받지 않는 소스(auto_fetch:false)는 다시 받지 않아 갱신·
+            // 대상 비교를 거치지 못하므로 심지 않는다 (@since engine-v1.85.0)
+            for (const [id, snapshot] of [...dataSnapshots.sources]) {
+                const source = progressiveAndBackgroundSources.find((s: any) => s.id === id);
+                if (!source || source.auto_fetch === false) {
+                    if (!blockingSources.some((s: any) => s.id === id)) {
+                        dataSnapshots.sources.delete(id);
+                    }
+                    continue;
+                }
+                (initialDataContext as any)[id] = snapshot.data;
+                this.currentFetchedData[id] = snapshot.data;
+                markDataSourceGrown(id, snapshot.path, snapshot.savedAt);
+            }
+
+            if (Object.keys(dataSnapshots.state).length > 0 && dataSnapshots.sources.size > 0) {
+                this.applyScrollSnapshotState(dataSnapshots.state);
+                (initialDataContext as any)._global = { ...this.globalState, layoutWarnings: layoutData.warnings || [] };
+                if (this.globalState._local) {
+                    (initialDataContext as any)._local = this.globalState._local;
+                }
+            }
+
             // 바인딩 값 캐시는 경로 글자가 키라 컨텍스트가 바뀌어도 그대로 맞는다 — 새 화면을 그리기 직전에 비운다.
             // 종전에는 같은 레이아웃의 다른 대상(클레임 A → B)으로 가면 props 의 `{{claim.data.order_number}}` 가
             // 30초 동안 앞 대상 값이었다. 받는 동안(blocking·init_actions 대기) 떠나는 화면이 전환 상태로 다시 그려지며
@@ -1814,6 +1924,11 @@ export class TemplateApp {
             // init 단계에서 렌더 뒤로 미룬 동작(showErrorPage 등)을 실행한다 — 기다리지 않는다(컨테이너 대기는
             // 동작 자신이 한다). 그사이 경로가 바뀌었으면 버린다 (engine-v1.80.1)
             void this.flushAfterRenderTasks(routeChangeId);
+
+            // 스크롤 복원 — 높이 대기면 첫 렌더 직후 시작해 데이터가 오며 문서가 자라는 동안 맞춘다 (@since engine-v1.85.0)
+            if (scrollConfig?.wait !== 'data') {
+                startScrollRestore(scrollTicket, scrollConfig);
+            }
 
             // renderTemplate이 #app DOM을 교체하면 타겟 내부의 spinner도 사라짐
             // 새 DOM의 타겟에 spinner를 재생성 (@since engine-v1.29.0)
@@ -1891,6 +2006,17 @@ export class TemplateApp {
                                 // 개별 데이터 소스 로드 완료 - 즉시 업데이트하여 해당 위젯 blur 해제
                                 logger.log(`Progressive data source loaded: ${source.id}`);
 
+                                // 더보기 스냅샷이 있으면 다시 받은 첫 묶음을 스냅샷 목록에 반영한다 (@since engine-v1.85.0)
+                                if (dataSnapshots.sources.has(source.id)) {
+                                    if (result.kept) {
+                                        // 대체 값 — 스냅샷을 버리고 그 값으로 그린다(다시 떠나도 스냅샷으로 남지 않게)
+                                        dataSnapshots.sources.delete(source.id);
+                                        unmarkDataSourceGrown(source.id);
+                                    } else {
+                                        result.data = applySnapshot(source.id, result.data);
+                                    }
+                                }
+
                                 // fetch된 데이터 업데이트
                                 this.currentFetchedData[source.id] = result.data;
 
@@ -1932,6 +2058,12 @@ export class TemplateApp {
                                 updateTemplateData(singleUpdateData);
 
                             } else if (result.state === 'error' && result.error) {
+                                // 스냅샷으로 그렸던 소스가 다시 받기에 실패했다 — 스냅샷을 버려 다시 떠날 때 유효 시간이 연장되지 않게 (@since engine-v1.85.0)
+                                if (dataSnapshots.sources.has(source.id)) {
+                                    dataSnapshots.sources.delete(source.id);
+                                    unmarkDataSourceGrown(source.id);
+                                    delete this.currentFetchedData[source.id];
+                                }
                                 // 에러 처리
                                 const axiosError = result.error as any;
                                 const apiMessage = axiosError.response?.data?.message;
@@ -2058,6 +2190,13 @@ export class TemplateApp {
                 logger.log('WebSocket subscriptions established:', this.currentWebSocketSubscriptions);
             }
 
+            // 스크롤 복원 — 이 화면의 데이터를 다 받았다. 높이 대기 복원에 알려 이제부터 높이가 안정되면 끝내게 하고, 데이터 기준이면
+            // 지금 한 번 시작한다 (@since engine-v1.85.0)
+            if (routeChangeId === this.currentRouteChangeId) {
+                notifyScrollRestoreDataReady();
+            }
+            startScrollRestore(scrollTicket, scrollConfig);
+
             logger.log('Layout rendered successfully');
         } catch (error) {
             logger.error('Route change handling failed:', error);
@@ -2073,6 +2212,11 @@ export class TemplateApp {
                 transitionManager.setPending(false);
             }
             this.showRouteError(error as Error);
+        } finally {
+            // 복원을 시작하지 못하고 끝났다(밀림·실패) — 이 화면에서 스크롤 기억을 다시 켠다 (@since engine-v1.85.0)
+            if (!scrollRestoreStarted && scrollTicket !== null && routeChangeId === this.currentRouteChangeId) {
+                resumeScrollSaving();
+            }
         }
     }
 
@@ -3721,6 +3865,11 @@ export class TemplateApp {
     private async handleRouteNotFound(path: string): Promise<void> {
         logger.warn('Route not found:', path);
 
+        // 경로 없음 화면 — 복원할 화면이 없으니 이 이동의 복원 정보를 버리고 스크롤 기억을 다시 켠다 (@since engine-v1.85.0)
+        if (takeScrollRestoreTicket() !== null) {
+            resumeScrollSaving();
+        }
+
         // 밀린 화면 처리(대기열의 새 이동이 경로 없음으로 끝남)가 켜 둔 전환 상태·입력 잠금·덮개를 걷는다 — 이 경로는 화면 처리
         // (handleRouteChange)를 거치지 않아, 걷지 않으면 흐림이 남고 뒤이은 다시 받기도 끄지 못한다 (@since engine-v1.82.0)
         this.releaseRouteInert();
@@ -4789,6 +4938,75 @@ export class TemplateApp {
     unregisterModalDataSources(modalId: string): void {
         this.modalDataSources.delete(modalId);
         logger.log(`Modal data sources unregistered: ${modalId}`);
+    }
+
+    /**
+     * 더보기 스냅샷 문맥 — 언어와 계정이 같을 때만 되살린다
+     *
+     * @returns `{로케일}|{사용자 id 또는 guest}`
+     * @since engine-v1.85.0
+     */
+    private scrollSnapshotContext(): string {
+        const user = AuthManager.getInstance().getUser() as { id?: unknown } | null;
+
+        return `${this.config.locale}|${user?.id ?? 'guest'}`;
+    }
+
+    /**
+     * 스냅샷과 함께 기억할 상태 경로 값을 읽습니다 (`_global.…` · `_local.…`)
+     *
+     * `_local` 은 화면이 쓰는 저장소(G7Core.state.getLocal)에서 읽는다 — 떠나는 화면이 아직 마운트된 시점에 부른다.
+     *
+     * @param path 상태 경로
+     * @returns 값 (없으면 undefined)
+     * @since engine-v1.85.0
+     */
+    private readScrollStatePath(path: string): unknown {
+        const [root, ...rest] = path.split('.');
+        let current: any = root === '_local'
+            ? ((window as any).G7Core?.state?.getLocal?.() ?? this.globalState._local)
+            : this.globalState;
+        for (const part of rest) {
+            if (current === null || typeof current !== 'object') {
+                return undefined;
+            }
+            current = current[part];
+        }
+
+        return current;
+    }
+
+    /**
+     * 스냅샷과 함께 기억한 상태를 되돌립니다 — 첫 렌더 직전, 레이아웃 init 과 같은 경로(`globalState`·`globalState._local`)로.
+     *
+     * @param state 경로 → 값
+     * @since engine-v1.85.0
+     */
+    private applyScrollSnapshotState(state: Record<string, unknown>): void {
+        for (const [path, value] of Object.entries(state)) {
+            const [root, ...rest] = path.split('.');
+            if (rest.length === 0) {
+                continue;
+            }
+            let target: any;
+            if (root === '_local') {
+                if (!this.globalState._local || typeof this.globalState._local !== 'object') {
+                    this.globalState._local = {};
+                }
+                target = this.globalState._local;
+            } else {
+                target = this.globalState;
+            }
+            const last = rest.pop() as string;
+            for (const part of rest) {
+                if (target[part] === null || typeof target[part] !== 'object') {
+                    target[part] = {};
+                }
+                target = target[part];
+            }
+            target[last] = value;
+        }
+        logger.log('Scroll snapshot state restored:', Object.keys(state));
     }
 
     /**
