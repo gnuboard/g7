@@ -1,0 +1,30 @@
+feature: 드라이버 연결 테스트 — Redis ACL 사용자 인증
+
+description: |
+  관리자 > 환경설정 > 드라이버의 Redis 연결 테스트가 사이트별 Redis ACL 사용자(REDIS_USERNAME)로 접속하는
+  서버에서 비밀번호만으로 AUTH 해 연결이 정상이어도 항상 WRONGPASS 로 실패하던 결함 수정.
+
+  규칙(DriverConnectionTester::resolveRedisAuth):
+    - 시험 대상 host·port 가 지금 설정된 연결과 같으면 설정의 사용자 이름을 쓰고, 빈 비밀번호는 설정값으로 채운다
+    - 다른 서버를 시험하면 입력한 비밀번호만 쓴다(설정 자격을 남의 서버로 보내지 않는다)
+    - 비밀번호가 어디에도 없으면 인증 없이 시험한다
+  phpredis 는 auth([사용자, 비밀번호]), predis 는 username/password 옵션으로 보낸다.
+
+axes:
+  endpoint: [same_as_config, other]
+  submitted_password: [blank, typed]
+  configured_username: [present, absent]
+
+exclusions:
+  - { endpoint: other, configured_username: absent, reason: "다른 서버는 설정 사용자 이름을 쓰지 않으므로 present/absent 결과가 같다 — other 는 present 로 대표" }
+  - { endpoint: same_as_config, submitted_password: typed, configured_username: absent, reason: "입력 비밀번호를 그대로 쓰는 경로는 typed+present 와 other+typed 가 덮는다" }
+
+effects:
+  - same_endpoint_blank_password_uses_configured_username_and_password
+  - same_endpoint_typed_password_keeps_typed_and_adds_username
+  - other_endpoint_uses_only_submitted_values
+  - no_username_falls_back_to_password_only
+  - no_credentials_means_no_auth
+
+test_files:
+  - tests/Unit/Services/DriverConnectionTesterRedisAuthTest.php

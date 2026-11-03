@@ -186,7 +186,7 @@ class DriverConnectionTester
         try {
             $host = $config['redis_host'] ?? '127.0.0.1';
             $port = (int) ($config['redis_port'] ?? 6379);
-            $password = $config['redis_password'] ?? '';
+            $auth = $this->resolveRedisAuth($config);
             $database = (int) ($config['redis_database'] ?? 0);
 
             // PHP Redis 확장 확인
@@ -199,7 +199,7 @@ class DriverConnectionTester
                     ];
                 }
 
-                return $this->testRedisWithPredis($host, $port, $password, $database);
+                return $this->testRedisWithPredis($host, $port, $auth, $database);
             }
 
             $startTime = microtime(true);
@@ -214,8 +214,8 @@ class DriverConnectionTester
                 ];
             }
 
-            if (! empty($password)) {
-                if (! $redis->auth($password)) {
+            if ($auth !== null) {
+                if (! $redis->auth($auth)) {
                     return [
                         'success' => false,
                         'message' => __('settings.redis_auth_failed'),
@@ -261,15 +261,46 @@ class DriverConnectionTester
     }
 
     /**
+     * Redis 연결 테스트에 쓸 인증 자격을 정합니다.
+     *
+     * 사이트별 ACL 사용자 이름(REDIS_USERNAME)은 설정 화면에 없고, 운영자가 비밀번호 칸을 비워 시험할 수도 있다.
+     * 그래서 시험 대상이 지금 설정된 연결(host·port)과 같을 때만 설정의 사용자 이름을 쓰고 빈 비밀번호를 설정값으로 채운다.
+     * 다른 서버를 시험할 때는 입력한 비밀번호만 쓴다.
+     *
+     * @param  array  $config  드라이버 설정 배열 (redis_host·redis_port·redis_password)
+     * @return string|array|null 비밀번호 문자열, [사용자 이름, 비밀번호], 인증 없음이면 null
+     */
+    public function resolveRedisAuth(array $config): string|array|null
+    {
+        $host = (string) ($config['redis_host'] ?? '127.0.0.1');
+        $port = (int) ($config['redis_port'] ?? 6379);
+        $password = (string) ($config['redis_password'] ?? '');
+
+        $sameEndpoint = $host === (string) config('database.redis.default.host')
+            && $port === (int) config('database.redis.default.port');
+
+        $username = $sameEndpoint ? (string) config('database.redis.default.username') : '';
+        if ($password === '' && $sameEndpoint) {
+            $password = (string) config('database.redis.default.password');
+        }
+
+        if ($password === '') {
+            return null;
+        }
+
+        return $username !== '' ? [$username, $password] : $password;
+    }
+
+    /**
      * Predis 라이브러리를 사용하여 Redis 연결을 테스트합니다.
      *
      * @param  string  $host  호스트
      * @param  int  $port  포트
-     * @param  string  $password  비밀번호
+     * @param  string|array|null  $auth  비밀번호 또는 [사용자 이름, 비밀번호] (resolveRedisAuth)
      * @param  int  $database  데이터베이스 번호
      * @return array 테스트 결과
      */
-    private function testRedisWithPredis(string $host, int $port, string $password, int $database): array
+    private function testRedisWithPredis(string $host, int $port, string|array|null $auth, int $database): array
     {
         try {
             $startTime = microtime(true);
@@ -282,8 +313,10 @@ class DriverConnectionTester
                 'timeout' => 3.0,
             ];
 
-            if (! empty($password)) {
-                $options['password'] = $password;
+            if (is_array($auth)) {
+                [$options['username'], $options['password']] = $auth;
+            } elseif ($auth !== null) {
+                $options['password'] = $auth;
             }
 
             $client = new Client($options);
