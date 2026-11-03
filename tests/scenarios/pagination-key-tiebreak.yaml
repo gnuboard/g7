@@ -1,0 +1,17 @@
+feature: 페이지네이션 정렬 고유 키 타이브레이크(전순서) 보장
+
+description: |
+  비고유 컬럼만으로 정렬해 페이지를 나누면 동률 구간 순서가 페이지마다 달라져 같은 행이 중복되고 다른 행이 사라진다(#492 D-24).
+  코어·번들 확장의 모든 Repository 에서 paginate()/simplePaginate() 를 부르는 메서드(같은 클래스 헬퍼 포함)는
+  정렬 끝에 기본키를 덧붙여야 한다. ResolvesSortSpec·PaginatesWithDeferredJoin 경유 목록과 사유를 단 면제 선언은 검사에서 뺀다.
+
+axes:
+  case: [repository_source_scan]
+
+effects:
+  - paginated_query_ends_with_unique_key_tiebreak
+  - trait_sorted_lists_skip_manual_check
+  - reasoned_exemption_skips_check
+
+test_files:
+  - tests/Unit/Repositories/PaginationKeyTiebreakTest.php

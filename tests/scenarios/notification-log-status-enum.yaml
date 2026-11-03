@@ -1,0 +1,18 @@
+feature: 알림 발송 로그 상태 Enum
+
+description: |
+  NotificationLogStatus Enum 이 sent·failed·skipped 세 상태를 저장 문자열과 일치하게 정의하고,
+  from/tryFrom 변환이 유효한 값은 대응 케이스로, 알 수 없는 값은 예외(from) 또는 null(tryFrom)로 처리하는지 지킨다.
+
+axes:
+  case: [case_values, valid_conversion, invalid_conversion]
+
+effects:
+  - case_values_match_storage_strings
+  - all_statuses_enumerated
+  - valid_string_converted_to_enum
+  - invalid_value_throws_on_from
+  - invalid_value_yields_null_on_try_from
+
+test_files:
+  - tests/Unit/Enums/NotificationLogStatusTest.php

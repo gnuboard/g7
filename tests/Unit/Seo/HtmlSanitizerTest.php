@@ -3,7 +3,7 @@
 namespace Tests\Unit\Seo;
 
 use App\Seo\HtmlSanitizer;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 봇 화면 HTML 정화기 검증.
@@ -16,12 +16,14 @@ use Tests\TestCase;
  *
  * @see HtmlSanitizer
  */
-class HtmlSanitizerTest extends TestCase
+class HtmlSanitizerTest extends PureTestCase
 {
     private HtmlSanitizer $sanitizer;
 
     /**
      * 테스트 초기화 — 정화기를 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -34,6 +36,8 @@ class HtmlSanitizerTest extends TestCase
      * script 태그는 내용까지 제거된다.
      *
      * @effects active_content_is_removed, html_mode_content_sanitized
+     *
+     * @return void 반환값 없음
      */
     public function test_script_tag_is_removed_with_its_content(): void
     {
@@ -48,6 +52,8 @@ class HtmlSanitizerTest extends TestCase
      * 이벤트 핸들러 속성은 태그를 남기고 속성만 제거된다.
      *
      * @effects event_handler_attributes_are_stripped
+     *
+     * @return void 반환값 없음
      */
     public function test_event_handler_attributes_are_stripped(): void
     {
@@ -62,6 +68,8 @@ class HtmlSanitizerTest extends TestCase
      * 목록에 없는 이벤트 핸들러(on* 전량)도 제거된다.
      *
      * @effects event_handler_attributes_are_stripped
+     *
+     * @return void 반환값 없음
      */
     public function test_unlisted_event_handlers_are_stripped(): void
     {
@@ -76,6 +84,8 @@ class HtmlSanitizerTest extends TestCase
      * 외부 콘텐츠 삽입 태그는 제거된다.
      *
      * @effects active_content_is_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_embedding_tags_are_removed(): void
     {
@@ -93,6 +103,8 @@ class HtmlSanitizerTest extends TestCase
      * 폼 요소는 벗기되 내부 텍스트는 남긴다 (피싱 방지 + 본문 보존).
      *
      * @effects active_content_is_removed, safe_markup_and_text_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_form_elements_are_unwrapped_but_text_is_kept(): void
     {
@@ -106,6 +118,8 @@ class HtmlSanitizerTest extends TestCase
      * javascript: 스킴 링크는 href 만 제거되고 글자는 남는다.
      *
      * @effects dangerous_url_schemes_are_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_javascript_scheme_href_is_removed(): void
     {
@@ -119,6 +133,8 @@ class HtmlSanitizerTest extends TestCase
      * 제어문자를 끼워 넣은 스킴 우회도 차단된다.
      *
      * @effects dangerous_url_schemes_are_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_obfuscated_javascript_scheme_is_removed(): void
     {
@@ -132,6 +148,8 @@ class HtmlSanitizerTest extends TestCase
      * 상대 경로·앵커·정상 스킴 링크는 보존된다.
      *
      * @effects safe_markup_and_text_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_normal_urls_are_preserved(): void
     {
@@ -148,6 +166,8 @@ class HtmlSanitizerTest extends TestCase
      * 외부 링크에는 rel 이 보강된다 (일반 화면 후처리와 동일).
      *
      * @effects safe_markup_and_text_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_external_link_gets_rel_attribute(): void
     {
@@ -160,6 +180,8 @@ class HtmlSanitizerTest extends TestCase
      * 이미지 data URL 은 허용하고 그 외 data URL 은 차단한다.
      *
      * @effects dangerous_url_schemes_are_blocked, safe_markup_and_text_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_data_url_is_allowed_for_images_only(): void
     {
@@ -174,6 +196,8 @@ class HtmlSanitizerTest extends TestCase
      * 일반 서식 태그와 한글 텍스트는 그대로 보존된다.
      *
      * @effects ordinary_formatting_survives_sanitization, safe_markup_and_text_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_formatting_markup_and_multibyte_text_survive(): void
     {
@@ -191,6 +215,8 @@ class HtmlSanitizerTest extends TestCase
      * 표 마크업(게시글에서 흔함)은 보존된다.
      *
      * @effects ordinary_formatting_survives_sanitization
+     *
+     * @return void 반환값 없음
      */
     public function test_table_markup_is_preserved(): void
     {
@@ -204,6 +230,8 @@ class HtmlSanitizerTest extends TestCase
      * 빈 문자열/공백은 빈 문자열을 반환한다.
      *
      * @effects safe_markup_and_text_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_blank_input_returns_empty_string(): void
     {
@@ -215,6 +243,8 @@ class HtmlSanitizerTest extends TestCase
      * 태그가 없는 평문은 그대로 남는다.
      *
      * @effects safe_markup_and_text_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_plain_text_passes_through(): void
     {
@@ -227,6 +257,8 @@ class HtmlSanitizerTest extends TestCase
      * SVG 는 스크립트 실행 벡터라 통째로 제거된다.
      *
      * @effects active_content_is_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_svg_is_removed(): void
     {
@@ -241,6 +273,8 @@ class HtmlSanitizerTest extends TestCase
      * 주석은 제거된다.
      *
      * @effects active_content_is_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_comments_are_removed(): void
     {
@@ -254,6 +288,8 @@ class HtmlSanitizerTest extends TestCase
      * 중첩 구조 안쪽의 스크립트도 제거된다.
      *
      * @effects active_content_is_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_script_is_removed(): void
     {

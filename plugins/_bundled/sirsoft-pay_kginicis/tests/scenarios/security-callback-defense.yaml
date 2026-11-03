@@ -83,6 +83,7 @@ effects:
   - timestamp_invalid_date_rejected
   - timestamp_short_length_rejected
   - timestamp_long_length_rejected
+  - timestamp_kst_local_accepted_on_utc_server   # 14자리는 Asia/Seoul 로 파싱 — UTC 서버에서도 KST 클라이언트 시각이 신선
   - signature_endpoint_returns_422_on_stale
 
   # 비인증 브라우저 콜백의 주문 변조 차단 (KVE-2026-2018 형제)

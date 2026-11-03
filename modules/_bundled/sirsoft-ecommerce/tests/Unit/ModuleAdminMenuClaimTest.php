@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit;
 
 use Modules\Sirsoft\Ecommerce\Module;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 관리자 메뉴 클레임 항목 등록 테스트 (S6c)
@@ -11,8 +11,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * '취소/반품/교환 관리' 메뉴가 주문 관리 직후에, 클레임 조회 권한으로 등록되는지 고정한다.
  * 메뉴 선언은 `syncDeclarativeArtifacts()` 가 업데이트마다 다시 맞추므로 선언 자체가 계약이다.
  */
-class ModuleAdminMenuClaimTest extends ModuleTestCase
+class ModuleAdminMenuClaimTest extends PureTestCase
 {
+    /**
+     * 취소/반품/교환 관리 메뉴가 클레임 URL·클레임 조회 권한으로 주문 관리 바로 다음 순서에 등록되고, 메뉴 order 값이 겹치지 않는다.
+     *
+     * @scenario case=claims_menu_after_orders
+     *
+     * @effects claims_menu_registered_with_claim_read_permission, claims_menu_ordered_right_after_orders, admin_menu_order_values_unique
+     *
+     * @return void 반환값 없음
+     */
     public function test_claims_menu_is_registered_right_after_orders(): void
     {
         $children = collect((new Module)->getAdminMenus()[0]['children']);

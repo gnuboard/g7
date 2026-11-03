@@ -1,0 +1,20 @@
+feature: 언어팩 출처(origin) 분류 매핑
+
+description: |
+  LanguagePackSourceType 의 모든 값이 LanguagePackOrigin 세 그룹(built_in·bundled·user_installed) 중
+  하나로 빠짐없이 매핑되는 계약을 지킨다. 코어 내장·확장 동봉은 built_in, 번들은 bundled,
+  github·url·upload·zip 외부 설치는 user_installed 이며, 문자열 값 변환은 null·알 수 없는 값을 null 로 돌려준다.
+
+axes:
+  case: [source_type_grouping, value_conversion, enum_completeness]
+
+effects:
+  - built_in_sources_map_to_built_in
+  - bundled_source_maps_to_bundled
+  - external_sources_map_to_user_installed
+  - invalid_or_null_value_yields_null
+  - origin_values_list_three_origins
+  - every_source_type_is_mapped
+
+test_files:
+  - tests/Unit/Enums/LanguagePackOriginTest.php

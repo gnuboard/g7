@@ -4,17 +4,23 @@ namespace Tests\Unit\Events;
 
 use App\Events\GenericBroadcastEvent;
 use Illuminate\Broadcasting\PrivateChannel;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * GenericBroadcastEvent 단위 테스트
  *
  * HookManager 내부 전용 브로드캐스트 이벤트의 채널/이벤트명/페이로드 정확성을 검증합니다.
  */
-class GenericBroadcastEventTest extends TestCase
+class GenericBroadcastEventTest extends PureTestCase
 {
     /**
-     * broadcastOn()이 올바른 Private 채널을 반환하는지 테스트합니다.
+     * broadcastOn()이 생성자 채널명에 private- 접두사가 붙은 PrivateChannel 하나를 돌려준다.
+     *
+     * @scenario case=channel
+     *
+     * @effects broadcast_on_returns_single_private_channel
+     *
+     * @return void 반환값 없음
      */
     public function test_broadcast_on_returns_private_channel(): void
     {
@@ -28,7 +34,13 @@ class GenericBroadcastEventTest extends TestCase
     }
 
     /**
-     * broadcastAs()가 지정한 이벤트명을 반환하는지 테스트합니다.
+     * broadcastAs()가 생성자에 지정한 이벤트명을 그대로 돌려준다.
+     *
+     * @scenario case=event_name
+     *
+     * @effects broadcast_as_returns_given_event_name
+     *
+     * @return void 반환값 없음
      */
     public function test_broadcast_as_returns_event_name(): void
     {
@@ -38,7 +50,13 @@ class GenericBroadcastEventTest extends TestCase
     }
 
     /**
-     * broadcastWith()가 payload를 정확히 반환하는지 테스트합니다.
+     * broadcastWith()가 생성자에 넘긴 payload 배열을 그대로 돌려준다.
+     *
+     * @scenario case=payload
+     *
+     * @effects broadcast_with_returns_given_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_broadcast_with_returns_payload(): void
     {
@@ -49,7 +67,13 @@ class GenericBroadcastEventTest extends TestCase
     }
 
     /**
-     * 빈 payload가 빈 배열로 반환되는지 테스트합니다.
+     * payload 를 생략하면 broadcastWith()가 빈 배열을 돌려준다.
+     *
+     * @scenario case=payload
+     *
+     * @effects omitted_payload_defaults_to_empty_array
+     *
+     * @return void 반환값 없음
      */
     public function test_broadcast_with_empty_payload(): void
     {

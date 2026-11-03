@@ -1,0 +1,16 @@
+feature: KG이니시스 SEED 라이브러리 재선언 가드
+
+description: |
+  autoload.files 로 부팅 시 적재된 INILib.php·KISA_SEED_CBC.php 를 설치·업데이트 과정에서 다시 require 해도
+  function_exists·class_exists 가드 덕분에 "Cannot redeclare" fatal 없이 통과해야 한다.
+  가드 추가 후에도 SEED 암복호화 라운드트립이 원문을 그대로 돌려줘야 한다.
+
+axes:
+  case: [repeated_require, encrypt_roundtrip]
+
+effects:
+  - seed_libs_require_again_without_redeclare_fatal
+  - seed_encrypt_decrypt_roundtrip_preserved
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Libs/SeedLibRedeclareGuardTest.php

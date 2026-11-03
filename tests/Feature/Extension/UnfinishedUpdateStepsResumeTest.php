@@ -6,7 +6,9 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\ExtensionOperationLock;
+use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionUpdateJournal;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -162,7 +164,7 @@ class UnfinishedUpdateStepsResumeTest extends TestCase
     {
         $bundled = $this->tempDir('src-'.$identifier);
         $this->newVersionSources[$identifier] = $bundled;
-        File::copyDirectory(base_path("{$type}/{$identifier}"), $bundled);
+        FilePermissionHelper::copyDirectory(base_path("{$type}/{$identifier}"), $bundled, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
 
         $manifest = json_decode(File::get("{$bundled}/{$manifestFile}"), true);
         $manifest['version'] = '1.0.4';

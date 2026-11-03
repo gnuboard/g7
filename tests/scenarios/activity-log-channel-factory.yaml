@@ -1,0 +1,18 @@
+feature: 활동 로그 Monolog 커스텀 채널 팩토리
+
+description: |
+  ActivityLogChannel 은 호출마다 'activity' 이름의 새 Monolog Logger 를 만들고,
+  그 Logger 에 ActivityLogHandler(저장)와 ActivityLogProcessor(문맥 보강)를 등록해 돌려준다.
+
+axes:
+  case: [logger_creation, pipeline_registration]
+
+effects:
+  - channel_factory_returns_monolog_logger
+  - logger_channel_named_activity
+  - activity_log_handler_registered
+  - activity_log_processor_registered
+  - new_logger_instance_per_call
+
+test_files:
+  - tests/Unit/ActivityLog/ActivityLogChannelTest.php

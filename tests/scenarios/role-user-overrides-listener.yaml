@@ -1,0 +1,19 @@
+feature: 역할 수정·권한 동기화 시 user_overrides 기록 리스너
+
+description: |
+  RoleUserOverridesListener 는 core.role.before_update·core.role.after_sync_permissions 훅을 구독해
+  사용자가 바꾼 다국어 필드 하위 키(name.ko 등)와 추가·제거된 권한 식별자를 역할 user_overrides 에 기록한다.
+  값이 그대로이거나 이미 기록된 항목이면 저장소 update 를 호출하지 않는다.
+
+axes:
+  case: [hook_subscription, field_update, permission_sync]
+
+effects:
+  - role_hooks_subscribed_with_priority
+  - changed_translatable_subkeys_recorded
+  - unchanged_values_not_recorded
+  - changed_permission_identifiers_recorded
+  - existing_override_not_duplicated
+
+test_files:
+  - tests/Unit/Listeners/RoleUserOverridesListenerTest.php

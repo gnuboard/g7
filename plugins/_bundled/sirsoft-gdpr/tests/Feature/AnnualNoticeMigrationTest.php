@@ -23,6 +23,16 @@ class AnnualNoticeMigrationTest extends PluginTestCase
     public function refreshDatabase(): void {}
 
     /**
+     * SQLite 로 격리하므로 테스트 DB 스키마 판정을 받지 않습니다.
+     *
+     * @return bool 늘 false
+     */
+    protected function needsTestingSchema(): bool
+    {
+        return false;
+    }
+
+    /**
      * 설치·재실행·롤백·재설치와 실제 이력 저장소 호출을 개발 DB와 분리해 검증합니다.
      *
      * @scenario flow=installation

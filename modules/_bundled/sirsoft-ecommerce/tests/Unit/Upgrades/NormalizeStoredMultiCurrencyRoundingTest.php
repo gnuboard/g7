@@ -6,6 +6,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 저장된 `mc_*` 금액의 절사 잔차 정규화(DataMigration) 회귀 테스트
@@ -22,12 +23,17 @@ class NormalizeStoredMultiCurrencyRoundingTest extends ModuleTestCase
 
     private UpgradeContext $context;
 
+    /**
+     * 1.3.0 mc_* 절사 잔차 정규화 마이그레이션을 불러와 인스턴스와 업그레이드 컨텍스트를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/06_NormalizeStoredMultiCurrencyRounding.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/06_NormalizeStoredMultiCurrencyRounding.php');
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\NormalizeStoredMultiCurrencyRounding';
 
@@ -72,6 +78,15 @@ class NormalizeStoredMultiCurrencyRoundingTest extends ModuleTestCase
         return json_decode((string) $raw, true) ?: [];
     }
 
+    /**
+     * 저장된 45.050000000000004 같은 부동소수 잔차가 45.05 로 정리된다.
+     *
+     * @scenario case=float_residue
+     *
+     * @effects float_residue_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_removes_float_residue_from_stored_amounts(): void
     {
         $id = $this->makeOrder([
@@ -88,6 +103,15 @@ class NormalizeStoredMultiCurrencyRoundingTest extends ModuleTestCase
         $this->assertSame(45.05, $this->stored($id)['USD']['total_amount']);
     }
 
+    /**
+     * 금액을 정리하는 동안 _formatted 문자열과 _meta 는 그대로 보존된다.
+     *
+     * @scenario case=formatted_and_meta
+     *
+     * @effects formatted_and_meta_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_preserves_formatted_string_and_meta(): void
     {
         $meta = ['is_default' => false, 'exchange_rate' => 0.75, 'snapshot_based' => true];
@@ -106,6 +130,15 @@ class NormalizeStoredMultiCurrencyRoundingTest extends ModuleTestCase
         $this->assertSame($meta, $stored['USD']['_meta']);
     }
 
+    /**
+     * 정수로 저장된 기본 통화 금액은 실수로 바뀌지 않고 정수로 남는다.
+     *
+     * @scenario case=integer_amount
+     *
+     * @effects integer_amounts_kept_integer
+     *
+     * @return void 반환값 없음
+     */
     public function test_leaves_integer_amounts_as_integers(): void
     {
         $id = $this->makeOrder([
@@ -119,6 +152,15 @@ class NormalizeStoredMultiCurrencyRoundingTest extends ModuleTestCase
         $this->assertSame(5000, $this->stored($id)['KRW']['total_amount']);
     }
 
+    /**
+     * 잔차가 아닌 실제 3자리 정밀값(45.055)은 2자리로 깎지 않는다.
+     *
+     * @scenario case=precise_value
+     *
+     * @effects precise_values_unchanged
+     *
+     * @return void 반환값 없음
+     */
     public function test_does_not_change_genuinely_precise_values(): void
     {
         $id = $this->makeOrder([
@@ -132,6 +174,15 @@ class NormalizeStoredMultiCurrencyRoundingTest extends ModuleTestCase
         $this->assertSame(45.055, $this->stored($id)['USD']['total_amount']);
     }
 
+    /**
+     * 두 번째 실행은 첫 실행 뒤 저장된 원시 JSON 을 더 바꾸지 않는다.
+     *
+     * @scenario case=rerun
+     *
+     * @effects normalization_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_idempotent(): void
     {
         $id = $this->makeOrder([
@@ -148,6 +199,15 @@ class NormalizeStoredMultiCurrencyRoundingTest extends ModuleTestCase
         $this->assertSame($first, $second);
     }
 
+    /**
+     * 정규화 대상 테이블이 스키마의 mc_* 컬럼에서 파생되어 출시본 주문 테이블을 모두 포함하고 ecommerce_ 밖은 건드리지 않는다.
+     *
+     * @scenario case=target_discovery
+     *
+     * @effects targets_derived_from_schema
+     *
+     * @return void 반환값 없음
+     */
     public function test_targets_are_derived_from_schema_not_hardcoded(): void
     {
         $method = new \ReflectionMethod($this->migration, 'targets');

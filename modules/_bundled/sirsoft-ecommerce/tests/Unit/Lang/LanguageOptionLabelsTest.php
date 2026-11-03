@@ -2,7 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Lang;
 
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 언어 선택지 라벨 전수 테스트 (S2-D11 회귀 · #599 통합실측 세션2)
@@ -31,7 +31,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * **실패**한다(경로가 바뀌었는데 조용히 지나가면 같은 사고가 되풀이된다 — 자매 테스트
  * `ConfirmPurchaseWarningAccuracyTest` 가 정확히 그 구멍으로 ja 오역을 놓쳤다).
  */
-class LanguageOptionLabelsTest extends ModuleTestCase
+class LanguageOptionLabelsTest extends PureTestCase
 {
     /**
      * 라벨이 있어야 하는 로케일.

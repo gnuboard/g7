@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Models\EcommerceStat;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 일별 판매 집계를 사이트 하루로 다시 묶는 재집계(DataMigration) 회귀 테스트 (S-Q26-a · 7.1.0 출시 점검 EU-1/U2-1)
@@ -43,8 +44,8 @@ class RecalculateEcommerceStatsNetSalesTest extends ModuleTestCase
         Order::query()->forceDelete();
         EcommerceStat::query()->delete();
 
-        require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/08_RecalculateEcommerceStatsNetSales.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/08_RecalculateEcommerceStatsNetSales.php');
 
         $class = 'App\Upgrades\Data\Ext\Modules\SirsoftEcommerce\V1_3_0\Migrations\RecalculateEcommerceStatsNetSales';
 

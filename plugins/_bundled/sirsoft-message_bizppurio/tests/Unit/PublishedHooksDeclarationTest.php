@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\MessageBizppurio\Tests\Unit;
 
 use Plugins\Sirsoft\MessageBizppurio\Plugin;
-use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * 발행 훅 선언(`getHooks()`) 테스트.
@@ -13,7 +13,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 「제공하는 훅이 없습니다」로 보였다(2026-10-07 실측). 소스에서 발행하는 훅이 모두 선언돼
  * 있고 유형·설명이 채워져 있는지 본다.
  */
-class PublishedHooksDeclarationTest extends PluginTestCase
+class PublishedHooksDeclarationTest extends PureTestCase
 {
     /**
      * 소스의 `HookManager::doAction` / `applyFilters` 로 발행하는 이 플러그인 접두 훅을 모은다.

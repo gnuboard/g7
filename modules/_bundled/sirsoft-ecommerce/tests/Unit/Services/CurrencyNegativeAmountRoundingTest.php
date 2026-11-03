@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 음수 금액의 통화 절사 대칭성 테스트
@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 0 에서 멀어지는 쪽으로 깎여(−342.3 → −343), 교환 신청 요약에서 같은 3,000원이 「옵션 차액 ¥-343」 과
  * 「환불 예정액 ¥342」 로 1엔 어긋난다. 음수는 절댓값에 규칙을 적용한 뒤 부호를 되돌린다.
  */
-class CurrencyNegativeAmountRoundingTest extends ModuleTestCase
+class CurrencyNegativeAmountRoundingTest extends PureTestCase
 {
     protected CurrencyConversionService $service;
 

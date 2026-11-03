@@ -2,10 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Architecture;
 
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Tests\PureTestCase;
 
 /**
  * 모듈 소스가 bcmath 함수를 부르지 않는지 잠근다 (#151)
@@ -14,7 +14,7 @@ use RecursiveIteratorIterator;
  * 선언하지 않았으므로, 소스에 `bc*()` 호출이 다시 들어오면 그 서버에서 주문 상세·취소가 500 이 된다.
  * 금액 비교는 `Support\DecimalComparator` 를 쓴다.
  */
-class NoBcmathUsageTest extends ModuleTestCase
+class NoBcmathUsageTest extends PureTestCase
 {
     /**
      * 모듈 src 에 bcmath 함수 호출이 0건인지 검사합니다.

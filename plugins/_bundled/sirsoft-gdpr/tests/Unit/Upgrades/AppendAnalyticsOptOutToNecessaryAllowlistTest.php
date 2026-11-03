@@ -8,6 +8,7 @@ use App\Upgrades\Data\Ext\Plugins\SirsoftGdpr\V1_1_0\Migrations\AppendAnalyticsO
 use Illuminate\Support\Facades\File;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 1.1.0 업그레이드 스텝 — 방문자 통계 수집 거부 쿠키 추가 검증
@@ -54,7 +55,7 @@ class AppendAnalyticsOptOutToNecessaryAllowlistTest extends PluginTestCase
 
         // 업그레이드 마이그레이션은 오토로드되지 않는다 — AbstractUpgradeStep 이 실행 시점에
         // `data/{version}/migrations/*.php` 를 require_once 한다. 테스트도 같은 방식으로 싣는다.
-        require_once __DIR__.'/../../../upgrades/data/1.1.0/migrations/03_AppendAnalyticsOptOutToNecessaryAllowlist.php';
+        UpgradeFiles::requireOnce(__DIR__.'/../../../upgrades/data/1.1.0/migrations/03_AppendAnalyticsOptOutToNecessaryAllowlist.php');
 
         $this->path = ExtensionStoragePath::plugin('sirsoft-gdpr', 'settings').'/setting.json';
 

@@ -120,6 +120,12 @@ effects:
   - report_includes_environment_and_run_conditions
   - report_defaults_to_untracked_storage_path
   - report_writes_to_given_path
+  # ── 프로파일 VO / 축 Enum 계약 (P1) ──
+  - qualified_key_combines_source_and_key
+  - profile_option_reads_with_default
+  - axis_default_mutation_verdict
+  - profile_serialization_carries_promised_keys
+  - axis_values_and_labels_are_defined
 
 test_files:
   # 코어 — 선언 수집 / 검증 / 대상 지목 / 축 분기 / 가드 / 출력 스키마

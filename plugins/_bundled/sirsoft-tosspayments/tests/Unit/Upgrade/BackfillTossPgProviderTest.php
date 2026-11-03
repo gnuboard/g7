@@ -10,6 +10,7 @@ use App\Upgrades\Data\Ext\Plugins\SirsoftTosspayments\V1_0_1\Migrations\Backfill
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 저장된 주문설정의 토스 주문서형 결제수단 PG 고정 백필.
@@ -41,7 +42,7 @@ class BackfillTossPgProviderTest extends PluginTestCase
     {
         parent::setUp();
 
-        require_once base_path('plugins/_bundled/sirsoft-tosspayments/upgrades/data/1.0.1/migrations/BackfillTossPgProvider.php');
+        UpgradeFiles::requireOnce(base_path('plugins/_bundled/sirsoft-tosspayments/upgrades/data/1.0.1/migrations/BackfillTossPgProvider.php'));
 
         $this->settingsPath = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
         $this->hadOriginalSettings = File::exists($this->settingsPath);

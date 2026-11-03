@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\LanguagePack;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackSourceType;
 use App\Enums\LanguagePackStatus;
+use App\Extension\Helpers\ExtensionPendingHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackRegistry;
@@ -81,7 +83,7 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         $activeDir = base_path('lang-packs/'.self::PACK_IDENTIFIER);
         File::deleteDirectory($activeDir);
         if (File::isDirectory($bundledDir)) {
-            File::copyDirectory($bundledDir, $activeDir);
+            FilePermissionHelper::copyDirectory($bundledDir, $activeDir, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
         }
 
         // 레지스트리 싱글톤을 갈아 끼우지 않고 캐시만 비운다 — 부팅 때 등록된 번역 필터·주입기가 그 인스턴스를

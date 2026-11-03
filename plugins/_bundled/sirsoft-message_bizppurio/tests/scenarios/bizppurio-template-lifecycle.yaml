@@ -38,6 +38,11 @@ effects:
   # 데이터 모델·상태 (S1)
   - status_enum_maps_kapi_service_status_vocabulary
   - unknown_service_status_does_not_overwrite_state
+  # 상세 응답 → serviceStatus 유도 (serviceStatus 필드 우선 → block/dormant 플래그 → 검수·운영 상태 → 기본 REG)
+  - detail_service_status_field_takes_precedence
+  - detail_derivation_follows_flag_and_inspection_priority
+  - detail_derivation_defaults_to_reg
+  - is_approved_true_only_for_approved_status
   - notification_type_unique_one_row_per_definition
   - model_casts_content_snapshot_inspection_json
   # 검수 신청 (S2)

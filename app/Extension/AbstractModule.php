@@ -11,6 +11,7 @@ use App\Extension\Cache\ModuleCacheDriver;
 use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Storage\ModuleStorageDriver;
 use App\Extension\Support\UnusableUpgradeStep;
+use App\Extension\Support\UpgradeStepFileLoader;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
 use App\Support\ExtensionIntegrations;
@@ -276,11 +277,12 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
                 $version .= '-'.str_replace('_', '.', $matches[4]);
             }
 
-            require_once $file;
-
             // 네임스페이스 추론: 모듈 네임스페이스 + Upgrades\ClassName
             $namespacePart = ExtensionManager::directoryToNamespace($this->getIdentifier());
             $namespace = 'Modules\\'.$namespacePart.'\\Upgrades\\'.$filename;
+
+            // 활성·번들 동일 사본이 이미 선언한 클래스는 다시 싣지 않는다(재선언 Fatal 방지, 7.1.5)
+            UpgradeStepFileLoader::load($file, $namespace);
 
             // 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 자리 표시를 둔다 — 업데이트가 이번 범위로 고른 단계에
             // 있을 때만 실패한다(7.1.3, 코어와 같은 규칙 — 예전엔 조용히 건너뜀)

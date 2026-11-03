@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 마일리지 적립 절사 기준 백필 마이그레이션 테스트
@@ -21,12 +22,17 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
 
     private string $settingsFile;
 
+    /**
+     * 1.0.5 백필 마이그레이션 파일을 불러오고 테스트 전용 마일리지 설정 파일 경로를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         // DataMigration 클래스는 오토로드 밖 — 직접 로드
-        require_once dirname(__DIR__, 3).'/upgrades/data/1.0.5/migrations/07_BackfillMileageEarnRounding.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3).'/upgrades/data/1.0.5/migrations/07_BackfillMileageEarnRounding.php');
 
         $dir = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         if (! File::isDirectory($dir)) {
@@ -36,6 +42,11 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
         $this->settingsFile = $dir.'/mileage.json';
     }
 
+    /**
+     * 테스트가 남긴 마일리지 설정 파일을 지워 다음 테스트에 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::exists($this->settingsFile)) {
@@ -45,6 +56,11 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**
+     * 검증 대상 절사 기준 백필 마이그레이션 인스턴스를 새로 만든다.
+     *
+     * @return object BackfillMileageEarnRounding 인스턴스
+     */
     private function migration(): object
     {
         $class = self::MIGRATION;
@@ -52,6 +68,11 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
         return new $class;
     }
 
+    /**
+     * 1.0.2 → 1.0.5 업그레이드 단계를 나타내는 컨텍스트를 만든다.
+     *
+     * @return UpgradeContext 1.0.5 단계 업그레이드 컨텍스트
+     */
     private function context(): UpgradeContext
     {
         return new UpgradeContext(
@@ -65,6 +86,7 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
      * 마일리지 설정 파일을 기록합니다.
      *
      * @param  array<int, array>  $rules  통화별 규칙
+     * @return void 반환값 없음
      */
     private function writeSettings(array $rules): void
     {
@@ -76,6 +98,8 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
     }
 
     /**
+     * 백필 후 설정 파일에 저장된 통화별 마일리지 규칙을 읽어 온다.
+     *
      * @return array<int, array> 저장된 통화별 규칙
      */
     private function readRules(): array
@@ -83,6 +107,15 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
         return json_decode((string) File::get($this->settingsFile), true)['currency_rules'];
     }
 
+    /**
+     * 절사 키가 없는 모든 통화 규칙에 종전 동작값(단위 1·버림)이 명시적으로 기입된다.
+     *
+     * @scenario rule_source=legacy_absent, rounding_unit=1, rounding_method=floor
+     *
+     * @effects upgrade_backfills_missing_rounding_keys
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 절사_키가_없는_행에_종전_동작값을_기입한다(): void
     {
@@ -99,6 +132,15 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 운영자가 이미 고른 단위·방식(100·올림)은 두 번 실행해도 덮어쓰지 않는다.
+     *
+     * @scenario rule_source=live_settings, rounding_unit=100, rounding_method=ceil
+     *
+     * @effects upgrade_preserves_operator_chosen_values
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 이미_기입된_값은_덮어쓰지_않는다(): void
     {
@@ -119,6 +161,15 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
         $this->assertSame('ceil', $rules[0][MileageRounding::METHOD_KEY]);
     }
 
+    /**
+     * 방식만 있는 행은 빠진 단위만 기본값으로 채우고 있던 방식(반올림)은 보존한다.
+     *
+     * @scenario rule_source=legacy_absent, rounding_unit=1, rounding_method=round
+     *
+     * @effects upgrade_backfills_missing_rounding_keys, upgrade_preserves_operator_chosen_values
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 한쪽_키만_있는_행은_빠진_키만_채운다(): void
     {
@@ -133,6 +184,15 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
         $this->assertSame('round', $rules[0][MileageRounding::METHOD_KEY], '있던 방식은 보존해야 한다');
     }
 
+    /**
+     * 설정 파일이 없는 설치본에서는 백필이 새 설정 파일을 만들지 않는다.
+     *
+     * @scenario rule_source=legacy_absent
+     *
+     * @effects upgrade_skips_when_settings_file_absent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 설정_파일이_없으면_아무것도_만들지_않는다(): void
     {
@@ -147,6 +207,15 @@ class BackfillMileageEarnRoundingTest extends ModuleTestCase
         $this->assertFalse(File::exists($this->settingsFile));
     }
 
+    /**
+     * 백필로 기입된 규칙으로 산출한 적립액이 종전 (int) floor 결과와 같다.
+     *
+     * @scenario rule_source=legacy_absent, rounding_unit=1, rounding_method=floor
+     *
+     * @effects fallback_matches_legacy_int_floor
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 백필_후_적립_산출이_종전과_같다(): void
     {

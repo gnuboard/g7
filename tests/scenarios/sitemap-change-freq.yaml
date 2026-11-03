@@ -1,0 +1,17 @@
+feature: 사이트맵 changefreq 폐쇄 어휘 정규화
+
+description: |
+  SitemapChangeFreq 가 sitemaps.org 의 7개 changefreq 값만 갖고, normalize() 가 유효한 값은 그대로,
+  대소문자·앞뒤 공백은 흡수해 돌려주며, 어휘 밖의 값·빈 값·null 은 null 로 떨어뜨려 XML 에 섞이지 않게 하는 계약을 지킨다.
+
+axes:
+  case: [vocabulary, normalize_valid, normalize_invalid]
+
+effects:
+  - vocabulary_matches_sitemaps_org
+  - valid_value_passes_through
+  - case_and_whitespace_absorbed
+  - invalid_or_empty_value_yields_null
+
+test_files:
+  - tests/Unit/Enums/SitemapChangeFreqTest.php

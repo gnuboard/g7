@@ -5,7 +5,7 @@ namespace Tests\Unit\Benchmark;
 use App\Benchmark\DTO\BenchmarkProfile;
 use App\Enums\BenchmarkAxis;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 계측 프로파일 VO 및 축 Enum 계약 단위 테스트.
@@ -13,7 +13,7 @@ use Tests\TestCase;
  * 축이 늘어나도 VO 를 고치지 않는다는 설계(축 고유 옵션은 `options` 에 남김)와, 변경 판정이
  * 어디서 결정되는지(축 기본값 → HTTP 메서드 → 선언 순)를 고정한다.
  */
-class BenchmarkProfileTest extends TestCase
+class BenchmarkProfileTest extends PureTestCase
 {
     /**
      * 프로파일을 만듭니다.
@@ -37,6 +37,12 @@ class BenchmarkProfileTest extends TestCase
 
     /**
      * 정규화 키는 출처와 키를 합쳐 전역 고유해집니다.
+     *
+     * @scenario source=module_declaration, selection=qualified_key
+     *
+     * @effects qualified_key_combines_source_and_key
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 정규화_키는_출처를_포함한다(): void
@@ -50,6 +56,12 @@ class BenchmarkProfileTest extends TestCase
 
     /**
      * 축 고유 옵션은 기본값과 함께 읽힙니다.
+     *
+     * @scenario axis_type=list, declaration_validity=valid
+     *
+     * @effects profile_option_reads_with_default
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 옵션은_기본값과_함께_읽힌다(): void
@@ -63,6 +75,12 @@ class BenchmarkProfileTest extends TestCase
 
     /**
      * 목록/화면 축은 기본적으로 데이터를 변경하지 않고, 쓰기/배치 축은 변경합니다.
+     *
+     * @scenario mutation_declaration=axis_default
+     *
+     * @effects axis_default_mutation_verdict
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 축_기본_변경_판정(): void
@@ -76,7 +94,11 @@ class BenchmarkProfileTest extends TestCase
     /**
      * 화면 축의 변경 판정은 선언된 HTTP 메서드를 따릅니다.
      *
+     * @scenario axis_type=screen, mutation_declaration=axis_default
+     *
      * @effects screen_mutation_verdict_follows_http_method
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 화면_축은_http_메서드로_변경을_판정한다(): void
@@ -93,7 +115,11 @@ class BenchmarkProfileTest extends TestCase
      *
      * 읽기 전용 배치(리포트 산출 등)를 `--allow-write` 없이 재려면 이 경로가 필요합니다.
      *
+     * @scenario mutation_declaration=declared_readonly
+     *
      * @effects explicit_mutating_declaration_overrides_axis_default
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 명시_mutating_선언이_기본값을_덮는다(): void
@@ -107,6 +133,12 @@ class BenchmarkProfileTest extends TestCase
 
     /**
      * 직렬화 결과가 리포트/JSON 이 기대하는 키를 담습니다.
+     *
+     * @scenario output=json
+     *
+     * @effects profile_serialization_carries_promised_keys
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 직렬화가_약속된_키를_담는다(): void
@@ -127,7 +159,11 @@ class BenchmarkProfileTest extends TestCase
      *
      * 화면 축이 라우트명 또는 URI 중 하나만 있으면 되는 성질이 이 구조에 담깁니다.
      *
+     * @scenario axis_type=screen, declaration_validity=missing_required_option
+     *
      * @effects screen_axis_accepts_route_or_uri_alternative
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 축별_필수_옵션은_대안_그룹으로_선언된다(): void
@@ -140,6 +176,12 @@ class BenchmarkProfileTest extends TestCase
 
     /**
      * 축 값 목록과 라벨이 정의됩니다.
+     *
+     * @scenario selection=axis_filter
+     *
+     * @effects axis_values_and_labels_are_defined
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 축_값과_라벨이_정의된다(): void

@@ -13,6 +13,7 @@ use App\Services\PluginService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -24,8 +25,21 @@ use Tests\TestCase;
  */
 class CascadeInstallPermissionTest extends TestCase
 {
+    use FakesGithubReleases;
     use MockeryPHPUnitIntegration;
     use RefreshDatabase;
+
+    /**
+     * 설치·업데이트 확인 경로의 GitHub 실제 접속을 막습니다(테스트마다 최대 10초 대기 방지).
+     *
+     * @return void 반환값 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->fakeGithubReleases();
+    }
 
     /**
      * 테스트 종료 시 Mockery 를 정리합니다.

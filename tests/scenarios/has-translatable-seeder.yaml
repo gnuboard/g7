@@ -1,0 +1,19 @@
+feature: 다국어 시더 트레이트(HasTranslatableSeeder)의 언어팩 필터 연동
+
+description: |
+  HasTranslatableSeeder 는 확장 식별자 유무에 따라 seed.{ext}.{entity}.translations 또는 seed.{entity}.translations
+  필터 이름을 조립하고, 그 필터로 기본 항목을 넘겨 활성 언어팩 키를 병합한 결과를 돌려준다.
+  필터가 없으면 기본 항목을 그대로 쓰며, 매칭 키(code·slug·key)는 시더 계약으로 노출된다.
+
+axes:
+  case: [filter_name, defaults_resolution]
+
+effects:
+  - extension_scoped_filter_name
+  - core_scoped_filter_name
+  - defaults_returned_without_filter
+  - lang_pack_keys_merged_via_filter
+  - filter_receives_defaults_with_match_key
+
+test_files:
+  - tests/Unit/Concerns/Seeder/HasTranslatableSeederTest.php

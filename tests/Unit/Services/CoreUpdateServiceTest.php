@@ -817,8 +817,11 @@ MD;
         $path1 = $this->service->createPendingDirectory();
         $this->tempDirs[] = $path1;
 
-        // 1초 대기하여 다른 타임스탬프 보장
-        sleep(1);
+        // 경로 이름은 PHP date('Ymd_His') 라 시각을 옮길 수 없다 — 1초를 통째로 쉬지 않고 다음 초가 될 때까지만 기다린다
+        $second = date('Ymd_His');
+        while (date('Ymd_His') === $second) {
+            usleep(20_000);
+        }
 
         $path2 = $this->service->createPendingDirectory();
         $this->tempDirs[] = $path2;

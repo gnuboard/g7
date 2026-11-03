@@ -36,6 +36,72 @@
 
 ---
 
+## 테스트 DB 스키마 재사용
+
+```
+DB 를 쓰는 테스트는 테스트 DB 스키마를 실행 사이에 재사용한다 — 마이그레이션을 다시 돌리지 않는다
+마이그레이션 관련 파일이 바뀌면 다음 실행이 자동으로 한 번 처음부터 다시 만든다
+처음부터 다시 만들려면: G7_TEST_FRESH_SCHEMA=1 php vendor/bin/phpunit <테스트 파일>
+같은 테스트 DB 로 phpunit 을 둘 띄우면 두 번째는 사용 중인 PID 를 알리며 바로 멈춘다
+```
+
+### 원리
+
+예전에는 PHP 프로세스마다 테스트 DB 를 코어와 모든 번들 확장 마이그레이션(300개 남짓)으로 처음부터 다시 만들어(`migrate:fresh`)
+DB 테스트 1건에도 수십 초가 들었다. 이제 첫 DB 테스트가 아래를 모두 확인하고, 같으면 스키마를 그대로 쓰며 남은 행만 정리한다.
+
+| 확인 항목 | 다르면 |
+|---|---|
+| 마이그레이션 지문 — 파일 이름·내용, 마이그레이션이 `use` 로 가져오는 클래스 파일, `composer.lock` | 처음부터 다시 만든다 |
+| 환경 — DB 서버 판·문자셋·연결 설정 | 처음부터 다시 만든다 |
+| DB `migrations` 테이블의 이름 집합 = 마이그레이션 파일 이름 집합 | 처음부터 다시 만든다(반쪽 스키마) |
+| DB 실물 구조 지문(`information_schema` 의 테이블·컬럼·인덱스·제약) | 처음부터 다시 만든다 |
+
+- 스키마는 테스트 클래스가 무엇을 선언했든 늘 코어 + 모든 번들 확장 마이그레이션으로 만든다 — 실행 순서와 무관하게 같은 테이블이 있다.
+- 남은 행 정리: 비어 있지 않은 테이블을 비우고, 마이그레이션이 넣었던 기준 행을 되돌린다. 빈 테이블의 자동 증가 번호는 초기화하지 않는다 —
+  테스트에서 자동 증가 id 를 숫자로 박아 단언하지 않는다.
+- `migrations` 기록도 전체 재생 직후의 batch 구성으로 되돌린다 — `migrate:rollback --path` 를 쓰는 왕복 테스트가 앞 실행이 남긴 batch 를 보지 않게 한다.
+- 스키마를 바꾸는 테스트는 끝에서 시작 전 구조로 되돌린다. 표를 지웠다 다시 만드는 왕복은 그 표를 고친 뒤 마이그레이션(인덱스·컬럼 추가)까지 다시 올린다 — 빠지면 다음 실행이 전체 재생으로 간다.
+- 확장을 「데이터까지 삭제」로 제거하는 테스트처럼 마이그레이션의 표·기록을 지운 채 끝나면, 그 테스트가 끝날 때 빠진 마이그레이션을 다시 올린다
+  (확장의 첫 마이그레이션까지 빠졌으면 그 확장 전체를 처음부터) — 다음 판정은 전체 재생 없이 재사용한다. 판정 기록에 `REPAIR` 로 남는다.
+- DB 트레이트 없이 테스트 DB 에 쓰는 테스트(INSERT·UPDATE·DELETE·DDL)는 쓰기가 곧바로 커밋된다. 그래서 끝날 때 다음 DB 테스트가
+  다시 판정해 남은 행을 정리하게 한다 — 같은 프로세스 뒤 테스트가 그 행과 충돌하지 않는다.
+- 시드가 필요한 베이스 클래스(시더를 지정한 `migrateFreshUsing()`)는 판정 때마다 시더를 다시 돌린다.
+- 시드 없이 시작해야 하는 확장 베이스(게시판·페이지·hello 모듈)는 그 프로세스에서 처음 쓸 때 시드 없이 남은 행만 정리한 상태를 받고,
+  그 뒤에는 앞 테스트가 남긴 상태를 그대로 쓴다 — 예전에 첫 사용 때 스키마를 다시 만들던 것과 같은 결과다.
+- 끊긴 이전 실행이 남긴 테스트 DB 연결은 같은 DB 의 잠금을 얻은 뒤, 스키마를 판정·변경하기 전에 한 번 정리한다 —
+  다른 실행이 쓰는 중이면 잠금에서 먼저 멈추므로 그 실행의 연결은 건드리지 않는다.
+- 기록은 `storage/framework/testing/schema-cache/<DB 이름>.json`, 판정 기록은 `storage/logs/testing-schema-cache.log`(FRESH·RESET·SKIP·REPAIR 와 사유·소요 ms).
+  다시 만들기를 시작하기 전에 기록을 지우므로, 중간에 끊긴 실행의 반쪽 스키마를 다음 실행이 재사용하지 않는다.
+- 강제 재생 값 `1` 은 프로세스마다 처음 한 번, 그 밖의 값은 실행 ID 로 보고 그 ID 로 아직 다시 만들지 않았을 때만 한 번 다시 만든다
+  (예: `export G7_TEST_FRESH_SCHEMA=$(date +%s)` 뒤 여러 phpunit 을 순서대로 실행하면 첫 실행만 다시 만든다). `phpunit.xml` 에는 넣지 않는다.
+
+### 스키마를 바꾸는 테스트
+
+마이그레이션의 `down()`·`up()` 을 직접 부르거나 컬럼을 바꾸는 테스트는 끝날 때 원래 구조로 되돌린다 — 되돌리지 않으면 다음 실행이
+구조 지문 불일치로 매번 처음부터 다시 만든다.
+
+```php
+$before = StructureChecksum::compute(DB::connection(), DB::connection()->getDatabaseName());
+try {
+    // down() → 단언 → up()
+} finally {
+    $migration->up(); // 단언이 실패해도 되돌린다
+}
+$this->assertSame($before, StructureChecksum::compute(DB::connection(), DB::connection()->getDatabaseName()));
+```
+
+`DatabaseTransactions` 테스트 안의 DDL 은 MySQL 이 트랜잭션을 암묵 커밋한다. 테스트 베이스가 이를 감지해 다음 테스트 전에 다시 판정하지만,
+새 테스트에서는 DDL 을 트랜잭션 밖에서(위 패턴) 다룬다.
+
+## 앱을 쓰지 않는 테스트 — PureTestCase
+
+```
+배열·문자열·값 객체만 다루는 테스트는 Tests\PureTestCase 를 상속한다 — 앱을 부팅하지 않는다(테스트당 약 0.2초 절약)
+PureTestCase 상속 파일에서 app()·config()·파사드·DB·HTTP 테스트 호출·__() 등을 쓰면 정적 검사가 오류로 잡는다 → 원래 베이스로 되돌린다
+확장 테스트도 순수 테스트면 PureTestCase 를 상속할 수 있다(그 밖에는 ModuleTestCase·PluginTestCase)
+```
+
 ## _bundled 확장 직접 테스트
 
 ```
@@ -48,22 +114,29 @@
 ### 백엔드 (PHPUnit)
 
 ```bash
-# _bundled 모듈 전체 테스트
-php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests
+# _bundled 모듈 테스트 — 바꾼 코드에 걸리는 테스트 파일 경로를 나열한다
+php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyControllerTest.php
 
-# _bundled 모듈 특정 테스트
-php vendor/bin/phpunit --filter=ShippingPolicyControllerTest modules/_bundled/sirsoft-ecommerce/tests
+# 같은 확장의 여러 파일은 한 번에(확장마다 한 실행)
+php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests/Feature/A/XTest.php modules/_bundled/sirsoft-ecommerce/tests/Unit/YTest.php
+
+# 메서드 단위로 더 좁힐 때만 --filter 를 덧붙인다
+php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyControllerTest.php --filter=test_store
 
 # _bundled 플러그인 테스트
-php vendor/bin/phpunit plugins/_bundled/sirsoft-tosspayments/tests
+php vendor/bin/phpunit plugins/_bundled/sirsoft-tosspayments/tests/Feature/HookPayloadSecretTest.php
 ```
+
+확장 `tests` 디렉터리를 통째로 돌리거나 경로 없이 `--filter` 만 주지 않는다. `--filter` 는 스위트의 모든 테스트 파일을 읽어 들인 뒤에
+고르므로 실행마다 수 초와 수백 MB 를 더 쓰고, 넓은 필터는 수천 건을 한 번에 돌려 로컬 MySQL 을 멈추게 한다.
+코어와 확장 테스트는 실행을 나눈다(확장 베이스 클래스의 시드·오토로드 준비가 확장 단위다).
 
 ### 프론트엔드 (Vitest)
 
 ```bash
-# _bundled 모듈 디렉토리에서 직접 실행
+# _bundled 모듈 디렉토리에서 직접 실행 — 바꾼 영역의 테스트 파일·패턴을 지정한다
 cd modules/_bundled/sirsoft-ecommerce
-powershell -Command "npm run test:run"
+powershell -Command "npm run test:run -- ShippingPolicy"
 ```
 
 ### 동작 원리
@@ -132,6 +205,8 @@ protected function tearDown(): void
 ```
 
 `Tests\TestCase` 를 고치지 않는다. 그쪽은 `RefreshDatabase` 테스트와 공유하는데 그 커넥션에는 열린 트랜잭션이 걸려 있어, 뒷정리 순서를 건드리면 롤백이 깨진다. 실제 사례는 `tests/Unit/Support/LayoutMarkup/LayoutMarkupTestCase.php` 참조.
+
+> 현재 `Tests\TestCase::tearDown()` 은 트랜잭션이 걸리지 않은 연결만 골라 닫는다(`purgeIdleDatabaseConnections()`) — `Tests\TestCase` 를 그대로 상속한 테스트는 따로 반납하지 않아도 된다. 위 조치는 별도 베이스 클래스를 둔 테스트군에만 해당한다. 앱을 쓰지 않는 테스트는 `Tests\PureTestCase` 를 상속하면 연결 자체가 없다.
 
 ## 확장 테스트 베이스 클래스
 
@@ -1643,6 +1718,10 @@ if (file_exists($configCacheFile)) {
 }
 ```
 
+시작 때 지우는 것만으로는 부족해, `tests/bootstrap.php` 는 config 캐시 경로 자체(`APP_CONFIG_CACHE`)를 테스트 전용 위치
+(`storage/framework/testing/config.php`)로 돌린다 — 테스트가 도는 사이 같은 클론에서 캐시를 다시 구워도 테스트 앱은 그 파일을 읽지 않는다.
+테스트 앱은 설정을 읽은 직후와 테스트 DB 스키마를 다시 만들기 직전에, 붙은 DB 이름이 테스트 전용(`testing` 포함)인지 다시 확인하고 아니면 멈춘다.
+
 ### 동작 방식
 
 1. `php artisan config:cache` 실행 → 캐시 생성 (개발/운영 환경 성능 최적화)
@@ -1657,8 +1736,8 @@ php artisan config:clear
 # 또는
 rm bootstrap/cache/config.php
 
-# 테스트 실행
-php artisan test
+# 테스트 실행 (바꾼 코드에 걸리는 파일 경로를 지정)
+php vendor/bin/phpunit tests/Feature/XTest.php
 ```
 
 ---
@@ -1749,31 +1828,28 @@ testUtils.cleanup();
 ```bash
 # 템플릿 디렉토리에서 실행 (해당 템플릿만 테스트)
 cd templates/sirsoft-admin_basic
-powershell -Command "npm run test:run"              # 전체
-powershell -Command "npm run test:run -- DataGrid"  # 특정 테스트
+powershell -Command "npm run test:run -- DataGrid"  # 바꾼 영역의 패턴 지정
 
-# 루트에서 실행 (모든 테스트)
-powershell -Command "npm run test:run"
-powershell -Command "npm run test:run -- template-engine"  # 코어 테스트
+# 루트에서 실행 (코어 테스트 — 패턴 지정)
+powershell -Command "npm run test:run -- template-engine"
 ```
 
-**백엔드**:
+**백엔드** (스위트마다 테스트 파일 경로 지정 — 무필터 전체 실행 금지):
 
 ```bash
-php artisan test
-php artisan test --filter=TestName
+php vendor/bin/phpunit tests/Feature/XTest.php tests/Unit/YTest.php
+php vendor/bin/phpunit tests/Feature/XTest.php --filter=test_메서드명
 ```
 
 **_bundled 확장 테스트 (활성 디렉토리 복사 불필요)**:
 
 ```bash
-# _bundled 모듈 테스트 직접 실행
-php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests
-php vendor/bin/phpunit --filter=ShippingPolicyControllerTest modules/_bundled/sirsoft-ecommerce/tests
+# _bundled 모듈 테스트 직접 실행(파일 경로 지정)
+php vendor/bin/phpunit modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ShippingPolicyControllerTest.php
 
-# _bundled 모듈 프론트엔드 테스트
+# _bundled 모듈 프론트엔드 테스트(패턴 지정)
 cd modules/_bundled/sirsoft-ecommerce
-powershell -Command "npm run test:run"
+powershell -Command "npm run test:run -- ShippingPolicy"
 ```
 
 ### 필수 준수 사항
