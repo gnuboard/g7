@@ -346,7 +346,7 @@
         "youtube_hint": "YouTube動画を音なしで自動再生し、動画が終わると次のバナーに移ります。訪問者がクッキー(マーケティング)に同意する前は、代表画像と再生ボタンのみが表示されます。",
         "video_hint": "アップロードした動画を音なしで自動再生し、動画が終わると次のバナーに移ります(バナーが1つの場合は繰り返し再生)。",
         "youtube_url": "YouTubeアドレス",
-        "youtube_url_hint": "動画ページアドレスまたは共有アドレスをそのまま貼り付けてください。例:https://www.youtube.com/watch?v=…·https://youtu.be/…·ショーツアドレス",
+        "youtube_url_hint": "動画ページアドレスまたは共有アドレスをそのまま貼り付けてください。例: https://www.youtube.com/watch?v=…·https://youtu.be/…·ショーツアドレス",
         "pc_video": "PC動画",
         "pc_video_hint": "最大{{mb}}MB·MP4·WEBM·横向き動画(16:9など)を推奨します。",
         "mobile_video": "モバイル動画",
