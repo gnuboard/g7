@@ -255,6 +255,11 @@ describe('팝업 등록·수정 화면', () => {
     const save = findById(form, 'footer_save_button')!;
     expect(save.props['aria-describedby']).toBe("{{_computed.saveBlockedReason !== '' ? 'popup_save_blocked_reason' : undefined}}");
     const note = collect(form, (n) => n.props?.id === 'popup_save_blocked_reason')[0];
+    // 이유는 단추 옆이 아니라 하단 줄의 첫 줄(전체 폭) — 휴대폰에서 「취소」가 갈라지지 않게
+    const footer = findById(form, 'footer_buttons')!;
+    expect(footer.children[0]).toBe(note);
+    expect(note.props.className).toContain('gpp:basis-full');
+    expect(footer.props.className).toContain('gpp:flex-wrap');
     expect(note.if).toBe("{{_computed.saveBlockedReason !== ''}}");
     expect(json(note)).toContain("sirsoft-popup.admin.form.save_blocked.' + _computed.saveBlockedReason");
     for (const key of ['no_image', 'uploading']) {

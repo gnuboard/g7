@@ -85,6 +85,7 @@ type LocalizedBody = Record<string, string> | null | undefined;
 
 /** `G7Core.state` 중 이 훅이 쓰는 것 */
 interface StateApi {
+  get?: () => { _local?: { form?: { body_html?: LocalizedBody } } } | null | undefined;
   subscribe?: (listener: (state: { _local?: { form?: { body_html?: LocalizedBody } } }) => void) => unknown;
 }
 
@@ -94,13 +95,20 @@ interface StateApi {
  * CKEditor 5 는 타이핑 성능을 위해 본문을 `setLocal({ render: false, selfManaged: true })` 로 상태에만 쓴다. 그래서 `form` props 는
  * 다른 칸이 화면을 다시 그릴 때까지 옛 본문에 머문다 — 운영자가 이전 문구를 보고 배치를 판단하게 된다. 상태 구독은 그런 쓰기도
  * 알려 주므로(`setGlobalState` 가 다시 그리기를 건너뛰기 전에 리스너를 부른다) 그 본문을 받아 쓰고, props 가 바뀌면 props 를 정본으로 돌린다.
+ * 마운트할 때는 알림을 기다리지 않고 상태의 지금 본문부터 읽는다.
  *
  * @param enabled 폼 미리보기인지 (표본 미리보기는 구독하지 않는다)
  * @param propBody props 로 받은 본문
  * @returns 지금 보여 줄 본문
  */
 function useLiveBody(enabled: boolean, propBody: LocalizedBody): LocalizedBody {
-  const [live, setLive] = useState<{ base: LocalizedBody; body: LocalizedBody } | null>(null);
+  // 새로 그려지는 미리보기(실제 크기 창 등)는 알림이 이미 지나간 뒤라, 마운트할 때 상태의 지금 본문을 한 번 읽는다 —
+  // 창이 받는 부모 `_local` 스냅숏은 다시 그리기 없이 쓴 본문을 담지 못해 옛 본문(새 팝업이면 빈 본문)이다
+  const [live, setLive] = useState<{ base: LocalizedBody; body: LocalizedBody } | null>(() => {
+    const body = enabled ? (window as { G7Core?: { state?: StateApi } }).G7Core?.state?.get?.()?._local?.form?.body_html : undefined;
+
+    return body && body !== propBody ? { base: propBody, body } : null;
+  });
   const baseRef = useRef(propBody);
   baseRef.current = propBody;
 
@@ -189,6 +197,32 @@ export const PopupPreview: React.FC<PopupPreviewProps> = ({ device = 'pc', setti
     return () => observer.disconnect();
   }, [frame.width, actualSize]);
   const bodyHtml = useLiveBody(!!form, form?.body_html);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 실제 크기 틀이 칸보다 크면(좁은 휴대폰에서 PC 1280 틀) 열릴 때 팝업이 칸 가운데 오게 한다 — 그대로 두면 처음 보이는 곳이 빈 배경이다.
+  // 팝업 위치는 레이어가 그린 뒤에 정해지므로 다음 프레임에 잰다
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (!actualSize || !scroller || typeof requestAnimationFrame !== 'function') {
+      return undefined;
+    }
+    const frameId = requestAnimationFrame(() => {
+      const dialog = scroller.querySelector<HTMLElement>('.g7pp-dialog');
+      if (!dialog) {
+        return;
+      }
+      const box = scroller.getBoundingClientRect();
+      const target = dialog.getBoundingClientRect();
+      scroller.scrollLeft += Math.round(target.left + target.width / 2 - (box.left + scroller.clientWidth / 2));
+      scroller.scrollTop += Math.round(target.top + target.height / 2 - (box.top + scroller.clientHeight / 2));
+    });
+
+    return () => {
+      if (typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(frameId);
+      }
+    };
+  }, [actualSize, device]);
   const popups = useMemo<PublicPopup[]>(() => {
     if (!form) {
       return SAMPLES;
@@ -233,7 +267,7 @@ export const PopupPreview: React.FC<PopupPreviewProps> = ({ device = 'pc', setti
     </div>
   );
 
-  return actualSize ? <div className="g7pp-frame-scroll">{screen}</div> : screen;
+  return actualSize ? <div ref={scrollRef} className="g7pp-frame-scroll">{screen}</div> : screen;
 };
 
 export default PopupPreview;

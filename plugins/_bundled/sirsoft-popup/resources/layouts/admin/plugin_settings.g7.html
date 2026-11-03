@@ -226,7 +226,7 @@
     </div>
   </slot>
   <modal>
-    <!-- 실제 크기 미리보기 — 모달이 열릴 때의 입력 값(부모 _local 스냅숏)을 배율 1 로 그린다. 창보다 크면 미리보기 칸이 스크롤한다 -->
+    <!-- 실제 크기 미리보기 — 모달이 열릴 때의 입력 값(부모 _local 스냅숏)을 배율 1 로 그린다. 편집기가 다시 그리기 없이 쓴 본문은 스냅숏에 없어 미리보기가 상태에서 최신 본문을 읽는다. 창보다 크면 미리보기 칸이 스크롤하고, 열릴 때 팝업 쪽으로 옮겨 둔다 -->
     <modal data-type="composite" data-ref="popup_actual_preview_modal" title="$t:sirsoft-popup.admin.preview.actual_title" width="min(1340px, 96vw)">
       <p class="g7pp-form-hint gpp:mb-3">$t:sirsoft-popup.admin.preview.actual_hint|width={{$parent._local.previewDevice === 'mobile' ? 390 : 1280}}|height={{$parent._local.previewDevice === 'mobile' ? 780 : 800}}</p>
       <sirsoft-popup.popup-preview data-type="composite" data-ref="actual_preview" :actualSize="true" settings="{{$parent._local.form}}" device="{{$parent._local.previewDevice}}"/>

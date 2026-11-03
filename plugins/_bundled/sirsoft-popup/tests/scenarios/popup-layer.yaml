@@ -77,7 +77,9 @@ axes:
     - html_body_scroll_region_only_when_overflowing
     - preview_renders_same_markup_with_links_inert
     - preview_follows_editor_body_written_without_render
+    - preview_mounts_with_latest_editor_body
     - preview_actual_size_frame
+    - preview_actual_size_scrolls_to_dialog
     - preview_coerces_numeric_settings_from_form
     - drag_mouse_moves_to_next_and_previous
     - drag_touch_moves_to_next

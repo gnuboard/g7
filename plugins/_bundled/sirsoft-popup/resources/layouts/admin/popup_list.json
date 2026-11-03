@@ -353,7 +353,7 @@
                                 "text": "$t:sirsoft-popup.admin.summary.empty"
                             },
                             {
-                                "comment": "많으면 처음 8개만 — 휴대폰에서 검색·목록이 화면 아래로 밀려나지 않게. 번호는 전체 순서 그대로다",
+                                "comment": "많으면 처음 8개만(휴대폰 폭은 한 줄 3개) — 검색·목록이 화면 아래로 밀려나지 않게. 번호는 전체 순서 그대로다",
                                 "id": "summary_items",
                                 "type": "basic",
                                 "name": "Ol",
@@ -372,7 +372,7 @@
                                             "index_var": "idx"
                                         },
                                         "props": {
-                                            "className": "gpp:w-20"
+                                            "className": "gpp:w-20 {{idx >= 3 && _local.summaryExpanded !== true ? 'gpp:hidden gpp:md:block' : ''}}"
                                         },
                                         "children": [
                                             {
@@ -480,9 +480,9 @@
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "if": "{{(summary?.data?.data ?? []).length > 8}}",
+                                        "if": "{{(summary?.data?.data ?? []).length > 3}}",
                                         "props": {
-                                            "className": "gpp:self-center"
+                                            "className": "gpp:self-center {{(summary?.data?.data ?? []).length > 8 ? '' : 'gpp:md:hidden'}}"
                                         },
                                         "children": [
                                             {
@@ -491,7 +491,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
-                                                        "comment": "나머지 노출 중 팝업을 펼치거나 다시 처음 8개로 접는다",
+                                                        "comment": "나머지 노출 중 팝업을 펼치거나 다시 처음 8개(휴대폰 폭은 3개)로 접는다",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -511,6 +511,18 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "if": "{{_local.summaryExpanded !== true}}",
+                                                        "props": {
+                                                            "className": "gpp:md:hidden"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 3}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.summaryExpanded !== true}}",
+                                                        "props": {
+                                                            "className": "gpp:hidden gpp:md:inline"
+                                                        },
                                                         "text": "$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 8}}"
                                                     },
                                                     {

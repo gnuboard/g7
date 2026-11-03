@@ -116,9 +116,9 @@
           <p class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mt-1">$t:sirsoft-popup.admin.summary.order_hint</p>
         </div>
         <p data-if="{{summary !== undefined &amp;&amp; (summary?.data?.data ?? []).length === 0}}" class="gpp:text-sm gpp:text-gray-500 gpp:dark:text-gray-400 gpp:flex-1">$t:sirsoft-popup.admin.summary.empty</p>
-        <!-- 많으면 처음 8개만 — 휴대폰에서 검색·목록이 화면 아래로 밀려나지 않게. 번호는 전체 순서 그대로다 -->
+        <!-- 많으면 처음 8개만(휴대폰 폭은 한 줄 3개) — 검색·목록이 화면 아래로 밀려나지 않게. 번호는 전체 순서 그대로다 -->
         <ol id="popup_summary_items" data-ref="summary_items" data-if="{{(summary?.data?.data ?? []).length &gt; 0}}" class="gpp:flex gpp:flex-wrap gpp:items-start gpp:gap-3 gpp:flex-1">
-          <li data-each="item, idx in (summary?.data?.data ?? []).slice(0, _local.summaryExpanded === true ? undefined : 8)" class="gpp:w-20">
+          <li data-each="item, idx in (summary?.data?.data ?? []).slice(0, _local.summaryExpanded === true ? undefined : 8)" class="gpp:w-20 {{idx &gt;= 3 &amp;&amp; _local.summaryExpanded !== true ? 'gpp:hidden gpp:md:block' : ''}}">
             <!-- 누르면 그 팝업의 수정 화면 — 보던 목록 조건(상태·기기·검색·쪽)을 이고 가 저장·취소 뒤 같은 목록으로 돌아온다.
               수정 권한이 없으면(조회 전용) 수정 화면이 403 이라 링크를 걸지 않는다 -->
             <a data-if="{{item.abilities?.can_update !== false}}" href="/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit" title="{{item.title}}" aria-label="$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}" class="g7pp-summary-link gpp:flex gpp:flex-col gpp:items-center gpp:gap-1 gpp:rounded gpp:p-0.5 gpp:hover:bg-gray-50 gpp:dark:hover:bg-gray-700/50">
@@ -138,13 +138,14 @@
               <span class="gpp:sr-only">{{item.title}}</span>
             </div>
           </li>
-          <li data-if="{{(summary?.data?.data ?? []).length &gt; 8}}" class="gpp:self-center">
+          <li data-if="{{(summary?.data?.data ?? []).length &gt; 3}}" class="gpp:self-center {{(summary?.data?.data ?? []).length &gt; 8 ? '' : 'gpp:md:hidden'}}">
             <button type="button" data-ref="summary_toggle" aria-expanded="{{_local.summaryExpanded === true}}" aria-controls="popup_summary_items" class="gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline">
               <on type="click">
-                <!-- 나머지 노출 중 팝업을 펼치거나 다시 처음 8개로 접는다 -->
+                <!-- 나머지 노출 중 팝업을 펼치거나 다시 처음 8개(휴대폰 폭은 3개)로 접는다 -->
                 <set-state target="local" summaryExpanded="{{_local.summaryExpanded !== true}}"/>
               </on>
-              <span data-if="{{_local.summaryExpanded !== true}}">$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 8}}</span>
+              <span data-if="{{_local.summaryExpanded !== true}}" class="gpp:md:hidden">$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 3}}</span>
+              <span data-if="{{_local.summaryExpanded !== true}}" class="gpp:hidden gpp:md:inline">$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 8}}</span>
               <span data-if="{{_local.summaryExpanded === true}}">$t:sirsoft-popup.admin.summary.show_less</span>
             </button>
           </li>

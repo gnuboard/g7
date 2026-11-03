@@ -163,6 +163,55 @@ describe('PopupPreview', () => {
     expect(unsubscribe).toHaveBeenCalled();
   });
 
+  // @scenario surface=preview_mounts_with_latest_editor_body
+  it('새로 그려지는 미리보기(실제 크기 창)는 props 스냅숏이 옛 본문이어도 마운트할 때 상태의 최신 본문을 그린다 — 알림을 기다리지 않는다', () => {
+    // 편집기는 이미 상태에만 최신 본문을 써 두었고(알림은 지나갔다), 창은 부모 `_local` 스냅숏(옛 본문)을 props 로 받는다
+    const global = { _local: { form: { content_type: 'html', body_html: { ko: '<p>Typed now</p>', en: '<p>Typed en</p>' } } } };
+    installCore({ state: { get: () => global, subscribe: () => () => {} } });
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
+    const stale = { content_type: 'html' as const, body_html: { ko: '<p>Saved before</p>' } };
+
+    const { container, unmount } = render(<PopupPreview device="pc" locale="ko" defaultLocale="ko" form={stale} actualSize />);
+    expect(container.querySelector('.g7pp-html')?.textContent).toBe('Typed now');
+    unmount();
+
+    // 미리보기 언어를 바꿔 열어도 같은 최신 본문의 그 언어
+    const en = render(<PopupPreview device="pc" locale="en" defaultLocale="ko" form={stale} actualSize />);
+    expect(en.container.querySelector('.g7pp-html')?.textContent).toBe('Typed en');
+    en.unmount();
+
+    // 새 팝업: 스냅숏에 본문이 아예 없어도
+    const fresh = render(<PopupPreview device="pc" locale="ko" defaultLocale="ko" form={{ content_type: 'html' }} actualSize />);
+    expect(fresh.container.querySelector('.g7pp-html')?.textContent).toBe('Typed now');
+  });
+
+  // @scenario surface=preview_actual_size_scrolls_to_dialog
+  it('실제 크기 틀이 칸보다 크면 열릴 때 팝업이 칸 가운데 오도록 스크롤한다(좁은 휴대폰에서 PC 실제 크기)', () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0; });
+    const rect = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) }) as DOMRect;
+    const rects = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('g7pp-frame-scroll')) return rect(40, 100, 310, 600);
+      if (this.classList.contains('g7pp-dialog')) return rect(441, 140, 480, 520);
+      return rect(0, 0, 0, 0);
+    });
+    const widths = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (this: HTMLElement) { return this.classList.contains('g7pp-frame-scroll') ? 310 : 0; });
+    const heights = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(function (this: HTMLElement) { return this.classList.contains('g7pp-frame-scroll') ? 600 : 0; });
+
+    try {
+      const { container } = render(<PopupPreview device="pc" actualSize />);
+      const scroller = container.querySelector('.g7pp-frame-scroll') as HTMLElement;
+      // 팝업 가운데(441 + 240 = 681)가 칸 가운데(40 + 155 = 195)로 오게 → 486. 세로는 이미 가운데라 0
+      expect(scroller.scrollLeft).toBe(486);
+      expect(scroller.scrollTop).toBe(0);
+    } finally {
+      rects.mockRestore();
+      widths.mockRestore();
+      heights.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   // @scenario surface=preview_actual_size_frame
   it('실제 크기로 보면 틀을 줄이지 않고(배율 1) 기기 크기 그대로 두며, 넘치는 부분은 감싼 칸이 스크롤한다', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;

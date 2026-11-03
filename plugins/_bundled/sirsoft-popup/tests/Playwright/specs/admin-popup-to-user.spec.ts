@@ -610,29 +610,32 @@ test.describe('관리자 화면', () => {
 
   // @scenario flow=admin_summary_expands_beyond_first_items, viewport=mobile
   // @effects test_data_cleaned_up
-  test('「지금 노출 중」이 8개를 넘으면 처음 8개만 보이고 「더 보기」로 펼치고 접는다 (mobile)', async ({ page, request, managerToken, created }) => {
+  test('「지금 노출 중」은 휴대폰에서 한 줄 3개만 보이고(검색칸이 첫 화면에) 「더 보기」로 펼치고 접는다 (mobile)', async ({ page, request, managerToken, created }) => {
     // 사이트의 다른 노출 중 팝업 수와 무관하게 8개를 넘도록 9건을 만든다
     for (let i = 0; i < 9; i += 1) created.push(await createHtmlPopup(request, managerToken));
     await page.setViewportSize(VIEWPORTS.mobile);
 
     await authenticatePage(page, managerToken);
     await page.goto(ADMIN_LIST);
-    const items = page.locator('#popup_summary_items > li:has(.g7pp-summary-link, [title])');
-    await expect(items).toHaveCount(8);
+    // 휴대폰 폭은 접힌 동안 한 줄 3개만 보인다(DOM 에는 8개, 나머지는 숨김)
+    const items = page.locator('#popup_summary_items > li:has(.g7pp-summary-link, [title]):visible');
+    await expect(items).toHaveCount(3);
     const toggle = page.locator('#popup_summary_items').getByRole('button', { name: /개 더 보기/ });
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    // 검색칸이 요약에 밀려 첫 화면에서 사라지지 않는다(26개를 다 펼치던 때는 1,610px 아래)
-    expect((await page.locator('#popup_filter_search').boundingBox())?.y ?? Infinity).toBeLessThan(1200);
+    // 검색칸이 첫 화면(844px) 안에 있다 — 26개를 다 펼치던 때는 1,610px, 8개일 때도 914px 아래였다
+    const search = await page.locator('#popup_filter_search').boundingBox();
+    expect((search?.y ?? Infinity) + (search?.height ?? 0)).toBeLessThanOrEqual(VIEWPORTS.mobile.height);
 
     await toggle.click();
     await expect(page.locator('#popup_summary_items').getByRole('button', { name: '접기' })).toHaveAttribute('aria-expanded', 'true');
     expect(await items.count()).toBeGreaterThanOrEqual(9);
     await page.locator('#popup_summary_items').getByRole('button', { name: '접기' }).click();
-    await expect(items).toHaveCount(8);
+    await expect(items).toHaveCount(3);
   });
 
-  // @scenario flow=admin_save_lock_reason_shown, viewport=desktop
-  test('이미지형 등록에서 이미지가 없으면 저장 단추 옆에 이유가 보이고 단추가 그 문구를 가리킨다', async ({ page, managerToken }) => {
+  // @scenario flow=admin_save_lock_reason_shown, viewport=mobile
+  test('이미지형 등록에서 이미지가 없으면 저장 단추 위 한 줄에 이유가 보이고 단추가 그 문구를 가리키며, 휴대폰에서 「취소」가 갈라지지 않는다 (mobile)', async ({ page, managerToken }) => {
+    await page.setViewportSize(VIEWPORTS.mobile);
     await authenticatePage(page, managerToken);
     await page.goto(`${ADMIN_LIST}/create`);
     const save = page.locator('button', { hasText: '저장' }).last();
@@ -642,6 +645,13 @@ test.describe('관리자 화면', () => {
     await expect(save).toHaveAttribute('aria-describedby', 'popup_save_blocked_reason');
     await expect(page.locator('#popup_title')).toHaveAttribute('aria-required', 'true');
     await expect(page.locator('#popup_title')).toHaveAttribute('aria-describedby', 'popup_title_hint');
+    // 이유는 단추들보다 위 줄이고, 「취소」 글자는 한 줄이다(두 줄로 갈라지면 글자 칸 높이가 한 줄의 두 배 가까이 된다)
+    const cancel = await page.locator('a', { hasText: '취소' }).last().boundingBox();
+    const reasonBox = await reason.boundingBox();
+    expect(reasonBox!.y + reasonBox!.height).toBeLessThanOrEqual(cancel!.y + 1);
+    const label = page.locator('a', { hasText: '취소' }).last().locator('span');
+    const lineHeight = await label.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
+    expect((await label.boundingBox())!.height).toBeLessThan(lineHeight * 1.5);
   });
 
   // @scenario flow=admin_preview_actual_size, viewport=desktop
@@ -670,6 +680,59 @@ test.describe('관리자 화면', () => {
     await page.getByRole('button', { name: '실제 크기로 보기' }).click();
     await expect(page.locator('.g7pp-frame--actual .g7pp-sample').first()).toBeVisible();
     expect(Math.abs((await dialogWidth()) - Math.min(display.pc_width, 1280 - 32))).toBeLessThanOrEqual(2);
+  });
+
+  // @scenario flow=admin_actual_preview_shows_latest_body, viewport=desktop
+  // @effects test_data_cleaned_up
+  test('본문을 고치고 다른 칸을 건드리지 않은 채 「실제 크기로 보기」를 열어도 방금 쓴 본문이 보인다(수정·등록)', async ({ page, request, managerToken, created }) => {
+    const id = await createHtmlPopup(request, managerToken, { body_html: { ko: '<p>Saved before</p>' } });
+    created.push(id);
+    const actualBody = page.locator('.g7pp-frame--actual .g7pp-html').first();
+    const typeBody = async (text: string) => {
+      const editable = page.locator('#ckeditor5-body_html .ck-editor__editable').first();
+      await expect(editable).toBeVisible();
+      await editable.click();
+      await page.keyboard.press('ControlOrMeta+a');
+      await page.keyboard.type(text);
+      // 줄인 미리보기가 따라온 뒤(편집기의 상태 쓰기가 끝난 뒤) 연다
+      await expect(page.locator('#popup_form_preview .g7pp-html').first()).toHaveText(text, { timeout: 3000 });
+    };
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}/${id}/edit`);
+    await typeBody('Unsaved edit body');
+    await page.getByRole('button', { name: '실제 크기로 보기' }).click();
+    await expect(actualBody).toHaveText('Unsaved edit body');
+    await page.keyboard.press('Escape');
+
+    // 새 팝업은 스냅숏에 본문이 아예 없다
+    await page.goto(`${ADMIN_LIST}/create`);
+    await page.getByRole('radio', { name: '직접 작성형' }).check();
+    await typeBody('New popup body');
+    await page.getByRole('button', { name: '실제 크기로 보기' }).click();
+    await expect(actualBody).toHaveText('New popup body');
+  });
+
+  // @scenario flow=admin_actual_preview_mobile_scrolls_to_popup, viewport=mobile
+  // @effects test_data_cleaned_up
+  test('휴대폰에서 PC 실제 크기를 열면 1280 틀이 팝업 쪽으로 스크롤돼 팝업이 바로 보인다 (mobile)', async ({ page, request, managerToken, created }) => {
+    const id = await createImagePopup(request, managerToken);
+    created.push(id);
+    await page.setViewportSize(VIEWPORTS.mobile);
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}/${id}/edit`);
+    await page.getByRole('button', { name: '실제 크기로 보기' }).click();
+    const scroller = page.locator('.g7pp-frame-scroll');
+    await expect(scroller.locator('.g7pp-dialog')).toBeVisible();
+    await expect.poll(async () => scroller.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+    // 칸 안에 보이는 팝업 폭 — 열자마자 0 이 아니라 칸 폭 거의 전부
+    const visibleWidth = await scroller.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const dialog = (el.querySelector('.g7pp-dialog') as HTMLElement).getBoundingClientRect();
+      return Math.max(0, Math.min(box.right, dialog.right) - Math.max(box.left, dialog.left));
+    });
+    expect(visibleWidth).toBeGreaterThan(200);
   });
 
   // @scenario flow=admin_summary_item_opens_edit, viewport=desktop

@@ -42,26 +42,38 @@ describe('팝업 관리 목록 화면', () => {
   });
 
   // @scenario surface=list_summary_shows_first_items_and_expands
-  it('「지금 노출 중」은 처음 8개만 보이고 나머지는 「더 보기」로 펼치며, 펼침 상태를 단추에 알린다', () => {
-    const each = findById(list, 'summary_items')!.children[0].iteration.source as string;
-    const visible = (count: number, expanded: boolean) => new Function('summary', '_local', `return (${each.replace(/^\{\{|\}\}$/g, '')});`)(
-      { data: { data: Array.from({ length: count }, (_, i) => ({ id: i + 1 })) } },
-      { summaryExpanded: expanded },
-    ).length;
+  it('「지금 노출 중」은 처음 8개(휴대폰은 한 줄 3개)만 보이고 나머지는 「더 보기」로 펼치며, 펼침 상태를 단추에 알린다', () => {
+    const li = findById(list, 'summary_items')!.children[0];
+    const run = (expr: string, scope: Record<string, unknown>) => new Function(...Object.keys(scope), `return (${expr.replace(/^\{\{|\}\}$/g, '')});`)(...Object.values(scope));
+    const summary = (count: number) => ({ data: { data: Array.from({ length: count }, (_, i) => ({ id: i + 1 })) } });
+    const visible = (count: number, expanded: boolean) => run(li.iteration.source, { summary: summary(count), _local: { summaryExpanded: expanded } }).length;
     expect(visible(26, false)).toBe(8);
     expect(visible(26, true)).toBe(26);
     expect(visible(5, false)).toBe(5);
+    // 휴대폰 폭(md 미만)에서는 4번째부터 접힌 동안 숨긴다 — 검색칸이 첫 화면에 오게
+    const hidden = (idx: number, expanded: boolean) => String(run(li.props.className.replace(/^[^{]*\{\{|\}\}$/g, ''), { idx, _local: { summaryExpanded: expanded } }));
+    expect(li.props.className.startsWith('gpp:w-20 ')).toBe(true);
+    expect(hidden(2, false)).toBe('');
+    expect(hidden(3, false)).toBe('gpp:hidden gpp:md:block');
+    expect(hidden(3, true)).toBe('');
 
     const toggle = findById(list, 'summary_toggle')!;
     expect(toggle.name).toBe('Button');
     expect(toggle.props.type).toBe('button');
-    // 단추를 담은 항목이 8개를 넘을 때만 그려진다(빈 항목을 남기지 않게 항목 쪽에 조건을 둔다)
+    // 단추를 담은 항목은 3개를 넘으면 그려지고, md 이상에서는 8개를 넘을 때만 보인다
     const holder = collect(findById(list, 'summary_items')!, (n) => (n.children ?? []).includes(toggle))[0];
-    expect(holder.if).toBe('{{(summary?.data?.data ?? []).length > 8}}');
+    expect(holder.if).toBe('{{(summary?.data?.data ?? []).length > 3}}');
+    const holderClass = (count: number) => String(run(holder.props.className.replace(/^[^{]*\{\{|\}\}$/g, ''), { summary: summary(count) }));
+    expect(holderClass(5)).toBe('gpp:md:hidden');
+    expect(holderClass(9)).toBe('');
     expect(toggle.props['aria-expanded']).toBe('{{_local.summaryExpanded === true}}');
     expect(toggle.props['aria-controls']).toBe('popup_summary_items');
     expect(findById(list, 'summary_items')!.props.id).toBe('popup_summary_items');
     expect(json(actionsOf(toggle, 'setState'))).toContain('summaryExpanded');
+    // 남은 개수는 폭마다 다르다 — 휴대폰은 전체-3, md 이상은 전체-8
+    const labels = json(toggle);
+    expect(labels).toContain('show_more|count={{(summary?.data?.data ?? []).length - 3}}');
+    expect(labels).toContain('show_more|count={{(summary?.data?.data ?? []).length - 8}}');
     for (const key of ['admin.summary.show_more', 'admin.summary.show_less']) {
       expect(pick(ko, key), `ko ${key}`).toBeTruthy();
       expect(pick(en, key), `en ${key}`).toBeTruthy();
