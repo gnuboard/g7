@@ -16,8 +16,9 @@ description: |
   (4) 사진 평균색과 문구 배경으로 어림한 글자 대비가 낮으면 추정값과 권장 조치를 안내한다. 글자색을 자동으로 바꾸거나 저장을
   막지 않으며, 사진 부분 밝기를 반영하지 못하는 어림값임을 문구에 밝힌다.
 
-# 위치(home_hero·shop_hero)·문자(ko·ja·nospace)·안내 경우(estimate·low·ok·with_controls)는 축 곱이 아니라 surface 별 변종이라
-# 마커의 덧붙은 키로만 적는다(예: surface=long_text_fits_slot, script=ja).
+# 위치(home_hero·shop_hero)·문자(ko·ja·nospace)·안내 경우(estimate·low·ok·with_controls)·링크 방식(whole_slide)은 축 곱이 아니라
+# surface 별 변종이라 마커에는 surface 만 적고 변종은 마커 옆 주석(`// 변종: script=ja`)으로 적는다 — 마커에 덧붙이면
+# 선언되지 않은 축이 된다.
 axes:
   surface:
     - preview_frame_chain_from_active_user_template

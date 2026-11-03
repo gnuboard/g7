@@ -47,8 +47,8 @@ async function previewSlot(page: Page, id: number, device: 'pc' | 'mobile', titl
 }
 
 for (const [position, path] of [['home_hero', '/'], ['shop_hero', '/shop/products']] as const) {
-  // @scenario surface=preview_frame_slot_inside_device_viewport, position=home_hero
-  // @scenario surface=preview_frame_slot_inside_device_viewport, position=shop_hero
+  // @scenario surface=preview_frame_slot_inside_device_viewport
+  // 변종: position=home_hero·shop_hero
   // @effects preview_matches_site_slot
   test(`${position} 미리보기 구좌가 실제 사이트 구좌와 같다(PC·모바일)`, async ({ page, request, managerToken, created }) => {
     const title = `E2E 구좌 ${position} 긴 제목으로 줄바꿈이 같은지 확인하는 문장 ${Date.now()}`;

@@ -883,6 +883,24 @@ describe('PopupLayer', () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
+  // @scenario surface=link_href_carries_site_mount_prefix
+  it('하위 폴더 사이트에서 덮는 링크 href 는 마운트 접두사를 갖고, 보통 누름은 접두사 없는 경로로 엔진 이동한다', () => {
+    const dispatch = vi.fn();
+    installCore({ dispatch });
+    (window as any).G7Config = { basePath: '/g7' };
+    try {
+      const { container } = show([imagePopup(1, { link_url: '/event/autumn' }), imagePopup(2, { link_url: 'https://example.com/promo', link_new_window: true })]);
+      const link = container.querySelector('.g7pp-cover-link') as HTMLAnchorElement;
+
+      // 새 탭·가운데 단추로 열어도 사이트 안에 머문다
+      expect(link.getAttribute('href')).toBe('/g7/event/autumn');
+      fireEvent.click(link);
+      expect(dispatch).toHaveBeenCalledWith({ handler: 'navigate', params: { path: '/event/autumn' } });
+    } finally {
+      delete (window as any).G7Config;
+    }
+  });
+
   // @scenario surface=html_body_purified_on_render
   it('직접 작성형 본문은 출력 때 DOMPurify 로 한 번 더 거른다', () => {
     const { container } = show([htmlPopup(1, '<p onclick="x()">안내</p><script>alert(1)</script><iframe src="https://evil"></iframe><img src="x" onerror="y()">')]);

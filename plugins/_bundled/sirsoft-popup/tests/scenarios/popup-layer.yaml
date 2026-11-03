@@ -73,6 +73,7 @@ axes:
     - link_popup_uses_covering_link_without_nested_focusables
     - link_without_alt_uses_generic_name
     - link_new_window_rel_noopener
+    - link_href_carries_site_mount_prefix
     - html_body_purified_on_render
     - html_body_scroll_region_only_when_overflowing
     - preview_renders_same_markup_with_links_inert

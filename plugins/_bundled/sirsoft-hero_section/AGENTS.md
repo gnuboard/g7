@@ -106,6 +106,8 @@
 | 공개 캐시 만료를 설정 시간으로만 잡기 | min(설정 시간, 다음 시작·종료 시각) + 꺼낼 때 기간 재판정 | 예약 배너가 시작 뒤에도 안 보이거나 종료 뒤에도 보인다 |
 | 링크 검증에서 `/` 시작을 모두 내부 경로로 보기 | `//`·`/\` 시작은 거부 | 프로토콜 상대 주소는 외부 사이트로 샌다 |
 | `Storage::disk()` 직접 호출 | `StorageInterface`(플러그인 스토리지 드라이버) | 확장 격리·경로 안전 규칙 |
+| 운영자가 넣은 링크 주소(`link_url`)를 그대로 `href` 에 넣기 | `resources/js/apiUrl.ts` 의 `sitePath()` 로 사이트 마운트 접두사를 붙인다(멱등, `http(s)://` 바깥 주소는 그대로) | 하위 폴더 설치(`https://host/g7/`)에서 `/shop` 이 사이트 밖으로 간다. `apiUrl.ts` 는 번들 확장 공통 바이트 동일 사본이다 |
+| `ini_get`·`glob` 처럼 호스팅이 막을 수 있는 함수를 바로 부르기 | `ExecutionEnvironment::hasFunction()` 으로 먼저 판정하고 대체 경로를 둔다(`UploadLimit::iniSettingBytes()`) | PHP 8 은 막힌 함수를 함수 표에서 지워 호출이 `Error` 다. `@` 는 가드가 아니다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

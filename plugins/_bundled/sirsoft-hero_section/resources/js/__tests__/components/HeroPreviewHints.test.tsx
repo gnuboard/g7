@@ -55,7 +55,7 @@ describe('미리보기 안내', () => {
   });
 
   // @scenario surface=contrast_estimate_hint
-  // @scenario surface=contrast_estimate_hint, case=estimate
+  // 변종: case=estimate
   it('대비 추정은 사진 평균색 위에 문구 배경을 절반 세기로 겹친 색과 글자색의 WCAG 대비율이다', () => {
     expect(contrastRatio('#FFFFFF', [0, 0, 0])).toBeCloseTo(21, 1);
     // 흰 사진 + 흰 글자: 배경 없음 1:1, 어두운 배경도 3:1 미만(실측 2.55)
@@ -69,7 +69,8 @@ describe('미리보기 안내', () => {
     expect(estimateContrast('red', [0, 0, 0], 'none')).toBeNull();
   });
 
-  // @scenario surface=contrast_estimate_hint, case=estimate
+  // @scenario surface=contrast_estimate_hint
+  // 변종: case=estimate
   it('추정에 쓰는 문구 배경 색·불투명도는 main.css 의 그라데이션 끝값과 같다', () => {
     const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     for (const [overlay, { rgb, alpha }] of Object.entries(OVERLAYS)) {
@@ -79,7 +80,8 @@ describe('미리보기 안내', () => {
     }
   });
 
-  // @scenario surface=contrast_estimate_hint, case=low
+  // @scenario surface=contrast_estimate_hint
+  // 변종: case=low
   it('대비가 낮으면 제목·설명의 추정값과 권장 조치를 안내하고 글자색은 바꾸지 않는다', async () => {
     const value = draft();
     const view = mount({ draft: value });
@@ -97,7 +99,8 @@ describe('미리보기 안내', () => {
     expect(title.style.color).toBe('rgb(255, 255, 255)');
   });
 
-  // @scenario surface=contrast_estimate_hint, case=ok
+  // @scenario surface=contrast_estimate_hint
+  // 변종: case=ok
   it('대비가 충분하거나 사진을 읽지 못하면 대비 안내를 띄우지 않는다', async () => {
     sample.rgb = [0, 0, 0];
     const dark = mount({ draft: draft() });
@@ -154,7 +157,8 @@ describe('미리보기 안내', () => {
     expect(view.container.querySelector('[data-hint="text-overflow"]')).toBeNull();
   });
 
-  // @scenario surface=long_text_overflow_hint, case=with_controls
+  // @scenario surface=long_text_overflow_hint
+  // 변종: case=with_controls
   it('혼자일 때는 들어가도 배너가 2장 이상이라 넘김 단추 자리를 비우면 넘치는 경우를 따로 알리고, 미리보기 모양은 그대로 둔다', async () => {
     sample.rgb = null;
     const view = mount({ draft: draft() });

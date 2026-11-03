@@ -4,6 +4,7 @@ import { Autoplay, EffectFade, EffectCube, EffectFlip, EffectCoverflow, EffectCr
 import type { Swiper as SwiperInstance, SwiperOptions } from 'swiper';
 // Swiper CSS 는 확장 CSS 에 넣지 않고 동봉 자산으로 따로 싣는다 — support/swiperStyles 참조
 import { useSwiperStyles } from '../../support/swiperStyles';
+import { sitePath } from '../../apiUrl';
 import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useMarketingConsent, type HeroVideo } from '../../support/media';
 import { LetterText, lineDelay, textMotion, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
@@ -290,6 +291,9 @@ function mediaOf(banner?: HeroBanner): 'video' | 'youtube' | null {
 /**
  * 링크 속성을 만듭니다 — 새 창이면 opener·referrer 를 끊는다.
  *
+ * 브라우저가 그대로 여는 주소라 사이트 안 경로(`/…`)에는 하위 폴더 마운트 접두사를 붙인다(`sitePath` — 멱등,
+ * `http(s)://` 바깥 주소는 그대로).
+ *
  * @param banner 배너
  * @returns a 태그 속성 (링크가 없으면 null)
  */
@@ -297,10 +301,11 @@ function linkProps(banner: HeroBanner): { href: string; target?: string; rel?: s
   if (!banner.link_url) {
     return null;
   }
+  const href = sitePath(banner.link_url);
 
   return banner.link_new_window
-    ? { href: banner.link_url, target: '_blank', rel: 'noopener noreferrer' }
-    : { href: banner.link_url };
+    ? { href, target: '_blank', rel: 'noopener noreferrer' }
+    : { href };
 }
 
 /**

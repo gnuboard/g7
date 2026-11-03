@@ -7,6 +7,7 @@ import { readDismissed, rememberDismissed } from '../../lib/dismissCookie';
 import { translate as t } from '../../support/editor';
 import { boxesFor } from '../../lib/overlays';
 import { ImageFrame } from '../../lib/ImageFrame';
+import { sitePath } from '../../apiUrl';
 
 /** GDPR 쿠키 배너 요소 id — GDPR 조각의 `data-ref` 가 DOM id 가 된다(공개 계약 아님, 결정 R8). */
 export const GDPR_BANNER_ID = 'gdpr_cookie_banner';
@@ -1238,7 +1239,9 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobi
       {link && (
         <a
           className="g7pp-cover-link"
-          href={link}
+          // 새 탭·가운데 단추로 열면 브라우저가 그대로 여는 주소라 하위 폴더 마운트 접두사를 붙인다. 보통 누름은
+          // 엔진 navigate 에 접두사 없는 경로를 넘긴다(라우터가 주소창에 쓸 때 붙인다)
+          href={sitePath(link)}
           aria-label={alt || t('sirsoft-popup.layer.link')}
           target={newWindow ? '_blank' : undefined}
           rel={newWindow ? 'noopener noreferrer' : undefined}

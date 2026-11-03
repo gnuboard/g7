@@ -80,7 +80,7 @@ class PopupImageUploadRequest extends FormRequest
         }
 
         // post_max_size 를 넘으면 본문 전체가 비어 들어온다
-        $postMax = UploadLimit::iniBytes((string) ini_get('post_max_size'));
+        $postMax = UploadLimit::iniSettingBytes('post_max_size');
         $length = (int) $this->server('CONTENT_LENGTH', 0);
 
         return $file === null && $postMax > 0 && $length > $postMax;
