@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.3] - 2026-11-02
+
+### Added
+
+- 이커머스 1.3.4 의 회원 없이 등록한 후기(다른 쇼핑몰에서 옮겨 온 후기) 표시 「移行」(`admin/product_review.table.imported`)과 이관 후기 입력 오류 문구(`exceptions.imported_review_invalid_field` 「移行レビューの入力値が正しくありません」)의 일본어 번역을 추가했습니다.
+
 ## [1.2.2] - 2026-11-01
 
 ### Added

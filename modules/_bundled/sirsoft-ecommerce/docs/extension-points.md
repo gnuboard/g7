@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 593종 / 호출 지점 697곳. 이 중 589종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 23곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 594종 / 호출 지점 698곳. 이 중 590종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 23곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -412,45 +412,46 @@
 | `sirsoft-ecommerce.product-notice-template.filter_show_result` | filter | — | `src/Services/ProductNoticeTemplateService.php:85` |
 | `sirsoft-ecommerce.product-notice-template.filter_update_data` | filter | — | `src/Services/ProductNoticeTemplateService.php:149` |
 | `sirsoft-ecommerce.product-notice-template.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductNoticeTemplateRequest.php:45` |
-| `sirsoft-ecommerce.product-review.after_bulk_delete` | action | — | `src/Services/ProductReviewService.php:340` |
-| `sirsoft-ecommerce.product-review.after_create` | action | — | `src/Services/ProductReviewService.php:165` |
-| `sirsoft-ecommerce.product-review.after_delete` | action | — | `src/Services/ProductReviewService.php:253` |
-| `sirsoft-ecommerce.product-review.before_bulk_delete` | action | — | `src/Services/ProductReviewService.php:318` |
-| `sirsoft-ecommerce.product-review.before_create` | action | — | `src/Services/ProductReviewService.php:146` |
-| `sirsoft-ecommerce.product-review.before_delete` | action | — | `src/Services/ProductReviewService.php:234` |
-| `sirsoft-ecommerce.product.after_bulk_price_update` | action | — | `src/Services/ProductService.php:591` |
-| `sirsoft-ecommerce.product.after_bulk_stock_update` | action | — | `src/Services/ProductService.php:624` |
-| `sirsoft-ecommerce.product.after_bulk_update` | action | — | `src/Services/ProductService.php:556` 외 1곳 |
-| `sirsoft-ecommerce.product.after_create` | action | — | `src/Services/ProductService.php:331` |
-| `sirsoft-ecommerce.product.after_delete` | action | — | `src/Services/ProductService.php:511` |
-| `sirsoft-ecommerce.product.after_new_list` | action | — | `src/Services/ProductService.php:206` |
-| `sirsoft-ecommerce.product.after_options_sync` | action | — | `src/Services/ProductService.php:887` |
-| `sirsoft-ecommerce.product.after_popular_list` | action | — | `src/Services/ProductService.php:185` |
-| `sirsoft-ecommerce.product.after_public_list` | action | — | `src/Services/ProductService.php:164` |
-| `sirsoft-ecommerce.product.after_read` | action | — | `src/Services/ProductService.php:248` |
+| `sirsoft-ecommerce.product-review.after_bulk_delete` | action | — | `src/Services/ProductReviewService.php:549` |
+| `sirsoft-ecommerce.product-review.after_create` | action | — | `src/Services/ProductReviewService.php:179` |
+| `sirsoft-ecommerce.product-review.after_delete` | action | — | `src/Services/ProductReviewService.php:461` |
+| `sirsoft-ecommerce.product-review.after_import` | action | — | `src/Services/ProductReviewService.php:253` |
+| `sirsoft-ecommerce.product-review.before_bulk_delete` | action | — | `src/Services/ProductReviewService.php:527` |
+| `sirsoft-ecommerce.product-review.before_create` | action | — | `src/Services/ProductReviewService.php:160` |
+| `sirsoft-ecommerce.product-review.before_delete` | action | — | `src/Services/ProductReviewService.php:442` |
+| `sirsoft-ecommerce.product.after_bulk_price_update` | action | — | `src/Services/ProductService.php:567` |
+| `sirsoft-ecommerce.product.after_bulk_stock_update` | action | — | `src/Services/ProductService.php:600` |
+| `sirsoft-ecommerce.product.after_bulk_update` | action | — | `src/Services/ProductService.php:532` 외 1곳 |
+| `sirsoft-ecommerce.product.after_create` | action | — | `src/Services/ProductService.php:307` |
+| `sirsoft-ecommerce.product.after_delete` | action | — | `src/Services/ProductService.php:487` |
+| `sirsoft-ecommerce.product.after_new_list` | action | — | `src/Services/ProductService.php:182` |
+| `sirsoft-ecommerce.product.after_options_sync` | action | — | `src/Services/ProductService.php:863` |
+| `sirsoft-ecommerce.product.after_popular_list` | action | — | `src/Services/ProductService.php:161` |
+| `sirsoft-ecommerce.product.after_public_list` | action | — | `src/Services/ProductService.php:140` |
+| `sirsoft-ecommerce.product.after_read` | action | — | `src/Services/ProductService.php:224` |
 | `sirsoft-ecommerce.product.after_stock_sync` | action | — | `src/Listeners/SyncProductFromOptionListener.php:111` 외 1곳 |
-| `sirsoft-ecommerce.product.after_update` | action | — | `src/Services/ProductService.php:408` |
-| `sirsoft-ecommerce.product.before_bulk_price_update` | action | — | `src/Services/ProductService.php:582` |
-| `sirsoft-ecommerce.product.before_bulk_stock_update` | action | — | `src/Services/ProductService.php:616` |
-| `sirsoft-ecommerce.product.before_bulk_update` | action | — | `src/Services/ProductService.php:548` 외 1곳 |
-| `sirsoft-ecommerce.product.before_create` | action | — | `src/Services/ProductService.php:265` |
-| `sirsoft-ecommerce.product.before_delete` | action | — | `src/Services/ProductService.php:463` |
-| `sirsoft-ecommerce.product.before_new_list` | action | — | `src/Services/ProductService.php:200` |
-| `sirsoft-ecommerce.product.before_popular_list` | action | — | `src/Services/ProductService.php:179` |
-| `sirsoft-ecommerce.product.before_public_list` | action | — | `src/Services/ProductService.php:158` |
-| `sirsoft-ecommerce.product.before_update` | action | — | `src/Services/ProductService.php:350` |
+| `sirsoft-ecommerce.product.after_update` | action | — | `src/Services/ProductService.php:384` |
+| `sirsoft-ecommerce.product.before_bulk_price_update` | action | — | `src/Services/ProductService.php:558` |
+| `sirsoft-ecommerce.product.before_bulk_stock_update` | action | — | `src/Services/ProductService.php:592` |
+| `sirsoft-ecommerce.product.before_bulk_update` | action | — | `src/Services/ProductService.php:524` 외 1곳 |
+| `sirsoft-ecommerce.product.before_create` | action | — | `src/Services/ProductService.php:241` |
+| `sirsoft-ecommerce.product.before_delete` | action | — | `src/Services/ProductService.php:439` |
+| `sirsoft-ecommerce.product.before_new_list` | action | — | `src/Services/ProductService.php:176` |
+| `sirsoft-ecommerce.product.before_popular_list` | action | — | `src/Services/ProductService.php:155` |
+| `sirsoft-ecommerce.product.before_public_list` | action | — | `src/Services/ProductService.php:134` |
+| `sirsoft-ecommerce.product.before_update` | action | — | `src/Services/ProductService.php:326` |
 | `sirsoft-ecommerce.product.bulk_price_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdatePriceRequest.php:42` |
 | `sirsoft-ecommerce.product.bulk_status_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateStatusRequest.php:52` |
 | `sirsoft-ecommerce.product.bulk_stock_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateStockRequest.php:40` |
 | `sirsoft-ecommerce.product.bulk_update_validation_rules` | filter | — | `src/Http/Requests/Admin/BulkUpdateProductsRequest.php:106` |
-| `sirsoft-ecommerce.product.filter_bulk_update_data` | filter | — | `src/Services/ProductService.php:653` |
+| `sirsoft-ecommerce.product.filter_bulk_update_data` | filter | — | `src/Services/ProductService.php:629` |
 | `sirsoft-ecommerce.product.filter_content_thumbnail` | filter | — | `src/Models/Product.php:195` |
-| `sirsoft-ecommerce.product.filter_create_data` | filter | — | `src/Services/ProductService.php:268` |
-| `sirsoft-ecommerce.product.filter_list_params` | filter | — | `src/Services/ProductService.php:125` |
-| `sirsoft-ecommerce.product.filter_new_list_result` | filter | — | `src/Services/ProductService.php:204` |
-| `sirsoft-ecommerce.product.filter_popular_list_result` | filter | — | `src/Services/ProductService.php:183` |
-| `sirsoft-ecommerce.product.filter_public_list_params` | filter | — | `src/Services/ProductService.php:160` |
-| `sirsoft-ecommerce.product.filter_update_data` | filter | — | `src/Services/ProductService.php:356` |
+| `sirsoft-ecommerce.product.filter_create_data` | filter | — | `src/Services/ProductService.php:244` |
+| `sirsoft-ecommerce.product.filter_list_params` | filter | — | `src/Services/ProductService.php:101` |
+| `sirsoft-ecommerce.product.filter_new_list_result` | filter | — | `src/Services/ProductService.php:180` |
+| `sirsoft-ecommerce.product.filter_popular_list_result` | filter | — | `src/Services/ProductService.php:159` |
+| `sirsoft-ecommerce.product.filter_public_list_params` | filter | — | `src/Services/ProductService.php:136` |
+| `sirsoft-ecommerce.product.filter_update_data` | filter | — | `src/Services/ProductService.php:332` |
 | `sirsoft-ecommerce.product.list_validation_messages` | filter | — | `src/Http/Requests/Admin/ProductListRequest.php:166` |
 | `sirsoft-ecommerce.product.list_validation_rules` | filter | — | `src/Http/Requests/Admin/ProductListRequest.php:122` |
 | `sirsoft-ecommerce.product.logs_validation_rules` | filter | — | `src/Http/Requests/Admin/ProductLogsRequest.php:39` |

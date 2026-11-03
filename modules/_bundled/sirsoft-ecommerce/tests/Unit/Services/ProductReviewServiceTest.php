@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
@@ -46,6 +47,11 @@ class ProductReviewServiceTest extends ModuleTestCase
     /** @var MockInterface&ProductReviewImageRepositoryInterface */
     private $imageRepository;
 
+    /**
+     * 저장소·저장소 드라이버·설정 서비스를 목으로 바꾸고 서비스를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,10 +70,16 @@ class ProductReviewServiceTest extends ModuleTestCase
             $this->orderOptionRepository,
             $this->storage,
             $this->settingsService,
-            $this->imageRepository
+            $this->imageRepository,
+            Mockery::mock(ProductRepositoryInterface::class)
         );
     }
 
+    /**
+     * Mockery 기대값을 검증하고 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -78,6 +90,15 @@ class ProductReviewServiceTest extends ModuleTestCase
     // canWrite() 테스트
     // ========================================
 
+    /**
+     * 주문 옵션이 없으면 작성할 수 없습니다.
+     *
+     * @scenario operation=can_write
+     *
+     * @effects review_write_denied_when_ineligible
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_can_write_returns_false_when_order_option_not_found(): void
     {
@@ -92,6 +113,15 @@ class ProductReviewServiceTest extends ModuleTestCase
         $this->assertEquals('order_option_not_found', $result['reason']);
     }
 
+    /**
+     * 다른 회원의 주문 옵션이면 작성할 수 없습니다.
+     *
+     * @scenario operation=can_write
+     *
+     * @effects review_write_denied_when_ineligible
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_can_write_returns_false_when_not_own_order(): void
     {
@@ -113,6 +143,15 @@ class ProductReviewServiceTest extends ModuleTestCase
         $this->assertEquals('not_own_order', $result['reason']);
     }
 
+    /**
+     * 구매 확정 전 주문 옵션이면 작성할 수 없습니다.
+     *
+     * @scenario operation=can_write
+     *
+     * @effects review_write_denied_when_ineligible
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_can_write_returns_false_when_not_confirmed(): void
     {
@@ -135,6 +174,15 @@ class ProductReviewServiceTest extends ModuleTestCase
         $this->assertEquals('not_confirmed', $result['reason']);
     }
 
+    /**
+     * 같은 주문 옵션에 이미 쓴 후기가 있으면 작성할 수 없습니다.
+     *
+     * @scenario operation=can_write
+     *
+     * @effects review_write_denied_when_ineligible
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_can_write_returns_false_when_already_written(): void
     {
@@ -168,6 +216,15 @@ class ProductReviewServiceTest extends ModuleTestCase
         $this->assertEquals('already_written', $result['reason']);
     }
 
+    /**
+     * 본인 주문의 구매 확정 옵션이고 기한 안이면 작성할 수 있습니다.
+     *
+     * @scenario operation=can_write
+     *
+     * @effects review_write_allowed_when_eligible
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_can_write_returns_true_when_eligible(): void
     {
@@ -201,6 +258,15 @@ class ProductReviewServiceTest extends ModuleTestCase
         $this->assertNull($result['reason']);
     }
 
+    /**
+     * 작성 기한이 지나면 작성할 수 없습니다.
+     *
+     * @scenario operation=can_write
+     *
+     * @effects review_write_denied_when_ineligible
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_can_write_returns_false_when_deadline_passed(): void
     {
@@ -233,6 +299,15 @@ class ProductReviewServiceTest extends ModuleTestCase
     // createReview() 테스트
     // ========================================
 
+    /**
+     * 작성 자격이 없으면 후기 생성이 예외로 막힙니다.
+     *
+     * @scenario operation=create_review
+     *
+     * @effects review_write_denied_when_ineligible
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_create_review_throws_when_not_eligible(): void
     {
@@ -251,6 +326,15 @@ class ProductReviewServiceTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 작성 자격이 있으면 후기를 만듭니다.
+     *
+     * @scenario operation=create_review
+     *
+     * @effects review_write_allowed_when_eligible
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_create_review_succeeds_when_eligible(): void
     {
@@ -309,6 +393,15 @@ class ProductReviewServiceTest extends ModuleTestCase
     // updateStatus() 테스트
     // ========================================
 
+    /**
+     * 상태 변경은 저장소에 위임합니다.
+     *
+     * @scenario operation=update_status
+     *
+     * @effects review_status_change_delegated
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_update_status_delegates_to_repository(): void
     {
@@ -334,6 +427,15 @@ class ProductReviewServiceTest extends ModuleTestCase
     // saveReply() 테스트
     // ========================================
 
+    /**
+     * 첫 답변이면 답변 시각을 기록합니다.
+     *
+     * @scenario operation=save_reply
+     *
+     * @effects review_reply_timestamps_tracked
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_save_reply_sets_replied_at_for_new_reply(): void
     {
@@ -361,6 +463,15 @@ class ProductReviewServiceTest extends ModuleTestCase
         $this->assertEquals('감사합니다.', $result->reply_content);
     }
 
+    /**
+     * 이미 답변이 있으면 답변 수정 시각을 기록합니다.
+     *
+     * @scenario operation=save_reply
+     *
+     * @effects review_reply_timestamps_tracked
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_save_reply_sets_reply_updated_at_for_existing_reply(): void
     {
@@ -399,6 +510,15 @@ class ProductReviewServiceTest extends ModuleTestCase
     // deleteReply() 테스트
     // ========================================
 
+    /**
+     * 답변을 지우면 답변 내용·작성 관리자·시각을 비우고 형식을 text 로 되돌립니다.
+     *
+     * @scenario operation=delete_reply
+     *
+     * @effects review_reply_cleared_on_delete
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_reply_clears_all_reply_fields(): void
     {
@@ -430,6 +550,15 @@ class ProductReviewServiceTest extends ModuleTestCase
     // bulkUpdateStatus() 테스트
     // ========================================
 
+    /**
+     * 일괄 상태 변경은 저장소에 위임합니다.
+     *
+     * @scenario operation=bulk_update_status
+     *
+     * @effects review_status_change_delegated
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_bulk_update_status_delegates_to_repository(): void
     {

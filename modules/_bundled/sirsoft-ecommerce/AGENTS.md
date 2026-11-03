@@ -222,6 +222,18 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 `order.user_id === null` 로도 판정합니다. 이 판정이 빠지면 비회원 주문 상세에 눌러도 반응 없는
 「리뷰 작성」 버튼이 보입니다.
 
+**회원·주문 없는 후기(1.3.4)**: 다른 쇼핑몰에서 옮겨 온 후기처럼 회원·주문 연결이 없는 후기도 같은
+`ecommerce_product_reviews` 에 둡니다 — 별도 표에 두고 화면에서 합치면 관리자 목록·상품 상세·상품 목록
+별점 집계가 서로 다른 데이터를 봅니다. 그 행은 `user_id`·`order_option_id` 가 NULL 이고 작성자는
+`author_name`(가린 이름이면 가린 채로)입니다. 쓰기 진입점은 `ProductReviewService::createImported()` 하나이며
+작성 자격 검사·회원 후기 작성 훅(`before_create`/`after_create` → 관리자 활동 로그)을 거치지 않고
+`after_import` 만 발행합니다. 같은 상품·작성자 이름·작성일이면 그 행을 갱신합니다(재이관 멱등 — 관리자가 바꾼
+`status`·답변은 입력에 키가 있을 때만 덮어쓰고, 지운 후기는 되살리지 않음). HTML 본문은 상품 설명과 같은
+`Services\Concerns\PurifiesHtml` 규칙으로 정화합니다. 후기를 읽는 코드에서 `$review->user`·`orderOption` 을
+null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview::displayAuthorName()`, 응답은
+`author_name`·`is_imported` 를 씁니다. 주문 옵션 파기 연쇄(`purgeForOrderOptions`)·옵션 필터·별점 분포 조인은
+`order_option_id` 로 묶으므로 이 후기를 자연히 건너뛰거나(옵션 필터) 그대로 셉니다(별점·상품 목록 집계).
+
 **상품 옵션 판매가 일괄 변경**: `BulkUpdateProductsRequest` 의
 `option_bulk_changes.price_adjustment.method` 는 `set` · `add` · `subtract` · `percent` 네 가지입니다
 (`subtract` 는 판매가 일괄 변경 창의 「인하 + 금액」 — 허용값에 없어 422 로 저장되지 않던 것을 더했습니다).
@@ -242,7 +254,7 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 593개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 594개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 224개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 48개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 17개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -375,10 +387,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 718개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 293개 | `vitest.config.ts` |
+| PHPUnit | 721개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 295개 | `vitest.config.ts` |
 | Playwright | 81개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 421개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 423개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
