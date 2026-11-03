@@ -1,0 +1,31 @@
+feature: 팝업 상태 판정 (모델 접근자 = SQL 판정, cron 없음)
+
+description: |
+  상태는 저장하지 않고 조회 시점에 계산한다 — 비활성 > 예약 > 종료 > 노출중(#810 과 같은 규칙).
+  모델 접근자(PHP)와 Repository 상태 필터(SQL)가 경계 값에서 같은 결과를 내는지 잠근다.
+  상시 팝업은 기간 경계가 없으므로 within 만 의미가 있다.
+
+axes:
+  display_period: [always, range]
+  is_active: [active, inactive]
+  now_position: [before_start, at_start, within, at_end, after_end]
+
+exclusions:
+  - display_period: always
+    now_position: before_start
+    reason: 상시 팝업에는 시작 시각이 없다
+  - display_period: always
+    now_position: at_start
+    reason: 상시 팝업에는 시작 시각이 없다
+  - display_period: always
+    now_position: at_end
+    reason: 상시 팝업에는 종료 시각이 없다
+  - display_period: always
+    now_position: after_end
+    reason: 상시 팝업에는 종료 시각이 없다
+
+effects:
+  - accessor_equals_sql_status
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Unit/PopupStatusParityTest.php

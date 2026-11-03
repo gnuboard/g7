@@ -1594,6 +1594,8 @@ G7Core.state.setLocal(updates, options?: {
 - 일반적인 모든 플러그인. 엔진이 자동으로 정합성 확보
 - **초보자는 `selfManaged`를 몰라도 되고 모르는 편이 안전** (safe-by-default)
 
+**그 값을 읽는 쪽**: `render: false` 쓰기는 화면을 다시 그리지 않으므로, 같은 값을 props(`{{_local.form.content}}` 등)로 받는 **다른 컴포넌트**(미리보기·글자 수 표시 등)는 다른 입력이 화면을 다시 그릴 때까지 옛 값에 머문다. 입력 즉시 따라가야 하는 컴포넌트는 `G7Core.state.subscribe()` 로 그 경로를 받아 그린다 — `setGlobalState` 는 다시 그리기를 건너뛰기 전에 리스너를 부른다. 받은 값은 그때의 props 위에서만 쓰고 props 가 바뀌면 props 를 정본으로 돌린다(예: 팝업 플러그인 `PopupPreview` 의 본문 미리보기).
+
 ### 플러그인 개발 체크리스트
 
 새 플러그인이 폼 내부에서 `setLocal`을 쓰는 경우 다음을 확인:

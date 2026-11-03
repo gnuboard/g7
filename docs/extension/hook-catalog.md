@@ -10,7 +10,7 @@
 ## 목차
 
 - [코어](#코어) (645)
-- [기본 제공 확장](#기본-제공-확장) (18)
+- [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
 
@@ -684,6 +684,7 @@
 | `sirsoft-pay_kginicis` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_kginicis/docs/extension-points.md#발행-훅) |
 | `sirsoft-pay_nhnkcp` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md#발행-훅) |
 | `sirsoft-pay_nicepayments` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md#발행-훅) |
+| `sirsoft-popup` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-popup/docs/extension-points.md#발행-훅) |
 | `sirsoft-social_login` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-social_login/docs/extension-points.md#발행-훅) |
 | `sirsoft-sso` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-sso/docs/extension-points.md#발행-훅) |
 | `sirsoft-tosspayments` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-tosspayments/docs/extension-points.md#발행-훅) |

@@ -1,0 +1,73 @@
+feature: 팝업 관리자 화면·사용자 주입 조각 레이아웃 렌더링
+
+description: |
+  목록·등록/수정·환경설정 레이아웃과 user_global_overlay 주입 조각을 createLayoutTest 로 렌더링해
+  #757 규칙(링크·받는 중 빈 문구·행 이름·컨트롤 이름), abilities 게이트, 일괄 줄·확인 창, 순서 변경 창,
+  폼 초기화·유형 전환·라우트 칩·에디터 확장점·업로드 주소·충돌 복구, 설정 화면 조건부 입력·onError 를 잠근다.
+
+axes:
+  surface:
+    - list_header_links_and_abilities
+    - list_summary_card_order_and_device_tags
+    - list_summary_card_settings_lines
+    - list_summary_shows_first_items_and_expands
+    - list_empty_message_hidden_while_loading
+    - list_pagination_shown
+    - list_summary_item_opens_edit
+    - list_row_label_and_control_names
+    - list_title_links_to_edit
+    - list_filters_write_url_query
+    - list_selection_cleared_on_filter_change
+    - list_bulk_bar_buttons_by_ability
+    - list_copy_and_delete_confirm_dialogs
+    - reorder_modal_loads_and_moves_items
+    - reorder_modal_first_last_buttons_locked
+    - reorder_save_locked_without_change
+    - form_create_initializes_once_with_temp_key
+    - form_edit_initializes_from_show_once
+    - form_content_type_switch_shows_fields
+    - form_language_tabs_mark_filled_locales
+    - form_route_chips_add_remove_and_hint
+    - form_html_editor_extension_point_with_default
+    - form_upload_urls_use_temp_key
+    - form_recommended_size_warning
+    - form_period_inputs_only_for_range
+    - form_validation_errors_shown_per_field
+    - form_conflict_resolver_opens_on_409
+    - form_preview_follows_display_settings
+    - settings_coords_inputs_only_for_coords
+    - settings_interval_locked_without_autoplay
+    - settings_days_input_only_for_days_mode
+    - settings_save_has_on_error
+    - conflict_resolver_defaults_by_side
+    - conflict_resolver_both_changed_requires_choice
+    - conflict_resolver_apply_merges_onto_latest
+    - conflict_resolver_stale_image_not_selectable
+    - period_hint_status_boundaries
+    - period_hint_clock_loading
+    - settings_back_link_to_list
+    - settings_mobile_style_description_shown
+    - reorder_close_clears_state_before_closing
+    - form_image_and_body_changes_mark_dirty
+    - row_menu_toggles_active
+    - form_preview_sticky_and_alt_placeholder
+    - form_save_lock_reason_and_field_error_links
+    - form_preview_actual_size_modal
+    - settings_preview_actual_size_modal
+    - overlay_fragment_targets_user_global_overlay
+    - overlay_fragment_hidden_when_empty
+    - overlay_fragment_passes_route_path
+
+effects:
+  - accessible_names_present
+  - links_used_for_navigation
+  - abilities_gate_controls
+  - translation_keys_present
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_list.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_form.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/plugin_settings.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupConflictResolver.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupPeriodHint.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_layer_extension.test.tsx
