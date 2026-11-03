@@ -1,0 +1,32 @@
+feature: 동적 주입 로케일(ja)의 SEO 계층 소비 — 사이트맵 다국어 확장, 봇 렌더 로케일 수용, 캐시 키 격리
+
+description: |
+  언어팩이 활성 코어 로케일을 `config('app.supported_locales')` 에 동적으로 주입하면(ja 등),
+  SEO 계층(SitemapGenerator, SeoMiddleware, SeoCacheManager)은 별도 배선 없이 그 로케일을
+  소비해야 한다. ja 언어팩 DB 행 유무와 무관하게 supported_locales 에 들어 있기만 하면 된다.
+
+    - 사이트맵: 로케일이 둘 이상이면 xhtml 네임스페이스와 로케일별 <url>, hreflang alternate 를
+      낸다. 기본 로케일 주소는 `?locale=` 없는 정본 주소다.
+    - 봇 렌더: `?locale=ja` 를 유효 로케일로 받는다. 미지원 로케일(fr)은 거부하지 않고 기본으로 접는다.
+    - 캐시: 같은 URL 이라도 로케일마다 캐시 키가 다르다.
+
+  (#609 부채 정리 — 소유 매니페스트가 없던 tests/Feature/Seo/JaLocaleSeoIntegrationTest.php 의 원장)
+
+axes:
+  surface: [sitemap_xml, seo_middleware, seo_cache_key]   # 동적 로케일을 소비하는 SEO 지점
+  locale: [default_ko, dynamic_ja, unsupported_fr]        # 요청 또는 생성 대상 로케일
+
+exclusions:
+  - { surface: sitemap_xml, locale: unsupported_fr, reason: "사이트맵은 요청 로케일을 받지 않고 supported_locales 만 전개한다 — 미지원 로케일이 들어올 입구가 없다" }
+  - { surface: seo_middleware, locale: default_ko, reason: "기본 로케일 봇 렌더는 동적 주입과 무관한 기존 경로다 — seo-renderer-pipeline 이 소유한다" }
+  - { surface: seo_cache_key, locale: unsupported_fr, reason: "미지원 로케일은 미들웨어에서 기본 로케일로 접힌 뒤 캐시 키를 만든다 — 캐시 키 단계에 미지원 값이 닿지 않는다" }
+
+effects:
+  - sitemap_expands_contributor_urls_to_dynamic_locale   # 동적 로케일 ja 의 <url> 과 hreflang alternate 가 생기고 xhtml 네임스페이스가 켜진다
+  - sitemap_default_locale_url_has_no_locale_query       # 기본 로케일(ko) 주소는 ?locale=ko 없는 정본 주소다
+  - seo_middleware_accepts_dynamic_locale_query          # ?locale=ja 봇 요청이 거부되지 않는다
+  - seo_middleware_unsupported_locale_falls_back         # 미지원 ?locale=fr 도 기본 로케일로 접혀 정상 응답한다
+  - seo_cache_key_isolated_per_dynamic_locale            # 같은 URL 의 ko, en, ja 캐시 키가 서로 다르다
+
+test_files:
+  - tests/Feature/Seo/JaLocaleSeoIntegrationTest.php

@@ -40,16 +40,27 @@ final class ProcessOutputEncoding
      */
     public static function normalize(string $value): string
     {
-        if ($value === '' || mb_check_encoding($value, 'UTF-8')) {
+        // mbstring 함수가 `disable_functions` 로 막힌 호스팅에서는 판정 자체가 불가능하다.
+        // PHP 8 은 차단 함수를 함수 테이블에서 제거하므로 그대로 부르면 치명 오류이고,
+        // 이 클래스는 인스톨러의 응답 조립 경로에 있어 그 한 줄이 곧 빈 본문(HTTP 200)이
+        // 된다 — 막으려던 결함을 정규화 자신이 만드는 셈이다. 판정할 수 없으면 원문을
+        // 그대로 돌려준다.
+        if ($value === '' || ! self::canUse('mb_check_encoding')) {
+            return $value;
+        }
+
+        if (mb_check_encoding($value, 'UTF-8')) {
             return $value;
         }
 
         // (1) 한국어 코드페이지 확정 감지 — OS 무관(테스트·Linux 에서도 같은 답).
-        $detected = mb_detect_encoding($value, self::DETECT_ORDER, true);
-        if ($detected !== false) {
-            $converted = @mb_convert_encoding($value, 'UTF-8', $detected);
-            if (is_string($converted) && mb_check_encoding($converted, 'UTF-8')) {
-                return $converted;
+        if (self::canUse('mb_detect_encoding') && self::canUse('mb_convert_encoding')) {
+            $detected = mb_detect_encoding($value, self::DETECT_ORDER, true);
+            if ($detected !== false) {
+                $converted = @mb_convert_encoding($value, 'UTF-8', $detected);
+                if (is_string($converted) && mb_check_encoding($converted, 'UTF-8')) {
+                    return $converted;
+                }
             }
         }
 
@@ -69,7 +80,26 @@ final class ProcessOutputEncoding
         }
 
         // (3) 최종 방어 — 의미는 잃어도 응답은 살린다.
-        return mb_scrub($value, 'UTF-8');
+        return self::canUse('mb_scrub') ? mb_scrub($value, 'UTF-8') : $value;
+    }
+
+    /**
+     * 인코딩 함수를 실제로 호출할 수 있는지 판정합니다.
+     *
+     * 가용성 판정은 `ExecutionEnvironment` 가 SSoT 다 (`function_exists` 만으로는
+     * `disable_functions` 목록을 보지 못한다). 그 클래스를 로드할 수 없는 배치에서는
+     * `function_exists` 로 내려간다 — 인스톨러는 두 클래스를 파일 경로로 함께 로드한다.
+     *
+     * @param  string  $function  판정할 함수명
+     * @return bool 호출 가능 여부
+     */
+    private static function canUse(string $function): bool
+    {
+        if (class_exists(ExecutionEnvironment::class)) {
+            return ExecutionEnvironment::hasFunction($function);
+        }
+
+        return function_exists($function);
     }
 
     /**
@@ -112,6 +142,12 @@ final class ProcessOutputEncoding
      */
     public static function invalidPaths(mixed $value, string $prefix = ''): array
     {
+        // 판정 함수를 부를 수 없으면 「invalid 없음」으로 답한다 — 이 목록은 진단용이라
+        // 여기서 죽으면 진단하려던 응답 자체가 사라진다 (normalize 와 같은 판정).
+        if (! self::canUse('mb_check_encoding')) {
+            return [];
+        }
+
         if (is_string($value)) {
             return mb_check_encoding($value, 'UTF-8') ? [] : [$prefix];
         }

@@ -219,6 +219,7 @@
 
 **판정 흐름**:
 
+0. 하위 폴더 설치면 마운트 접두사를 품은 목적지(`/g7/board/free`, 같은 출처 전체 주소)는 접두사를 벗겨 대조한다. 목적지가 `//`(프로토콜 상대, 백슬래시와 제어 문자 변형 포함)나 스킴으로 시작하면 사이트 밖이다 — 아래 어느 갈래(`fallback: false`, `replace: true`, 라우터 미초기화 포함)로도 SPA 이동하지 않고 경고만 남기며, 기본 fallback 은 그 주소를 같은 출처 판정으로 거부한다 (engine-v1.87.0)
 1. `params.fallback === false` → fallback 비활성화 (SPA navigate 강행, 기존 동작)
 2. `params.replace === true` → 쿼리 갱신 전용이므로 fallback 미적용
 3. Router 미초기화 또는 routes 미로드 → fallback 미적용 (정상 navigate)

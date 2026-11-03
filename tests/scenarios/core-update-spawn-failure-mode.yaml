@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 코어 업데이트 spawn 실패 / silent skip / stale 메모리 가드 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 코어 업데이트 spawn 실패 / silent skip / stale 메모리 가드 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 코어 업데이트 spawn 자식 실패 fail-fast + [STEPS_EXECUTED] silent skip 가드 + stale 메모리 가드
 
@@ -37,6 +38,8 @@ description: |
   PHP·실행 유저가 동일하면 non_root 로 처리된다.
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  update_mode: [prune]
   spawn_branch: [proc_open_disabled, proc_open_resource_fail, child_abnormal_exit, child_silent_skip_no_signal, child_zero_steps_with_discovered, child_zero_steps_no_step_files]
   spawn_failure_mode: [abort, fallback]
   from_to_relation: [from_lt_to, from_eq_to_forced]                # version_compare 분기
@@ -148,6 +151,16 @@ effects:
   # #658 상주 큐 워커 재시작 신호
   - core_update_step11_signals_queue_restart
   - core_update_queue_restart_failure_does_not_abort_update
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - CoreUpdateContext_hasEnvFlag_ignores_argv
+  - bootstrap_self_heal_condition_mirrors_CoreUpdateContext
+  - removeOrphanItems_preserves_whitelisted_orphan_links
+  - removeOrphanItems_still_deletes_orphan_links_outside_whitelist
+  - copyDirectory_copies_plain_directories_unchanged
+  - copyDirectory_preserves_windows_junction_as_link
+  - junction_detection_matches_storage_link_helper_ssot
+  - env_version_update_reaches_the_running_process
+  - missing_env_file_leaves_process_version_untouched
 
 test_files:
   - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php
@@ -168,6 +181,7 @@ test_files:
   - tests/Unit/Extension/CoreVersionCheckerEnvPriorityTest.php
   - tests/Unit/Extension/PluginManagerVersionCheckTest.php
   - tests/Unit/Services/CoreUpdateServiceQueueRestartTest.php
+  - tests/Unit/Services/CoreUpdateServiceVersionEnvSyncTest.php
 
 # 본 매니페스트의 axes cross product 는 800+ 케이스이나, 실제 회귀 가드는 test_files 의
 # 통과 테스트들이 SSoT — 매니페스트는 매트릭스 SSoT 역할.

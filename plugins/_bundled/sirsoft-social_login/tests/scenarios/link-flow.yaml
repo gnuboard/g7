@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 연결 관리(연결·충돌·해제·마지막 수단), 대체 이메일 회원의 소셜 재확인, 회원 생애주기 리스너, 공개 제공자 목록은 서로 다른 표면이라 축을 곱하면 성립하지 않는 조합만 늘어난다 — 표면별 시험으로 나눴다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 연결 관리(연결·충돌·해제·마지막 수단), 대체 이메일 회원의 소셜 재확인, 회원 생애주기 리스너, 공개 제공자 목록은 서로 다른 표면이라 축을 곱하면 성립하지 않는 조합만 늘어난다 — 표면별 시험으로 나눴다.
 feature: social_login_link_flow
 coverage_strategy: pairwise
 description: |

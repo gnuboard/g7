@@ -2,6 +2,7 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { createLogger } from '../utils/Logger';
+import { withBasePrefix } from '../support/assetUrl';
 
 // Pusher를 window 객체에 등록 (Laravel Echo 필수)
 declare global {
@@ -111,7 +112,11 @@ class WebSocketManager {
       return;
     }
 
-    const { appKey, host = 'localhost', port = 80, scheme = 'https', authEndpoint = '/api/broadcasting/auth' } = this.config;
+    const { appKey, host = 'localhost', port = 80, scheme = 'https', authEndpoint: configuredAuthEndpoint } = this.config;
+
+    // 하위 폴더 배치에서 사이트 밖을 가리키지 않도록 접두사를 거친다 (헬퍼는 멱등이고
+    // 절대 URL 은 그대로 둔다). 운영자가 지정한 값도 같은 규칙을 탄다.
+    const authEndpoint = withBasePrefix(configuredAuthEndpoint ?? '/api/broadcasting/auth');
     const numPort = Number(port) || 80;
     const useTLS = scheme === 'https';
 

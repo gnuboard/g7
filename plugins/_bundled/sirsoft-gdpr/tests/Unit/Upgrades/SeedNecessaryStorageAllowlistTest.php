@@ -24,8 +24,6 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *   - 잠금 항목을 시드하지 않는다 (담기면 API 로 지울 수 있게 된다)
  *
  * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=empty, request=key_absent
- *
- * @effects upgrade_seeds_allowlist_when_key_absent, upgrade_preserves_operator_edited_allowlist, upgrade_is_idempotent, upgrade_skips_when_settings_file_missing, upgrade_skips_when_settings_json_malformed, upgrade_does_not_seed_locked_items, allowlist_default_seeded_from_shipped_catalog
  */
 class SeedNecessaryStorageAllowlistTest extends PluginTestCase
 {
@@ -37,7 +35,7 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
     /**
      * 테스트 환경 준비 — 설정 파일 경로 해석 및 잔여 파일 정리.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -57,7 +55,7 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
     /**
      * 테스트가 만든 설정 파일 정리.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -68,6 +66,13 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         parent::tearDown();
     }
 
+    /**
+     * 허용목록 키가 없는 설정 파일에 출하 카탈로그 기본값이 세 스코프로 들어가고 다른 키는 남는지 확인한다.
+     *
+     * @effects upgrade_seeds_allowlist_when_key_absent, allowlist_default_seeded_from_shipped_catalog
+     *
+     * @return void 반환값 없음
+     */
     public function test_seeds_allowlist_when_key_is_absent(): void
     {
         $this->writeSettings(['banner_enabled' => true]);
@@ -88,6 +93,13 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertTrue($settings['banner_enabled']);
     }
 
+    /**
+     * 운영자가 이미 편집한 허용목록은 스텝이 덮어쓰지 않고 그대로 두는지 확인한다.
+     *
+     * @effects upgrade_preserves_operator_edited_allowlist
+     *
+     * @return void 반환값 없음
+     */
     public function test_preserves_operator_edited_allowlist(): void
     {
         $edited = [
@@ -102,6 +114,13 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertSame($edited, $this->readSettings()['necessary_storage_allowlist']);
     }
 
+    /**
+     * 스텝을 두 번 돌려도 설정 파일 내용이 첫 실행 결과와 같은지 확인한다.
+     *
+     * @effects upgrade_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_idempotent_on_repeated_runs(): void
     {
         $this->writeSettings(['banner_enabled' => true]);
@@ -115,6 +134,13 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertSame($first, $second);
     }
 
+    /**
+     * 설정 파일이 없으면 스텝이 새 파일을 만들지 않고 건너뛰는지 확인한다.
+     *
+     * @effects upgrade_skips_when_settings_file_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_skips_when_settings_file_missing(): void
     {
         $this->assertFalse(File::exists($this->path));
@@ -124,6 +150,13 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertFalse(File::exists($this->path), '파일이 없으면 새로 만들지 않는다');
     }
 
+    /**
+     * JSON 이 깨진 설정 파일은 덮어쓰지 않고 원문 그대로 남기는지 확인한다.
+     *
+     * @effects upgrade_skips_when_settings_json_malformed
+     *
+     * @return void 반환값 없음
+     */
     public function test_skips_when_settings_json_is_malformed(): void
     {
         File::ensureDirectoryExists(dirname($this->path));
@@ -134,6 +167,13 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
         $this->assertSame('{ not json', File::get($this->path), '깨진 파일을 덮어쓰지 않는다');
     }
 
+    /**
+     * 인증 토큰, XSRF 쿠키, GDPR 세션 쿠키 같은 잠금 항목은 시드된 허용목록에 담기지 않는지 확인한다.
+     *
+     * @effects upgrade_does_not_seed_locked_items
+     *
+     * @return void 반환값 없음
+     */
     public function test_does_not_seed_locked_items(): void
     {
         $this->writeSettings([]);
@@ -149,7 +189,7 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
     /**
      * 업그레이드 스텝을 실행합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function runStep(): void
     {
@@ -167,7 +207,7 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
      * 설정 파일을 씁니다.
      *
      * @param  array<string, mixed>  $settings  설정 내용
-     * @return void
+     * @return void 반환값 없음
      */
     private function writeSettings(array $settings): void
     {
@@ -178,7 +218,7 @@ class SeedNecessaryStorageAllowlistTest extends PluginTestCase
     /**
      * 설정 파일을 읽습니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 디코드한 설정 내용
      */
     private function readSettings(): array
     {

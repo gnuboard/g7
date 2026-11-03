@@ -18,6 +18,11 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class TwoFactorDeliveryFailedException extends HttpException
 {
+    /**
+     * 예외를 생성합니다 — 메시지 자리에는 다국어 키를 둡니다.
+     *
+     * @param  string|null  $message  다국어 키 (null 이면 auth.two_factor_delivery_failed)
+     */
     public function __construct(?string $message = null)
     {
         parent::__construct(503, $message ?? 'auth.two_factor_delivery_failed');

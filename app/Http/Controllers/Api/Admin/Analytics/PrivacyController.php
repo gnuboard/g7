@@ -104,17 +104,10 @@ class PrivacyController extends AdminBaseController
             $request->input('to'),
         );
 
-        $filename = $this->exportFilename();
-
-        return new StreamedResponse(function () use ($payload): void {
-            // 기록을 받는 사람이 읽을 파일이다 — 사람이 볼 수 있게 들여쓰고,
-            // 주소·한글 라벨이 이스케이프 코드로 바뀌지 않게 둔다.
-            echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        }, 200, [
-            'Content-Type' => 'application/json; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate',
-        ]);
+        // file-serving:allow 파일이 아니라 이 자리에서 조회해 만든 열람 기록(JSON)을 돌려준다 — 저장된 파일을
+        // 내주는 통로가 아니라 서빙 계약(nosniff·ETag·304)의 대상이 아니다(매 요청 새로 만들고 no-store).
+        // 응답 조립은 형제 CSV 내보내기(CsvExporter)처럼 서비스가 한다 — 컨트롤러는 파일 응답을 직접 만들지 않는다.
+        return $this->subjects->streamExport($payload, $this->exportFilename());
     }
 
     /**

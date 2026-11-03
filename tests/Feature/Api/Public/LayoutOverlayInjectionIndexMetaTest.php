@@ -32,6 +32,15 @@ class LayoutOverlayInjectionIndexMetaTest extends TestCase
         'plugins/sirsoft-gdpr',
     ];
 
+    /**
+     * overlay 확장의 injection 여러 개(inject_props 포함)를 병합한 트리에서 주입 노드의 `__source` 에 원래 injection 순번이 실리는지 확인한다.
+     *
+     * @scenario edit_mode=extension, extension_type=overlay
+     *
+     * @effects overlay_injected_nodes_carry_injection_index_in_source_meta, applyextensions_with_source_meta_tags_extension_nodes_and_injected_props
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function overlay_injected_nodes_carry_injection_index_in_source_meta(): void
     {

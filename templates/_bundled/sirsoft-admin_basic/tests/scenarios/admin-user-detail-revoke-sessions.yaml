@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: surface, action, ability, response 축은 버튼 → 확인 창 → 요청 → 토스트
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 surface, action, ability, response 축은 버튼 → 확인 창 → 요청 → 토스트
 # 한 흐름의 단계를 이름 붙인 것이라 곱으로 나눌 실체가 아니다. locale 은 lang 키 검사에만 의미가 있다.
 # 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
 

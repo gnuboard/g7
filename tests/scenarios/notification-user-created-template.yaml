@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 동작(켜기·끄기·켜기 시도·되돌리기·재동기화)마다 의미 있는 템플릿 상태가 달라 축을 곱하면 성립하지 않는 조합만 늘어난다 — 동작별 시험으로 나눴다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#835 동작(켜기·끄기·켜기 시도·되돌리기·재동기화)마다 의미 있는 템플릿 상태가 달라 축을 곱하면 성립하지 않는 조합만 늘어난다 — 동작별 시험으로 나눴다.
 feature: 알림 — 운영자가 켠 발송 수단의 빈 템플릿 (7.2.0)
 coverage_strategy: pairwise
 

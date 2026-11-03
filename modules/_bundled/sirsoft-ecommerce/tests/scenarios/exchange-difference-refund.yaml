@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   차액 수단(카드·마일리지) × 반품 범위(전량·일부) × 집행 결과(성공·실패)에서 의미 있는 조합은 수단별 성공,
 #   일부 수량 비례, 카드 실패 롤백 넷이다 — 마일리지 환급 실패는 원장 쓰기 실패라 다른 테스트(RefundExecution)가 소유한다.
 # e2e:allow 화면 표시(환불 금액 표의 교환 차액 줄)는 레이아웃 구조 테스트가, 실제 화면은 07 문서 Chrome MCP 실측이 잰다.

@@ -32,8 +32,6 @@ use Tests\TestCase;
  * 해치지 않고, 건너뛴 날은 다음 날 배치가 흡수합니다.
  *
  * @scenario schedule_axis=code_registered, schedule_axis=admin_registered, timezone_setting=configured, timezone_setting=empty
- *
- * @effects all_gc_commands_are_registered_in_schedule, gc_commands_run_on_one_server_only, sanctum_prune_uses_hours_option, schedule_timezone_follows_site_general_timezone, schedule_timezone_falls_back_to_app_timezone_when_unset, app_timezone_stays_utc, admin_registered_schedule_next_run_uses_same_basis, new_commands_are_in_schedule_security_allowlist, new_commands_are_exposed_in_dev_dashboard
  */
 class CoreScheduleRegistrationTest extends TestCase
 {
@@ -144,7 +142,7 @@ class CoreScheduleRegistrationTest extends TestCase
     /**
      * B1-t: 예약 시각 기준은 사이트 설정 시간대(general.timezone)를 따른다.
      *
-     * @effects schedule_timezone_follows_site_general_timezone
+     * @effects schedule_timezone_follows_site_general_timezone, app_timezone_stays_utc
      *
      * @return void 반환값 없음
      */

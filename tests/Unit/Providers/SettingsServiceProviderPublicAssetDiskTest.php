@@ -18,8 +18,6 @@ use Tests\TestCase;
  * (injectPublicAssetDiskConfig)는 테스트 격리 가드와 분리되어 있어 직접 단언이
  * 가능하며, 가드(applyPublicAssetDiskConfig)가 testing 환경에서 주입을 실제로
  * 차단하는지도 함께 고정합니다.
- *
- * @effects global_setting_injects_core_config_with_none_normalized
  */
 class SettingsServiceProviderPublicAssetDiskTest extends TestCase
 {
@@ -28,6 +26,7 @@ class SettingsServiceProviderPublicAssetDiskTest extends TestCase
      *
      * @param  string  $method  호출할 private 메서드명
      * @param  array  $driverSettings  drivers 카테고리 설정 데이터
+     * @return void 반환값 없음
      */
     private function callWithDriverSettings(string $method, array $driverSettings): void
     {
@@ -43,6 +42,10 @@ class SettingsServiceProviderPublicAssetDiskTest extends TestCase
 
     /**
      * 저장값이 core.storage.public_asset_disk 로 주입되는지 테스트합니다.
+     *
+     * @effects global_setting_injects_core_config_with_none_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_stored_disk_injected_into_core_config(): void
     {
@@ -57,6 +60,10 @@ class SettingsServiceProviderPublicAssetDiskTest extends TestCase
 
     /**
      * 'none'(스트리밍 유지 선택)이 미설정('')으로 정규화되는지 테스트합니다.
+     *
+     * @effects global_setting_injects_core_config_with_none_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_none_sentinel_normalized_to_empty(): void
     {
@@ -71,6 +78,10 @@ class SettingsServiceProviderPublicAssetDiskTest extends TestCase
 
     /**
      * 저장 키 부재 시 미설정('')으로 주입되는지 테스트합니다.
+     *
+     * @effects global_setting_injects_core_config_with_none_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_key_injected_as_empty(): void
     {
@@ -83,6 +94,10 @@ class SettingsServiceProviderPublicAssetDiskTest extends TestCase
 
     /**
      * 빈 문자열 저장값이 그대로 미설정('')인지 테스트합니다.
+     *
+     * @effects global_setting_injects_core_config_with_none_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_blank_value_injected_as_empty(): void
     {
@@ -101,6 +116,10 @@ class SettingsServiceProviderPublicAssetDiskTest extends TestCase
      * 이 테스트 자체가 testing 환경에서 실행되므로, 가드 메서드
      * (applyPublicAssetDiskConfig)를 호출해도 dev 공유 drivers.json 값이
      * 흘러들지 않아야 합니다.
+     *
+     * @effects public_asset_disk_injection_is_skipped_in_testing_env
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_skips_injection_in_testing_env(): void
     {

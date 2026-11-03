@@ -99,6 +99,34 @@ class ScreenUrlTest extends TestCase
     }
 
     /**
+     * 베이스가 하위 폴더이고 경로가 그 접두사를 이미 실었으면 다시 붙이지 않습니다 (SiteUrl 과 같은 멱등 규칙).
+     *
+     * @scenario case=absolute
+     *
+     * @effects user_scope_uses_user_screen_url, admin_scope_uses_site_url
+     *
+     * @return void 반환값 없음
+     */
+    public function test_absolute_does_not_repeat_mount_prefix(): void
+    {
+        config(['app.url' => 'https://site.example.test/g7']);
+
+        $this->assertSame('https://site.example.test/g7/login', ScreenUrl::absolute('auth.login', '/login'));
+        $this->assertSame('https://site.example.test/g7/login', ScreenUrl::toAbsolute('/g7/login'));
+        $this->assertSame('https://site.example.test/g7?ref=x', ScreenUrl::toAbsolute('/g7?ref=x'));
+        // 운영자가 접두사를 이미 넣은 결제 복귀 경로 — `/g7/g7/shop/…` 가 되지 않는다
+        $this->assertSame('https://site.example.test/g7/shop/orders/1?result=ok', ScreenUrl::toAbsolute('/g7/shop/orders/1?result=ok'));
+        $this->assertSame('https://site.example.test/g7/shop/orders/1', ScreenUrl::absolute('shop.order', '/g7/shop/orders/{id}', ['id' => 1]));
+        $this->assertSame('https://site.example.test/g7/g7x', ScreenUrl::toAbsolute('/g7x'));
+        $this->assertSame('https://site.example.test/g7/', ScreenUrl::toAbsolute('/'));
+        $this->assertSame('https://site.example.test/g7/admin/login', ScreenUrl::toAbsolute('/g7/admin/login', ScreenUrl::SCOPE_ADMIN));
+
+        config(['g7_settings.core.general.user_screen_url' => 'https://front.example.test/app/']);
+        $this->assertSame('https://front.example.test/app/mypage', ScreenUrl::toAbsolute('/app/mypage'));
+        $this->assertSame('https://front.example.test/app/mypage', ScreenUrl::toAbsolute('/mypage'));
+    }
+
+    /**
      * 같은 출처 판정 — 기본 포트는 같게 보고 다른 호스트·포트·스킴은 다르게 봅니다.
      *
      * @scenario case=origin

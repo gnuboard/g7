@@ -1,0 +1,33 @@
+feature: 쇼핑 목록과 첫 화면 조회의 쿼리 수 안정성, 진열과 판매 집계 색인 선택 (#519)
+
+description: |
+  쇼핑 목록(관리자, 공개), 카테고리 트리, 쇼핑 첫 화면 조각(인기, 신상품, 최근 본)은 행 수가 늘어도
+  쿼리 수가 늘지 않아야 한다(N+1 의 정의). 숫자를 박지 않고 행 수를 늘린 두 측정의 쿼리 수가 같은지로 판정한다.
+
+  진열 정렬과 판매 집계 색인은 "만들었다" 가 아니라 "쿼리가 그것을 고른다" 가 목표다. 마이그레이션의 존재와
+  컬럼 순서를 확인하고, MySQL 계열에서는 EXPLAIN 이 확정한 key 로 실제 선택을 판정한다.
+
+  이 세 테스트 파일은 tests/scenarios/bounded-total-pagination.yaml 도 소유한다. 그쪽은 상한 총 건수와 정확도 계약,
+  이 매니페스트는 쿼리 수와 색인 선택이라는 성능 표면을 맡는다.
+
+axes:
+  # 무엇으로 성능을 재는가: 행 수 증가에 대한 쿼리 수 / 색인 존재와 실행계획 선택
+  measure: [query_count, index_coverage]
+
+effects:
+  - product_list_query_count_stable        # 관리자 상품 목록 쿼리 수가 상품 수와 무관
+  - public_list_query_count_stable         # 공개 상품 목록 쿼리 수가 상품 수와 무관
+  - category_tree_query_count_stable       # 카테고리 트리 쿼리 수가 노드 수와 무관 (노드마다 자식 재조회 금지)
+  - shop_home_popular_query_count_stable   # 첫 화면 인기 상품 섹션 쿼리 수가 상품 수와 무관
+  - shop_home_new_query_count_stable       # 첫 화면 신상품 섹션 쿼리 수가 상품 수와 무관
+  - shop_home_recent_query_count_stable    # 첫 화면 최근 본 상품 섹션 쿼리 수가 지목 ID 수와 무관
+  - display_sort_index_exists              # 전시 조건 + 정렬을 덮는 색인 존재와 컬럼 순서
+  - sales_aggregate_index_exists           # 판매 집계 커버링 색인 존재
+  - product_list_uses_display_sort_index   # 등록일 정렬 목록이 실행계획에서 진열 정렬 색인을 고름
+  - product_list_uses_price_sort_index     # 판매가 정렬 목록이 실행계획에서 가격 정렬 색인을 고름
+  - sales_aggregate_uses_covering_index    # 판매 집계 파생 테이블이 커버링 색인만으로 끝남
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Performance/ListQueryCountRegressionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Performance/ShopHomeQueryCountRegressionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Performance/StorefrontIndexCoverageTest.php

@@ -136,6 +136,7 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 - [ ] `duplicate_field`/`duplicate_block_enabled` 로직을 고치면 `KcpDuplicateField` Enum 과 `AssertNoDuplicateKcpIdentity`를 함께 갱신
 - [ ] `normalizeLiveSiteCd()`/`addLiveModeRules()`를 고칠 때 두 훅(`filter_save_data`/`update_validation_rules`)의 실행 순서(검증 먼저, 정규화는 저장 시점)를 유지
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-verification_nhnkcp --force`
+- [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()`, `sitePath()`, `routePath()` 만 쓴다 — 서버를 부르는 주소와 인증기관이 되돌아올 복귀 주소는 `apiUrl()`/`sitePath()` 로 접두사를 붙이고, `location.pathname` 을 화면 판정에 쓸 때는 `routePath()` 로 벗긴다. 이 파일은 번들 확장 전체가 바이트 동일한 사본으로 갖는다. 서버 쪽 중계 화면(`KcpBridgeController`)의 기본 목적지도 사이트 마운트 접두사를 포함한 주소를 쓴다. 어기면 하위 폴더 설치(`https://host/g7/`)에서만 오류 없이 본인인증을 마친 사용자가 사이트 밖으로 돌아온다
 
 ## 6. 금지 패턴
 

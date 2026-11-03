@@ -27,7 +27,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario scope=sessionStorage, notation=exact, locked=operator_item, settings_state=populated, request=key_absent
  *
- * @effects upgrade_removes_extension_owned_keys_seeded_by_1_0_4,
+ * 효과 요약(마커 아님 — 평문): upgrade_removes_extension_owned_keys_seeded_by_1_0_4,
  *   upgrade_preserves_operator_items_when_removing_extension_keys,
  *   shipped_catalog_contains_no_extension_owned_keys
  */

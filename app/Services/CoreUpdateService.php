@@ -12,6 +12,8 @@ use App\Extension\AbstractUpgradeStep;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Custom\CustomUpdatePreflight;
 use App\Extension\Exceptions\UpgradeStepClassMissingException;
+use App\Extension\Helpers\AbstractRootMarkerFileUpdater;
+use App\Extension\Helpers\BackupDirectoryName;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
@@ -19,6 +21,7 @@ use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Helpers\RootIndexShim;
 use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\Helpers\UpdateReservedPaths;
 use App\Extension\Support\LifecycleWarnings;
@@ -28,6 +31,7 @@ use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use App\Support\ExecutionEnvironment;
 use App\Support\PackageManifestCacheHelper;
 use App\Support\ScopedPermissionEnforcement;
 use Database\Seeders\CoreScheduleSeeder;
@@ -48,6 +52,46 @@ use Illuminate\Support\Str;
 class CoreUpdateService
 {
     /**
+     * 코어 업데이트 리포트 로그의 이름 접두사 (`storage/logs/` 직하).
+     *
+     * 이 파일들은 daily 로테이션 **밖**이라 프레임워크가 걷지 않고, 업데이트마다 하나씩
+     * 영구히 쌓인다. 만드는 쪽(이 서비스 · `CoreUpdateCommand`)과 지우는 쪽
+     * (`StorageLeftoverPruneService`)이 같은 값을 보게 한다 — 리터럴 사본으로 갈리면
+     * 그 상태는 오류가 아니라 **모집단이 조용히 비는 것**으로만 나타난다.
+     */
+    public const UPDATE_REPORT_PREFIX = 'core_update_';
+
+    /**
+     * 리포트 이름을 판정하는 정규식 (캡처 1 = 시각 부분).
+     *
+     * 상태 어휘는 세 가지다 — 성공(`success`) · 실패(`failed`, 커맨드) ·
+     * 실패 리포트(`failure`, 이 서비스).
+     */
+    public const UPDATE_REPORT_NAME_PATTERN = '/^'.self::UPDATE_REPORT_PREFIX.'(?:success|failed|failure)_(\d{8}_\d{6})\.log$/';
+
+    /**
+     * `_pending` 전개 디렉토리의 이름 접두사 (`{pending_path}/core_{Ymd_His}/`).
+     *
+     * 정리 주체는 `cleanupPending()` 하나였고 그것은 정상 경로와 **처리된** 실패 경로에서만
+     * 불린다 — 치명 오류·타임아웃·kill(무CLI 웹 워커에서 특히 흔하다)이면 그 코드가 돌지
+     * 않아 릴리즈 한 벌 크기의 디렉토리가 영구히 남는다. 회수는 `StorageLeftoverPruneService`
+     * 의 `core_pending_staging` 대상군이 맡고, 이름 규약의 일치는 계약 테스트가 이 상수를
+     * 읽어 잠근다 (#609 G6 — 회차 6 이관).
+     */
+    public const PENDING_DIR_PREFIX = 'core_';
+
+    /**
+     * 코어 업데이트 리포트 로그의 절대 경로를 만듭니다 (생산자 단일 지점).
+     *
+     * @param  string  $status  상태 어휘 (`success` | `failed` | `failure`)
+     * @return string `storage/logs/core_update_{status}_{Ymd_His}.log`
+     */
+    public static function updateReportPath(string $status): string
+    {
+        return storage_path('logs/'.self::UPDATE_REPORT_PREFIX.$status.'_'.date('Ymd_His').'.log');
+    }
+
+    /**
      * 마지막 `restoreOwnership()` 실행에서 누적된 권한 정상화 경고.
      *
      * 각 항목은 `['target' => string, 'kind' => 'chown'|'group_writable', 'failed' => int, 'failed_paths' => string[]]`.
@@ -57,6 +101,186 @@ class CoreUpdateService
      */
     protected array $lastPermissionWarnings = [];
 
+    /** 실행 잠금 파일 핸들 (획득 상태에서만 리소스). */
+    private static $runLockHandle = null;
+
+    /**
+     * 실행 잠금 보유 깊이.
+     *
+     * 재진입을 허용하면서 **안쪽 해제가 바깥 보유자의 잠금을 푸는** 것을 막는다.
+     * 그 형태가 실재한다 — 웹 오케스트레이터가 잠금을 잡은 뒤 같은 프로세스에서
+     * `Artisan::call('core:update')` 를 부르면, 커맨드의 `finally` 가 오케스트레이터의
+     * 잠금을 풀고 이후 백업 삭제·롤백 구간이 **무잠금으로** 돈다.
+     */
+    private static int $runLockDepth = 0;
+
+    /**
+     * 실행 잠금을 **쓸 수 없어** 보호 없이 진행한 사유 (호출부가 표면화한다).
+     *
+     * 두 폴백 경로는 `true` 를 돌려주므로 호출부가 실패와 구분할 수 없고, 종전에는
+     * 사유가 로그 파일에만 남았다 — 운영자 화면에는 아무 표시가 없어, 두 창에서 동시에
+     * 업데이트를 눌러 백업이 서로 파괴되는 상태(잠금을 넣은 바로 그 사유)가 무경고로
+     * 재현된다. 잠금이 걸린 경우(`already_running`)만 다국어 문구가 있었고 이 축은
+     * 문구조차 없었다.
+     *
+     * @var array<int, string>
+     */
+    private static array $runLockWarnings = [];
+
+    /**
+     * 잠금이 「죽은 실행이 남긴 것」으로 판정되는 나이 (초).
+     *
+     * 코어 업데이트는 내려받기·압축 해제·마이그레이션을 포함해 길어질 수 있으므로
+     * 넉넉히 잡는다. 이보다 오래된 잠금 파일은 프로세스가 비정상 종료하며 남긴 것으로
+     * 보고 넘겨받는다 — `flock` 은 프로세스가 죽으면 OS 가 풀어 주므로 이 나이 판정은
+     * 파일 자체가 남는 경우의 정리용이다.
+     */
+    private const RUN_LOCK_STALE_SECONDS = 3600;
+
+    /**
+     * 코어 업데이트 실행을 직렬화합니다.
+     *
+     * 종전에는 이 흐름 전체에 어떤 잠금도 없었다. 그래서 두 실행이 겹치면 서로의 백업을
+     * 파괴한다 — 한쪽이 이미 신 버전으로 바꾼 디스크를 다른 쪽이 「업데이트 이전 스냅샷」
+     * 이라며 백업하고, 먼저 끝난 쪽이 성공하면 아직 쓰고 있는 백업을 통째로 지운다.
+     * 그 뒤 남은 쪽이 실패하면 **되돌릴 것이 없다.** 경로 충돌은 난수 접미사로 닫았지만
+     * 그것은 「서로 다른 디렉토리를 쓴다」까지이고, 같은 디스크를 동시에 바꾸는 것 자체는
+     * 잠금만이 막는다 (제품 결정 2026-08-26).
+     *
+     * 실패해도 예외를 던지지 않는다 — 잠금 파일을 만들 수 없는 환경(읽기 전용 storage)에서
+     * 업데이트 자체를 막으면 이 안이 대상으로 삼은 제한 호스팅이 더 나빠진다. 그 경우는
+     * 종전과 같은 무잠금 동작으로 진행하고 사실만 남긴다.
+     *
+     * @return bool 잠금을 얻었거나 잠금을 쓸 수 없으면 true, **다른 실행이 진행 중**이면 false
+     */
+    public function acquireRunLock(): bool
+    {
+        if (self::$runLockHandle !== null) {
+            // 같은 프로세스가 이미 보유 — 재진입은 허용하되 **깊이를 센다.**
+            // 세지 않으면 안쪽 호출의 해제가 바깥 보유자의 잠금을 푼다.
+            self::$runLockDepth++;
+
+            return true;
+        }
+
+        $path = storage_path('app/core-update.lock');
+
+        try {
+            File::ensureDirectoryExists(dirname($path));
+        } catch (\Throwable $e) {
+            self::$runLockWarnings[] = (string) __('settings.core_update.run_lock_unavailable', [
+                'reason' => $e->getMessage(),
+            ]);
+
+            return true; // 잠금을 쓸 수 없는 환경 — 종전 동작
+        }
+
+        // 오래 남은 잠금 파일은 비정상 종료의 잔해다. `flock` 자체는 OS 가 풀어 주므로
+        // 아래 획득이 성공하며, 여기서는 나이만 기록해 진단에 남긴다.
+        //
+        // 수정 시각을 **읽지 못한 것**은 「오래됨」이 아니다. 종전에는 `(int) @filemtime()` 이라
+        // 조회 실패(`false`)가 0 — 1970년 — 으로 접혀 `time() - 0` 이 언제나 상한을 넘었고,
+        // 방금 만든 잠금 파일이 「이전 실행이 비정상 종료했을 수 있다」는 경고를 남겼다.
+        // 잘못된 경고는 운영자가 진짜 잔해를 볼 때 무시하게 만든다. 조회 실패는 판정
+        // 불가로 두고 나이 판정을 건너뛴다 (13차 G3 라운드).
+        if (is_file($path)) {
+            $modifiedAt = @filemtime($path);
+
+            if ($modifiedAt === false) {
+                Log::info('코어 업데이트 잠금 파일의 수정 시각을 확인할 수 없어 잔류 여부를 판정하지 않습니다', [
+                    'path' => $path,
+                ]);
+            } elseif ((time() - $modifiedAt) > self::RUN_LOCK_STALE_SECONDS) {
+                Log::warning('코어 업데이트 잠금 파일이 오래 남아 있습니다 — 이전 실행이 비정상 종료했을 수 있습니다', [
+                    'path' => $path,
+                ]);
+            }
+        }
+
+        $handle = @fopen($path, 'c');
+
+        if ($handle === false) {
+            Log::warning('코어 업데이트 잠금 파일을 열지 못했습니다 — 동시 실행 보호 없이 진행합니다', [
+                'path' => $path,
+            ]);
+
+            // `:reason` 은 **사유**가 들어가는 자리다. 경로를 넣으면 세 언어 모두
+            // 「보호를 켤 수 없어 그대로 진행합니다 (…/core-update.lock)」가 되어 문장이
+            // 성립하지 않고, 운영자가 원인(권한·디스크·open_basedir)을 알 수 없다.
+            $reason = error_get_last()['message'] ?? '';
+
+            self::$runLockWarnings[] = (string) __('settings.core_update.run_lock_unavailable', [
+                'reason' => $reason !== ''
+                    ? $reason
+                    : (string) __('settings.core_update.run_lock_unknown_reason', ['path' => $path]),
+            ]);
+
+            return true;
+        }
+
+        if (! @flock($handle, LOCK_EX | LOCK_NB)) {
+            fclose($handle);
+
+            return false;
+        }
+
+        self::$runLockHandle = $handle;
+        self::$runLockDepth = 1;
+        @ftruncate($handle, 0);
+        @fwrite($handle, (string) time());
+        @fflush($handle);
+
+        return true;
+    }
+
+    /**
+     * 잠금 없이 진행하게 된 사유를 꺼내고 버퍼를 비웁니다.
+     *
+     * @return array<int, string> 운영자 안내 문구 (없으면 빈 배열)
+     */
+    public static function takeRunLockWarnings(): array
+    {
+        $warnings = self::$runLockWarnings;
+        self::$runLockWarnings = [];
+
+        return $warnings;
+    }
+
+    /**
+     * 실행 잠금을 놓습니다.
+     *
+     * @return void 반환값 없음
+     */
+    public function releaseRunLock(): void
+    {
+        if (self::$runLockHandle === null) {
+            return;
+        }
+
+        // 실제로 얻은 쪽만 푼다 — 안쪽 호출의 해제가 바깥 보유자의 잠금을 풀면
+        // 이후 구간이 무잠금으로 돌아 잠금이 지키려던 것이 그대로 재현된다.
+        if (self::$runLockDepth > 1) {
+            self::$runLockDepth--;
+
+            return;
+        }
+
+        @flock(self::$runLockHandle, LOCK_UN);
+        @fclose(self::$runLockHandle);
+        self::$runLockHandle = null;
+        self::$runLockDepth = 0;
+    }
+
+    /**
+     * 실행 잠금 보유 깊이를 돌려줍니다 (테스트·진단 전용).
+     *
+     * @return int 보유 깊이 (0 이면 미보유)
+     */
+    public static function runLockDepth(): int
+    {
+        return self::$runLockDepth;
+    }
+
     /**
      * 마지막 restoreOwnership 호출에서 발생한 권한 정상화 경고를 조회합니다.
      *
@@ -65,6 +289,249 @@ class CoreUpdateService
     public function getLastPermissionWarnings(): array
     {
         return $this->lastPermissionWarnings;
+    }
+
+    /**
+     * 마지막 파일 적용에서 루트 진입·보호 파일 갱신이 실패한 사유.
+     *
+     * 루트 `.htaccess` 는 다른 코어 파일과 달리 블록 교체 규칙으로 갱신되고, 그 갱신은
+     * 실패할 수 있다(그 파일만 읽기 전용인 호스팅 · 중복 블록 · 릴리즈 산출물 결함).
+     * 실패해도 업데이트 자체는 계속되므로 — 다른 파일은 이미 신 버전이라 여기서 세우면
+     * 중간 상태가 남는다 — 사유가 운영자에게 **도달**해야 한다. 종전에는 갱신기가 실패를
+     * 판정하고도 그 값을 두 호출부가 모두 버려, 화면에는 「완료」만 뜨고 보호 규칙은
+     * 구버전으로 남았다 (3차 G3 라운드 H4). 권한 경고와 같은 side-channel 규약이다.
+     *
+     * @var array<int, string>
+     */
+    protected array $lastRootFileWarnings = [];
+
+    /**
+     * 코어가 마지막으로 쓴 `deploy/**` 조각의 해시 원장 파일 이름 (`storage/app/core-update/` 아래).
+     */
+    public const DEPLOY_FRAGMENT_LEDGER = 'deploy-fragments.json';
+
+    /**
+     * 운영자 수정본을 보존할 때 새 판본을 옆에 두는 이름의 접미사 (`g7-layout2.conf.dist`).
+     *
+     * `dist` 는 네 서버 조각의 확장자 차단 목록에 있고 `deploy/` 자체도 차단 디렉토리다 —
+     * 이 사본은 웹에서 열리지 않는다.
+     */
+    public const DEPLOY_FRAGMENT_DIST_SUFFIX = '.dist';
+
+    /**
+     * 옛 `.dist` 가 남아 있고 그 내용이 새 판본과 다를 때, 새 판본을 두는 이름의 접미사 (`….dist.new`).
+     *
+     * `.dist` 를 덮어쓰면 운영자가 그 파일에 합치던 중간 작업이 사라지고, 새 판본을 버리면 최신 보호
+     * 규칙이 운영자 손에 닿지 않는다 — 둘 다 남긴다. 이 파일은 코어가 만든 것이라 다음 업데이트가
+     * 자유롭게 갱신한다. `deploy/` 디렉토리 자체가 네 서버 조각의 차단 목록에 있어 웹에서 열리지 않는다
+     * (G3 회차 16 W2 A5).
+     */
+    public const DEPLOY_FRAGMENT_DIST_NEW_SUFFIX = '.dist.new';
+
+    /**
+     * 마지막 파일 적용에서 누적된 루트 진입·보호 파일 경고를 조회합니다.
+     *
+     * @return array<int, string> 운영자 안내 문구 목록 (없으면 빈 배열)
+     */
+    public function getLastRootFileWarnings(): array
+    {
+        return $this->lastRootFileWarnings;
+    }
+
+    /**
+     * 루트 마커 파일(`.htaccess`·`web.config`) 갱신 결과를 판정해 실패면 경고로 누적합니다.
+     *
+     * @param  class-string<AbstractRootMarkerFileUpdater>  $updater  그 파일의 갱신기
+     * @param  string  $result  `$updater::apply()` 반환값
+     * @param  string  $destinationPath  대상 파일 경로
+     * @return void 반환값 없음
+     */
+    protected function recordRootMarkerFileResult(string $updater, string $result, string $destinationPath): void
+    {
+        // 실패가 아닌 결과도 하나는 알려야 한다 — `preserved`(마커 없는 파일이라 손대지
+        // 않음)는 코어 보호 규칙이 **미적용으로 남았다**는 뜻이라, 조용히 넘기면 문서 루트가
+        // 무방비인 사이트가 「적용 완료」만 보고 운영된다. 동작은 그대로 두고 사실만 싣는다.
+        $message = $updater::isFailure($result)
+            ? $updater::failureMessage($result, $destinationPath)
+            : $updater::noticeMessage($result, $destinationPath);
+
+        if ($message !== null) {
+            $this->lastRootFileWarnings[] = $message;
+        }
+    }
+
+    /**
+     * 루트 진입·보호 파일을 복사하되, 실패를 **예외가 아니라 경고**로 다룹니다.
+     *
+     * 형제 파일 `.htaccess` 는 3·4차 라운드가 세운 계약을 갖는다 — 쓰기 실패를 예외로
+     * 터뜨리지 않고 결과 코드로 잡아 경고로 표시하고 업데이트는 계속한다(제품 결정).
+     * 그런데 `index.php`·`web.config` 는 그 계약 밖에서 `FilePermissionHelper::copyFile()`
+     * 로 곧장 떨어졌고, 그 헬퍼는 `void` 라 `File::copy()` 의 실패를 판정하지 않는다.
+     *
+     * 배포 대상 순서(`config/app.php` 의 `update.targets`)는 `index.php` 가 `.htaccess`
+     * **앞**이다. 그래서 FTP 로 푼 사이트처럼 루트 파일 소유자가 웹 프로세스와 다른
+     * 환경에서는 `index.php` 복사가 `ErrorException` 으로 승격되며 그 자리에서 중단되고,
+     * `.htaccess` 는 평가될 기회조차 없다 — 형제가 만든 통보 통로가 **그 호스팅에서만
+     * 한 번도 열리지 않는다.** 이 안이 대상으로 삼은 바로 그 호스팅이다.
+     *
+     * 실패해도 나머지 대상은 계속 적용한다 — 루트 파일 하나가 구버전으로 남는 것과
+     * 업데이트 전체가 중단되고 롤백되는 것은 위험 등급이 다르다.
+     *
+     * @param  string  $target  정규화된 대상 이름 (`index.php` 등)
+     * @param  string  $source  소스 파일
+     * @param  string  $destination  대상 파일
+     * @return void 반환값 없음
+     */
+    protected function copyRootFileOrWarn(string $target, string $source, string $destination): void
+    {
+        try {
+            FilePermissionHelper::copyFile($source, $destination);
+
+            // 예외 없이 돌아와도 내용이 도달했는지는 별개다. `copyFile()` 은 `void` 이고
+            // 그 안의 `File::copy()` 가 돌려주는 `false` 를 삼키므로, 쓰기가 통째로
+            // 실패해도(FTP 로 푼 사이트처럼 루트 파일 소유자가 웹 프로세스와 다른 환경)
+            // 예외 없이 돌아온다. 디스크가 차서 부분 쓰기로 끝나는 경로도 있다.
+            // 형제 `writeAtomically()` 가 길이를 보는 것과 같은 판정을 여기서도 한다.
+            $expected = @filesize($source);
+            $actual = is_file($destination) ? @filesize($destination) : false;
+
+            if ($expected !== false && $actual !== false && $expected === $actual) {
+                return;
+            }
+
+            // 여기까지 왔으면 「도달했다」고 말할 수 없다. 종전에는 이 자리에서 대상 파일이
+            // **없을 때만** 통보했는데, 실제로 가장 흔한 실패는 그 반대다 — 덮어쓰지 못해
+            // **구버전 파일이 그대로 남는** 경우다. 그때 `is_file()` 은 참이라 통보가
+            // 통째로 빠져, 길이를 재고도 그 결과를 버린 셈이었다(길이 대조를 지워도
+            // 관측 동작이 같아 어떤 검사도 그것을 보지 못했다). 크기를 읽지 못한 경우도
+            // 확인 불가이므로 같은 등급으로 다룬다 — 형제 갱신기가 읽기 실패를 실패로
+            // 분류하는 것과 같은 규율이다.
+            $this->lastRootFileWarnings[] = (string) __('settings.core_update.root_file_copy_failed', [
+                'path' => $destination,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('루트 진입·보호 파일을 갱신하지 못했습니다', [
+                'target' => $target,
+                'destination' => $destination,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->lastRootFileWarnings[] = (string) __('settings.core_update.root_file_copy_failed', [
+                'path' => $destination,
+            ]);
+        }
+    }
+
+    /**
+     * 루트 `index.php` 를 코어 shim 으로 **교체하기 직전**에 그 사실을 통보합니다.
+     *
+     * 형제 파일(`.htaccess`)은 마커 블록 규칙과 `RESULT_*` 통보 통로를 갖는데 이 파일은
+     * 둘 다 없어 통째 복사로 끝난다. 계획서 §4 B-2 가 「통째로 교체된다」고 정한 대상은
+     * **코어가 놓아 둔 shim** 이고, 그 판단은 「운영자가 이 파일을 수정하지 않는다」는
+     * 전제 위에 있다. 전제가 성립하지 않는 경우가 하나 있다 — 레이아웃 ③ 사이트가
+     * 프로젝트 루트에 두던 자기 랜딩·리다이렉트 `index.php` 다. 그 파일은 첫 업데이트에서
+     * 말없이 사라지고, 성공 시 백업까지 지워지면 되돌릴 수단이 없다.
+     *
+     * 교체는 그대로 하되, **되찾을 수단을 함께 남긴다.** 종전 문구는 「그 내용은 백업에만
+     * 남습니다」/「백업에서 확인하세요」였는데, 성공 경로는 이 통보 직후 백업을 무조건
+     * 지운다(`CoreUpdateCommand` 의 `deleteBackup()` — 보존 옵션이 없다). 그래서 그 안내는
+     * 실행할 수 없는 안내였다. 교체 직전에 **그 파일 하나만** 업데이트 흐름이 건드리지
+     * 않는 위치로 사본해 두고, 문구가 그 경로를 싣는다(백업 전체 보존으로 넓히지 않는다).
+     *
+     * @param  string  $destinationPath  대상 파일 경로
+     * @return void 반환값 없음
+     */
+    protected function recordRootIndexReplacement(string $destinationPath): void
+    {
+        if (! is_file($destinationPath)) {
+            return; // 신규 생성 — 덮어쓸 것이 없다.
+        }
+
+        $existing = @file_get_contents($destinationPath);
+
+        if ($existing === false) {
+            $this->lastRootFileWarnings[] = (string) __('settings.core_update.root_index_unreadable', [
+                'path' => $destinationPath,
+            ]);
+
+            return;
+        }
+
+        // 코어 shim 의 식별자 — shim 은 `public/index.php` 로 위임하는 한 줄이 전부다.
+        // 판정은 `RootIndexShim` 이 소유한다(계약 테스트도 같은 지점을 쓴다). 종전에는
+        // 여기 공백까지 고정한 리터럴이 박혀 있어, PSR-12 스타일로 띄어 쓴 shim 이
+        // 「운영자 파일」로 오판되어 매 업데이트마다 거짓 경고 + 쓸모없는 사본이 쌓였다.
+        if (RootIndexShim::matches($existing)) {
+            return;
+        }
+
+        $preservedPath = $this->preserveReplacedRootIndex($existing);
+
+        $this->lastRootFileWarnings[] = $preservedPath !== null
+            ? (string) __('settings.core_update.root_index_replaced', [
+                'path' => $destinationPath,
+                'copy' => $preservedPath,
+            ])
+            : (string) __('settings.core_update.root_index_replaced_not_preserved', [
+                'path' => $destinationPath,
+            ]);
+    }
+
+    /**
+     * 교체 직전의 루트 진입 파일 내용을 업데이트 흐름 밖에 사본으로 남깁니다.
+     *
+     * 위치는 `storage/app/core-update/<타임스탬프>/index.php` 다. `storage` 는
+     * `update.protected_paths` 이자 `update.targets` 밖이라 적용·자동 발견 폴백·롤백
+     * prune 어느 쪽도 건드리지 않는다 — 성공 시 지워지는 백업(`core_backups`)과 다른 점이
+     * 이것이다. 같은 초에 두 번 도달해도 앞선 사본을 덮지 않는다.
+     *
+     * 사본을 남기지 못하는 것은 업데이트를 세울 사유가 아니다(교체는 계속한다) — 대신
+     * 호출부가 「남겼다」고 말하지 않도록 `null` 을 돌려준다.
+     *
+     * @param  string  $contents  교체 직전 파일 내용
+     * @return string|null 사본 절대 경로 (남기지 못했으면 null)
+     */
+    protected function preserveReplacedRootIndex(string $contents): ?string
+    {
+        try {
+            // 이름은 백업 이름 SSoT 가 만든다 — 정리자(`StorageLeftoverPruneService`)의 판정
+            // 정규식도 같은 곳을 보므로 한쪽만 바뀌는 일이 없다. 같은 초 충돌 접미사도 거기서 온다.
+            $directory = storage_path('app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.BackupDirectoryName::stamp());
+            File::ensureDirectoryExists($directory);
+
+            $path = $directory.DIRECTORY_SEPARATOR.'index.php';
+            $suffix = 1;
+            while (file_exists($path)) {
+                $path = $directory.DIRECTORY_SEPARATOR.'index.'.$suffix.'.php';
+                $suffix++;
+            }
+
+            // 부분 쓰기도 실패로 본다. `file_put_contents` 는 디스크가 차면 `false` 가
+            // 아니라 **쓴 바이트 수**를 돌려주므로, `=== false` 만 보면 잘린 사본이 성공으로
+            // 통과한다. 그러면 「여기 사본이 있습니다」라는 안내가 나가는데 그 사본으로는
+            // 되찾을 수 없다 — 이 자리는 **유일한 복구 수단**이라 「남기지 못했다」로
+            // 말하는 편이 낫다. 형제 두 지점(`AbstractRootMarkerFileUpdater::writeAtomically` ·
+            // `copyRootFileOrWarn`)이 이미 같은 규율로 길이를 대조한다.
+            $written = File::put($path, $contents);
+
+            if ($written === false || $written !== strlen($contents)) {
+                // 잘린 사본을 그대로 두면 잔존물 정리기가 그것을 백업으로 보고 **최신 1개**
+                // 자리를 차지하게 한다 — 되돌릴 수 없는 파일이 되돌릴 수단 자리를 막는다.
+                @unlink($path);
+                // 비었을 때만 지워진다 — 같은 초의 앞선 성공 사본은 남긴다.
+                @rmdir($directory);
+
+                return null;
+            }
+
+            return $path;
+        } catch (\Throwable $e) {
+            Log::channel('upgrade')->warning('[core-update] 교체 직전 루트 index.php 사본 생성 실패', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
@@ -450,6 +917,15 @@ class CoreUpdateService
             $data = $response->json();
             $apiMessage = is_array($data) && isset($data['message']) ? $data['message'] : '';
 
+            // 화면에 실을 사유는 **비어 있을 수 없다.** 아래 키들은 전부
+            // `(HTTP :status — :message)` 를 싣는데, GitHub 이 비-JSON 본문을 주거나
+            // `message` 를 담지 않으면 `$apiMessage` 가 빈 문자열이 되어 운영자 화면에
+            // `(HTTP 401 — )` 가 뜬다. 사유를 모를 때는 비워 두지 말고 일반 문구로 채운다.
+            //
+            // 로그에는 **원문 그대로**(`$apiMessage`)를 남긴다 — 진단에서는 「비어 있었다」가
+            // 그 자체로 사실이고, 그것을 일반 문구로 덮으면 원인 추적이 어려워진다.
+            $apiReason = $apiMessage !== '' ? $apiMessage : __('settings.core_update.unknown_error');
+
             if ($statusCode === 401 || $statusCode === 403) {
                 Log::channel('upgrade')->warning(__('settings.core_update.log_auth_failed'), [
                     'url' => $apiUrl,
@@ -460,7 +936,7 @@ class CoreUpdateService
 
                 return ['version' => null, 'error' => $token === ''
                     ? __('settings.core_update.github_token_required')
-                    : __('settings.core_update.github_token_invalid', ['status' => $statusCode, 'message' => $apiMessage]),
+                    : __('settings.core_update.github_token_invalid', ['status' => $statusCode, 'message' => $apiReason]),
                 ];
             }
 
@@ -475,7 +951,13 @@ class CoreUpdateService
                         'reason' => 'no_releases',
                     ]);
 
-                    return ['version' => null, 'error' => __('settings.core_update.no_releases_found', ['status' => $statusCode, 'message' => $apiMessage])];
+                    // 이 분기는 **릴리스가 없는 것이 정상**인 경우라 API 가 `message` 를
+                    // 주지 않는 것이 흔하다. 그대로 넘기면 운영자 화면에 `(HTTP 404 — )`
+                    // 가 뜬다 — 형제 호출부와 같은 규율로 일반 문구를 채운다.
+                    return ['version' => null, 'error' => __('settings.core_update.no_releases_found', [
+                        'status' => $statusCode,
+                        'message' => $apiReason,
+                    ])];
                 }
 
                 // 저장소 자체를 찾을 수 없음
@@ -486,8 +968,8 @@ class CoreUpdateService
                 ]);
 
                 return ['version' => null, 'error' => $token === ''
-                    ? __('settings.core_update.github_repo_not_found_no_token', ['status' => $statusCode, 'message' => $apiMessage])
-                    : __('settings.core_update.github_repo_not_found', ['status' => $statusCode, 'message' => $apiMessage]),
+                    ? __('settings.core_update.github_repo_not_found_no_token', ['status' => $statusCode, 'message' => $apiReason])
+                    : __('settings.core_update.github_repo_not_found', ['status' => $statusCode, 'message' => $apiReason]),
                 ];
             }
 
@@ -498,14 +980,21 @@ class CoreUpdateService
                     'api_message' => $apiMessage,
                 ]);
 
-                return ['version' => null, 'error' => __('settings.core_update.github_api_error', ['status' => $statusCode, 'message' => $apiMessage])];
+                return ['version' => null, 'error' => __('settings.core_update.github_api_error', ['status' => $statusCode, 'message' => $apiReason])];
             }
 
             if (is_array($data) && isset($data['tag_name'])) {
                 return ['version' => ltrim($data['tag_name'], 'v'), 'error' => null];
             }
 
-            return ['version' => null, 'error' => __('settings.core_update.no_releases_found', ['status' => $statusCode, 'message' => $apiMessage])];
+            // 치환 자리를 비워 두지 않는다 — 이 키는 `(HTTP :status — :message)` 를 싣고
+            // 있어, 파라미터 없이 부르면 번역기가 자리표시자를 **그대로 둔 문장**을 돌려줘
+            // 운영자 화면에 `:status`·`:message` 가 노출된다. 사유를 모를 때는 비워 두지
+            // 말고 일반 문구로 채운다 (형제 호출부는 전부 채우고 있었고 이 자리만 빠졌다).
+            return ['version' => null, 'error' => __('settings.core_update.no_releases_found', [
+                'status' => $statusCode,
+                'message' => $apiReason,
+            ])];
         } catch (\Exception $e) {
             Log::channel('upgrade')->error(__('settings.core_update.log_version_check_error'), ['error' => $e->getMessage()]);
 
@@ -910,15 +1399,18 @@ class CoreUpdateService
      * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대, 예 `plugins/_bundled/{id}`).
      *                                         증분·prune·백업 부재 세 모드 모두에서 복사와 orphan 정리를 건너뛴다 —
      *                                         설치되지 않았고 디스크에도 없는 공식 번들을 새로 깔지 않기 위함(#146).
-     * @return void 반환값 없음
+     * @return array{root_file_warnings: list<string>} 이 호출에서 누적된 루트 진입·보호 파일 경고 — `getLastRootFileWarnings()` 와 같은 값이다. 콘솔 커맨드가 아닌 소비처(무CLI 웹 워커)가 그 게터를 모르면 통보가 통째로 사라지므로 반환값에도 싣는다.
      */
-    public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null, array $skipPaths = []): void
+    public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null, array $skipPaths = []): array
     {
         $targets = config('app.update.targets', []);
         $excludes = config('app.update.excludes', []);
         // custom 예약 자리(#792)는 어느 모드에서도 복사·orphan 정리·자동 발견 대상이 아니다 —
         // skipPaths 와 같은 경로 판정으로 copyDirectory 의 복사·removeOrphanItems 양쪽에서 건너뛴다.
         $skipPaths = array_values(array_filter(array_map(fn ($p) => $this->normalizeRelativePath((string) $p), UpdateReservedPaths::mergeInto($skipPaths))));
+
+        // 루트 진입·보호 파일 경고는 이 호출 단위로만 유효하다 (권한 경고와 같은 규약).
+        $this->lastRootFileWarnings = [];
 
         // 증분 모드 여부: prune 이 아니고 적용 목록이 주어진 경우에만 증분 적용.
         // applyList 가 null 이면(백업 부재 등) 안전을 위해 전체 덮어쓰기로 회귀한다.
@@ -974,17 +1466,23 @@ class CoreUpdateService
                 // 업로드 파일이 404 되는 결함(#43). 다른 타깃은 빈 배열이라 영향 없음.
                 $preserveLinkPaths = $normalizedTarget === 'public' ? ['storage'] : [];
 
-                FilePermissionHelper::copyDirectory(
-                    $src,
-                    $dest,
-                    $onProgress,
-                    $excludes,
-                    removeOrphans: $prune,
-                    preserveTopLevelOrphans: $preserveTopLevelOrphans,
-                    applyList: $targetApplyList,
-                    preserveLinkPaths: $preserveLinkPaths,
-                    skipPaths: $this->stripTargetPrefix($skipPaths, $normalizedTarget),
-                );
+                // `deploy/**` 는 운영자가 **제자리에서 고쳐 쓰는** 서버 설정 조각이다 (nginx 는
+                // `include` 로 그 파일을 직접 읽는다). 통째 복사는 그 수정을 조용히 지운다.
+                if ($normalizedTarget === 'deploy') {
+                    $this->applyDeployFragments($src, $dest, $targetApplyList, $onProgress);
+                } else {
+                    FilePermissionHelper::copyDirectory(
+                        $src,
+                        $dest,
+                        $onProgress,
+                        $excludes,
+                        removeOrphans: $prune,
+                        preserveTopLevelOrphans: $preserveTopLevelOrphans,
+                        applyList: $targetApplyList,
+                        preserveLinkPaths: $preserveLinkPaths,
+                        skipPaths: $this->stripTargetPrefix($skipPaths, $normalizedTarget),
+                    );
+                }
             } else {
                 // 단일 파일 target — 증분 모드에서는 적용 목록에 있을 때만 복사.
                 if ($incremental && ! isset($applySet[$normalizedTarget])) {
@@ -993,7 +1491,24 @@ class CoreUpdateService
                     continue;
                 }
                 File::ensureDirectoryExists(dirname($dest));
-                FilePermissionHelper::copyFile($src, $dest);
+
+                // 루트 `.htaccess`·`web.config` 는 운영자가 서버 규칙을 덧붙이는 파일이다 (D25).
+                // 증분 판정의 base 가 "현재 디스크 스냅샷"이라 운영자 수정본은 언제나
+                // changed 로 분류되므로, 통째 복사 대신 코어 관리 블록(BEGIN ~ END 마커)만
+                // 교체해 블록 밖 운영자 규칙을 보존한다 (prune 모드도 동일 — 이 파일의
+                // 운영자 규칙 소실은 사이트 서버 설정 파손이라 전체 덮어쓰기 대상이 아니다).
+                // 어느 파일이 마커 파일인지는 리터럴이 아니라 보호 파일 SSoT 에서 도출한다 —
+                // 종전에는 `.htaccess` 리터럴이 분기였고 `web.config` 는 통째 복사로 떨어졌다.
+                $updater = CoreBackupHelper::rootMarkerFileUpdater($normalizedTarget);
+                if ($updater !== null) {
+                    $this->recordRootMarkerFileResult($updater, $updater::apply($src, $dest), $dest);
+                } else {
+                    if ($normalizedTarget === 'index.php') {
+                        $this->recordRootIndexReplacement($dest);
+                    }
+
+                    $this->copyRootFileOrWarn($normalizedTarget, $src, $dest);
+                }
             }
 
             $applied[$normalizedTarget] = true;
@@ -1007,6 +1522,341 @@ class CoreUpdateService
         // 않은 항목은 동일 흐름으로 복사하며 경고 로그를 남긴다. 다음 코어 업데이트의
         // applyUpdate 는 이미 디스크에 반영된 신버전 config 의 targets 로 정상 처리한다.
         $this->applyDiscoveredTopLevelPaths($sourcePath, $applied, $excludes, $onProgress, $skipPaths);
+
+        return ['root_file_warnings' => $this->lastRootFileWarnings];
+    }
+
+    /**
+     * `deploy/**` 서버 설정 조각을 **운영자 수정본을 보존하며** 갱신합니다 (G3 회차 15 W2-1).
+     *
+     * 조각 머리말은 운영자에게 그 파일을 직접 고치라고 지시한다(`fastcgi_pass`·하위 폴더
+     * 접두사·리다이렉트 목적지). nginx 는 그 파일을 `include` 로 제자리에서 읽으므로 통째
+     * 복사는 사이트의 PHP 소켓 설정을 릴리즈 기본값으로 되돌린다 — 오류 없이, 다음 reload 때.
+     *
+     * 판정 근거는 **코어가 마지막으로 쓴 내용의 해시**(원장 `storage/app/core-update/`
+     * `deploy-fragments.json`)다. 백업 스냅샷은 근거가 못 된다 — 그것은 현재 디스크의 사본이라
+     * 언제나 현재 디스크와 같다. 파일마다:
+     *   · 디스크가 새 판본과 같다 → 원장만 갱신하고 잔존 `.dist` 를 걷는다
+     *   · 디스크가 없다 → 신규 복사
+     *   · 디스크가 원장의 해시와 같다(코어가 쓴 그대로) → 정상 갱신 + 잔존 `.dist` 제거
+     *   · 그 외(운영자 수정본, 또는 원장이 없어 판정할 수 없음) → 덮어쓰지 않고 새 판본을
+     *     `<이름>.dist` 로 옆에 두고 경고 통로(`lastRootFileWarnings`)에 싣는다. 판정할 수
+     *     없을 때 잃는 쪽보다 한 번 더 확인시키는 쪽을 고른다
+     *
+     * `.dist` 는 웹에서 열리지 않는다 — `deploy/` 디렉토리 자체와 `dist` 확장자가 네 서버
+     * 조각의 차단 목록에 모두 있다(`ServerConfigParityTest`). 되돌리기는 `.dist` 와 원장을
+     * 함께 걷는다(`restoreFromBackup()`). 이 경로는 orphan 을 지우지 않는다 — 운영자가 둔
+     * 파일이 사라지는 것이 곧 이 메서드가 막는 결함이다.
+     *
+     * @param  string  $sourceDir  릴리즈 판본의 `deploy/` 절대 경로
+     * @param  string  $destinationDir  설치본의 `deploy/` 절대 경로
+     * @param  array<string, bool>|null  $applyList  증분 모드의 적용 목록(`deploy/` 접두사를 벗긴 상대 경로). null 이면 전체
+     * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
+     */
+    protected function applyDeployFragments(string $sourceDir, string $destinationDir, ?array $applyList, ?\Closure $onProgress): void
+    {
+        $ledgerPath = $this->deployFragmentLedgerPath();
+        $ledger = $this->readDeployFragmentLedger($ledgerPath);
+
+        foreach (File::allFiles($sourceDir) as $file) {
+            $relative = str_replace('\\', '/', $file->getRelativePathname());
+            if ($applyList !== null && ! isset($applyList[$relative])) {
+                continue;
+            }
+
+            $sourcePath = $file->getPathname();
+            $destinationPath = $destinationDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
+            $distPath = $destinationPath.self::DEPLOY_FRAGMENT_DIST_SUFFIX;
+            $distNewPath = $destinationPath.self::DEPLOY_FRAGMENT_DIST_NEW_SUFFIX;
+
+            $onProgress?->__invoke('apply', 'deploy/'.$relative);
+
+            $newContents = @file_get_contents($sourcePath);
+            if ($newContents === false) {
+                Log::channel('upgrade')->warning('[core-update] deploy 조각 소스를 읽지 못했습니다', ['path' => $sourcePath]);
+
+                continue;
+            }
+            $newHash = hash('sha256', $newContents);
+
+            if (is_file($destinationPath)) {
+                $current = @file_get_contents($destinationPath);
+                $currentHash = $current === false ? null : hash('sha256', $current);
+                $reference = isset($ledger[$relative]) && is_string($ledger[$relative]) ? $ledger[$relative] : null;
+
+                if ($currentHash === $newHash) {
+                    $ledger[$relative] = $newHash;
+                    @unlink($distPath);
+                    @unlink($distNewPath);
+
+                    continue;
+                }
+
+                // 원장이 없거나(이 기능 이전 설치본) 코어가 쓴 해시와 다르면 운영자 수정본으로 본다.
+                if ($currentHash === null || $reference === null || $currentHash !== $reference) {
+                    $this->placeDeployFragmentSidecar($destinationPath, $distPath, $distNewPath, $newContents);
+
+                    // 보존해도 원장에는 **코어가 제시한 새 판본의 해시**를 기록한다 (G3 회차 16 W2 A2/C-2).
+                    //
+                    // 원장은 「코어가 마지막으로 제시한 판본」이다. 운영자가 안내대로 `.dist` 를 합쳐
+                    // 파일이 새 판본과 같아지면 다음 업데이트에서 디스크 == 원장이라 정상 갱신으로
+                    // 탈출한다. 합치지 않으면 디스크 ≠ 원장이라 보존이 유지된다 — 올바른 동작이다.
+                    // 종전에는 이 분기가 원장을 씨앗하지 않아, 원장이 없던 사이트는 합친 뒤에도
+                    // **매 업데이트마다** 「판정 불가 → 보존 + `.dist`」 로 떨어졌다(오류 없음).
+                    $ledger[$relative] = $newHash;
+
+                    continue;
+                }
+            }
+
+            $this->copyRootFileOrWarn('deploy/'.$relative, $sourcePath, $destinationPath);
+            if (is_file($destinationPath) && @filesize($destinationPath) === strlen($newContents)) {
+                $ledger[$relative] = $newHash;
+                @unlink($distPath);
+                @unlink($distNewPath);
+            }
+        }
+
+        $this->writeDeployFragmentLedger($ledgerPath, $ledger);
+    }
+
+    /**
+     * 보존한 조각 옆에 새 판본을 사이드카(`.dist` 또는 `.dist.new`)로 두고 사실을 통보합니다.
+     *
+     * `.dist` 가 없거나 내용이 새 판본과 같으면 `.dist` 에 쓴다. 이미 있는데 내용이 다르면 그 파일은
+     * 운영자가 합치던 중간 작업일 수 있으므로 덮어쓰지 않고 새 판본을 `.dist.new` 로 둔다 — 코어가
+     * 만든 파일은 코어가 자유롭게 갱신하지만, 운영자가 손댔을 수 있는 파일은 건드리지 않는다
+     * (G3 회차 16 W2 A5). 쓰기 실패·보존 사실은 통보 통로와 업그레이드 로그 채널 **양쪽**에 싣는다 —
+     * 로그 파일에만 남으면 「완료」만 본 운영자에게 닿지 않고, 통보 통로에만 있으면 기록이 남지 않는다 (G-1).
+     *
+     * @param  string  $destinationPath  보존한 조각 경로
+     * @param  string  $distPath  `.dist` 경로
+     * @param  string  $distNewPath  `.dist.new` 경로
+     * @param  string  $newContents  새 판본 내용
+     * @return void 반환값 없음
+     */
+    protected function placeDeployFragmentSidecar(string $destinationPath, string $distPath, string $distNewPath, string $newContents): void
+    {
+        $existingDist = is_file($distPath) ? @file_get_contents($distPath) : null;
+        $conflict = is_string($existingDist) && $existingDist !== $newContents;
+        $target = $conflict ? $distNewPath : $distPath;
+
+        if (! $conflict && $existingDist === $newContents) {
+            // 이미 같은 새 판본이 옆에 있다 — 다시 쓰지 않고 사실만 통보한다.
+            $written = strlen($newContents);
+        } else {
+            $written = @file_put_contents($target, $newContents);
+        }
+
+        if ($written === false || $written !== strlen($newContents)) {
+            @unlink($target);
+            Log::channel('upgrade')->warning('[core-update] deploy 조각 새 판본 사이드카를 쓰지 못했습니다', [
+                'path' => $destinationPath,
+                'sidecar' => $target,
+            ]);
+            $this->lastRootFileWarnings[] = (string) __('settings.core_update.deploy_fragment_dist_write_failed', [
+                'path' => $destinationPath,
+                'dist' => $target,
+            ]);
+
+            return;
+        }
+
+        if ($conflict) {
+            Log::channel('upgrade')->warning('[core-update] deploy 조각 보존 — 옛 .dist 와 내용이 달라 새 판본을 .dist.new 로 두었습니다', [
+                'path' => $destinationPath,
+                'dist' => $distPath,
+                'dist_new' => $distNewPath,
+            ]);
+            $this->lastRootFileWarnings[] = (string) __('settings.core_update.deploy_fragment_dist_conflict', [
+                'path' => $destinationPath,
+                'dist' => $distPath,
+                'dist_new' => $distNewPath,
+            ]);
+
+            return;
+        }
+
+        Log::channel('upgrade')->warning('[core-update] deploy 조각 보존 — 운영자 수정본(또는 판정 불가)이라 새 판본을 .dist 로 두었습니다', [
+            'path' => $destinationPath,
+            'dist' => $distPath,
+        ]);
+        $this->lastRootFileWarnings[] = (string) __('settings.core_update.deploy_fragment_preserved', [
+            'path' => $destinationPath,
+            'dist' => $distPath,
+        ]);
+    }
+
+    /**
+     * 해시 원장을 읽습니다. 없거나 손상이면 빈 배열.
+     *
+     * @param  string  $ledgerPath  원장 경로
+     * @return array<string, string> 상대 경로 => sha256
+     */
+    protected function readDeployFragmentLedger(string $ledgerPath): array
+    {
+        if (! is_file($ledgerPath)) {
+            return [];
+        }
+
+        $decoded = json_decode((string) @file_get_contents($ledgerPath), true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * 해시 원장을 쓰고, 쓰지 못하면 통보 통로와 업그레이드 로그 채널에 싣습니다 (G3 회차 16 W2 A4).
+     *
+     * 원장은 다음 업데이트의 판정 근거다. 쓰지 못한 채 조용히 넘기면 그 사이트는 다음 업데이트에서
+     * 전 조각이 「판정 불가」로 떨어지고 운영자는 이유를 알 수 없다. `File::put()` 은 실패 시
+     * `false` 를, 디스크가 차면 **쓴 바이트 수**를 돌려주므로 둘 다 본다. 디렉토리 생성은 예외를
+     * 던질 수 있어(권한) 같은 통로로 접는다.
+     *
+     * @param  string  $ledgerPath  원장 경로
+     * @param  array<string, string>  $ledger  상대 경로 => sha256
+     * @return bool 썼으면 true
+     */
+    protected function writeDeployFragmentLedger(string $ledgerPath, array $ledger): bool
+    {
+        $encoded = (string) json_encode($ledger, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        $reason = null;
+
+        try {
+            File::ensureDirectoryExists(dirname($ledgerPath));
+            $written = File::put($ledgerPath, $encoded);
+        } catch (\Throwable $e) {
+            $written = false;
+            $reason = $e->getMessage();
+        }
+
+        if ($written === false || $written !== strlen($encoded)) {
+            Log::channel('upgrade')->warning('[core-update] deploy 조각 해시 원장을 쓰지 못했습니다 — 다음 업데이트가 전 조각을 판정 불가로 봅니다', [
+                'ledger' => $ledgerPath,
+                'reason' => $reason ?? ($written === false ? 'put_failed' : 'partial_write'),
+            ]);
+            $this->lastRootFileWarnings[] = (string) __('settings.core_update.deploy_fragment_ledger_write_failed', [
+                'ledger' => $ledgerPath,
+            ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 현재 디스크의 `deploy/**` 해시로 원장을 **씨앗**합니다 (G3 회차 16 W2 A2 ②).
+     *
+     * 원장이 없는 설치본은 다음 업데이트에서 전 조각이 「판정 불가 → 보존 + `.dist`」 로 떨어진다.
+     * 설치 완료 시점(인스톨러)과 업그레이드 스텝이 이 진입점을 부른다 — 그 시점의 디스크는
+     * **사이드카가 없는 조각에 한해** 릴리즈 판본과 바이트 동일하다(설치는 릴리즈 판본을 그대로
+     * 풀고, 업데이트는 다른 것을 보존할 때 반드시 사이드카를 남긴다). 사이드카가 있는 조각은
+     * 씨앗하지 않는다 — 씨앗하면 운영자 수정본이 「코어가 쓴 그대로」로 읽혀 다음 업데이트가 덮어쓴다.
+     *
+     * 원장이 이미 있으면 **없는 키만 채우는 병합**이다 (17차 C-4) — 완전한 원장에는 아무것도
+     * 더하지 않아 멱등이고, 부분 원장(선택 적용이 남긴)에는 빠진 조각을 채운다. 업그레이드 스텝은
+     * 경로 C 규율로 같은 로직을 로컬에 갖는다 — 두 구현의 일치는 계약 테스트가 대조한다.
+     *
+     * @param  string  $projectRoot  프로젝트 루트 절대 경로
+     * @return list<string> 이 호출에서 **새로 채운** 조각의 상대 경로 (더할 것이 없거나 쓰기 실패면 빈 배열)
+     */
+    public function seedDeployFragmentLedger(string $projectRoot): array
+    {
+        // 이 호출의 경고만 반영한다 — 소비처(`core:deploy-ledger-seed`)가 반환값의 `[]` 만으로는
+        // 「완전한 원장(정상)」과 「원장 쓰기 실패」를 구분할 수 없어, 경고 통로로 실패를 가른다 (17차 B-1).
+        $this->lastRootFileWarnings = [];
+
+        $ledgerPath = $this->deployFragmentLedgerPath();
+
+        // 원장이 있어도 조기 반환하지 않는다 — **원장에 없는 키만 채우는 병합**이다 (17차 C-4).
+        //
+        // `applyDeployFragments()` 는 세 지점(선택 적용에서 제외·소스 읽기 실패·복사 검증 실패)에서
+        // `continue` 로 빠지며 그 조각을 원장에 넣지 않는다. 그러면 이후 **부분 원장**이 디스크에
+        // 남는데, 종전 씨앗기는 `is_file($ledgerPath)` 하나로 조기 반환해 그 빠진 키를 영원히 채우지
+        // 못했다(오류 없음). 다음 업데이트는 원장에 없는 그 조각을 「판정 불가 → 보존 + `.dist`」 로
+        // 떨어뜨린다. 이미 있는 키는 건드리지 않으므로(운영자 수정본의 근거 해시가 그대로 유지된다)
+        // 원장이 완전하면 아무것도 추가되지 않아 종전과 같은 멱등이다.
+        $ledger = $this->readDeployFragmentLedger($ledgerPath);
+
+        $deployDir = $projectRoot.DIRECTORY_SEPARATOR.'deploy';
+        if (! File::isDirectory($deployDir)) {
+            return [];
+        }
+
+        $added = [];
+        foreach (File::allFiles($deployDir) as $file) {
+            $name = $file->getFilename();
+            if (str_ends_with($name, self::DEPLOY_FRAGMENT_DIST_SUFFIX) || str_ends_with($name, self::DEPLOY_FRAGMENT_DIST_NEW_SUFFIX)) {
+                continue;
+            }
+
+            $relative = str_replace('\\', '/', $file->getRelativePathname());
+            if (isset($ledger[$relative])) {
+                continue; // 원장에 이미 있는 키는 채우지 않는다 — 운영자 수정본의 근거 해시를 보존한다
+            }
+
+            $path = $file->getPathname();
+            if (is_file($path.self::DEPLOY_FRAGMENT_DIST_SUFFIX) || is_file($path.self::DEPLOY_FRAGMENT_DIST_NEW_SUFFIX)) {
+                continue; // 사이드카가 있는 조각은 씨앗하지 않는다 — 운영자 수정본이 「코어가 쓴 그대로」로 읽힌다
+            }
+
+            $contents = @file_get_contents($path);
+            if ($contents === false) {
+                continue;
+            }
+
+            $ledger[$relative] = hash('sha256', $contents);
+            $added[] = $relative;
+        }
+
+        if ($added === []) {
+            return []; // 채울 것이 없다 — 원장이 완전하거나 씨앗 대상 조각이 없다 (멱등)
+        }
+
+        ksort($ledger);
+
+        return $this->writeDeployFragmentLedger($ledgerPath, $ledger) ? $added : [];
+    }
+
+    /**
+     * 코어가 마지막으로 쓴 `deploy/**` 조각의 해시 원장 경로.
+     *
+     * `storage` 는 `update.protected_paths` 이자 `update.targets` 밖이라 적용·폴백·롤백
+     * prune 어느 쪽도 건드리지 않는다. 잔존물 정리기(`StorageLeftoverPruneService`)는 그
+     * 디렉토리의 **하위 디렉토리**만 보므로 이 파일은 그 모집단 밖이다 — 잔존물이 아니라
+     * 다음 업데이트가 읽는 상태 파일이다.
+     *
+     * @return string 절대 경로
+     */
+    protected function deployFragmentLedgerPath(): string
+    {
+        return storage_path('app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.self::DEPLOY_FRAGMENT_LEDGER);
+    }
+
+    /**
+     * 설치본 `deploy/` 아래의 `.dist`·`.dist.new` 사본과 해시 원장을 걷습니다 (되돌리기 전용).
+     *
+     * 백업에는 `.dist` 가 없으므로 복원만으로는 남는다 — 되돌린 판본 옆에 미래 판본이 놓인다.
+     * 원장도 지운다: 복원된 내용이 코어가 쓴 것인지 운영자 수정본인지 여기서는 알 수 없으므로,
+     * 다음 업데이트가 **판정할 수 없음**(보존 + 안내) 쪽으로 떨어지게 둔다.
+     *
+     * @param  string  $projectRoot  프로젝트 루트
+     * @return void 반환값 없음
+     */
+    protected function removeDeployFragmentSidecars(string $projectRoot): void
+    {
+        $deployDir = $projectRoot.DIRECTORY_SEPARATOR.'deploy';
+        if (File::isDirectory($deployDir)) {
+            foreach (File::allFiles($deployDir) as $file) {
+                $name = $file->getFilename();
+                if (str_ends_with($name, self::DEPLOY_FRAGMENT_DIST_SUFFIX) || str_ends_with($name, self::DEPLOY_FRAGMENT_DIST_NEW_SUFFIX)) {
+                    @unlink($file->getPathname());
+                }
+            }
+        }
+
+        @unlink($this->deployFragmentLedgerPath());
     }
 
     /**
@@ -1069,7 +1919,14 @@ class CoreUpdateService
         $protected = array_flip(array_map([$this, 'normalizeRelativePath'], (array) config('app.update.protected_paths', [])));
         $userExcludes = array_flip(array_map([$this, 'normalizeRelativePath'], $excludes));
 
-        $entries = array_merge(File::directories($sourcePath), File::files($sourcePath));
+        // `File::files()` 의 기본값은 숨김 파일 제외(`ignoreDotFiles(true)`)다 — 그대로 두면
+        // 점으로 시작하는 최상위 파일이 이 폴백에서 **통째로 보이지 않는다.** 구버전 targets 로
+        // 도는 첫 업데이트에서 루트 `index.php` 는 전달되고 루트 `.htaccess` 만 빠져, 보호 규칙
+        // 없는 진입점이 남는다 (D25 의 「함께 갱신」이 그 전환에서만 깨진다). 열거가 넓어져도
+        // 보호는 아래 protected_paths·excludes 검사가 그대로 담당한다.
+        // 디렉토리 쪽은 넓히지 않는다 — 릴리즈 페이로드의 점 디렉토리는 전부 protected_paths
+        // 대상이라 얻는 것이 없고, `File::directories()` 에는 대응 인자도 없다.
+        $entries = array_merge(File::directories($sourcePath), File::files($sourcePath, hidden: true));
 
         foreach ($entries as $absPath) {
             $name = basename($absPath);
@@ -1108,10 +1965,29 @@ class CoreUpdateService
                 // 부모 프로세스의 stale targets 누락을 메우는 안전망이므로,
                 // base 의 활성 서브디렉토리(예: templates/sirsoft-basic) 가 source 에 없다고
                 // 해서 삭제하면 사용자 데이터 영구 손실 위험. orphan 처리는 정상 targets 분기만 수행.
-                FilePermissionHelper::copyDirectory($absPath, $dest, $onProgress, $excludes, removeOrphans: false, skipPaths: $this->stripTargetPrefix($skipPaths, $normalized));
+                //
+                // `deploy` 는 정상 분기와 같은 보존 규칙을 탄다 — 구버전 targets 로 도는 첫
+                // 업데이트가 운영자 수정본을 덮어쓰지 않도록 (루트 `.htaccess` 와 같은 사유).
+                if ($normalized === 'deploy') {
+                    $this->applyDeployFragments($absPath, $dest, null, $onProgress);
+                } else {
+                    FilePermissionHelper::copyDirectory($absPath, $dest, $onProgress, $excludes, removeOrphans: false, skipPaths: $this->stripTargetPrefix($skipPaths, $normalized));
+                }
             } else {
                 File::ensureDirectoryExists(dirname($dest));
-                FilePermissionHelper::copyFile($absPath, $dest);
+
+                // 자동 발견 폴백 경로에서도 루트 마커 파일은 블록 교체 규칙(D25)을 지킨다 —
+                // 구버전 targets 로 도는 첫 업데이트가 운영자 규칙을 덮어쓰지 않도록.
+                $updater = CoreBackupHelper::rootMarkerFileUpdater($normalized);
+                if ($updater !== null) {
+                    $this->recordRootMarkerFileResult($updater, $updater::apply($absPath, $dest), $dest);
+                } else {
+                    if ($normalized === 'index.php') {
+                        $this->recordRootIndexReplacement($dest);
+                    }
+
+                    $this->copyRootFileOrWarn($normalized, $absPath, $dest);
+                }
             }
         }
     }
@@ -1384,6 +2260,14 @@ class CoreUpdateService
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w'],
         ];
+
+        // composer 실행은 `proc_open` 없이는 성립하지 않는다. 무가드로 부르면 그 함수가
+        // 막힌 호스팅에서 `Error` 로 요청이 죽어, 호출자(`VendorResolver`)가 번들 모드로
+        // 폴백할 기회를 잃는다 — 무CLI 환경에서 vendor 가 빈 채 진행되는 것보다 나쁜
+        // 상태다(사유가 남지 않는다). 여기서는 도메인 예외로 바꿔 폴백에 태운다 (#609 D34).
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
+            throw new CoreUpdateOperationException('settings.core_update.composer_unavailable');
+        }
 
         $process = proc_open($command, $descriptors, $pipes, $workingDir, EnvironmentDetector::buildComposerEnv());
 
@@ -1928,6 +2812,21 @@ class CoreUpdateService
     /**
      * .env 파일의 APP_VERSION을 갱신합니다.
      *
+     * 디스크만 고치면 **이 프로세스는 여전히 옛 값을 들고 있다.** Dotenv 의 immutable
+     * 로더는 이미 저장소에 실린 키를 덮지 않으므로, 같은 요청 안에서 `config:cache` 를
+     * 구우면(`ConfigCacheHelper::rebuild()` 가 그 커맨드를 새 애플리케이션에서 돌려도
+     * `Env::getRepository()` 는 프로세스 전역이다) **옛 버전이
+     * 새 캐시에 박제된다.** 그러면 업데이트가 성공했는데도 사이트가 옛 버전으로 동작하고,
+     * 그 상태는 다음 수명주기 이벤트가 캐시를 다시 구울 때까지 이어진다 — 버전 표시만이
+     * 아니라 새 코어가 추가한 config 값도 캐시에 없는 채로 남는다.
+     *
+     * 그래서 디스크와 **함께** 프로세스의 환경 저장소도 갱신한다. 채널은 `$_ENV`/`$_SERVER`/
+     * `putenv` 셋이다 — 캐시 부팅한 부모(Dotenv 미실행)도 두 슈퍼전역 대입만으로 이후
+     * `config:cache` 굽기가 새 값을 본다(`env()` 는 `$_ENV` 를 먼저 읽는다). `putenv` 는 차단된
+     * 호스팅에서 호출 자체가 치명 오류라 `ExecutionEnvironment::hasFunction()` 가드 아래에서만
+     * 부른다(설계 결정 2026-09-11: 세 채널 유지 + 가드).
+     * (2026-09-07 실측: `config:clear` 후 7.0.10 → 7.0.11 업데이트가 config 캐시에 7.0.10 을 구웠다.)
+     *
      * @param  string  $version  새 버전
      * @return void 반환값 없음
      */
@@ -1939,6 +2838,8 @@ class CoreUpdateService
             return;
         }
 
+        $this->syncVersionIntoProcessEnvironment($version);
+
         $content = File::get($envPath);
 
         if (preg_match('/^APP_VERSION=.*/m', $content)) {
@@ -1948,20 +2849,34 @@ class CoreUpdateService
         }
 
         File::put($envPath, $content);
+    }
 
-        // 프로세스 환경도 함께 갱신한다.
-        //
-        // 부모가 config 캐시 **없이** 부팅했다면 Dotenv 가 `.env` 를 읽어 `$_ENV['APP_VERSION']` 에
-        // 이전 버전을 채워 두었고, Laravel 의 env 저장소는 불변(immutable)이라 뒤이어 부팅하는
-        // 프로세스가 `.env` 를 다시 읽어도 그 값을 덮지 않는다. 그래서 Step 11 의 `config:cache` 가
-        // 굽는 `bootstrap/cache/config.php` 에 **이전 버전**이 박제되고, 이후 모든 웹 요청이 옛 버전으로
-        // 판정한다 — 새 코어를 요구하는 확장이 `incompatible_core` 로 꺼지는 경로다
-        // (2026-09-07 실측: `config:clear` 후 7.0.10 → 7.0.11 업데이트가 config 캐시에 7.0.10 을 구웠다).
-        //
-        // 캐시 부팅에서는 Dotenv 가 아예 돌지 않아 이 값이 비어 있을 수 있으므로 세 채널 모두 세운다.
+    /**
+     * 이 프로세스의 환경 저장소에 새 `APP_VERSION` 을 반영합니다.
+     *
+     * `env('APP_VERSION')` 은 `Env::getRepository()` 를 읽고, 그 저장소의 어댑터 사슬에는
+     * `$_ENV` · `$_SERVER` 가 들어 있다. 두 슈퍼전역을 함께 고쳐야 이후의 config 굽기와
+     * 서브프로세스 자식(`SubprocessCommandRunner::inheritedEnvironment()` 가 `$_ENV` 를
+     * 병합한다)이 같은 값을 본다. 프로세스 환경(`putenv`)도 같은 값으로 맞추되, 그 함수는
+     * 하드닝 프로필의 표준 차단 목록에 있으므로 가용할 때만 부른다 — PHP 8 은 차단 함수를
+     * 함수 테이블에서 제거해 무가드 호출이 치명 오류가 된다.
+     *
+     * 런타임 config 미러(`app.version`)도 함께 맞춘다 — 이미 부팅된 config 저장소는
+     * `.env` 를 다시 읽지 않으므로, 이 값을 고치지 않으면 같은 요청의 나머지 구간이
+     * 옛 버전으로 동작한다.
+     *
+     * @param  string  $version  새 버전
+     * @return void 반환값 없음
+     */
+    private function syncVersionIntoProcessEnvironment(string $version): void
+    {
         $_ENV['APP_VERSION'] = $version;
         $_SERVER['APP_VERSION'] = $version;
-        putenv('APP_VERSION='.$version);
+        if (ExecutionEnvironment::hasFunction('putenv')) {
+            putenv('APP_VERSION='.$version);
+        }
+
+        config(['app.version' => $version]);
     }
 
     /**
@@ -1969,7 +2884,7 @@ class CoreUpdateService
      *
      * @param  string  $backupPath  백업 경로
      * @param  \Closure|null  $onProgress  진행 콜백
-     * @return array 복원 실패한 target 목록 (빈 배열이면 전체 성공)
+     * @return array{failed_targets: list<string>, root_file_warnings: list<string>} 복원 실패한 target 목록(빈 배열이면 전체 성공)과 이 호출에서 누적된 루트 진입·보호 파일 경고(`getLastRootFileWarnings()` 와 같은 값 — 커맨드가 아닌 소비처를 위해 반환값에도 싣는다)
      */
     public function restoreFromBackup(string $backupPath, ?\Closure $onProgress = null): array
     {
@@ -1979,7 +2894,52 @@ class CoreUpdateService
         );
         $excludes = config('app.update.excludes', []);
 
-        return CoreBackupHelper::restoreFromBackup($backupPath, $targets, $onProgress, $excludes);
+        // 경고 버퍼는 **호출 단위**다(프로퍼티 주석이 선언한 규약). 적용 단계에서 쌓인
+        // 경고를 그대로 두면 자동 롤백에서 같은 통로로 다시 나가는데, 그 문구는 이미
+        // 사실이 아니다 — 그 파일은 방금 백업에서 복원됐다. 「루트 .htaccess 를 쓰지
+        // 못했습니다, 다시 시도하세요」를 복원 직후에 읽은 운영자는 존재하지 않는 상태를
+        // 쫓게 된다.
+        $this->lastRootFileWarnings = [];
+
+        $failedTargets = CoreBackupHelper::restoreFromBackup($backupPath, $targets, $onProgress, $excludes);
+
+        // 적용 단계가 `deploy/**` 옆에 둔 `.dist` 는 백업에 없어 복원만으로는 남는다.
+        $this->removeDeployFragmentSidecars(base_path());
+
+        // 되돌린 뒤 루트 진입·보호 파일이 없으면 그 사실을 콘솔 통로에 싣는다.
+        //
+        // 되돌리기 자체는 의도된 동작이다(그 파일이 없던 버전으로 돌아가는 것이 목적). 문제는
+        // 그 **결과**다 — 문서 루트가 프로젝트 루트인 사이트에서 루트 `.htaccess` 가 사라지면
+        // 보호·위임 규칙이 통째로 없어져 `.env` 가 그대로 열린다. 종전에는 `Log::warning` 뿐이라
+        // 「백업에서 복원되었습니다」만 보고 창을 닫은 운영자에게 도달하지 않았다.
+        $missingRootFiles = CoreBackupHelper::missingRootProtectionFiles(base_path());
+        if ($missingRootFiles !== []) {
+            // 문구는 **가장 흔한 정상 상태를 먼저** 말한다. 문서 루트가 `public/` 인 표준
+            // 배치에서 이 파일들이 없는 것은 정상이고 그쪽이 절대다수인데, 보안 경고를 먼저
+            // 읽히면 정상 롤백마다 경보가 뜨는 셈이라 진짜 경고가 묻힌다.
+            $this->lastRootFileWarnings[] = (string) __('settings.core_update.rollback_root_protection_missing', [
+                'paths' => implode(', ', $missingRootFiles),
+            ]);
+        }
+
+        // 되돌리기가 문서 루트 **안**에 공개 파일 사본을 되살렸으면 그것도 같은 통로로 싣는다.
+        //
+        // 백업은 업데이트 이전 스냅샷이라 그 시점의 `public/storage.broken.*`(공개 업로드
+        // 전량 사본)을 그대로 되돌려 놓는다. 7.1.0 스텝이 이미 문서 루트 밖으로 옮긴 뒤라면
+        // 같은 파일이 두 벌이 되고 그중 하나는 웹에서 열린다. 종전에는 그 사실이 `Log::warning`
+        // 한 줄뿐이라, 형제 축(루트 진입·보호 파일)에는 있는 콘솔 통로가 이 축에만 없었다 —
+        // 롤백한 운영자는 「백업에서 복원되었습니다」만 보고 노출을 알 수 없다.
+        $docrootResidue = CoreBackupHelper::restoredDocrootResidue(base_path());
+        if ($docrootResidue !== []) {
+            $this->lastRootFileWarnings[] = (string) __('settings.core_update.rollback_docroot_residue', [
+                'paths' => implode(', ', $docrootResidue),
+            ]);
+        }
+
+        return [
+            'failed_targets' => array_values($failedTargets),
+            'root_file_warnings' => $this->lastRootFileWarnings,
+        ];
     }
 
     /**
@@ -2024,8 +2984,15 @@ class CoreUpdateService
     public function createPendingDirectory(): string
     {
         $basePath = config('app.update.pending_path');
-        $timestamp = date('Ymd_His');
-        $pendingPath = $basePath.DIRECTORY_SEPARATOR.'core_'.$timestamp;
+        // 초 단위 타임스탬프는 고유하지 않다 — 같은 초에 시작한 두 실행이 같은 디렉토리를
+        // 받으면 한쪽이 내려받는 중인 페이로드에 다른 쪽이 겹쳐 쓴다. docblock 이 「동시
+        // 실행 충돌을 방지합니다」라고 선언한 성질을 실제로 성립시킨다.
+        //
+        // 모양은 `BackupDirectoryName` 이 소유한다 — 여기서 손으로 조립하면 형제 생산자와
+        // 같은 문자열을 두 곳에 적게 되고, 그 상태가 곧 이 규약이 폐기하려던 것이다:
+        // 한쪽이 모양을 바꿔도 다른 쪽은 따라가지 못하고 그 사실이 오류로 나타나지 않는다.
+        $timestamp = BackupDirectoryName::stamp();
+        $pendingPath = $basePath.DIRECTORY_SEPARATOR.self::PENDING_DIR_PREFIX.$timestamp;
 
         File::ensureDirectoryExists($pendingPath, 0770, true);
 
@@ -2888,8 +3855,7 @@ class CoreUpdateService
      */
     public function generateFailureReport(\Throwable $exception, string $fromVersion, string $toVersion): string
     {
-        $timestamp = date('Ymd_His');
-        $reportPath = storage_path("logs/core_update_failure_{$timestamp}.log");
+        $reportPath = self::updateReportPath('failure');
 
         $content = implode("\n", [
             '=== 그누보드7 코어 업데이트 실패 리포트 ===',

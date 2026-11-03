@@ -1,16 +1,3 @@
-/**
- * detectAssetUrlMode 핸들러 (이슈 #486 §8)
- *
- * 관리자 환경설정에서 자산 URL 방식을 **브라우저에서** 재감지한다.
- *
- * 서버측에서 자기 `APP_URL` 로 curl 하면 loopback 이 nginx vhost·SSL·프록시 체인을
- * 우회하거나 다른 vhost 를 타서 오판한다. 실제로 방문자가 겪는 경로를 재현하려면
- * 브라우저가 던져야 한다.
- *
- * 감지 지점이 인스톨러 하나로 부족한 이유가 여기 있다 — 관리자가 설치 6개월 뒤
- * 정적 최적화 블록을 추가하면 저장된 값은 "확장자 OK" 인 채 사이트가 다시 죽는다.
- * 이 버튼이 그 상황의 재판정 수단이다.
- */
 /** 판정 결과 */
 export type DetectResult = 'extension' | 'extensionless' | 'unavailable';
 /**

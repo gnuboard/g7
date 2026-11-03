@@ -114,6 +114,7 @@
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`sl:` 접두 유틸리티 · `sl-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-social_login --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 로그인 관련 변경은 코어 로그인 인계 계약(`docs/backend/authentication.md` 「외부 인증 로그인」)과 맞는지 확인하고, 플러그인이 토큰을 직접 만들지 않는지 `grep -rnE "createToken\(|Auth::login\(" src` 로 0 을 확인
+- [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()`, `sitePath()`, `routePath()` 만 쓴다 — 이동, 링크, 요청 주소는 `sitePath()`/`apiUrl()` 로 접두사를 붙이고, `location.pathname` 을 화면 판정에 쓸 때는 `routePath()` 로 벗긴다. 이 파일은 번들 확장 전체가 바이트 동일한 사본으로 갖는다. 어기면 하위 폴더 설치(`https://host/g7/`)에서만 오류 없이 로그인/가입 버튼이 사이트 밖 시작 주소로 간다. 제공자 인가 주소(https 절대 주소)는 대상이 아니므로 그 줄 위에 예외 사유 주석을 단다
 
 ## 6. 금지 패턴
 

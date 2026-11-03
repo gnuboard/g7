@@ -16,11 +16,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 이 테스트가 그 회귀를 고정한다.
  *
  * @scenario actor=admin, change_mode=manual
- *
- * @effects settings_cash_receipt_provider_persisted,
- *   settings_shipping_fee_tax_policy_persisted,
- *   settings_cash_receipt_self_issue_persisted,
- *   settings_invalid_shipping_fee_tax_policy_rejected_422
  */
 class EcommerceSettingsCashReceiptTest extends ModuleTestCase
 {
@@ -30,6 +25,11 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
 
     private User $adminUser;
 
+    /**
+     * 쇼핑몰 설정 조회와 수정 권한을 가진 관리자를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,6 +39,11 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 설정 캐시를 비운 설정 서비스를 돌려준다. 저장 직후 값을 다시 읽을 때 캐시된 옛값을 보지 않게 한다.
+     *
+     * @return EcommerceSettingsService 캐시를 비운 설정 서비스
+     */
     private function settings(): EcommerceSettingsService
     {
         $settings = app(EcommerceSettingsService::class);
@@ -47,6 +52,13 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         return $settings;
     }
 
+    /**
+     * 제공 확장을 등록한 프로바이더를 저장하면 원시 설정값과 해석값이 모두 그 프로바이더가 되는지 확인한다.
+     *
+     * @effects settings_cash_receipt_provider_persisted
+     *
+     * @return void 반환값 없음
+     */
     public function test_현금영수증_프로바이더가_저장된다(): void
     {
         // 저장값 해석은 레지스트리 대조를 거치므로 제공 확장을 함께 등록한다 (A3)
@@ -61,6 +73,13 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         $this->assertSame('tosspayments', $this->settings()->getCashReceiptProvider());
     }
 
+    /**
+     * 프로바이더를 빈 문자열로 저장하면 해석값이 null(미사용)로 정규화되는지 확인한다.
+     *
+     * @effects settings_cash_receipt_provider_persisted
+     *
+     * @return void 반환값 없음
+     */
     public function test_프로바이더를_빈_문자열로_저장하면_미사용이_된다(): void
     {
         $this->actingAs($this->adminUser)->putJson($this->apiBase, [
@@ -72,6 +91,13 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         $this->assertNull($this->settings()->getCashReceiptProvider());
     }
 
+    /**
+     * 배송비 과세 정책을 전액 과세로 저장하면 설정 서비스가 그 정책 Enum 을 돌려주는지 확인한다.
+     *
+     * @effects settings_shipping_fee_tax_policy_persisted
+     *
+     * @return void 반환값 없음
+     */
     public function test_배송비_과세_정책이_저장된다(): void
     {
         $this->actingAs($this->adminUser)->putJson($this->apiBase, [
@@ -85,6 +111,13 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 배송비 과세 정책 Enum 의 모든 값을 차례로 저장해 각각 그대로 읽히는지 확인한다.
+     *
+     * @effects settings_shipping_fee_tax_policy_persisted
+     *
+     * @return void 반환값 없음
+     */
     public function test_배송비_과세_정책_3종이_모두_저장된다(): void
     {
         foreach (ShippingFeeTaxPolicy::cases() as $policy) {
@@ -97,6 +130,13 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         }
     }
 
+    /**
+     * Enum 에 없는 배송비 과세 정책 값을 보내면 해당 필드 오류로 422 가 나는지 확인한다.
+     *
+     * @effects settings_invalid_shipping_fee_tax_policy_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_알_수_없는_배송비_과세_정책은_거부된다(): void
     {
         $this->actingAs($this->adminUser)->putJson($this->apiBase, [
@@ -106,6 +146,13 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
             ->assertJsonValidationErrors(['order_settings.shipping_fee_tax_policy']);
     }
 
+    /**
+     * 현금영수증 자진발급 토글을 켰다가 끄면 각 저장 뒤 설정 서비스 판정이 따라 바뀌는지 확인한다.
+     *
+     * @effects settings_cash_receipt_self_issue_persisted
+     *
+     * @return void 반환값 없음
+     */
     public function test_자진발급_토글이_저장된다(): void
     {
         $this->actingAs($this->adminUser)->putJson($this->apiBase, [
@@ -123,6 +170,15 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
         $this->assertFalse($this->settings()->isCashReceiptSelfIssueEnabled());
     }
 
+    /**
+     * 등록된 프로바이더가 없어도 설정 조회 응답에 발급 프로바이더 후보 목록 키가 있는지 확인한다. 관리자 UI 가 그 길이로 분기한다.
+     *
+     * @scenario surface=admin_settings, provider_state=not_configured
+     *
+     * @effects settings_available_providers_exposed
+     *
+     * @return void 반환값 없음
+     */
     public function test_설정_조회_응답에_발급_프로바이더_후보_목록이_포함된다(): void
     {
         // 등록된 프로바이더가 없어도 키 자체는 존재해야 한다 (관리자 UI 가 length 로 분기한다).
@@ -141,6 +197,8 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
      * @scenario provider_state=dead
      *
      * @effects dead_cash_receipt_provider_treated_as_unset
+     *
+     * @return void 반환값 없음
      */
     public function test_등록되지_않은_프로바이더는_미설정으로_취급된다(): void
     {
@@ -168,6 +226,8 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
      * @scenario provider_state=dead
      *
      * @effects dead_cash_receipt_provider_normalized_in_public
+     *
+     * @return void 반환값 없음
      */
     public function test_공개_결제설정에서_죽은_프로바이더가_정규화된다(): void
     {
@@ -191,6 +251,8 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
      * @scenario provider_state=live
      *
      * @effects live_cash_receipt_provider_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_등록된_프로바이더는_그대로_해석된다(): void
     {

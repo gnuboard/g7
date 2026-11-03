@@ -64,11 +64,17 @@ class AssetProbeController extends PublicBaseController
         $body = "/* G7 asset URL mode probe */\n"
             ."window.__g7AssetProbe = '".self::PROBE_TOKEN."';\n";
 
-        return response($body, 200, [
-            'Content-Type' => 'application/javascript; charset=utf-8',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
+        // 응답 계약(`Content-Type` + `nosniff`)은 헬퍼 단일 지점이 소유한다. 종전에는 이
+        // 자리가 헤더 배열을 손으로 조립하면서 `nosniff` 를 리터럴 사본으로 들고 있었다 —
+        // 값이 같아 지금은 무해하지만, 계약이 바뀌면 이 통로만 따라오지 않는다
+        // (22차 G3 라운드 B1).
+        $response = $this->inlineContentResponse($body, 'application/javascript; charset=utf-8');
+
+        // 이 응답은 **판정용 대조**라 캐시되면 안 된다 — 운영자가 자산 URL 모드를 바꾼 뒤
+        // 재감지를 눌러도 옛 응답이 돌아오면 같은 오답이 반복된다.
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $response->headers->set('Pragma', 'no-cache');
+
+        return $response;
     }
 }

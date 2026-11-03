@@ -183,6 +183,29 @@ describe('[case:state-global-locale-switch-reentry] TemplateApp 언어 전환 �
   });
 
   /**
+   * 하위 폴더 배치(`/g7`)에서는 브라우저 주소가 마운트 접두사를 품는다. 인계 경로는 접두사를 벗기고 정규화한
+   * 라우트 경로여야 라우터 재진입(접두사 없는 route.path)과 맞는다 — 어느 한쪽만 하면 인계를 잃는다(3차 병합 M2).
+   *
+   * @scenario case=unsaved_title_kept
+   * @effects unsaved_local_kept, init_local_not_applied
+   */
+  it('하위 폴더의 끝 슬래시 주소에서 언어를 바꿔도 접두사 없는 경로 재진입이 전환 직전 _local 을 이어받는다', async () => {
+    (window as any).G7Config = { basePath: '/g7' };
+    try {
+      window.history.replaceState(null, '', '/g7' + ROUTE.path + '/?tab=basic');
+
+      await app.changeLocale('en');
+
+      const ctx = lastRenderContext();
+      expect(ctx._local?.form?.title).toEqual({ ko: '저장 전 제목' });
+      expect(ctx._local?.hasChanges).toBe(true);
+      expect(ctx._localInit).toBeUndefined();
+    } finally {
+      delete (window as any).G7Config;
+    }
+  });
+
+  /**
    * @scenario case=manual_source_refetched
    * @effects manual_source_refetched_in_new_locale, manual_refetch_does_not_touch_local
    */

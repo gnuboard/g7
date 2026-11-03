@@ -1,3 +1,4 @@
+import { routePath, sitePath } from './apiUrl';
 import {
     clearMobilePaymentReturnPending,
     hasMobilePaymentReturnPending,
@@ -74,7 +75,9 @@ function returnToClaimDetailIfClaimPayment(): boolean {
     clearStandardPaymentCloseReportContext();
     removeKoreanPaymentForms();
     markStandardPaySdkForReload();
-    window.location.href = url;
+    // 서버가 주는 신청서 상세 주소는 앱 내 경로(`/mypage/...`)라 사이트 마운트 접두사를 붙여 이동한다
+    // (절대 URL·이미 접두사가 붙은 값은 그대로 — 멱등).
+    window.location.href = sitePath(url);
 
     return true;
 }
@@ -112,7 +115,8 @@ function isCheckoutPage(): boolean {
         return false;
     }
 
-    return window.location.pathname.replace(/\/+$/, '') === `${shopBase}/checkout`;
+    // 쇼핑몰 경로 앞머리는 라우트 기준이라 브라우저 주소의 사이트 마운트 접두사를 벗겨 대조한다.
+    return routePath(window.location.pathname).replace(/\/+$/, '') === `${shopBase}/checkout`;
 }
 
 function windowRecord(): Record<string, unknown> {
@@ -231,7 +235,7 @@ export async function reportStandardPaymentFailureOnReturn(): Promise<void> {
     }
 
     // 결제 완료 화면으로 돌아왔으면 보고 대상이 아니다 — 성공 확정은 서버가 이미 했다.
-    if (/\/(complete|success)(\/|$|\?)/.test(window.location.pathname)) {
+    if (/\/(complete|success)(\/|$|\?)/.test(routePath(window.location.pathname))) {
         clearStandardPaymentCloseReportContext();
 
         return;

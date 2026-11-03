@@ -296,9 +296,12 @@ Route::get('/templates/{identifier}/lang/{locale}', [TemplateLanguageController:
 ### React 컴포넌트
 
 ```javascript
-// React 컴포넌트에서 언어 파일 로드
+// 템플릿 컴포넌트에서 언어 파일 로드
+import { apiUrl } from '../support/apiUrl';
+
 const loadLanguageFile = async (identifier, locale) => {
-  const response = await fetch(`/api/templates/${identifier}/lang/${locale}`);
+  // 서버를 부르는 주소는 apiUrl() 을 거친다 (아래 주의 참조)
+  const response = await fetch(apiUrl(`/api/templates/${identifier}/lang/${locale}`));
 
   if (!response.ok) {
     console.error('Failed to load language file');
@@ -312,6 +315,29 @@ const loadLanguageFile = async (identifier, locale) => {
 const translations = await loadLanguageFile('sirsoft-admin_basic', 'ko');
 console.log(translations.dashboard.title); // "대시보드"
 ```
+
+#### 주소는 루트 상대로 두지 않는다
+
+사이트는 문서 루트가 아니라 하위 폴더에 설치될 수 있다(`https://host/g7/`). 서버가 렌더한 주소에는
+마운트 접두사가 이미 붙어 있지만 **브라우저 안에서 만드는 주소**는 루트 상대(`/api/…`)라 접두사가 없다.
+`fetch('/api/…')` 를 그대로 쓰면 그 요청이 사이트 밖으로 나가고, 증상은 오류가 아니라
+**버튼이 조용히 무반응**인 것이다(문서 루트에 다른 사이트가 있으면 그쪽 응답을 받는다).
+
+확장 번들(템플릿·모듈·플러그인)은 코어와 **별도 IIFE** 라 코어 함수를 `import` 할 수 없다. 그래서 각 확장이
+`apiUrl.ts` 헬퍼를 바이트 동일한 사본으로 갖는다 — 코어 `G7Core.url.api` 에 위임하고, 코어 초기화 전에
+불릴 수 있는 진입점을 위해 같은 SSoT(`G7Config.basePath`)를 읽는 폴백을 둔다. 템플릿에서의 위치는
+`templates/{vendor-template}/src/support/apiUrl.ts` 다.
+
+| 헬퍼 | 부르는 자리 |
+|------|-------------|
+| `apiUrl(path)` | 서버를 부르는 주소 — `fetch` / `XMLHttpRequest` / `EventSource` |
+| `sitePath(path)` | 브라우저가 그대로 여는 주소 — `location.href` 대입 · `location.assign/replace` · `window.open` · `history.pushState`/`replaceState` 의 세 번째 인자 |
+| `routePath(path)` | 받아 온 주소를 라우트와 대조할 때 — `location.pathname` 을 패턴과 비교하기 직전에 접두사를 **벗긴다**. 벗기지 않으면 하위 폴더 사이트에서 그 대조가 항상 불일치라 해당 기능이 조용히 사라진다 |
+
+화면 링크(`<a href>`)는 템플릿 `A` 컴포넌트가 접두사를 붙이므로 날 `<a>` 를 직접 쓰지 않는다.
+`navigate` 핸들러의 `path` 는 라우터가 붙이므로 확장이 직접 붙이지 않는다.
+
+> 상세: [G7Core 전역 API 레퍼런스 "주소 조립 (G7Core.url)"](../frontend/g7core-api.md)
 
 ### Blade 템플릿
 

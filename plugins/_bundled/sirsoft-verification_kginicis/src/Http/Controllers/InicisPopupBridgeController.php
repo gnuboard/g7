@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationKginicis\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Support\AssetUrl;
 use App\Support\ScreenUrl;
 use App\Support\SiteUrl;
 use Illuminate\Http\Response;
@@ -56,6 +57,9 @@ class InicisPopupBridgeController extends PublicBaseController
      */
     protected function htmlResponse(string $html): Response
     {
+        // file-serving:allow 파일이 아니라 이 자리에서 만든 중계 문서를 돌려준다 — 서빙 계약
+        // (nosniff·ETag·304) 의 대상이 아니다. 표식이 없으면 소스 계약 검사가 이 메서드를
+        // 파일 서빙으로 읽는다 (22차 G3 라운드 B2).
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Referrer-Policy' => 'no-referrer',
@@ -80,8 +84,10 @@ class InicisPopupBridgeController extends PublicBaseController
         $title = e(__('sirsoft-verification_kginicis::messages.bridge_page_title'));
         // 보안: 부모창 전달 대상은 브리지 자신의 주소(요청 Host 를 따른다)가 아니라 사이트 주소의 origin.
         $siteOrigin = json_encode(SiteUrl::origin(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-        // 복귀 주소가 없을 때 갈 홈 — 화면 주소 헬퍼(home)를 거친다(#792 F1-17, 주소 필터·사용자 화면 URL)
-        $homeUrl = json_encode(ScreenUrl::path('home', '/'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        // 복귀 주소가 없을 때 갈 홈 — 화면 주소 헬퍼(home)를 거친다(#792 F1-17, 주소 필터·사용자 화면 URL).
+        // 경로로 돌아오면 마운트 접두사를 채운다 — 리터럴 '/' 는 하위 폴더 배치(https://host/g7/)에서
+        // 문서 루트를 가리켜 본인인증을 마친 사용자가 사이트 밖에 떨어진다. 절대 URL·접두사 보유 값은 그대로 둔다.
+        $homeUrl = json_encode(AssetUrl::sitePath(ScreenUrl::path('home', '/')), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
         // 동작은 정적 브리지 파일이 한다 — 인라인 <script> 는 strict CSP(script-src 'self')에서 실행되지 않아
         // 인증 결과가 전달되지 않고 팝업도 닫히지 않았다(#158). 서버 값은 비실행 JSON 데이터 블록으로만 넘긴다.
         $bridgeData = '<script type="application/json" id="bridge-data">{"siteOrigin":'.$siteOrigin.',"homeUrl":'.$homeUrl.',"payload":'.$payloadJson.'}</script>';

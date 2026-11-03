@@ -264,7 +264,7 @@ return [
         'update_autoload' => [
             'generating' => '확장 오토로드 파일을 생성합니다...',
             'generated' => '오토로드 파일이 성공적으로 생성되었습니다.',
-            'hooks_cache_regenerated' => '정적 훅 매핑 캐시가 재생성되었습니다.',
+            'hooks_cache_regenerated' => '정적 확장 캐시(훅 매핑, 예약 커맨드 매핑)가 재생성되었습니다.',
             'failed' => '오토로드 파일 생성 중 오류가 발생했습니다: :error',
         ],
         'vendor_bundle_action' => [

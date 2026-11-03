@@ -19,8 +19,6 @@ use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
  *
  * 스키마 타입만으로는 검증할 수 없다 — 선택지가 코어 3종 + 플러그인 훅 등록
  * 디스크라 런타임에만 확정되기 때문이다.
- *
- * @effects invalid_disk_rejected_with_422
  */
 class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
 {
@@ -28,6 +26,7 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
      * 플러그인 설정 저장 요청을 해석합니다.
      *
      * @param  string  $disk  public_asset_disk 값
+     * @return UpdatePluginSettingsRequest 검증까지 마친 설정 저장 요청
      */
     private function resolve(string $disk): UpdatePluginSettingsRequest
     {
@@ -37,6 +36,13 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
         $request->setContainer($this->app)->setRedirector($this->app['redirect']);
         $request->setRouteResolver(fn () => new class
         {
+            /**
+             * 라우트 매개변수 조회를 흉내 내 항상 CKEditor5 플러그인 식별자를 돌려준다.
+             *
+             * @param  string  $key  조회할 라우트 매개변수 이름
+             * @param  mixed  $default  매개변수가 없을 때의 기본값
+             * @return string 플러그인 식별자
+             */
             public function parameter(string $key, $default = null): string
             {
                 return 'sirsoft-ckeditor5';
@@ -47,6 +53,13 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
         return $request;
     }
 
+    /**
+     * 코어 카탈로그에 있는 public 디스크를 고르면 검증을 통과해 그 값이 그대로 남는지 확인한다.
+     *
+     * @scenario disk_setting=public, consumer=editor
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function core_catalog_disk_is_accepted(): void
     {
@@ -55,6 +68,13 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
         $this->assertSame('public', $request->validated()['public_asset_disk']);
     }
 
+    /**
+     * 빈 값은 코어 설정을 따른다는 뜻으로 받아들여 검증 오류 없이 저장되는지 확인한다.
+     *
+     * @scenario disk_setting=none, override=follow_core, consumer=editor
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function empty_value_is_accepted_as_follow_core(): void
     {
@@ -63,6 +83,13 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
         $this->assertSame('', $request->validated()['public_asset_disk'] ?? '');
     }
 
+    /**
+     * 카탈로그에 없는 디스크 이름을 넣으면 public_asset_disk 필드 오류로 검증이 거부되는지 확인한다.
+     *
+     * @effects invalid_disk_rejected_with_422
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function unknown_disk_is_rejected(): void
     {
@@ -81,6 +108,13 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
         }
     }
 
+    /**
+     * 설정 스키마에 public_asset_disk 를 선언하지 않은 플러그인에는 그 검증 규칙이 붙지 않는지 확인한다.
+     *
+     * @effects public_asset_disk_validation_follows_the_catalog_attach_gate
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function validation_gate_is_closed_when_schema_lacks_the_key(): void
     {
@@ -101,6 +135,13 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
         $request->setContainer($this->app)->setRedirector($this->app['redirect']);
         $request->setRouteResolver(fn () => new class
         {
+            /**
+             * 라우트 매개변수 조회를 흉내 내 공개 자산 디스크 키를 선언하지 않은 플러그인 식별자를 돌려준다.
+             *
+             * @param  string  $key  조회할 라우트 매개변수 이름
+             * @param  mixed  $default  매개변수가 없을 때의 기본값
+             * @return string 플러그인 식별자
+             */
             public function parameter(string $key, $default = null): string
             {
                 return 'other-plugin';
@@ -110,6 +151,11 @@ class PluginSettingsPublicAssetDiskValidationTest extends PluginTestCase
         $this->assertArrayNotHasKey('public_asset_disk', $request->rules());
     }
 
+    /**
+     * 테스트가 바꿔 끼운 플러그인 매니저 인스턴스를 컨테이너에서 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->app->forgetInstance(PluginManager::class);

@@ -1,15 +1,3 @@
-/**
- * 로컬 스토리지 관련 핸들러
- *
- * 비로그인 사용자의 장바구니 키 등 클라이언트 스토리지 관리를 처리합니다.
- *
- * 핸들러 시그니처: ActionDispatcher의 ActionHandler 형식을 따름
- * (action: ActionDefinition, context: ActionContext) => void | Promise<void>
- *
- * G7Core API 사용:
- * - G7Core.state.set() - 전역 상태 설정
- * - G7Core.state.get()?.currentUser - 현재 사용자 확인 (반환값이 곧 `_global` 이라 `._global` 을 덧붙이지 않는다)
- */
 export declare const SECRET_VIEW_TOKEN_STORAGE_NAME = "g7_board_secret_view_token";
 export declare const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = "g7_board_secret_view_expires_at";
 /**

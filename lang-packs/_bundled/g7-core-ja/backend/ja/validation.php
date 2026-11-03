@@ -700,6 +700,7 @@ return [
         'null_byte_detected' => 'NULL バイト攻撃が検出されました。',
         'outside_base_directory' => '基本ディレクトリ外のパスは許可されていません。',
         'file_type_not_allowed' => '許可されていないファイルタイプです。拡張子: :extension (許可: :allowed)',
+        'hidden_segment_not_allowed' => 'ドット(.)で始まるファイル·ディレクトリは提供していません。',
     ],
     'extension_identifier' => [
         'max' => '拡張識別子は最大255文字まで入力できます。',
@@ -717,6 +718,7 @@ return [
         'absolute_path_not_allowed' => '絶対パスは許可されません。',
         'null_byte_detected' => 'NULL バイトが検出されました。',
         'outside_base_directory' => '基準ディレクトリ外へのアクセスは許可されません。',
+        'hidden_segment_not_allowed' => 'ドット(.)で始まるファイル·ディレクトリは提供していません。',
     ],
     'plugin_path' => [
         'file_type_not_allowed' => '許可されていないファイルタイプです。拡張子: :extension（許可: :allowed）',
@@ -725,6 +727,7 @@ return [
         'absolute_path_not_allowed' => '絶対パスは許可されません。',
         'null_byte_detected' => 'NULL バイトが検出されました。',
         'outside_base_directory' => '基準ディレクトリ外へのアクセスは許可されません。',
+        'hidden_segment_not_allowed' => 'ドット(.)で始まるファイル·ディレクトリは提供していません。',
     ],
     'auth' => [
         'two_factor' => [
@@ -788,6 +791,9 @@ return [
             'required' => 'パスは必須です。',
             'string' => 'パスは文字列である必要があります。',
         ],
+    ],
+    'ip_allow_list' => [
+        'invalid' => '":value" は有効な IP アドレスまたは範囲の表記ではありません。1 行に 1 件ずつ、またはカンマで区切って入力してください。',
     ],
     'setting' => [
         'value' => [
@@ -1069,6 +1075,11 @@ return [
         'orphan_retention_days_integer' => '孤立した添付ファイルの保持期間は整数である必要があります。',
         'orphan_retention_days_min' => '孤立した添付ファイルの保持期間は1日以上である必要があります。',
         'orphan_retention_days_max' => '孤立した添付ファイルの保持期間は3650日を超えることはできません。',
+        'trusted_proxies_present' => '信頼できるプロキシリストがリクエストに含まれていません。',
+        'trusted_proxies_array' => '信頼できるプロキシリストは配列である必要があります。',
+        'trusted_proxies_max' => '信頼できるプロキシは :max 個を超えることはできません。',
+        'trusted_proxy_address_invalid' => '信頼できるプロキシアドレスの形式が正しくありません。IPアドレスまたはCIDRで入力してください（例：10.0.0.1、10.0.0.0/24）。',
+        'trusted_proxy_address_max' => '信頼できるプロキシアドレスは :max 文字を超えることはできません。',
         'ip_restriction_enabled_boolean' => 'IP アクセス制限の使用は true または false 値である必要があります。',
         'ip_or_cidr_invalid' => '":value" は IP アドレスまたは CIDR 形式(例: 203.0.113.0/24)ではありません。',
         'csp_source_host_invalid' => '":value" は許可されていない形式です。ホスト (例: cdn.example.com, *.example.com, https://cdn.example.com) のみ入力してください — 引用符・セミコロン・空白・unsafe-inline などのキーワード・data:・*・http:// は使用できません。',
@@ -1147,6 +1158,11 @@ return [
     'summary_more_error' => '(他 :count 件のエラー)',
     'summary_more_errors' => '(他 :count 件のエラー)',
     'attributes' => [
+        'system.execution_mode' => '実行方式',
+        'system.cron_mode' => 'スケジュール実行方式',
+        'system.cron_allowed_ips' => 'スケジュール許可アドレス',
+        'system.cron_min_interval' => 'スケジュール最小呼び出し間隔',
+        'system.cron_visit_fallback' => '訪問時のスケジュール実行',
         'layout_source' => 'レイアウトインストールソース',
         'layout_meta_icon' => 'メニューアイコン',
         'layout_meta_editor_label' => 'エディター表示名',
@@ -1339,6 +1355,7 @@ return [
         'public_asset_disk' => '公開アセットディスク',
         'orphan_cleanup_enabled' => '孤立した添付ファイルの自動クリーンアップ',
         'orphan_retention_days' => '孤立した添付ファイルの保持期間',
+        'trusted_proxies' => '信頼できるプロキシリスト',
         'two_factor_scope' => '2段階認証の適用範囲',
         'ip_restriction_enabled' => 'IP アクセス制限の使用',
         'admin_allowed_ips' => '管理者エリア許可 IP',

@@ -48,7 +48,12 @@
             @hasSection('extra')
                 @yield('extra')
             @endif
-            <a href="{{ $homeUrl ?? '/' }}" class="error-btn">
+            {{-- 마운트 접두사는 **여기 한 곳**이 붙인다. 자식 뷰 다섯이 정하는 것은
+                 「관리자면 /admin, 아니면 /」라는 목적지뿐이고, 그 판정은 접두사를 이미
+                 벗긴 `request()->path()` 를 보므로 옳다. 붙이는 자리를 자식으로 내리면
+                 다섯 벌이 되고 새로 추가되는 오류 페이지가 다시 사각이 된다. 이 링크는
+                 라우터를 거치지 않는 날 `<a href>` 라 붙일 주체가 이 자리밖에 없다. --}}
+            <a href="{{ \App\Support\AssetUrl::basePrefix().($homeUrl ?? '/') }}" class="error-btn">
                 {{ __('errors.back_home') }}
             </a>
         </div>

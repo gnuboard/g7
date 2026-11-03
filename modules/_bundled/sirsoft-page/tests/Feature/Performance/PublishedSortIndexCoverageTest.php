@@ -14,15 +14,13 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
  * 컬럼 순서가 어긋나 옵티마이저가 무시하는 색인을 정상으로 판정한다.
  *
  * @scenario page-published-sort-index
- *
- * @effects published_sort_index_exists,
- *          published_sort_index_column_order,
- *          page_list_query_uses_published_sort_index
  */
 class PublishedSortIndexCoverageTest extends ModuleTestCase
 {
     /**
      * MySQL 계열이 아니면 건너뜁니다 (EXPLAIN 출력 형식이 다름).
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -37,6 +35,8 @@ class PublishedSortIndexCoverageTest extends ModuleTestCase
      * 정렬을 덮는 색인이 존재하는지 확인
      *
      * @effects published_sort_index_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_published_sort_index_exists(): void
     {
@@ -53,6 +53,8 @@ class PublishedSortIndexCoverageTest extends ModuleTestCase
      * 색인 컬럼 순서가 조건·정렬 순서와 일치하는지 확인
      *
      * @effects published_sort_index_column_order
+     *
+     * @return void 반환값 없음
      */
     public function test_index_column_order_matches_query_shape(): void
     {
@@ -73,6 +75,8 @@ class PublishedSortIndexCoverageTest extends ModuleTestCase
      * 스캔을 골라도 통과해 버린다. 판정은 실행계획이 확정한 `key` 로만 한다.
      *
      * @effects page_list_query_uses_published_sort_index
+     *
+     * @return void 반환값 없음
      */
     public function test_query_plan_uses_the_index(): void
     {

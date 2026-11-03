@@ -45,6 +45,8 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
+
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | idps | array | — | 필터 선택지. 등록된 IdP 전부 `{id, key, label, protocol}` |
@@ -99,7 +101,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.accounts.view`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.accounts.view`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -124,7 +126,7 @@ HTTP/1.1 200
 | user_id | body | integer | 조건부 | `new_user` 와 함께 보낼 수 없음 | 연결을 붙일 기존 회원 ID. `new_user` 가 없으면 필수 |
 | new_user | body | object | 조건부 | — | 회원이 없을 때 비밀번호 없이 사전 등록할 회원. `user_id` 가 없으면 필수 |
 | new_user.name | body | string | 아니오 | 최대 50자 | 이름. 비우면 이메일 앞부분 |
-| new_user.email | body | string | 조건부 | 이메일, 최대 255자 | 사전 등록 이메일. `new_user` 를 보내면 필수 |
+| new_user.email | body | email | 조건부 | 이메일, 최대 255자 | 사전 등록 이메일. `new_user` 를 보내면 필수 |
 
 **요청 예시**
 
@@ -190,7 +192,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.accounts.provision`)이 없는 경우, 또는 `errors.code` = `admin_target_manual_only` — 관리자 계정에 붙이려는데 행위자가 최고관리자가 아님 |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.accounts.provision`)이 없는 경우, 또는 `errors.code` = `admin_target_manual_only` — 관리자 계정에 붙이려는데 행위자가 최고관리자가 아님 |
 | 404 | Not Found | `errors.code` = `user_not_found`(`user_id` 회원 없음) 또는 `idp_not_found` |
 | 409 | Conflict | `errors.code` = `already_linked`(같은 IdP 와 subject 의 연결이 있거나 그 회원이 이 IdP 에 이미 연결됨) 또는 `email_in_use`(사전 등록 이메일을 다른 회원이 씀) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지), 또는 `errors.code` = `email_required` |
@@ -271,7 +273,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.accounts.provision`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.accounts.provision`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우, 또는 `errors.code` = `csv_empty`, `csv_header_invalid`, `csv_too_many_rows` |
 | 429 | Too Many Requests | 분당 20회를 넘은 경우 |
 
@@ -292,7 +294,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | 숫자 | 연결 ID |
+| id | path | integer | 예 | 숫자 | 연결 ID |
 | confirm_last_method | query | boolean | 아니오 | `1`, `0` (JSON 본문이면 `true`, `false`) | 마지막 로그인 수단이어도 해제한다(409 `last_method` 를 받은 뒤 확인하고 다시 보낼 때) |
 
 **요청 예시**
@@ -329,7 +331,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.accounts.unlink`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.accounts.unlink`)이 없는 경우 |
 | 404 | Not Found | `errors.code` = `account_not_found` — 연결이 없음 |
 | 409 | Conflict | `errors.code` = `last_method` — 비밀번호가 없는 회원의 마지막 연결이고 `confirm_last_method` 가 참이 아님 |
 | 422 | Unprocessable Entity | `confirm_last_method` 가 참거짓 값이 아닌 경우 |
@@ -362,6 +364,8 @@ Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -423,7 +427,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | 숫자 | 내 연결 ID |
+| id | path | integer | 예 | 숫자 | 내 연결 ID |
 
 **요청 예시**
 

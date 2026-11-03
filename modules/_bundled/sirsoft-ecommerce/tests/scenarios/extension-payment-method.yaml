@@ -75,6 +75,8 @@ effects:
   # 기존 설치 환경
   - saved_null_pg_provider_self_healed    # 저장된 pg_provider=null 이 정의값으로 덮임
   - upgrade_step_backfills_settings_file  # upgrade step 이 저장 파일 자체도 정정 (멱등)
+  # 결제 페이로드
+  - pg_payment_data_carries_tax_free_amount  # 면세 상품이 섞인 PG 주문은 결제 페이로드에 면세 금액을 싣는다 (승인과 취소의 과세 구분 일치, S1-D12)
 
 sub_flows:
   - id: legacy_card_orders

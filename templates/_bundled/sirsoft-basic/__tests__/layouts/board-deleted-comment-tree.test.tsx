@@ -1,3 +1,6 @@
+// @scenario viewer=regular
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 /**
  * @file board-deleted-comment-tree.test.tsx
  * @description 부모 댓글 삭제 시 tombstone 표시 + 자식 트리 보존 (이슈 #413-56-2)

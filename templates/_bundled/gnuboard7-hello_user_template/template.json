@@ -23,7 +23,7 @@
         "url": "https://gnuboard.com"
     },
     "release_date": "2026-11-01",
-    "g7_version": ">=7.1.1",
+    "g7_version": ">=7.2.0",
     "dependencies": {
         "modules": {
             "gnuboard7-hello_module": ">=0.2.0"

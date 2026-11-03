@@ -55,6 +55,15 @@ effects:
   - code_editor_font_size_is_configurable              # 글자 크기를 prop 으로 바꿀 수 있다
   - code_editor_auto_theme_follows_dark_class          # auto 테마는 처음 뜰 때부터 문서 dark 클래스를 따른다
   - code_editor_auto_theme_reacts_without_rerender     # 테마 토글을 관측해 다시 그리지 않아도 따라간다
+  # --- 브라우저 실측 (code-editor-shortcuts.spec.ts) — 같은 약속이 실제 Monaco 안팎에서 도는가
+  - code_editor_has_document_shortcuts                 # 편집기 화면에 문서 단위 단축키가 걸려 있다
+  - code_editor_ctrl_s_saves_and_prevents_browser_default # Ctrl+S 가 저장 요청을 내고 브라우저 기본 동작을 막는다
+  - code_editor_shortcut_help_lists_the_ssot           # ? 로 도움말이 열리고 SSoT 의 단축키가 모두 보인다
+  - code_editor_ctrl_k_focuses_the_file_search         # Ctrl+K 가 편집기 안에서도 파일 검색창으로 포커스를 옮긴다
+  - code_editor_shortcuts_do_not_misfire_in_inputs     # 검색창에 ? 를 치면 도움말 대신 글자가 들어간다
+  - code_editor_alt_z_toggles_word_wrap_and_remembers_it # Alt+Z 줄바꿈 토글이 새로고침 뒤에도 남는다
+  - code_editor_ctrl_plus_minus_adjusts_font_size_and_remembers_it # Ctrl+= / Ctrl+- 글자 크기가 새로고침 뒤에도 남는다
+  - code_editor_avoids_browser_reserved_shortcuts      # 도움말에 mod+w 가 실리지 않는다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.shortcuts.test.tsx

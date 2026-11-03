@@ -18,7 +18,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
     /**
      * 주문 소유자의 닫힘 보고는 결제대기 주문을 실패·취소로 기록한다.
      *
-     * @effects close_report_marks_pending_order_failed_and_payment_cancelled
+     * @scenario context=paymentCallback_card, caller=ownership_verified_buyer, callback_state=approval_not_yet_attempted
+     *
+     * @effects close_report_marks_pending_order_failed_and_payment_cancelled,
+     *   legitimate_failure_is_recorded_by_ownership_verified_close_report
      *
      * @return void 반환값 없음
      */
@@ -123,7 +126,10 @@ class PaymentCloseReportControllerTest extends PluginTestCase
      *
      * 연락처는 제3자도 알 수 있어 소유 증명이 아니다. 종전에는 이 요청이 주문을 취소시켰다.
      *
-     * @effects close_report_rejects_matching_buyer_contact_without_ownership
+     * @scenario context=paymentCallback_card, caller=ownership_verified_buyer, callback_state=approval_not_yet_attempted
+     *
+     * @effects close_report_rejects_matching_buyer_contact_without_ownership,
+     *   close_report_rejects_buyer_mismatch
      *
      * @return void 반환값 없음
      */

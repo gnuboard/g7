@@ -20,8 +20,6 @@ use Tests\TestCase;
  * before/after_withdraw 훅을 통째로 건너뛰었다. 본인 탈퇴와 결과가 같아야 한다.
  *
  * @scenario entry_point=admin_update_status, entry_point=admin_bulk_status, target_account=admin
- *
- * @effects admin_status_change_runs_full_withdrawal, admin_status_change_fires_withdraw_hooks, bulk_status_withdraw_delegates_per_user, bulk_status_reports_failed_count, admin_account_withdraw_blocked_consistently
  */
 class AdminWithdrawPathUnificationTest extends TestCase
 {
@@ -29,6 +27,10 @@ class AdminWithdrawPathUnificationTest extends TestCase
 
     /**
      * W8: 단건 상태 변경으로 탈퇴시켜도 익명화와 훅이 동일하게 수행된다.
+     *
+     * @effects admin_status_change_runs_full_withdrawal, admin_status_change_fires_withdraw_hooks
+     *
+     * @return void 반환값 없음
      */
     public function test_update_user_with_withdrawn_status_runs_full_withdrawal(): void
     {
@@ -58,6 +60,12 @@ class AdminWithdrawPathUnificationTest extends TestCase
 
     /**
      * W8: 같은 요청의 다른 필드 갱신도 함께 반영된다.
+     *
+     * @scenario entry_point=admin_update_status, target_account=normal
+     *
+     * @effects admin_status_change_keeps_other_field_updates
+     *
+     * @return void 반환값 없음
      */
     public function test_update_user_with_withdrawn_status_still_applies_other_fields(): void
     {
@@ -82,6 +90,8 @@ class AdminWithdrawPathUnificationTest extends TestCase
      * 미리 점유해 마지막 쓰기(withdraw)를 실패시킨다.
      *
      * @effects admin_status_change_is_atomic_with_profile_update
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_withdrawal_rolls_back_the_profile_update(): void
     {
@@ -113,6 +123,10 @@ class AdminWithdrawPathUnificationTest extends TestCase
 
     /**
      * W9: 일괄 상태 변경도 건별 정식 탈퇴로 처리되고, 차단 대상은 실패 건수로 보고된다.
+     *
+     * @effects bulk_status_withdraw_delegates_per_user, bulk_status_reports_failed_count
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_withdrawn_delegates_per_user_and_reports_failures(): void
     {
@@ -147,6 +161,10 @@ class AdminWithdrawPathUnificationTest extends TestCase
      * W9-b: 전건이 차단되어도 200 으로 나가므로, 응답만으로 "아무 일도 없었음" 이 구분되어야 한다.
      *
      * 이 구분이 없으면 화면은 성공 안내를 띄우고 운영자는 처리된 줄 안다 (실제 제보 경로).
+     *
+     * @effects bulk_status_reports_failed_count
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_withdrawn_reports_zero_updated_when_every_target_is_blocked(): void
     {
@@ -170,6 +188,12 @@ class AdminWithdrawPathUnificationTest extends TestCase
      * W9-c: 탈퇴가 아닌 일괄 상태 변경도 같은 응답 형태를 유지한다.
      *
      * 형태가 갈리면 화면 표현식이 한쪽 경로에서만 undefined 를 만난다.
+     *
+     * @scenario entry_point=admin_bulk_status, target_account=normal
+     *
+     * @effects bulk_status_response_shape_is_consistent
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_response_shape_is_consistent_for_non_withdraw_statuses(): void
     {
@@ -192,6 +216,12 @@ class AdminWithdrawPathUnificationTest extends TestCase
      * 사유는 `$t:key|reason=...` 파라미터로 전달되는데, 파서가 `|` `&` `=` 를
      * 구분자로 읽으므로 그 문자가 섞이면 안내가 조용히 잘린다. 알 수 없는 예외의
      * 원문 메시지를 그대로 싣지 않는 것이 이 불변식을 지키는 방법이다.
+     *
+     * @scenario entry_point=admin_bulk_status, target_account=admin
+     *
+     * @effects bulk_status_failed_reasons_safe_for_message_params
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_withdraw_reasons_are_safe_for_message_parameters(): void
     {
@@ -215,6 +245,12 @@ class AdminWithdrawPathUnificationTest extends TestCase
 
     /**
      * W9: 탈퇴 외 상태의 일괄 변경은 종전 동작을 유지한다.
+     *
+     * @scenario entry_point=admin_bulk_status, target_account=normal
+     *
+     * @effects bulk_status_non_withdraw_keeps_previous_behaviour
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_status_other_status_keeps_previous_behaviour(): void
     {
@@ -234,6 +270,10 @@ class AdminWithdrawPathUnificationTest extends TestCase
 
     /**
      * W10: 관리자를 상태 변경으로 탈퇴시키려는 시도는 일관되게 차단된다.
+     *
+     * @effects admin_account_withdraw_blocked_consistently
+     *
+     * @return void 반환값 없음
      */
     public function test_update_user_cannot_withdraw_admin_via_status(): void
     {

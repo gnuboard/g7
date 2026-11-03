@@ -2,10 +2,63 @@
 
 namespace App\Seo;
 
+use App\Support\AssetUrl;
 use App\Support\SiteUrl;
 
 class ComponentHtmlMapper
 {
+    /**
+     * 봇에게 나가는 HTML 의 **사이트 내부 링크**에 마운트 접두사를 붙입니다.
+     *
+     * 화면(React)은 접두사를 붙이는 자리를 템플릿 `A` 컴포넌트 한 곳으로 모았는데,
+     * 봇 경로는 그 컴포넌트를 **거치지 않는다** — `component_map` 이 `A` 를
+     * `{"tag":"a"}` 로 치환하고 `href` 를 날 문자열로 전개하기 때문이다. 그래서
+     * 하위 폴더 배치(`https://host/g7/`)에서는 같은 레이아웃의 같은 링크가 화면에서는
+     * 사이트 안을, 봇에게는 **사이트 밖**을 가리켰다. 오류가 나지 않으므로 증상은
+     * 검색 색인이 조용히 사이트 밖 주소로 쌓이는 것뿐이다 (15차 G3 라운드).
+     *
+     * 루트 상대(`/…`)만 대상이다. 절대 URL·프로토콜 상대(`//`)·조각(`#`)·상대 경로는
+     * 사이트 경로가 아니므로 손대지 않는다. 이미 접두사를 가진 값도 그대로 둔다
+     * — 이 함수가 멱등이어야 소비 지점을 늘려도 이중 접두가 생기지 않는다.
+     *
+     * 그 규칙 자체는 `AssetUrl::sitePath()` 가 소유한다. 종전에는 같은 규칙이 이
+     * 파일 두 곳과 `SeoMetaResolver` 에 세 벌의 독립 사본으로 살아 있었고, 갈려도
+     * 오류가 나지 않아 대조할 장치가 없었다 (16차 G3 라운드 A-9).
+     *
+     * @param  string  $href  해석이 끝난 링크 목적지
+     * @return string 접두사가 붙은 링크 목적지
+     */
+    private function siteHref(string $href): string
+    {
+        return AssetUrl::sitePath($href);
+    }
+
+    /**
+     * 봇에게 나가는 HTML 의 **자산 주소**(`src`)를 절대 URL 로 만듭니다.
+     *
+     * `url()` 을 쓰면 안 된다 — 그 헬퍼는 `config('app.url')` 전체(오리진 **+ 마운트
+     * 접두사**)를 앞에 붙이는데, 이 자리에 오는 값의 생산자가 이미 접두사를 실어 준다
+     * (`ProductImage::apiDownloadUrl()` 등이 `AssetUrl::basePrefix().'/api/…'` 를
+     * 돌려준다). 그래서 하위 폴더 배치에서 `https://host/g7/g7/api/…` 가 나가고,
+     * 그 주소는 404 다. 오류가 아니라 **이미지가 안 나오는 것**이 유일한 증상이라
+     * 봇 화면을 열어 보기 전에는 드러나지 않는다 (10차 G3 라운드 X-1).
+     *
+     * 그렇다고 오리진만 붙이면 반대쪽이 깨진다 — 레이아웃이 리터럴로 적은 사이트
+     * 경로(`/images/logo.png`)에는 접두사를 붙일 주체가 여기밖에 없다. 두 입력이
+     * 같은 자리에 오므로 **접두사를 멱등으로 보정한 뒤 오리진을 붙인다**:
+     * 이미 접두사가 있으면 `siteHref()` 가 그대로 두고, 없으면 채운다.
+     *
+     * 그 규칙 자체는 `AssetUrl::siteAbsolute()` 가 소유하고, 절대 주소의 본체는 사이트 주소 기준
+     * `SiteUrl::absolute()`(`SeoUrl::absolute()` 와 같은 출처 — 요청 Host 비의존)다 (16차 G3 라운드 A-9).
+     *
+     * @param  string  $value  해석이 끝난 자산 경로
+     * @return string 절대 URL (판정 대상이 아니면 원본 그대로)
+     */
+    private function siteAssetUrl(string $value): string
+    {
+        return AssetUrl::siteAbsolute($value);
+    }
+
     /**
      * SEO 렌더링 기준 뷰포트 폭 (px)
      *
@@ -899,9 +952,18 @@ class ComponentHtmlMapper
                 continue;
             }
 
-            // src 속성의 상대 경로를 사이트 주소 기준 절대 경로로 변환 (요청 Host 비의존)
-            if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
-                $value = SeoUrl::absolute($value);
+            // src 속성의 상대 경로를 절대 경로로 변환 (마운트 접두사 인지 — `siteAssetUrl` 독블록)
+            if ($attrName === 'src') {
+                $value = $this->siteAssetUrl($value);
+            }
+
+            // `href` 도 같은 `item_attrs` 를 전개한다 — `render_modes` 의 iterate 정의는
+            // 속성 이름을 자유롭게 선언하므로(`item_attrs: {href: "/board/{slug}"}`)
+            // 이 루프에 링크가 온다. 형제 두 지점은 `href`·`src` 를 **둘 다** 배선하는데
+            // 여기만 `src` 뿐이라, 이 경로로 나간 링크는 하위 폴더 배치에서 사이트 밖을
+            // 가리켰다 — A-1 의 반대 방향 비대칭이다 (16차 G3 라운드 A-2).
+            if ($attrName === 'href') {
+                $value = $this->siteHref($value);
             }
 
             $attrStr .= " {$attrName}=\"".e($value).'"';
@@ -1076,7 +1138,7 @@ class ComponentHtmlMapper
             if ($html !== '' && isset($modeConfig['link']['href'])) {
                 $linkHref = $this->resolveFieldsLink($modeConfig['link'], $data);
                 if ($linkHref !== null) {
-                    $html = '<a href="'.e($linkHref).'">'."\n".$html.'</a>'."\n";
+                    $html = '<a href="'.e($this->siteHref($linkHref)).'">'."\n".$html.'</a>'."\n";
                 }
             }
 
@@ -1138,7 +1200,7 @@ class ComponentHtmlMapper
 
         $html = '';
         for ($i = $start; $i <= $end; $i++) {
-            $href = e($basePath.'?page='.$i);
+            $href = e($this->siteHref($basePath).'?page='.$i);
             if ($i === $currentPage) {
                 $html .= '<span>'.$i.'</span>';
             } else {
@@ -1232,6 +1294,20 @@ class ComponentHtmlMapper
                     foreach ($itemAttrs as $attrName => $attrPattern) {
                         $attrValue = $this->resolveFieldContent($attrPattern, $item);
                         if ($attrValue !== '') {
+                            // `href` 는 브라우저가 그대로 여는 사이트 경로다 — 봇 화면에서도
+                            // 마운트 접두사를 거쳐야 한다(예: `item_attrs: {href: "/board/{slug}"}`).
+                            if ($attrName === 'href') {
+                                $attrValue = $this->siteHref($attrValue);
+                            }
+
+                            // `src` 도 같은 `item_attrs` 를 전개하는데 형제 두 지점만
+                            // 다루고 여기만 빠져 있었다 — 그래서 이 경로로 나간 이미지는
+                            // 하위 폴더 배치에서 접두사 없는 주소가 되고, 봇이 그것을
+                            // 페이지 주소가 아니라 **오리진 루트**에 붙여 해석한다
+                            // (10차 G3 라운드 — X-1 을 고치다 드러난 형제).
+                            if ($attrName === 'src') {
+                                $attrValue = $this->siteAssetUrl($attrValue);
+                            }
                             $attrStr .= " {$attrName}=\"".e($attrValue).'"';
                         }
                     }
@@ -1342,7 +1418,10 @@ class ComponentHtmlMapper
             $baseUrl = '';
         }
 
-        return $baseUrl.$href;
+        // 접두사는 **생산 지점**에서 붙인다 — 호출부 하나가 이미 감싸고 있지만, 그러면
+        // 새 소비처가 생길 때마다 그 자리를 다시 기억해야 한다. `siteHref()` 는 멱등이고
+        // 절대 URL(`base_url` 설정)은 손대지 않으므로 이중 적용이 생기지 않는다.
+        return $this->siteHref($baseUrl.$href);
     }
 
     /**
@@ -1363,9 +1442,19 @@ class ComponentHtmlMapper
             // 종전에는 `{x}` 하나짜리만 치환해 섞인 패턴이 중괄호째 href 로 나갔다(engine-v1.84.0).
             $value = $this->resolveFieldContent((string) $fieldPattern, $data);
             if ($value !== '') {
-                // src 속성의 상대 경로를 사이트 주소 기준 절대 경로로 변환 (요청 Host 비의존)
-                if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
-                    $value = SeoUrl::absolute($value);
+                // src 속성의 상대 경로를 절대 경로로 변환 (마운트 접두사 인지 — `siteAssetUrl` 독블록)
+                if ($attrName === 'src') {
+                    $value = $this->siteAssetUrl($value);
+                }
+                // `href` 는 브라우저가 그대로 여는 사이트 경로다 — 마운트 접두사를 거친다.
+                //
+                // 이 경로(`fields` 렌더 모드)가 `seo-config.json` 이 **자기 소유로 선언한**
+                // 헤더·푸터 앵커를 그린다. 형제 지점(속성 매핑·link 래핑·페이지네이션·
+                // item_attrs·navigate 주입)을 배선하고도 여기만 남아, 같은 봇 응답 안에
+                // `/g7/page/about` 와 `/page/about` 이 **동시에** 나갔다. 단위 테스트는
+                // 형제 경로만 세워 초록이었고 **P0 하위 폴더 실측이 잡았다** (15차 G3 라운드).
+                if ($attrName === 'href') {
+                    $value = $this->siteHref($value);
                 }
                 $attrStr .= " {$attrName}=\"".e($value).'"';
             }
@@ -1832,6 +1921,7 @@ class ComponentHtmlMapper
                     continue;
                 }
 
+                // 미리 정한 링크 목적지(`fallbackHref` 대체)는 presetAnchorAttributes() 가 이미 마운트 접두사를 거쳐 돌려준다
                 if ($htmlAttr === 'href' && self::isExecutableUrl($value, true)) {
                     $value = '#';
                 }
@@ -1858,6 +1948,28 @@ class ComponentHtmlMapper
                     $evaluated = '#';
                 } elseif ($htmlAttr === 'src' && self::isExecutableUrl($evaluated, false)) {
                     continue;
+                }
+
+                // 링크 목적지는 브라우저가 그대로 여는 사이트 경로다 — 봇 화면에서도
+                // 마운트 접두사를 거쳐야 한다. 레이아웃 JSON 의 `A` 컴포넌트 `href` 와
+                // `seo-config.json` 이 자기 소유로 선언한 앵커가 전부 이 지점을 지난다
+                // (화면 경로는 템플릿 `A` 컴포넌트가 같은 일을 한다 — 15차 G3 라운드).
+                if ($htmlAttr === 'href') {
+                    $evaluated = $this->siteHref($evaluated);
+                }
+
+                // `src` 도 같은 루프를 지난다 — `src` 는 허용 속성이고 `component_map`
+                // 에 `Img` 가 있어 레이아웃 JSON 의 `Img` props 가 전부 이 자리로 온다.
+                // 형제 세 지점(`buildIterateItemAttributes` · `renderFieldIterate` ·
+                // `renderFieldWithAttrs`)은 자산 헬퍼를 거치는데 **네 번째인 이 지점만**
+                // 아무 변환도 하지 않아, 봇 화면의 그 이미지는 상대 주소 그대로 나갔다
+                // (하위 폴더 배치에서는 오리진 루트 기준으로 해석돼 404).
+                //
+                // 종전 소스 계약 검사가 이것을 못 본 이유는 모집단이 「`'src'` 리터럴이
+                // 있는 줄」이었기 때문이다 — 배선되지 않은 지점에는 그 리터럴이 없으므로
+                // 이미 배선된 셋만 스스로를 확인하는 자기충족이었다 (16차 G3 라운드 A-1).
+                if ($htmlAttr === 'src') {
+                    $evaluated = $this->siteAssetUrl($evaluated);
                 }
 
                 if ($evaluated !== '') {
@@ -1910,7 +2022,9 @@ class ComponentHtmlMapper
                 $href = $evaluator->evaluate($props['fallbackHref'], $context, false);
             }
 
-            $preset['href'] = $href;
+            // 고른 목적지도 일반 href 경로(buildAttributes)와 같이 마운트 접두사를 거친다 — 하위 폴더 배치에서
+            // 이 링크만 사이트 밖으로 나가지 않게. 실행 스킴·`//host`·`#` 은 sitePath() 가 그대로 둔다.
+            $preset['href'] = $this->siteHref($href);
         }
 
         $target = isset($props['target']) && is_string($props['target']) ? $evaluator->evaluate($props['target'], $context) : '';
@@ -2522,7 +2636,7 @@ class ComponentHtmlMapper
 
         // 새 창은 열린 창이 이 창(opener)을 조작하지 못하게 끊는다 — 엔진 openWindow·HtmlContent 외부 링크와 같은 기준
         $targetAttr = $newWindow ? ' target="_blank" rel="noopener noreferrer"' : '';
-        $escapedHref = e($href);
+        $escapedHref = e($this->siteHref($href));
 
         // a 태그: href 주입 또는 스킵
         if ($tag === 'a') {

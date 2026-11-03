@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Execution\SubprocessCommandRunner;
 use App\Extension\CoreVersionChecker;
 
 /**
@@ -21,13 +22,14 @@ final class UpdateChildEnv
      * 자식 프로세스에 넘길 env 배열을 만듭니다.
      *
      * `getenv()` 는 putenv 로 세운 값까지 담은 프로세스 env 테이블이고, `$_ENV` 로 보완한다(`variables_order` 에 E 가
-     * 없으면 `$_ENV` 가 비어 있을 수 있다).
+     * 없으면 `$_ENV` 가 비어 있을 수 있다). 읽기는 `SubprocessCommandRunner::inheritedEnvironment()` 를 거친다 —
+     * 「proc_open 은 살아 있는데 getenv 만 막힌」 호스팅에서 무가드 `getenv()` 는 이 자리에서 치명 종료한다.
      *
      * @return array<string, mixed> proc_open 에 넘길 env
      */
     public static function build(): array
     {
-        $env = array_merge(getenv(), $_ENV);
+        $env = SubprocessCommandRunner::inheritedEnvironment();
 
         if (CoreUpdateContext::isInProgress()) {
             $env['APP_VERSION'] = CoreVersionChecker::getCoreVersion();

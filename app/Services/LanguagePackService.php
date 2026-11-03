@@ -45,6 +45,17 @@ use Throwable;
  */
 class LanguagePackService
 {
+    /** 외부 ZIP/URL/GitHub/번들 추출 대기 디렉토리 (프로젝트 루트 기준). */
+    public const PENDING_DIR = 'lang-packs/_pending';
+
+    /**
+     * 추출 디렉토리 이름의 **생성 규칙** — `Str::uuid()` 또는 `preview-<uuid>`.
+     *
+     * 정리 주체(`StorageLeftoverPruneService::pruneUpdateStaging`)가 이 패턴을 통과한 것만
+     * 걷는다. 운영자가 손으로 둔 팩(식별자 이름, `g7-core-ja` 등)은 매치되지 않아 불가침이다.
+     */
+    public const PENDING_EXTRACT_NAME_PATTERN = '/^(?:preview-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
+
     use ClearsTemplateCaches;
 
     /**
@@ -802,7 +813,7 @@ class LanguagePackService
         $this->assertInstallDirectoriesWritable();
 
         $tempId = (string) Str::uuid();
-        $extractPath = base_path('lang-packs/_pending/'.$tempId);
+        $extractPath = $this->pendingExtractPath($tempId);
 
         try {
             $zipPath = $file->getRealPath();
@@ -832,7 +843,7 @@ class LanguagePackService
 
         $tempId = (string) Str::uuid();
         $tempPath = storage_path('app/temp/'.$tempId);
-        $extractPath = base_path('lang-packs/_pending/'.$tempId);
+        $extractPath = $this->pendingExtractPath($tempId);
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -875,7 +886,7 @@ class LanguagePackService
 
         $tempId = (string) Str::uuid();
         $tempPath = storage_path('app/temp/'.$tempId);
-        $extractPath = base_path('lang-packs/_pending/'.$tempId);
+        $extractPath = $this->pendingExtractPath($tempId);
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -937,7 +948,7 @@ class LanguagePackService
         }
 
         $tempId = (string) Str::uuid();
-        $extractPath = base_path('lang-packs/_pending/'.$tempId);
+        $extractPath = $this->pendingExtractPath($tempId);
 
         try {
             File::ensureDirectoryExists(dirname($extractPath));
@@ -1684,6 +1695,21 @@ class LanguagePackService
     }
 
     /**
+     * `_pending` 추출 디렉토리 경로를 만듭니다 — 이름 규칙의 **단일 조립 지점**.
+     *
+     * 다섯 생산 지점이 각자 `base_path()` 안에서 `_pending/` 경로를 리터럴로 조립하고 있었다. 정리
+     * 주체(`StorageLeftoverPruneService`)가 `PENDING_EXTRACT_NAME_PATTERN` 으로 같은 이름을
+     * 보므로, 한 지점만 규칙이 바뀌어도 그 잔해는 모집단 밖이 된다 (13차 G3 W1-4).
+     *
+     * @param  string  $name  디렉토리 이름 (UUID 또는 `preview-<UUID>`)
+     * @return string 절대 경로
+     */
+    private function pendingExtractPath(string $name): string
+    {
+        return base_path(self::PENDING_DIR.DIRECTORY_SEPARATOR.$name);
+    }
+
+    /**
      * 검증을 마친 새 설치본을 활성 디렉토리(`lang-packs/{identifier}`) 자리에 놓습니다.
      *
      * 확장 폴더 교체와 같은 `ExtensionPendingHelper::copyToActive` 를 쓴다 — 사본을 만든 뒤 옛 폴더를 `_pending` 으로
@@ -1744,6 +1770,9 @@ class LanguagePackService
 
     /**
      * _pending 임시 디렉토리를 정리합니다.
+     *
+     * `catch`/`finally` 에서만 불리므로 강제 종료(FPM 타임아웃 · OOM-kill)에는 돌지 않는다 —
+     * 그 잔해는 `StorageLeftoverPruneService` 가 `PENDING_EXTRACT_NAME_PATTERN` 으로 걷는다.
      *
      * @param  string  $path  정리 대상 경로
      * @return void 반환값 없음
@@ -2219,7 +2248,7 @@ class LanguagePackService
     public function previewManifest(UploadedFile $file): array
     {
         $tempId = (string) Str::uuid();
-        $extractPath = base_path('lang-packs/_pending/preview-'.$tempId);
+        $extractPath = $this->pendingExtractPath('preview-'.$tempId);
 
         try {
             $zipPath = $file->getRealPath();

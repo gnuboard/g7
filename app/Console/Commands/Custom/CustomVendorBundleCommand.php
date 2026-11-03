@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Custom;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Vendor\Concerns\RunsVendorBundleAction;
 use App\Extension\Vendor\VendorBundler;
 use Illuminate\Console\Command;
@@ -15,6 +16,7 @@ use Illuminate\Console\Command;
  */
 class CustomVendorBundleCommand extends Command
 {
+    use LocalizesDescription;
     use RunsVendorBundleAction;
 
     /**
@@ -23,11 +25,6 @@ class CustomVendorBundleCommand extends Command
     protected $signature = 'custom:vendor-bundle
                             {--force : 해시 체크 무시, 강제 재빌드}
                             {--check : 실제 빌드 없이 stale 여부만 확인}';
-
-    /**
-     * @var string
-     */
-    protected $description = '개발자 전용 composer(custom/)의 vendor 를 custom/vendor-bundle.zip 으로 빌드합니다 (composer 없는 서버용)';
 
     /**
      * 명령을 실행합니다.

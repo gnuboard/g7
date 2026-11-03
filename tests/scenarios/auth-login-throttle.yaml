@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 로그인 시도 제한 / 계정 잠금 (per-account)
 
@@ -86,6 +87,8 @@ effects:
   - unlocked_account_completes_two_factor_normally
   - token_refresh_rejects_locked_account
   - token_refresh_still_works_for_unlocked_account
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - nonexistent_email_attempt_stores_no_counter
 
   # 실패 누적 기간 — 차단 시간 안의 연속 실패만 잠금으로 이어진다 (KVE-2026-2332(b) 보완)
   - stale_failures_restart_count_after_lockout_window

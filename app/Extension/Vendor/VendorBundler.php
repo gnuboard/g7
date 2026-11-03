@@ -3,6 +3,7 @@
 namespace App\Extension\Vendor;
 
 use App\Extension\Vendor\Exceptions\VendorInstallException;
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -522,6 +523,14 @@ class VendorBundler
         $outPath = $stagingDir.DIRECTORY_SEPARATOR.'_composer_stdout.log';
         $errPath = $stagingDir.DIRECTORY_SEPARATOR.'_composer_stderr.log';
         $descriptors = self::composerOutputDescriptors($outPath, $errPath);
+
+        // `proc_open` 이 막힌 호스팅에서는 번들 생성 자체가 성립하지 않는다. 무가드로
+        // 부르면 `Error` 로 죽어 호출자가 사유를 담은 예외로 안내할 기회를 잃는다 (#609 D34).
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
+            throw new VendorInstallException(
+                (string) __('vendor.composer_unavailable'),
+            );
+        }
 
         $process = @proc_open(
             $command,

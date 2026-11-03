@@ -1054,7 +1054,7 @@ foreach ($this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at') 
 }
 ```
 
-`repository-sort-column-whitelist` 룰은 **정렬 컬럼 변수 자체를 인자로 받는** `in_array`/`match`/`array_key_exists` 또는 `resolveSortSpec` 만 화이트리스트로 인정한다.
+정적 검사는 **정렬 컬럼 변수 자체를 인자로 받는** `in_array`/`match`/`array_key_exists` 또는 `resolveSortSpec` 만 화이트리스트로 인정한다.
 
 ### 화면 정렬 옵션은 게이트의 부분집합이어야 한다
 

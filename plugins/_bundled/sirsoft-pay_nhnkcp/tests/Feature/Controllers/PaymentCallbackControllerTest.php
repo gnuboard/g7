@@ -266,6 +266,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
     /**
      * 정상 카드 승인 콜백은 주문을 결제완료로 바꾸고 거래번호·승인번호를 기록한 뒤 완료 페이지로 보낸다.
      *
+     * @scenario context=paymentCallback_card, caller=pg_server_verified, callback_state=approval_succeeded
+     *
      * @return void 반환값 없음
      *
      * @effects normal_approval_still_completes_the_order
@@ -652,9 +654,12 @@ class PaymentCallbackControllerTest extends PluginTestCase
     /**
      * 브라우저가 보낸 실패 결과만으로는 주문·결제 상태와 실패 기록을 바꾸지 않는다.
      *
+     * @scenario context=paymentCallback_card, threat=forged_browser_callback, caller=unauthenticated_browser, callback_state=approval_not_yet_attempted
+     *
      * @return void 반환값 없음
      *
-     * @effects browser_result_code_alone_never_transitions_order_state
+     * @effects browser_result_code_alone_never_transitions_order_state,
+     *   pre_approval_failure_sink_does_not_call_fail_payment
      */
     public function test_auth_callback_does_not_mutate_order_on_browser_failure_result(): void
     {
@@ -765,6 +770,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
     /**
      * 브라우저가 보낸 금액이 주문 금액과 다르면 승인 자체를 하지 않고, 주문도 건드리지 않는다.
      *
+     * @scenario context=paymentCallback_card, threat=forged_browser_callback, caller=unauthenticated_browser, callback_state=approval_not_yet_attempted
+     *
      * @return void 반환값 없음
      *
      * @effects pre_approval_amount_mismatch_does_not_mutate_the_order
@@ -803,6 +810,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 공격자는 로그인하지 않고, 피해자의 주문번호와 아무 암호문만으로 이 엔드포인트를 친다.
      * 서버 승인은 당연히 실패하는데, 그 실패를 피해 주문의 결제 실패로 오인 처리하면
      * 남의 주문이 취소된다.
+     *
+     * @scenario context=paymentCallback_card, threat=forged_browser_callback, caller=unauthenticated_browser, callback_state=approval_failed
      *
      * @return void 반환값 없음
      *
@@ -843,6 +852,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 가상계좌 모바일 분기는 enc_data/enc_info 가 비면 PG 서버를 호출하지 않고 콜백 평문을
      * 그대로 승인 응답으로 취급한다. 분기 판정이 요청값을 보면 공격자가 카드 주문을 그 경로로
      * 몰아, 은행명·계좌번호를 비운 것만으로 "발급 실패" 를 만들어 남의 주문을 취소시킬 수 있다.
+     *
+     * @scenario context=paymentCallback_vbank, threat=forged_browser_callback, caller=unauthenticated_browser, callback_state=approval_failed
      *
      * @return void 반환값 없음
      *
@@ -888,9 +899,12 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 카드 주문에 VCNT + 위조 발급정보를 실어도 가상계좌 발급으로 기록되지 않아야 한다.
      * 요청값으로 분기가 갈리면 공격자가 피해자 카드 주문에 임의 계좌번호를 심을 수 있다.
      *
+     * @scenario context=paymentCallback_vbank, threat=forged_browser_callback, caller=unauthenticated_browser, callback_state=approval_not_yet_attempted
+     *
      * @return void 반환값 없음
      *
-     * @effects request_pay_method_cannot_route_a_card_order_into_vbank_branch,
+     * @effects payment_method_branch_is_decided_by_stored_order_value_only,
+     *   request_pay_method_cannot_route_a_card_order_into_vbank_branch,
      *   forged_vbank_callback_cannot_write_an_account_number_to_the_order
      */
     public function test_request_pay_method_cannot_route_a_card_order_into_the_vbank_branch(): void
@@ -1439,9 +1453,12 @@ class PaymentCallbackControllerTest extends PluginTestCase
      *      정상 가상계좌 발급도 fail URL 로 처리됨 — 실제 운영 회귀 발견 (주문 20260513-0846191476).
      *      판정 기준을 res_cd 비교에서 핵심 필드(bankname/account) 존재 여부로 변경.
      *
+     * @scenario context=paymentCallback_vbank, caller=pg_server_verified, callback_state=approval_succeeded
+     *
      * @return void 반환값 없음
      *
-     * @effects kcp_vbank_pc_issuance_with_account_data_succeeds, kcp_vbank_issue_marks_payment_waiting_deposit
+     * @effects kcp_vbank_pc_issuance_with_account_data_succeeds, kcp_vbank_issue_marks_payment_waiting_deposit,
+     *   vbank_save_failure_mutates_only_on_pc_server_confirmed_issuance
      */
     public function test_vbank_pc_succeeds_on_kcp_v000_with_issuance_data(): void
     {
@@ -1638,6 +1655,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
     /**
      * PC 가상계좌: CLI 호출 자체가 예외(approvePayment throws) → fail URL.
      *
+     * @scenario context=paymentCallback_vbank, threat=post_approve_failure, caller=pg_server_verified, callback_state=approval_failed
+     *
      * @return void 반환값 없음
      *
      * @effects pc_vbank_cli_exception_does_not_mutate_the_order
@@ -1714,6 +1733,8 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * res_cd != 0000 시 fail URL 로 리다이렉트.
      *
      * 모바일은 enc_data/enc_info 가 없어 CLI 미호출이므로, 콜백 res_cd 자체가 권위.
+     *
+     * @scenario context=mobileApproval, threat=forged_browser_callback, caller=unauthenticated_browser, callback_state=approval_failed
      *
      * @return void 반환값 없음
      *

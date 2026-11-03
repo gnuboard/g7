@@ -1,4 +1,6 @@
-# audit:allow test-scenario-coverage reason: axes cross product 중 의미적으로 핵심인 격리/폴백/전체성공 케이스만 docblock 매핑. probe_item 축의 각 항목(os_info/cpu_info/memory_usage/disk_usage 등)은 모두 동일한 safeSystemProbe 격리 경로를 타므로 cpu_info 1건으로 대표 검증(나머지는 형식적 확장). E2E axis 없음 — 순수 백엔드 JSON API 로 레이아웃/프론트 렌더 변경 없음.
+# audit:allow test-scenario-coverage reason: issue:#609 axes cross product 중 의미적으로 핵심인 격리/폴백/전체성공 케이스만 docblock 매핑. probe_item 축의 각 항목(os_info/cpu_info/memory_usage/disk_usage 등)은 모두 동일한 safeSystemProbe 격리 경로를 타므로 cpu_info 1건으로 대표 검증(나머지는 형식적 확장). E2E axis 없음 — 순수 백엔드 JSON API 로 레이아웃/프론트 렌더 변경 없음.
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 1건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(설정/시스템 정보)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 관리자 시스템 정보(system-info) probe 실패 격리
 
@@ -8,7 +10,7 @@ description: |
   등) 는 호스팅의 disable_functions / open_basedir 제약으로 예외·Error 를 던질 수 있다.
 
   SettingsService::safeSystemProbe 가 각 항목 수집을 개별 격리하여, 한 항목의 실패가
-  전체 API 를 500 으로 떨어뜨리지 않고 해당 항목만 'unknown'(사용량 배열은 percentage 0)
+  전체 API 를 500 으로 떨어뜨리지 않고 해당 항목만 'unknown'(사용량 배열은 percentage null — 측정 불가, 0 은 실측 0%)
   폴백으로 채우도록 한다. 개별 실패는 Log::warning, 격리를 뚫은 전체 실패는 컨트롤러
   Log::error 로 기록된다.
 
@@ -34,7 +36,7 @@ effects:
   - opcache_status_exposed_in_system_info
   - failing_probe_isolated_and_api_returns_200
   - failed_item_filled_with_unknown_fallback
-  - usage_array_fallback_keeps_total_used_free_unknown_and_percentage_zero
+  - usage_array_fallback_keeps_total_used_free_unknown_and_percentage_null
   - all_probes_success_returns_full_payload
   - unauthenticated_returns_401
   - without_permission_returns_403

@@ -24,9 +24,9 @@ use Tests\TestCase;
  * 잠시 active 가 아닌 창이 존재하는 한, 그 순간의 읽기를 막을 방법은 없습니다.
  * 따라서 명시적 무효화는 그대로 두되, **빈 결과는 애초에 캐시하지 않습니다**.
  *
- * @scenario extension_kind=module, active_state=has_active
+ * 축 요약(마커 아님 — 평문): extension_kind=module, active_state=has_active
  *
- * @effects non_empty_active_list_is_cached, status_change_invalidates_active_list_cache,
+ * 효과 요약(마커 아님 — 평문): non_empty_active_list_is_cached, status_change_invalidates_active_list_cache,
  *          empty_active_list_is_not_cached_and_recovers_immediately
  */
 class ModuleCacheTest extends TestCase

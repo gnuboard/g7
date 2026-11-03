@@ -79,6 +79,8 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 일본 CBT(국경 간) 결제 흐름의 첫 단계로, 프론트엔드 결제창이 후속 해시 생성 요청에 사용할 단기 체크아웃 토큰을 발급합니다. `CbtCheckoutTokenService::issue()` 가 주문번호·금액·구매자(이메일/전화)·요청 IP·User-Agent 를 HMAC-SHA256 으로 봉인한 서명 토큰을 만들어 반환하며, 이 토큰은 hash-data 단계에서 결제 컨텍스트가 위변조되지 않았는지 검증하는 데 쓰입니다. 인증은 필요 없고(결제창에서 직접 호출), 대신 `oid` 기준 IP별 분당 10회 레이트리밋과 일본 결제 활성화·설정 여부, 주문 존재·결제 가능 상태·통화 JPY 여부·구매자 일치·금액 일치를 순차 검증합니다. 요청 형식·길이는 `CbtCheckoutTokenRequest` 가 국내 짝(`SignatureRequest`)과 동일 강도로 검증하며(`oid` max 40, `price` 하한은 `PaymentLimits::MIN_PRICE`), 위반 시 표준 validation 422, 레이트리밋 초과 시 429, 주문 미존재 시 404, 구매자 검증 실패 시 403, 그 외 결제 불가 조건은 422 로 응답합니다.
@@ -151,6 +153,8 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 일본 CBT 결제창이 실제로 KG 이니시스에 전송할 위변조 방지 해시(P_HASHDATA)를 생성해 반환합니다. `KgInicisApiService::generateCbtHashData()` 가 일본 가맹점 MID·타임스탬프·금액·주문번호로 해시를 만들며, 인증은 불필요하지만 checkout-token 단계에서 발급한 토큰을 `CbtCheckoutTokenService::verify()` 로 재검증해 동일한 결제 컨텍스트(주문·금액·구매자·IP·UA)에서 온 요청임을 보장합니다. 재생 공격을 막기 위해 타임스탬프 신선도(`isTimestampFresh`)를 확인하고, `oid` 기준 IP별 분당 10회 레이트리밋과 일본 결제 활성화·설정·주문 상태·통화 JPY·구매자 일치·금액 일치를 검증합니다. 요청 형식·길이는 `CbtHashDataRequest` 가 검증합니다 — 파라미터(`oid`, `price`, `timestamp`, `checkout_token`) 누락·길이 초과·타임스탬프 만료·금액 불일치 등은 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 또는 (비어 있지 않은 토큰의) 토큰 검증 실패는 403 으로 응답합니다. 계약 변경: 종전에는 `checkout_token` 이 빈 값이면 토큰 검증 단계에서 403 이었으나, 필수 검증으로 승격되어 지금은 422 입니다 (클라이언트는 응답의 `.ok` 만 검사하므로 영향 없음).
@@ -170,7 +174,7 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 | oid | body | string | 예 | max 40 | 결제창을 닫은 대상 주문의 주문번호. 서버가 이 값으로 주문을 조회해 결제 실패/취소 이력을 기록한다. |
 | price | body | integer | 예 | min 1 | 주문 결제 금액. 저장된 주문 청구액과 일치하는지 검증해 위변조된 닫힘 보고를 차단한다. |
 | payment_method | body | string | 아니오 | max 50 | 사용자가 결제창에서 선택했던 간편결제 등 결제수단 식별값. 결제 메타에 병합해 어떤 수단에서 창을 닫았는지 남긴다. |
-| reason | body | string | 아니오 | max 80 | 결제창 닫힘 사유 문자열. 실패/취소 이력에 참고 정보로 기록된다. |
+| reason | body | string | 아니오 | max 160 | 결제창 닫힘 사유 문자열. 실패/취소 이력에 참고 정보로 기록된다. |
 
 **요청 예시**
 
@@ -197,6 +201,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | status | string | `recorded` \| `ignored` | 닫힘 보고 처리 결과. `recorded` = 주문을 `USER_CANCEL` 로 실패 처리하고 취소 이력을 남김. `ignored` = 결제 성공 콜백과의 경쟁 등으로 처리하지 않고 무시. |
 | reason | string | `order_not_payable` \| `payment_already_paid` | `status: ignored` 일 때만 포함되는 무시 사유. 주문이 이미 결제 가능 상태가 아니거나(`order_not_payable`), 결제가 이미 완료됨(`payment_already_paid`). |
+| recorded | boolean | `false` | 클레임 추가결제 결제번호(`CP` 채번)로 보고가 들어왔을 때만 포함되며 값은 항상 `false`. 기록할 주문 결제 이력이 없어 보고를 무시했다는 뜻이다. 이 응답에는 `status` 가 없고 `reason` 은 `claim_payment` 다. |
 
 **응답 예시**
 
@@ -220,6 +225,8 @@ _단건 응답: `data` 객체의 필드._
 | 429 | Too Many Requests | 동일 IP·`oid` 조합에서 분당 20회를 초과해 요청한 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -295,6 +302,8 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 모바일 KRW 결제창이 요구하는 위변조 방지 해시(P_CHKFAKE)와 모바일 결제 URL 을 생성해 반환합니다. `KgInicisApiService::generateMobileChkfake()` 로 주문번호·금액·타임스탬프 기반 해시를 만들고 `getMobilePaymentUrl()` 로 결제창 진입 URL 을 함께 내려줍니다. 인증은 불필요하지만(결제창에서 직접 호출) FormRequest 검증에 더해 재생 공격 방지를 위한 타임스탬프 신선도 확인, `oid` 기준 IP별 분당 20회 레이트리밋, 그리고 주문 존재·결제 가능 상태·통화 KRW·구매자 일치·금액 일치를 검증하며 모바일 결제 자격증명 설정 여부도 확인합니다. 파라미터 검증 실패·타임스탬프 만료·통화 불일치·금액 불일치·자격증명 미설정은 422, 레이트리밋 초과 429, 주문 미존재 404, 구매자 검증 실패 403 으로 응답합니다.
@@ -369,6 +378,8 @@ _이 엔드포인트는 `ResponseHelper` 봉투를 쓰지 않고 `response()->js
 | 429 | Too Many Requests | 동일 IP·`oid` 조합에서 분당 20회를 초과해 요청한 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -449,8 +460,11 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=202607
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -526,8 +540,11 @@ Location: https://example.com/shop/checkout?error=mid_mismatch&orderId=20260714-
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -616,8 +633,11 @@ Location: https://example.com/shop/checkout?error=cbt_failed&orderId=20260714-12
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -710,9 +730,11 @@ OK
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | KG 이니시스 공식 발송 IP 화이트리스트에 없는 IP 에서 요청한 경우 (로컬·테스트 환경 제외) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -770,6 +792,7 @@ _에러 응답이 정의되어 있지 않습니다. 인증·요청 파라미터 
 
 <!-- @generated:end -->
 
+
 **설명**
 
 PC 표준결제창의 닫기(closeUrl) 전용 페이지입니다. 구매자가 결제창을 X 버튼으로 닫으면 KG 이니시스 결제창이 이 주소를 열고, 페이지는 KG 이니시스 공식 close 스크립트를 실행해 결제창을 정리한 뒤 부모(또는 opener) 창에 결제창이 닫혔음을 알리는 메시지를 보냅니다. 체크아웃 화면은 그 메시지를 받아 결제 진행 상태를 해제하고, 별도로 결제창 닫힘을 서버에 보고(close-report)합니다.
@@ -813,6 +836,7 @@ Content-Type: text/html; charset=UTF-8
 _에러 응답이 정의되어 있지 않습니다. 인증·요청 파라미터 없이 팝업 닫기 스크립트(HTML 200)만 반환하므로 도메인 특이 에러가 발생하지 않습니다._
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -861,6 +885,8 @@ Location: https://example.com/mypage/orders
 _에러 응답이 정의되어 있지 않습니다. 어떤 입력이든 기록 없이 주문 목록(`/mypage/orders`)으로 리다이렉트합니다._
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -960,6 +986,7 @@ Content-Type: text/html; charset=UTF-8
 _에러 응답이 정의되어 있지 않습니다. 어떤 입력이든 기록 없이 동일한 HTML(200)을 반환합니다._
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -1090,6 +1117,8 @@ Content-Type: text/html; charset=UTF-8
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 구매자가 자신의 에스크로 주문에 대해 구매결정(구매확정/구매거절)을 진행하도록 KG 이니시스 구매결정 창을 띄워 주는 진입 페이지입니다. 마이페이지 주문 상세의 "구매결정" 버튼이 이 주소를 열며, 서버는 접속한 사용자 본인의 KG 이니시스 에스크로 결제를 찾아 거래번호를 담은 폼을 만들고 KG 이니시스 구매결정 창으로 자동 전송합니다. 접속 기기의 User-Agent 로 PC/모바일을 판별해 각각 PC 팝업 방식과 모바일 전송 방식으로 분기합니다.
@@ -1154,8 +1183,11 @@ Location: https://example.com/shop/checkout?error=req_url_invalid&orderId=202607
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1236,8 +1268,11 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=202607
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1338,9 +1373,11 @@ OK
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | KG 이니시스 공식 발송 IP 화이트리스트에 없는 IP 에서 요청한 경우 (로컬·테스트 환경 제외) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1455,9 +1492,11 @@ OK
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | KG 이니시스 공식 발송 IP 화이트리스트에 없는 IP 에서 요청한 경우 (로컬·테스트 환경 제외) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1480,3 +1519,5 @@ PC 결제로 발급한 가상계좌의 입금통보를 KG 이니시스 서버로
 | `orderId` | 주문번호 | 실패한 주문의 식별자 |
 
 `message` 에는 예외 원문(내부 오류 메시지·SQL 상태코드·클래스명·경로)을 싣지 않습니다. 이 값은 브라우저 주소창과 참조 로그에 남고 실패 페이지에 그대로 출력되므로, 내부 정보가 구매자와 중간 경유지에 노출됩니다. 원인 파악에 필요한 원문은 서버 로그(`Log::error`)에만 기록합니다.
+
+

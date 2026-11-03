@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce;
 use App\Extension\AbstractModule;
 use App\Notifications\Identity\IdentityNotificationType;
 use App\Seo\Concerns\LocalizesSeoValues;
-use App\Support\SiteUrl;
+use App\Support\AssetUrl;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -4334,12 +4334,25 @@ class Module extends AbstractModule
             }
 
             // 절대 URL 변환 — 슬랙/페이스북/쓰레드는 og:image 가 절대 URL 이어야 인식.
-            // ProductImage::download_url 은 "/api/..." 상대 경로 형식이므로 url() 통과 필수.
+            //
+            // `url()` 을 쓰면 안 된다. `ProductImage::download_url` 은 이제
+            // `AssetUrl::basePrefix()` 를 거쳐 **마운트 접두사를 이미 품은** 사이트 절대
+            // 경로(`/g7/api/…`)인데, `url()` 은 요청 루트(접두사 포함)를 앞에 다시 붙여
+            // `https://host/g7/g7/api/…` 가 된다. 크롤러만 받는 값이라 화면에는 아무
+            // 표시가 없고 미리보기 이미지만 404 다. 접두사를 멱등으로 보정한 뒤 오리진만
+            // 붙이는 `AssetUrl::siteAbsolute()` 가 그 SSoT 이며, 그 독블록이 이 실패를
+            // 이름으로 적고 있다.
+            //
+            // 종전에는 이 자리에 `str_starts_with('http') ? … : AssetUrl::absolute()` 라는
+            // 순진한 형태가 있었다. 그 형태는 세 입력을 조용히 망가뜨린다 —
+            // 프로토콜 상대(`//cdn/…` → `https://host//cdn/…`) · 상대 경로
+            // (`img.png` → `https://hostimg.png`) · `data:` URI. 그리고 접두사를 채우는
+            // 주체가 없어 리터럴 사이트 경로(`/images/logo.png`)는 하위 폴더 배치에서
+            // 접두사를 잃었다 (16차 G3 라운드 A-4).
             $imageRaw = $this->resolveLocalizedValue($product['thumbnail_url'] ?? '');
-            $image = $imageRaw !== ''
-                // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
-                ? (str_starts_with($imageRaw, 'http') ? $imageRaw : SiteUrl::absolute($imageRaw))
-                : '';
+            // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
+            // `AssetUrl::siteAbsolute()` 의 본체는 `SiteUrl::absolute()` 이고, 사이트 경로가 아닌 값은 그대로 둔다.
+            $image = AssetUrl::siteAbsolute($imageRaw);
 
             // thumbnail_width/height 는 어떤 Resource 도 방출하지 않는 死키였다 — 값 공급이
             // 불가능한 축이므로 제거하고 크기 메타는 코어 기본값 폴백에 맡긴다 (공개 #22 부수 정리)
@@ -4354,9 +4367,8 @@ class Module extends AbstractModule
         if ($pageType === 'category') {
             $category = data_get($context, 'category.data', []);
             $catImageRaw = $this->resolveLocalizedValue($category['thumbnail_url'] ?? '');
-            $catImage = $catImageRaw !== ''
-                ? (str_starts_with($catImageRaw, 'http') ? $catImageRaw : SiteUrl::absolute($catImageRaw))
-                : '';
+            // 형제와 같은 변환기를 쓴다 — `AssetUrl::siteAbsolute()` 독블록(본체 `SiteUrl::absolute()`).
+            $catImage = AssetUrl::siteAbsolute($catImageRaw);
 
             return array_filter([
                 'type' => 'website',
@@ -4404,7 +4416,8 @@ class Module extends AbstractModule
         // 절대 URL 변환 (Schema.org image 도 검색엔진이 절대 URL 권장)
         $imageRaw = $this->resolveLocalizedValue($product['thumbnail_url'] ?? '');
         if ($imageRaw !== '') {
-            $schema['image'] = str_starts_with($imageRaw, 'http') ? $imageRaw : SiteUrl::absolute($imageRaw);
+            // 형제(`seoOgDefaults`)와 **같은 변환기**를 쓴다 — `AssetUrl::siteAbsolute()` 독블록(본체 `SiteUrl::absolute()`).
+            $schema['image'] = AssetUrl::siteAbsolute($imageRaw);
         }
 
         if (! empty($product['sku'])) {

@@ -6,11 +6,11 @@
 > **응답 문구**: `message` 의 언어와 개수에 따른 단수·복수(영어에서 1이면 단수, 0·2 이상이면 복수) 규칙은 코어와 같습니다 — [코어 API 안내 「로케일」](../../../../../docs/backend/api/README.md#로케일).
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 6 · **엔드포인트 수**: 17
+- **문서 수**: 6 · **엔드포인트 수**: 19
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
-| [annual-notice.md](annual-notice.md) | `annual-notice` | 1 |
+| [annual-notice.md](annual-notice.md) | `annual-notice` | 3 |
 | [consent.md](consent.md) | `consent` | 7 |
 | [consent-log.md](consent-log.md) | `consent-log` | 1 |
 | [notice-log.md](notice-log.md) | `notice-log` | 1 |

@@ -450,6 +450,16 @@ ko/en 키를 바꿨으면 대응 번들 팩(`lang-packs/_bundled/g7-*-{locale}/`
 - 매칭 4 scope: 코어 `lang/{ko,en}/*.php` ⇔ `g7-core-{locale}/backend/{locale}/*.php` · 모듈 backend `modules/_bundled/{mod}/{src,resources}/lang/{ko,en}/*.php`(union) ⇔ `g7-module-{mod}-{locale}/backend/{locale}/*.php` · 모듈 frontend `resources/lang/partial/{ko,en}/*.json` ⇔ `frontend/partial/*.json` · 플러그인 `plugins/_bundled/{pl}/lang/{ko,en}/*.php` ⇔ `g7-plugin-{pl}-{locale}/backend/{locale}/*.php` · 템플릿 `templates/_bundled/{tpl}/lang/{ko,en}.json` + `lang/partial/{ko,en}/*.json` ⇔ `g7-template-{tpl}-{locale}/frontend/{locale}.json` + `frontend/partial/*.json`.
 - 미출시 언어팩은 키 추가가 있어도 CHANGELOG 항목을 만들지 않는다(미출시).
 
+### 스코프 밖 — 인스톨러 다국어
+
+`public/install/lang/{ko,en}.php` 는 위 글롭(`**/lang/**`)에는 걸리지만 **이 영역의 대상이 아니다.** Laravel 부팅 전에 도는 전용 사전이고, 번들 ja 언어팩의 소스도 아니다. 그 경로를 인자로 받았거나 변경셋에 들어 있다면 "검증했다" 고 보고하지 말고 아래를 실행한 뒤 그 결과로 보고한다:
+
+```bash
+php vendor/bin/phpunit tests/Unit/Installer/InstallerLanguageParityTest.php
+```
+
+이 게이트가 키 집합·자리표시자·중괄호 표기·점 경로 해석·지원 로케일 상수 대조를 본다. 이 사실을 적어 두지 않으면 이 영역이 인스톨러 lang 변경에 대해 **공허한 초록**을 낸다 (대상 파일이 하나도 매칭되지 않아 위반 0 이 나온다).
+
 ### 부수의무 (i18n)
 
 ko 키만 추가하고 en·ja·번들 팩을 빠뜨리지 않았는가. 새 문구가 쓰이는 표면(레이아웃·알림·예외·검증 메시지·활동 로그) 전체에 키가 닿는가. 한 로케일만 보고 통과를 단정하지 않는다.

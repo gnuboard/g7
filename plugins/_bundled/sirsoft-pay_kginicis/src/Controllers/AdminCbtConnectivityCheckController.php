@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Support\OutboundProxy;
+use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
@@ -220,9 +221,11 @@ class AdminCbtConnectivityCheckController extends AdminBaseController
      */
     private function buildCallbackDiagnostics(): array
     {
-        $appUrl = rtrim((string) config('app.url'), '/');
+        $appUrl = SiteUrl::base();
+        // 콜백 진단값은 일부러 이 요청의 루트(스킴, Host, 설치 경로)에서 만든다. 사이트 주소로 만들면
+        // 두 값이 늘 같아져 어긋남을 보여 줄 수 없다.
         // audit:allow request-host-absolute-url reason: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단 — 이동·전송에 쓰지 않는다
-        $callbackUrl = url('/plugins/sirsoft-pay_kginicis/payment/cbt/callback');
+        $callbackUrl = url('/plugins/sirsoft-pay_kginicis/payment/cbt/callback'); // audit:allow asset-url-site-absolute-required 요청 Host 기준 진단값 — 사이트 주소(SiteUrl)와 비교해 어긋남을 보여 주려고 일부러 url() 로 만든다
         $appHost = parse_url($appUrl, PHP_URL_HOST);
         $callbackHost = parse_url($callbackUrl, PHP_URL_HOST);
 

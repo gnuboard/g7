@@ -22,8 +22,6 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 누출은 응답 본문에서만 보이므로 이 테스트가 유일한 방어선이다.
  *
  * @scenario case=use_reaction_off_payload_omits_reaction
- *
- * @effects list_omits_reaction_total_when_use_reaction_off
  */
 class ReactionPayloadGateTest extends BoardTestCase
 {

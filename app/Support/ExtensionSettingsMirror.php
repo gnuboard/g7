@@ -50,6 +50,7 @@ class ExtensionSettingsMirror
         // 커맨드는 영원히 기본값(false)을 읽어 "대상 0건" 이라는 정상 출력을 낸다 —
         // 실패가 아니라 정상처럼 보이므로 아무도 알아채지 못한다.
         'privacy',
+        'system',
     ];
 
     /**

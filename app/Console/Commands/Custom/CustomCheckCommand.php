@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Custom;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\Custom\CustomPackageConflictChecker;
 use App\Support\Custom\CustomStatus;
 use Illuminate\Console\Command;
@@ -13,16 +14,13 @@ use Illuminate\Console\Command;
  */
 class CustomCheckCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string
      */
     protected $signature = 'custom:check
         {--json : 결과를 JSON 으로 출력}';
-
-    /**
-     * @var string
-     */
-    protected $description = 'custom 예약 자리(routes/custom.php·custom composer 등)를 점검합니다';
 
     /**
      * 명령을 실행합니다.

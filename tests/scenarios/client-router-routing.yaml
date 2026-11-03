@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 축은 라우터 입력 변수 목록(SSoT)이고 조합은 독립적이다 — 각 시험은 한 축의 값만 바꿔 효과를 잠근다. 주소 정규화는 path_shape × entry 조합을 시험이 명시적으로 덮는다(진입·navigate·popstate·로그인 복귀).
+# audit:allow test-scenario-coverage reason: issue:#848 축은 라우터 입력 변수 목록(SSoT)이고 조합은 독립적이다 — 각 시험은 한 축의 값만 바꿔 효과를 잠근다. 주소 정규화는 path_shape × entry 조합을 시험이 명시적으로 덮는다(진입·navigate·popstate·로그인 복귀).
 
 feature: 클라이언트 라우터의 라우트 매칭·인증 가드·주소 정규화
 

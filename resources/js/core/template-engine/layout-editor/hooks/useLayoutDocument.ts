@@ -34,6 +34,7 @@ import { readSanctumToken } from '../utils/authToken';
 import { getCacheBustNonce, bumpCacheBustNonce } from '../utils/editorCacheBust';
 import { hasPending, flushPending } from './pendingCustomTranslations';
 import { suffixed } from '../../../support/assetUrl';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /**
  * 로드된 레이아웃 문서 — 백엔드 응답의 data 부분 (병합 + 확장 + 메타 포함)
@@ -454,7 +455,7 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(url, { headers, credentials: 'same-origin' });
+      const response = await fetch(withBasePrefix(url), { headers, credentials: 'same-origin' });
       const body = await response.json().catch(() => null);
 
       if (!response.ok) {
@@ -870,7 +871,7 @@ export function useLayoutDocument(): UseLayoutDocumentResult {
 
       let response: Response;
       try {
-        response = await fetch(url, {
+        response = await fetch(withBasePrefix(url), {
           method: 'PUT',
           headers,
           credentials: 'same-origin',

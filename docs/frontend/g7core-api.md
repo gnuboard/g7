@@ -23,7 +23,7 @@
 
 | 문서 | 내용 |
 |------|------|
-| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 플러그인/모듈 설정, 확장 자산, 방문자 동의, 전역 상태 계약 |
+| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 주소 조립, 플러그인/모듈 설정, 확장 자산, 방문자 동의, 전역 상태 계약 |
 | [g7core-api-advanced.md](g7core-api-advanced.md) | 다국어, 액션 실행, 컴포넌트 이벤트, 이벤트 생성 헬퍼, 렌더링 헬퍼, 인증/API, WebSocket, 반응형, React Hooks, 타입 정의 |
 
 ---
@@ -36,11 +36,12 @@
 4. [모달 관리 (G7Core.modal)](#모달-관리-g7coremodal)
 5. [네비게이션 (G7Core.navigation)](#네비게이션-g7corenavigation)
 6. [스타일 헬퍼 (G7Core.style)](#스타일-헬퍼-g7corestyle)
-7. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
-8. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
-9. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
-10. [방문자 동의 (G7Core.consent)](#방문자-동의-g7coreconsent)
-11. [전역 상태 계약 (G7Core.stateContracts)](#전역-상태-계약-g7corestatecontracts)
+7. [주소 조립 (G7Core.url)](#주소-조립-g7coreurl)
+8. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
+9. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
+10. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
+11. [방문자 동의 (G7Core.consent)](#방문자-동의-g7coreconsent)
+12. [전역 상태 계약 (G7Core.stateContracts)](#전역-상태-계약-g7corestatecontracts)
 
 ---
 
@@ -57,6 +58,7 @@
 | 모달 | `G7Core.modal` | 모달 열기/닫기 | 현재 문서 |
 | 네비게이션 | `G7Core.navigation` | 페이지 전환 상태 | 현재 문서 |
 | 스타일 | `G7Core.style` | Tailwind 클래스 병합 | 현재 문서 |
+| 주소 | `G7Core.url` | 마운트 접두사 붙이기/벗기기 (확장 공용) | 현재 문서 |
 | 플러그인 | `G7Core.plugin` | 플러그인 설정 조회 | 현재 문서 |
 | 모듈 | `G7Core.module` | 모듈 설정 조회 | 현재 문서 |
 | 다국어 | `G7Core.locale`, `G7Core.t` | 로케일 관리, 번역 | [고급 API](g7core-api-advanced.md) |
@@ -790,6 +792,74 @@ export const Button: React.FC<Props> = ({ className = '', ...props }) => {
   return <button className={mergedClassName} {...props} />;
 };
 ```
+
+---
+
+## 주소 조립 (G7Core.url)
+
+> engine-v1.61.2+
+
+사이트가 문서 루트가 아니라 **하위 폴더**에 설치될 수 있다(`https://host/g7/`). 서버가 렌더한 주소에는 그 마운트 접두사(`/g7`)가 이미 붙어 있지만, **브라우저 안에서 만드는 주소**는 루트 상대(`/api/…`)라 접두사가 없다. 같은 화면에서 두 규칙이 공존하면 확장의 요청·이동이 사이트 밖으로 나가고, 증상은 오류가 아니라 **버튼이 조용히 무반응**인 것이다.
+
+확장 프론트엔드는 코어와 **별도 IIFE 번들**이라 코어 함수를 `import` 할 수 없다. `G7Core.url` 이 그 공식 수단이다.
+
+### API 목록
+
+| API | 시그니처 | 설명 |
+|-----|----------|------|
+| `G7Core.url.api(path)` | `(string) => string` | 루트 상대 경로에 마운트 접두사를 붙인다 (멱등) |
+| `G7Core.url.route(path)` | `(string) => string` | 마운트 접두사를 벗겨 라우트 기준 경로로 되돌린다 |
+| `G7Core.url.base()` | `() => string` | 현재 마운트 접두사 (루트 설치면 빈 문자열) |
+
+접두사 값의 SSoT 는 서버가 내려주는 `G7Config.basePath` 다.
+
+### 확장에서의 사용
+
+확장 번들은 코어 초기화 **전**에 실행될 수 있으므로(부트스트랩 순서 역전), 확장마다 같은 SSoT 를 읽는 폴백을 가진 얇은 헬퍼를 둔다. 번들 확장은 이 헬퍼를 `apiUrl.ts` 라는 이름으로 **바이트 동일한 사본**으로 갖는다 (동일성은 계약 테스트가 잰다). 내보내는 이름은 셋이며, 연산이 아니라 **부르는 자리**로 구분한다.
+
+| 헬퍼 | 코어 대응 | 부르는 자리 |
+|------|-----------|-------------|
+| `apiUrl(path)` | `withBasePrefix()` · `G7Core.url.api` | **서버를 부르는** 주소 — `fetch` / `XMLHttpRequest` / `EventSource` 에 넘기는 값 |
+| `sitePath(path)` | `withBasePrefix()` · `G7Core.url.api` | **브라우저가 그대로 여는** 주소 — `location.href` 대입 · `location.assign/replace` · `window.open` · `history.pushState`/`replaceState` 의 세 번째 인자 · 외부 인증기관에 넘기는 복귀 주소 |
+| `routePath(path)` | `stripBasePrefix()` · `G7Core.url.route` | **받아 온 주소를 라우트와 대조할** 때 — `location.pathname` 을 패턴·경로 목록과 비교하기 직전 |
+
+```typescript
+import { apiUrl, routePath, sitePath } from '../apiUrl';
+
+// 서버를 부르는 주소 — 접두사를 붙인다
+const res = await fetch(apiUrl('/api/plugins/vendor-plugin/settings'));
+
+// 화면을 이동하는 주소 — 라우터를 거치지 않으므로 붙일 주체가 호출부밖에 없다
+window.location.href = sitePath('/admin/orders');
+window.open(sitePath(`/admin/orders/${orderNumber}/shipping-label`), '_blank');
+
+// 브라우저가 준 주소를 라우트와 대조 — 여기서는 접두사를 벗긴다
+if (/^\/shop\/orders\/([^/]+)\/complete$/.test(routePath(window.location.pathname))) {
+  mountReceipt();
+}
+```
+
+`apiUrl()` 과 `sitePath()` 는 연산이 같고 부르는 자리가 다르다. `routePath()` 는 그 둘의 **역방향**이다 — 내보내는 주소에는 붙이고, 받아 온 주소는 벗겨서 대조한다. 라우트 패턴은 언제나 접두사 없이 적히므로 벗기지 않으면 하위 폴더 사이트에서 그 대조가 **항상 불일치**가 되고, 그 기능은 오류도 로그도 없이 조용히 사라진다.
+
+붙이는 쪽(요청·이동)과 벗기는 쪽(대조)은 다른 방향이므로, 한쪽만 재는 회귀 테스트는 다른 쪽이 통째로 빠져도 통과한다. 양방향을 함께 잰다.
+
+### 접두사를 붙이지 않는 경우
+
+| 대상 | 이유 |
+|------|------|
+| 절대 URL (`https://…`) · 프로토콜 상대 (`//host/…`) | 사이트 경로가 아니다 — 붙이면 주소가 깨진다 |
+| 이미 접두사가 붙은 경로 | 세 함수 모두 멱등이라 이중 접두(`/g7/g7/…`)나 이중 제거가 생기지 않는다. 「이미 붙어 있다」의 판정은 접두사 뒤가 끝·`/`·`?`·`#` 인 경우다 — `/g7?ref=x`(쿼리가 붙은 하위 폴더 홈) 도 보유이고, `/g7x/foo` 는 경계 없이 이어진 다른 경로라 붙인다. 앞뒤 공백은 판정 전에 걷어낸다 |
+| 외부 시스템(PG 등)이 내려준 주소 | 사이트 경로가 아니다 |
+| `navigate` 핸들러의 `path` | 라우터가 붙인다 — 확장이 직접 붙일 필요가 없다 |
+| 화면 링크(`<a href>`) · 이미지(`<img src>`) · 폼 제출(`<form action>`) | 템플릿 `A` · `Img` · `Form` 컴포넌트가 붙인다 (`sitePath()` 멱등 — 절대 URL · `//` · `data:` · 상대 경로는 그대로). 셋 다 브라우저가 라우터 없이 직접 여는 주소라 붙일 주체가 컴포넌트뿐이다. 날 `<a>`/`<img>`/`<form>` 을 직접 쓰지 않는 것이 그 계층이 성립하는 조건이고, 레이아웃 JSON 의 루트 상대 `href`/`src`/`action` 은 그 세 컴포넌트 위에만 둔다 |
+
+판정할 수 없는 형태(변수·표현식)는 그 줄 바로 위에 `// base-path:allow <사유>` 로 의도를 남긴다.
+
+서버가 만드는 **절대** 주소(알림·메일 링크 · 결제·본인인증의 복귀·통보 주소 · 사이트맵 · 봇 화면)는 브라우저 축이 아니라 서버 축이다 — 사이트 주소 기준의 `App\Support\SiteUrl`(회원이 여는 사용자 화면 주소는 `ScreenUrl`)이 그 단일 지점이고, `url()` 이나 `config('app.url').'/…'` 로 조립하지 않는다. 하위 폴더 설치에서 이미 접두사가 붙은 경로를 넘겨도 `SiteUrl` 은 접두사를 다시 붙이지 않으며, `AssetUrl::siteAbsolute()` 는 그 위임(호환)이다 (상세: [routing.md "절대 URL 은 사이트 주소로 만든다"](../backend/routing.md#절대-url-은-사이트-주소로-만든다) · ["마운트 접두사"](../backend/routing.md#마운트-접두사--라우트는-언제나-접두사-없이-등록된다)).
+
+`routePath()`/`stripBasePrefix()` 의 결과가 `/` 하나로 시작한다는 보장은 없다 — `/g7//evil.com` 을 벗기면 `//evil.com` 이다(접두사 뒤 나머지를 그대로 돌려준다). 그 값을 `navigate` 에 넘기면 사이트 밖 목적지로 판정돼 이동하지 않지만(engine-v1.87.0), `location.href` 대입처럼 라우터를 거치지 않는 통로에 넘기면 그 방어가 없다. 벗긴 값은 대조에만 쓰고 이동 주소로 재사용하지 않는다.
+
+경계 판정의 기대표(입력 24종 × 붙이기/벗기기 + 접두사 정규화 변종)는 `tests/Fixtures/AssetUrl/base-prefix-boundary.json` 하나이며 서버 `AssetUrlTest` 와 프론트 `assetUrl.test.ts` 가 같은 파일을 읽는다. 규칙을 바꾸면 양쪽 구현과 그 표를 함께 바꾼다.
 
 ---
 

@@ -1,8 +1,8 @@
-<!-- 언어팩 탭 — 이 조각이 하는 일은 **활성 탭 가드 하나**뿐이고 본문은 언어팩 관리 화면 조각을 그대로
-  빌려 쓴다. 그래서 설정 화면의 언어팩 탭과 별도 언어팩 화면이 언제나 같은 모습이다(사본이 없다).
+<!-- 언어팩 탭 — 이 조각이 하는 일은 **활성 탭 가드 하나**뿐이고 본문은 언어팩 관리 화면 조각을 그대로 빌려 쓴다. 그래서 설정 화면의 언어팩 탭과 별도 언어팩 화면이 언제나 같은 모습이다(사본이 없다).
   그 조각이 읽는 소스와 여는 창들도 부모 화면이 같은 id 로 갖춰 둔다.
   언어팩 조회 권한이 없는 관리자(설정 조회만)에게는 탭 항목이 숨지만, 주소로 직접 들어오면 빌린 본문 대신 권한 안내를 보인다 —
-  받지 못한 목록(403 → 빈 fallback)을 「설치된 언어팩이 없습니다」로 그리지 않는다. -->
+  받지 못한 목록(403 → 빈 fallback)을 「설치된 언어팩이 없습니다」로 그리지 않는다.
+  e2e:allow 609 후속 — 미배치 번들 안내 [닫기] 버튼에 왕복 중 잠금, 스피너, 성공과 실패 양쪽 해제만 더했다(형제 신뢰 프록시 [검사] 버튼과 같은 형태). 그 안내는 업데이트가 미배치 언어팩을 기록한 사이트에만 뜬다. 대체 검증: admin-settings-inflight-controls.test.ts(잠금 식과 스피너 식 일치, 해제 자리 둘) 27/27 -->
 <partial description="환경설정 > 언어팩 관리 탭 — 본문은 partials/admin_language_pack_list/_content.json 공유 (SSoT). 활성 탭 가드만 유지하고 본문은 모듈/플러그인/템플릿 페이지와 동일.">
   <div data-ref="tab_content_language_packs" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'language_packs'}}" class="mt-6">
     <div data-ref="language_packs_permission_denied" data-if="{{_computed.canReadLanguagePacks === false}}" role="status" class="alert-warning">
@@ -29,20 +29,27 @@
             <code data-ref="unplaced_bundled_notice_command" class="block mt-1 px-2 py-1 rounded font-mono text-xs break-all select-all bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-200">{{unplaced_bundled_notice?.data?.commands?.language_packs ?? ''}}</code>
           </div>
         </div>
-        <button data-ref="unplaced_bundled_notice_dismiss" type="button" class="shrink-0 text-info-soft hover:underline" aria-label="$t:extensions.unplaced_bundled.dismiss">
+        <button data-ref="unplaced_bundled_notice_dismiss" type="button" class="shrink-0 text-info-soft hover:underline" aria-label="$t:extensions.unplaced_bundled.dismiss" disabled="{{_local.unplacedBundledDismissing === true}}">
+          <on type="click">
+            <!-- 진행 표시를 먼저 켠다 — 아래 블록이 왕복하는 동안 버튼이 잠기고 돈다(연타가 두 번의 호출이 되지 않게). -->
+            <set-state target="local" :unplacedBundledDismissing="true"/>
+          </on>
           <on type="click">
             <!-- 이 관리자에게서만 언어팩 안내를 닫는다(번들 자체는 그대로 미배치다).
-                 성공하면 안내 소스만 다시 받아 블록이 사라졌는지 확인한다. -->
+                 성공하면 안내 소스만 다시 받아 블록이 사라졌는지 확인한다. 진행 플래그는 성공과 실패 양쪽에서 되돌린다. -->
             <api-call :auth_required="true" target="/api/admin/extensions/unplaced-bundled/language_pack/dismiss" method="POST">
               <success>
+                <set-state target="local" :unplacedBundledDismissing="false"/>
                 <refetch-data-source dataSourceId="unplaced_bundled_notice"/>
               </success>
               <fail>
+                <set-state target="local" :unplacedBundledDismissing="false"/>
                 <toast type="error" message="{{error.message}}"/>
               </fail>
             </api-call>
           </on>
-          <icon name="times" size="xs"/>
+          <icon data-if="{{_local.unplacedBundledDismissing === true}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_local.unplacedBundledDismissing !== true}}" name="times" size="xs"/>
         </button>
       </div>
     </div>

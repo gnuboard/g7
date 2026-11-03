@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Mockery;
 use Mockery\MockInterface;
@@ -34,6 +35,11 @@ class CategoryImageServiceTest extends ModuleTestCase
 
     private User $user;
 
+    /**
+     * 저장소와 StorageInterface 를 목으로 만든 카테고리 이미지 서비스를 준비하고 테스트 사용자로 로그인한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -55,12 +61,26 @@ class CategoryImageServiceTest extends ModuleTestCase
         Auth::login($this->user);
     }
 
+    /**
+     * Mockery 기대값을 검증하고 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
     }
 
+    /**
+     * 카테고리 이미지를 올리면 images 카테고리의 category/ 경로에 저장되고 작성자와 다음 정렬 순서로 행이 만들어지는지 확인한다.
+     *
+     * @scenario operation=upload
+     *
+     * @effects upload_stores_file_and_creates_record
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_stores_image_and_creates_record(): void
     {
@@ -124,6 +144,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals(600, $result->height);
     }
 
+    /**
+     * 임시 키로 올리면 카테고리 없이 임시 키 행이 만들어지는지 확인한다.
+     *
+     * @scenario operation=upload
+     *
+     * @effects upload_with_temp_key_creates_unlinked_image
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_with_temp_key_creates_temp_image(): void
     {
@@ -175,6 +204,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($tempKey, $result->temp_key);
     }
 
+    /**
+     * 업로드 때 넘긴 다국어 대체 텍스트가 생성 행 데이터에 그대로 실리는지 확인한다.
+     *
+     * @scenario operation=upload
+     *
+     * @effects upload_persists_alt_text
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_with_alt_text(): void
     {
@@ -208,6 +246,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($altText, $result->alt_text);
     }
 
+    /**
+     * 업로드가 before_upload, filter_upload_file, after_upload 훅을 모두 발행하는지 확인한다.
+     *
+     * @scenario operation=upload
+     *
+     * @effects upload_fires_before_filter_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_fires_hooks(): void
     {
@@ -253,6 +300,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-ecommerce.category-image.after_upload');
     }
 
+    /**
+     * 이미지를 지우면 저장소 파일과 이미지 행이 함께 삭제되는지 확인한다.
+     *
+     * @scenario operation=delete
+     *
+     * @effects delete_removes_storage_file_and_record
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_removes_file_from_storage(): void
     {
@@ -303,6 +359,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 삭제가 before_delete, after_delete 훅을 발행하는지 확인한다.
+     *
+     * @scenario operation=delete
+     *
+     * @effects delete_fires_before_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_fires_hooks(): void
     {
@@ -339,6 +404,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-ecommerce.category-image.after_delete');
     }
 
+    /**
+     * 임시 키 이미지를 카테고리에 연결하면 저장소가 돌려준 연결 수를 그대로 반환하는지 확인한다.
+     *
+     * @scenario operation=link_temp
+     *
+     * @effects link_temp_images_links_to_category
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_link_temp_images_links_temp_files_to_category(): void
     {
@@ -359,6 +433,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals(3, $result);
     }
 
+    /**
+     * 이미지 ID 와 순서 맵을 저장소 reorder 에 그대로 넘기는지 확인한다.
+     *
+     * @scenario operation=reorder
+     *
+     * @effects reorder_delegates_order_map_to_repository
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_reorder_updates_image_order(): void
     {
@@ -382,6 +465,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 정렬 변경이 before_reorder, after_reorder 훅을 발행하는지 확인한다.
+     *
+     * @scenario operation=reorder
+     *
+     * @effects reorder_fires_before_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_reorder_fires_hooks(): void
     {
@@ -413,6 +505,19 @@ class CategoryImageServiceTest extends ModuleTestCase
 
     /**
      * download 메서드가 StorageInterface.response()를 사용하여 StreamedResponse를 반환하는지 테스트
+     *
+     * 헤더 계약은 11차 G3 라운드 B11-12 로 **강화**되었고, 14차에 그 계약의 소유자가 바뀌었다 —
+     * `Cache-Control`·`ETag`·`Expires`·304 판정은 코어 단일 지점(`streamedFileResponse()`)이
+     * 만들고 서비스는 스트림 + 검증자 메타(`getFileInfo()`)만 돌려준다. 서비스가 그 헤더를
+     * 스토리지에 넘기면 코어 지점이 덮어쓰거나 갈린 사본이 되므로, 여기서는 **넘기지 않는
+     * 것**을 단언한다. HTTP 계약(검증자·304·환경별 정책)은 `CategoryImageServiceRowDiskTest`
+     * 가 실제 라우트로 잰다.
+     *
+     * @scenario operation=download
+     *
+     * @effects download_streams_without_cache_policy_headers
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_returns_streamed_response(): void
@@ -423,12 +528,16 @@ class CategoryImageServiceTest extends ModuleTestCase
             'path' => 'category/2024/01/19/image.jpg',
             'original_filename' => 'photo.jpg',
             'mime_type' => 'image/jpeg',
+            'file_size' => 1234,
         ]);
         $image->id = 1;
+        // 검증자 소스가 되는 행 메타 — 미저장 모델은 updated_at 이 null 이라
+        // Last-Modified 축을 재지 못한다.
+        $image->updated_at = Carbon::parse('2026-08-01 09:30:00');
 
         $this->repository
             ->shouldReceive('findByHash')
-            ->once()
+            ->twice()
             ->with($hash)
             ->andReturn($image);
 
@@ -436,13 +545,18 @@ class CategoryImageServiceTest extends ModuleTestCase
             echo 'image-data';
         });
 
+        $capturedHeaders = null;
+
         $this->storage
             ->shouldReceive('response')
-            ->once()
-            ->with('images', 'category/2024/01/19/image.jpg', 'photo.jpg', [
-                'Content-Type' => 'image/jpeg',
-                'Cache-Control' => 'public, max-age=31536000',
-            ])
+            ->twice()
+            ->withArgs(function ($category, $path, $filename, $headers) use (&$capturedHeaders) {
+                $capturedHeaders = $headers;
+
+                return $category === 'images'
+                    && $path === 'category/2024/01/19/image.jpg'
+                    && $filename === 'photo.jpg';
+            })
             ->andReturn($mockResponse);
 
         // Act
@@ -450,10 +564,41 @@ class CategoryImageServiceTest extends ModuleTestCase
 
         // Assert
         $this->assertInstanceOf(StreamedResponse::class, $result);
+
+        $this->assertSame('image/jpeg', $capturedHeaders['Content-Type']);
+
+        $this->assertSame(
+            gmdate('D, d M Y H:i:s', $image->updated_at->getTimestamp()).' GMT',
+            $capturedHeaders['Last-Modified'] ?? null,
+            'Last-Modified 는 행 메타(updated_at)에서 결정적으로 만들어져야 한다',
+        );
+
+        // 캐시 정책·ETag 는 코어 지점의 몫이다 — 서비스가 넘기면 사본이 된다.
+        $this->assertArrayNotHasKey('Cache-Control', $capturedHeaders, '캐시 정책은 코어 streamedFileResponse() 가 환경에 따라 정한다');
+        $this->assertArrayNotHasKey('ETag', $capturedHeaders, 'ETag 는 코어 지점이 etag_source 로 만든다');
+
+        // 서빙 정보는 코어 형제(`AttachmentService::getFileInfo()`)와 같은 형태다.
+        $info = $this->service->getFileInfo($hash);
+
+        $this->assertSame($mockResponse, $info['response']);
+        $this->assertSame(
+            // 미저장 모델은 `disk` 가 null 이라 첫 세그먼트가 빈 문자열이다.
+            '|category/2024/01/19/image.jpg|'.$image->updated_at->getTimestamp().'|1234',
+            $info['etag_source'],
+        );
+        $this->assertSame($image->updated_at->getTimestamp(), $info['last_modified']);
+        $this->assertSame('image/jpeg', $info['mime_type']);
+        $this->assertSame(CategoryImageService::IMAGE_CACHE_MAX_AGE, $info['max_age']);
     }
 
     /**
      * download 메서드가 존재하지 않는 해시에 대해 null을 반환하는지 테스트
+     *
+     * @scenario operation=download
+     *
+     * @effects download_returns_null_for_unknown_hash
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_returns_null_for_unknown_hash(): void
@@ -474,6 +619,12 @@ class CategoryImageServiceTest extends ModuleTestCase
 
     /**
      * download 메서드가 스토리지에 파일이 없을 때 null을 반환하는지 테스트
+     *
+     * @scenario operation=download
+     *
+     * @effects download_returns_null_when_file_missing
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_returns_null_when_file_missing_from_storage(): void
@@ -510,6 +661,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertNull($result);
     }
 
+    /**
+     * 대체 텍스트 수정 데이터가 저장소 update 로 전달되고 수정된 행이 돌아오는지 확인한다.
+     *
+     * @scenario operation=update
+     *
+     * @effects update_modifies_alt_text
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_update_modifies_image_metadata(): void
     {
@@ -537,6 +697,15 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($altText, $result->alt_text);
     }
 
+    /**
+     * 수정이 before_update, filter_update_data, after_update 훅을 모두 발행하는지 확인한다.
+     *
+     * @scenario operation=update
+     *
+     * @effects update_fires_before_filter_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_update_fires_hooks(): void
     {

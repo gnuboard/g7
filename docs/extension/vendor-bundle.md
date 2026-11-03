@@ -30,7 +30,7 @@ G7 코어와 모듈/플러그인은 PHP 의존성 관리에 Composer를 사용�
 
 이 네 파일(`composer.json` / `composer.lock` / `vendor-bundle.json` / `vendor-bundle.zip`)은 코어 루트 및 각 `_bundled` 확장 루트에 함께 존재하며 모두 Git 으로 추적한다. 추출 결과인 `vendor/` 디렉토리만 `.gitignore` 대상이다. `composer.lock` 이 누락되면 `VendorIntegrityChecker` 가 `composer_lock_sha256` 을 검증할 수 없으므로, `composer update` 직후 생성된 `composer.lock` 과 재빌드된 번들 두 파일을 같은 커밋에 함께 포함한다.
 
-### 1.1 빌드가 보는 composer.json / composer.lock
+### 1.2 빌드가 보는 composer.json / composer.lock
 
 확장의 번들 빌드는 산출물을 `_bundled` 에 쓰지만(활성 디렉토리 오염 방지), **입력으로 삼는 `composer.json` / `composer.lock` 도 `_bundled` 를 기준으로 한다**. 출력 디렉토리에 해당 파일이 없을 때만 활성 디렉토리로 폴백하며, 코어는 소스와 출력이 같은 경로(`base_path()`)이므로 언제나 동일한 파일을 본다. 이 규칙은 `VendorBundler::resolveHashTarget()` 한 곳에 있고, 빌드의 네 가지 판단이 모두 그것을 쓴다.
 
@@ -106,6 +106,32 @@ G7 코어와 모듈/플러그인은 PHP 의존성 관리에 Composer를 사용�
 ```
 
 **핵심 원칙**: auto 모드에서는 **composer가 우선**입니다 (개발 환경과 프로덕션 동작 일치).
+
+### 2.2 실행 모드와의 연동
+
+VendorMode 와 실행 모드(`App\Execution\ExecutionMode`)는 **같은 판정 SSoT** 를 봅니다.
+`EnvironmentDetector` 의 `hasProcOpen()` · `hasExec()` · `hasShellExec()` · PHP 바이너리 probe 는
+전부 `App\Support\ExecutionEnvironment` 에 위임하므로, 「명령을 띄울 수 있는가」의 답이 두
+축에서 갈리지 않습니다. `function_exists` 를 직접 부르면 `disable_functions` 목록을 보지 못해
+그 자리만 다른 답을 내고, 그 어긋남은 예외가 아니라 **한쪽 경로에서만 나는 실패**로 드러납니다.
+
+| 실행 모드 | vendor 모드 | 근거 |
+|-----------|-------------|------|
+| `subprocess` | `auto` 는 composer 우선 | composer 를 자식 프로세스로 띄울 수 있다 |
+| `inprocess` | **`bundled` 로 보정** | 자식 프로세스를 띄울 수 없으므로 composer 는 성립하지 않는다 |
+
+보정 지점은 둘이며 서로 다른 계층에 있습니다.
+
+- **인스톨러** — `installerCoerceVendorModeForExecution()`(`public/install/includes/execution-mode.php`).
+  실행 모드가 `inprocess` 면 운영자가 무엇을 골랐든 `bundled` 를 돌려줍니다. Step 3 화면은
+  composer 옵션을 비활성으로 표시해 그 결과를 미리 보여 줍니다.
+- **코어** — `VendorResolver::resolveMode()` 의 auto 해석이 `canExecuteComposer()` 를 거칩니다
+  (§2.1 의 4-a). 확장 설치·업데이트 **양쪽**이 이 resolver 를 지나야 하며, 한쪽이 raw composer
+  로 빠지면 명령을 띄울 수 없는 호스팅에서 vendor 가 빈 확장이 「설치 완료」로 남습니다.
+
+`inprocess` 환경에서 `bundled` 가 성립하려면 `vendor-bundle.zip` 과 `zip` 확장이 **둘 다**
+있어야 합니다. 하나라도 없으면 대안이 남지 않으므로 인스톨러는 그 조합만을 차단(빨강)으로
+다룹니다 — 함수가 막혔다는 사실 자체는 차단 사유가 아닙니다.
 
 ## 3. CLI 사용법
 
@@ -191,6 +217,19 @@ php artisan core:update --local --force --vendor-mode=bundled
 ```
 
 ## 5. 확장 설치/업데이트
+
+설치와 업데이트는 **같은 통로**(`VendorResolver`)로 vendor/ 를 구성한다. 소스 디렉토리만 다르다.
+
+| 흐름 | 소스 디렉토리 | 비고 |
+|------|--------------|------|
+| 설치 — `_pending` 스테이징 (GitHub/ZIP) | `{type}/_pending/{id}` | 활성 디렉토리로 이관하기 전에 구성 |
+| 설치 — `_bundled` 선탑재 (웹 인스톨러의 정상 경로) | 복사 후 `{type}/{id}` | 활성 디렉토리에 zip·manifest 가 함께 복사되므로 그 디렉토리가 유효한 소스다. 확장 부팅(ServiceProvider·시더) 전에 구성한다 |
+| 설치 — `--force` 재설치 | 복사 후 `{type}/{id}` | 위와 같다 |
+| 업데이트 | 스테이징 경로 | 이전 설치 모드를 상속 (§5.4) |
+
+`_bundled` 흐름이 이 통로에서 빠지면 남는 것은 확장 설치 마지막 단계의 raw composer 뿐이다. 그 상태는 오류로 드러나지 않는다 — composer 를 실행할 수 없는 환경에서는 경고 로그만 남고 **설치는 성공으로 표시**되며, `vendor_mode` 컬럼에는 운영자가 고른 `bundled` 가 기록된다. 이후 업데이트만 그 모드를 상속해 번들로 vendor 를 채우므로 **설치 직후에만 vendor 가 비어 있는** 상태가 되고, 그 확장이 외부 패키지를 실제로 쓰는 지점에서야 클래스 부재로 드러난다.
+
+번들이 없거나 무결성 검증에 실패하면 그 사유를 진행 기록에 남기고 raw composer 로 넘어간다. 조용히 지나가지 않는다.
 
 ### 5.1 CLI
 

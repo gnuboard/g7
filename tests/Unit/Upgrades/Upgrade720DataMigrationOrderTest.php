@@ -33,6 +33,8 @@ class Upgrade720DataMigrationOrderTest extends TestCase
             '01_SyncActiveExtensionSchedules',
             '02_MigrateSitemapScheduleSetting',
             '03_MigrateGeoipScheduleEnv',
+            '04_MovePublicStorageBrokenBackupsOutOfDocroot',
+            '05_SeedDeployFragmentLedger',
         ], $names, '7.2.0 데이터 스텝 목록·순서가 바뀌었다 — 출시 뒤 동결 디렉토리다');
 
         $at = array_flip($names);

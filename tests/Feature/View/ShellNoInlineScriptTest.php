@@ -20,7 +20,8 @@ use Tests\TestCase;
  *
  * @scenario surface=admin_shell, csp=webserver_strict, failure=none
  *
- * @effects shell_html_has_no_inline_executable, shell_config_keys_unchanged
+ * 효과 요약(마커 아님 — 평문): 셸 HTML 에 실행형 인라인 코드가 없음, g7-config 키 집합 불변.
+ * 각 효과는 그것을 재는 메서드 docblock 이 가리킨다.
  */
 class ShellNoInlineScriptTest extends TestCase
 {
@@ -35,6 +36,8 @@ class ShellNoInlineScriptTest extends TestCase
         'appConfig', 'consentInitial', 'coreEditorAsset', 'coreDevToolsAsset', 'cache_version', 'assetUrlMode',
         // 7.2.0 — 다크 방식·확장 CSS 덮기·확장 클래스 접두(#816), 개발자 화면 주소(#792)
         'colorScheme', 'extensionCssOverrides', 'extensionClassPrefixes', 'customRoutes',
+        // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값(#609)
+        'basePath',
     ];
 
     /**
@@ -46,6 +49,8 @@ class ShellNoInlineScriptTest extends TestCase
         'appConfig', 'coreEditorAsset', 'coreDevToolsAsset', 'cache_version', 'assetUrlMode',
         // 7.2.0 — 다크 방식·확장 CSS 덮기·확장 클래스 접두(#816), 개발자 화면 주소(#792)
         'colorScheme', 'extensionCssOverrides', 'extensionClassPrefixes', 'customRoutes',
+        // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값(#609)
+        'basePath',
     ];
 
     /**

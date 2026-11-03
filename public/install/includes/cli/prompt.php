@@ -1,12 +1,13 @@
 <?php
 
+use App\Console\Helpers\ConsoleConfirm;
+
 /**
  * 그누보드7 터미널 설치 - 대화형 입력
  *
  * 표준 입력이 터미널(TTY)이고 `--no-interaction` 이 없을 때만 묻는다(판정: `stream_isatty(STDIN)` —
  * artisan 확인 프롬프트와 같은 기준). 비밀번호는 화면·스크롤백에 남지 않게 숨김 입력으로만 받는다.
  */
-
 if (! function_exists('g7_cli_stdin_is_tty')) {
     /**
      * 표준 입력이 터미널인지.
@@ -70,7 +71,7 @@ if (! function_exists('g7_cli_confirm')) {
         // 이 헬퍼는 Laravel·vendor 없이 동작하므로 vendor 가 없는 설치 전에도 쓸 수 있다.
         require_once dirname(__DIR__, 4).'/app/Console/Helpers/ConsoleConfirm.php';
 
-        return \App\Console\Helpers\ConsoleConfirm::ask(
+        return ConsoleConfirm::ask(
             '  '.$question,
             $default,
             null,
@@ -119,15 +120,23 @@ if (! function_exists('g7_cli_hidden_input_supported')) {
     /**
      * 숨김 입력을 쓸 수 있는지 — 유닉스는 stty, Windows 는 hiddeninput.exe(vendor 에 있을 때).
      *
+     * 두 방식 모두 shell_exec 로 돈다. 가용성은 판정 SSoT(installerHasFunction — function_exists 와
+     * disable_functions 를 함께 본다)로 묻는다. Windows 도 같다 — 파일만 보고 참을 내면 shell_exec 가 막힌
+     * php.ini 에서 g7_cli_hidden() 이 Error 로 죽는다. 불가면 호출자가 환경변수·파일 입력을 안내하고 거부한다.
+     *
      * @return bool 사용 가능 여부
      */
     function g7_cli_hidden_input_supported(): bool
     {
+        if (! installerHasFunction('shell_exec')) {
+            return false;
+        }
+
         if (DIRECTORY_SEPARATOR === '\\') {
             return is_file(BASE_PATH.'/vendor/symfony/console/Resources/bin/hiddeninput.exe');
         }
 
-        return function_exists('shell_exec') && trim((string) @shell_exec('stty -g 2>/dev/null')) !== '';
+        return trim((string) @shell_exec('stty -g 2>/dev/null')) !== '';
     }
 }
 

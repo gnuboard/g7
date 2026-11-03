@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Schedules 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -541,6 +541,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 전달된 `ids` 배열의 스케줄 활성 상태(`is_active`)를 일괄 변경합니다. `core.schedules.update` 권한이 필요합니다. 처리 결과 요약을 반환하며, 검증 실패 시 422로 응답합니다. 목록에서 여러 스케줄을 선택해 한 번에 활성화/비활성화하는 동작에 사용합니다.
 
 
@@ -593,6 +595,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명** 특정 실행 이력 레코드를 삭제합니다. `core.schedules.delete` 권한이 필요합니다. 대상 이력이 없으면 404로 응답합니다. 스케줄 상세의 실행 이력 목록에서 개별 이력을 제거할 때 사용합니다.
 
@@ -737,6 +740,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 스케줄 전체의 집계 통계를 조회합니다. `core.schedules.read` 권한이 필요합니다. 전체/활성/비활성 수와 마지막 실행 결과별(성공/실패/실행중/미실행) 건수를 반환합니다. 관리자 스케줄 대시보드의 요약 카드 표시에 사용합니다.
 
@@ -1371,6 +1376,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 기존 스케줄 정보를 수정합니다. `core.schedules.update` 권한이 필요합니다. store 와 동일한 필드(`type`/`command`/`expression`/`frequency` 등)를 받으며 검증 실패 시 422로 응답합니다. 경로의 `schedule` 은 라우트 모델 바인딩으로 해석되며, 수정된 스케줄 리소스를 반환합니다. 관리자 스케줄 수정 폼에 사용합니다.
 
 **7.2.0 변경** 모든 본문 필드가 선택이 되었습니다 — 보낸 필드만 검증·저장하며, `name`·`type`·`command`·`expression`·`frequency` 는 보내면 비울 수 없습니다. `type` 을 보내지 않고 `command` 만 바꾸면 저장된 유형 기준으로 명령 허용 검사를 합니다. 코어·확장이 등록한(소유) 행은 `command`·`type`·`name`·`enabled_condition`·`timezone` 이 잠깁니다(응답 `locked_fields`) — 저장값과 같은 값은 그대로 통과하고, 다른 값을 보내면 422(`schedule.validation.owned_field_locked`)입니다. 소유 행에서 운영자가 바꾼 필드는 `overridden_fields` 에 남습니다. `extension_type`·`extension_identifier`·`enabled_condition`·`command_class` 는 모든 행에서 입력 금지(422)이며, 새 필드와 `without_overlapping`(분) 규칙은 등록과 같습니다.
@@ -1629,6 +1636,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 스케줄의 실행 이력을 페이지네이션으로 조회합니다. `core.schedules.read` 권한이 필요합니다. `status`(success/failed/running), `trigger_type`(scheduled/manual), 기간(`started_from`/`started_to`)으로 필터링하고 `sort_by`/`sort_order` 로 정렬할 수 있습니다. 스케줄 상세의 실행 이력 탭 표시에 사용합니다.
 

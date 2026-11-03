@@ -7,6 +7,7 @@ use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Exceptions\IdentityVerificationRequiredException;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
@@ -17,16 +18,18 @@ use App\Services\Auth\ReauthenticationService;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\ConfigCacheHelper;
 use App\Support\EnvPriority;
+use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
 use App\Support\PhpExtensionProbe;
 use App\Support\PhpExtensionRequirements;
 use App\Support\ProcessOutputEncoding;
 use App\Support\SettingsVersion;
+use App\Support\TrustedProxyDiagnostic;
+use App\Support\TrustedProxySetting;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -187,7 +190,38 @@ class SettingsService
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
-        return $this->overlayEnvLockedValues($settings);
+        return $this->overlayEnvLockedValues($this->seedTrustedProxiesFromRuntime($settings));
+    }
+
+    /**
+     * 신뢰 프록시 저장값이 비어 있으면 **현재 적용 중인 값**으로 채웁니다.
+     *
+     * 저장값 null 은 "화면에서 한 번도 정한 적 없음" 이고, 그 설치의 실제 권위는
+     * `.env` 의 `TRUSTED_PROXIES` 입니다. 그 상태에서 화면이 「신뢰하지 않음」을 보여주면,
+     * 운영자가 고급 탭의 **무관한** 항목을 저장하는 순간 폼이 그 빈 값을 함께 제출해
+     * 프록시 설정이 사라집니다 — 오류도 로그도 없이 방문자 IP 만 전부 프록시 주소가 됩니다.
+     *
+     * 그래서 화면에는 적용 중인 값을 그대로 보여주고, 그대로 저장되면 값이 같아 동작도
+     * 바뀌지 않습니다. `.env` 로 잠긴 설치는 이 뒤에 도는 잠금 표시값 덮기가 다시 맡습니다.
+     *
+     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
+     * @return array<string, mixed> 유효값이 채워진 설정 배열
+     */
+    private function seedTrustedProxiesFromRuntime(array $settings): array
+    {
+        foreach ($this->resolveFrontendKeyTargets('debug', 'trusted_proxies') as [$targetCategory, $outputKey]) {
+            if (! isset($settings[$targetCategory]) || ! is_array($settings[$targetCategory])) {
+                continue;
+            }
+
+            $stored = $settings[$targetCategory][$outputKey] ?? null;
+
+            $settings[$targetCategory][$outputKey] = $stored === null
+                ? TrustedProxySetting::toList(TrustedProxyDiagnostic::configuredProxies())
+                : TrustedProxySetting::toList($stored);
+        }
+
+        return $settings;
     }
 
     /**
@@ -1367,6 +1401,7 @@ class SettingsService
     {
         return [
             // php_uname / ini_get 은 disable_functions 로 차단될 수 있어 개별 격리한다.
+            // audit:allow hosting-blocked-function-requires-guard safeSystemProbe 가 Throwable 을 잡아 「확인 불가」로 접는다 — 룰은 try/catch 를 보지 못한다
             'os_info' => $this->safeSystemProbe('os_info', fn () => php_uname('s').' '.php_uname('r'), __('common.unknown')),
             'web_server' => $_SERVER['SERVER_SOFTWARE'] ?? __('common.unknown'),
             'php_version' => PHP_VERSION,
@@ -1378,6 +1413,7 @@ class SettingsService
             'cpu_info' => $this->safeSystemProbe('cpu_info', fn () => $this->getCpuInfo(), __('common.unknown')),
             'memory_usage' => $this->safeSystemProbe('memory_usage', fn () => $this->getMemoryUsage(), $this->unknownUsage()),
             'disk_usage' => $this->safeSystemProbe('disk_usage', fn () => $this->getDiskUsage(), $this->unknownUsage()),
+            // audit:allow hosting-blocked-function-requires-guard safeSystemProbe 가 Throwable 을 잡아 「확인 불가」로 떨어뜨린다 (아래 두 줄 동일)
             'php_memory_limit' => $this->safeSystemProbe('php_memory_limit', fn () => ini_get('memory_limit'), __('common.unknown')),
             'max_execution_time' => $this->safeSystemProbe('max_execution_time', fn () => ini_get('max_execution_time').__('settings.seconds'), __('common.unknown')),
             'upload_max_filesize' => $this->safeSystemProbe('upload_max_filesize', fn () => ini_get('upload_max_filesize'), __('common.unknown')),
@@ -1442,11 +1478,12 @@ class SettingsService
      */
     private function unknownUsage(): array
     {
+        // percentage null = 측정 불가 — 화면은 0% 가 아니라 "측정 불가" 로 표기한다 (A-8)
         return [
             'total' => __('common.unknown'),
             'used' => __('common.unknown'),
             'free' => __('common.unknown'),
-            'percentage' => 0,
+            'percentage' => null,
         ];
     }
 
@@ -1506,7 +1543,7 @@ class SettingsService
      * @param  array{password?: string|null, verification_token?: string|null}  $credentials  재확인 입력
      * @return array 결과 (success, app_key 또는 error·status)
      *
-     * @throws \App\Exceptions\IdentityVerificationRequiredException 비밀번호 없는 관리자가 비밀번호로 확인하려 할 때 (428)
+     * @throws IdentityVerificationRequiredException 비밀번호 없는 관리자가 비밀번호로 확인하려 할 때 (428)
      */
     public function regenerateAppKey(array $credentials): array
     {
@@ -1533,9 +1570,29 @@ class SettingsService
             $newKey = 'base64:'.base64_encode(random_bytes(32));
 
             $envPath = base_path('.env');
-            $envContent = file_get_contents($envPath);
+            $envContent = @file_get_contents($envPath);
+
+            if ($envContent === false) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
+
             $envContent = preg_replace('/^APP_KEY=.*/m', 'APP_KEY='.$newKey, $envContent);
-            file_put_contents($envPath, $envContent);
+
+            // PCRE 실패(백트랙 한계 등)는 `null` 이다 — 그것을 쓰면 `.env` 가 빈 파일이 된다.
+            if ($envContent === null) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
+
+            // 부분 쓰기는 `false` 가 아니라 **쓴 바이트 수**다(디스크 full·quota). 반환값을
+            // 버리면 잘린 `.env` 가 「재생성 완료」로 보고되고, 그 파일에는 APP_KEY 도
+            // DB 자격증명도 온전히 남아 있지 않아 사이트가 다음 부팅에서 뜨지 않는다.
+            // 되돌릴 사본도 없다(제자리 쓰기). 형제 축(인스톨러 `installerWroteFully()` ·
+            // `AbstractRootMarkerFileUpdater` · `CoreUpdateService`)이 같은 규율을 쓴다.
+            $written = @file_put_contents($envPath, $envContent, LOCK_EX);
+
+            if ($written === false || $written !== strlen($envContent)) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
 
             // .env 변경 반영 + config 캐시 재생성 (clear 만 하면 캐시 비활성 상태로 잔존).
             ConfigCacheHelper::rebuild();
@@ -1619,7 +1676,8 @@ class SettingsService
                     $free = (int) $m[1] * 1024;
                 }
             }
-        } elseif (PHP_OS_FAMILY === 'Windows') {
+        } elseif (PHP_OS_FAMILY === 'Windows' && ExecutionEnvironment::hasFunction('shell_exec')) {
+            // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
             $script = '$os = Get-CimInstance Win32_OperatingSystem; '
                 .'Write-Output $os.TotalVisibleMemorySize; '
                 .'Write-Output $os.FreePhysicalMemory';
@@ -1658,6 +1716,9 @@ class SettingsService
 
         // open_basedir 제한 환경에서 disk_*_space 가 warning → ErrorException 이 되지 않도록
         // @ 억제 + numeric 체크 (공개#40, getMemoryUsage 폴백 패턴 재사용).
+        // `disable_functions` 축은 호출부의 `safeSystemProbe` 가 `\Throwable` 로 접는다
+        // (PHP 8 의 차단 함수 호출은 `Error`). audit 이관 원장의 「조치 불필요」 판정과 같다.
+        // audit:allow hosting-blocked-function-requires-guard reason: 차단 축은 호출부 safeSystemProbe 가 \Throwable 로 접는다 (위 주석 참조 — audit 이관 원장의 「조치 불필요」 판정)
         $totalRaw = @disk_total_space($path);
         $freeRaw = @disk_free_space($path);
         $total = is_numeric($totalRaw) ? (int) $totalRaw : 0;
@@ -1705,6 +1766,11 @@ class SettingsService
     protected function getCpuInfo(): string
     {
         if (PHP_OS_FAMILY === 'Windows') {
+            // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
+            if (! ExecutionEnvironment::hasFunction('shell_exec')) {
+                return __('common.unknown');
+            }
+
             $output = @shell_exec('powershell -NoProfile -NonInteractive -Command "(Get-CimInstance Win32_Processor | Select-Object -First 1).Name" 2>&1');
             if ($output) {
                 // 2>&1 로 합쳐진 오류 문장은 시스템 코드페이지(한국어 Windows = CP949)로 출력된다.

@@ -13,6 +13,9 @@ namespace App\Support;
  * 운영자가 정한 사이트 주소로 이 클래스를 통해 만든다.
  *
  * 사이트 주소가 비어 있으면 요청 Host 로 되돌아가지 않는다 — 상대 경로를 돌려준다.
+ *
+ * 사이트 주소가 하위 폴더(마운트 접두사)를 가지면, 경로가 그 접두사를 이미 실었을 때 다시 붙이지
+ * 않는다(멱등). 같은 사이트 안 상대 경로에 접두사를 채우는 일은 `AssetUrl::sitePath()` 가 맡는다.
  */
 final class SiteUrl
 {
@@ -33,6 +36,9 @@ final class SiteUrl
      * 끝 슬래시를 떼며, 쿼리 문자열은 보존한다. 다른 점은 기준 주소가 요청 Host 가 아니라는 것뿐이다.
      * 완전한 URL 을 통과시키므로 **요청에서 온 경로**(`getRequestUri()` 등)에는 `forPath()` 를 쓴다.
      *
+     * 사이트 주소가 하위 폴더(`https://example.com/g7`)이고 경로가 그 마운트 접두사를 **이미** 갖고
+     * 있으면(`/g7`·`/g7/...`·`/g7?x`) 접두사를 다시 붙이지 않는다 — {@see self::join()}.
+     *
      * @param  string  $path  경로 (예: `/products/1?page=2`)
      * @return string 절대 URL (사이트 주소가 없으면 상대 경로)
      */
@@ -49,7 +55,13 @@ final class SiteUrl
             $path = substr($path, 0, $queryPosition);
         }
 
-        return rtrim(self::base().'/'.trim($path, '/'), '/').$query;
+        $trimmed = trim($path, '/');
+
+        if ($trimmed === '') {
+            return self::base().$query;
+        }
+
+        return self::join(self::base(), '/'.$trimmed).$query;
     }
 
     /**
@@ -59,6 +71,9 @@ final class SiteUrl
      * 시작시킨다. 그래서 `//evil.com/x`·`/\evil.com` 같은 경로도 사이트 주소 밖으로 나가지 않는다
      * (`https://<사이트>/evil.com/x`).
      *
+     * 하위 폴더 설치에서 요청 경로는 마운트 접두사를 싣고 온다(`/g7/products/1`). 그런 경로에는
+     * 접두사를 다시 붙이지 않는다 — {@see self::join()}.
+     *
      * @param  string  $pathAndQuery  요청 경로 (예: `getRequestUri()` 값)
      * @return string 사이트 주소 안의 절대 URL (사이트 주소가 없으면 `/` 로 시작하는 상대 경로)
      */
@@ -67,7 +82,64 @@ final class SiteUrl
         $clean = (string) preg_replace('/[\x00-\x1F\x7F]/', '', $pathAndQuery);
         $path = '/'.ltrim($clean, '/\\');
 
-        return self::base().$path;
+        return self::join(self::base(), $path);
+    }
+
+    /**
+     * 사이트 주소의 경로 부분(마운트 접두사)을 반환합니다.
+     *
+     * 쿼리·프래그먼트는 경로가 아니므로 버리고, 끝 슬래시를 뗀다.
+     *
+     * @return string `''`(루트 설치·미설정) 또는 `/` 로 시작하고 `/` 로 끝나지 않는 접두사 (예: `/g7`)
+     */
+    public static function basePath(): string
+    {
+        return self::pathOf(self::base());
+    }
+
+    /**
+     * 루트 상대 경로가 접두사를 **이미** 갖고 있는지 판정합니다.
+     *
+     * 접두사 뒤가 끝·`/`·`?`·`#` 일 때만 보유다. `/g7x/foo` 는 접두사가 경계 없이 이어진 다른 경로라
+     * 보유가 아니다. 프론트 `withBasePrefix()`/`stripBasePrefix()` 와 같은 규칙이며,
+     * `AssetUrl::hasBasePrefix()` 가 이 판정을 그대로 쓴다.
+     *
+     * @param  string  $path  `/` 로 시작하는 경로
+     * @param  string  $prefix  `/` 로 시작하고 `/` 로 끝나지 않는 접두사
+     * @return bool 접두사를 이미 갖고 있으면 true
+     */
+    public static function hasPathPrefix(string $path, string $prefix): bool
+    {
+        if (! str_starts_with($path, $prefix)) {
+            return false;
+        }
+
+        $next = substr($path, strlen($prefix), 1);
+
+        return $next === '' || $next === '/' || $next === '?' || $next === '#';
+    }
+
+    /**
+     * 베이스 주소 뒤에 루트 상대 경로를 잇습니다 — 경로가 베이스의 경로 부분을 이미 가지면 다시 붙이지 않습니다.
+     *
+     * 하위 폴더 설치(`https://example.com/g7`)에서 서버가 만드는 사이트 경로에는 마운트 접두사를 이미
+     * 실은 값(`AssetUrl::sitePath()` 결과·요청 URI)과 싣지 않은 값(`/login`)이 섞여 도착한다. 앞의 것에
+     * 접두사를 한 번 더 붙이면 `/g7/g7/…` 가 되어 사이트 밖(404)을 가리킨다. 그래서 이미 가진 값은
+     * 베이스의 오리진 뒤에, 없는 값은 베이스 뒤에 잇는다. 루트 설치(경로 부분 없음)에서는 단순 연결이다.
+     *
+     * @param  string  $base  끝 슬래시 없는 베이스 주소 (예: `https://example.com/g7`, 빈 문자열 가능)
+     * @param  string  $path  `/` 로 시작하는 경로 (쿼리·프래그먼트 포함 가능)
+     * @return string 이은 주소
+     */
+    public static function join(string $base, string $path): string
+    {
+        $prefix = self::pathOf($base);
+
+        if ($prefix !== '' && str_ends_with($base, $prefix) && self::hasPathPrefix($path, $prefix)) {
+            return substr($base, 0, strlen($base) - strlen($prefix)).$path;
+        }
+
+        return $base.$path;
     }
 
     /**
@@ -162,6 +234,25 @@ final class SiteUrl
         return $scheme === $siteScheme
             && strtolower($parts['host']) === strtolower($site['host'])
             && self::effectivePort($scheme, $parts['port'] ?? null) === self::effectivePort($siteScheme, $site['port'] ?? null);
+    }
+
+    /**
+     * 주소의 경로 부분을 접두사 꼴로 반환합니다.
+     *
+     * @param  string  $base  주소 (예: `https://example.com/g7/`)
+     * @return string `''` 또는 `/` 로 시작하고 `/` 로 끝나지 않는 경로
+     */
+    private static function pathOf(string $base): string
+    {
+        $path = parse_url($base, PHP_URL_PATH);
+
+        if (! is_string($path)) {
+            return '';
+        }
+
+        $path = rtrim($path, '/');
+
+        return str_starts_with($path, '/') ? $path : '';
     }
 
     /**

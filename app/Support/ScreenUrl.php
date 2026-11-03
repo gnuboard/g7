@@ -88,7 +88,9 @@ final class ScreenUrl
 
         $trimmed = trim($pathOrUrl, '/');
 
-        return ($trimmed === '' ? $base.'/' : $base.'/'.$trimmed).$query;
+        // 베이스가 하위 폴더(`https://example.com/g7`)이고 경로가 그 접두사를 이미 실었으면 다시 붙이지 않는다 —
+        // SiteUrl::absolute() 와 같은 멱등 규칙(SiteUrl::join()).
+        return ($trimmed === '' ? $base.'/' : SiteUrl::join($base, '/'.$trimmed)).$query;
     }
 
     /**

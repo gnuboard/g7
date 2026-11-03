@@ -9,6 +9,8 @@ description: |
   링크로 바꾸되 보통 클릭은 지금처럼 정리 후 이동하고, 새 탭은 href 로 연다.
   쿼리를 합치는 링크(`mergeQuery`·`pageHrefMergeQuery`·`preserveListQuery`·`tabHrefMergeQuery`)는 같은 화면에서 쿼리만
   바꾸는 `navigate replace` 뒤에도 새 쿼리를 합친 href 로 다시 그려진다(엔진 `subscribeLocationSearch` 구독, props 가 같아도).
+  하위 폴더 설치(`G7Config.basePath`)에서는 그리는 href 의 루트 상대 경로에 사이트 마운트 접두사를 붙인다(`sitePath()`, #609 D2) —
+  새 탭·링크 복사가 사이트 밖(404)으로 가지 않게. 보통 클릭의 SPA 이동 값은 접두사 없는 앱 경로 그대로다.
 
 axes:
   component: [a, header, mobile_nav, footer, user_info, product_card, pagination, tab_navigation, notification_center, image_gallery, layout]
@@ -23,9 +25,11 @@ effects:
   - layout_moves_are_links
   - new_window_link_has_noopener
   - unsafe_href_uses_fallback
+  - href_has_site_mount_prefix
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NavigationLinks.test.tsx
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NavigationLinks.locationSync.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NavigationLinks.basePath.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/navigation-links.test.ts
   - templates/_bundled/sirsoft-basic/tests/Playwright/specs/user-navigation-links.spec.ts

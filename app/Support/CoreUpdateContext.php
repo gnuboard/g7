@@ -72,7 +72,14 @@ final class CoreUpdateContext
      */
     public static function hasEnvFlag(): bool
     {
-        $flag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
+        // `getenv` 는 `??` 사슬의 **꼬리**다 — 앞의 두 항이 폴백이라는 판정은 성립하지 않는다.
+        // 업데이트 중이 아닌 정상 요청에서는 앞의 두 항이 언제나 비어 있으므로 이 호출은
+        // **매 부팅마다** 평가된다(`CoreServiceProvider` 가 부팅에서 부른다). `getenv` 가 차단된
+        // 호스팅에서는 PHP 8 이 함수 테이블에서 제거하므로 `Error` 로 부팅이 죽는다 — 인스톨러의
+        // in-process 실행도 이 프로바이더를 부팅한다 (16차 A-1). 가드 판정은 SSoT 를 경유한다.
+        $flag = $_ENV['G7_UPDATE_IN_PROGRESS']
+            ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
+            ?? (ExecutionEnvironment::hasFunction('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false);
 
         return $flag === '1' || $flag === 1 || $flag === true;
     }

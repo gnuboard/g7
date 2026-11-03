@@ -210,6 +210,30 @@ return [
         'command_class' => 'command class',
     ],
 
+    // Web cron (URL-triggered scheduled tasks)
+    'cron' => [
+        'invalid_token' => 'The call number is not valid.',
+        'ip_not_allowed' => 'This call came from an address that is not allowed.',
+        'disabled' => 'Scheduled tasks are set to server cron only, so this URL call did not run them.',
+        'throttled' => 'The minimum interval has not elapsed, so this call did not run. Pending tasks are handled on the next call.',
+        'completed' => 'Scheduled tasks finished running.',
+        'run_failed' => 'Failed to run scheduled tasks.',
+        'token_fetch_success' => 'The call address was retrieved.',
+        'token_fetch_failed' => 'Failed to retrieve the call address.',
+        'token_rotated' => 'A new call number was issued. The previous address is now invalid.',
+        'token_rotate_failed' => 'Failed to issue a new call number.',
+        'console_summary' => 'Scheduled tasks: :executed of :due ran, :failed failed, :skipped skipped (:duration ms)',
+        'console_truncated' => 'The runtime limit was reached; the remaining tasks were deferred to the next call.',
+    ],
+
+    // Dashboard alerts (scheduled tasks not running)
+    'alerts' => [
+        'not_running_title' => 'Scheduled tasks have not run for :days day(s)',
+        'not_running_guidance_web' => 'Copy the call address from Settings > System and register it in the scheduled task feature of your hosting control panel.',
+        'not_running_guidance_cron' => 'Check whether the scheduled task (crontab) registered on the server is running.',
+        'not_running_action' => 'Open schedule settings',
+    ],
+
     // Permissions
     'permissions' => [
         'read' => 'View Schedules',

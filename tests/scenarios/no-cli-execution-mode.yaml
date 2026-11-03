@@ -1,0 +1,141 @@
+# audit:allow test-scenario-coverage reason: issue:#609 disable_functions 는 INI 값이라 PHPUnit/Playwright 런타임에서 재현 불가 (계획서 §8 자동화 한계). 판정·해석 분기는 콜백 주입 단위 테스트(test_files)가 커버하고, 무CLI 프로필의 종단(E2E) 검증은 P0 격리 환경의 브라우저 실측(§9 S2·S6)이 담당한다 — 그 실측 결과는 G8 보고서에 기록된다.
+
+feature: 공통 실행 모드 (무CLI 환경 지원 축 A 의 뼈대 — P1/G1)
+
+description: |
+  웹 요청 안에서 Artisan 커맨드를 실행해야 할 때(인스톨러·웹 크론·코어 업데이트)
+  어떤 실행기를 쓸지의 공통 판정. VendorMode 와 같은 골격 —
+  열거(ExecutionMode) · 해석기(CommandRunnerResolver) · 러너 2종
+  (SubprocessCommandRunner / InProcessCommandRunner) · 판정 SSoT(ExecutionEnvironment,
+  인스톨러 게이트와 공유).
+
+  회귀 불변식 (계획서 A-0):
+    1. subprocess 경로는 현행 그대로 — 신규 코드는 전부 inprocess 분기 안.
+    2. 기본값 불변 — 설정 없는 환경의 판정은 subprocess (fail-safe 방향).
+    3. 두 러너 등가 계약 — 같은 커맨드·파라미터가 같은 의미로 실행.
+    4. 인스톨러 게이트(A-1)는 차단이 아니라 모드 분기 — inprocess + 번들 보유는
+       정보(파랑)로 통과, 번들 부재만 차단(사유는 "번들 부재").
+
+# 축이 8개라 full cross product 는 11,520 조합이 되어 전개 상한을 넘고, 그 대부분은
+# 서로 무관한 관심사의 인위적 조합이다(호출부 명시 모드 × A-8 가드 지점 × 인스톨러 게이트 …).
+# 형제 매니페스트(no-cli-installer-stepwise)와 같은 규율로, 모든 축 값 쌍을 덮되
+# 케이스 수를 실측 가능한 범위로 유지한다.
+coverage_strategy: pairwise
+
+axes:
+  requested_mode: [none, auto, subprocess, inprocess]              # 호출부 명시 모드
+  saved_setting: [absent, auto, subprocess, inprocess, invalid]   # system.execution_mode 저장값
+  function_availability: [all_available, one_blocked, all_blocked] # exec/proc_open/shell_exec
+  php_binary_probe: [valid, invalid_with_autodetect, invalid_no_autodetect, uncertain]
+  # 아래 두 축은 인스톨러 게이트(A-1)의 것이다 — 판정 코드는 인스톨러가 소유하므로
+  # 커버는 `no-cli-installer-stepwise.yaml` 의 test_files(InstallerExecutionModeHelperTest 등)와
+  # P0 프로필 브라우저 실측이 담당한다. 여기서는 이 매니페스트의 조합 축으로만 선언한다.
+  vendor_bundle_presence: [present, absent]                        # 인스톨러 게이트(A-1) 분기
+  installer_gate_status: [pass_green, info_blue, fail_red]         # Step 2 카드 상태
+  shell_exec_guard_surface: [dashboard_cpu, dashboard_memory, settings_memory, settings_cpu_info]  # A-8 의 자원 측정 가드 (실측 5곳 — DashboardService 3 · SettingsService 2). 디스크는 disk_*_space 라 가드 대상이 아니고 measurement_result 축 소관이다 (11차 #C9)
+  measurement_result: [measured, not_measurable]                   # percentage null 계약
+  extension_vendor_source: [pending_staging, bundled_source, force_reinstall, none]  # 확장 vendor 구성의 소스 (설치 경로) — 15차 감사에서 bundled_source 가 resolver 를 안 거치고 있었다
+
+exclusions:
+  - { function_availability: all_blocked, php_binary_probe: valid, reason: "함수 차단 시 probe 는 수행되지 않는다 (unavailable 고정)" }
+  - { function_availability: one_blocked, php_binary_probe: valid, reason: "동일 — 부분 차단도 probe 생략" }
+  - { installer_gate_status: pass_green, vendor_bundle_presence: absent, function_availability: all_blocked, reason: "차단 + 번들 부재는 정의상 fail_red" }
+
+effects:
+  # 판정 SSoT (ExecutionEnvironment)
+  - detect_returns_subprocess_when_functions_available_and_probe_valid
+  - detect_returns_inprocess_when_functions_blocked
+  - detect_returns_inprocess_when_single_function_blocked
+  - detect_returns_inprocess_when_probe_invalid_and_no_autodetect
+  - detect_falls_back_to_autodetected_binary
+  - detect_fail_safe_to_subprocess_when_probe_uncertain
+  - probe_returns_unavailable_when_exec_blocked
+  - subprocess_function_set_is_stable
+  # 어휘 SSoT (ExecutionMode 열거형) — 인스톨러가 이 값 집합을 그대로 쓴다
+  - execution_mode_enum_has_exactly_three_cases
+  - execution_mode_unknown_value_falls_back_to_auto
+  # 해석기 (CommandRunnerResolver) — 명시 → 설정 → 감지 + 기본값 불변
+  - default_resolves_to_subprocess_without_any_setting
+  - auto_follows_detection_to_inprocess
+  - explicit_request_overrides_everything
+  - saved_setting_overrides_detection
+  - saved_auto_setting_still_detects
+  - invalid_saved_setting_falls_back_to_detection
+  - requested_auto_is_not_explicit
+  - detection_report_exposes_basis
+  # 두 러너 등가 계약
+  - format_parameters_matches_artisan_call_convention
+  - inprocess_runner_executes_safe_command
+  - both_runners_agree_on_safe_command_exit_status
+  - both_runners_agree_on_unknown_command_failure
+  # A-8 shell_exec 가드 — 측정 불가는 0% 가 아니라 null
+  - get_system_resources_isolates_failing_cpu_probe
+  - get_system_resources_isolates_failing_memory_probe
+  - get_system_resources_isolates_failing_disk_probe
+  - resources_probe_failure_returns_null_percentage_not_zero
+  # PHP 바이너리 해석 (php_binary_probe 축의 값을 실제로 만드는 지점)
+  - validate_rejects_empty_or_nonexistent_binary_path
+  - validate_reports_sapi_for_configured_binary
+  # 설정값을 그대로 따르는 해석 경로 — 바이너리와 composer 커맨드 조립 양쪽.
+  - php_binary_and_composer_paths_follow_configured_values
+  # 현장 2026-09-12 — 이 판정이 재는 것은 CLI 바이너리인데 사이트가 실제로 도는 곳은 웹
+  # SAPI 다. 공유 호스팅에서는 둘의 계열이 갈릴 수 있어(웹 8.2 / CLI 8.4), 그 상태에서
+  # 서버 명령으로 한 설치가 사이트와 다른 런타임에서 수행된다. 막지 않고 근거에 적는다.
+  - php_probe_reports_when_the_web_runtime_is_a_different_line
+  - auto_detect_orders_cli_binaries_first
+  # 제한 호스팅 내성 — hasFunction 정규화·주입 이음매·러너 블로킹 read (19차 파생, 20차 등재)
+  - core_execution_layer_survives_restricted_hosting
+  # 설정 화면 2지점(메모리·CPU)의 shell_exec 가드 — 이 파일의 마커가 어느 매니페스트에도
+  # 등재돼 있지 않아 죽은 마커였다 (10차 #G5 역방향)
+  - settings_system_info_shell_calls_are_guarded
+  # 확장 vendor 구성 — 설치·업데이트가 같은 통로(VendorResolver)를 쓰는가. 인스톨러가
+  # in-process 로 module:install 을 돌리면 이 코어 코드가 같은 요청 안에서 실행되므로
+  # 무CLI 성립 여부가 이 축에 달려 있다 (15차 감사에서 열린 축)
+  - composer_binary_lookup_does_not_leak_exception_when_spawn_blocked
+  - spawn_availability_is_judged_through_execution_environment_ssot
+  - bundled_source_install_routes_vendor_through_resolver
+  - raw_composer_fallback_is_gated_by_vendor_resolution_flag
+  - module_and_plugin_managers_have_symmetric_vendor_paths
+  # W1 정보 카드의 [자세히 보기] — 링크가 사라지는 축과 목적지(INSTALL.md 방법 6 제목)가
+  # 사라지는 축이 다르다. 뒤쪽은 404 가 아니라 문서 맨 위가 열려 오류로 드러나지 않는다 (D32)
+  - installer_execution_mode_card_links_to_install_guide
+  # 같은 계약의 모집단은 그 화면 하나가 아니다 — 관리자 코어 업데이트 안내 모달에도 같은
+  # 형태의 링크가 있고, 추적 파일 전수에서 도출해 함께 잰다 (P7 검증 라운드 1 결정)
+  - install_guide_link_targets_exist_repo_wide
+  - both_runners_accept_positional_arguments   # 숫자 키 위치 인자가 두 러너 모두에서 인자로 도달한다
+  - inprocess_runner_maps_positional_values_to_required_arguments   # in-process 러너가 숫자 키 값을 필수 인자 이름에 매핑한다
+  - inprocess_runner_keeps_named_argument_convention   # 인자명 키 표기(['name' => 'value'])도 계속 성립한다
+  - inprocess_runner_collects_trailing_values_into_array_argument   # 남는 위치 값이 배열 인자({items*})에 모인다
+  - inprocess_runner_appends_overflow_values_to_trailing_array_argument   # 정의보다 많은 값이 마지막 배열 인자에 덧붙는다
+  - empty_detected_binary_falls_back_to_configured_binary
+  - empty_configuration_falls_back_to_plain_php
+
+test_files:
+  - tests/Unit/Support/ExecutionEnvironmentTest.php
+  - tests/Unit/Execution/ExecutionModeTest.php
+  - tests/Unit/Execution/CommandRunnerResolverTest.php
+  - tests/Feature/Execution/CommandRunnerEquivalenceTest.php
+  - tests/Unit/Services/DashboardServiceTest.php
+  - tests/Feature/Api/Admin/DashboardControllerTest.php
+  # PHP 바이너리 형태 규칙·자동 탐색 정렬 — detect() 의 php_binary_probe 축을 실제로 만드는 곳
+  - tests/Unit/Support/PhpBinaryResolverTest.php
+  # A-8 가드 중 설정 화면 2지점(메모리·CPU) — 대시보드 2지점만 덮여 있던 축을 채운다 (9차 #G13)
+  - tests/Unit/Support/ShellExecGuardCoverageTest.php
+  # 확장 vendor 의 설치·업데이트 통로 대칭 — 「어느 분기가 어느 소스에 열려 있는가」는
+  # 정적 룰로 판정할 수 없어 소스 계약 테스트가 잠근다 (15차 감사)
+  - tests/Unit/Extension/BundledSourceVendorInstallTest.php
+  # 제한 호스팅 내성 회귀 가드 (19차 파생 산출물 — 20차 역방향 대조가 등재)
+  - tests/Unit/Support/ExecutionPortabilityHardeningTest.php
+  # W1 [자세히 보기] 링크와 그 목적지의 실재 (D32 · P7)
+  - tests/Unit/Installer/InstallerExecutionModeGuideLinkTest.php
+  # A-8 측정 불가 표기의 화면 쪽 절반 — 설정 정보 탭이 percentage null 을 0% 로 위장하지 않는다 (609 docblock 정리에서 소유 등재)
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-info-not-measurable.test.tsx
+
+# 번들 존재 축(vendor_bundle_presence)도 같은 이유로 단위 커버리지 밖이다 — 그 축이 갈리는
+# 지점은 인스톨러 게이트 카드(A-1)이고, `vendor-bundle.zip` 유무는 파일 배치의 문제라
+# P0 격리 환경에서 번들을 넣고/빼며 확인한다 (§9 S2). 10차 라운드에서 사유를 명시했다.
+#
+# 인스톨러 게이트(installer_gate_status 축)는 check-configuration.php 의 procedural
+# 클래스 안에 있어 단위 하네스 비용이 크고, disable_functions 재현도 불가하다 —
+# pass_green(일반 환경)·info_blue(P0 프로필 + 번들)·fail_red(P0 + 번들 제거)는
+# P0 격리 환경 브라우저 실측(§9 S2 · G1 DoD)으로 판정한다.

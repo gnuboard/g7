@@ -12,11 +12,11 @@
 
     var data = installerStepData();
 
-    function pairs(list, installId, activateId) {
+    function pairs(list, installId, activateId, kind) {
         return (list || []).map(function (target) {
             return [
-                { id: installId, target: target },
-                { id: activateId, target: target }
+                { id: installId, target: target, kind: kind },
+                { id: activateId, target: target, kind: kind }
             ];
         });
     }
@@ -27,9 +27,21 @@
     window.INSTALLER_EXTENSION_NAMES = data.extension_names || {};
     // 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, #153)
     window.INSTALLER_PULLED_BY = data.pulled_by || {};
+    // 유효 실행 모드 (subprocess|inprocess) — JS 소비처는 없고 무CLI 실측에서 콘솔로 확인하기 위한 진단용 노출
+    window.INSTALLER_EXECUTION_MODE = data.execution_mode === undefined ? null : data.execution_mode;
+    // 진행 중인 단계별 실행을 새로고침 뒤 이어가기 위한 토큰 (설치를 시작한 세션에만 실린다, 없으면 null)
+    window.INSTALLER_STEPWISE_TOKEN = data.stepwise_token || null;
+    // 서버가 서브프로세스 스폰 동안 스스로에게 주는 창(ms) — 세 모니터의 정지 감지 근거 (installer.js monitorStuckThresholdMs)
+    if (typeof data.server_blocking_window_ms === 'number') {
+        window.INSTALLER_SERVER_BLOCKING_WINDOW_MS = data.server_blocking_window_ms;
+    }
 
-    // 작업 그룹 정의
-    window.INSTALLER_TASK_GROUPS = [
+    // 작업 그룹 정의 — 서버 태스크 목록(buildInstallationTaskList)에서 파생한 값이 있으면 그것을 쓴다.
+    // 손으로 적은 아래 사본은 dependency_precheck · db_cleanup · config_cache 등을 빠뜨려 진행률 분모가 어긋나고
+    // 그 단계의 실패가 빨강이 되지 않았다(12차 #B22~#B24). 사본은 task_groups 가 없는 옛 캐시 화면의 폴백이다.
+    // 서버 화면은 확장 작업을 실행 순서(종류를 넘는 의존 순서)로 한 묶음에 담는다(PO 2026-11-02). 폴백은 그 순서를
+    // 알 수 없어 서버의 해석 실패 폴백(installer_category_install_order)과 같은 종류 순서로 같은 한 묶음에 담는다.
+    window.INSTALLER_TASK_GROUPS = (Array.isArray(data.task_groups) && data.task_groups.length > 0) ? data.task_groups : [
         {
             id: 'environment',
             labelKey: 'task_group_environment',
@@ -49,30 +61,20 @@
             ]
         },
         {
-            id: 'admin_templates',
-            labelKey: 'task_group_admin_templates',
-            tasks: pairs(data.admin_templates, 'template_install', 'template_activate')
-        },
-        {
-            id: 'modules',
-            labelKey: 'task_group_modules',
-            tasks: pairs(data.modules, 'module_install', 'module_activate')
-        },
-        {
-            id: 'plugins',
-            labelKey: 'task_group_plugins',
-            tasks: pairs(data.plugins, 'plugin_install', 'plugin_activate')
-        },
-        {
-            id: 'user_templates',
-            labelKey: 'task_group_user_templates',
-            tasks: pairs(data.user_templates, 'user_template_install', 'user_template_activate')
+            id: 'extensions',
+            labelKey: 'task_group_extensions',
+            tasks: [].concat(
+                pairs(data.admin_templates, 'template_install', 'template_activate', 'admin_templates'),
+                pairs(data.modules, 'module_install', 'module_activate', 'modules'),
+                pairs(data.plugins, 'plugin_install', 'plugin_activate', 'plugins'),
+                pairs(data.user_templates, 'user_template_install', 'user_template_activate', 'user_templates')
+            )
         },
         {
             id: 'language_packs',
             labelKey: 'task_group_language_packs',
             tasks: (data.language_packs || []).map(function (pack) {
-                return { id: 'language_pack_install', target: pack };
+                return { id: 'language_pack_install', target: pack, kind: 'language_packs' };
             })
         },
         {

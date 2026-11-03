@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 결함 회귀 묶음이라 축이 서로 독립이다(화면·선택 방식·차액 부호·우선순위 출처·문구 해석). 교차 조합에 뜻이 없고, 효과마다 그 효과를 여는 조합을 테스트 docblock 이 직접 적는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 결함 회귀 묶음이라 축이 서로 독립이다(화면·선택 방식·차액 부호·우선순위 출처·문구 해석). 교차 조합에 뜻이 없고, 효과마다 그 효과를 여는 조합을 테스트 docblock 이 직접 적는다.
 feature: "#599 validate P7 — 사용자 클레임 진입·작성 핸들러와 기본 배송지 카드"
 
 description: |

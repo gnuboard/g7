@@ -1,3 +1,5 @@
+# audit:allow test-scenario-coverage reason: issue:#609 develop 이 소유한 축(backfill)의 @scenario 마킹이 이 매니페스트 선언과 어긋난다 — 축을 선언하면 교차곱 18케이스가 미커버가 되고, 그 케이스를 재는 테스트 작성은 그 축을 소유한 작업의 몫이라 리베이스 범위 밖이다(프로젝트 결정). 표식을 걷는 것이 그 작업의 완료 조건이다.
+
 feature: 상품 설명 첫 이미지 목록/공유 썸네일 폴백
 
 description: |
@@ -10,6 +12,8 @@ description: |
 axes:
   image_source: [product_image_only, content_internal_only, both, content_external_only, none]
   locale_content: [default_locale, other_locale_only]
+  # 마킹은 있는데 선언이 없던 축 (값은 실제 마킹에서 도출) — 머리말 표식이 교차곱 유예를 소유한다.
+  backfill: [idempotent, legacy_row, text_mode]    # 업그레이드 백필의 입력 상태
 
 exclusions:
   - { image_source: product_image_only, locale_content: other_locale_only, reason: "로케일 축은 설명 내용에만 작용 — 상품 이미지 우선순위와 직교라 default_locale 대표 조합으로 검증" }
@@ -44,6 +48,10 @@ effects:
   - external_only_description_yields_null
   - hidden_product_stays_hidden
   - detail_og_and_search_share_same_fallback
+  # 체인(category_og_producer)에만 있던 축을 최상위 선언으로 올린다 — 대조는 최상위 목록만 본다.
+  - category_og_image_emitted_from_thumbnail_url
+  - category_og_image_omitted_without_thumbnail
+  - category_detail_emits_thumbnail_url
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/ProductContentThumbnailTest.php

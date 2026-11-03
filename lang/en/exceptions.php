@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 경로 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재 (#609)
+
 return [
     // User related exceptions
     'cannot_delete_super_admin' => 'Super admin cannot be deleted.',
@@ -261,6 +263,18 @@ return [
         'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
     ],
 
+    // 실행 모드(커맨드 러너) 관련 예외
+    'execution' => [
+        'spawn_unavailable' => 'This server cannot launch external processes (:reason). Check the execution mode.',
+        'spawn_failed' => 'Failed to start the command execution process: :command',
+    ],
+
+    // 스케줄 이벤트에서 Artisan 커맨드 되뽑기 실패
+    'schedule_extraction' => [
+        'not_artisan' => 'Not an Artisan command string (no php/artisan prefix).',
+        'command_name_missing' => 'Could not find the command name.',
+    ],
+
     // 스토리지 드라이버 경로 가드 예외
     'storage' => [
         'unsafe_path' => 'The storage path is not allowed.',
@@ -269,6 +283,11 @@ return [
     ],
 
     // SEO / Sitemap 관련 예외
+    // 파일 서빙 헬퍼 — 호출부 계약 위반 (개발자 대상)
+    'file_serving' => [
+        'meta_key_missing' => 'The file serving meta is missing a required key: :key',
+    ],
+
     'seo' => [
         'sitemap_write_failed' => 'Failed to write sitemap file: :path',
         'sitemap_gzip_failed' => 'Failed to compress sitemap child file: :file',

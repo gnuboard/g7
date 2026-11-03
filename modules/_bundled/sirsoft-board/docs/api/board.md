@@ -23,6 +23,11 @@
 - **댓글 목록**(`GET .../posts/{postId}/comments`): 부모 게시글이 비밀글이고 열람 권한이 없으면 빈 목록(`200`)을 반환합니다.
 - **첨부 서빙**(`GET .../attachment/{hash}`, `.../attachment/{hash}/preview`): 부모 게시글이 비밀글이고 열람 권한이 없으면 `403`. 첨부 요청은 상세와 분리된 요청이라 비밀번호 검증(`password_verified`)은 적용되지 않으며 작성자/관리 권한만 인정합니다.
 - **상세/목록 응답**: 비열람자에게 `content`·`title`·`reply`·`attachments`가 마스킹됩니다.
+- **첨부 서빙 응답 헤더**: 두 통로 모두 행 메타에서 만든 `ETag`·`Last-Modified`·`Content-Length` 를
+  싣고 `If-None-Match`·`If-Modified-Since` 에 `304` 로 답합니다. `304` 는 `200` 이 실었을
+  캐시 헤더를 함께 싣고, 클라이언트가 보유한 표현의 검증자를 그대로 돌려줍니다. 파일 이름
+  선언(`Content-Disposition`)은 스토리지 계층이 만들며, 서빙 디스크는 각 첨부 행의 `disk` 를
+  따릅니다.
 
 ---
 
@@ -140,7 +145,7 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.attachments.upload`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 (슬러그에 해당하는 게시판 없음 — `게시판을 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 업로드 처리 실패 (`파일 업로드에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -256,7 +261,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.attachments.upload`)이 없는 경우 |
 | 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 (`게시판을 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 순서 변경 처리 실패 (`첨부파일 순서 변경에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -275,7 +280,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -481,7 +486,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.posts.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -545,7 +550,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 게시글 수정(PUT
 | trigger_type | string | `user` | 상태 변경을 유발한 주체 (`report`/`admin`/`system`/`auto_hide`/`user`/`cascade`) |
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체. board 관계 미로드 시 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보. 쓰기 응답에서는 계산하지 않아 null. |
@@ -641,6 +646,256 @@ HTTP/1.1 201
 <!-- @generated:end -->
 
 **설명** 게시판 관리자가 새 게시글을 작성합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, `StorePostRequest` 검증을 거친 값에 작성자(`Auth::id()`)와 요청 IP가 자동으로 채워집니다. 업로드 파일과 첨부파일 ID 배열은 본문에서 분리되어 `PostService::createPost()`로 전달되고, 성공 시 생성된 게시글 리소스를 201로 반환합니다. `is_notice=true` 는 게시판 관리 권한(`admin.manage`/`manager`) 또는 공지 등록 권한(`posts.write-notice`)이 있어야 합니다(사용자 글쓰기 경로와 같은 판정) — 없으면 403(`messages.permission.notice_denied`, 7.1.0).
+
+
+### DELETE /api/modules/sirsoft-board/admin/board/{slug}/posts/bulk
+<!-- @generated:start:api.modules.sirsoft-board.admin.board.posts.bulk-destroy -->
+- **라우트명**: `api.modules.sirsoft-board.admin.board.posts.bulk-destroy`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\PostController@bulkDestroy`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.{slug}.admin.manage`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | URL 친화 식별자 (slug) |
+| ids | query | array | 예 | min 1, max 100 | 대상 리소스 식별자 배열 (대량 작업 대상) |
+| reason | query | string | 아니오 | max 1000 | 사유. 삭제 동작은 이 값을 쓰지 않습니다 (블라인드와 복구만 처리 이력에 남깁니다) |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-board/admin/board/{slug}/posts/bulk?ids=%EC%98%88%EC%8B%9C%EA%B0%92&reason=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| affected_count | integer | `2` | 실제로 처리된 게시글 수 |
+| affected_ids | array | `[12,15]` | 처리된 게시글 ID 목록 |
+| skipped | array | `[{"id":19,"reason":"has_replies",…}]` | 건너뛴 항목 목록. 항목마다 `id`(게시글 ID), `reason`(사유 코드), `reason_label`(요청 언어로 번역한 사유), `title`(글 제목, 글을 찾지 못했으면 `null`)을 담습니다. 사유 코드는 아래 「관리자 게시글 일괄 처리」 절의 「건너뛰는 사유」 표에 있습니다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "2개의 게시글을 삭제했습니다. (건너뜀 1개)",
+    "data": {
+        "affected_count": 2,
+        "affected_ids": [
+            12,
+            15
+        ],
+        "skipped": [
+            {
+                "id": 19,
+                "reason": "has_replies",
+                "reason_label": "답글이 달린 글 (답글 삭제 정책상 삭제할 수 없음)",
+                "title": "답글이 달린 공지"
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위 밖 게시판. 아무 글도 처리하지 않고 전량 거부합니다 (`auth.scope_denied`) |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 |
+| 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘거나, 정수가 아니거나 중복된 값이 있는 경우, `reason` 이 1000자를 넘는 경우 (`error.errors` 에 필드별 메시지) |
+| 428 | Identity Verification Required | 본인인증 정책(`sirsoft-board.post.bulk_action`)이 켜져 있고 미충족인 경우. 아무 글도 처리하지 않습니다 |
+| 500 | Internal Server Error | 일괄 처리 실패 (`게시글 일괄 처리에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명** 게시판 관리자가 선택한 게시글을 한 번에 삭제합니다. `auth:sanctum` + admin + 게시판별 `admin.manage` 권한이 필요하며, 단건 삭제와 달리 본인 글이라는 이유로 `posts.write` 만으로 열리지 않습니다(한 요청에 남의 글이 섞일 수 있기 때문입니다). `BulkPostActionRequest` 가 `ids`(1~100개, 정수, 중복 불가)를 검증하되 `exists` 를 두지 않으므로, 이 게시판에 없는 ID 는 422 가 아니라 `skipped` 의 `not_found` 로 돌아옵니다. `PostService::bulkAction()` 은 `sirsoft-board.post.before_bulk_action` 훅을 항목 처리 전에 한 번만 발화한 뒤 글마다 삭제하고, 이미 삭제된 글(`already_deleted`)과 답글 삭제 정책이 `block` 인데 살아 있는 답글이 있는 글(`has_replies`)은 건너뜁니다. 한 건의 처리 실패는 나머지를 막지 않고 `error` 사유로 남습니다. 성공 메시지는 처리 건수와 건너뛴 건수를 함께 알립니다. `ids` 는 본문 JSON 으로 보내도 됩니다. 건너뛰는 사유 전체와 훅, 본인인증 동작은 아래 「관리자 게시글 일괄 처리」 절에 있습니다.
+
+
+### PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-blind
+<!-- @generated:start:api.modules.sirsoft-board.admin.board.posts.bulk-blind -->
+- **라우트명**: `api.modules.sirsoft-board.admin.board.posts.bulk-blind`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\PostController@bulkBlind`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.{slug}.admin.manage`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | URL 친화 식별자 (slug) |
+| ids | body | array | 예 | min 1, max 100 | 대상 리소스 식별자 배열 (대량 작업 대상) |
+| reason | body | string | 아니오 | max 1000 | 블라인드 사유. 처리된 각 글의 처리 이력(`action_logs`)에 남습니다 |
+
+**요청 예시**
+
+```http
+PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-blind HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "ids": [
+        "예시값"
+    ],
+    "reason": "예시값"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| affected_count | integer | `2` | 실제로 처리된 게시글 수 |
+| affected_ids | array | `[12,15]` | 처리된 게시글 ID 목록 |
+| skipped | array | `[{"id":19,"reason":"has_replies",…}]` | 건너뛴 항목 목록. 항목마다 `id`(게시글 ID), `reason`(사유 코드), `reason_label`(요청 언어로 번역한 사유), `title`(글 제목, 글을 찾지 못했으면 `null`)을 담습니다. 사유 코드는 아래 「관리자 게시글 일괄 처리」 절의 「건너뛰는 사유」 표에 있습니다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "2개의 게시글을 블라인드 처리했습니다. (건너뜀 1개)",
+    "data": {
+        "affected_count": 2,
+        "affected_ids": [
+            12,
+            15
+        ],
+        "skipped": [
+            {
+                "id": 19,
+                "reason": "already_blinded",
+                "reason_label": "이미 블라인드된 글",
+                "title": "이미 가린 글"
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위 밖 게시판. 아무 글도 처리하지 않고 전량 거부합니다 (`auth.scope_denied`) |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 |
+| 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘거나, 정수가 아니거나 중복된 값이 있는 경우, `reason` 이 1000자를 넘는 경우 (`error.errors` 에 필드별 메시지) |
+| 428 | Identity Verification Required | 본인인증 정책(`sirsoft-board.post.bulk_action`)이 켜져 있고 미충족인 경우. 아무 글도 처리하지 않습니다 |
+| 500 | Internal Server Error | 일괄 처리 실패 (`게시글 일괄 처리에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명** 게시판 관리자가 선택한 게시글을 한 번에 블라인드 처리합니다. 권한과 요청 검증, 훅 발화, 항목별 실패 격리, 응답 모양은 일괄 삭제와 같습니다. `reason` 은 처리된 각 글의 블라인드 이력에 사유로 남고, 비우면 빈 사유로 기록됩니다. 이미 블라인드된 글은 `already_blinded` 로 건너뜁니다. 삭제 상태이거나 소프트 삭제된 글은 블라인드하면 삭제가 풀리므로 `already_deleted` 로 건너뜁니다(단건 블라인드와 같은 판정). 먼저 복구한 뒤 블라인드합니다.
+
+
+### PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-restore
+<!-- @generated:start:api.modules.sirsoft-board.admin.board.posts.bulk-restore -->
+- **라우트명**: `api.modules.sirsoft-board.admin.board.posts.bulk-restore`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\PostController@bulkRestore`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.{slug}.admin.manage`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | URL 친화 식별자 (slug) |
+| ids | body | array | 예 | min 1, max 100 | 대상 리소스 식별자 배열 (대량 작업 대상) |
+| reason | body | string | 아니오 | max 1000 | 복구 사유. 처리된 각 글의 처리 이력(`action_logs`)에 남습니다 |
+
+**요청 예시**
+
+```http
+PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-restore HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "ids": [
+        "예시값"
+    ],
+    "reason": "예시값"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| affected_count | integer | `2` | 실제로 처리된 게시글 수 |
+| affected_ids | array | `[12,15]` | 처리된 게시글 ID 목록 |
+| skipped | array | `[{"id":19,"reason":"has_replies",…}]` | 건너뛴 항목 목록. 항목마다 `id`(게시글 ID), `reason`(사유 코드), `reason_label`(요청 언어로 번역한 사유), `title`(글 제목, 글을 찾지 못했으면 `null`)을 담습니다. 사유 코드는 아래 「관리자 게시글 일괄 처리」 절의 「건너뛰는 사유」 표에 있습니다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "2개의 게시글을 복구했습니다. (건너뜀 1개)",
+    "data": {
+        "affected_count": 2,
+        "affected_ids": [
+            12,
+            15
+        ],
+        "skipped": [
+            {
+                "id": 19,
+                "reason": "already_published",
+                "reason_label": "이미 게시 상태인 글",
+                "title": "정상 게시 중인 글"
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위 밖 게시판. 아무 글도 처리하지 않고 전량 거부합니다 (`auth.scope_denied`) |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 |
+| 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘거나, 정수가 아니거나 중복된 값이 있는 경우, `reason` 이 1000자를 넘는 경우 (`error.errors` 에 필드별 메시지) |
+| 428 | Identity Verification Required | 본인인증 정책(`sirsoft-board.post.bulk_action`)이 켜져 있고 미충족인 경우. 아무 글도 처리하지 않습니다 |
+| 500 | Internal Server Error | 일괄 처리 실패 (`게시글 일괄 처리에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명** 게시판 관리자가 블라인드되었거나 삭제된 게시글을 한 번에 복구합니다. 권한과 요청 검증, 훅 발화, 항목별 실패 격리, 응답 모양은 일괄 삭제와 같습니다. `reason` 은 처리된 각 글의 복구 이력에 사유로 남습니다. 이미 정상 게시 중인 글(상태가 `published` 이고 소프트 삭제되지 않은 글)은 `already_published` 로 건너뜁니다.
 
 
 ### GET /api/modules/sirsoft-board/admin/board/{slug}/posts/form-data
@@ -897,7 +1152,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `admin` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:43` | 최종 수정 일시 |
 | deleted_at | string | `2026-07-08 15:01:43` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[{"action":"delete","reason":null,"admin_name":"API 문서 샘플…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1059,7 +1314,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 상태 변경(삭제/블라인드 등)을 유발한 주체. `report`(신고) / `admin`(관리자 직권) / `system`(시스템) / `auto_hide`(신고 누적 자동 블라인드) / `user`(사용자 직접) / `cascade`(상위 삭제 연쇄) 중 하나입니다. |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | object | `{"prev":null,"next":null}` | 이전/다음 게시글 이동 정보. `prev`·`next` 키에 인접 게시글 요약(없으면 null)이 담기며, 상세 로드 시 함께 계산됩니다. |
@@ -1322,7 +1577,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1414,7 +1669,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.posts.write`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1483,7 +1738,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
@@ -1583,7 +1838,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
 | 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1652,7 +1907,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 복원된 게시글.
 | trigger_type | string | `admin` | 상태 변경을 유발한 주체 (복원은 관리자 직권이므로 `admin`) |
 | updated_at | string | `2026-07-08 15:01:45` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (복원 후 null) |
-| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[{"action":"restore","reason":null,"admin_name":"API 문서 샘플 사용자","created_at":"2026-07-08 06:01:45"}]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체 (관계 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보 (쓰기 응답은 미계산 → null) |
@@ -1769,7 +2024,11 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.store_validation_rules`).
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.store_validation_rules`).
 
 > `status` 는 요청으로 `published` 만 지정할 수 있습니다(사용자 경로와 같은 검증 규칙 공유) — 블라인드·복구는 전용 `/blind`·`/restore` 엔드포인트를 씁니다.
 
@@ -1805,7 +2064,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource`)._
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
-| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
@@ -1888,8 +2147,8 @@ HTTP/1.1 201
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -1943,8 +2202,12 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.update_validation_rules`).
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.update_validation_rules`).
 
 > `status` 는 요청으로 `published` 만 지정할 수 있습니다(사용자 경로와 같은 검증 규칙 공유) — 블라인드·복구는 전용 `/blind`·`/restore` 엔드포인트를 씁니다.
 
@@ -2044,7 +2307,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.comments.write`)이 없거나, 타인/비회원 댓글을 `admin.manage` 없이 수정하려는 경우(`접근 권한이 없습니다.`), 게시판의 댓글 기능이 꺼진 경우(`이 게시판은 댓글 기능이 비활성화되어 있습니다.`) |
 | 404 | Not Found | ID 에 해당하는 댓글 또는 슬러그에 해당하는 게시판이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 수정 처리 실패 (`댓글 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -2063,8 +2326,8 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 | reason | body | string | 아니오 | max 1000 | 댓글 블라인드 처리 사유(최대 1000자). 처리 이력에 기록되며, 미지정 시 빈 문자열로 저장됩니다. |
 
 **요청 예시**
@@ -2176,7 +2439,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
 | 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -2194,8 +2457,8 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 | reason | body | string | 아니오 | max 1000 | 댓글 블라인드 처리 사유(최대 1000자). 처리 이력에 기록되며, 미지정 시 빈 문자열로 저장됩니다. |
 
 **요청 예시**
@@ -2312,7 +2575,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | ID 에 해당하는 댓글 또는 슬러그에 해당하는 게시판이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 409 | Conflict | 원글이 삭제된 상태에서 댓글만 복구하려 한 경우 (`원글이 삭제된 상태라 댓글만 복구할 수 없습니다. 원글을 먼저 복구해 주세요.`) — 원글을 복구하면 함께 지워진 댓글도 돌아온다(1.2.0+) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 복원 처리 실패 (`댓글 복원에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -2325,9 +2588,9 @@ HTTP/1.1 200
 
 ## 관리자 게시글 일괄 처리 (삭제 · 블라인드 · 복구)
 
-> 이 절은 **수기 작성**입니다. `api:docgen` 기본 모드는 파괴적 재생성 가드(`docs/backend/api-documentation.md`)로
-> 막혀 있어 위쪽 `@generated` 블록처럼 실측 스캐폴딩을 만들 수 없습니다. 값은 전부 코드에서 옮겼고
-> 근거 위치를 각 항목에 적었습니다 (이슈 #524).
+> 이 절은 세 엔드포인트의 공통 동작을 모은 손 작성 안내입니다. 엔드포인트별 생성 절은 위쪽
+> `DELETE …/posts/bulk`, `PATCH …/posts/bulk-blind`, `PATCH …/posts/bulk-restore` 에 있습니다. 값은 코드에서
+> 옮겼고 근거 위치를 각 항목에 적었습니다.
 
 세 엔드포인트는 같은 요청 형태·같은 응답 형태·같은 권한을 쓰고 동작만 다릅니다.
 
@@ -2337,15 +2600,15 @@ HTTP/1.1 200
 | PATCH | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-blind` | `…admin.board.posts.bulk-blind` | 선택한 글을 블라인드 |
 | PATCH | `/api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-restore` | `…admin.board.posts.bulk-restore` | 블라인드·삭제된 글을 복구 |
 
-- **컨트롤러**: `Admin\PostController@bulkDestroy` / `@bulkBlind` / `@bulkRestore` (`src/Http/Controllers/Admin/PostController.php:623,635,647`)
+- **컨트롤러**: `Admin\PostController@bulkDestroy` / `@bulkBlind` / `@bulkRestore` (`src/Http/Controllers/Admin/PostController.php:674,686,698`)
 - **미들웨어**: `auth:sanctum` + `admin` + `permission:admin,sirsoft-board.{slug}.admin.manage`
   셋 다 `admin.manage` 를 요구합니다 — 단건 삭제의 「본인 글이면 `posts.write`」 완화를 일괄에 적용하면
-  한 요청에 남의 글이 섞여 들어갈 수 있기 때문입니다 (`src/routes/api.php:330-344`).
+  한 요청에 남의 글이 섞여 들어갈 수 있기 때문입니다 (`src/routes/api.php:416-429`).
 - **선언 순서**: 세 라우트는 `/{id}` 계열보다 **먼저** 선언됩니다. 뒤에 두면 `bulk` 가 `{id}` 로 잡힙니다.
 
 ### 요청 파라미터
 
-`BulkPostActionRequest` (`src/Http/Requests/Admin/BulkPostActionRequest.php:35-37`)
+`BulkPostActionRequest` (`src/Http/Requests/Admin/BulkPostActionRequest.php:36-38`)
 
 | 이름 | 위치 | 타입 | 필수 | 제한 | 설명 |
 | --- | --- | --- | --- | --- | --- |
@@ -2384,11 +2647,11 @@ HTTP/1.1 200
 | skipped | array | 건너뛴 항목 목록. 항목마다 `id`(게시글 ID)·`reason`(사유 코드, 아래 표)·`reason_label`(요청 언어로 번역된 사유 — 1.2.0+)·`title`(글 제목, 조회 전에 실패했으면 `null` — 1.2.0+). 관리자 목록 화면은 건너뛴 글이 있으면 이 두 값으로 「건너뛴 게시글」 창을 연다 |
 
 메시지 키는 `sirsoft-board::messages.posts_bulk.{delete,blind,restore}_success` 이며 `:count`·`:skipped`
-를 치환합니다 (`src/lang/{ko,en}/messages.php:311-316`).
+를 치환합니다 (`src/lang/{ko,en}/messages.php:370-385`).
 
 ### 건너뛰는 사유 (`skipped[].reason`)
 
-`PostService::resolveBulkSkipReason()` (`src/Services/PostService.php:711-738`)
+`PostService::resolveBulkSkipReason()` (`src/Services/PostService.php:843-875`)
 
 | reason | 동작 | 조건 |
 | --- | --- | --- |
@@ -2405,11 +2668,11 @@ HTTP/1.1 200
 ### 훅과 본인인증(IDV)
 
 - `sirsoft-board.post.before_bulk_action($slug, $action, $ids, $reason)` — **루프에 들어가기 전 1회**만
-  발화합니다 (`PostService.php:660`). 항목마다 `before_delete`·`before_blind` 를 태우지 않으므로,
+  발화합니다 (`PostService.php:762`). 항목마다 `before_delete`·`before_blind` 를 태우지 않으므로,
   본인인증이 필요한 상황에서 428 이 루프 **중간**에 터져 일부만 처리되는 일이 없습니다(부수효과 0).
-- `sirsoft-board.post.after_bulk_action($slug, $action, $affectedIds, $skipped)` — 처리 뒤 1회 (`:692`).
+- `sirsoft-board.post.after_bulk_action($slug, $action, $affectedIds, $skipped)` — 처리 뒤 1회 (`:802`).
 - 본인인증 정책 `sirsoft-board.post.bulk_action` 이 위 `before_bulk_action` 을 대상으로 선언돼 있습니다
-  (`module.php:827-834`, 기본 `enabled=false`). 켜면 미충족 시 **HTTP 428** 과 함께
+  (`module.php:962-971`, 기본 `enabled=false`). 켜면 미충족 시 **HTTP 428** 과 함께
   `verification.return_request` 가 내려가고, 프론트 인터셉터가 인증 모달을 연 뒤 원요청을 재전송합니다.
   컨트롤러는 `catch (\Exception)` 만 잡습니다 — 428 을 일으키는 예외는 `\Error` 를 상속하므로 삼켜지지 않습니다.
 

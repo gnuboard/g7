@@ -55,6 +55,8 @@ effects:
   - admin_info_warning_hidden_when_unknown
   - opcache_warning_placed_at_tab_top
   - admin_info_defensive_against_missing_opcache_key
+  - opcache_row_mounted   # 관리자 정보 탭에 OPcache 상태 행이 실제로 마운트된다 (E2E)
+  - opcache_warning_conditional   # OPcache 경고 블록이 비활성일 때만 뜨고 활성 또는 판정 불가일 때는 숨는다 (E2E)
 
 # E2E axis: admin_info_row / admin_info_warning_block 는 레이아웃 JSON 변경을 수반하므로
 # Playwright spec 을 동반한다 (frontend-change-requires-e2e). API 응답을 route 로 가로채

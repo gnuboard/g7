@@ -54,7 +54,8 @@ async function stubOpcache(
   });
 }
 
-// @scenario tab=info, permitted=yes
+// (tab=info, permitted=yes — 미선언 축은 평문으로)
+// @scenario opcache_state=enabled, surface=admin_info_row
 // @effects opcache_row_mounted
 test('@smoke - 정보 탭에 OPcache 상태 행이 번역문과 함께 마운트된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -75,7 +76,8 @@ test('@smoke - 정보 탭에 OPcache 상태 행이 번역문과 함께 마운트
   expect(text.replace('OPcache', '').trim().length).toBeGreaterThan(0);
 });
 
-// @scenario tab=info, opcache_enabled=false
+// (tab=info, opcache_enabled=false — stubOpcache: loaded+disabled)
+// @scenario opcache_state=loaded_but_disabled, surface=admin_info_warning_block
 // @effects opcache_warning_conditional
 test('- OPcache 비활성이면 성능 저하 경고 블록이 표시된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -91,7 +93,8 @@ test('- OPcache 비활성이면 성능 저하 경고 블록이 표시된다', as
   expect(warningText.length).toBeGreaterThan(0);
 });
 
-// @scenario tab=info, opcache_enabled=false
+// (tab=info, opcache_enabled=false — stubOpcache: loaded+disabled)
+// @scenario opcache_state=loaded_but_disabled, surface=admin_info_warning_block
 // @effects opcache_warning_placed_at_tab_top
 test('- 경고 블록이 정보 탭 최상단에 놓이고 아래 카드와 간격을 둔다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -122,7 +125,8 @@ test('- 경고 블록이 정보 탭 최상단에 놓이고 아래 카드와 간�
   await expect(page.locator('#tab_content_info > #opcache_warning')).toHaveCount(1);
 });
 
-// @scenario tab=info, opcache_enabled=true
+// (tab=info, opcache_enabled=true — stubOpcache: loaded+enabled)
+// @scenario opcache_state=enabled, surface=admin_info_warning_block
 // @effects opcache_warning_conditional
 test('- OPcache 활성이면 경고 블록이 표시되지 않는다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -136,7 +140,8 @@ test('- OPcache 활성이면 경고 블록이 표시되지 않는다', async ({ 
   await expect(page.locator(OPCACHE_WARNING)).toHaveCount(0);
 });
 
-// @scenario tab=info, opcache_enabled=null
+// (tab=info, opcache_enabled=null — stubOpcache: enabled=null, 확인 불가)
+// @scenario opcache_state=ini_get_blocked, surface=admin_info_warning_block
 // @effects opcache_warning_conditional
 test('- OPcache 확인 불가(null)면 경고 블록이 표시되지 않는다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');

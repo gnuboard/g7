@@ -20,7 +20,7 @@ use Psr\Log\AbstractLogger;
  *
  * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  *
- * @effects upgrade_reports_same_option_amount_overlap_without_writing
+ * 효과 요약(마커 아님 — 평문): upgrade_reports_same_option_amount_overlap_without_writing
  */
 class ReportSameOptionRowAmountOverlapTest extends ModuleTestCase
 {

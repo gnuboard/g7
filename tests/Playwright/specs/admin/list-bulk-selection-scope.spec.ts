@@ -10,7 +10,8 @@
  * 잠근다. 단위 테스트(DataGrid.test.tsx)는 컴포넌트가 정리를 수행하는지를 보고, 이 spec 은
  * 그 정리가 실제 화면·실제 전역 상태·실제 요청까지 도달하는지를 본다.
  *
- * // @scenario surface=admin_user_list, transition=search_filter_change, scope=page
+ * // (surface=admin_user_list — 미선언 축은 평문으로)
+// @scenario transition=search_filter_change, scope=page
  * // @effects hidden_row_selection_dropped, bulk_button_disabled_when_selection_empties, bulk_request_carries_only_visible_checked_rows
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -93,6 +94,8 @@ async function checkFirstRow(page: any): Promise<void> {
   await expect(checkbox).toBeChecked({ timeout: 10_000 });
 }
 
+// @scenario transition=search_filter_change, scope=page
+// @effects hidden_row_selection_dropped, bulk_button_disabled_when_selection_empties, bulk_request_carries_only_visible_checked_rows
 test('@smoke 회원 목록: 검색으로 사라진 행은 선택이 풀리고 일괄 처리 대상에서도 빠진다', async ({ page }) => {
   const token = issueToken(...ADMIN_PERMISSIONS);
   await authenticatePage(page, token);

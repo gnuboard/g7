@@ -24,10 +24,16 @@ class SitemapWriterTest extends TestCase
 
     /**
      * 테스트 초기화 - 가짜 로컬 디스크와 put 순서 기록 스토리지를 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 색인 <loc> 의 오리진은 설정(app.url)이 우선이다 (AssetUrl::siteAbsolute()). 개발 사이트의
+        // app.url 이 흘러들면 url() 기대값(요청 호스트 http://localhost)과 갈리므로 고정한다.
+        Config::set('app.url', 'http://localhost');
 
         Config::set('app.locale', 'ko');
         Config::set('app.supported_locales', ['ko']);
@@ -69,6 +75,12 @@ class SitemapWriterTest extends TestCase
 
     /**
      * URL 수가 임계를 넘으면 자식 파일로 분할되는지 확인합니다.
+     *
+     * @scenario split_threshold=over
+     *
+     * @effects child_split_at_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_splits_children_at_threshold(): void
     {
@@ -92,6 +104,12 @@ class SitemapWriterTest extends TestCase
 
     /**
      * 임계에 정확히 맞아떨어지면 빈 자식 파일이 생기지 않는지 확인합니다.
+     *
+     * @scenario split_threshold=under
+     *
+     * @effects child_split_at_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_exact_threshold_does_not_create_empty_child(): void
     {
@@ -110,6 +128,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * 각 자식 파일이 well-formed urlset XML 인지 확인합니다.
+     *
+     * @effects child_sitemaps_are_well_formed_urlsets
+     *
+     * @return void 반환값 없음
      */
     public function test_children_are_well_formed_urlsets(): void
     {
@@ -136,6 +158,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * sitemapindex 가 모든 자식을 절대 URL 로 참조하는지 확인합니다.
+     *
+     * @effects index_emitted
+     *
+     * @return void 반환값 없음
      */
     public function test_index_references_all_children(): void
     {
@@ -161,6 +187,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * URL 이 하나도 없어도 빈 urlset 자식 1개와 인덱스를 남기는지 확인합니다.
+     *
+     * @effects index_emitted
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_set_still_emits_index_and_one_child(): void
     {
@@ -179,6 +209,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * loc 이 없는 항목은 무시되는지 확인합니다.
+     *
+     * @effects entries_without_loc_are_skipped
+     *
+     * @return void 반환값 없음
      */
     public function test_entry_without_loc_is_skipped(): void
     {
@@ -195,6 +229,12 @@ class SitemapWriterTest extends TestCase
 
     /**
      * 다국어에서는 URL 하나가 로케일 수만큼의 <url> 블록으로 계산되는지 확인합니다.
+     *
+     * @scenario multilingual=on
+     *
+     * @effects child_split_at_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_counts_url_blocks_per_locale(): void
     {
@@ -219,6 +259,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * gzip 활성 시 .xml.gz 로 압축 저장되고 인덱스 loc 도 .gz 를 가리키는지 확인합니다.
+     *
+     * @effects gzip_children_are_opt_in_and_indexed_as_gz
+     *
+     * @return void 반환값 없음
      */
     public function test_gzip_writes_compressed_children(): void
     {
@@ -248,6 +292,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * gzip 비활성이 기본값인지 확인합니다.
+     *
+     * @effects gzip_children_are_opt_in_and_indexed_as_gz
+     *
+     * @return void 반환값 없음
      */
     public function test_gzip_disabled_by_default(): void
     {
@@ -265,6 +313,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * manifest.json 이 커밋의 마지막 기록인지 확인합니다 (커밋 마커).
+     *
+     * @effects sitemap_manifest_is_the_commit_marker
+     *
+     * @return void 반환값 없음
      */
     public function test_manifest_is_written_last(): void
     {
@@ -294,6 +346,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * 커밋 후 임시 디렉토리가 정리되는지 확인합니다.
+     *
+     * @effects sitemap_commit_leaves_no_tmp_or_stale_children
+     *
+     * @return void 반환값 없음
      */
     public function test_commit_cleans_tmp_directory(): void
     {
@@ -308,6 +364,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * 이전 생성물 중 새 세트에 없는 자식 파일이 정리되는지 확인합니다.
+     *
+     * @effects sitemap_commit_leaves_no_tmp_or_stale_children
+     *
+     * @return void 반환값 없음
      */
     public function test_commit_removes_stale_children(): void
     {
@@ -337,6 +397,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * open() 이 이전 실행의 임시 파일을 정리하는지 확인합니다.
+     *
+     * @effects sitemap_commit_leaves_no_tmp_or_stale_children
+     *
+     * @return void 반환값 없음
      */
     public function test_open_clears_previous_tmp_files(): void
     {
@@ -350,6 +414,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * manifest 에 세트 메타데이터가 기록되는지 확인합니다.
+     *
+     * @effects sitemap_manifest_is_the_commit_marker
+     *
+     * @return void 반환값 없음
      */
     public function test_manifest_contains_set_metadata(): void
     {
@@ -374,6 +442,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * urlsPerFile 이 프로토콜 상한(50,000)을 넘지 못하도록 클램프되는지 확인합니다.
+     *
+     * @effects child_split_respects_protocol_url_and_byte_caps
+     *
+     * @return void 반환값 없음
      */
     public function test_urls_per_file_is_clamped_to_protocol_cap(): void
     {
@@ -394,6 +466,10 @@ class SitemapWriterTest extends TestCase
      * 전체 in-memory 적재(회귀)라면 URL 수에 비례해 메모리가 증가합니다.
      *
      * @scale n=1500000 asserts=bounded_peak_memory, child_count_correct
+     *
+     * @effects large_sitemap_generation_keeps_memory_bounded
+     *
+     * @return void 반환값 없음
      */
     public function test_large_volume_splits_and_keeps_memory_bounded(): void
     {
@@ -435,6 +511,10 @@ class SitemapWriterTest extends TestCase
      * sitemaps.org 는 파일당 50MB 를 제한하므로 URL 수 상한만으로는 프로토콜 위반을 막지 못한다
      * (긴 URL 5만 건이면 50MB 초과). MAX_FILE_BYTES 분기가 그 방어인데, 45MB 를 실제로 채우면
      * 테스트가 과도하게 무거우므로 하위 클래스로 임계값만 낮춰 같은 경로를 검증한다.
+     *
+     * @effects child_split_respects_protocol_url_and_byte_caps
+     *
+     * @return void 반환값 없음
      */
     public function test_byte_threshold_splits_child_even_below_url_cap(): void
     {
@@ -463,6 +543,10 @@ class SitemapWriterTest extends TestCase
 
     /**
      * 바이트 임계로 분할된 자식들도 well-formed urlset 이며 전량 보존됩니다.
+     *
+     * @effects child_split_respects_protocol_url_and_byte_caps
+     *
+     * @return void 반환값 없음
      */
     public function test_byte_threshold_split_children_are_well_formed_and_lossless(): void
     {

@@ -1,14 +1,18 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 메서드 PHPDoc(목적 설명, @param, @return)만 더했다. 라우트, 요청, 응답 모양은 그대로라 API 문서에 반영할 표면이 없다.
+
 namespace App\Http\Requests\Public\Module;
 
+use App\Http\Requests\Concerns\ResolvesDualModeFilePath;
 use App\Rules\AllowedModuleFileType;
 use App\Rules\SafeModulePath;
-use App\Support\Routing\DualExtensionRoute;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ServeModuleAssetRequest extends FormRequest
 {
+    use ResolvesDualModeFilePath;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -32,8 +36,15 @@ class ServeModuleAssetRequest extends FormRequest
     public function rules(): array
     {
         // 모듈 식별자로부터 기준 경로 구성 (모듈 루트)
+        // 식별자는 **검증 전** 값이다. 라우트에 형태 제약이 없고 Laravel 은 매칭·바인딩을
+        // 모두 디코딩된 경로로 하므로 `%2e%2e` 가 `..` 로 들어온다 — 그대로 보간하면
+        // 봉쇄의 **기준선을 요청이 고르게** 된다. 확장 식별자는 `vendor-name` 형태이므로
+        // 그 형태가 아니면 실재할 수 없는 이름으로 접어 기준선이 트리 밖으로 나가지 않게 한다.
         $identifier = $this->route('identifier');
-        $basePath = base_path("modules/{$identifier}");
+        $identifier = is_string($identifier) && preg_match('/^[A-Za-z0-9_.-]+$/', $identifier) && ! str_contains($identifier, '..')
+            ? $identifier
+            : '__invalid__';
+        $basePath = base_path('modules/'.$identifier);
 
         return [
             'identifier' => ['required', 'string'],
@@ -48,6 +59,8 @@ class ServeModuleAssetRequest extends FormRequest
 
     /**
      * 검증을 위한 데이터 준비
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -55,7 +68,7 @@ class ServeModuleAssetRequest extends FormRequest
         // 확장자 없는 모드에서는 파일 경로가 `?file=` 쿼리로 온다 (경로 확장자 회피).
         $this->merge([
             'identifier' => $this->route('identifier'),
-            'path' => $this->route('path') ?? $this->query(DualExtensionRoute::FILE_QUERY_PARAM),
+            'path' => $this->dualModeFilePath(),
         ]);
     }
 

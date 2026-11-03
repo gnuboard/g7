@@ -361,23 +361,43 @@ class NotificationHookListener implements HookListenerInterface
         $guard = app(NotificationDeliveryGuard::class);
         $deferred = [];
 
+        // 발송 건수 관측 (D6-a) — 큐 연결이 `sync` 인 사이트에서는 수신자마다의
+        // 발송이 **이 요청 안에서** 순차 실행된다. 실행 시간 상한에 걸리면 그 지점
+        // 이후 수신자는 누락되는데, 시작·완료 두 줄이 없으면 그 누락이 아무 흔적도
+        // 남기지 않는다. 시작 줄만 있고 완료 줄이 없는 조합이 곧 "중간에 끊겼다" 는
+        // 신호다. 정책은 바꾸지 않는다 — 관측만 확보한다.
+        $tally = ['sent' => 0, 'failed' => 0];
+        $total = is_countable($recipients) ? count($recipients) : null;
+
+        Log::info('알림 발송 시작', [
+            'type' => $definition->type,
+            'channel' => $channel,
+            'recipients' => $total,
+            'queue_connection' => config('queue.default'),
+        ]);
+
         foreach ($recipients as $notifiable) {
-            if ($this->sendToRecipient($guard, $definition, $channel, $notifiable, $data, $context, $args, $eventId) === NotificationDeliveryClaim::InFlight) {
+            if ($this->sendToRecipient($guard, $definition, $channel, $notifiable, $data, $context, $args, $eventId, $tally) === NotificationDeliveryClaim::InFlight) {
                 $deferred[] = $notifiable;
             }
-        }
-
-        if ($deferred === []) {
-            return;
         }
 
         // 다른 사본이 끝냈으면 Done, 죽어서 리스가 지났으면 넘겨받아 보낸다(누락 방지).
         $stillInFlight = 0;
         foreach ($deferred as $notifiable) {
-            if ($this->sendToRecipient($guard, $definition, $channel, $notifiable, $data, $context, $args, $eventId) === NotificationDeliveryClaim::InFlight) {
+            if ($this->sendToRecipient($guard, $definition, $channel, $notifiable, $data, $context, $args, $eventId, $tally) === NotificationDeliveryClaim::InFlight) {
                 $stillInFlight++;
             }
         }
+
+        Log::info('알림 발송 완료', [
+            'type' => $definition->type,
+            'channel' => $channel,
+            'recipients' => $total,
+            'sent' => $tally['sent'],
+            'failed' => $tally['failed'],
+            'in_flight' => $stillInFlight,
+        ]);
 
         if ($stillInFlight > 0) {
             throw new RetryHookListenerLaterException(
@@ -398,6 +418,7 @@ class NotificationHookListener implements HookListenerInterface
      * @param  array  $context  extract_data 컨텍스트
      * @param  array  $args  원래 훅 인자
      * @param  string  $eventId  이벤트 ID
+     * @param  array{sent: int, failed: int}  $tally  발송 건수 집계 (보낸 수·실패 수를 여기에 더한다)
      * @return NotificationDeliveryClaim|null 선점 결과 (중복 방지 대상이 아니면 null)
      */
     private function sendToRecipient(
@@ -409,6 +430,7 @@ class NotificationHookListener implements HookListenerInterface
         array $context,
         array $args,
         string $eventId,
+        array &$tally,
     ): ?NotificationDeliveryClaim {
         // 키를 못 만드는 수신자(모델이 아닌 임시 객체)는 종전처럼 중복 방지 없이 보낸다.
         $recipientKey = $guard->recipientKey($notifiable);
@@ -458,10 +480,20 @@ class NotificationHookListener implements HookListenerInterface
             // 실제로 나간 값(수신자별 치환 결과)을 넘긴다 — 원본 $data 를 넘기면
             // 로그 연결 리스너가 수신자가 받은 것과 다른 값을 본다.
             HookManager::doAction('core.notification.after_send', $notifiable, $definition, $notifiableData);
+
+            // 집계는 try 의 마지막에서 한다 — 앞에서 세면 그 뒤(선점 갱신·발송 후 훅)가 던질 때 아래
+            // catch 가 실패를 한 번 더 세어, 같은 수신자가 보낸 수와 실패 수 양쪽에 잡힌다.
+            if ($report->statusFor($channel) === DeliveryReport::FAILED) {
+                $tally['failed']++;
+            } else {
+                $tally['sent']++;
+            }
         } catch (\Throwable $e) {
             if ($recipientKey !== null) {
                 $guard->release($eventId, $definition->type, $channel, $recipientKey);
             }
+
+            $tally['failed']++;
 
             Log::error('NotificationHookListener: 알림 발송 실패', [
                 'type' => $definition->type,

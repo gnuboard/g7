@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 200개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 203개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 42개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 151개 |
+| `partials` | 154개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -156,6 +156,7 @@
 | `_modal_core_changelog` | `partials` | partial | - |
 | `_modal_core_update_guide` | `partials` | partial | - |
 | `_modal_core_update_result` | `partials` | partial | - |
+| `_modal_cron_token_rotate` | `partials` | partial | - |
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
 | `_modal_ip_restriction_rule_form` | `partials` | partial | - |
@@ -190,6 +191,8 @@
 | `_tab_security_ip_restriction` | `partials` | partial | - |
 | `_tab_security_password_policy` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
+| `_tab_system` | `partials` | partial | - |
+| `_tab_update` | `partials` | partial | - |
 | `_tab_upload` | `partials` | partial | - |
 | `_modal_extension_preview_layout` | `partials` | partial | - |
 | `_modal_extension_version_history` | `partials` | partial | - |
@@ -657,6 +660,9 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_seo.g7.html (SEO)
 │           ├── _tab_advanced.g7.html (고급)
 │           ├── _tab_info.g7.html (시스템 정보 — PHP 확장 카드: 필수·선택(코어 SSoT)과 「확장이 요구하는 모듈」(`php_extensions.requested_by`))
+│           ├── _tab_system.g7.html (시스템 — 긴 작업의 실행 방식(별도 프로세스 또는 요청 안)과 웹 크론 예약 작업 호출 주소)
+│           ├── _modal_cron_token_rotate.g7.html (시스템 — 웹 크론 호출 주소 재발급 확인 창, 성공하면 부모 화면의 주소칸을 새 주소로 바꿈)
+│           ├── _tab_update.g7.html (업데이트 — 명령줄 없이 화면에서 코어 업데이트, 대기 → 진행 중 → 완료 또는 실패의 4상태, 코어 업데이트 권한이 있을 때만 보임)
 │           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)
 │           ├── _modal_cache_delete.g7.html
 │           ├── _modal_core_changelog.g7.html

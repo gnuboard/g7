@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * 이동·새로고침마다 다시 잠긴다 — 오류도 로그도 남지 않는다(라이브 실측). 반대로 키 이름이 실제
  * 저장 코드와 어긋나면 제공해도 아무것도 지켜지지 않으므로 원문과 대조한다.
  *
- * @scenario link=board-necessary-storage-provision
+ * 소속 시나리오(마커 아님 — 평문): board-necessary-storage-provision
  */
 class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
 {

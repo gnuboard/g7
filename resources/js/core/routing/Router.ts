@@ -1,6 +1,6 @@
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
-import { suffixed } from '../support/assetUrl';
+import { basePrefix, stripBasePrefix, suffixed, withBasePrefix } from '../support/assetUrl';
 import { isCustomRoutePath } from './CustomRouteMatcher';
 import { notifyLocationReplaced } from '../template-engine/navigationLinks';
 import { normalizePathname } from './normalizePathname';
@@ -37,8 +37,12 @@ function currentHistoryEntryIndex(): number | null {
 
 /**
  * 지금 주소(경로+쿼리+해시)
+ *
+ * 브라우저가 보는 주소 그대로다(하위 폴더 배치면 마운트 접두사 포함). 확정 주소 기록·popstate 복구(`pushState`)가
+ * 이 값을 다시 브라우저에 넘기고, 이탈 가드는 비교 전에 양쪽 접두사를 벗긴다.
  */
 function currentUrl(): string {
+  // base-path:allow 브라우저 주소를 기록·복구용으로 그대로 읽는다(라우트 대조가 아니다).
   return window.location.pathname + window.location.search + window.location.hash;
 }
 
@@ -140,8 +144,10 @@ export class Router {
       return;
     }
 
-    if (isCustomRoutePath(window.location.pathname)) {
-      logger.log(`popstate to custom route — reloading: ${window.location.pathname}`);
+    // 개발자 화면 패턴은 서버 라우트 URI 라 접두사가 없다 — 브라우저 주소의 접두사를 벗겨 대조한다.
+    const poppedPath = stripBasePrefix(window.location.pathname);
+    if (isCustomRoutePath(poppedPath)) {
+      logger.log(`popstate to custom route — reloading: ${poppedPath}`);
       window.location.reload();
       return;
     }
@@ -162,6 +168,7 @@ export class Router {
    * @param _targetIndex popstate 가 내려앉은 항목 위치 (진단용)
    */
   private restoreBlockedPopState(_targetIndex: number | null): void {
+    // base-path:allow 확정 주소는 브라우저에서 읽은 값이라 접두사를 이미 품고 있다(currentUrl·Navigation API).
     window.history.pushState({}, '', this.getCommittedUrl());
     this.committedHistoryIndex = currentHistoryEntryIndex();
   }
@@ -388,14 +395,28 @@ export class Router {
    * `routeChange.path` 에 정규형만 쓴다. 원본(`/x/`)이 남으면 화면 동일성 판정이 `/x` 와 다른 화면으로 본다 (engine-v1.84.0, 공개#156)
    */
   async navigateToCurrentPath(): Promise<void> {
+    // 주소창 정규화는 접두사를 품은 전체 경로로 한다 — 주소창에 쓰는 값이므로 `/g7/x/` 는 `/g7/x` 가 된다.
+    // base-path:allow 주소창 정규화용 원본이다 — 라우트 대조용 접두사는 아래에서 정규형에 대해 벗긴다.
     const rawPathname = window.location.pathname;
-    const pathname = this.normalizePathname(rawPathname);
-    if (pathname !== rawPathname) {
+    let normalizedPathname = this.normalizePathname(rawPathname);
+    // 하위 폴더 마운트 루트는 끝 슬래시 형태(`/g7/`)가 서버 정본이다 — 웹서버가 폴더 주소를
+    // `/g7` → `/g7/` 로 돌려보낸다(Apache DirectorySlash). 여기서 `/g7` 로 접어 쓰면 새로고침·
+    // 북마크·공유 때마다 301 이 한 번 더 난다. 그 밖의 경로는 끝 슬래시 없는 형태가 정본이다.
+    const mountRoot = basePrefix();
+    if (mountRoot !== '' && normalizedPathname === mountRoot) {
+      normalizedPathname = mountRoot + '/';
+    }
+    if (normalizedPathname !== rawPathname) {
       // 정규형은 늘 `/` 하나로 시작하므로 교차 출처 주소(`//host`)가 될 수 없다
-      window.history.replaceState(window.history.state, '', pathname + window.location.search + window.location.hash);
+      // base-path:allow 브라우저에서 읽은 접두사 포함 주소를 슬래시만 정규화해 그대로 되쓴다(접두사를 다시 붙이면 이중이 된다).
+      window.history.replaceState(window.history.state, '', normalizedPathname + window.location.search + window.location.hash);
       notifyLocationReplaced();
       this.committedUrl = currentUrl();
     }
+    // 정규형에서 사이트 마운트 접두사를 벗긴다. 라우트 패턴은
+    // 언제나 접두사 없이 등록되므로, 하위 폴더 배치(`/g7/board/free`)에서 벗기지
+    // 않으면 어떤 패턴에도 맞지 않아 전 화면이 「없는 페이지」가 된다 (12차 G3).
+    const pathname = stripBasePrefix(normalizedPathname);
     const search = window.location.search;
     const matchResult = this.match(pathname);
 
@@ -436,6 +457,7 @@ export class Router {
       if (!isAuthenticated) {
         const loginUrl = authManager.getLoginRedirectUrl(authType, pathname + search);
         logger.log(`Not authenticated, redirecting to: ${loginUrl}`);
+        // base-path:allow getLoginRedirectUrl() 가 접두사를 붙인 값이다.
         window.location.href = loginUrl;
         return;
       }
@@ -527,7 +549,8 @@ export class Router {
     if (isCustomRoutePath(path)) {
       logger.log(`navigate to custom route — full page load: ${path}`);
       this.pendingNavigation = null;
-      window.location.assign(path);
+      // 이동 경로는 앱 기준(접두사 없음)이다 — 브라우저가 그대로 여는 주소라 마운트 접두사를 붙인다.
+      window.location.assign(withBasePrefix(path));
       return;
     }
 
@@ -535,8 +558,10 @@ export class Router {
     this.pendingNavigation = null;
 
     try {
-      // URL 변경 (브라우저 히스토리에 추가)
-      window.history.pushState({}, '', path);
+      // URL 변경 (브라우저 히스토리에 추가). 히스토리에 실리는 값은 **브라우저가
+      // 보는 주소**이므로 접두사를 붙인다 — 붙이지 않으면 하위 폴더 배치에서 주소창이
+      // 사이트 밖을 가리키게 되고, 그 상태로 새로고침하면 설치 밖으로 나간다.
+      window.history.pushState({}, '', withBasePrefix(path));
       // 같은 레이아웃으로 쿼리만 바뀌는 이동에서도 `:mergeQuery` 링크가 새 주소로 다시 그려지게 알린다 (engine-v1.82.1)
       notifyLocationReplaced();
       this.committedUrl = currentUrl();

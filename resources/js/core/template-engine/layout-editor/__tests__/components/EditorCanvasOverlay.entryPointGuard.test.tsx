@@ -173,6 +173,7 @@ beforeEach(() => {
 });
 
 describe('EditorCanvasOverlay — 구조 편집 콜백의 선두 가드 (호출자 비신뢰)', () => {
+  /** @effects structural_edit_callbacks_guard_locked_nodes_without_trusting_the_caller, route_edit_source_lock_blocks_inline_edit_delete_cut_and_duplicate_entry_points */
   it('N24f base 출처 노드 — ⓘ 를 우회해 onDuplicate 를 직접 호출해도 patchLayout 미호출', async () => {
     const { selectNode, patchSpy } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -187,6 +188,7 @@ describe('EditorCanvasOverlay — 구조 편집 콜백의 선두 가드 (호출�
     expect(patchSpy).not.toHaveBeenCalled();
   });
 
+  /** @effects route_owned_nodes_keep_inline_edit_delete_cut_and_duplicate */
   it('N24g 회귀 가드 — route 출처 노드는 같은 경로로 실제 복제된다', async () => {
     // N24f 의 「부재」가 공허하지 않음을 증명한다 — 이 하네스에서 복제는 도달 가능하다.
     const { selectNode, patchSpy } = mount([BASE_TEXT, ROUTE_TEXT]);

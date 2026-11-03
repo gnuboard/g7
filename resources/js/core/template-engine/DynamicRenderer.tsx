@@ -4314,10 +4314,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // @since engine-v1.79.0: 예약 때의 경로를 기억해, 대기 중에 다른 경로로 옮겼으면 버린다.
           // 같은 레이아웃의 다른 경로로 가도 입력칸 인스턴스는 남으므로 타이머가 새 화면에서 터지는데, 그 쓰기의
           // base 는 예약 때의 `_local` 전체(이전 레코드 id 등)라 비워 둔 상태 소유 루트의 저장소 A 를 다시 오염시킨다.
+          // base-path:allow 경로 가드는 브라우저 주소끼리 대조한다(예약 때 주소와 지금 주소, 둘 다 접두사 포함) — 벗기지 않는다.
           const scheduledPath = typeof window !== 'undefined' ? window.location.pathname : '';
           const runScheduledWrite = () => {
             // engine-v1.81.2: 주소만 바꾼 같은 화면(navigate replace:true 로 경로가 바뀜 — 경로 전환 없음)은 다른 경로로 보지 않는다
-            if (typeof window !== 'undefined' && window.location.pathname !== scheduledPath
+            // base-path:allow 경로 가드는 브라우저 주소끼리 대조한다(예약 때 주소와 지금 주소, 둘 다 접두사 포함) — 벗기지 않는다.
+            if (typeof window !== 'undefined' && window.location.pathname !== scheduledPath // base-path:allow 위와 같다.
               && !isUrlOnlyPathAlias(scheduledPath, window.location.pathname)) {
               autoBindingDebounceTimerRef.current = null;
               // 표시용 대기 값도 버린다 — 남기면 새 화면 칸에 이전 화면 입력이 보인다.
@@ -4416,6 +4418,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               autoBindingPendingSeenRef.current = new Set([String(currentValue ?? '')]);
             }
             autoBindingPendingValueRef.current = newValue;
+            // base-path:allow 경로 가드는 브라우저 주소끼리 대조한다(예약 때 주소와 지금 주소, 둘 다 접두사 포함) — 벗기지 않는다.
             autoBindingPendingPathRef.current = typeof window !== 'undefined' ? window.location.pathname : '';
             // 새 경로에서 다시 쳤으면 지금 화면 글자가 사용자 입력이다 — 앞서 버린 값의 다시 마운트 기록은 버린다
             // (늦은 새 화면 렌더가 입력 중인 칸을 다시 마운트해 포커스·조합을 끊지 않게, engine-v1.81.2)
@@ -4485,8 +4488,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // @since engine-v1.79.0: 다른 경로에서 만든 대기 값은 이 화면의 값이 아니다 — 버리고 지금 상태를 쓴다
         if (autoBindingPendingValueRef.current !== undefined
           && typeof window !== 'undefined'
+          // base-path:allow 경로 가드는 브라우저 주소끼리 대조한다(예약 때 주소와 지금 주소, 둘 다 접두사 포함) — 벗기지 않는다.
           && autoBindingPendingPathRef.current !== window.location.pathname
           // engine-v1.81.2: 주소만 바꾼 같은 화면(navigate replace:true 로 경로가 바뀜)은 다른 경로로 보지 않는다
+          // base-path:allow 경로 가드는 브라우저 주소끼리 대조한다(예약 때 주소와 지금 주소, 둘 다 접두사 포함) — 벗기지 않는다.
           && !isUrlOnlyPathAlias(autoBindingPendingPathRef.current, window.location.pathname)) {
           // 다시 마운트 기록은 타이머가 아직 실행되지 않은(쓰기가 실제로 버려지는) 대기 값만 한다 (engine-v1.81.2).
           // 쓰기를 마친 대기 값은 확정 렌더 전까지 남아 있는데(위 runScheduledWrite 주석), 그 칸의 change 동작이 다른 경로로

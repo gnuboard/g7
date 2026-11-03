@@ -2,6 +2,7 @@ import { getApiClient } from '../api/ApiClient';
 import { createLogger } from '../utils/Logger';
 import { sanitizeNavPath } from '../support/navPolicy';
 import { getAppConfig, resolveUsableLocale } from '../support/localeTag';
+import { stripBasePrefix, withBasePrefix } from '../support/assetUrl';
 
 const logger = createLogger('AuthManager');
 
@@ -931,9 +932,13 @@ export class AuthManager {
       // 서버가 이동 경로를 주면 그 경로로(같은 출처 경로만 — 외부 IdP 로그아웃은 서버의 같은 출처 라우트가 302 한다),
       // 아니면 로그인 페이지로 리다이렉트 (queryString 포함)
       if (serverRedirect) {
-        window.location.href = serverRedirect;
+        // 서버(확장 필터 `core.auth.logout_redirect_url`)가 주는 값은 앱 기준 경로일 수 있다 — 하위 폴더 배치에서
+        // 사이트 밖으로 나가지 않게 접두사를 붙인다(이미 붙은 값은 그대로 — 멱등).
+        window.location.href = withBasePrefix(serverRedirect);
       } else if (config && previousState.type) {
+        // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다
         const returnUrl = window.location.pathname + window.location.search;
+        // base-path:allow getLoginRedirectUrl() 자신이 withBasePrefix() 로 접두사를 붙여 돌려준다.
         window.location.href = this.getLoginRedirectUrl(previousState.type, returnUrl);
       }
     }
@@ -1016,9 +1021,15 @@ export class AuthManager {
    * @returns 로그인 페이지 URL (redirect 파라미터 포함)
    */
   getLoginRedirectUrl(type: AuthType, returnUrl: string, reason?: string): string {
+    // 이 값의 소비처는 전부 `window.location.href` — 즉 **브라우저가 그대로 여는
+    // 주소**다. 접두사를 붙이지 않으면 하위 폴더 배치에서 로그인 페이지가 사이트
+    // 밖(`https://host/login`)을 가리켜 세션 만료가 곧 이탈이 된다 (12차 G3).
+    //
+    // `returnUrl` 은 호출부가 `location.pathname` 에서 만들어 이미 접두사를 갖고 있고,
+    // `withBasePrefix()` 는 멱등이라 어느 형태로 들어와도 이중 접두가 되지 않는다.
     const config = this.config.get(type);
     if (!config) {
-      return '/login';
+      return withBasePrefix('/login');
     }
 
     // 로그인 전용 화면(로그인·가입·비밀번호 찾기·재설정)은 복귀 경로로 싣지 않는다 — 세션이 끊긴 채
@@ -1033,7 +1044,8 @@ export class AuthManager {
     if (reason) {
       params.push(`reason=${encodeURIComponent(reason)}`);
     }
-    return params.length > 0 ? `${config.loginPath}?${params.join('&')}` : config.loginPath;
+    const loginPath = withBasePrefix(config.loginPath);
+    return params.length > 0 ? `${loginPath}?${params.join('&')}` : loginPath;
   }
 
   /**
@@ -1055,7 +1067,7 @@ export class AuthManager {
     }
 
     // 로그인 화면이 이미 복귀 경로를 갖고 있으면(`/login?redirect=/mypage`) 그 경로를 이어 싣는다.
-    if (this.normalizePath(path) === this.normalizePath(config.loginPath) && queryIndex !== -1) {
+    if (this.normalizePath(stripBasePrefix(path)) === this.normalizePath(config.loginPath) && queryIndex !== -1) {
       const search = returnUrl.slice(queryIndex).split('#')[0];
       const inner = new URLSearchParams(search.startsWith('?') ? search.slice(1) : '').get('redirect');
       if (inner) {
@@ -1072,12 +1084,16 @@ export class AuthManager {
   /**
    * 로그인 전용 화면 경로인지 판정합니다(로그인 경로 + 설정의 guestOnlyPaths, 끝 슬래시 무시).
    *
+   * 판정할 경로는 브라우저 주소(`location.pathname`)에서 오므로 하위 폴더 배치면 마운트 접두사를 품고 있고, 비교 대상
+   * (loginPath·guestOnlyPaths)은 앱 기준 경로다. 접두사를 벗겨 대조한다 — 벗기지 않으면 `/g7/login` 이 로그인 화면으로
+   * 인식되지 않아 로그인을 마친 뒤 다시 로그인 폼에 떨어진다.
+   *
    * @param config - 인증 설정
    * @param path - 판정할 경로(쿼리 제외)
    * @returns 로그인 전용 화면이면 true
    */
   private isGuestOnlyPath(config: AuthConfig, path: string): boolean {
-    const target = this.normalizePath(path);
+    const target = this.normalizePath(stripBasePrefix(path));
     const candidates = [config.loginPath, ...(config.guestOnlyPaths ?? [])];
     return candidates.some((candidate) => this.normalizePath(candidate) === target);
   }

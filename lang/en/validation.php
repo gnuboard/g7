@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -767,6 +769,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte attack detected.',
         'outside_base_directory' => 'Paths outside the base directory are not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
         'file_type_not_allowed' => 'File type not allowed. Extension: :extension (Allowed: :allowed)',
     ],
 
@@ -789,6 +792,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte detected.',
         'outside_base_directory' => 'Access outside the base directory is not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
     ],
 
     // Plugin path validation messages
@@ -799,6 +803,7 @@ return [
         'absolute_path_not_allowed' => 'Absolute paths are not allowed.',
         'null_byte_detected' => 'NULL byte detected.',
         'outside_base_directory' => 'Access outside the base directory is not allowed.',
+        'hidden_segment_not_allowed' => 'Files and directories whose names begin with a dot are not served.',
     ],
 
     // Auth validation messages
@@ -867,6 +872,11 @@ return [
             'required' => 'Path is required.',
             'string' => 'Path must be a string.',
         ],
+    ],
+
+    // IP allow list (web cron call restriction)
+    'ip_allow_list' => [
+        'invalid' => '":value" is not a valid IP address or range. List one per line, or separate them with commas.',
     ],
 
     // Setting value validation messages
@@ -999,6 +1009,11 @@ return [
         'outbound_proxy_bypass_array' => 'The proxy bypass list must be an array.',
         'outbound_proxy_bypass_item_string' => 'Each proxy bypass entry must be a string.',
         'outbound_proxy_bypass_item_max' => 'Each proxy bypass entry may not be greater than :max characters.',
+        'trusted_proxies_present' => 'The trusted proxy list is missing from the request.',
+        'trusted_proxies_array' => 'The trusted proxy list must be an array.',
+        'trusted_proxies_max' => 'The trusted proxy list may not have more than :max entries.',
+        'trusted_proxy_address_invalid' => 'The trusted proxy address format is invalid. Enter an IP address or CIDR (e.g. 10.0.0.1, 10.0.0.0/24).',
+        'trusted_proxy_address_max' => 'Each trusted proxy address may not be greater than :max characters.',
 
         // List limits
         'pagination_result_cap_integer' => 'The total count cap must be a number.',
@@ -1371,6 +1386,12 @@ return [
         'timezone' => 'timezone',
         'language' => 'language',
         'default_language' => 'default language',
+        // Execution method / scheduled task fields (admin 'System' tab)
+        'system.execution_mode' => 'Execution method',
+        'system.cron_mode' => 'Scheduled task execution method',
+        'system.cron_allowed_ips' => 'Scheduled task allowed addresses',
+        'system.cron_min_interval' => 'Scheduled task minimum interval',
+        'system.cron_visit_fallback' => 'Run scheduled tasks on visitor traffic',
         // Identity verification (IDV) fields
         'identity_default_provider' => 'default provider',
         'identity_purpose_providers' => 'purpose-to-provider mapping',
@@ -1567,6 +1588,7 @@ return [
         'sql_query_log' => 'SQL query log',
         'outbound_proxy' => 'outbound proxy address',
         'outbound_proxy_bypass' => 'proxy bypass list',
+        'trusted_proxies' => 'trusted proxy list',
         'core_update_github_url' => 'core update GitHub URL',
         'core_update_github_token' => 'core update GitHub token',
         'geoip_enabled' => 'GeoIP',

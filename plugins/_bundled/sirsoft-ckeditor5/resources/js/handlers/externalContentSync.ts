@@ -23,6 +23,7 @@
  * @module externalContentSync
  */
 
+import { routePath } from '../apiUrl';
 import { setSyncSuppressed } from './editorInstances';
 
 /** 외부 값 확인 주기(ms). 폼 쓰기 디바운스(300ms)보다 길게 둔다. */
@@ -107,7 +108,8 @@ export function attachExternalContentSync(
 ): ExternalContentSyncHandle {
     const { name, locale, multilingual } = options;
 
-    let pathAtSeed = options.seedPath ?? location.pathname;
+    // 경로는 앱 기준(마운트 접두사를 벗긴 값)으로 잰다 — `seedPath` 를 주는 initEditor 와 같은 기준이다.
+    let pathAtSeed = options.seedPath ?? routePath(location.pathname);
     let lastEmitted: string | null = null;
     let awaitingReseed = false;
     /**
@@ -147,7 +149,7 @@ export function attachExternalContentSync(
         return typeof value === 'string' ? value : undefined;
     };
 
-    lastSeenExternal = pathAtSeed !== location.pathname && options.seedValue !== undefined
+    lastSeenExternal = pathAtSeed !== routePath(location.pathname) && options.seedValue !== undefined
         ? options.seedValue
         : readExternal();
 
@@ -161,12 +163,12 @@ export function attachExternalContentSync(
      * @return void
      */
     const enterAwaitingIfPathChanged = (current: string): void => {
-        if (location.pathname === pathAtSeed) {
+        if (routePath(location.pathname) === pathAtSeed) {
             return;
         }
 
         // 편집 대상이 바뀌었다. 새 본문이 도착할 때까지 내보내기를 막고, 「이전 글의 값」으로 볼 값들을 기억해 둔다.
-        pathAtSeed = location.pathname;
+        pathAtSeed = routePath(location.pathname);
         staleValues = new Set([current]);
         if (lastSeenExternal !== undefined) staleValues.add(lastSeenExternal);
         if (lastEmitted !== null) staleValues.add(lastEmitted);

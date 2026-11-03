@@ -15,13 +15,14 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 캐스트 대상은 rules() 에서 파생한다 — 필드를 손으로 열거하면 규칙이 추가될 때
  * 누락(드리프트)이 생기므로, integer/numeric 규칙을 가진 모든 필드가 자동 포함되어야 한다.
- *
- * @effects request_numeric_fields_cast_before_validation, request_validation_not_loosened
  */
 class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
 {
     /**
      * 요청을 해석하고 검증 통과 데이터를 반환합니다.
+     *
+     * @param  array  $payload  설정 저장 요청 본문
+     * @return StoreEcommerceSettingsRequest 검증을 마친 설정 저장 요청
      */
     private function resolve(array $payload): StoreEcommerceSettingsRequest
     {
@@ -33,7 +34,11 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     }
 
     /**
+     * 숫자 문자열 '5' 로 보낸 자동취소 일수가 검증 통과 데이터에서 정수 5 로 캐스트되는지 확인한다.
+     *
      * @effects request_numeric_fields_cast_before_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_cancel_days_string_is_cast_to_int(): void
     {
@@ -49,6 +54,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
      * 취소 가능 상태가 validatedSettings에서 사라지지 않고 저장 계층까지 전달됩니다.
      *
      * @effects cancel_status_values_survive_both_tab_validations
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_policy_survives_validation_for_both_settings_tabs(): void
     {
@@ -64,6 +71,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
      * 취소 완료 상태는 취소 정책으로 저장할 수 없습니다.
      *
      * @effects invalid_cancel_status_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_policy_rejects_invalid_order_statuses(): void
     {
@@ -72,7 +81,11 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     }
 
     /**
+     * 앞에 0 이 붙은 숫자 문자열 '05' 도 정수 5 로 캐스트되는지 확인한다.
+     *
      * @effects request_numeric_fields_cast_before_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_zero_padded_numeric_string_is_cast_to_int(): void
     {
@@ -85,7 +98,11 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     }
 
     /**
+     * 와일드카드 중첩 경로(마일리지 통화 규칙)의 숫자 필드도 정수와 실수로 캐스트되는지 확인한다.
+     *
      * @effects request_numeric_fields_cast_before_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_wildcard_nested_numeric_fields_are_cast(): void
     {
@@ -108,7 +125,11 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     }
 
     /**
+     * 비숫자 문자열은 캐스트하지 않아 정수 검증이 그대로 실패하는지 확인한다.
+     *
      * @effects request_validation_not_loosened
+     *
+     * @return void 반환값 없음
      */
     public function test_non_numeric_string_is_not_cast_and_still_fails_validation(): void
     {
@@ -121,7 +142,11 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     }
 
     /**
+     * 정수 필드에 소수 문자열을 보내면 캐스트로 통과시키지 않고 검증이 실패하는지 확인한다.
+     *
      * @effects request_validation_not_loosened
+     *
+     * @return void 반환값 없음
      */
     public function test_decimal_string_on_integer_field_still_fails_validation(): void
     {
@@ -135,7 +160,11 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     }
 
     /**
+     * 문자열 규칙 필드(사업자번호 앞자리 '012')는 숫자처럼 보여도 문자열 그대로 남는지 확인한다.
+     *
      * @effects request_validation_not_loosened
+     *
+     * @return void 반환값 없음
      */
     public function test_string_fields_are_not_converted_to_numbers(): void
     {
@@ -160,6 +189,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
      * 동작해 관리자가 본 것과 실제 동작이 어긋난다.
      *
      * @effects request_validation_not_loosened
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_auto_cancel_days_is_rejected(): void
     {
@@ -172,7 +203,11 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
     }
 
     /**
+     * 자동취소 일수를 null 로 보내면 조용히 저장되지 않고 검증 오류가 나는지 확인한다.
+     *
      * @effects request_validation_not_loosened
+     *
+     * @return void 반환값 없음
      */
     public function test_null_auto_cancel_days_is_rejected(): void
     {
@@ -190,6 +225,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
      * 필수는 "키가 왔을 때만" 적용되어야 한다.
      *
      * @effects request_validation_not_loosened
+     *
+     * @return void 반환값 없음
      */
     public function test_other_tab_save_is_not_blocked_by_auto_cancel_days_requirement(): void
     {
@@ -206,6 +243,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
      * 필수화가 정상 저장 흐름을 깨지 않아야 한다.
      *
      * @effects request_numeric_fields_cast_before_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_valid_value_passes_when_auto_cancel_disabled(): void
     {
@@ -222,6 +261,8 @@ class StoreEcommerceSettingsRequestNumericCastTest extends ModuleTestCase
      * 그 목록을 rules() 에서 파생해야 한다(하드코딩 열거 금지 — 드리프트 방지).
      *
      * @effects request_numeric_fields_cast_before_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_every_integer_rule_field_is_covered_by_derived_casting(): void
     {

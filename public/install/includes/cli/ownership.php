@@ -10,7 +10,6 @@
  * 설치 계획 서명(installer_plan_signature)·DROP 직전 재검증(installer_plan_verify)은 owner_hash 를 그대로 쓰므로
  * 웹과 같은 검증을 통과한다.
  */
-
 if (! defined('G7_CLI_HEARTBEAT_ACTIVE_SECONDS')) {
     // 웹 워커가 이 시간 안에 심장박동했으면 활동 중으로 보고 넘겨받지 않는다 (acquireWorkerLock 판정과 같은 15초)
     define('G7_CLI_HEARTBEAT_ACTIVE_SECONDS', 15);
@@ -35,18 +34,19 @@ if (! function_exists('installer_state_owner_kind')) {
 
 if (! function_exists('installer_worker_recently_active')) {
     /**
-     * 설치 워커가 최근(15초 안)에 심장박동했는지.
+     * 설치 워커가 아직 살아 있는지 — 웹 워커 잠금 획득·상태 가드와 같은 판정(installerActiveWorkerIsAlive)을 쓴다.
+     *
+     * 점유자가 스스로 선언한 유효 시간(`worker_stale_after`)을 존중한다. 태스크 실행 중에는 심장박동을 갱신할 수 없어
+     * (in-process·subprocess 부팅은 600초, 단계별 실행은 180초) 15초 고정 판정은 살아 있는 웹 워커를 죽은 것으로 보고
+     * 넘겨받기·초기화를 허용한다. 시계가 뒤로 가 미래 시각이 된 심장박동은 믿을 수 없는 값이라 stale 로 본다.
+     * 선언이 없는 옛 state 는 G7_CLI_HEARTBEAT_ACTIVE_SECONDS(acquireWorkerLock 기본값과 같은 15초)로 떨어진다.
      *
      * @param  array<string, mixed>  $state  인스톨러 state
-     * @param  int|null  $now  기준 시각
      * @return bool 활동 중이면 true
      */
-    function installer_worker_recently_active(array $state, ?int $now = null): bool
+    function installer_worker_recently_active(array $state): bool
     {
-        $now ??= time();
-
-        return ($state['active_worker_id'] ?? null) !== null
-            && ($now - (int) ($state['last_heartbeat'] ?? 0)) < G7_CLI_HEARTBEAT_ACTIVE_SECONDS;
+        return installerActiveWorkerIsAlive($state, G7_CLI_HEARTBEAT_ACTIVE_SECONDS);
     }
 }
 
@@ -111,8 +111,10 @@ if (! function_exists('g7_cli_acquire_process_lock')) {
             return null;
         }
 
+        // 잠금은 flock 이 소유한다 — 파일 안의 프로세스 번호는 사람이 보는 참고값이다. 프로세스 식별자 조회는 하드닝
+        // 프로필이 막을 수 있고 막히면 호출 자체가 Error 이므로, 조회할 수 없으면 비워 둔다.
         ftruncate($handle, 0);
-        fwrite($handle, (string) getmypid());
+        fwrite($handle, installerHasFunction('getmypid') ? (string) getmypid() : '');
         fflush($handle);
 
         return $handle;

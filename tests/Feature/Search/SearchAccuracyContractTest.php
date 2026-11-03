@@ -16,13 +16,6 @@ use Tests\TestCase;
  * 응답에 실어 보내야 한다. 세지 않은 값을 정확한 것처럼 말하지 않는다.
  *
  * @scenario pagination-accuracy-contract
- *
- * @effects exact_total_reports_exact,
- *          bounded_total_reports_at_least,
- *          bounded_total_hides_last_page,
- *          bounded_total_keeps_next,
- *          page_limit_rejects_abusive_page,
- *          search_message_switches_on_accuracy
  */
 class SearchAccuracyContractTest extends TestCase
 {
@@ -31,7 +24,11 @@ class SearchAccuracyContractTest extends TestCase
     /**
      * 상한 이하면 총 건수가 정확하고 마지막 페이지가 계산되는지 확인
      *
-     * @effects exact_total_reports_exact
+     * @scenario total_relation=exact, surface=core_repository
+     *
+     * @effects total_is_exact_under_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_exact_total_reports_exact_and_last_page(): void
     {
@@ -48,7 +45,11 @@ class SearchAccuracyContractTest extends TestCase
     /**
      * 상한 초과 시 하한으로 보고하고 마지막 페이지를 비우는지 확인
      *
-     * @effects bounded_total_reports_at_least, bounded_total_hides_last_page
+     * @scenario total_relation=at_least, surface=core_repository
+     *
+     * @effects total_reports_at_least_over_cap, last_page_is_null_when_total_truncated
+     *
+     * @return void 반환값 없음
      */
     public function test_bounded_total_reports_at_least_and_hides_last_page(): void
     {
@@ -65,7 +66,11 @@ class SearchAccuracyContractTest extends TestCase
     /**
      * 상한을 넘겨도 "다음" 이동이 끝까지 열려 있는지 확인
      *
-     * @effects bounded_total_keeps_next
+     * @scenario total_relation=at_least, navigation=offset_page_number, position=last
+     *
+     * @effects next_navigation_stays_open_when_total_truncated
+     *
+     * @return void 반환값 없음
      */
     public function test_bounded_total_keeps_next_navigation_open(): void
     {
@@ -95,7 +100,11 @@ class SearchAccuracyContractTest extends TestCase
     /**
      * 통합검색 응답이 정확도 메타를 함께 내보내는지 확인
      *
-     * @effects search_message_switches_on_accuracy
+     * @scenario total_relation=exact, surface=module_search
+     *
+     * @effects bounded_envelope_adds_accuracy_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_search_response_carries_accuracy_meta(): void
     {
@@ -118,7 +127,11 @@ class SearchAccuracyContractTest extends TestCase
      * 정상 탐색은 has_more_pages 로 열려 있고, 상한은 임의의 큰 페이지 번호를 직접
      * 던져 초대형 OFFSET 을 만드는 것만 막는다.
      *
-     * @effects page_limit_rejects_abusive_page
+     * @scenario navigation=offset_page_number, cap_source=settings, surface=module_search
+     *
+     * @effects page_number_upper_bound_is_enforced
+     *
+     * @return void 반환값 없음
      */
     public function test_page_number_upper_bound_is_enforced(): void
     {
@@ -135,6 +148,12 @@ class SearchAccuracyContractTest extends TestCase
 
     /**
      * 상한이 0 이면 무제한으로 해석되는지 확인
+     *
+     * @scenario cap_source=unlimited, total_relation=exact
+     *
+     * @effects zero_limit_means_unlimited, unlimited_cap_always_counts_exactly
+     *
+     * @return void 반환값 없음
      */
     public function test_zero_cap_means_unlimited(): void
     {

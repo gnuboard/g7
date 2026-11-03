@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 거절된 시작의 콜백 단계)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 거절된 시작의 콜백 단계)이 대부분이라 명목상이다.
 feature: sso_plugin_lifecycle
 description: |
   플러그인 선언과 생애주기 — 이음매 파일, 리스너 계약, 권한·역할·훅·설정 선언, 활성화·비활성·삭제의 메뉴 동기화, 표 스키마(collation, UNIQUE, CASCADE 없음, comment), 회원 탈퇴·삭제 정리, 모의 IdP 게이트와 명령.

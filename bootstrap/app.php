@@ -34,12 +34,14 @@ use App\Http\Middleware\RedirectToCanonicalPath;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Http\Middleware\RestrictIpAccess;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\RunScheduleOnVisit;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetTimezone;
 use App\Http\Middleware\StartApiSession;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\SyncBoostWithDebugMode;
 use App\Seo\SeoMiddleware;
+use App\Support\ExecutionEnvironment;
 use App\Support\TrustedHosts;
 use App\Support\UmaskHelper;
 use Illuminate\Auth\AuthenticationException;
@@ -51,6 +53,8 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 /*
 |--------------------------------------------------------------------------
@@ -149,6 +153,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // Gzip 압축 미들웨어 (웹서버 설정 없이 애플리케이션 레벨에서 압축)
         $middleware->append(GzipEncodeResponse::class);
+
+        // 방문 트리거 예약 실행 폴백 (기본 꺼짐 — D5). 인증을 요구하지 않으므로 전역
+        // 등록이 가능하고, 실행은 응답을 보낸 뒤(terminate)에만 일어난다. 설정이 꺼져
+        // 있으면 판정 한 번으로 끝나는 no-op 이다.
+        $middleware->append(RunScheduleOnVisit::class);
 
         // 방문자 통계 수집 제외 표식은 암호화하지 않는다.
         // 사용자 화면의 트래커가 `document.cookie` 로 이 값을 직접 읽고 보내기 전에 스스로
@@ -273,6 +282,29 @@ $app = Application::configure(basePath: dirname(__DIR__))
             }
         });
 
+        // API 경로의 검증 실패 → 항상 JSON 422 (브라우저 리다이렉트 금지).
+        //
+        // Laravel 기본 동작은 `expectsJson()` 이 false 이면 **이전 페이지로 리다이렉트**한다.
+        // 그런데 그 "이전 페이지" 는 `url()->previous()` 이고, 그 값의 출처는 요청의
+        // `Referer` 헤더다 — 즉 인증 없는 API 주소 하나로 **임의 외부 주소로 튕겨 보낼 수
+        // 있는 통로**가 된다. 자산 서빙 라우트에서는 그 조건이 일상적으로 성립한다:
+        // `<img src="/api/system/public-storage/…">` 는 `Accept: image/*` 로 오므로
+        // `expectsJson()` 이 false 이고, 경로 검증에 실패하면 302 가 나간다.
+        //
+        // 응답 형태 자체도 갈렸다 — 링크가 있는 서버의 정적 서빙은 같은 요청에 404 를 준다.
+        // 같은 라우트가 `Accept` 헤더에 따라 다른 종류의 응답을 내는 상태를 없앤다.
+        //
+        // 이 통로만 고치지 않는 이유는 형제 자산 라우트(템플릿·모듈·플러그인)가 전부 같은
+        // 구조이기 때문이다. 한 곳만 막으면 나머지가 그대로 우회로로 남는다 (제품 결정).
+        $exceptions->render(function (ValidationException $e, Request $request) {
+            if ($request->is('api/*') && ! $request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors' => $e->errors(),
+                ], $e->status);
+            }
+        });
+
         // IDV 정책 위반 → HTTP 428 (Precondition Required) + verification payload
         $exceptions->render(function (IdentityVerificationRequiredException $e, Request $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
@@ -290,6 +322,42 @@ $app = Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => $e->getMessage(),
                 ], 403);
+            }
+        });
+
+        // `api/*` 의 HTTP 예외(`abort(404)`·`abort(403)`·`abort(429)` 등) → 항상 JSON.
+        //
+        // 위 검증 실패 렌더러와 같은 사유다. 파일 서빙 헬퍼(`fileResponse()`)는 판정과 서빙
+        // 사이에 파일이 사라지면 `abort(404)`, 읽을 수 없으면 `abort(403)` 을 던지는데, 그
+        // 요청은 `<img src>` 라 `Accept: image/*` 로 온다 — 프레임워크 기본값은 그 요청에
+        // **HTML 오류 페이지**를 돌려준다. 같은 라우트가 `Accept` 헤더에 따라 JSON 과 HTML 을
+        // 갈라 내는 상태이고, 링크가 되는 서버의 정적 서빙(빈 본문 404)과도 갈린다. 형제
+        // 렌더러 다섯이 전부 `expectsJson() || is('api/*')` 로 JSON 을 고정하는데 이 종류만
+        // 빠져 있었다 (16차 G3 라운드 E-9).
+        //
+        // 조건은 `expectsJson() || is('api/*')` 다 — 종전의 `is('api/*') && !expectsJson()`
+        // 은 XHR(`Accept: application/json`) 요청을 이 렌더러 밖으로 흘려, 프레임워크 기본값이
+        // 본문 없는 HTTP 예외를 `{"message":""}`(빈 문자열)로 돌려줬다. 그러면 같은 라우트가
+        // 요청의 `Accept` 에 따라 `{success,message}` 와 `{message:""}` 로 응답 형태가 갈린다.
+        // `api/*` 응답 형태 분기는 이 렌더러 한 곳이 소유한다 (17차 G3 라운드 B-6).
+        //
+        // 예외가 실은 헤더(`Retry-After` 등)는 그대로 승계한다 — 예: 레이트리밋(429) 이 봇에
+        // 재시도 간격을 알리는 통로다.
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                $status = $e->getStatusCode();
+                $message = $e->getMessage();
+
+                if ($message === '') {
+                    $message = trans()->has("errors.{$status}.message")
+                        ? __("errors.{$status}.message")
+                        : __('errors.500.message');
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], $status, $e->getHeaders());
             }
         });
 
@@ -339,6 +407,55 @@ $app = Application::configure(basePath: dirname(__DIR__))
     })->create();
 
 /*
+|--------------------------------------------------------------------------
+| Public Path 통일 (B-2)
+|--------------------------------------------------------------------------
+|
+| `public_path()` 오버라이드 지점을 여기 한 곳으로 통일해 CLI·웹·테스트가 같은 값을 본다.
+| 문서 루트 분리 배치처럼 public 디렉토리를 앱 루트 밖에 두는 레이아웃은 진입 파일이
+| `G7_PUBLIC_PATH` 상수를 정의하고, 그때만 이 자리가 값을 고정한다.
+|
+| **배포본의 어떤 파일도 이 상수를 정의하지 않는다** — 그 배치는 운영자가 자기 진입 파일을
+| 두는 형태이고, 이 자리는 그 진입 파일이 값을 넘길 통로다(같은 계열로 `public/index.php` 의
+| `G7_BASE_PATH` 가 있다). 정의처가 없다는 이유로 이 분기를 지우면 그 배치가 성립하지 않게
+| 되므로, 「죽은 코드」로 오해하지 않도록 여기 적어 둔다.
+|
+| 상수를 정의할 진입 파일이 없는 문맥(콘솔 `artisan`·테스트)도 **같은 값**을 볼 수 있어야
+| 한다. 그 통로가 없으면 문서 루트 분리 배치에서 웹은 운영자의 public 디렉토리를 보고
+| 콘솔은 앱 루트의 `public/` 을 봐, `storage:link` 복구처럼 두 문맥이 함께 쓰는 코드가
+| 서로 다른 트리를 대상으로 돈다(오류 없이 링크만 엉뚱한 곳에 생긴다). 그래서 상수가
+| 없으면 같은 이름의 **프로세스 환경변수**를 읽는다 — 판정 지점은 여전히 이 한 곳이다.
+| 값의 우선순위는 상수 > 환경변수이고, 둘 다 없으면 종전대로 아무것도 걸지 않는다.
+| `.env` 는 이 시점에 아직 로드되지 않으므로(프레임워크 부팅 이후다) 셸·서버 환경변수로
+| 전달해야 한다.
+|
+| 상수가 없는 기본 배치에서는 **아무것도 걸지 않는다.** `usePublicPath()` 가 담은 값은
+| 절대경로로 저장되어 이후 `setBasePath()` 에 반응하지 않는다(Laravel `publicPath()` 는
+| 저장된 값을 우선한다). 기본값으로라도 채워 두면 앱 루트를 갈아 끼우는 지점에서
+| `storage_path()` 만 따라가고 `public_path()` 는 실 저장소를 가리켜, `public/storage`
+| 복구처럼 두 경로를 함께 쓰는 코드가 서로 다른 트리를 대상으로 돈다.
+|
+*/
+$g7PublicPath = null;
+
+if (defined('G7_PUBLIC_PATH')) {
+    $g7PublicPath = G7_PUBLIC_PATH;
+} elseif (isset($_SERVER['G7_PUBLIC_PATH'])) {
+    // 웹서버가 넘긴 환경변수(`SetEnv`·`fastcgi_param`)는 SAPI 에 따라 `getenv()` 가 아니라
+    // 여기에만 실린다.
+    $g7PublicPath = $_SERVER['G7_PUBLIC_PATH'];
+} elseif (ExecutionEnvironment::hasFunction('getenv')) {
+    // 셸 환경변수(콘솔·크론)는 `variables_order` 설정에 따라 `$_ENV` 가 비어 있을 수 있어
+    // `getenv()` 로 읽는다. 그 함수를 막은 호스팅에서는 이 통로를 건너뛴다 (가드 SSoT 경유).
+    $g7PublicPath = getenv('G7_PUBLIC_PATH');
+}
+
+if (is_string($g7PublicPath) && trim($g7PublicPath) !== '') {
+    $app->usePublicPath(rtrim(trim($g7PublicPath), '/\\'));
+}
+
+/*
+|--------------------------------------------------------------------------
 | Core Update: Stale Package Manifest Self-Heal — 코어 업데이트 트리 안에서 부팅하는 프로세스
 | (core:update 부모, G7_UPDATE_IN_PROGRESS=1 을 물려받은 spawn 자식, 그 안의 config:cache/route:cache
 | 일회용 앱)는 bootstrap/cache/packages.php · services.php 를 비우고 부팅한다. Laravel 은 두 파일이
@@ -353,6 +470,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
 | 쿼리스트링을 '+' 로 쪼갠 값으로 채우므로(`GET /?x+core:update` → argv[1] === 'core:update'), 이 게이트가
 | 없으면 비인증 웹 요청이 요청마다 매니페스트를 지우고 다시 만들게 한다. env 플래그 채널은 웹 요청으로
 | 주입할 수 없어 그대로 두며, 웹 요청 안에서 시작하는 업데이트 흐름은 그 플래그를 프로세스 안에서 세운다.
+| `getenv` 는 `??` 사슬의 꼬리라 정상 요청마다 도달한다 — 그 함수를 막은 호스팅에서는 PHP 8 이 함수
+| 테이블에서 제거해 호출이 치명 오류가 되므로 순수 PHP `function_exists` 로 가린다. 이 블록은 App\ 클래스를
+| 참조하지 않는 규칙이라 `ExecutionEnvironment::hasFunction()` 을 부르지 않는다 — PHP 8 은 차단 함수를
+| 등록하지 않으므로 두 판정은 같다(위 Public Path 블록은 부팅 뒤에도 도는 앱 코드라 SSoT 를 경유한다).
 |
 | Core Update: APP_VERSION 정합 — 같은 조건 안에서 프로세스 env 의 APP_VERSION 을 디스크 `.env` 값으로 올린다
 | (bootstrap/g7-update-env.php). 7.0.0~7.0.10 부모는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 두므로, 그 env 를
@@ -360,7 +481,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
 | 프로세스가 확장을 자동 비활성화했다(#145, #137). 옛 부모 코드는 고칠 수 없지만 config:cache 는 어느 프로세스에서
 | 돌든 이 파일을 디스크에서 새로 require 하므로, 여기가 옛 부모 안과 모든 자식을 한 번에 덮는 유일한 지점이다.
 */
-$g7UpdateFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
+$g7UpdateFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
+    ?? (function_exists('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false);
 $g7UpdateArgv = in_array(PHP_SAPI, ['cli', 'phpdbg'], true) ? ($_SERVER['argv'][1] ?? '') : '';
 
 if ($g7UpdateFlag === '1' || $g7UpdateFlag === 1 || $g7UpdateFlag === true

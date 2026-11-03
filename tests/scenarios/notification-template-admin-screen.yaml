@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축(편집 축 × 계층)의 조합마다 테스트를 두지 않는다 — 각 축의 계약은 "서버가 정하고 화면이
 #   읽는다" 하나이고, 계층마다 그 계약의 자기 몫을 한 테스트가 본다. effects 축은 면제하지 않는다.
 feature: notification_template_admin_screen

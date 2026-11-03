@@ -19,8 +19,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * 선택 셀렉트를 그렸다. 백필은 자기 접두사 수단만, 멱등하게 현재 선언과 일치시킨다.
  *
  * @scenario method_kind=extension, capability_declared=declared, capability=pg_locked
- *
- * @effects upgrade_step_backfills_settings_file, saved_null_pg_provider_self_healed
  */
 #[Group('payment')]
 #[Group('upgrade')]
@@ -69,7 +67,9 @@ class BackfillTossPgProviderTest extends PluginTestCase
     /**
      * 토스 결제수단 설정에 PG 선언을 채워 넣는다.
      *
-     * @effects backfills_pg_declaration_for_toss_methods
+     * @effects backfills_pg_declaration_for_toss_methods,
+     *   upgrade_step_backfills_settings_file,
+     *   saved_null_pg_provider_self_healed
      *
      * @return void 반환값 없음
      */

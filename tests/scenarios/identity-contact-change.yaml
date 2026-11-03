@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#736 |
 #   진입 경로 × 바뀐 항목 × 본인인증 상태 × 행위자 조합 중 성립하는 것만 각 테스트가 메서드 안에서 직접 돌린다
 #   (관리자는 정책 적용 대상이 아니라 본인인증 상태 축이 의미가 없고, 회원 수정 화면은 관리자만 쓴다). effects·test_files 는 계속 검사한다.
 

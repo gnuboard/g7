@@ -150,7 +150,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `1023`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `1027`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
@@ -304,6 +304,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_filter.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_identity_logs/_partial_filter.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_notification_log_list/_partial_filter.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_advanced.json",
     ],
     "old": {
       "DataBindingEngine.isBaseExpression": false,

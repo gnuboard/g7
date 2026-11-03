@@ -2,6 +2,7 @@
 
 namespace App\Extension\Vendor;
 
+use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,17 +26,24 @@ class EnvironmentDetector
     /**
      * proc_open() 함수 사용 가능 여부.
      *
+     * 판정은 ExecutionEnvironment::hasFunction 이 SSoT — 인스톨러 게이트·실행 모드
+     * 해석기와 같은 판정을 공유한다 (동일 로직 이중화 금지).
+     *
      * @return bool proc_open 호출 가능 여부 (disable_functions 차단 시 false)
      */
     public function hasProcOpen(): bool
     {
-        if (! function_exists('proc_open')) {
-            return false;
-        }
+        return ExecutionEnvironment::hasFunction('proc_open');
+    }
 
-        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
-
-        return ! in_array('proc_open', $disabled, true);
+    /**
+     * exec() 함수 사용 가능 여부.
+     *
+     * @return bool exec 호출 가능 여부 (disable_functions 차단 시 false)
+     */
+    public function hasExec(): bool
+    {
+        return ExecutionEnvironment::hasFunction('exec');
     }
 
     /**
@@ -45,13 +53,21 @@ class EnvironmentDetector
      */
     public function hasShellExec(): bool
     {
-        if (! function_exists('shell_exec')) {
-            return false;
-        }
+        return ExecutionEnvironment::hasFunction('shell_exec');
+    }
 
-        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
-
-        return ! in_array('shell_exec', $disabled, true);
+    /**
+     * PHP 바이너리 실행 probe.
+     *
+     * 실행 모드(축 A) 판정용 — 실제로 `{binary} --version` 을 실행해 본다.
+     * 판정 본체는 ExecutionEnvironment::probePhpBinary 가 SSoT.
+     *
+     * @param  string  $binary  probe 대상 PHP 바이너리 경로
+     * @return array{status: string, version: string|null, message: string} status 는 'valid'|'invalid'|'unavailable'
+     */
+    public function probePhpBinary(string $binary = 'php'): array
+    {
+        return ExecutionEnvironment::probePhpBinary($binary);
     }
 
     /**
@@ -83,7 +99,9 @@ class EnvironmentDetector
             $hint,
             config('process.composer_binary'),
             $_ENV['COMPOSER_BINARY'] ?? null,
-            getenv('COMPOSER_BINARY') ?: null,
+            // 배열 리터럴은 앞 항이 값을 내도 **모든 항이 평가된다** — `??` 사슬이 아니므로
+            // 앞의 후보가 있다고 이 호출이 건너뛰어지지 않는다 (#609 D34).
+            ExecutionEnvironment::hasFunction('getenv') ? (getenv('COMPOSER_BINARY') ?: null) : null,
         ]);
 
         foreach ($candidates as $candidate) {
@@ -220,6 +238,8 @@ class EnvironmentDetector
 
     /**
      * 캐시 초기화 (테스트용).
+     *
+     * @return void 반환값 없음
      */
     public function resetCache(): void
     {
@@ -240,7 +260,9 @@ class EnvironmentDetector
      */
     public static function buildComposerEnv(): array
     {
-        $current = getenv();
+        // `getenv` 가 막힌 호스팅에서는 현재 환경을 `$_SERVER` 로 대신 읽는다 — 여기서
+        // 죽으면 composer 실행 자체가 아니라 **환경 조립**에서 요청이 끝난다 (#609 D34).
+        $current = ExecutionEnvironment::hasFunction('getenv') ? getenv() : ($_SERVER ?? []);
         if (! is_array($current)) {
             $current = [];
         }
@@ -287,10 +309,13 @@ class EnvironmentDetector
      * 를 일으키므로 보조 신호로만 쓴다. stat 통과 후보가 있으면 우선 반환하고,
      * 그렇지 않은 경우 메타문자 없는 첫 후보를 반환해 canExecuteComposer 의
      * proc_open 결과로 최종 판정한다.
+     *
+     * @return string|null stat 통과 후보, 없으면 첫 후보 경로 (PATH 가 비어 있으면 null)
      */
     private function searchComposerInPath(): ?string
     {
-        $pathEnv = getenv('PATH') ?: ($_SERVER['PATH'] ?? '');
+        $pathEnv = (ExecutionEnvironment::hasFunction('getenv') ? getenv('PATH') : false)
+            ?: ($_SERVER['PATH'] ?? '');
         if (empty($pathEnv)) {
             return null;
         }
@@ -330,6 +355,9 @@ class EnvironmentDetector
      * stat (is_file) 의존을 제거해 open_basedir 환경의 false negative 를 피한다.
      * 단일 토큰의 셸 메타문자만 차단하고, 실제 실행 가능 여부는 canExecuteComposer
      * 의 proc_open 결과로 최종 판정한다.
+     *
+     * @param  string|null  $candidate  검사할 composer 경로 또는 명령 문자열
+     * @return bool 비어 있지 않고 셸 메타문자가 없으면 true (공백이 든 명령은 신뢰해 true)
      */
     private function isExecutableCandidate(?string $candidate): bool
     {

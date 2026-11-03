@@ -34,7 +34,7 @@ class EmailLookupCaseTest extends PluginTestCase
 
         foreach ((new Finder)->files()->in(dirname(__DIR__, 3).'/src')->name('*.php') as $file) {
             $scanned++;
-            foreach (preg_split('/\R/', $file->getContents()) ?: [] as $no => $line) {
+            foreach (preg_split('/\r\n|\r|\n/', $file->getContents()) ?: [] as $no => $line) {
                 if (preg_match('/->findByEmail\(/', $line) === 1) {
                     $exact[] = $file->getRelativePathname().':'.($no + 1);
                 }

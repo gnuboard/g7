@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축(수신자 × 신청번호 유무)의 조합마다 테스트를 두지 않는다 — 이 기능의 커버리지 단위는
 #   **알림 정의 전수 순회**이고, 한 테스트가 그 전수를 한 번에 돈다. effects 축은 면제하지
 #   않는다(선언한 부수효과는 전부 마킹으로 덮여야 한다).

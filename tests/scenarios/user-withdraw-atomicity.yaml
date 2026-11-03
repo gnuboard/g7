@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
 #   검출되지 않는다(다른 시나리오와 동일 한계). 축 조합은 PHPUnit Feature 테스트
 #   (WithdrawAtomicityTest · AdminWithdrawPathUnificationTest · MultiStepWriteAtomicityTest)와
@@ -64,6 +65,16 @@ effects:
   - admin_form_cancel_leaves_user_untouched
   - admin_form_non_withdraw_status_saves_without_dialog
   - create_mode_hides_withdrawn_option
+  - admin_status_change_keeps_other_field_updates   # 단건 탈퇴 전환과 같은 요청의 다른 필드 갱신도 반영된다
+  - bulk_status_response_shape_is_consistent   # 탈퇴가 아닌 일괄 상태 변경도 updated/failed/failed_reasons 형태를 유지한다
+  - bulk_status_failed_reasons_safe_for_message_params   # 일괄 탈퇴 실패 사유에 문구 파라미터 구분자(| & =)가 섞이지 않는다
+  - bulk_status_non_withdraw_keeps_previous_behaviour   # 탈퇴 외 상태의 일괄 변경은 상태만 바꾸고 익명화하지 않는다
+  - role_delete_rolls_back_relations   # 역할 삭제의 마지막 쓰기 실패 시 사용자 연결이 복구된다
+  - register_rolls_back_user_on_failure   # 가입 중간 실패 시 이메일을 점유한 계정이 남지 않는다
+  - reset_password_rolls_back_when_token_delete_fails   # 토큰 삭제 실패 시 바뀐 비밀번호도 되돌아가고 토큰이 남는다
+  - attachment_file_kept_when_db_delete_fails   # 첨부 DB 삭제 실패 시 저장소 파일이 남는다
+  - schedule_delete_rolls_back_histories   # 스케줄 삭제 실패 시 실행 이력이 복구된다
+  - menu_delete_rolls_back_role_links   # 메뉴 삭제 실패 시 역할 연결이 복구된다
 
 test_files:
   - tests/Feature/Api/Auth/WithdrawAtomicityTest.php

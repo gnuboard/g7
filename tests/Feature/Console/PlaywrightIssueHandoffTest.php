@@ -63,7 +63,7 @@ class PlaywrightIssueHandoffTest extends TestCase
      */
     private function ticketFrom(string $output): array
     {
-        $line = collect(preg_split('/\R/', trim($output)))->last(fn (string $l) => str_starts_with(trim($l), '{'));
+        $line = collect(preg_split('/\r\n|\r|\n/', trim($output)))->last(fn (string $l) => str_starts_with(trim($l), '{'));
         $this->assertNotNull($line, $output);
 
         return json_decode((string) $line, true);

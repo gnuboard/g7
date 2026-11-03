@@ -12,22 +12,21 @@
 > 내보내기(`exports.md`, 12엔드포인트 — 일회용 파일 주소 포함) 행과 그 증분도 같은 이유로 손으로 넣었습니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 37 · **엔드포인트 수**: 260
+- **문서 수**: 41 · **엔드포인트 수**: 326
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
 | [addresses.md](addresses.md) | `addresses` | 6 |
-| [admin-claims.md](admin-claims.md) | `admin-claims` | 17 |
 | [brands.md](brands.md) | `brands` | 6 |
 | [cart.md](cart.md) | `cart` | 11 |
 | [carts.md](carts.md) | `carts` | 3 |
 | [categories.md](categories.md) | `categories` | 14 |
 | [category-image.md](category-image.md) | `category-image` | 1 |
+| [checkout.md](checkout.md) | `checkout` | 5 |
 | [claim-image.md](claim-image.md) | `claim-image` | 1 |
 | [claim-payments.md](claim-payments.md) | `claim-payments` | 2 |
-| [checkout.md](checkout.md) | `checkout` | 5 |
 | [claim-reasons.md](claim-reasons.md) | `claim-reasons` | 8 |
-| [claims.md](claims.md) | `claims` | 5 |
+| [claims.md](claims.md) | `claims` | 27 |
 | [coupons.md](coupons.md) | `coupons` | 4 |
 | [currency.md](currency.md) | `currency` | 2 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
@@ -35,11 +34,11 @@
 | [extra-fee-templates.md](extra-fee-templates.md) | `extra-fee-templates` | 10 |
 | [guest.md](guest.md) | `guest` | 20 |
 | [identity-policies.md](identity-policies.md) | `identity-policies` | 4 |
-| [inquiries.md](inquiries.md) | `inquiries` | 10 |
+| [inquiries.md](inquiries.md) | `inquiries` | 12 |
 | [mileage.md](mileage.md) | `mileage` | 3 |
 | [mileage-transactions.md](mileage-transactions.md) | `mileage-transactions` | 5 |
 | [options.md](options.md) | `options` | 3 |
-| [orders.md](orders.md) | `orders` | 34 |
+| [orders.md](orders.md) | `orders` | 41 |
 | [payments.md](payments.md) | `payments` | 1 |
 | [presets.md](presets.md) | `presets` | 4 |
 | [product-common-infos.md](product-common-infos.md) | `product-common-infos` | 6 |
@@ -50,10 +49,10 @@
 | [promotion-coupons.md](promotion-coupons.md) | `promotion-coupons` | 9 |
 | [review-image.md](review-image.md) | `review-image` | 1 |
 | [reviews.md](reviews.md) | `reviews` | 12 |
-| [settings.md](settings.md) | `settings` | 10 |
+| [settings.md](settings.md) | `settings` | 11 |
 | [shipping-carriers.md](shipping-carriers.md) | `shipping-carriers` | 7 |
 | [shipping-country.md](shipping-country.md) | `shipping-country` | 2 |
-| [shipping-policies.md](shipping-policies.md) | `shipping-policies` | 11 |
+| [shipping-policies.md](shipping-policies.md) | `shipping-policies` | 13 |
 | [user-addresses.md](user-addresses.md) | `user-addresses` | 3 |
 | [users.md](users.md) | `users` | 2 |
 | [wishlist.md](wishlist.md) | `wishlist` | 3 |

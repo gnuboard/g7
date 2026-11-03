@@ -15,7 +15,7 @@
  *  - 이미 귀속된 첨부를 그 자리에서 지우면 저장을 취소하고 나가도 첨부만 영구히 사라진다.
  *  - 저장 페이로드에 품목·수량·교환 대상을 실으면 바꾸지 않은 축이 "바뀐 것" 으로 처리된다.
  *
- * @scenario claim_type=exchange, charge_method=pay_on_request, refund_branch=none
+ * 축 요약(마커 아님 — 평문): claim_type=exchange, charge_method=pay_on_request, refund_branch=none
  * @effects claim_edit_route_resolves_number_by_position,
  *   claim_edit_order_404_is_a_normal_path,
  *   claim_edit_seeds_items_from_the_claim,

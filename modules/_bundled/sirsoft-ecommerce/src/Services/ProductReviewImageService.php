@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -28,6 +29,7 @@ class ProductReviewImageService
 {
     use ResolvesRowStorage;
     use ResolvesStoredExtension;
+    use ServesImageWithRowValidators;
 
     /**
      * ProductReviewImageService 생성자
@@ -74,6 +76,14 @@ class ProductReviewImageService
 
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
+
+        // 축소는 **같은 경로를 제자리에서 갈아 끼운다.** 그 과정이 `is_file()` 로 그 경로를
+        // stat 하므로 PHP 공유 stat 캐시가 채워지고, 뒤따르는 `getSize()` 는 그 캐시를 그대로
+        // 읽어 **축소 전 크기**를 돌려준다. `getimagesize()` 는 파일을 직접 읽으므로
+        // width/height 만 축소본을 가리키고 크기만 어긋난다 — 한 행의 두 값이 서로 다른
+        // 파일을 가리키는 상태다. 형제 넷(코어 2 · 게시판 · 페이지)은 같은 사유로 이미 이
+        // 처리를 갖는다 (12차 G3 라운드 D3 — 11차가 형제 절반에만 적용했다).
+        clearstatcache(true, $file->getRealPath());
 
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
@@ -156,19 +166,33 @@ class ProductReviewImageService
     }
 
     /**
-     * 이미지 다운로드 응답 생성
+     * 이미지 다운로드 응답 생성 (하위호환 표면)
      *
-     * $signatureVerified 는 요청 URL 의 한시 서명이 검증된 경우다 — 서명은
-     * 숨김 리뷰 게이트(관리자 권한 미들웨어)를 통과한 응답 직렬화
-     * (ProductReviewResource)만 발급하므로, 검증된 서명은 그 게이트 통과 자격의
-     * 위임으로 보고 상태 게이트를 재적용하지 않는다 (<img> 는 인증 헤더를 실을 수
-     * 없는 렌더 경로).
+     * 캐시 계약(검증자·304)은 이 스트림에 실리지 않는다 — `getFileInfo()` 가 돌려주는 메타를
+     * 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 넘겨 입힌다. 이 메서드는 그
+     * 정보의 `response` 만 돌려준다.
      *
-     * @param  string  $hash  이미지 해시 (12자)
-     * @param  bool  $signatureVerified  한시 서명 검증 통과 여부
-     * @return StreamedResponse|null 다운로드 응답 (없으면 null)
+     * @param  string  $hash  이미지 해시
+     * @param  bool  $signatureVerified  유효 서명 URL 로 접근했는가 (숨김 리뷰 이미지의 한시 허용)
+     * @return StreamedResponse|null 이미지 스트림 또는 null
      */
     public function download(string $hash, bool $signatureVerified = false): ?StreamedResponse
+    {
+        return $this->getFileInfo($hash, $signatureVerified)['response'] ?? null;
+    }
+
+    /**
+     * 이미지 서빙 정보 조회 (스트림 + 검증자 메타)
+     *
+     * 캐싱 헤더·검증자 비교·304 는 코어 단일 지점이 만든다 — 이 서비스는 코어 형제
+     * (`App\Services\AttachmentService::getFileInfo()`)와 같은 형태의 서빙 정보만 돌려준다
+     * (14차 G3 라운드).
+     *
+     * @param  string  $hash  이미지 해시
+     * @param  bool  $signatureVerified  유효 서명 URL 로 접근했는가 (숨김 리뷰 이미지의 한시 허용)
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, max_age: int}|null 서빙 정보 또는 null
+     */
+    public function getFileInfo(string $hash, bool $signatureVerified = false): ?array
     {
         $image = $this->findByHash($hash);
 
@@ -188,17 +212,11 @@ class ProductReviewImageService
             return null;
         }
 
-        $response = $this->storageForRow($image->disk)->response(
-            'images',
-            $image->path,
-            $image->original_filename,
-            [
-                'Content-Type' => $image->mime_type,
-                'Cache-Control' => 'public, max-age=31536000',
-            ]
-        );
+        // 서빙 정보(스트림 + 검증자 메타)는 `ServesImageWithRowValidators` 단일 지점이 만든다
+        // (형제 두 이미지 서비스와 같은 계약 — 11차 G3 라운드 B11-12 · 14차 코어 지점 경유).
+        $info = $this->imageServeInfo($image);
 
-        if (! $response) {
+        if (! $info) {
             Log::error('리뷰 이미지 스토리지에 없음', [
                 'review_image_id' => $image->id,
                 'path' => $image->path,
@@ -207,9 +225,11 @@ class ProductReviewImageService
             return null;
         }
 
-        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
-        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
+        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366).
+        // 서빙 정보의 스트림에 굳혀 두면 코어 지점(`streamedFileResponseFromMeta()`)이 같은 응답 객체에
+        // 캐시 계약을 더해 내보낸다.
+        InlineMediaPolicy::harden($info['response'], $image->mime_type, $image->original_filename);
 
-        return $response;
+        return $info;
     }
 }

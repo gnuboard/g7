@@ -8,6 +8,7 @@ use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
+use App\Execution\SubprocessCommandRunner;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Custom\CustomPackageConflictChecker;
 use App\Extension\Custom\CustomUpdatePreflight;
@@ -26,6 +27,7 @@ use App\Services\Core\PhpRequirementPreflight;
 use App\Services\CoreUpdateService;
 use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use App\Support\HookCacheFreshProcess;
 use App\Support\PackageManifestCacheHelper;
 use App\Support\RouteCacheHelper;
@@ -73,13 +75,53 @@ class CoreUpdateCommand extends Command
      */
     public function handle(CoreUpdateService $service): int
     {
+        // 같은 디스크를 동시에 바꾸는 두 실행은 서로의 백업을 파괴한다 — 한쪽이 이미
+        // 신 버전으로 바꾼 디스크를 다른 쪽이 「업데이트 이전 스냅샷」이라며 백업하고,
+        // 먼저 끝난 쪽이 아직 쓰고 있는 백업을 지운다. 그 뒤 남은 쪽이 실패하면 되돌릴
+        // 것이 없다. 본문에 반환 지점이 여럿이라 `finally` 로 해제를 보장한다
+        // (제품 결정 2026-08-26).
+        if (! $service->acquireRunLock()) {
+            $this->error((string) __('settings.core_update.already_running'));
+
+            return Command::FAILURE;
+        }
+
+        // 잠금을 **쓸 수 없어** 보호 없이 진행하는 경우가 있다(읽기 전용 storage 등).
+        // 그 경로는 `true` 를 돌려주므로 위 분기로는 구분되지 않고, 종전에는 사유가
+        // 로그 파일에만 남아 운영자 화면에 아무 표시가 없었다 — 두 창에서 동시에 눌러
+        // 백업이 서로 파괴되는 상태(잠금을 넣은 바로 그 사유)가 무경고로 재현된다.
+        foreach (CoreUpdateService::takeRunLockWarnings() as $warning) {
+            $this->warn('⚠ '.$warning);
+        }
+
+        try {
+            return $this->runUpdate($service);
+        } finally {
+            $service->releaseRunLock();
+        }
+    }
+
+    /**
+     * 코어 업데이트 본문을 실행합니다 (잠금은 `handle()` 이 보유).
+     *
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스
+     * @return int 종료 코드
+     */
+    protected function runUpdate(CoreUpdateService $service): int
+    {
         // 코어 업데이트 진행 플래그: 업데이트 중에는 일시적 버전 불일치로 인한 자동 비활성화를
         // 차단해야 한다 (CoreServiceProvider::validateAndDeactivateIncompatibleExtensions 및
         // spawn 자식이 모두 이 플래그를 감지). 커맨드 종료 시 프로세스 env 도 함께 소멸하므로
         // 정리 로직 불필요.
         $_ENV['G7_UPDATE_IN_PROGRESS'] = '1';
         $_SERVER['G7_UPDATE_IN_PROGRESS'] = '1';
-        putenv('G7_UPDATE_IN_PROGRESS=1');
+
+        // `putenv` 는 하드닝 프로필의 표준 차단 대상이다. 막힌 환경에서 무가드로 부르면
+        // 업데이트가 시작하자마자 `Error` 로 죽는다 — 위 두 줄이 이미 같은 사실을 심었고
+        // 소비처(`CoreServiceProvider::isCoreUpdateInProgress`)도 그 둘을 먼저 본다 (#609 D34).
+        if (ExecutionEnvironment::hasFunction('putenv')) {
+            putenv('G7_UPDATE_IN_PROGRESS=1');
+        }
 
         $backupPath = null;
         $maintenanceEnabled = false;
@@ -619,8 +661,11 @@ class CoreUpdateCommand extends Command
                 $log('코어 파일 덮어쓰기 시작 (백업 부재 — 전체 덮어쓰기로 회귀)');
             }
 
-            $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList, skipPaths: $bundledSkipPaths);
+            // 반환값이 계약이다 — 게터(`getLastRootFileWarnings()`)는 예외 경로(아래 catch)처럼
+            // 반환값을 손에 쥘 수 없는 자리의 편의다 (G3 회차 16 W2 C-6).
+            $applyResult = $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList, skipPaths: $bundledSkipPaths);
             $log(sprintf('코어 파일 적용 완료 (미배치 공식 번들 %d개 건너뜀)', count($bundledSkipPaths)));
+            $this->surfaceWarnings($applyResult['root_file_warnings'], $log);
 
             // 미배치 공식 번들 기록 — 관리자 목록 안내와 core:bundled-sources 의 근거. 롤백 시 이전 기록으로 되돌린다.
             $bundledRecordBackup = is_file($planner->recordPath()) ? (string) file_get_contents($planner->recordPath()) : null;
@@ -741,6 +786,7 @@ class CoreUpdateCommand extends Command
             // 경우에도, 첫 요청부터 `/storage/...` 가 200 을 반환하도록 링크를 재생성한다.
             StorageLinkHelper::ensurePublicStorageLink();
             $log('public/storage symlink 확인/복구 완료');
+            $this->surfaceDocrootExposureWarnings($log);
 
             $service->cleanupPending($pendingPath);
 
@@ -895,6 +941,15 @@ class CoreUpdateCommand extends Command
             } catch (\Throwable $cleanupError) {
                 $log("핸드오프 cleanup 중 오류: {$cleanupError->getMessage()}");
                 $this->warn(__('settings.core_update.console.handoff_cleanup_failed', ['error' => $cleanupError->getMessage()]));
+            } finally {
+                // 배수는 **cleanup 성패와 무관**해야 한다. 이 시점의 버퍼에는 spawn 자식이
+                // `[DOCROOT_EXPOSURE]` 라인으로 실어 보낸 통보가 이미 담겨 있는데, 배수를
+                // try 안에 두면 그 앞의 어느 단계(버전 갱신·캐시 정리·소유권 복원·링크
+                // 복구)가 던지는 순간 「공개 파일 전량 사본이 지금 웹에서 열린다」가
+                // 콘솔·업데이트 기록 **양쪽에서** 사라진다 — 접두사를 모르는 구버전 부모가
+                // 원시 라인을 그대로 중계하던 것보다 못한 상태다. 형제 실패 경로(바깥
+                // `\Throwable` catch)는 이미 같은 이유로 배수 지점을 갖는다.
+                $this->surfaceDocrootExposureWarnings($log);
             }
 
             $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, true);
@@ -931,6 +986,20 @@ class CoreUpdateCommand extends Command
 
             $log("오류 발생: {$e->getMessage()}");
 
+            // 복원 **이전**에 한 번 비운다. 이 실행에서 이미 판정된 루트 진입·보호
+            // 파일 결과는 그 자체로 운영자가 알아야 할 사실이고, `restoreFromBackup()` 은
+            // 경고 버퍼를 비우므로 그 뒤에만 출력하면 사라진다. 또 종전에는 이 출력이
+            // `if ($backupPath)` 블록 **안**에만 있어, `--no-backup` 으로 돈 실행은 롤백도
+            // 없는 부분 적용 상태가 남는데 그 사실이 통보에서만 빠졌다.
+            $this->surfaceRootFileWarnings($service, $log);
+
+            // 노출 통보도 같은 자리에서 낸다. 자식(`core:execute-upgrade-steps`)이 실어 보낸
+            // 것을 부모가 버퍼에 담아 두는데, 실패 경로에 배수 지점이 없으면 그 통보는
+            // 콘솔·업데이트 기록 **양쪽에서** 사라진다 — 접두사를 모르는 구버전 부모가
+            // 원시 라인을 그대로 중계하던 것보다 못한 상태가 된다. 롤백은 `public/storage`
+            // 를 다시 일반 디렉토리로 되돌릴 수 있는 바로 그 경로다.
+            $this->surfaceDocrootExposureWarnings($log);
+
             // 롤백
             $restoreSuccess = false;
             $failedTargets = [];
@@ -939,8 +1008,13 @@ class CoreUpdateCommand extends Command
                 $this->warn(__('settings.core_update.console.restoring_backup'));
                 $log('백업 복원 시작');
 
+                // 반환값이 계약이다 — 게터(`getLastRootFileWarnings()`)는 커맨드의 편의이고, 커맨드마저
+                // 게터만 쓰면 반환값 축은 소비처가 0 이라 조용히 죽는다 (G3 회차 16 W2 C-6).
+                $restoreResult = ['failed_targets' => [], 'root_file_warnings' => []];
+
                 try {
-                    $failedTargets = $service->restoreFromBackup($backupPath, $onProgress);
+                    $restoreResult = $service->restoreFromBackup($backupPath, $onProgress);
+                    $failedTargets = $restoreResult['failed_targets'];
 
                     if (empty($failedTargets)) {
                         $log('백업 복원 완료');
@@ -955,6 +1029,11 @@ class CoreUpdateCommand extends Command
                     $log("백업 복원 실패: {$restoreError->getMessage()}");
                     $this->error(__('settings.core_update.console.restore_failed', ['error' => $restoreError->getMessage()]));
                 }
+
+                // 되돌린 뒤 루트 진입·보호 파일이 사라졌다면 그 사실도 같은 통로로 출력한다.
+                // 업데이트 경로에만 배선이 있고 롤백 경로에는 없으면, 문서 루트가 프로젝트
+                // 루트인 사이트가 무방비가 된 사실이 로그 파일에만 남는다.
+                $this->surfaceWarnings($restoreResult['root_file_warnings'], $log);
 
                 // 롤백 직후 캐시 자동 정리 — 신 코드가 `bootstrap/cache/*.php` 에 cache 된 채로
                 // 남아 부팅 실패하는 회귀 차단. 운영자의 수동 `php artisan optimize:clear` 단계 제거.
@@ -1056,7 +1135,9 @@ class CoreUpdateCommand extends Command
      */
     private function spawnUpgradeStepsProcess(string $fromVersion, string $toVersion, bool $force, \Closure $log): bool
     {
-        if (! function_exists('proc_open')) {
+        // 가용성 판정은 SSoT 한 곳이 소유한다 — `function_exists` 만으로는 `disable_functions`
+        // 로 이름만 남겨 둔 호스팅을 구분하지 못한다 (#609 D34 이관 완료).
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return $this->failSpawnWithMode(
                 __('settings.core_update.console.spawn.proc_open_disabled'),
                 $log,
@@ -1111,7 +1192,11 @@ class CoreUpdateCommand extends Command
         //
         // APP_VERSION: Step 11 updateVersionInEnv 는 아직 실행 전이라 .env 는 fromVersion.
         // G7_UPDATE_IN_PROGRESS: CoreServiceProvider::validateAndDeactivate 가드가 참조.
-        $env = array_merge(getenv(), $_ENV, [
+        // `getenv` 자신도 하드닝 프로필이 막을 수 있다 — 그리고 이 자리는 `proc_open`
+        // 가드 **안쪽**이라 「proc_open 은 살아 있는데 getenv 만 막힌」 조합에서 그대로
+        // 치명 종료한다. 판정과 `$_SERVER` 폴백은 형제 러너가 SSoT 로 갖고 있다
+        // (7차 G3 라운드 D-8).
+        $env = array_merge(SubprocessCommandRunner::inheritedEnvironment(), [
             'APP_VERSION' => $toVersion,
             'G7_UPDATE_IN_PROGRESS' => '1',
         ]);
@@ -1185,6 +1270,26 @@ class CoreUpdateCommand extends Command
                     // 구조/값이 깨진 핸드오프 라인 — 정상 출력으로 간주해 그대로 전달
                     if (is_array($decoded)) {
                         $log('[spawn] 핸드오프 페이로드 검증 실패 — 정상 출력으로 처리: '.json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    }
+                }
+
+                // 자식이 만든 「공개 파일이 지금 웹에서 열린다」 통보. 이 버퍼는 **소비자만**
+                // 비우는데 그 소비자가 부모 프로세스에만 있어, 자식이 담은 통보는 자식 종료와
+                // 함께 폐기되고 `upgrade` 로그 파일에만 남았다 — 콘솔에도 업데이트 기록에도
+                // 도달하지 않았다. 자식이 이 라인으로 실어 보내고 부모가 자기 통보와 같은
+                // 통로로 낸다.
+                if (str_starts_with($trimmed, '[DOCROOT_EXPOSURE] ')) {
+                    $json = substr($trimmed, strlen('[DOCROOT_EXPOSURE] '));
+                    $decoded = json_decode($json, true);
+
+                    if (is_array($decoded) && isset($decoded['warnings']) && is_array($decoded['warnings'])) {
+                        foreach ($decoded['warnings'] as $warning) {
+                            if (is_string($warning) && $warning !== '') {
+                                StorageLinkHelper::recordDocrootExposureWarning($warning);
+                            }
+                        }
+
+                        continue;
                     }
                 }
 
@@ -1561,9 +1666,9 @@ class CoreUpdateCommand extends Command
      */
     private function saveUpdateLog(array $entries, string $fromVersion, string $toVersion, bool $success): void
     {
-        $timestamp = date('Ymd_His');
-        $status = $success ? 'success' : 'failed';
-        $logPath = storage_path("logs/core_update_{$status}_{$timestamp}.log");
+        // 이름은 생산자 단일 지점이 만든다 — 정리 주체(`StorageLeftoverPruneService`)가
+        // 같은 규칙을 읽어야 이 로그가 회수 모집단에 든다 (11차 G3 라운드 E11-4).
+        $logPath = CoreUpdateService::updateReportPath($success ? 'success' : 'failed');
 
         $header = implode("\n", [
             '=== 그누보드7 코어 업데이트 로그 ===',
@@ -1634,6 +1739,15 @@ class CoreUpdateCommand extends Command
         // 코어('upgrade-*.log') + 확장('extension-upgrade-*.log') 두 채널의 daily 로그를 모두
         // 정합한다. glob 'upgrade-*.log' 는 'extension-' 접두사 파일을 매칭하지 못하므로
         // 두 패턴을 각각 순회한다.
+        //
+        // `glob` 은 하드닝 프로필이 흔히 막는 이름이고, 이 커맨드는 무CLI 환경에서
+        // `InProcessCommandRunner` 로 **웹 요청 안에서** 실행된다 — 막힌 호스팅에서는
+        // 함수 테이블에 없어 `Error`(치명)이고 `?: []` 는 그것을 막지 못한다(false 만 받는다).
+        // 소유권 정합은 실패해도 업데이트 자체를 되돌릴 이유가 없으므로 조용히 건너뛴다.
+        if (! ExecutionEnvironment::hasFunction('glob')) {
+            return;
+        }
+
         foreach (['upgrade-*.log', 'extension-upgrade-*.log'] as $pattern) {
             foreach (glob($logsDir.DIRECTORY_SEPARATOR.$pattern) ?: [] as $logFile) {
                 FilePermissionHelper::inheritOwnershipFromParent($logFile);
@@ -1777,6 +1891,84 @@ class CoreUpdateCommand extends Command
         $account = FilePermissionHelper::describeWebServerAccount();
 
         return [$account['mode'], $account['name']];
+    }
+
+    /**
+     * `public/storage` 복구가 문서 루트 **안**에 공개 파일 사본을 남겼으면 운영자에게 알립니다.
+     *
+     * 그 상태는 「지금 웹에서 열린다」는 뜻이라 형제 축(루트 진입·보호 파일)과 같은 위험
+     * 등급이다. 종전에는 그 사실이 `upgrade` 로그 채널에만 남아, 콘솔에는 「확인/복구 완료」만
+     * 뜨고 운영자는 노출을 알 수 없었다.
+     *
+     * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
+     */
+    private function surfaceDocrootExposureWarnings(callable $log): void
+    {
+        $warnings = StorageLinkHelper::takeDocrootExposureWarnings();
+
+        if (empty($warnings)) {
+            return;
+        }
+
+        $this->newLine();
+        // 이 통로에는 등급이 다른 두 종류가 섞인다 — 「지금 웹에서 열린다」(웹 트리 안
+        // 폴백)와 「옮기는 데 성공했으니 확인 후 지워라」(정상 결과)다. 머리말이 전자를
+        // 단정하면 문서 루트가 `public/` 인 표준 배치(절대다수)에서 노출이 아닌 상태에
+        // 노출 경보가 뜬다. 형제 축(`surfaceRootFileWarnings`)이 같은 이유로 단정 대신
+        // 완화 표현을 쓴다 — 등급은 각 문구가 스스로 말한다.
+        $this->warn(__('settings.core_update.console.docroot_exposure_header'));
+        foreach ($warnings as $warning) {
+            $this->warn('  - '.$warning);
+            $log('[storage-link] '.$warning);
+        }
+        $this->newLine();
+    }
+
+    /**
+     * 루트 진입·보호 파일(`.htaccess`) 갱신 실패를 운영자에게 노출합니다.
+     *
+     * 이 갱신은 실패해도 업데이트를 세우지 않는다 — 다른 코어 파일은 이미 신 버전이라
+     * 여기서 중단하면 중간 상태가 남는다. 대신 **반드시 보이게** 한다: 종전에는 갱신기가
+     * 실패를 판정하고도 그 값을 호출부가 버려, 콘솔에는 「코어 파일 적용 완료」만 뜨고
+     * 보호 규칙은 구버전으로 남았다. `$log()` 로도 흘려 업데이트 기록에 남긴다 — 콘솔은
+     * 스크롤로 사라지지만 그 기록은 남는다 (3차 G3 라운드 H4).
+     *
+     * @param  CoreUpdateService  $service  경고를 누적한 서비스
+     * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
+     */
+    private function surfaceRootFileWarnings(CoreUpdateService $service, callable $log): void
+    {
+        // 예외 경로 전용 — 적용이 예외로 끊기면 반환값이 없어 게터로만 그 실행의 판정 결과를
+        // 되찾을 수 있다. 정상 경로·롤백 경로는 반환값(`root_file_warnings`)을 `surfaceWarnings()`
+        // 에 직접 넘긴다 (G3 회차 16 W2 C-6).
+        $this->surfaceWarnings($service->getLastRootFileWarnings(), $log);
+    }
+
+    /**
+     * 루트 진입·보호 파일 경고 목록을 콘솔과 업데이트 기록에 출력합니다.
+     *
+     * @param  list<string>  $warnings  `applyUpdate()`/`restoreFromBackup()` 반환값의 `root_file_warnings`
+     * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
+     */
+    private function surfaceWarnings(array $warnings, callable $log): void
+    {
+        if (empty($warnings)) {
+            return;
+        }
+
+        $this->newLine();
+        // 이 통로가 나르는 것은 실패만이 아니다 — 「마커가 없어 갱신하지 않았다」(코어 보호
+        // 규칙 미적용)와 「되돌린 뒤 파일이 없다」도 여기로 온다. 헤더가 실패만 말하면 그 둘이
+        // 실패로 읽히거나, 반대로 실패가 아니라는 이유로 이 통로에서 빠진다.
+        $this->warn(__('settings.core_update.console.root_files_header'));
+        foreach ($warnings as $warning) {
+            $this->warn('  - '.$warning);
+            $log('[root-files] '.$warning);
+        }
+        $this->newLine();
     }
 
     /**

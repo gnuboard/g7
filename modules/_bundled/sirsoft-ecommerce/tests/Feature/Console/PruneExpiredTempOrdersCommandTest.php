@@ -14,8 +14,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 만료 행을 실제로 지우는 주체가 없어 무한히 누적됩니다.
  *
  * @scenario target=ecommerce_temp_orders, row_age=beyond_retention
- *
- * @effects rows_beyond_retention_are_deleted, rows_within_retention_are_kept, all_gc_commands_are_registered_in_schedule
  */
 class PruneExpiredTempOrdersCommandTest extends ModuleTestCase
 {

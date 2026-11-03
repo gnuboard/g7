@@ -22,6 +22,7 @@ import { DataBindingEngine } from '../DataBindingEngine';
 import { TranslationEngine, TranslationContext } from '../TranslationEngine';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { isPlainLeftClick, mergeQueryIntoHref, isRealHref, toSameOriginPath } from '../navigationLinks';
+import { Router } from '../../routing/Router';
 
 const A: React.FC<Record<string, any>> = ({ children, text, ...rest }) => (
   <a {...rest}>{text}{children}</a>
@@ -306,5 +307,130 @@ describe('링크 판정·병합 규칙 — navigationLinks (G7Core.navigation �
     expect(toSameOriginPath(`${window.location.origin}/x`)).toBe('/x');
     expect(toSameOriginPath('//evil.example.com/x')).toBeNull();
     expect(toSameOriginPath('https://evil.example.com/x')).toBeNull();
+  });
+});
+
+/**
+ * 하위 폴더 배치(`G7Config.basePath = '/g7'`)의 링크 href 유래 navigate — 실제 Router 로 끝까지 민다.
+ *
+ * 링크 컴포넌트가 그리는 href 는 브라우저 주소라 마운트 접두사를 품는다(`/g7/board/free/2849`). 종전에는 그 값을
+ * 접두사째 라우트에 대조해 미등록으로 읽고, 폴백 openWindow `_self` 로 문서 전체를 다시 불렀다(루트 설치는 SPA).
+ * 이제 접두사를 벗겨 대조하고 Router 가 히스토리에 실을 때 다시 붙인다 — 이중 접두 없이 한 번. (engine-v1.87.0)
+ */
+describe('하위 폴더 배치 — 링크 href 유래 navigate 는 접두사를 벗겨 SPA 이동한다', () => {
+  let registry: ComponentRegistry;
+  let router: Router;
+  let dispatcher: ActionDispatcher;
+  let pushState: ReturnType<typeof vi.spyOn>;
+  let routeChanges: Array<{ path: string; query: Record<string, any> }>;
+  const translationContext: TranslationContext = { templateId: 'test-template', locale: 'ko' };
+
+  const renderLink = (href: string, params: Record<string, any>) =>
+    render(
+      <DynamicRenderer
+        componentDef={{
+          id: 'lnk',
+          type: 'basic',
+          name: 'A',
+          props: { 'data-testid': 'lnk', text: '이동', href },
+          actions: [{ type: 'click', handler: 'navigate', params }] as any,
+        }}
+        dataContext={{}}
+        translationContext={translationContext}
+        registry={registry}
+        bindingEngine={new DataBindingEngine()}
+        translationEngine={new TranslationEngine()}
+        actionDispatcher={dispatcher}
+      />,
+    );
+
+  const setup = (basePath: string | undefined, startUrl: string) => {
+    (window as any).G7Config = basePath === undefined ? {} : { basePath };
+    window.history.replaceState(null, '', startUrl);
+    router = new Router('test-template');
+    router.setRoutes([
+      // sirsoft-basic routes.json 과 같은 모양(언어 접두 `*/` 없음) — `*/` 패턴은 접두사 `g7` 을 언어 자리로 삼켜
+      // 우연히 맞으므로(관리자 모듈 라우트가 그렇다) 결함이 드러나는 실제 사용자 라우트 모양으로 잰다
+      { path: '/board/:slug', layout: 'board_index' },
+      { path: '/board/:slug/:id', layout: 'board_show' },
+      { path: '/shop/products', layout: 'shop_products' },
+    ] as any);
+    routeChanges = [];
+    router.on('routeChange', (data: any) => {
+      routeChanges.push({ path: data.path, query: data.query });
+    });
+    (window as any).__templateApp = { getRouter: () => router };
+    dispatcher = new ActionDispatcher({ navigate: (path: string, options?: any) => router.navigate(path, options) });
+    pushState = vi.spyOn(window.history, 'pushState');
+  };
+
+  beforeEach(() => {
+    registry = ComponentRegistry.getInstance();
+    (registry as any).registry = {
+      A: { component: A, metadata: { name: 'A', type: 'basic' } },
+    };
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    delete (window as any).__templateApp;
+    delete (window as any).G7Config;
+    window.history.replaceState(null, '', '/');
+  });
+
+  // @scenario click=plain, element=link, prevent_key=omitted
+  // @effects plain_click_spa_navigates, subpath_link_href_strips_mount_prefix
+  it('글 행 링크(`/g7/board/free/2849`, mergeQuery): pushState 1회 `/g7/board/free/2849`, 라우트 `/board/free/2849`', async () => {
+    setup('/g7', '/g7/board/free');
+    renderLink('/g7/board/free/2849', { mergeQuery: true });
+
+    await click(screen.getByTestId('lnk'));
+    await vi.waitFor(() => expect(routeChanges).toHaveLength(1));
+
+    expect(pushState).toHaveBeenCalledTimes(1);
+    expect(pushState.mock.calls[0][2]).toBe('/g7/board/free/2849');
+    expect(window.location.pathname).toBe('/g7/board/free/2849');
+    expect(routeChanges[0].path).toBe('/board/free/2849');
+  });
+
+  // @scenario click=plain, element=link, prevent_key=omitted
+  // @effects path_from_link_href_merges_query, subpath_link_href_strips_mount_prefix
+  it('쇼핑 쪽 넘김(`/g7/shop/products?category=89&page=2`, mergeQuery): 같은 문서에서 쿼리를 합쳐 이동한다', async () => {
+    setup('/g7', '/g7/shop/products?category=89&page=1');
+    renderLink('/g7/shop/products?category=89&page=2', { mergeQuery: true });
+
+    await click(screen.getByTestId('lnk'));
+    await vi.waitFor(() => expect(routeChanges).toHaveLength(1));
+
+    expect(pushState).toHaveBeenCalledTimes(1);
+    expect(pushState.mock.calls[0][2]).toBe('/g7/shop/products?category=89&page=2');
+    expect(routeChanges[0]).toMatchObject({ path: '/shop/products', query: { category: '89', page: '2' } });
+  });
+
+  // @scenario click=plain, element=link, prevent_key=omitted
+  // @effects plain_click_spa_navigates, subpath_link_href_strips_mount_prefix
+  it('접두사 없는 href(`/board/free/7`)도 종전대로 SPA 이동하고 접두사는 한 번만 붙는다', async () => {
+    setup('/g7', '/g7/board/free');
+    renderLink('/board/free/7', {});
+
+    await click(screen.getByTestId('lnk'));
+    await vi.waitFor(() => expect(routeChanges).toHaveLength(1));
+
+    expect(pushState.mock.calls[0][2]).toBe('/g7/board/free/7');
+    expect(routeChanges[0].path).toBe('/board/free/7');
+  });
+
+  // @scenario click=plain, element=link, prevent_key=omitted
+  // @effects plain_click_spa_navigates
+  it('루트 설치(접두사 없음)는 종전과 같다', async () => {
+    setup(undefined, '/board/free');
+    renderLink('/board/free/2849', { mergeQuery: true });
+
+    await click(screen.getByTestId('lnk'));
+    await vi.waitFor(() => expect(routeChanges).toHaveLength(1));
+
+    expect(pushState.mock.calls[0][2]).toBe('/board/free/2849');
+    expect(routeChanges[0].path).toBe('/board/free/2849');
   });
 });

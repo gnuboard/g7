@@ -535,7 +535,7 @@ if (isset($_GET['ajax_action'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', '그누보드7') }}</title>
     {{-- 스타일: 자체 빌드 CSS (종전 Tailwind Play CDN 대체 — 외부 도달 실패 시 화면이 무너졌다) --}}
-    <link rel="stylesheet" href="/build/core/dev-dashboard.css">
+    <link rel="stylesheet" href="{{ \App\Support\AssetUrl::sitePath('/build/core/dev-dashboard.css') }}">
     <style>
         .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }
@@ -985,6 +985,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>코어 업데이트</span>
                                     <span class="text-[10px] opacity-60">(core:update --force) ⚠️</span>
                                 </button>
+                                <button onclick="runCommand('core:deploy-ledger-seed')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>서버 설정 조각 원장 씨앗</span>
+                                    <span class="text-[10px] opacity-60">(core:deploy-ledger-seed)</span>
+                                </button>
                                 <button onclick="runCommand('core:bundled-sources list')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-medium rounded transition-colors">
                                     <span>공식 번들 소스 목록</span>
                                     <span class="text-[10px] opacity-60">(core:bundled-sources list)</span>
@@ -1157,6 +1161,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>스케줄 이력 정리</span>
                                     <span class="text-[10px] opacity-60">(schedules:prune-history)</span>
                                 </button>
+                                <button onclick="runCommand('g7:schedule-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>밀린 예약 작업 실행</span>
+                                    <span class="text-[10px] opacity-60">(g7:schedule-run)</span>
+                                </button>
                                 <button onclick="runCommand('activity-log:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>활동 로그 정리</span>
                                     <span class="text-[10px] opacity-60">(activity-log:prune)</span>
@@ -1274,7 +1282,7 @@ if (isset($_GET['ajax_action'])) {
             <div class="space-y-4">
                 <h2 class="text-sm font-medium text-slate-500 uppercase tracking-wider text-left">페이지 이동</h2>
 
-                <a href="/admin" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
+                <a href="{{ \App\Support\AssetUrl::sitePath('/admin') }}" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-cyan-500/0 group-hover:from-blue-500/10 group-hover:to-cyan-500/5 transition-all duration-300"></div>
                     <div class="relative z-10 flex items-center gap-4">
                         <div class="card-icon text-4xl shrink-0">⚙️</div>
@@ -1285,7 +1293,7 @@ if (isset($_GET['ajax_action'])) {
                     </div>
                 </a>
 
-                <a href="/install" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
+                <a href="{{ \App\Support\AssetUrl::sitePath('/install') }}" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-pink-500/0 group-hover:from-purple-500/10 group-hover:to-pink-500/5 transition-all duration-300"></div>
                     <div class="relative z-10 flex items-center gap-4">
                         <div class="card-icon text-4xl shrink-0">📥</div>
@@ -1662,7 +1670,12 @@ if (isset($_GET['ajax_action'])) {
                 // 완료 메시지 및 버튼
                 html += `<div class="mt-3 pt-3 border-t border-slate-700/50">
                     <div class="text-emerald-400 text-[11px] font-medium mb-2">🎉 초기화 완료!</div>
-                    <a href="/install" class="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+                    {{-- 마운트 접두사를 실어야 한다 — 날 루트 상대 주소는 하위 폴더 배치에서
+                         사이트 밖으로 나간다(오류 없이 남의 사이트 응답을 받는다). 형제 링크들이
+                         쓰는 `url()` 대신 `AssetUrl::sitePath()` 를 쓴다: `url()` 은 이미 접두사를
+                         품은 값에 접두사를 한 번 더 싣고 프록시 배치에서 요청 호스트를 실어
+                         사이트 밖을 가리킨다 (23차 G3 라운드 C23-9). --}}
+                    <a href="{{ \App\Support\AssetUrl::sitePath('/install') }}" class="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
                         <span>📥</span> 설치 페이지로 이동
                     </a>
                 </div>`;

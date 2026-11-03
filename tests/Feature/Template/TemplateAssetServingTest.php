@@ -201,8 +201,10 @@ class TemplateAssetServingTest extends TestCase
         $response = $this->get($this->assetUrl('js/nonexistent.js'));
 
         // Assert
-        // 검증 실패로 인한 리다이렉트 또는 404 허용
-        $this->assertContains($response->status(), [302, 404]);
+        // 검증 실패는 `api/*` 전 경로에서 JSON 422 다 — 302 를 허용하면 그 목적지가
+        // `Referer` 인 무인증 오픈 리다이렉트를 통과시키게 되고, 404 와 함께 열거하면
+        // 「어느 쪽이 계약인가」가 흐려진다. 실제 응답 하나로 고정한다.
+        $this->assertContains($response->status(), [404, 422]);
     }
 
     /**
@@ -221,7 +223,7 @@ class TemplateAssetServingTest extends TestCase
 
         // Assert
         // 검증 실패 시 Laravel은 302 리다이렉트 또는 422 중 하나를 반환
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -239,7 +241,7 @@ class TemplateAssetServingTest extends TestCase
         $response = $this->get($this->assetUrl('..%5c..%5cconfig.php'));
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -257,7 +259,7 @@ class TemplateAssetServingTest extends TestCase
         $response = $this->get($this->assetUrl('/etc//passwd'));
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -286,7 +288,7 @@ class TemplateAssetServingTest extends TestCase
             $response = $this->get($this->assetUrl("{$pattern}secret.txt"));
 
             // Assert
-            $this->assertContains($response->status(), [302, 422], "Pattern {$pattern} should be blocked");
+            $this->assertSame(422, $response->status(), "Pattern {$pattern} should be blocked — api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 (302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트)");
         }
     }
 
@@ -305,7 +307,7 @@ class TemplateAssetServingTest extends TestCase
         $response = $this->get($this->assetUrl('C:%5cWindows%5cSystem32%5cconfig.ini'));
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -323,7 +325,7 @@ class TemplateAssetServingTest extends TestCase
         $response = $this->get($this->assetUrl('/etc/passwd'));
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -341,7 +343,7 @@ class TemplateAssetServingTest extends TestCase
         $response = $this->get($this->assetUrl('malicious.php%00.js'));
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -363,7 +365,7 @@ class TemplateAssetServingTest extends TestCase
         $response = $this->get($this->assetUrl('malicious.php'));
 
         // Assert
-        $this->assertContains($response->status(), [302, 422]);
+        $this->assertSame(422, $response->status(), 'api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 — 302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트다');
     }
 
     /**
@@ -397,7 +399,7 @@ class TemplateAssetServingTest extends TestCase
             $response = $this->get($this->assetUrl("malicious.{$ext}"));
 
             // Assert
-            $this->assertContains($response->status(), [302, 422], "Extension .{$ext} should be blocked");
+            $this->assertSame(422, $response->status(), "Extension .{$ext} should be blocked — api/* 검증 실패는 Accept 헤더와 무관하게 JSON 422 다 (302 는 Referer 로 되돌리는 무인증 오픈 리다이렉트)");
         }
     }
 
@@ -535,7 +537,10 @@ class TemplateAssetServingTest extends TestCase
         $response->assertStatus(200);
         $etag = $response->headers->get('ETag');
         $this->assertNotNull($etag, 'ETag header should be present');
-        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $etag, 'ETag should be a 32-character MD5 hash');
+        // RFC 9110 §8.8.3 의 entity-tag 는 큰따옴표로 감싼 형태다 — 정적 서빙(Apache·nginx)도
+        // 항상 따옴표를 붙이고, 따옴표 없는 값은 중간 프록시·CDN 이 버리거나 다시 쓸 수 있다.
+        // 값 자체는 종전대로 파일에서 파생된 MD5 다 (3차 G3 라운드 L2).
+        $this->assertMatchesRegularExpression('/^"[a-f0-9]{32}"$/', $etag, 'ETag should be a quoted 32-character MD5 hash');
     }
 
     /**
@@ -566,6 +571,163 @@ class TemplateAssetServingTest extends TestCase
         // Assert
         $response->assertStatus(304);
         $this->assertEmpty($response->getContent(), '304 response should have empty body');
+    }
+
+    /**
+     * 압축된 표현의 ETag 로도 재검증이 성립한다 (`-gzip` 접미사 흡수).
+     *
+     * 압축 미들웨어는 압축본의 ETag 에 `-gzip` 접미사를 붙인다 — 표현이 다르면 다른
+     * entity-tag 라는 RFC 9110 §8.8.1 의 요구다. 브라우저는 받은 값을 **그대로**
+     * `If-None-Match` 로 돌려보내므로, 재검증 쪽이 그 접미사를 벗겨 비교하지 않으면
+     * **영원히 불일치**한다. 증상은 오류가 아니라 그 URL 의 304 가 통째로 사라지는
+     * 것이다 — 매 재검증이 전문 200 이 되고 아무 로그도 남지 않는다.
+     *
+     * 이 축은 **압축이 실제로 일어나는 통로**에서만 잴 수 있다. 압축에서 제외된
+     * 라우트(공개 스토리지)에 같은 왕복을 두면 접미사가 붙지 않아 엄격 비교로도
+     * 통과하고, 그러면 「쟀다」와 「보지 않았다」가 구분되지 않는다.
+     *
+     * @scenario case=caching
+     *
+     * @effects gzip_marks_encoded_representation_with_distinct_etag, template_asset_returns_304_when_etag_matches
+     *
+     * @return void 반환값 없음
+     */
+    public function test_revalidation_succeeds_when_the_client_accepts_gzip(): void
+    {
+        $jsPath = $this->testTemplatePath.'/js/large.js';
+        mkdir(dirname($jsPath), 0755, true);
+        // 압축 최소 크기를 넘겨야 압축 경로를 탄다 — 그래야 접미사가 붙는다.
+        file_put_contents($jsPath, str_repeat("console.log('padding');\n", 200));
+
+        $first = $this->withHeaders(['Accept-Encoding' => 'gzip, deflate'])
+            ->get($this->assetUrl('js/large.js'));
+
+        $first->assertOk();
+        $etag = (string) $first->headers->get('ETag');
+
+        // 전제 확인 — 압축이 일어나지 않으면 이 검사는 접미사 축을 재지 못한다.
+        $this->assertSame(
+            'gzip',
+            $first->headers->get('Content-Encoding'),
+            '이 통로가 압축되지 않는다 — 그렇다면 이 검사는 `-gzip` 접미사 축을 재지 못하므로 '
+            .'압축되는 통로로 옮겨야 한다'
+        );
+        $this->assertStringContainsString(
+            '-gzip',
+            $etag,
+            '압축본인데 ETag 에 표현 접미사가 없다 — 공유 캐시가 두 표현을 같은 것으로 다룬다'
+        );
+
+        $second = $this->withHeaders([
+            'Accept-Encoding' => 'gzip, deflate',
+            'If-None-Match' => $etag,
+        ])->get($this->assetUrl('js/large.js'));
+
+        $second->assertStatus(304);
+
+        // 304 는 **같은 요청의 200 이 실었을** ETag 를 실어야 한다 (RFC 9110 §15.4.5).
+        // 압축본의 표현 접미사(`-gzip`)를 200 에만 붙이고 304 에는 identity 값을 실으면,
+        // 공유 캐시가 gzip 본문을 identity 검증자로 갱신한다 — 200 에서 표현을 갈라 놓은
+        // 이유가 그 자리에서 사라진다. 종전에는 `notModified()` 가 접미사 이전 값을 싣고
+        // 압축 미들웨어는 304 를 아예 건너뛰어(본문이 없으므로) 이 축이 비어 있었다
+        // (7차 G3 라운드 C5).
+        $this->assertSame(
+            $etag,
+            (string) $second->headers->get('ETag'),
+            '304 의 ETag 가 같은 요청의 200 과 다르다 — 공유 캐시가 두 표현을 뒤섞는다'
+        );
+    }
+
+    /**
+     * 304 의 검증자는 **매치를 성립시킨 후보**의 표현을 따른다 (다중값 `If-None-Match`).
+     *
+     * 브라우저는 같은 URL 의 검증자를 여러 개 보낼 수 있다(RFC 9110 §13.1.2 — 목록이다).
+     * 그때 하나는 identity(`"abc"`), 다른 하나는 낡은 압축본(`"xyz-gzip"`)일 수 있다.
+     * 종전 판정은 **아무 후보에서나** `-gzip` 을 찾아 접미사를 붙였으므로, identity 로
+     * 매치가 성립한 요청에도 압축 표현의 검증자를 돌려줬다 — 클라이언트·공유 캐시는
+     * identity 본문을 갖고 있는데 그 항목이 압축 표현의 검증자로 갱신된다. C5 가
+     * 막으려던 「두 표현을 뒤섞는다」의 정확한 거울상이다.
+     *
+     * 단일값만 보내는 왕복으로는 두 해석이 같은 답을 내 이 축이 드러나지 않는다
+     * (8차 G3 라운드 C-1).
+     *
+     * @scenario case=caching
+     *
+     * @effects not_modified_echoes_the_validator_of_the_representation_the_client_holds
+     *
+     * @return void 반환값 없음
+     */
+    public function test_negotiated_etag_follows_the_candidate_that_matched(): void
+    {
+        $jsPath = $this->testTemplatePath.'/js/large.js';
+        mkdir(dirname($jsPath), 0755, true);
+        file_put_contents($jsPath, str_repeat("console.log('padding');
+", 200));
+
+        // identity 표현의 검증자를 얻는다 — 압축을 요청하지 않으면 접미사가 붙지 않는다.
+        $identity = $this->get($this->assetUrl('js/large.js'));
+        $identity->assertOk();
+        $identityEtag = (string) $identity->headers->get('ETag');
+
+        $this->assertStringNotContainsString(
+            '-gzip',
+            $identityEtag,
+            '압축을 요청하지 않았는데 표현 접미사가 붙었다 — 이 검사의 전제가 깨졌다'
+        );
+
+        // 보유한 것은 identity 본문인데, 목록에는 무관한 낡은 압축 검증자가 함께 실린다.
+        $revalidated = $this->withHeaders([
+            'If-None-Match' => '"stale-other-representation-gzip", '.$identityEtag,
+        ])->get($this->assetUrl('js/large.js'));
+
+        $revalidated->assertStatus(304);
+
+        $this->assertSame(
+            $identityEtag,
+            (string) $revalidated->headers->get('ETag'),
+            '304 가 매치되지 않은 후보의 표현 접미사를 실었다 — 공유 캐시가 identity 본문을 '
+            .'압축 표현의 검증자로 갱신한다'
+        );
+    }
+
+    /**
+     * 확장자 없는 모드의 응답이 **파일 이름**을 선언한다.
+     *
+     * 무확장자 모드에서 URL 의 마지막 세그먼트는 `{identifier}` 다 — 이름 선언이 없으면
+     * 내려받기가 `sirsoft-basic` 같은 이름으로 저장되어, 같은 파일이 자산 URL 모드에
+     * 따라 다른 이름을 갖고 링크가 되는 서버의 정적 서빙과도 어긋난다. 공개 스토리지
+     * 통로는 정확히 이 사유로 6차에서 이름 선언을 넣었는데 형제 세 통로(template ·
+     * module · plugin)에는 반영되지 않았다 — 「한쪽에만 있는 성질」 형태다
+     * (7차 G3 라운드 C2).
+     *
+     * @scenario asset_url_mode=extensionless, channel=template
+     *
+     * @effects asset_response_declares_the_file_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extensionless_mode_declares_the_file_name(): void
+    {
+        $jsPath = $this->testTemplatePath.'/js/app.js';
+        mkdir(dirname($jsPath), 0755, true);
+        file_put_contents($jsPath, "console.log('app');\n");
+
+        $response = $this->get("/api/templates/assets/{$this->testIdentifier}?file=js/app.js");
+
+        $response->assertOk();
+
+        $disposition = (string) $response->headers->get('Content-Disposition');
+
+        $this->assertStringContainsString(
+            'app.js',
+            $disposition,
+            '무확장자 모드 응답이 파일 이름을 선언하지 않는다 — 내려받기가 확장 식별자 이름으로 저장된다'
+        );
+        $this->assertStringStartsWith(
+            'inline',
+            $disposition,
+            '자산 통로는 화면에 그리는 자리다 — attachment 로 바꾸면 그 화면들이 전부 다운로드가 된다'
+        );
     }
 
     /**
@@ -630,7 +792,15 @@ class TemplateAssetServingTest extends TestCase
     }
 
     /**
-     * 프로덕션 환경에서 immutable 캐싱 정책 적용
+     * 프로덕션 캐싱 정책은 **URL 이 버전을 싣는지**로 갈린다.
+     *
+     * `immutable` 은 「만료 전까지 서버에 다시 묻지 말라」는 지시다. 버전 없는 주소에
+     * 붙이면 그 확장을 업데이트해도 방문자 브라우저가 만료(1년)까지 옛 파일을 쓴다 —
+     * 오류도 경고도 없이 「업데이트했는데 화면이 그대로」로만 나타난다.
+     *
+     * 종전 이 테스트는 **버전 없는 주소**를 요청하고 `immutable` 이 있어야 통과라고
+     * 단언했다. 즉 규정 위반 상태가 곧 green 이었고, 그 계약이 서 있는 한 결함을 고치면
+     * 테스트가 red 가 되는 구조였다. 계약을 판정 기준 자체로 교체한다 (11차 G3 라운드).
      *
      * @scenario case=caching
      *
@@ -651,9 +821,43 @@ class TemplateAssetServingTest extends TestCase
 
         // Assert
         $response->assertStatus(200);
-        $cacheControl = $response->headers->get('Cache-Control');
-        $this->assertStringContainsString('immutable', $cacheControl, 'Production should use immutable caching');
+        $cacheControl = (string) $response->headers->get('Cache-Control');
         $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringContainsString('max-age=31536000', $cacheControl);
+
+        // 버전이 없는 주소 — 재확인을 요구해야 한다.
+        $this->assertStringNotContainsString(
+            'immutable',
+            $cacheControl,
+            '버전 없는 주소에 immutable 이 붙었다 — 확장을 업데이트해도 방문자에게 도달하지 않는다'
+        );
+        $this->assertStringContainsString('must-revalidate', $cacheControl);
+    }
+
+    /**
+     * 같은 파일이라도 **버전이 실린 주소**는 immutable 이다.
+     *
+     * 위 형제와 짝이다 — 한쪽만 두면 「immutable 을 통째로 없앴다」와 「기준에 따라 갈린다」를
+     * 구분할 수 없고, 캐싱 이점을 잃은 것도 green 으로 보인다.
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_applies_immutable_caching_in_production
+     *
+     * @return void 반환값 없음
+     */
+    public function test_applies_immutable_caching_when_the_url_carries_a_version(): void
+    {
+        app()['env'] = 'production';
+        $jsPath = $this->testTemplatePath.'/js/main.js';
+        @mkdir(dirname($jsPath), 0755, true);
+        file_put_contents($jsPath, 'console.log("test");');
+
+        $response = $this->get($this->assetUrl('js/main.js').'?v=1.2.3');
+
+        $response->assertStatus(200);
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('immutable', $cacheControl, '버전이 실린 주소는 재확인이 필요 없다');
         $this->assertStringContainsString('max-age=31536000', $cacheControl);
     }
 
@@ -987,5 +1191,75 @@ class TemplateAssetServingTest extends TestCase
         // 현재 /api/templates/*/assets/* 라우트에는 throttle 미들웨어가 적용되지 않아
         // X-RateLimit-* 헤더가 기본적으로 존재하지 않는다.
         $response->assertStatus(200);
+    }
+
+    /**
+     * 확장자 없는 모드(`?file=`)가 경로 모드와 **같은 판정**을 받는다.
+     *
+     * `ResolvesDualModeFilePath` 는 네 통로가 공유하는데, 쿼리 모드를 실제로 재는 통로는
+     * 공개 스토리지 하나뿐이었다 — 세 요청 클래스의 `dualModeFilePath()` 를
+     * `query('file')` 로 되돌려도 전 스위트가 초록이다.
+     *
+     * @scenario url_mode=path
+     *
+     * @effects dual_mode_query_form_matches_path_form
+     *
+     * @return void 반환값 없음
+     */
+    public function test_dual_mode_query_form_matches_the_path_form(): void
+    {
+        $viaPath = $this->get("/api/templates/assets/{$this->testIdentifier}/js/nonexistent.js");
+        $viaQuery = $this->get("/api/templates/assets/{$this->testIdentifier}?file=js/nonexistent.js");
+
+        $this->assertSame(
+            $viaPath->status(),
+            $viaQuery->status(),
+            '같은 파일이 주소 형태에 따라 다르게 판정되면 이중 모드가 검사 강도를 가르는 장치가 된다'
+        );
+    }
+
+    /**
+     * 점(`.`)으로 시작하는 이름은 두 모드 모두에서 거부된다.
+     *
+     * 서버 3종 설정의 숨김 파일 차단은 **URL 경로**에만 걸린다. 확장자 없는 모드는 그
+     * 경로를 쿼리로 옮기므로 그 방어선을 통째로 지나간다 — 애플리케이션 계층이 같은
+     * 규칙을 갖지 않으면 같은 파일이 주소 형태에 따라 403·200 으로 갈린다.
+     *
+     * @scenario url_mode=path
+     *
+     * @effects hidden_segments_rejected_in_both_url_modes
+     *
+     * @return void 반환값 없음
+     */
+    public function test_hidden_segments_are_rejected_in_both_url_modes(): void
+    {
+        // 파일이 **실재해야** 이 축이 측정된다 — 없으면 규칙과 무관하게 404 라
+        // 규칙을 통째로 지워도 초록이 된다.
+        $dotFile = $this->hiddenFixtureRoot().DIRECTORY_SEPARATOR.'.eslintrc.json';
+        file_put_contents($dotFile, '{"root":true}');
+
+        try {
+            foreach (["/api/templates/assets/{$this->testIdentifier}/.eslintrc.json", "/api/templates/assets/{$this->testIdentifier}?file=.eslintrc.json"] as $url) {
+                $response = $this->get($url);
+
+                $this->assertNotSame(
+                    200,
+                    $response->baseResponse->getStatusCode(),
+                    $url.' 가 점으로 시작하는 이름을 내준다 — 서버 설정의 숨김 파일 차단은 경로 모드에만 걸린다'
+                );
+            }
+        } finally {
+            @unlink($dotFile);
+        }
+    }
+
+    /**
+     * 숨김 파일 픽스처를 놓을 디렉토리 (자산 루트).
+     *
+     * @return string 절대 경로
+     */
+    private function hiddenFixtureRoot(): string
+    {
+        return $this->testTemplatePath;
     }
 }

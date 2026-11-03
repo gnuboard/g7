@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축이 8개(부과정책 10값 × 쿠폰슬롯 × 수량 × 과세 × 배송지 × 스냅샷 …)라 cross product
 #   전개가 수만 건으로 폭발한다. 이 매니페스트는 조합 전수가 아니라 **관측 결과(effects)**
 #   단위로 계약을 잠근다 — effects 축은 면제하지 않으므로 선언한 효과는 전부 어느 테스트가

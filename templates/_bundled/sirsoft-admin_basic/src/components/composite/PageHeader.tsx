@@ -7,6 +7,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Breadcrumb, BreadcrumbItem } from './Breadcrumb';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
 
 /**
@@ -151,7 +152,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 return (
                   <a
                     key={action.id}
-                    href={link.href}
+                    href={sitePath(link.href)}
                     {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     aria-label={action.variant === 'ghost' ? action.label : undefined}
                     className={buttonLikeClass(getButtonClasses(action.variant))}

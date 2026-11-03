@@ -13,6 +13,8 @@
  * ⓘ 메뉴 오픈·드래그 시작 보존을 검증한다.
  *
  * 효과 요약(마커 아님 — 평문): overlay_affordance_above_drag_handle_zindex, overlay_affordance_click_not_intercepted_by_drag_handle, drag_handle_depth_clamped_below_affordance_band, drag_initiation_preserved_on_element_body_after_affordance_zindex_fix.
+ *
+ * @scenario insertion_path=context_plus_button, selected_node_state=basic_selected
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -203,6 +205,8 @@ test.describe('@layout-editor overlay affordance z-index', () => {
     expect(probedDirections, '+ 버튼이 1개 이상 검사돼야 함').toBeGreaterThan(0);
   });
 
+  // @scenario insertion_path=context_plus_button, selected_node_state=basic_selected
+  // @effects overlay_affordance_click_not_intercepted_by_drag_handle, context_menu_three_items_exactly_setting_duplicate_delete
   test('ⓘ 버튼 클릭 시 컨텍스트 메뉴가 열림 — 클릭이 핸들러에 도달', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

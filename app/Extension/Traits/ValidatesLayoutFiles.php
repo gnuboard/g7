@@ -3,6 +3,7 @@
 namespace App\Extension\Traits;
 
 use App\Exceptions\LayoutIncludeException;
+use App\Extension\ExtensionManager;
 use App\Extension\Layout\BackupLayoutReader;
 use App\Support\Filesystem\PathGuard;
 use App\Support\LayoutDataSourceIds;
@@ -584,11 +585,11 @@ trait ValidatesLayoutFiles
         if ($recursive) {
             $jsonFiles = $this->scanLayoutFilesRecursively($layoutsPath);
         } else {
-            $jsonFiles = File::glob("{$layoutsPath}/*.json") ?: [];
+            $jsonFiles = ExtensionManager::listDirectoryFiles($layoutsPath, '.json');
 
             $errorsPath = "{$layoutsPath}/errors";
             if (File::exists($errorsPath)) {
-                $jsonFiles = array_merge($jsonFiles, File::glob("{$errorsPath}/*.json") ?: []);
+                $jsonFiles = array_merge($jsonFiles, ExtensionManager::listDirectoryFiles($errorsPath, '.json'));
             }
         }
 
@@ -712,11 +713,11 @@ trait ValidatesLayoutFiles
             return $files;
         }
 
-        $files = File::glob("{$layoutsPath}/*.g7.html") ?: [];
+        $files = ExtensionManager::listDirectoryFiles($layoutsPath, '.g7.html');
 
         $errorsPath = "{$layoutsPath}/errors";
         if (File::exists($errorsPath)) {
-            $files = array_merge($files, File::glob("{$errorsPath}/*.g7.html") ?: []);
+            $files = array_merge($files, ExtensionManager::listDirectoryFiles($errorsPath, '.g7.html'));
         }
 
         return $files;
@@ -736,7 +737,7 @@ trait ValidatesLayoutFiles
         $relativePath = str_replace($basePath.DIRECTORY_SEPARATOR, '', $filePath);
 
         // .g7.html / .json 확장자 제거 (소스·산출 어느 쪽이든 같은 논리 이름)
-        $relativePath = preg_replace('/\.(g7\.html|json)$/i', '', $relativePath);
+        $relativePath = preg_replace('/\.(g7\.html|json)$/iu', '', $relativePath);
 
         // 디렉토리 구분자를 언더스코어로 변환
         $layoutPath = str_replace([DIRECTORY_SEPARATOR, '/'], '_', $relativePath);

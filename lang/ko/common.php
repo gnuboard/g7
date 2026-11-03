@@ -100,7 +100,9 @@ return [
             'configured' => '신뢰 프록시가 설정되어 있습니다. X-Forwarded-* 헤더를 신뢰합니다.',
             'not_configured' => '신뢰 프록시가 설정되어 있지 않습니다.',
             'not_configured_help' => '프록시(AWS ALB, CloudFront, Cloudflare, nginx, ngrok) 뒤에서 구동 중이라면
-  .env 에 TRUSTED_PROXIES 를 지정하세요. 미설정 시 접속 주소·방문자 IP 가
+  환경설정 > 고급 > 신뢰 프록시에서 신뢰 범위를 지정하세요(저장 전 검사 제공).
+  화면에 들어갈 수 없는 상태라면 .env 의 TRUSTED_PROXIES 로도 지정할 수 있습니다.
+  미설정 시 접속 주소·방문자 IP 가
   프록시 기준으로 인식되어 화면 표시·IP 기록·결제 통보 수신이 어긋납니다.
   프록시를 쓰지 않는 직접 노출 구성이라면 미설정이 정상입니다.',
             'details' => '상세: :url',
@@ -167,9 +169,21 @@ return [
             'groups' => [
                 'staging' => '업데이트 스테이징 잔존',
                 'temp' => '코어 임시 산출물',
+                'storage_temp' => 'composer 폴백 임시 디렉토리',
+                'core_pending' => '번들 업데이트 매니페스트 잔존',
+                'core_pending_staging' => '코어 업데이트 전개 디렉토리 잔존',
+                'core_update_preserved' => '코어 업데이트 교체 전 사본',
+                'core_update_reports' => '코어 업데이트 리포트 로그',
+                'public_storage_broken' => '손상된 공개 스토리지 링크 백업',
+                'public_storage_broken_docroot' => '손상된 공개 스토리지 링크 백업 (문서 루트 안)',
+                'installer_probes' => '인스톨러 점검·설치 잔여물',
+                'installer_state_corrupt' => '인스톨러 파손 상태 사본',
                 'vendor_bundle_staging' => 'vendor 번들 스테이징',
                 'extension_backups' => '확장 백업',
                 'core_backups' => '코어 백업',
+                'root_entry_temp' => '루트 진입·보호 파일 임시 산출물',
+                'stale_swap_files' => '확장 동기화 잠금 잔해',
+                'env_backups' => 'finalize 가 남긴 .env 보존 사본',
                 'legacy_browser_log' => '레거시 브라우저 로그',
             ],
             'group_count' => ':label: :count건',

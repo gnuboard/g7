@@ -1,3 +1,4 @@
+import { apiUrl } from '../support/apiUrl';
 /**
  * 로컬 스토리지 관련 핸들러
  *
@@ -33,7 +34,7 @@ const logger = ((window as any).G7Core?.createLogger?.('Handler:Storage')) ?? {
  */
 export async function issueCartKeyFromApi(): Promise<string | null> {
   try {
-    const response = await fetch(CART_KEY_API_ENDPOINT, {
+    const response = await fetch(apiUrl(CART_KEY_API_ENDPOINT), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

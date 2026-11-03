@@ -225,6 +225,8 @@ test_files:
   # 수정 진입의 첫 미리보기는 작성·수정 공용 핸들러(initClaimApply 의 수정 분기)가 낸다 —
   # 그 축의 유일한 근거가 이 파일에 있으므로 여기서도 소유한다(2026-09-11 브라우저 실측).
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
+  # 주문상세의 상품 선택이 신청 진입으로 넘길 상품을 정한다 — 이 매니페스트의 축 어휘(claim_type, entry, screen)로 조합을 적는다.
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/orderItemSelectionHandlers.test.ts
 
 notes: |
   **§9-1 의 매니페스트 수가 10 → 11 이 된다.** §7 S15 DoD 가 그 숫자를 인용하므로 함께 정정한다.

@@ -103,6 +103,7 @@
   "refresh": "Refresh",
   "activate": "Activate",
   "skip": "Skip",
+  "copy": "Copy",
   "tag_input": {
     "remove": "Remove {{label}}",
     "results": "{{count}} results available",

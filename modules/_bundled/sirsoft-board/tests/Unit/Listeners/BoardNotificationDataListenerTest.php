@@ -6,6 +6,7 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -1278,5 +1279,35 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         }
 
         return $comment;
+    }
+
+    /**
+     * 게시글 링크는 요청이 아니라 **설정된 사이트 주소**를 따르고 후행 슬래시를 이어 붙이지 않는다.
+     *
+     * `config('app.url').'/board/…'` 는 후행 슬래시를 그대로 실어 `https://host/g7//board/…` 를
+     * 만든다 — 메일 안의 링크가 조용히 깨진다 (16차 G3 라운드 B-4).
+     * 회원 알림 링크는 「사용자 화면 URL」을 따르므로(#792) 그 값을 비워 사이트 주소 폴백을 검사한다.
+     *
+     * @scenario base_path=subpath, navigation_direction=navigation
+     *
+     * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
+     */
+    public function test_post_url_follows_the_configured_site_url_without_double_slash(): void
+    {
+        Config::set('app.url', 'https://example.com/g7/');
+        Config::set('g7_settings.core.general.user_screen_url', '');
+        $board = new Board(['slug' => 'free']);
+        $post = new Post;
+        $post->id = 5;
+
+        try {
+            $url = (new \ReflectionMethod($this->listener, 'buildPostUrl'))->invoke($this->listener, $board, $post);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+
+        $this->assertSame('https://example.com/g7/board/free/5', $url);
     }
 }

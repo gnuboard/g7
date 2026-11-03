@@ -511,7 +511,7 @@ describe('읽기 전용 단축키', () => {
   /**
    * 읽기 전용이면 저장·모두 저장·새 파일 단축키가 아무것도 부르지 않는다 — 머리말 저장 버튼을 숨긴 것과 같은 판정.
    *
-   * @scenario read_only=true,shortcut=save|saveAll|newFile
+   * @scenario combo=mod_only, combo=mod_alt, focus=document
    * @effects code_workspace_read_only_blocks_write_shortcuts
    */
   it('readOnly 면 저장·모두 저장·새 파일 단축키를 무시한다', () => {

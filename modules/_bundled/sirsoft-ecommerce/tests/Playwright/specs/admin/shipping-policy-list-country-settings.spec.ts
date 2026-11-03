@@ -10,7 +10,8 @@
  * 따라서 이 spec 은 두 가지를 함께 고정한다 — 화면이 opt-in 을 켜지 않는다는 것과, 그런데도
  * 국가 칩·배송비 요약이 채워진다는 것. 한쪽만 보면 어느 방향으로 되돌아가도 통과한다.
  *
- * @scenario surface=admin_shipping_policy_list
+ * 표면(마커 아님 — 평문): admin_shipping_policy_list.
+ * @scenario endpoint=admin_list
  * @effects shipping_policy_list_renders_country_summary
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
@@ -60,6 +61,8 @@ async function createFixturePolicy(page: any): Promise<any | null> {
 }
 
 test.describe('배송정책 목록 국가 요약 (#76)', () => {
+  // @scenario endpoint=admin_list, opt_in=default
+  // @effects list_keeps_fields_the_screen_draws
   test('목록 요청이 무거운 opt-in 을 켜지 않고도 국가별 설정을 받아온다', async ({
     page,
     shippingPolicyToken,
@@ -108,6 +111,8 @@ test.describe('배송정책 목록 국가 요약 (#76)', () => {
     expect(row).toHaveProperty('countries_display');
   });
 
+  // @scenario endpoint=admin_list, opt_in=default
+  // @effects shipping_policy_list_renders_country_summary
   test('국가 칩과 배송비 요약 열이 비어 있지 않다', async ({ page, shippingPolicyToken }) => {
     await authenticatePage(page, shippingPolicyToken);
     await page.goto(LIST_URL);

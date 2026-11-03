@@ -21,6 +21,7 @@
 import { useCallback, useState } from 'react';
 import { buildAuthHeaders } from '../utils/authToken';
 import { stripInheritedFromLayoutContent } from '../utils/layoutTreeUtils';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /** 미리보기 결과 — UI 분기용. */
 export type PreviewResult =
@@ -67,7 +68,7 @@ export function useLayoutPreview(
         // 저장과 동일 마스킹 후 content 직렬화.
         const maskedContent = stripInheritedFromLayoutContent(raw);
         const url = `/api/admin/templates/${encodeURIComponent(templateIdentifier)}/layouts/${layoutName}/preview`;
-        const response = await fetch(url, {
+        const response = await fetch(withBasePrefix(url), {
           method: 'POST',
           credentials: 'same-origin',
           headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),

@@ -8,6 +8,7 @@ use App\Support\EnvPriority;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rules\In;
 
 /**
  * 단건 설정 저장 요청 검증
@@ -129,6 +130,24 @@ class UpdateSettingRequest extends FormRequest
             'value' => ['present', 'nullable', $this->valueShapeRule()],
         ];
 
+        // 허용값이 닫힌 키(실행 모드·자산 URL 방식 등)는 벌크 저장과 같은 표로 값을 제한한다.
+        // 이 경로에만 게이트가 없으면 벌크 저장의 허용값 검사가 우회된다.
+        $enumerated = $this->enumeratedValueRule();
+        if ($enumerated !== null) {
+            $rules['value'][] = $enumerated;
+        }
+
+        // 형태가 정해진 키(IP 목록 등)도 같은 이유로 두 경로가 같은 표를 쓴다.
+        foreach ($this->shapeRules() as $rule) {
+            $rules['value'][] = $rule;
+        }
+
+        // 값이 목록인 키는 각 항목도 벌크 저장과 같은 규칙으로 본다.
+        $itemRules = $this->shapeItemRules();
+        if ($itemRules !== []) {
+            $rules['value.*'] = $itemRules;
+        }
+
         // 서버가 기록하는 키는 이 경로로 쓰지 못한다 — 만료 시작일을 과거로 돌리면 켜자마자 전원이
         // 만료되고, 미래로 밀면 만료가 무력화된다. 기본값이 null 이라 형태 검사도 걸리지 않는 키다.
         // `prohibited` 는 null 을 통과시키는데, 시작일을 null 로 비우면 판독부가 "지금" 으로 다시 채워
@@ -208,6 +227,54 @@ class UpdateSettingRequest extends FormRequest
                 $fail(__('validation.setting.value.type'));
             }
         };
+    }
+
+    /**
+     * 저장 대상 키의 허용값 규칙을 반환합니다.
+     *
+     * @return In|null 허용값 규칙, 허용값이 닫힌 키가 아니면 null
+     */
+    private function enumeratedValueRule(): ?In
+    {
+        $key = $this->route('key');
+
+        if (! is_string($key) || $key === '') {
+            return null;
+        }
+
+        return EnumeratedSettingValues::ruleFor($key);
+    }
+
+    /**
+     * 저장 대상 키의 전용 형태 규칙을 반환합니다.
+     *
+     * @return list<ValidationRule|string> 규칙 목록 (없으면 빈 배열)
+     */
+    private function shapeRules(): array
+    {
+        $key = $this->route('key');
+
+        if (! is_string($key) || $key === '') {
+            return [];
+        }
+
+        return SettingShapeRules::rulesFor($key);
+    }
+
+    /**
+     * 저장 대상 키의 항목별 형태 규칙을 반환합니다 (값이 목록인 키).
+     *
+     * @return list<ValidationRule|string> 항목 규칙 목록 (없으면 빈 배열)
+     */
+    private function shapeItemRules(): array
+    {
+        $key = $this->route('key');
+
+        if (! is_string($key) || $key === '') {
+            return [];
+        }
+
+        return SettingShapeRules::itemRulesFor($key);
     }
 
     /**

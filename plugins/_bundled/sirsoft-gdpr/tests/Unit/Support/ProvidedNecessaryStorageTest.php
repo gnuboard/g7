@@ -20,7 +20,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario scope=sessionStorage, notation=exact, locked=operator_item, settings_state=populated, request=valid_item
  *
- * @effects provided_keys_collected_from_filter_hook,
+ * 효과 요약(마커 아님 — 평문): provided_keys_collected_from_filter_hook,
  *   provided_keys_merged_into_necessary_judgement,
  *   provided_keys_reject_invalid_items,
  *   provided_keys_exposed_in_inline_payload

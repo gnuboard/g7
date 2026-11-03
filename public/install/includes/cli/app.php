@@ -34,6 +34,8 @@ require_once dirname(__DIR__).'/functions.php';
 require_once dirname(__DIR__).'/installer-state.php';
 require_once dirname(__DIR__).'/installer-runtime.php';
 require_once dirname(__DIR__).'/installer-ownership.php';
+// 차단 함수 가드(installerHasFunction)와 실행 방식 판정 — 터미널 진입도 웹과 같은 판정 지점을 쓴다.
+require_once dirname(__DIR__).'/execution-mode.php';
 require_once dirname(__DIR__).'/config-validation.php';
 require_once dirname(__DIR__).'/requirements.php';
 require_once dirname(__DIR__).'/db-check.php';
@@ -41,6 +43,8 @@ require_once dirname(__DIR__).'/extension-selection.php';
 require_once dirname(__DIR__).'/php-extension-requirements.php';
 require_once dirname(__DIR__).'/install-plan.php';
 require_once dirname(__DIR__).'/env-finalize.php';
+// .env 확정 뒤 웹 노출 점검 잔여물 정리(installerCleanupExposureProbe) — 웹 마무리 엔드포인트와 같은 정리.
+require_once dirname(__DIR__).'/exposure-check.php';
 require_once dirname(__DIR__).'/progress-emitter.php';
 require_once dirname(__DIR__).'/task-runner.php';
 require_once dirname(__DIR__, 2).'/api/_guard.php';
@@ -579,8 +583,13 @@ if (! function_exists('g7_install_cli_main')) {
      */
     function g7_install_cli_main(array $argv, ?array $env = null): int
     {
-        @set_time_limit(0);
-        $env ??= getenv();
+        // CLI 의 max_execution_time 기본값은 0 이지만 php.ini 가 바꿔 두었을 수 있다. 두 함수 모두 하드닝 프로필이
+        // 막을 수 있고, 막히면 PHP 8 은 함수 테이블에서 지우므로 `@` 로는 Error 를 막지 못한다 — 판정 뒤에 부른다.
+        if (installerHasFunction('set_time_limit')) {
+            set_time_limit(0);
+        }
+        // getenv 가 막힌 php.ini 에서는 CLI 가 환경변수를 함께 싣는 $_ENV·$_SERVER 의 문자열 항목으로 대신한다.
+        $env ??= installerHasFunction('getenv') ? getenv() : $_ENV + array_filter($_SERVER, 'is_string');
         $parsed = g7_cli_parse_args(array_slice($argv, 1));
         $options = $parsed['options'];
 
@@ -662,7 +671,7 @@ if (! function_exists('g7_install_cli_main')) {
             if ($lock === null) {
                 return g7_cli_fail($out, [['key' => 'cli_error_another_cli_running', 'params' => []]], G7_CLI_EXIT_CONFLICT);
             }
-            $finalize = installer_finalize_env();
+            $finalize = g7_cli_finalize_env();
 
             return $finalize['success'] ? G7_CLI_EXIT_OK : g7_cli_fail($out, [['key' => 'cli_error_finalize_failed', 'params' => []]], G7_CLI_EXIT_FAILED);
         }

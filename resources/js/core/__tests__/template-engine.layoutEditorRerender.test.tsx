@@ -133,6 +133,7 @@ describe('[case:state-advanced-editor-blank] template-engine — 레이아웃 �
     window.history.replaceState({}, '', '/');
   });
 
+  /** @effects update_template_data_keeps_layout_editor_tree_mounted_in_editor_mode, render_with_layout_editor_called_from_render_template_branch */
   it('편집기 렌더 후 updateTemplateData 가 들어와도 편집기 트리가 지워지지 않는다', async () => {
     // TemplateApp.init 이 편집기 모드에서 넘기는 것과 동일한 빈 레이아웃
     await act(async () => {
@@ -163,6 +164,7 @@ describe('[case:state-advanced-editor-blank] template-engine — 레이아웃 �
     expect(container.childElementCount, '#app 이 비어서는 안 된다').toBeGreaterThan(0);
   });
 
+  /** @effects update_template_data_rerenders_normally_outside_editor_mode */
   it('편집기 모드가 아니면 updateTemplateData 재렌더가 종전대로 동작한다 (회귀 가드)', async () => {
     window.history.replaceState({}, '', '/admin/dashboard');
 

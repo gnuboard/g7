@@ -1,3 +1,4 @@
+import { sitePath } from '../support/apiUrl';
 /**
  * IDV Modal Launcher (sirsoft-admin_basic)
  *
@@ -270,9 +271,14 @@ export async function sirsoftAdminBasicIdentityLauncher(
       render_hint: 'external_redirect',
       // 인증 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는 빼는데,
       // 인증 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
-      redirect_url: `/admin/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return_url=${encodeURIComponent(
-        `${window.location.pathname}${window.location.search}`,
-      )}`,
+      // 외부 인증기관이 그대로 여는 복귀 주소라 사이트 마운트 접두사를 붙인다 — 없으면 하위 폴더 사이트에서
+      // 인증을 마친 사용자가 사이트 밖으로 돌아온다(`return_url` 의 pathname 은 이미 접두사를 갖고 있고, 복귀 이동이 그대로 받는다).
+      redirect_url: sitePath(
+        `/admin/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return_url=${encodeURIComponent(
+          // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다(위 주석).
+          `${window.location.pathname}${window.location.search}`,
+        )}`,
+      ),
     });
   }
 

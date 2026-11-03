@@ -19,9 +19,9 @@ use Tests\TestCase;
  * 확장이 잘못 등록한 핸들러 하나가 다른 도메인의 법정 파기까지 멈추면 안 되고, 반대로
  * 조용히 버려져서도 안 된다는 계약을 고정합니다.
  *
- * @scenario target=privacy_withdrawn_users, row_age=within_retention, row_age=beyond_retention
+ * 축 요약(마커 아님 — 평문): target=privacy_withdrawn_users, row_age=within_retention, row_age=beyond_retention
  *
- * @effects retention_handlers_are_collected_from_core_and_extensions, disabled_handler_is_reported_separately_from_zero_targets
+ * 효과 요약(마커 아님 — 평문): retention_handlers_are_collected_from_core_and_extensions, disabled_handler_is_reported_separately_from_zero_targets
  */
 class PrivacyRetentionManagerTest extends TestCase
 {

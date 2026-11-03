@@ -37,6 +37,7 @@ class SamlController extends Controller
             abort(404);
         }
 
+        // file-serving:allow 파일이 아니라 IdP 설정에서 그 자리에서 만든 SAML 메타데이터 문서다 — 설정이 바뀌면 곧바로 달라져야 하므로 `no-store`.
         return response($xml, 200, [
             'Content-Type' => 'application/samlmetadata+xml; charset=utf-8',
             'Cache-Control' => 'no-store',

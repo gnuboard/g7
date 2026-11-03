@@ -9,6 +9,7 @@ use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Models\Attachment;
 use App\Models\User;
+use App\Services\Concerns\ResolvesRowStorage;
 use App\Support\ImageResizer;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
@@ -26,6 +27,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class AttachmentService
 {
+    use ResolvesRowStorage;
+
     /**
      * AttachmentService 생성자
      *
@@ -67,6 +70,17 @@ class AttachmentService
         // 환경설정 > 업로드의 최대 가로/세로·품질을 실제로 적용한다.
         // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기·메타 계산이 모두 축소본을 본다.
         $this->imageResizer->resizeInPlace($file->getRealPath(), $file->getMimeType());
+
+        // 위 한 줄의 약속("모두 축소본을 본다")을 실제로 성립시킨다.
+        //
+        // 축소는 **제자리 덮어쓰기**이고, `ImageResizer::resizeInPlace()` 는 쓰기 **전에**
+        // `is_file()` 로 그 경로를 stat 하므로 PHP 공유 stat 캐시가 반드시 채워진다.
+        // 그 뒤의 `getSize()` 는 그 캐시를 그대로 읽어 **축소 전 크기**를 돌려주고, 그 값이
+        // 행의 `size` → 서빙의 `Content-Length` 로 **선언**되어 응답이 잘린다. `getimagesize()`
+        // 는 파일을 직접 읽으므로 메타(width/height)만 축소본을 보고 크기만 어긋난다 —
+        // 두 값이 한 행에서 서로 다른 파일을 가리키는 상태다.
+        // 형제 `sirsoft-board` 는 같은 사유로 이미 이 처리를 갖는다 (11차 G3 라운드 B11-4).
+        clearstatcache(true, $file->getRealPath());
 
         // 저장 경로 생성 (날짜별 디렉토리).
         // 확장자는 클라이언트가 보낸 파일명이 아니라 MIME 추론값을 우선 사용한다 —
@@ -283,7 +297,7 @@ class AttachmentService
         if ($result) {
             // 커밋 후 스토리지 파일 삭제 (실패해도 DB 는 되돌리지 않는다)
             try {
-                $this->storage->withDisk($attachment->disk)->delete('', $attachment->path);
+                $this->storageForRow($attachment->disk)->delete('', $attachment->path);
             } catch (\Throwable $e) {
                 Log::warning('첨부파일 스토리지 삭제 실패 (고아 파일 잔존)', [
                     'attachment_id' => $id,
@@ -308,6 +322,7 @@ class AttachmentService
      * 순서 변경
      *
      * @param  array<int, array{id: int, order: int}>  $orderData  순서 데이터
+     * @return void 반환값 없음
      */
     public function reorder(array $orderData): void
     {
@@ -337,6 +352,7 @@ class AttachmentService
      * "제외" 를 택한 것과 의미론이 다르다).
      *
      * @param  array<int, array{id: int, order: int}>  $orderData  순서 데이터
+     * @return void 반환값 없음
      *
      * @throws AuthorizationException 스코프 밖 첨부가 하나라도 포함된 경우
      */
@@ -365,6 +381,10 @@ class AttachmentService
      *
      * 기능 레벨 권한 체크 (permission_hooks) - 다운로드 기능 자체에 대한 접근 권한
      *
+     * 캐시 계약(검증자·304)은 이 스트림에 실리지 않는다 — `getDownloadInfo()` 가 돌려주는
+     * 메타를 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 넘겨 입힌다. 이 메서드는
+     * 그 정보의 `response` 만 돌려주는 하위호환 표면이다.
+     *
      * @param  string  $hash  첨부파일 해시
      * @param  User|null  $user  요청한 사용자 (null이면 비로그인)
      * @return StreamedResponse|null 다운로드 응답 또는 null
@@ -372,6 +392,28 @@ class AttachmentService
      * @throws AuthorizationException 기능 레벨 권한이 없는 경우
      */
     public function download(string $hash, mixed $user = null): ?StreamedResponse
+    {
+        return $this->getDownloadInfo($hash, $user)['response'] ?? null;
+    }
+
+    /**
+     * 다운로드(첨부 방식) 서빙 정보 조회
+     *
+     * 이미지 인라인 통로(`getFileInfo()`)와 **같은 서빙 메타**(ETag 소스·수정 시각)를 돌려준다.
+     * 종전에는 비이미지 다운로드가 `download()` 하나로 끝나 검증자가 하나도 없었다 —
+     * 같은 사이트에서 같은 첨부가 이미지면 304 로 재검증되고 문서면 매번 전문을 받아 갔다.
+     * 오류도 로그도 없이 대역폭으로만 나타나고, 정적 서빙(링크가 되는 서버)은 두 유형을
+     * 가리지 않으므로 링크 유무로 동작이 갈리는 상태였다 (14차 G3 라운드).
+     *
+     * 훅 순서는 종전 `download()` 와 같다 — 권한 훅 → 액션 훅(IDV 가드) → 필터 훅.
+     *
+     * @param  string  $hash  첨부파일 해시
+     * @param  User|null  $user  요청한 사용자 (null이면 비로그인)
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null}|null 서빙 정보 또는 null
+     *
+     * @throws AuthorizationException 기능 레벨 권한이 없는 경우
+     */
+    public function getDownloadInfo(string $hash, mixed $user = null): ?array
     {
         $attachment = $this->repository->findByHash($hash);
 
@@ -391,7 +433,7 @@ class AttachmentService
         $attachment = HookManager::applyFilters('core.attachment.before_download', $attachment, $user);
 
         // 파일 존재 확인
-        $diskStorage = $this->storage->withDisk($attachment->disk);
+        $diskStorage = $this->storageForRow($attachment->disk);
         if (! $diskStorage->exists('', $attachment->path)) {
             Log::error('첨부파일 스토리지에 없음', [
                 'attachment_id' => $attachment->id,
@@ -402,7 +444,45 @@ class AttachmentService
         }
 
         // 다운로드 응답 생성 (원본 파일명으로)
-        return $diskStorage->download('', $attachment->path, $attachment->original_filename);
+        $response = $diskStorage->download('', $attachment->path, $attachment->original_filename, [
+            'Content-Type' => $attachment->mime_type,
+        ]);
+
+        if (! $response) {
+            return null;
+        }
+
+        return [
+            'response' => $response,
+            ...$this->serveMeta($attachment),
+        ];
+    }
+
+    /**
+     * 행 메타에서 서빙 검증자를 만듭니다 — 인라인·다운로드 두 통로가 **같은 값**을 쓴다.
+     *
+     * 파일 stat 없이 결정적이라 원격 디스크에서도 같고, 통로마다 사본으로 두면 같은 첨부가
+     * 통로에 따라 다른 ETag 를 갖는다.
+     *
+     * @param  Attachment  $attachment  첨부 행
+     * @return array{etag_source: string, mime_type: string, filename: string, last_modified: int|null}
+     */
+    private function serveMeta(Attachment $attachment): array
+    {
+        return [
+            // 파일 stat 없이 결정적인 ETag 소스 (업로드 파일은 경로당 불변)
+            'etag_source' => implode('|', [
+                $attachment->disk,
+                $attachment->path,
+                (string) $attachment->updated_at?->getTimestamp(),
+                (string) $attachment->size,
+            ]),
+            'mime_type' => $attachment->mime_type,
+            'filename' => $attachment->original_filename,
+            // 조건부 요청의 `Last-Modified`/`If-Modified-Since` 축 — ETag 를 쓰지 않고
+            // 시각으로만 재검증하는 프록시는 이 값이 없으면 매번 전문을 받아 간다.
+            'last_modified' => $attachment->updated_at?->getTimestamp(),
+        ];
     }
 
     /**
@@ -416,7 +496,7 @@ class AttachmentService
      *
      * @param  string  $hash  첨부파일 해시
      * @param  User|null  $user  요청한 사용자 (null이면 비로그인)
-     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string}|null 서빙 정보 또는 null
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null}|null 서빙 정보 또는 null
      *
      * @throws AuthorizationException 기능 레벨 권한이 없는 경우
      */
@@ -436,7 +516,7 @@ class AttachmentService
 
         // 행 disk 기준 인라인 스트림 (존재 검사는 response() 내부에서 수행)
         // Content-Type/Length 를 행 메타로 선지정해 원격 디스크의 추가 메타 조회를 생략한다.
-        $response = $this->storage->withDisk($attachment->disk)->response(
+        $response = $this->storageForRow($attachment->disk)->response(
             '',
             $attachment->path,
             $attachment->original_filename,
@@ -457,15 +537,7 @@ class AttachmentService
 
         return [
             'response' => $response,
-            // 파일 stat 없이 결정적인 ETag 소스 (업로드 파일은 경로당 불변)
-            'etag_source' => implode('|', [
-                $attachment->disk,
-                $attachment->path,
-                (string) $attachment->updated_at?->getTimestamp(),
-                (string) $attachment->size,
-            ]),
-            'mime_type' => $attachment->mime_type,
-            'filename' => $attachment->original_filename,
+            ...$this->serveMeta($attachment),
         ];
     }
 
@@ -529,7 +601,7 @@ class AttachmentService
         // 커밋 후 파일 정리 (실패해도 DB 는 되돌리지 않는다 — 고아 파일은 비파괴)
         foreach ($files as $file) {
             try {
-                $this->storage->withDisk($file['disk'])->delete('', $file['path']);
+                $this->storageForRow($file['disk'])->delete('', $file['path']);
             } catch (\Throwable $e) {
                 Log::warning('첨부파일 스토리지 일괄 삭제 실패 (고아 파일 잔존)', [
                     'source_identifier' => $identifier,

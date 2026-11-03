@@ -34,7 +34,7 @@ use PHPUnit\Framework\Attributes\Test;
  *
  * @scenario link=secret-post-child-write-gate
  *
- * @effects secret_post_comment_blocked_for_outsider,
+ * 효과 요약(마커 아님 — 평문): secret_post_comment_blocked_for_outsider,
  *          secret_post_reply_comment_blocked_for_outsider,
  *          secret_post_reply_post_blocked_for_outsider,
  *          secret_post_report_blocked_for_outsider,

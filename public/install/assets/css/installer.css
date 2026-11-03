@@ -95,6 +95,11 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  /* 팔레트 종속 그림자 — primary/danger 가 테마마다 다르므로 그림자도 함께 재정의한다.
+     라이트 값은 종전 리터럴 그대로다(렌더링 불변). */
+  --shadow-primary-glow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  --shadow-danger-sm: 0 2px 4px rgba(239, 68, 68, 0.1);
+  --shadow-danger-glow: 0 4px 12px rgba(239, 68, 68, 0.3);
 
   /* 전환 효과 */
   --transition-fast: 150ms ease-in-out;
@@ -115,6 +120,205 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
+
+  /* ---- 의미 색 표면/문자/테두리 토큰 (D16 — 화면별 리터럴 대신 여기서 한 번 정의, 다크는 아래 블록이 재정의) ---- */
+  --success-text: #065f46;
+  --success-border: #a7f3d0;
+  --success-surface: #f0fdf4;
+  --success-surface-strong: #dcfce7;
+  --success-soft: rgba(16, 185, 129, 0.15);
+  --success-strong: #059669;
+  --success-strong-hover: #047857;
+  --error-text: #991b1b;
+  --error-text-strong: #7f1d1d;
+  --error-border: #fecaca;
+  --error-surface: #fef2f2;
+  --error-surface-strong: #fee2e2;
+  --error-hairline: rgba(239, 68, 68, 0.2);
+  --error-scroll-thumb: #fca5a5;
+  --danger-color: #dc2626;
+  --danger-hover: #b91c1c;
+  --warning-text: #92400e;
+  --warning-text-strong: #b45309;
+  --warning-border: #fde68a;
+  --warning-surface: #fffbeb;
+  --warning-surface-strong: #fef3c7;
+  --warning-icon: #f59e0b;
+  /* 「건너뜀」 전용 상태색 — 경고(중단)와 같은 토큰을 쓰던 것을 갈랐다.
+     두 상태는 W3 한 화면에 공존할 수 있는데(선택 확장을 건너뛰고 이어가다 중단),
+     글리프·문구색이 같고 라이트에서는 배경까지 같아 사실상 구분되지 않았다.
+     건너뛰기는 경고가 아니라 「지나쳤다」이므로 계열 자체를 분리한다. */
+  --skipped-text: #5b21b6;
+  --skipped-border: #ddd6fe;
+  --skipped-surface: #f5f3ff;
+  --skipped-icon: #7c3aed;
+  --info-text: #1e40af;
+  --info-text-strong: #1d4ed8;
+  --info-border: #bfdbfe;
+  --info-surface: #eff6ff;
+  --info-surface-strong: #dbeafe;
+  --primary-soft: rgba(59, 130, 246, 0.08);
+  --primary-soft-strong: rgba(59, 130, 246, 0.15);
+  --accent-purple: #7e22ce; /* 배지 문구로 쓰인다 — #9333ea 는 자기 배경(soft) 위에서 4.49:1 (9차 #L29) */
+  --accent-purple-soft: rgba(168, 85, 247, 0.15);
+  --dep-auto-color: #d97706;
+  --dep-auto-soft: rgba(217, 119, 6, 0.1);
+  --dep-auto-soft-strong: rgba(217, 119, 6, 0.25);
+
+  /* 코드·로그 표면 (터미널은 두 테마 모두 어둡게 유지) */
+  --code-bg: #1f2937;
+  --code-border: #374151;
+  --code-text: #e5e7eb;
+  --code-action-bg: rgba(255, 255, 255, 0.1);
+  --code-action-bg-hover: rgba(255, 255, 255, 0.2);
+  --code-action-border: rgba(255, 255, 255, 0.2);
+  --log-bg: #0d1117;
+  --log-border: #30363d;
+  --log-text: #d7d7d7;
+  /* 로그 상자는 두 테마 모두 어둡다 — 이 표면 위의 흐린 글자는 테마 반전 토큰이 아니라
+     전용 값을 쓴다 (11차 #B7). #0d1117 대비 6.6:1. */
+  --log-text-muted: #9aa4b2;
+  --log-track: #161b22;
+  --log-thumb: #30363d;
+  --log-thumb-hover: #484f58;
+
+  /* 보조 표면 */
+  --card-header-from: #fafafa;
+  --card-header-to: #f5f5f5;
+  --hairline: rgba(0, 0, 0, 0.06);
+  --surface-overlay: rgba(255, 255, 255, 0.6);
+  --overlay-color: rgba(0, 0, 0, 0.5);
+  --tooltip-bg: #1f2937;
+  --tooltip-text: #ffffff;
+  --toast-bg: #1e293b;
+  --toast-text: #f8fafc;
+  --toggle-off-bg: #cbd5e1;
+  --disabled-bg: #d1d5db;
+  --disabled-text: #9ca3af;
+  --heading-text: #374151;
+  --chip-bg: #f3f4f6;
+  --chip-text: #374151;
+
+  /* ---- 선택자별 다크 재정의를 접으며 신설한 의미 토큰 (D16) ----
+   * 라이트 값은 접기 전 라이트 규칙이 쓰던 값 그대로(팔레트 토큰 참조는 참조로 유지),
+   * 다크 값은 접기 전 다크 블록의 리터럴 그대로. 렌더 결과는 두 테마 모두 불변이다. */
+
+  /* 단색 버튼 (기본/호버/눌림) */
+  --primary-solid: var(--primary-color);
+  --primary-solid-hover: var(--primary-hover);
+  --primary-solid-active: var(--primary-active);
+  --success-solid: var(--success-color);
+  --success-solid-hover: var(--success-strong);
+  /* 경고 단색 버튼(W3 [건너뛰고 계속]) — 아이콘 토큰을 배경으로 전용하지 않는다.
+   * `--warning-icon` 은 다크에서 더 밝아지는 아이콘용이라 배경으로 쓰면 흰 글자가
+   * 라이트보다 어두운 화면에서 더 안 읽히고, `--warning-text-strong` 과 다크값이
+   * 같아 hover 가 resting 과 구분되지 않는다. 라이트 값은 종전 렌더 그대로. */
+  --warning-solid: var(--warning-icon);
+  --warning-solid-hover: var(--warning-text-strong);
+  --warning-solid-active: #92400e;
+  --btn-danger-bg: var(--danger-color);
+  --btn-danger-border: var(--error-color);
+  --btn-danger-hover: var(--danger-color);
+  --btn-danger-active: var(--danger-hover);
+  /* 중단 단색 버튼(W3 [중단]) — .btn 파생이 아닌 독립 클래스라 형제 단색 버튼의 토큰
+   * 정규화에서 빠져 있었고, 그 결과 유일하게 다크에서 대비가 나빠졌다(3.78→2.80).
+   * 라이트 값은 종전 렌더 그대로(--error-color / --danger-color). */
+  --abort-solid: var(--error-color);
+  --abort-solid-hover: var(--danger-color);
+  --abort-solid-active: var(--danger-hover);
+
+  /* 오류 문자·테두리 변형 */
+  --field-error-text: var(--error-color);
+  --error-text-emphasis: var(--error-text);
+  --error-accent-text: var(--error-color);
+  --alert-error-border: var(--error-border);
+  --error-box-border: var(--error-color);
+  --error-box-list-text: var(--text-color);
+  --error-box-sublist-text: var(--text-muted);
+  --fix-guide-hint-text: var(--text-muted);
+  --error-badge-bg: var(--error-light);
+  --success-badge-bg: var(--success-light);
+
+  /* 설치 결과(Step 5) 표면 */
+  --result-success-bg: linear-gradient(135deg, var(--success-surface) 0%, var(--success-surface-strong) 100%);
+  --result-warning-bg: linear-gradient(135deg, var(--warning-surface) 0%, var(--warning-surface-strong) 100%);
+  --result-error-bg: linear-gradient(135deg, var(--error-surface) 0%, var(--error-surface-strong) 100%);
+  --failure-text: var(--text-secondary);
+  --failure-detail-bg: var(--bg-color);
+  --failure-detail-border: var(--error-border);
+  --rollback-notice-bg: var(--warning-surface);
+  --rollback-notice-border: var(--warning-icon);
+  --rollback-notice-text: var(--warning-text);
+  --error-detail-toggle-bg: var(--error-surface);
+  --error-detail-toggle-bg-hover: var(--error-surface-strong);
+  --error-detail-toggle-text: var(--danger-color);
+  --error-scroll-track: var(--error-surface);
+  --error-scroll-thumb-hover: var(--error-color);
+  --inline-code-bg: var(--bg-light);
+  /* 라이트는 `--error-color`(#ef4444) 를 그대로 쓰면 `--inline-code-bg`(#f9fafb) 위에서
+     3.60:1 로 AA 미달이다 — 같은 계열의 진한 값으로 분리한다(6.19:1). 다크는 자기 블록의
+     값(#e5e7eb on #374151 · 8.33:1)을 그대로 둔다. */
+  --inline-code-text: #b91c1c;
+  /* 경고·오류 카드(`.alert-warning`·`.alert-error`) **위에** 놓이는 힌트 — 기본 힌트 토큰
+     (`--text-muted`)은 흰 바탕용이라 그 배경에서는 4.34:1 · 3.96:1 로 AA 미달이다.
+     따뜻한 회색으로 갈라 두 배경 모두에서 6.2:1 이상. */
+  --fix-guide-hint-on-alert-text: #57534e;
+  /* 판정 불능 카드(경고 배경)의 확인 주소 링크 — 기본 링크색(#3b82f6)은 노란 배경 위에서
+     3.30:1 이다. 종전에는 `--warning-text-strong`(#b45309)을 재사용해 4.51:1 로 AA 를 겨우
+     넘겼는데(여유 +0.01), 문자색 토큰이 조금만 밝아져도 미달로 떨어진다 — 전용 토큰으로
+     갈라 더 진한 값을 써서 여유를 둔다(#92400e on #fef3c7 · 6.36:1) (17차 E-3). */
+  --exposure-link-text: #92400e;
+  --env-status-text: var(--warning-color);
+
+  /* 작업 목록 항목 */
+  --task-completed-bg: var(--bg-gray);
+  --task-completed-border: var(--border-color);
+  --task-aborted-bg: var(--warning-surface);
+  --task-aborted-border: var(--warning-color);
+
+  /* 연결 테스트 결과 (Step 3) */
+  --test-result-success-from: var(--success-surface);
+  --test-result-success-to: var(--success-surface-strong);
+  --test-result-error-from: var(--error-surface);
+  --test-result-error-to: var(--error-surface-strong);
+
+  /* 요구사항 카드·배지 */
+  --warning-value-text: var(--warning-text-strong);
+  --badge-neutral-text: var(--text-secondary);
+  --badge-neutral-bg: #ffffff;
+  --badge-neutral-border: var(--border-color);
+
+  /* 확장 선택 카드 */
+  --card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --card-selected-bg: var(--primary-soft);
+  --surface-muted: var(--bg-light);
+  --dep-tag-bg: var(--bg-gray);
+  --dep-tag-text: var(--text-secondary);
+  --dep-auto-solid: var(--dep-auto-color);
+  --dep-auto-card-bg: var(--dep-auto-soft);
+  --dep-auto-badge-bg: var(--dep-auto-soft);
+  --dep-auto-badge-border: var(--dep-auto-soft-strong);
+
+  /* 선택 연동(integrations) 배지·태그·안내 — 필수 의존성(주황)과 구분되는 청록 */
+  --integration-text: #115e59;
+  --integration-icon: #0d9488;
+  --integration-label-text: #0f766e;
+  --integration-notice-bg: rgba(13, 148, 136, 0.08);
+  --integration-notice-border: rgba(13, 148, 136, 0.25);
+  --integration-card-border: #0d9488;
+  --integration-card-bg: rgba(13, 148, 136, 0.08);
+  --integration-solid: #0d9488;
+  --integration-solid-text: #ffffff;
+  --integration-select: #0d9488;
+  --integration-badge-bg: rgba(13, 148, 136, 0.12);
+  --integration-badge-border: rgba(13, 148, 136, 0.3);
+  --integration-tag-bg: rgba(13, 148, 136, 0.08);
+  --integration-tag-border: rgba(13, 148, 136, 0.4);
+  --integration-mismatch-border: rgba(220, 38, 38, 0.45);
+  --integration-warning-text: var(--danger-color);
+  /* 확장 카드의 PHP 확장 미설치 안내 (필수 없음 → 설치 불가, 권장 없음 → 경고) */
+  --php-notice-text: #b45309;
+  --php-notice-blocked-text: var(--danger-color);
 }
 
 /* ========================================
@@ -129,9 +333,12 @@
   --primary-light: #1e3a8a;
 
   /* 색상 시스템 - Secondary */
-  --secondary-color: #94a3b8;
-  --secondary-hover: #cbd5e1;
-  --secondary-active: #e2e8f0;
+  /* 보조 버튼 — 유일 소비처는 .btn-secondary 3상태. 기본/호버의 이전 값(#94a3b8/#cbd5e1)은 접기 전
+   * 다크 블록에 가려져 렌더된 적이 없고, 눌림(#e2e8f0)은 호버 없는 눌림(키보드)에서만 보이던 값이라
+   * 마우스 눌림(hover+active)이 그리던 호버 색으로 통일한다 */
+  --secondary-color: #475569;
+  --secondary-hover: #334155;
+  --secondary-active: #334155;
 
   /* 색상 시스템 - Semantic */
   --success-color: #34d399;
@@ -142,27 +349,6 @@
   --warning-light: #78350f;
   --info-color: #60a5fa;
   --info-light: #1e3a8a;
-
-  /* Red (에러 메시지) */
-  --red-200: #fecaca;
-  --red-600: #dc2626;
-  --red-800: #991b1b;
-  --red-900: #7f1d1d;
-
-  /* Green (성공 메시지) */
-  --green-200: #86efac;
-  --green-600: #065f46;
-  --green-900: #064e3b;
-
-  /* Yellow (경고 메시지) */
-  --yellow-400: #fcd34d;
-  --yellow-800: #92400e;
-  --yellow-900: #78350f;
-
-  /* Blue (정보 메시지) */
-  --blue-300: #93c5fd;
-  --blue-700: #1e40af;
-  --blue-900: #1e3a8a;
 
   /* 텍스트 색상 */
   --text-color: #e2e8f0;
@@ -187,256 +373,181 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7);
-}
+  /* 다크 팔레트: --primary-color #60a5fa · --danger-color #ef4444 */
+  --shadow-primary-glow: 0 4px 12px rgba(96, 165, 250, 0.25);
+  --shadow-danger-sm: 0 2px 4px rgba(239, 68, 68, 0.2);
+  --shadow-danger-glow: 0 4px 12px rgba(239, 68, 68, 0.4);
 
-/* 다크모드 카드 헤더 배경 */
-[data-theme="dark"] .requirement-card-header {
-  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-  border-bottom-color: #475569;
-}
+  /* ---- 의미 색 토큰 다크 판 (D16) — 라이트 토큰을 한 곳에서 재정의한다 ---- */
+  --success-text: #86efac;
+  --success-border: #065f46;
+  --success-surface: rgba(52, 211, 153, 0.12);
+  --success-surface-strong: rgba(52, 211, 153, 0.2);
+  --success-soft: rgba(52, 211, 153, 0.18);
+  --success-strong: #10b981;
+  --success-strong-hover: #047857; /* 유일 소비처 .btn-success:active — 마우스 눌림(hover+active)이 그리던 호버 색으로 통일(이전 #059669 는 키보드 눌림에서만 보이던 값) */
+  --error-text: #fca5a5;
+  --error-text-strong: #fca5a5; /* 유일 소비처 .alert-message 의 다크 블록 값 — 이전 #fecaca 는 사문값 */
+  --error-border: #7f1d1d;
+  --error-surface: rgba(239, 68, 68, 0.12);
+  --error-surface-strong: rgba(239, 68, 68, 0.22);
+  --error-hairline: rgba(239, 68, 68, 0.3);
+  --error-scroll-thumb: #475569; /* 유일 소비처 오류 상세 스크롤 썸의 다크 블록 값 — 이전 #7f1d1d 는 사문값 */
+  --danger-color: #ef4444;
+  --danger-hover: #dc2626;
+  --warning-text: #fcd34d;
+  --warning-text-strong: #fbbf24;
+  --warning-border: #92400e;
+  --warning-surface: rgba(245, 158, 11, 0.12);
+  --warning-surface-strong: rgba(245, 158, 11, 0.2);
+  --warning-icon: #fbbf24;
+  --skipped-text: #c4b5fd;
+  --skipped-border: #8b5cf6;
+  --skipped-surface: rgba(139, 92, 246, 0.14);
+  --skipped-icon: #a78bfa;
+  --info-text: #93c5fd;
+  --info-text-strong: #93c5fd;
+  --info-border: #1e40af;
+  --info-surface: rgba(59, 130, 246, 0.12);
+  --info-surface-strong: rgba(59, 130, 246, 0.22);
+  --primary-soft: rgba(96, 165, 250, 0.12);
+  --primary-soft-strong: rgba(96, 165, 250, 0.22);
+  --accent-purple: #d8b4fe; /* 다크 판 — #c084fc 는 자기 배경 위에서 3.96:1 로 라이트보다 나빴다 */
+  --accent-purple-soft: rgba(192, 132, 252, 0.2);
+  --dep-auto-color: #fbbf24;
+  --dep-auto-soft: rgba(251, 191, 36, 0.14);
+  --dep-auto-soft-strong: rgba(251, 191, 36, 0.3);
 
-/* 다크모드 필수 배지 가독성 개선 */
-[data-theme="dark"] .requirement-badge.badge-required {
-  color: #f1f5f9;
-  background-color: #475569;
-  border-color: #64748b;
-}
+  --code-bg: #0f172a;
+  --code-border: #334155;
+  --code-text: #e2e8f0;
+  --code-action-bg: rgba(255, 255, 255, 0.12);
+  --code-action-bg-hover: rgba(255, 255, 255, 0.22);
+  --code-action-border: rgba(255, 255, 255, 0.24);
 
-/* 다크모드 오류 메시지 색상 개선 */
-[data-theme="dark"] .field-error {
-  color: #fca5a5;
-}
+  --card-header-from: #334155;
+  --card-header-to: #1e293b;
+  --hairline: #475569; /* 유일 소비처 .requirement-card-header 하단선의 다크 블록 값 — 이전 rgba(255,255,255,0.08) 는 사문값 */
+  --surface-overlay: rgba(255, 255, 255, 0.06);
+  --overlay-color: rgba(0, 0, 0, 0.7);
+  --tooltip-bg: #0f172a;
+  --tooltip-text: #e2e8f0;
+  --toast-bg: #334155; /* 유일 소비처 .dep-lock-toast 의 다크 블록 값 — 이전 #0f172a 는 사문값 */
+  --toast-text: #e2e8f0;
+  --toggle-off-bg: #475569;
+  --disabled-bg: #475569;
+  --disabled-text: #94a3b8;
+  --heading-text: #cbd5e1;
+  --chip-bg: #334155;
+  --chip-text: #e2e8f0;
 
-/* 다크모드 결과 섹션 배경 */
-[data-theme="dark"] .result-section:has(.result-icon-success) {
-  background: var(--green-900);
-  border-color: var(--green-600);
-}
+  /* ---- 선택자별 다크 재정의를 접으며 신설한 의미 토큰 — 접기 전 다크 블록의 값 그대로 ---- */
 
-[data-theme="dark"] .result-section:has(.result-icon-warning) {
-  background: var(--yellow-900);
-  border-color: var(--yellow-800);
-}
+  /* 단색 버튼 (기본/호버/눌림) */
+  --primary-solid: #2563eb;
+  --primary-solid-hover: #1d4ed8;
+  --primary-solid-active: #1d4ed8;
+  --success-solid: #059669;
+  --success-solid-hover: #047857;
+  /* 형제 단색 버튼과 같은 방향 — 다크에서 배경을 더 어둡게 내려 흰 글자 대비를 올린다
+   * (primary 3.68→5.17 · success 2.54→3.77 · danger 4.83→8.31 · warning 2.15→5.02). */
+  --warning-solid: #b45309;
+  --warning-solid-hover: #92400e;
+  --warning-solid-active: #78350f;
+  --btn-danger-bg: #991b1b;
+  --btn-danger-border: #991b1b;
+  --btn-danger-hover: #7f1d1d;
+  --btn-danger-active: #7f1d1d;
+  /* 중단 버튼도 같은 방향(2.80→8.31) — 같은 파괴적 동작이므로 danger 와 같은 값을 쓴다 */
+  --abort-solid: #991b1b;
+  --abort-solid-hover: #7f1d1d;
+  --abort-solid-active: #641818;
 
-[data-theme="dark"] .result-section:has(.result-icon-error) {
-  background: var(--red-900);
-  border-color: var(--red-600);
-}
+  /* 오류 문자·테두리 변형 */
+  --field-error-text: #fca5a5;
+  --error-text-emphasis: #fecaca;
+  --error-accent-text: #fecaca;
+  --alert-error-border: #dc2626;
+  --error-box-border: #dc2626;
+  --error-box-list-text: #fecaca;
+  --error-box-sublist-text: #fecaca;
+  --fix-guide-hint-text: #9ca3af;
+  --error-badge-bg: rgba(239, 68, 68, 0.2);
+  --success-badge-bg: rgba(52, 211, 153, 0.2);
 
-/* 다크모드 결과 메시지 텍스트 색상 */
-[data-theme="dark"] .result-message {
-  color: #cbd5e1;
-}
+  /* 설치 결과(Step 5) 표면 */
+  --result-success-bg: #064e3b;
+  --result-warning-bg: #78350f;
+  --result-error-bg: #7f1d1d;
+  --failure-text: #e2e8f0;
+  --failure-detail-bg: #7f1d1d;
+  --failure-detail-border: #475569;
+  --rollback-notice-bg: #451a03;
+  --rollback-notice-border: #92400e;
+  --rollback-notice-text: #fbbf24;
+  --error-detail-toggle-bg: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+  --error-detail-toggle-bg-hover: linear-gradient(135deg, #475569 0%, #334155 100%);
+  --error-detail-toggle-text: var(--text-color);
+  --error-scroll-track: var(--bg-color);
+  --error-scroll-thumb-hover: #64748b;
+  --inline-code-bg: #374151;
+  --inline-code-text: #e5e7eb;
+  /* 다크 경고(#78350f)·오류(#7f1d1d) 배경 위 힌트 — 기본 #9ca3af 는 3.57:1 · 3.95:1 로 미달 */
+  --fix-guide-hint-on-alert-text: #e7e5e4;
+  /* 다크 경고 배경 위 링크 — 기본 #60a5fa 는 3.57:1, 경고 강조색 #fbbf24 는 5.43:1 */
+  --exposure-link-text: var(--warning-text-strong);
+  --env-status-text: #fcd34d;
 
-[data-theme="dark"] .failure-main-message {
-  color: #e2e8f0;
-}
+  /* 작업 목록 항목 */
+  --task-completed-bg: #1e293b;
+  --task-completed-border: #34d399;
+  --task-aborted-bg: #1e293b;
+  --task-aborted-border: #f59e0b;
 
-/* 다크모드 완료된 작업 항목 배경 */
-[data-theme="dark"] .task-completed {
-  background-color: #1e293b;
-  border-color: #34d399;
-}
+  /* 연결 테스트 결과 (Step 3) */
+  --test-result-success-from: rgba(52, 211, 153, 0.1);
+  --test-result-success-to: rgba(52, 211, 153, 0.15);
+  --test-result-error-from: rgba(239, 68, 68, 0.1);
+  --test-result-error-to: rgba(239, 68, 68, 0.15);
 
-/* 다크모드 중단된 작업 항목 배경 */
-[data-theme="dark"] .task-aborted {
-  background-color: #1e293b;
-  border-color: #f59e0b;
-}
+  /* 요구사항 카드·배지 */
+  --warning-value-text: #fcd34d;
+  --badge-neutral-text: #f1f5f9;
+  --badge-neutral-bg: #475569;
+  --badge-neutral-border: #64748b;
 
-/* 다크모드 설치 안내 메시지 */
-[data-theme="dark"] .install-info-simple .info-item {
-  color: #e2e8f0;
-}
+  /* 확장 선택 카드 */
+  --card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --card-selected-bg: rgba(59, 130, 246, 0.15);
+  --surface-muted: var(--bg-gray);
+  --dep-tag-bg: rgba(255, 255, 255, 0.1);
+  /* 12px 이하 배지 문구다 — --text-muted 는 이 배경에서 4.2:1 로 라이트(6.9:1)보다 나빠진다 */
+  --dep-tag-text: var(--text-secondary);
+  /* 흰 글리프를 얹는 칩 배경 — 형제 단색과 같은 방향으로 내린다(2.15→5.02) */
+  --dep-auto-solid: #b45309;
+  --dep-auto-card-bg: rgba(245, 158, 11, 0.12);
+  --dep-auto-badge-bg: rgba(245, 158, 11, 0.15);
+  --dep-auto-badge-border: rgba(245, 158, 11, 0.3);
 
-[data-theme="dark"] .install-info-simple .info-item strong {
-  color: #cbd5e1;
-}
-
-/* 다크모드 버튼 색상 조정 */
-[data-theme="dark"] .btn-primary {
-  background-color: #2563eb;
-  border-color: #2563eb;
-}
-
-[data-theme="dark"] .btn-primary:hover {
-  background-color: #1d4ed8;
-  border-color: #1d4ed8;
-}
-
-[data-theme="dark"] .btn-secondary {
-  background-color: #475569;
-  border-color: #475569;
-}
-
-[data-theme="dark"] .btn-secondary:hover {
-  background-color: #334155;
-  border-color: #334155;
-}
-
-[data-theme="dark"] .btn-success {
-  background-color: #059669;
-  border-color: #059669;
-}
-
-[data-theme="dark"] .btn-success:hover {
-  background-color: #047857;
-  border-color: #047857;
-}
-
-[data-theme="dark"] .btn-danger {
-  background-color: #991b1b;
-  border-color: #991b1b;
-}
-
-[data-theme="dark"] .btn-danger:hover {
-  background-color: #7f1d1d;
-  border-color: #7f1d1d;
-}
-
-/* ========================================
-   다크모드 Alert 메시지 (Step 2, Step 3)
-   ======================================== */
-
-[data-theme="dark"] .alert-error {
-  color: var(--red-200);
-  background-color: var(--red-900);
-  border-color: var(--red-600);
-}
-
-[data-theme="dark"] .alert-success {
-  color: var(--green-200);
-  background-color: var(--green-900);
-  border-color: var(--green-600);
-}
-
-[data-theme="dark"] .alert-warning {
-  color: var(--yellow-400);
-  background-color: var(--yellow-900);
-  border-color: var(--yellow-800);
-}
-
-[data-theme="dark"] .alert-info {
-  color: var(--blue-300);
-  background-color: var(--blue-900);
-  border-color: var(--blue-700);
-}
-
-/* ========================================
-   다크모드 Requirements Error Box (Step 3)
-   ======================================== */
-
-[data-theme="dark"] .requirements-error-box {
-  background-color: var(--red-900);
-  border-color: var(--red-600);
-}
-
-[data-theme="dark"] .error-box-title,
-[data-theme="dark"] .error-box-list,
-[data-theme="dark"] .error-box-list li,
-[data-theme="dark"] .error-box-list ul li {
-  color: var(--red-200);
-}
-
-[data-theme="dark"] .permission-fix-guide {
-  border-top-color: rgba(239, 68, 68, 0.3);
-}
-
-[data-theme="dark"] .fix-guide-label {
-  color: var(--red-200);
-}
-
-[data-theme="dark"] .fix-guide-hint {
-  color: var(--gray-400, #9ca3af);
-}
-
-/* 다크모드 Alert 내부 요소 (Step 0: Storage 권한 경고) */
-[data-theme="dark"] .alert-title {
-  color: var(--red-200);
-}
-
-[data-theme="dark"] .alert-message {
-  color: #fca5a5;
-}
-
-/* 다크모드 권한 뱃지 (Step 0: 현재 소유자/그룹/권한) */
-[data-theme="dark"] .permission-badge.badge-current {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-}
-
-[data-theme="dark"] .permission-badge.badge-required {
-  background-color: rgba(52, 211, 153, 0.2);
-  color: #86efac;
-}
-
-[data-theme="dark"] .missing-files li code {
-  background-color: var(--gray-700, #374151);
-  color: var(--gray-200, #e5e7eb);
-}
-
-[data-theme="dark"] .env-check-actions #env-check-status {
-  color: var(--yellow-300, #fcd34d);
-}
-
-/* ========================================
-   다크모드 Step 5 결과 아이콘 (Installation)
-   ======================================== */
-
-[data-theme="dark"] .result-section:has(.result-icon-error) .result-title {
-  color: var(--red-200);
-}
-
-[data-theme="dark"] .result-icon-error .result-icon-circle {
-  stroke: var(--red-200);
-}
-
-[data-theme="dark"] .result-icon-error .result-icon-x {
-  stroke: var(--red-200);
-}
-
-/* ========================================
-   다크모드 Step 5 오류 상세 보기 (Installation)
-   ======================================== */
-
-[data-theme="dark"] .failure-error-detail {
-  background-color: var(--red-900);
-  border-color: #475569;
-}
-
-[data-theme="dark"] .failure-rollback-notice {
-  background-color: #451a03;
-  border-color: #92400e;
-  color: #fbbf24;
-}
-
-[data-theme="dark"] .error-detail-toggle {
-  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-  border-bottom-color: #475569;
-  color: var(--text-color);
-}
-
-[data-theme="dark"] .error-detail-toggle:hover,
-[data-theme="dark"] .error-detail-toggle[aria-expanded="true"] {
-  background: linear-gradient(135deg, #475569 0%, #334155 100%);
-}
-
-[data-theme="dark"] .error-stack {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-}
-
-[data-theme="dark"] .error-detail-content::-webkit-scrollbar-track {
-  background: var(--bg-color);
-}
-
-[data-theme="dark"] .error-detail-content::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-color: var(--bg-color);
-}
-
-[data-theme="dark"] .error-detail-content::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  /* 선택 연동(integrations) */
+  --integration-text: #99f6e4;
+  --integration-icon: #2dd4bf;
+  --integration-label-text: #5eead4;
+  --integration-notice-bg: rgba(45, 212, 191, 0.1);
+  --integration-notice-border: rgba(45, 212, 191, 0.3);
+  --integration-card-border: #2dd4bf;
+  --integration-card-bg: rgba(45, 212, 191, 0.12);
+  --integration-solid: #14b8a6;
+  --integration-select: #2dd4bf;
+  --integration-badge-bg: rgba(45, 212, 191, 0.15);
+  --integration-badge-border: rgba(45, 212, 191, 0.35);
+  --integration-tag-bg: rgba(45, 212, 191, 0.1);
+  --integration-tag-border: rgba(45, 212, 191, 0.4);
+  --integration-mismatch-border: rgba(248, 113, 113, 0.6);
+  --integration-warning-text: #f87171;
+  /* 확장 카드의 PHP 확장 미설치 안내 */
+  --php-notice-text: #fbbf24;
+  --php-notice-blocked-text: #f87171;
 }
 
 /* ========================================
@@ -726,6 +837,21 @@ hr {
   margin-bottom: var(--spacing-lg);
 }
 
+/* 설치 소유권 잠금 화면 — 복구 토큰 입력 아래의 「처음부터 다시」 안내.
+   본문 설명(.installer-description)과 같은 단계의 글자이고, 입력 폼과 떨어뜨리기만 한다. */
+.recovery-reset-hint {
+  margin-top: var(--spacing-lg);
+}
+
+/* 복구 토큰 안내 (Step 4·5 공용) — 경고 알림 상자 안에 복사 가능한 토큰 상자를 둔다. */
+.recovery-token-notice {
+  margin-bottom: var(--spacing-lg);
+}
+
+.recovery-token-notice .code-box {
+  margin-top: var(--spacing-sm);
+}
+
 /* 에러 아이콘 */
 .error-icon {
   display: inline-flex;
@@ -829,6 +955,23 @@ hr {
   letter-spacing: -0.3px;
 }
 
+/* 입력 보조 문구 — 뷰가 form-help(9곳)·form-hint(1곳)로 참조하는데 규칙이 없어
+   본문과 같은 16px 로 그려지고 있었다. 같은 역할의 card-description 과 같은 토큰을 쓴다. */
+.form-help {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin: var(--spacing-xs) 0 0 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.form-hint {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+  line-height: var(--line-height-relaxed);
+}
+
 /* 일반 체크박스 스타일 */
 .checkbox-input {
   cursor: pointer;
@@ -853,7 +996,7 @@ hr {
   width: 3rem;
   height: 1.5rem;
   appearance: none;
-  background-color: #cbd5e1;
+  background-color: var(--toggle-off-bg);
   border-radius: 1rem;
   cursor: pointer;
   transition: background-color var(--transition-fast);
@@ -871,7 +1014,7 @@ hr {
   left: 0.125rem;
   width: 1.25rem;
   height: 1.25rem;
-  background-color: white;
+  background-color: var(--text-white);
   border-radius: 50%;
   transition: transform var(--transition-fast);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -970,7 +1113,7 @@ hr {
   display: none;
   margin-top: var(--spacing-xs);
   font-size: var(--font-size-sm);
-  color: var(--error-color);
+  color: var(--field-error-text);
   line-height: var(--line-height-normal);
 }
 
@@ -1011,20 +1154,20 @@ hr {
 
 .btn-primary {
   color: var(--text-white);
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+  background-color: var(--primary-solid);
+  border-color: var(--primary-solid);
 }
 
-.btn-primary:hover {
-  background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-solid-hover);
+  border-color: var(--primary-solid-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:active {
-  background-color: var(--primary-active);
-  border-color: var(--primary-active);
+  background-color: var(--primary-solid-active);
+  border-color: var(--primary-solid-active);
   transform: translateY(0);
 }
 
@@ -1034,7 +1177,7 @@ hr {
   border-color: var(--secondary-color);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background-color: var(--secondary-hover);
   border-color: var(--secondary-hover);
   transform: translateY(-1px);
@@ -1049,40 +1192,45 @@ hr {
 
 .btn-success {
   color: var(--text-white);
-  background-color: var(--success-color);
-  border-color: var(--success-color);
+  background-color: var(--success-solid);
+  border-color: var(--success-solid);
 }
 
-.btn-success:hover {
-  background-color: #059669;
-  border-color: #059669;
+.btn-success:hover:not(:disabled) {
+  background-color: var(--success-solid-hover);
+  border-color: var(--success-solid-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
 
 .btn-success:active {
-  background-color: #047857;
-  border-color: #047857;
+  background-color: var(--success-strong-hover);
+  border-color: var(--success-strong-hover);
   transform: translateY(0);
 }
 
 .btn-danger {
   color: var(--text-white);
-  background-color: var(--error-color);
-  border-color: var(--error-color);
+  background-color: var(--btn-danger-bg);
+  border-color: var(--btn-danger-border);
 }
 
-.btn-danger:hover {
-  background-color: #dc2626;
-  border-color: #dc2626;
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--btn-danger-hover);
+  border-color: var(--btn-danger-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
 
-.btn-danger:active {
-  background-color: #b91c1c;
-  border-color: #b91c1c;
+.btn-danger:active:not(:disabled) {
+  background-color: var(--btn-danger-active);
+  border-color: var(--btn-danger-active);
   transform: translateY(0);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-lg {
@@ -1138,27 +1286,50 @@ hr {
 }
 
 .alert-error {
-  color: #991b1b;
+  color: var(--error-text-emphasis);
   background-color: var(--error-light);
-  border-color: #fecaca;
+  border-color: var(--alert-error-border);
 }
 
 .alert-success {
-  color: #065f46;
+  color: var(--success-text);
   background-color: var(--success-light);
-  border-color: #a7f3d0;
+  border-color: var(--success-border);
 }
 
 .alert-warning {
-  color: #92400e;
+  color: var(--warning-text);
   background-color: var(--warning-light);
-  border-color: #fde68a;
+  border-color: var(--warning-border);
 }
 
 .alert-info {
-  color: #1e40af;
+  color: var(--info-text);
   background-color: var(--info-light);
-  border-color: #bfdbfe;
+  border-color: var(--info-border);
+}
+
+/* 알림 상자 안의 기술 상세 한 줄 — 작게만 하고 **흐리게 하지는 않는다**.
+ *
+ * 종전에는 인라인 `style="font-size:0.85rem;opacity:0.75;"` 였다. 색 토큰은 정상인데
+ * 투명도가 대비를 깎아 라이트 3.75:1 · 다크 4.31:1 로 둘 다 기준(4.5:1) 미달이었다
+ * (제거하면 6.37:1 · 6.29:1). 13.6px 보통 굵기라 대형 텍스트 완화 대상도 아니다.
+ * 토큰을 보는 검사는 투명도 채널을 원리상 볼 수 없어 이 지점이 남아 있었다 (12차 #B33). */
+.alert-technical-detail {
+  font-size: var(--font-size-sm);
+  margin-bottom: 0;
+}
+
+/* 운영자 **판정 기준** 한 줄 (D1) — 사유 문장 바로 아래, 목록보다 위.
+ *
+ * 사유는 여럿이지만 「무엇을 보고 정상/실패를 가르는가」는 하나다. 그 하나를 사유 문장과
+ * 같은 굵기로 흘려보내면 목록 사이에 묻히고, 정작 그 문장이 없어서 운영자가 정상 응답
+ * (문서 루트를 바꿀 수 없는 배치의 설치 안내 화면)을 노출로 읽었다 — 그래서 강조한다.
+ * 흐리게 하지 않는다: 투명도는 대비를 깎고 토큰 검사가 그것을 보지 못한다(#B33 전례). */
+.exposure-criteria {
+  margin-top: var(--spacing-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--warning-text);
 }
 
 .alert-list {
@@ -1250,10 +1421,12 @@ hr {
   color: var(--text-color);
 }
 
+/* 바로 왼쪽의 .progress-label 은 --text-color 라 선명한데 이 값만 3.72:1 이었다 —
+   한 줄 안에서 규칙이 갈렸다 (11차 #B3). */
 .progress-percentage {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--primary-color);
+  color: var(--info-text);
 }
 
 .progress-bar-bg {
@@ -1288,6 +1461,21 @@ hr {
   color: var(--text-secondary);
   margin-top: var(--spacing-sm);
   font-style: italic;
+}
+
+/* 단계별 실행의 경과 표시 (D2 L9) — 형제(`progress-status`)보다 한 단계 약하게 둔다.
+   이것은 진행 **사실**이 아니라 「서버가 아직 일하고 있다」는 생존 신호다. */
+.progress-elapsed {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+}
+
+/* 설치 완료 표시 — 색은 토큰이 정한다 (D16). 인라인 style 로 칠하면 다크 재정의가
+   도달하지 못해 그 표시만 밝은 테마 색으로 남는다. */
+.progress-status.progress-status--success {
+  color: var(--success-text);
+  font-weight: bold;
 }
 
 .task-list {
@@ -1379,9 +1567,9 @@ hr {
 }
 
 .task-active {
-  color: var(--primary-color);
+  color: var(--info-text);
   font-weight: var(--font-weight-medium);
-  background-color: rgba(99, 102, 241, 0.05);
+  background-color: var(--primary-soft);
   border-color: var(--primary-color);
 }
 
@@ -1390,9 +1578,14 @@ hr {
   color: var(--primary-color);
 }
 
+/* 항목 **문구**는 12~14px 본문이다 — 아이콘·테두리용 밝은 값(`--success-color` 등)을 쓰면
+ * 라이트에서 2.0~3.4:1 로 §11.5 의 4.5:1 을 못 넘긴다. 같은 목록의 `.task-skipped` 는 이미
+ * 문구 전용 토큰을 쓰고 있어, 한 목록 안에서 규칙이 갈려 있었다 (10차 #M6). 아이콘·테두리는
+ * 그대로 둔다 — 그 자리는 도형이라 본문 대비 기준의 대상이 아니다. */
 .task-completed {
-  color: var(--success-color);
-  background-color: #f3f4f6;
+  color: var(--success-text);
+  background-color: var(--task-completed-bg);
+  border-color: var(--task-completed-border);
 }
 
 .task-completed .task-icon {
@@ -1401,8 +1594,8 @@ hr {
 }
 
 .task-failed {
-  color: var(--error-color);
-  background-color: rgba(239, 68, 68, 0.05);
+  color: var(--error-text);
+  background-color: var(--error-surface);
   border-color: var(--error-color);
 }
 
@@ -1412,9 +1605,9 @@ hr {
 }
 
 .task-aborted {
-  color: var(--warning-color);
-  background-color: rgba(245, 158, 11, 0.05);
-  border-color: var(--warning-color);
+  color: var(--warning-text);
+  background-color: var(--task-aborted-bg);
+  border-color: var(--task-aborted-border);
 }
 
 .task-aborted .task-icon {
@@ -1463,11 +1656,12 @@ hr {
   transition: transform var(--transition-fast);
 }
 
-/* 아코디언 토글 아이콘 */
+/* 아코디언 토글 아이콘 — 같은 헤더의 .task-group-status 는 --bg-color 위라 통과하는데
+   이 글리프만 --bg-gray 위라 4.46:1 / 4.00:1 이었다 (11차 #B8). */
 .task-group-toggle {
   margin-left: auto;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   transition: transform var(--transition-fast);
 }
 
@@ -1491,36 +1685,57 @@ hr {
   color: var(--text-muted);
 }
 
+/* 그룹 요약 배지도 같은 규칙이다 (10차 #M7) — 완료된 그룹은 접히므로 이 배지가 그 그룹에
+ * 남는 유일한 정보다. 라이트에서 1.9~3.1:1 이던 것을 문구 전용 토큰으로 올린다. */
 .task-group-status.status-in-progress {
-  color: var(--primary-color);
+  color: var(--info-text);
   background-color: var(--primary-light);
 }
 
 .task-group-status.status-completed {
-  color: var(--success-color);
+  color: var(--success-text);
   background-color: var(--success-light);
 }
 
 .task-group-status.status-error {
-  color: var(--error-color);
+  color: var(--error-text);
   background-color: var(--error-light);
 }
 
 .task-group-status.status-aborted {
-  color: var(--warning-color);
+  color: var(--warning-text);
   background-color: var(--warning-light);
 }
 
+/* 펼친 상태에는 높이 상한을 두지 않으면서 접기 애니메이션도 유지한다 (제품 결정 13차 — B30 복구).
+ *
+ * 종전에는 `max-height: 1000px` 이 상한이었다. 항목 하나가 약 40px 이므로 22단계면 이미
+ * 888px 이고, 좁은 화면(≤767px)에서 항목이 두 줄로 접히면 같은 22단계가 약 1,408px 이 된다 —
+ * `overflow: hidden` 이라 넘친 마지막 6~7단계가 스크롤바도 없이 화면에서 사라졌다. 확장을
+ * 많이 고른 설치일수록 잘리는 단계가 많아지는데, 잘렸다는 사실 자체가 화면에 나타나지 않는다.
+ *
+ * 12차는 그 잘림을 `max-height: none` 으로 막았는데, `none` 은 `0` 과 보간되지 않아 접기
+ * 애니메이션이 함께 사라졌다(패딩 전환만 남았다). 그래서 높이 상한이 아니라 **그리드 행
+ * 크기**를 전환한다 — `1fr ↔ 0fr` 은 보간되고, 펼친 상태의 `1fr` 은 내용 높이를 그대로
+ * 따르므로 상한이 없다. 이 방식은 단일 자식(`.task-group-items-inner`)을 요구한다:
+ * 자식이 여럿이면 두 번째 행부터는 `auto` 라 접히지 않는다. 실제 클리핑은 그 자식이 맡는다. */
 .task-group-items {
+  display: grid;
+  grid-template-rows: 1fr;
   padding: var(--spacing-xs);
-  max-height: 1000px;
+  transition: grid-template-rows 0.3s ease-in-out, padding 0.3s ease-in-out;
+}
+
+/* 접히는 동안 넘치는 내용을 잘라내는 자리 — 그리드 항목의 기본 `min-height: auto` 가
+ * 0fr 을 무시하므로 `min-height: 0` 이 함께 필요하다. */
+.task-group-items-inner {
   overflow: hidden;
-  transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+  min-height: 0;
 }
 
 /* 아코디언 접힌 상태 */
 .task-group.collapsed .task-group-items {
-  max-height: 0;
+  grid-template-rows: 0fr;
   padding: 0 var(--spacing-xs);
 }
 
@@ -1538,7 +1753,7 @@ hr {
 
 .task-group-items .task-item:hover {
   box-shadow: none;
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-light);
 }
 
 .task-group-items .task-item + .task-item {
@@ -1557,21 +1772,6 @@ hr {
   height: 16px;
 }
 
-/* 다크 모드 그룹 스타일 */
-.dark .task-group {
-  background-color: var(--bg-color);
-  border-color: var(--border-color);
-}
-
-.dark .task-group-header {
-  background-color: var(--bg-secondary);
-  border-color: var(--border-color);
-}
-
-.dark .task-group-items .task-item:hover {
-  background-color: var(--bg-secondary);
-}
-
 /* 로그 섹션 타이틀 */
 .log-section-title {
   font-size: var(--font-size-lg);
@@ -1586,8 +1786,8 @@ hr {
 .install-log {
   max-height: 400px;
   padding: var(--spacing-md);
-  background-color: #0d1117;
-  border: 1px solid #30363d;
+  background-color: var(--log-bg);
+  border: 1px solid var(--log-border);
   border-radius: var(--border-radius);
   overflow-y: auto;
   overflow-x: hidden;
@@ -1604,23 +1804,23 @@ hr {
 }
 
 .install-log::-webkit-scrollbar-track {
-  background: #161b22;
+  background: var(--log-track);
   border-radius: 4px;
 }
 
 .install-log::-webkit-scrollbar-thumb {
-  background: #30363d;
+  background: var(--log-thumb);
   border-radius: 4px;
 }
 
 .install-log::-webkit-scrollbar-thumb:hover {
-  background: #484f58;
+  background: var(--log-thumb-hover);
 }
 
 .log-entry {
   font-size: 13px;
   line-height: 1.5;
-  color: #d7d7d7;
+  color: var(--log-text);
   margin-bottom: 4px;
   word-break: break-word;
   padding: 2px 0;
@@ -1632,10 +1832,115 @@ hr {
   margin-bottom: 0;
 }
 
+/* 명령 상세 (자세히 접기) — 진행 기록에서 걷어낸 커맨드 원문의 자리 (§12.0 W3).
+   접기 기제는 .error-detail-* 과 같다(toggleErrorDetail 의 `.show`). 색만 중립 계열을
+   쓴다 — 이 영역은 실패가 아니라 「필요하면 펼쳐 보는 진단」이다. */
+.command-output-section {
+  margin-top: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.command-output-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-light);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.command-output-toggle:hover,
+.command-output-toggle[aria-expanded="true"] {
+  background-color: var(--bg-gray);
+}
+
+.command-output-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: var(--font-size-sm);
+  transition: transform var(--transition-fast);
+}
+
+.command-output-toggle[aria-expanded="true"] .command-output-toggle-icon {
+  transform: rotate(90deg);
+}
+
+.command-output-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--transition-base) ease-out;
+}
+
+.command-output-content.show {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.command-output-log {
+  margin: 0;
+  padding: var(--spacing-md) var(--spacing-sm);
+  background-color: var(--log-bg);
+  color: var(--log-text);
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 100%;
+  word-break: break-word;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* 로그 상자는 「터미널은 두 테마 모두 어둡게」로 --log-bg 가 고정인데, --text-muted 는
+   테마마다 뒤집힌다 — 라이트에서 어두운 회색을 검은 배경에 얹어 3.88:1 이 됐다.
+   고정 표면에는 그 표면 전용 토큰을 쓴다 (11차 #B7). */
+/* 중단 화면의 사유 줄 (11차 #A12) — 결과 본문과 같은 층의 문구다. */
+.abort-reason-notice {
+  margin: var(--spacing-sm) 0 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* 점유 해제까지 남은 시간 (D7) — 실패 카드 본문 바로 아래, 형제(`.result-message`)와
+   같은 층이라 같은 토큰을 쓴다. 새 색을 들이지 않는 것이 목적이다: 이 줄은 초마다 바뀌므로
+   눈이 먼저 가는데, 강조 색을 주면 정작 실패 사유보다 세어 주는 숫자가 앞선다. */
+.lock-wait-countdown {
+  margin: var(--spacing-sm) 0 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 커맨드 원문 한 줄 — 종전에는 `<pre>` 의 textContent 에 문자열로 누적했다. 그 방식은
+   줄마다 상자 전체를 다시 만들어 줄 수의 제곱에 비례하는 복사가 되므로(실측: 한 설치에
+   643,167 자) 줄을 각자의 요소로 둔다. `<pre>` 의 `white-space: pre-wrap` 을 그대로
+   물려받으므로 보이는 모양은 종전과 같다. */
+.command-output-line {
+  margin: 0;
+}
+
+/* 화면 상한(PROGRESS_LOG_MAX_LINES)을 넘겨 앞에서 걷어낸 줄이 있음을 알리는 한 줄.
+   전체 기록은 storage/logs/installation.log 가 갖는다는 사실을 함께 말한다. */
+.log-truncated-notice {
+  color: var(--log-text-muted);
+  font-style: italic;
+  padding-bottom: var(--spacing-sm);
+}
+
 .log-placeholder {
   text-align: center;
   padding: var(--spacing-xl);
-  color: var(--text-muted);
+  color: var(--log-text-muted);
   font-style: italic;
 }
 
@@ -1665,11 +1970,25 @@ hr {
   100% { transform: rotate(360deg); }
 }
 
+/* 글줄 안에 놓이는 작은 스피너 — Step 3 의 "확인 중…" 표시가 참조하는데 규칙이 없어
+   빈 span 으로 아무것도 보이지 않았다. .spinner(56px 블록)·.task-icon-spinner(작업 목록용)
+   와는 놓이는 자리가 달라 별도로 둔다. */
+.loading-spinner {
+  display: inline-block;
+  vertical-align: -0.125em;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--bg-gray);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 /* 작업 목록용 작은 스피너 */
 .task-icon-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(99, 102, 241, 0.2);
+  border: 2px solid var(--primary-soft-strong);
   border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -1706,15 +2025,15 @@ hr {
 }
 
 .test-result .alert-success {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  background: linear-gradient(135deg, var(--test-result-success-from) 0%, var(--test-result-success-to) 100%);
   border-color: var(--success-color);
-  color: #065f46;
+  color: var(--success-text);
 }
 
 .test-result .alert-error {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  background: linear-gradient(135deg, var(--test-result-error-from) 0%, var(--test-result-error-to) 100%);
   border-color: var(--error-color);
-  color: #991b1b;
+  color: var(--error-text-emphasis);
 }
 
 /* 기존 DB 테이블 감지 인라인 카드 (#244)
@@ -1726,10 +2045,10 @@ hr {
   gap: 0;
   margin-top: var(--spacing-md);
   padding: var(--spacing-lg);
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border: 1px solid #fde68a;
+  background: linear-gradient(135deg, var(--warning-surface) 0%, var(--warning-surface-strong) 100%);
+  border: 1px solid var(--warning-border);
   border-radius: var(--border-radius-lg);
-  color: #78350f;
+  color: var(--warning-text);
   box-shadow: var(--shadow-sm);
 }
 
@@ -1751,8 +2070,8 @@ hr {
 }
 
 .test-result .db-existing-tables-card .db-existing-tables-list {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid #fde68a;
+  background: var(--surface-overlay);
+  border: 1px solid var(--warning-border);
   border-radius: var(--border-radius);
   padding: var(--spacing-sm) var(--spacing-md);
   margin: 0 0 var(--spacing-sm) 0;
@@ -1775,8 +2094,8 @@ hr {
   gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid #fde68a;
+  background: var(--surface-overlay);
+  border: 1px solid var(--warning-border);
   border-radius: var(--border-radius);
   cursor: pointer;
   font-weight: var(--font-weight-medium);
@@ -1784,19 +2103,6 @@ hr {
 
 .test-result .db-existing-tables-card .db-backup-confirm-checkbox input[type="checkbox"] {
   cursor: pointer;
-}
-
-/* 다크모드 테스트 결과 (Step 3: DB/PHP 연결 테스트) */
-[data-theme="dark"] .test-result .alert-success {
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.1) 0%, rgba(52, 211, 153, 0.15) 100%);
-  border-color: var(--success-color);
-  color: var(--green-200);
-}
-
-[data-theme="dark"] .test-result .alert-error {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.15) 100%);
-  border-color: var(--error-color);
-  color: var(--red-200);
 }
 
 .test-result-icon {
@@ -1849,7 +2155,7 @@ hr {
 .requirement-card--warning {
   border-color: var(--warning-color);
   border-left-width: 4px;
-  background-color: #fffbeb;
+  background-color: var(--warning-surface);
 }
 
 .requirement-card--warning .requirement-card-header {
@@ -1857,14 +2163,14 @@ hr {
 }
 
 .requirement-card--warning .value-text {
-  color: #b45309;
+  color: var(--warning-value-text);
   font-weight: 600;
 }
 
 .requirement-card--fail {
   border-color: var(--error-color);
   border-left-width: 4px;
-  background-color: #fef2f2;
+  background-color: var(--error-surface);
 }
 
 .requirement-card--fail .requirement-card-header {
@@ -1872,33 +2178,74 @@ hr {
 }
 
 .requirement-card--fail .value-text {
-  color: #b91c1c;
+  color: var(--error-text);
   font-weight: 600;
 }
 
-[data-theme="dark"] .requirement-card--warning {
-  background-color: rgba(245, 158, 11, 0.12);
+/* 정보(파랑) 카드 — 실행 방식 판정처럼 통과/차단 게이트가 아닌 "안내" 항목 (A-1 · W1) */
+.requirement-card--info {
+  border-color: var(--info-color);
+  border-left-width: 4px;
+  background-color: var(--info-surface);
 }
 
-[data-theme="dark"] .requirement-card--warning .value-text {
-  color: #fcd34d;
+.requirement-card--info .requirement-card-header {
+  background: transparent;
 }
 
-[data-theme="dark"] .requirement-card--fail {
-  background-color: rgba(239, 68, 68, 0.12);
+.requirement-card--info .value-text {
+  color: var(--info-text-strong);
+  font-weight: 600;
 }
 
-[data-theme="dark"] .requirement-card--fail .value-text {
-  color: #fca5a5;
+/* 실행 방식 정보 카드 본문 */
+.execution-mode-info {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
 
+.execution-mode-info p {
+  margin: 0 0 var(--spacing-sm);
+}
+
+.execution-mode-info ul {
+  margin: 0 0 var(--spacing-md);
+  padding-left: 1.25rem;
+}
+
+.execution-mode-info ul:last-child {
+  margin-bottom: 0;
+}
+
+.execution-mode-info li {
+  margin-bottom: 2px;
+}
+
+/* [자세히 보기] — 카드 오른쪽 끝에 둔다 (§12 W1).
+ *
+ * 색은 토큰(`a { color: var(--primary-color) }`)에서 상속받으므로 여기서 다시 선언하지
+ * 않는다. 다크 판은 그 토큰 한 곳에서 재정의된다 — 화면마다 색을 적으면 새 화면이
+ * 추가될 때마다 다크 대응이 누락된다 (D16). */
+.execution-mode-more {
+  margin: 0;
+  text-align: right;
+}
+
+/* 이 블록이 `.requirement-card-header` 의 유일한 선언이다.
+ *
+ * 같은 선택자를 파일 뒤쪽에서 한 번 더 선언하면(종전에는 토글 정렬 보정 목적의 중복이 있었다)
+ * 명시도가 같으므로 **뒤가 이긴다**. 미디어 쿼리는 명시도를 올리지 않으므로, 그 중복은 767px
+ * 보정(`align-items: flex-start`)을 한 번도 적용되지 못하게 만들었다 — 좁은 화면에서 제목과
+ * 우측 컨트롤이 세로 가운데로 붙은 채 남는다 (12차 #B31). 새 속성이 필요하면 여기에 더한다. */
 .requirement-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   padding: var(--spacing-md) var(--spacing-xl);
-  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, var(--card-header-from) 0%, var(--card-header-to) 100%);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .requirement-card-header.header-single {
@@ -1906,7 +2253,7 @@ hr {
 }
 
 .requirement-card-title {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
   color: var(--text-color);
   margin: 0;
@@ -1952,15 +2299,24 @@ hr {
 }
 
 .requirement-badge.badge-required {
-  color: var(--text-secondary);
-  background-color: white;
-  border: 1px solid var(--border-color);
+  color: var(--badge-neutral-text);
+  background-color: var(--badge-neutral-bg);
+  border: 1px solid var(--badge-neutral-border);
 }
 
 .requirement-badge.badge-optional {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   background-color: var(--bg-gray);
   border: 1px solid var(--border-color);
+}
+
+/* 통과/차단 게이트가 아닌 정보 항목용 — W1 의 실행 방식 카드가 「필수」 배지를 달면
+   PHP 버전·필수 확장과 같은 게이트로 읽혀, 시안이 없애려던 "설치가 막힌 건가?" 라는
+   오해를 그대로 만든다. 카드 색(파랑)과 같은 계열을 쓴다. */
+.requirement-badge.badge-info {
+  color: var(--info-text);
+  background-color: var(--info-light);
+  border: 1px solid var(--info-border);
 }
 
 .status-icon {
@@ -1982,6 +2338,10 @@ hr {
 
 .status-icon.status-warning {
   color: var(--warning-color);
+}
+
+.status-icon.status-info {
+  color: var(--info-color);
 }
 
 .status-icon svg {
@@ -2009,10 +2369,13 @@ hr {
 }
 
 .requirement-card-body .form-input:focus {
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  box-shadow: var(--shadow-primary-glow);
 }
 
-.extension-grid {
+/* PHP 확장 점검 목록(W1) — 확장 **카드** 그리드(.extension-grid)와 이름이 같아 뒤 규칙에
+ * 덮이고 있었다. 같은 선택자·같은 속성의 상충 중복은 뒤가 이기므로 앞 의도가 조용히 사라진다.
+ * 용도가 다르므로 이름을 나눈다 (9차 #L31). */
+.requirement-extension-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--spacing-md);
@@ -2087,13 +2450,18 @@ hr {
   flex-shrink: 0;
 }
 
+/* 소유자 표기는 본문이다 — 흐리게 하지 않는다.
+ *
+ * `--text-light` 자체가 이미 배경(--bg-light) 대비 2.43:1(라이트)·3.75:1(다크)로 기준 미달인데,
+ * 여기에 `opacity: 0.7` 이 더해져 실효 1.81:1 · 2.48:1 까지 내려가 있었다. 토큰만 보는 검사는
+ * 투명도 채널을 원리상 볼 수 없어 이 지점은 어느 라운드에서도 드러나지 않았다 (12차 #B33 형제).
+ * 보조 텍스트 토큰으로 올리면 7.23:1 · 12.02:1 이 된다. */
 .directory-owner {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
-  color: var(--text-light);
+  color: var(--text-secondary);
   white-space: nowrap;
   margin-right: 0.5rem;
-  opacity: 0.7;
 }
 
 .directory-permission {
@@ -2123,8 +2491,8 @@ hr {
   transform: translateX(-50%);
   margin-bottom: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background-color: #1f2937;
-  color: #ffffff;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
   font-size: var(--font-size-sm);
   font-weight: normal;
   white-space: nowrap;
@@ -2143,7 +2511,7 @@ hr {
   transform: translateX(-50%);
   margin-bottom: 0.125rem;
   border: 0.25rem solid transparent;
-  border-top-color: #1f2937;
+  border-top-color: var(--tooltip-bg);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease-in-out;
@@ -2191,7 +2559,7 @@ hr {
   margin-top: var(--spacing-xl);
   padding: var(--spacing-lg);
   background-color: var(--error-light);
-  border: 2px solid var(--error-color);
+  border: 2px solid var(--error-box-border);
   border-radius: var(--border-radius);
 }
 
@@ -2205,7 +2573,7 @@ hr {
 .error-box-title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  color: var(--error-color);
+  color: var(--error-accent-text);
   margin: 0;
 }
 
@@ -2213,7 +2581,7 @@ hr {
   margin: 0 0 var(--spacing-md) var(--spacing-lg);
   padding: 0;
   list-style: disc;
-  color: var(--text-color);
+  color: var(--error-box-list-text);
 }
 
 .error-box-list li {
@@ -2234,28 +2602,117 @@ hr {
 .error-box-list ul li {
   margin-bottom: 0.125rem;
   font-size: var(--font-size-sm);
-  color: var(--text-muted);
+  color: var(--error-box-sublist-text);
 }
 
 /* 권한 수정 안내 (Step 2 에러 박스 내) */
 .permission-fix-guide {
   margin-top: var(--spacing-md);
   padding-top: var(--spacing-md);
-  border-top: 1px solid rgba(239, 68, 68, 0.2);
+  border-top: 1px solid var(--error-hairline);
 }
 
 .fix-guide-label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-sm);
-  color: var(--error-dark, #991b1b);
+  color: var(--error-text-emphasis);
+}
+
+/* 판정 불능(D21) 카드는 **노랑**이다 — 그 안의 라벨까지 error 토큰으로 그리면 차단(D3)과
+   시각 언어가 섞여, 「막혔다」와 「확인이 필요하다」를 색으로 구분할 수 없게 된다. */
+.alert-warning .fix-guide-label {
+  color: var(--warning-text-strong);
+}
+
+/* 노출 확정(D3) 카드는 **빨강**이다 — 그 안의 라벨은 error 토큰이 맞다. 오류 배경 위 기본
+   힌트색으로는 대비가 갈리므로 카드 배경에 맞춰 진한 error 문자색을 명시한다. 경고 라벨과
+   합치지 않는다 — 대비 게이트가 선택자 단위로 규칙을 찾는다 (18차 A-1). */
+.alert-error .fix-guide-label {
+  color: var(--error-text-emphasis);
+}
+
+/* 노출 주소 목록의 인라인 코드.
+   기본 `code` 규칙은 `--error-color` on `--bg-gray` 라 대비가 라이트 3.60:1 · 다크 3.73:1 로
+   AA(4.5:1) 미달이다. 그 규칙의 소비처는 여기뿐이었고, 형제 목록(`.missing-files li code`)은
+   이미 전용 토큰 쌍을 쓴다 — 같은 쌍을 재사용한다. 그 쌍의 라이트 문자색은 한때
+   `--error-color` 참조라 `--inline-code-bg` 위에서도 3.60:1 이었고 주석은 그것을 통과로
+   적고 있었다 — 지금은 토큰이 진한 값(6.19:1)이고 수치는 게이트가 잰다
+   (`resources/js/installer/__tests__/installer-css-contrast-gate.test.ts`). */
+.exposure-address-list code {
+  background-color: var(--inline-code-bg);
+  color: var(--inline-code-text);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* 판정 불능 카드의 「직접 열어 볼 주소」 링크 — 경고 배경 위라 기본 링크색으로는 AA 미달
+   (라이트 3.30 · 다크 3.57). 색만으로 링크임을 알리지 않도록 밑줄도 상시 둔다. */
+.exposure-address-list a {
+  color: var(--exposure-link-text);
+  text-decoration: underline;
+}
+
+/* 권한 안내 무쉘 판본 (W7) — FTP 조작 절차와 쉘 명령을 두 벌로 낸다.
+   색은 선언하지 않는다: 이 블록은 언제나 경고·오류 카드 안에 놓이고, 그 카드의 문자색을
+   그대로 물려받아야 두 모드에서 대비가 카드와 함께 성립한다. */
+.permission-guide {
+  margin-top: var(--spacing-md);
+}
+
+.permission-guide-summary {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: var(--spacing-xs) 0;
+}
+
+.permission-guide-steps {
+  margin: var(--spacing-sm) 0 0;
+  padding-left: var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.permission-guide-steps li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.permission-guide-note {
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-sm);
+  margin-bottom: 0;
 }
 
 .fix-guide-hint {
   font-size: var(--font-size-xs);
-  color: var(--gray-500, #6b7280);
+  color: var(--fix-guide-hint-text);
   margin-top: var(--spacing-sm);
   margin-bottom: 0;
+}
+
+/* 경고·오류 카드 위의 힌트 — 기본 힌트색은 흰 바탕용이라 그 배경에서는 AA 미달이었다
+   (경고 라이트 4.34 · 다크 3.57, 오류 라이트 3.96 · 다크 3.95). 두 규칙을 합치지 않는다 —
+   대비 게이트가 선택자 단위로 규칙을 찾는다. */
+.alert-warning .fix-guide-hint {
+  color: var(--fix-guide-hint-on-alert-text);
+}
+
+.alert-error .fix-guide-hint {
+  color: var(--fix-guide-hint-on-alert-text);
+}
+
+/* 경고 요구사항 카드의 본문 힌트(에셋 서빙 방식 판정 사유) — 카드 배경이 경고 표면이라
+   위와 같은 이유로 기본 힌트색은 AA 미달이다. 본문 첫 문단은 위 여백을 두지 않는다
+   (카드 본문 padding 이 이미 있다). */
+.requirement-card--warning .fix-guide-hint {
+  color: var(--fix-guide-hint-on-alert-text);
+}
+
+.requirement-card-body > .fix-guide-hint:first-child {
+  margin-top: 0;
 }
 
 /* 코드 박스 (명령어 표시용) */
@@ -2272,7 +2729,8 @@ hr {
 }
 
 .missing-files li code {
-  background-color: var(--bg-light);
+  background-color: var(--inline-code-bg);
+  color: var(--inline-code-text);
   padding: 0.125rem 0.375rem;
   border-radius: var(--border-radius-sm);
   font-family: var(--font-family-mono);
@@ -2288,7 +2746,7 @@ hr {
 
 .env-check-actions #env-check-status {
   font-size: var(--font-size-sm);
-  color: var(--warning-color, #f59e0b);
+  color: var(--env-status-text);
 }
 
 .btn-group-spread {
@@ -2364,17 +2822,17 @@ hr {
 
 /* 성공 배경 */
 .result-section:has(.result-icon-success) {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  background: var(--result-success-bg);
 }
 
 /* 경고 배경 */
 .result-section:has(.result-icon-warning) {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  background: var(--result-warning-bg);
 }
 
 /* 에러 배경 */
 .result-section:has(.result-icon-error) {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  background: var(--result-error-bg);
 }
 
 /* 컨텐츠: 세로 배치 (상단: 아이콘+텍스트, 하단: 중앙 버튼) */
@@ -2432,20 +2890,26 @@ hr {
 
 /* 경고 아이콘 */
 .result-icon-warning .result-icon-circle {
-  stroke: #f59e0b;
+  stroke: var(--warning-icon);
 }
 
 .result-icon-warning path:not(.result-icon-circle) {
-  stroke: #f59e0b;
+  stroke: var(--warning-icon);
+}
+
+/* 느낌표 점 — circle 이라 위의 path 규칙에 걸리지 않는다. 규칙이 없으면 인라인 색으로
+   떨어져 같은 글리프 안에서 링·줄기와 색이 갈린다. */
+.result-icon-warning .result-icon-dot {
+  fill: var(--warning-icon);
 }
 
 /* 에러 아이콘 */
 .result-icon-error .result-icon-circle {
-  stroke: #ef4444;
+  stroke: var(--error-accent-text);
 }
 
 .result-icon-error .result-icon-x {
-  stroke: #ef4444;
+  stroke: var(--error-accent-text);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-dasharray: 28;
@@ -2471,20 +2935,24 @@ hr {
   margin: 0 0 var(--spacing-xs) 0;
 }
 
+/* 문구 층 토큰을 쓴다 (11차 #B1·#B2). 아이콘 층(--success-color·--warning-icon)은 라이트
+   배경 위에서 2.32:1 / 1.95:1 이라 24px 굵은 글씨의 대형 텍스트 기준(3:1)에도 미달했다.
+   아이콘 stroke 는 그대로 아이콘 층 토큰을 쓴다 — 대비 규칙은 글자에만 적용된다.
+   10차 #M6~#M8 이 진행 목록·그룹 배지·완료 문구에 세운 규칙의 미적용 형제였다. */
 .result-section:has(.result-icon-success) .result-title {
-  color: var(--success-color);
+  color: var(--success-text);
 }
 
 .result-section:has(.result-icon-warning) .result-title {
-  color: #f59e0b;
+  color: var(--warning-text);
 }
 
 .result-section:has(.result-icon-error) .result-title {
-  color: #ef4444;
+  color: var(--error-accent-text);
 }
 
 .result-message {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-base);
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.6;
@@ -2493,120 +2961,32 @@ hr {
 .failure-main-message {
   margin: var(--spacing-sm) 0;
   padding: var(--spacing-sm) 0;
-  font-size: var(--font-size-md);
-  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  color: var(--failure-text);
 }
 
-/* 수동 명령어 박스 - 상단에 눈에 띄게 표시 */
-.manual-commands-box {
-  margin: var(--spacing-md) 0;
-  border: 2px solid #3b82f6;
-  border-radius: var(--border-radius);
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-  overflow: hidden;
-}
-
-.manual-commands-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: #fff;
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-}
-
-.manual-commands-header i {
-  font-size: var(--font-size-md);
-}
-
-.manual-commands-content {
-  padding: var(--spacing-md);
-}
-
-.manual-commands-pre {
-  margin: 0;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: #1e293b;
-  border-radius: calc(var(--border-radius) / 2);
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: var(--font-size-sm);
-  line-height: 1.8;
-  overflow-x: auto;
-}
-
-.manual-command-line {
-  display: block;
-  color: #10b981;
-  background: transparent;
-  padding: 0;
-}
-
-/* 복사 버튼 */
-.manual-commands-copy {
-  margin-left: auto;
-  padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.manual-commands-copy:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.manual-commands-copy.copied {
-  background: #10b981;
-  border-color: #10b981;
-}
-
-.manual-commands-copy i {
-  font-size: var(--font-size-sm);
-}
-
-/* 다크모드 수동 명령어 박스 */
-[data-theme="dark"] .manual-commands-box {
-  border-color: #60a5fa;
-  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
-}
-
-[data-theme="dark"] .manual-commands-header {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-}
-
-[data-theme="dark"] .manual-commands-pre {
-  background-color: #0f172a;
-}
-
-[data-theme="dark"] .manual-command-line {
-  color: #34d399;
-}
+/* 수동 복구 안내(manual_commands)는 전용 UI 없이 **진행 기록(로그)** 으로 노출된다 —
+ * 그것이 installation-monitor.js 의 콜백 계약 주석이 선언한 소비 경로다. 종전에는 완성된
+ * 박스 UI 규칙 9개(.manual-commands-*)가 남아 있어 다음 사람이 「있는 UI」로 읽었고,
+ * 실제로는 어느 마크업도 그 클래스를 붙이지 않았다 (9차 #L11). 사문 규칙은 걷어낸다. */
 
 /* 에러 상세 아코디언 - 카드 형태 */
 .failure-error-detail {
   margin-top: var(--spacing-sm);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--failure-detail-border);
   border-radius: var(--border-radius);
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+  background-color: var(--failure-detail-bg);
+  box-shadow: var(--shadow-danger-sm);
   overflow: hidden;
 }
 
 .failure-rollback-notice {
   margin-top: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid #fbbf24;
+  border: 1px solid var(--rollback-notice-border);
   border-radius: var(--border-radius);
-  background-color: #fffbeb;
-  color: #92400e;
+  background-color: var(--rollback-notice-bg);
+  color: var(--rollback-notice-text);
   font-size: var(--font-size-sm);
   line-height: 1.6;
 }
@@ -2626,19 +3006,19 @@ hr {
   gap: var(--spacing-sm);
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
-  background-color: #fef2f2;
+  background: var(--error-detail-toggle-bg); /* 다크 값이 그라데이션이라 background-color 가 아닌 background 로 받는다 */
   border: none;
-  border-bottom: 1px solid #fecaca;
+  border-bottom: 1px solid var(--failure-detail-border);
   cursor: pointer;
   transition: all var(--transition-fast);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: #dc2626;
+  color: var(--error-detail-toggle-text);
   text-align: left;
 }
 
 .error-detail-toggle:hover {
-  background-color: #fee2e2;
+  background: var(--error-detail-toggle-bg-hover);
 }
 
 .error-detail-toggle-icon {
@@ -2656,7 +3036,7 @@ hr {
 }
 
 .error-detail-toggle[aria-expanded="true"] {
-  background-color: #fee2e2;
+  background: var(--error-detail-toggle-bg-hover);
 }
 
 .error-detail-content {
@@ -2672,7 +3052,8 @@ hr {
 
 .error-stack {
   padding: var(--spacing-md) var(--spacing-sm);
-  background-color: #fff;
+  background-color: var(--bg-color);
+  color: var(--failure-text);
   font-size: 0.75rem;
   line-height: 1.3;
   max-width: 100%;
@@ -2687,17 +3068,17 @@ hr {
 }
 
 .error-detail-content::-webkit-scrollbar-track {
-  background: #fef2f2;
+  background: var(--error-scroll-track);
 }
 
 .error-detail-content::-webkit-scrollbar-thumb {
-  background: #fca5a5;
+  background: var(--error-scroll-thumb);
   border-radius: 5px;
-  border: 2px solid #fef2f2;
+  border: 2px solid var(--error-scroll-track);
 }
 
 .error-detail-content::-webkit-scrollbar-thumb:hover {
-  background: #f87171;
+  background: var(--error-scroll-thumb-hover);
 }
 
 /* 반응형 */
@@ -2731,7 +3112,7 @@ hr {
 }
 
 .install-info-simple .info-item {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-base);
   color: var(--text-color);
   margin-bottom: var(--spacing-sm);
   line-height: 1.6;
@@ -2751,15 +3132,15 @@ hr {
 .install-section-header {
   margin-bottom: var(--spacing-md);
   padding: var(--spacing-md);
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius-md);
+  background: var(--bg-light);
+  border-radius: var(--border-radius);
   cursor: pointer;
   transition: background-color 0.2s ease;
   user-select: none;
 }
 
 .install-section-header:hover {
-  background: rgba(99, 102, 241, 0.05);
+  background: var(--primary-soft);
 }
 
 .install-section-title {
@@ -2796,7 +3177,7 @@ hr {
 }
 
 .btn-log-toggle:hover {
-  background: rgba(99, 102, 241, 0.1);
+  background: var(--primary-soft-strong);
   color: var(--primary-color);
 }
 
@@ -2841,7 +3222,10 @@ hr {
     font-size: var(--font-size-2xl);
   }
 
-  .extension-grid,
+  /* .extension-grid 는 여기에 두지 않는다 — 원 선언이 이 블록보다 **뒤**에 있어
+     같은 명시도로 덮인다(미디어 쿼리는 명시도를 올리지 않는다). 그 보정은 원 선언
+     바로 아래에 둔다 (12차 #B31 형제 지점). */
+  .requirement-extension-grid,
   .directory-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-sm);
@@ -3039,9 +3423,17 @@ hr {
     font-size: var(--font-size-sm);
   }
 
-  .extension-grid,
+  /* .extension-grid 는 원 선언 아래의 전용 블록이 담당한다 (위와 같은 이유) */
+  .requirement-extension-grid,
   .directory-grid {
     gap: var(--spacing-xs);
+  }
+
+  /* 디렉토리 권한 목록은 한 칸이 「경로 + 소유자 + 권한」 세 토막이라 폰 폭에서 두 열이면
+     경로가 잘리고 오른쪽 열이 카드 밖으로 밀린다 (실측 390px: `storage/app/core_pending` 뒤의
+     둘째 열이 보이지 않았다). 확장 모듈 목록은 이름이 짧아 두 열을 유지한다. */
+  .directory-grid {
+    grid-template-columns: 1fr;
   }
 
   .requirement-card-header {
@@ -3133,10 +3525,10 @@ hr {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-lg);
-  background: #ef4444;
-  color: white;
+  background: var(--abort-solid);
+  color: var(--text-white);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--border-radius);
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
@@ -3144,25 +3536,26 @@ hr {
   white-space: nowrap;
 }
 
-.btn-abort:hover {
-  background: #dc2626;
+.btn-abort:hover:not(:disabled) {
+  background: var(--abort-solid-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  box-shadow: var(--shadow-danger-glow);
 }
 
 .btn-abort:active {
+  background: var(--abort-solid-active);
   transform: translateY(0);
 }
 
 .btn-abort:disabled {
-  background: #d1d5db;
-  color: #9ca3af;
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
   cursor: not-allowed;
   transform: none;
 }
 
 .btn-abort:disabled:hover {
-  background: #d1d5db;
+  background: var(--disabled-bg);
   box-shadow: none;
 }
 
@@ -3221,7 +3614,7 @@ hr {
   margin: 0;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  color: #991b1b;
+  color: var(--error-text-emphasis);
   line-height: 1.4;
 }
 
@@ -3230,7 +3623,7 @@ hr {
   margin: var(--spacing-xs) 0 var(--spacing-sm) 0;
   font-size: var(--font-size-sm);
   line-height: 1.5;
-  color: #7f1d1d;
+  color: var(--error-text-strong);
 }
 
 /* 경고 상세 내용 */
@@ -3256,15 +3649,15 @@ hr {
   position: relative;
   margin: var(--spacing-sm) 0;
   padding: var(--spacing-md);
-  background: #1f2937;
-  border: 1px solid #374151;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
   border-radius: var(--border-radius);
   overflow-x: auto;
 }
 
 .code-box .fix-command,
 .code-box pre {
-  color: #e5e7eb;
+  color: var(--code-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   margin: 0;
@@ -3275,7 +3668,7 @@ hr {
 
 .code-box code {
   background: none;
-  color: #e5e7eb;
+  color: var(--code-text);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
 }
@@ -3284,9 +3677,11 @@ hr {
   position: absolute;
   top: var(--spacing-sm);
   right: var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.1);
-  color: #e5e7eb;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* 코드 상자는 두 테마 모두 어둡지만 색은 토큰이 정한다 (D16) — 리터럴로 두면 상자 팔레트를
+     바꿀 때 이 버튼만 따라오지 않는다. 인스톨러 CSS 의 마지막 비토큰 색이었다 (10차). */
+  background: var(--code-action-bg);
+  color: var(--code-text);
+  border: 1px solid var(--code-action-border);
   border-radius: var(--border-radius-sm);
   padding: 0.25rem 0.75rem;
   font-size: var(--font-size-xs);
@@ -3295,7 +3690,7 @@ hr {
 }
 
 .code-box .btn-copy:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--code-action-bg-hover);
 }
 
 /* 권한 상세 정보 */
@@ -3323,13 +3718,13 @@ hr {
 }
 
 .permission-badge.badge-current {
-  background-color: var(--error-light);
-  color: #991b1b;
+  background-color: var(--error-badge-bg);
+  color: var(--error-text);
 }
 
 .permission-badge.badge-required {
-  background-color: var(--success-light);
-  color: #065f46;
+  background-color: var(--success-badge-bg);
+  color: var(--success-text);
 }
 
 .permission-arrow {
@@ -3440,8 +3835,16 @@ hr {
   transform: scale(0.95);
 }
 
+/* 마우스 클릭 시의 outline 만 지우고 키보드 포커스는 남긴다 — `:focus { outline: none }` 만
+ * 두면 이 버튼은 Tab 으로 도달해도 화면에 아무 표시가 없다. 저장소의 다른 포커스 규칙과
+ * 같은 형태(2px solid --primary-color / offset 2px)를 쓴다. */
 .theme-toggle:focus {
   outline: none;
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 .theme-toggle svg {
@@ -3552,6 +3955,22 @@ body {
   gap: var(--spacing-md);
 }
 
+/* 좁은 화면 보정은 원 선언 **바로 뒤**에 둔다. 파일 앞쪽의 공용 반응형 블록에 두면 이
+ * 선언이 나중에 와서 같은 명시도로 덮어 버린다 — 미디어 쿼리는 명시도를 올리지 않으므로
+ * 보정이 한 번도 적용되지 않는다 (12차 #B31 형제 지점). */
+@media (max-width: 1023px) {
+  .extension-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 767px) {
+  .extension-grid {
+    gap: var(--spacing-xs);
+  }
+}
+
 /* 확장 카드 */
 .extension-card {
   position: relative;
@@ -3567,12 +3986,12 @@ body {
 
 .extension-card:hover {
   border-color: var(--primary-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--card-hover-shadow);
 }
 
 .extension-card.selected {
   border-color: var(--primary-color);
-  background-color: rgba(59, 130, 246, 0.08);
+  background-color: var(--card-selected-bg);
 }
 
 /* 확장 카드 헤더 */
@@ -3606,9 +4025,11 @@ body {
   border-radius: inherit;
 }
 
+/* 선택된 카드의 아이콘 칩 — 흰 글리프를 얹으므로 단색 버튼과 같은 --primary-solid 를 쓴다.
+ * --primary-color 를 그대로 쓰면 다크(#60a5fa)에서 2.54:1 로 그래픽 요소 기준(3:1) 미달이다. */
 .extension-card.selected .extension-card-icon {
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--primary-solid);
+  color: var(--text-white);
 }
 
 .extension-card-info {
@@ -3666,7 +4087,7 @@ body {
 }
 
 .extension-card.selected .extension-card-footer {
-  border-top-color: rgba(59, 130, 246, 0.2);
+  border-top-color: var(--primary-soft-strong);
 }
 
 .extension-card-dependencies {
@@ -3687,10 +4108,10 @@ body {
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  background-color: var(--bg-gray);
+  background-color: var(--dep-tag-bg);
   border-radius: 12px;
   font-size: 0.7rem;
-  color: var(--text-secondary);
+  color: var(--dep-tag-text);
   border: 1px solid var(--border-color);
 }
 
@@ -3705,7 +4126,7 @@ body {
   text-align: center;
   color: var(--text-muted);
   font-size: var(--font-size-sm);
-  background-color: var(--bg-light);
+  background-color: var(--surface-muted);
   border-radius: var(--border-radius);
   border: 1px dashed var(--border-color);
 }
@@ -3730,7 +4151,7 @@ body {
   flex-direction: column;
   align-items: center;
   padding: var(--spacing-md);
-  background-color: var(--bg-light);
+  background-color: var(--surface-muted);
   border-radius: var(--border-radius);
   text-align: center;
 }
@@ -3759,67 +4180,21 @@ body {
 }
 
 .badge-required {
-  background-color: var(--error-light);
+  background-color: var(--error-badge-bg);
   color: var(--error-color);
 }
 
+/* 선택 사항 배지 — 문구는 --text-secondary. --text-muted 는 이 배경에서 라이트 4.4:1 /
+ * 다크 4.0:1 로 둘 다 4.5:1 아래이고, 다크가 라이트보다 나쁘다 (9차 #L29) */
 .badge-optional {
   background-color: var(--bg-gray);
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 /* 카드 타이틀 아이콘 */
 .requirement-card-title i {
   margin-right: var(--spacing-sm);
   color: var(--primary-color);
-}
-
-/* 다크모드 확장 선택 스타일 */
-[data-theme="dark"] .extension-card {
-  background-color: var(--bg-color);
-  border-color: var(--border-color);
-}
-
-[data-theme="dark"] .extension-card:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .extension-card.selected {
-  background-color: rgba(59, 130, 246, 0.15);
-  border-color: var(--primary-color);
-}
-
-[data-theme="dark"] .extension-card-icon {
-  background-color: var(--bg-gray);
-}
-
-[data-theme="dark"] .extension-card.selected .extension-card-icon {
-  background-color: var(--primary-color);
-}
-
-[data-theme="dark"] .dep-tag {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .extension-empty {
-  background-color: var(--bg-gray);
-  border-color: var(--border-color);
-}
-
-[data-theme="dark"] .selection-summary .summary-item {
-  background-color: var(--bg-gray);
-}
-
-[data-theme="dark"] .badge-required {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-}
-
-[data-theme="dark"] .badge-optional {
-  background-color: var(--bg-gray);
-  color: var(--text-muted);
 }
 
 /* 확장 선택 반응형 */
@@ -3893,15 +4268,15 @@ body {
   align-items: flex-start;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  border: 1px solid var(--border-color, #d1d5db);
-  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .installation-mode-option:hover {
-  border-color: var(--color-primary, #3b82f6);
-  background-color: var(--bg-hover, #f9fafb);
+  border-color: var(--primary-color);
+  background-color: var(--bg-light);
 }
 
 .installation-mode-option input[type="radio"] {
@@ -3909,13 +4284,15 @@ body {
   flex-shrink: 0;
 }
 
+/* 지금 고른 항목의 이름만 흐려지면 선택 강조가 오히려 가독을 낮춘다 (11차 #B4) —
+   16px strong 이라 대형 텍스트 완화도 받지 못한다. */
 .installation-mode-option input[type="radio"]:checked + .installation-mode-text strong {
-  color: var(--color-primary, #3b82f6);
+  color: var(--info-text);
 }
 
 .installation-mode-option:has(input[type="radio"]:checked) {
-  border-color: var(--color-primary, #3b82f6);
-  background-color: var(--bg-selected, #eff6ff);
+  border-color: var(--primary-color);
+  background-color: var(--info-surface);
 }
 
 .installation-mode-text {
@@ -3926,23 +4303,15 @@ body {
 
 .installation-mode-text strong {
   font-size: var(--font-size-base);
-  color: var(--text-primary);
+  color: var(--text-color);
 }
 
 .installation-mode-desc {
   font-size: var(--font-size-sm);
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-muted);
   line-height: 1.4;
 }
 
-@media (prefers-color-scheme: dark) {
-  .installation-mode-option {
-    border-color: var(--border-color-dark, #374151);
-  }
-  .installation-mode-option:has(input[type="radio"]:checked) {
-    background-color: var(--bg-selected-dark, #1e3a8a33);
-  }
-}
 
 /* ============================================================
    Step 3: 기존 DB 테이블 감지 배지 + 모달
@@ -3971,7 +4340,7 @@ body {
 .modal-existing-tables .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-color);
 }
 
 .modal-existing-tables .modal-content {
@@ -3979,9 +4348,9 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--bg-card, #fff);
+  background: var(--bg-color);
   padding: var(--spacing-lg, 24px);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--border-radius);
   max-width: 600px;
   width: 90%;
   max-height: 85vh;
@@ -3992,7 +4361,7 @@ body {
 .modal-existing-tables .modal-title {
   margin: 0 0 var(--spacing-md) 0;
   font-size: var(--font-size-lg);
-  color: var(--color-warning, #d97706);
+  color: var(--warning-text-strong);
 }
 
 .modal-existing-tables .modal-body {
@@ -4010,8 +4379,8 @@ body {
 
 .modal-existing-tables .modal-tables-list {
   padding: var(--spacing-sm);
-  background: var(--bg-muted, #f3f4f6);
-  border-radius: var(--radius-sm, 4px);
+  background: var(--bg-gray);
+  border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
   white-space: pre-wrap;
   word-break: break-all;
@@ -4034,17 +4403,10 @@ body {
   margin-top: var(--spacing-lg);
 }
 
-.btn-danger {
-  background-color: var(--color-danger, #dc2626);
-  color: #fff;
-}
-.btn-danger:hover:not(:disabled) {
-  background-color: var(--color-danger-hover, #b91c1c);
-}
-.btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* .btn-danger 규칙은 버튼 절(위)이 단독으로 소유한다 — 여기에 사본을 두면 뒤에 오는
+ * `:hover:not(:disabled)`(특이도 0,3,0)가 위쪽 `:hover`(0,2,0)의 배경을 이겨
+ * `--btn-danger-hover` 가 사문화되고, 다크에서 hover 가 resting 보다 밝아지며
+ * (배경 --danger-hover · 테두리 --btn-danger-hover) 두 색이 서로 어긋났다. */
 
 /* Step 4 의존성 경고 */
 .dependency-warning-list {
@@ -4058,21 +4420,21 @@ body {
 
 /* Step 4 자동 선택된 확장 카드 */
 .extension-card.dep-auto-selected.selected {
-  border-color: #d97706;
-  background-color: rgba(217, 119, 6, 0.08);
+  border-color: var(--dep-auto-solid);
+  background-color: var(--dep-auto-card-bg);
 }
 
 .extension-card.dep-auto-selected.selected .extension-card-icon {
-  background-color: #d97706;
-  color: white;
+  background-color: var(--dep-auto-solid);
+  color: var(--text-white);
 }
 
 .extension-card.dep-auto-selected.selected .extension-card-select {
-  color: #d97706;
+  color: var(--dep-auto-color);
 }
 
 .extension-card.dep-auto-selected.selected .extension-card-footer {
-  border-top-color: rgba(217, 119, 6, 0.2);
+  border-top-color: var(--dep-auto-soft-strong);
 }
 
 /* 자동 선택 배지 */
@@ -4084,9 +4446,9 @@ body {
   padding: 2px 8px;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #92400e;
-  background-color: rgba(217, 119, 6, 0.12);
-  border: 1px solid rgba(217, 119, 6, 0.25);
+  color: var(--warning-text);
+  background-color: var(--dep-auto-badge-bg);
+  border: 1px solid var(--dep-auto-badge-border);
   border-radius: 4px;
   line-height: 1.4;
 }
@@ -4095,14 +4457,15 @@ body {
   font-size: 0.6rem;
 }
 
+/* 배지 안의 소유자 이름 — 강조를 낮추는 것은 굵기가 담당한다.
+ * `opacity: 0.8` 은 라이트에서 4.20:1 로 기준 미달이었다(제거하면 6.36:1). */
 .dep-auto-badge-owner {
   font-weight: 400;
-  opacity: 0.8;
 }
 
 /* 버전 충돌 표시 */
 .dep-version-conflict {
-  color: var(--color-danger, #dc2626);
+  color: var(--danger-color);
   font-weight: 600;
   font-size: 0.8em;
 }
@@ -4114,8 +4477,8 @@ body {
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   padding: 12px 20px;
-  background-color: #1e293b;
-  color: #f8fafc;
+  background-color: var(--toast-bg);
+  color: var(--toast-text);
   border-radius: 8px;
   font-size: var(--font-size-sm);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -4128,7 +4491,7 @@ body {
 
 .dep-lock-toast i {
   margin-right: 6px;
-  color: #fbbf24;
+  color: var(--warning-icon);
 }
 
 .dep-lock-toast.show {
@@ -4136,54 +4499,35 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
-/* 다크 모드 */
-[data-theme="dark"] .extension-card.dep-auto-selected.selected {
-  border-color: #f59e0b;
-  background-color: rgba(245, 158, 11, 0.12);
-}
-
-[data-theme="dark"] .extension-card.dep-auto-selected.selected .extension-card-icon {
-  background-color: #f59e0b;
-}
-
-[data-theme="dark"] .dep-auto-badge {
-  color: #fcd34d;
-  background-color: rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.3);
-}
-
-[data-theme="dark"] .dep-lock-toast {
-  background-color: #334155;
-}
-
-/* Step 4 선택 연동(integrations) — 필수 의존성(주황)과 구분되는 청록 */
+/* Step 4 선택 연동(integrations) — 필수 의존성(주황)과 구분되는 청록.
+   색은 토큰(:root · [data-theme="dark"] 의 --integration-* · --php-notice-*)으로만 칠한다 — D16 */
 .integration-selection-notice {
   margin: 0 0 var(--spacing-md) 0;
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--font-size-sm);
-  color: #115e59;
-  background-color: rgba(13, 148, 136, 0.08);
-  border: 1px solid rgba(13, 148, 136, 0.25);
+  color: var(--integration-text);
+  background-color: var(--integration-notice-bg);
+  border: 1px solid var(--integration-notice-border);
   border-radius: 6px;
 }
 
 .integration-selection-notice i {
   margin-right: 6px;
-  color: #0d9488;
+  color: var(--integration-icon);
 }
 
 .extension-card.integration-auto-selected.selected {
-  border-color: #0d9488;
-  background-color: rgba(13, 148, 136, 0.08);
+  border-color: var(--integration-card-border);
+  background-color: var(--integration-card-bg);
 }
 
 .extension-card.integration-auto-selected.selected .extension-card-icon {
-  background-color: #0d9488;
-  color: white;
+  background-color: var(--integration-solid);
+  color: var(--integration-solid-text);
 }
 
 .extension-card.integration-auto-selected.selected .extension-card-select {
-  color: #0d9488;
+  color: var(--integration-select);
 }
 
 .integration-auto-badge {
@@ -4194,9 +4538,9 @@ body {
   padding: 2px 8px;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #115e59;
-  background-color: rgba(13, 148, 136, 0.12);
-  border: 1px solid rgba(13, 148, 136, 0.3);
+  color: var(--integration-text);
+  background-color: var(--integration-badge-bg);
+  border: 1px solid var(--integration-badge-border);
   border-radius: 4px;
   line-height: 1.4;
 }
@@ -4205,9 +4549,9 @@ body {
   font-size: 0.6rem;
 }
 
+/* 본문 텍스트라 불투명도로 흐리지 않는다 — 배지(600)보다 낮은 굵기로 강조만 낮춘다 */
 .integration-auto-badge-owner {
   font-weight: 400;
-  opacity: 0.8;
 }
 
 .extension-card-integrations {
@@ -4224,7 +4568,7 @@ body {
 
 .integration-label {
   font-size: 0.7rem;
-  color: #0f766e;
+  color: var(--integration-label-text);
   margin-right: 2px;
 }
 
@@ -4234,11 +4578,11 @@ body {
   flex-wrap: wrap;
   gap: 4px;
   padding: 3px 8px;
-  background-color: rgba(13, 148, 136, 0.08);
-  border: 1px dashed rgba(13, 148, 136, 0.4);
+  background-color: var(--integration-tag-bg);
+  border: 1px dashed var(--integration-tag-border);
   border-radius: 12px;
   font-size: 0.7rem;
-  color: #115e59;
+  color: var(--integration-text);
 }
 
 .integration-tag i {
@@ -4246,84 +4590,30 @@ body {
   opacity: 0.7;
 }
 
+/* 본문 텍스트라 불투명도로 흐리지 않는다 — 연동 계열의 보조 텍스트 토큰으로 강조를 낮춘다 */
 .integration-template-hint {
-  opacity: 0.75;
+  color: var(--integration-label-text);
 }
 
 .integration-tag.integration-version-mismatch {
   border-style: solid;
-  border-color: rgba(220, 38, 38, 0.45);
+  border-color: var(--integration-mismatch-border);
 }
 
 .integration-version-warning {
-  color: var(--color-danger, #dc2626);
+  color: var(--integration-warning-text);
   font-weight: 600;
-}
-
-[data-theme="dark"] .integration-selection-notice {
-  color: #99f6e4;
-  background-color: rgba(45, 212, 191, 0.1);
-  border-color: rgba(45, 212, 191, 0.3);
-}
-
-[data-theme="dark"] .integration-selection-notice i {
-  color: #2dd4bf;
-}
-
-[data-theme="dark"] .extension-card.integration-auto-selected.selected {
-  border-color: #2dd4bf;
-  background-color: rgba(45, 212, 191, 0.12);
-}
-
-[data-theme="dark"] .extension-card.integration-auto-selected.selected .extension-card-icon {
-  background-color: #14b8a6;
-}
-
-[data-theme="dark"] .extension-card.integration-auto-selected.selected .extension-card-select {
-  color: #2dd4bf;
-}
-
-[data-theme="dark"] .integration-auto-badge {
-  color: #99f6e4;
-  background-color: rgba(45, 212, 191, 0.15);
-  border-color: rgba(45, 212, 191, 0.35);
-}
-
-[data-theme="dark"] .integration-label {
-  color: #5eead4;
-}
-
-[data-theme="dark"] .integration-tag {
-  color: #99f6e4;
-  background-color: rgba(45, 212, 191, 0.1);
-  border-color: rgba(45, 212, 191, 0.4);
-}
-
-[data-theme="dark"] .integration-tag.integration-version-mismatch {
-  border-color: rgba(248, 113, 113, 0.6);
 }
 
 .extension-card-php-notice {
   margin-top: 6px;
   font-size: 0.75rem;
-  color: #b45309;
+  color: var(--php-notice-text);
 }
 
 .extension-card-php-notice.extension-card-php-blocked {
-  color: var(--color-danger, #dc2626);
+  color: var(--php-notice-blocked-text);
   font-weight: 600;
-}
-
-[data-theme="dark"] .extension-card-php-notice {
-  color: #fbbf24;
-}
-
-[data-theme="dark"] .extension-card-php-notice.extension-card-php-blocked {
-  color: #f87171;
-}
-
-[data-theme="dark"] .integration-version-warning {
-  color: #f87171;
 }
 
 /* ========================================================================
@@ -4350,20 +4640,48 @@ body {
   user-select: none;
 }
 
+/* 카드형 라디오의 포커스 표시 — 실제 input 은 opacity:0 으로 숨겨져 있어 네이티브 포커스
+ * 링이 보이지 않는다. 카드에 :focus-within 을 두지 않으면 Tab/방향키로 이동해도 어느 카드에
+ * 있는지가 화면에 남지 않는다. */
+.vendor-mode-card:focus-within {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 .vendor-mode-card:hover:not(.disabled) {
   border-color: var(--primary-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* 리터럴은 토큰의 라이트 값과 문자 그대로 같아 라이트 렌더는 불변이고, 다크 재정의(0.3)를
+   * 따라가게 된다 — 종전에는 바로 옆 확장 카드(--card-hover-shadow)와 hover 반응이 달랐다. */
+  box-shadow: var(--card-hover-shadow);
 }
 
 .vendor-mode-card.selected {
   border-color: var(--primary-color);
-  background-color: rgba(59, 130, 246, 0.08);
+  background-color: var(--primary-soft);
 }
 
+/* 비활성 카드는 카드 전체를 흐리지 않는다 — opacity 는 스택 컨텍스트를 만들어 자식이
+ * 그보다 진해질 수 없으므로, 종전 0.55 는 「이 서버에서 불가」 사유 문구(운영자가 읽어야 하는
+ * 유일한 판정 근거)까지 실효 대비 약 2:1 로 함께 흐렸다. 접근성 기준이 면제하는 것은 비활성
+ * 컨트롤의 라벨이지 그 안의 설명문이 아니다. 제목·설명·아이콘만 개별로 흐리고 상태 줄은 남긴다. */
 .vendor-mode-card.disabled {
   cursor: not-allowed;
+  background-color: var(--bg-gray);
+}
+
+/* 글자는 흐리지 않는다 — opacity 는 스택 컨텍스트를 만들어 자식이 그보다 진해질 수 없으므로,
+ * 설명문(4.4:1 → 2.2:1)과 「이 서버에서 불가」 배지(6.8:1 → 2.9:1)가 함께 흐려진다. §12.0 W2 는
+ * 「고를 수 없는 항목을 숨기지 않고 **사유 배지와 함께** 남긴다」인데 그 배지가 가장 흐려지는
+ * 상태였다. 비활성 신호는 배경·커서·네이티브 disabled 가 이미 전달하고, 글자는 보조 색으로
+ * 낮춘다 — 9차가 W3 비활성 옵션에 세운 규칙과 같은 기준으로 맞춘다 (10차). */
+.vendor-mode-card.disabled .vendor-mode-card-icon,
+.vendor-mode-card.disabled .vendor-mode-card-check {
   opacity: 0.55;
-  background-color: var(--bg-gray, rgba(0, 0, 0, 0.03));
+}
+
+.vendor-mode-card.disabled .vendor-mode-card-title,
+.vendor-mode-card.disabled .vendor-mode-card-description {
+  color: var(--text-secondary);
 }
 
 .vendor-mode-card.disabled:hover {
@@ -4387,13 +4705,23 @@ body {
   gap: var(--spacing-sm);
 }
 
+/* Step 3 카드·상태 줄의 인라인 글리프 (11차 #B12).
+   크기는 슬롯이 정한 글자 크기를 따르고 색은 슬롯의 색을 물려받는다 — 결과 아이콘 셋
+   (.result-icon, 48px + 스트로크 애니메이션)과 같은 클래스를 쓰면 12px 글줄이 무너진다. */
+.inline-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+
 .vendor-mode-card-icon {
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-gray, rgba(0, 0, 0, 0.05));
+  background-color: var(--bg-gray);
   border-radius: var(--border-radius);
   flex-shrink: 0;
   color: var(--text-muted);
@@ -4402,8 +4730,8 @@ body {
 }
 
 .vendor-mode-card.selected .vendor-mode-card-icon {
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--primary-solid);
+  color: var(--text-white);
 }
 
 .vendor-mode-card-title-wrapper {
@@ -4452,19 +4780,21 @@ body {
   white-space: nowrap;
 }
 
+/* 9차 #L29 가 형제 -dev 만 문구 층으로 옮겼고 나머지 둘은 남아 있었다 (11차 #B5·#B6).
+   12px semibold 배지라 대형 텍스트 완화 대상이 아니다. */
 .vendor-mode-card-badge-recommended {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: var(--primary-color);
+  background-color: var(--primary-soft-strong);
+  color: var(--info-text);
 }
 
 .vendor-mode-card-badge-dev {
-  background-color: rgba(168, 85, 247, 0.15);
-  color: #9333ea;
+  background-color: var(--accent-purple-soft);
+  color: var(--accent-purple);
 }
 
 .vendor-mode-card-badge-shared {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: #059669;
+  background-color: var(--success-soft);
+  color: var(--success-text);
 }
 
 /* 설명 */
@@ -4487,12 +4817,15 @@ body {
   gap: 4px;
 }
 
+/* 상태 줄은 12px 본문이다 — 아이콘·테두리용 밝은 값(`--success-color` 등)을 쓰면
+ * 라이트에서 2.5~3.8:1 로 §11.5 의 4.5:1 을 못 넘긴다. 문구 전용 토큰으로 바꾼다 (9차 #L23).
+ * 「이 서버에서 불가」는 §12.0 W2 가 못박은 유일한 판정 근거 문구다. */
 .vendor-mode-card-status-ok {
-  color: var(--color-success, #10b981);
+  color: var(--success-text);
 }
 
 .vendor-mode-card-status-error {
-  color: var(--color-error, #ef4444);
+  color: var(--error-text);
 }
 
 /* 반응형 — 좁은 화면에서는 1열 */
@@ -4509,8 +4842,8 @@ body {
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
   padding-bottom: 0.25rem;
-  border-bottom: 1px solid #e5e7eb;
-  color: #374151;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--heading-text);
 }
 
 .lp-locale-heading:first-child {
@@ -4521,17 +4854,25 @@ body {
   margin-bottom: 0.75rem;
 }
 
-/* 종속 확장 미선택 시 disabled 시각화 */
+/* 종속 확장 미선택 시 disabled 시각화
+ *
+ * 글자는 흐리지 않는다 — `.vendor-mode-card.disabled` 가 같은 이유로 이미 그렇게 바뀌었다
+ * (10차). 카드 전체 `opacity: 0.5` 는 스택 컨텍스트를 만들어 자식이 그보다 진해질 수 없고,
+ * 여기서는 그 위에 `--text-light` 까지 겹쳐 카드 이름·설명이 실효 1.5:1 안팎이었다.
+ * 비활성 신호는 배경·커서·pointer-events 가 이미 전달한다 (12차 #B33 형제). */
 .extension-card.disabled {
-  opacity: 0.5;
   pointer-events: none;
   cursor: not-allowed;
-  background-color: #f9fafb;
+  background-color: var(--bg-gray);
 }
 
 .extension-card.disabled .extension-card-name,
 .extension-card.disabled .extension-card-description {
-  color: #9ca3af;
+  color: var(--text-secondary);
+}
+
+.extension-card.disabled .extension-card-select {
+  opacity: 0.55;
 }
 
 /* scope 배지 */
@@ -4541,18 +4882,18 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 0.25rem;
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--chip-bg);
+  color: var(--chip-text);
 }
 
 .lp-scope-badge.lp-scope-core {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: var(--info-surface-strong);
+  color: var(--info-text);
 }
 
 .lp-target-text {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-left: 0.25rem;
 }
 
@@ -4562,8 +4903,8 @@ body {
   justify-content: flex-end;
   padding: 0.5rem 1rem;
   margin-bottom: 0.75rem;
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
 }
 
@@ -4573,7 +4914,7 @@ body {
   align-items: center;
   gap: 0.4rem;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
 }
@@ -4588,7 +4929,7 @@ body {
   width: 1rem;
   height: 1rem;
   cursor: pointer;
-  accent-color: #2563eb;
+  accent-color: var(--primary-hover);
 }
 
 .bulk-toggle-checkbox:disabled {
@@ -4596,11 +4937,130 @@ body {
   opacity: 0.5;
 }
 
-/* requirement-card-header 가 flexbox 가 아닌 경우 토글 우측 정렬을 위해 보정 */
-.requirement-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+/* (토글 우측 정렬 보정은 `.requirement-card-header` 원 선언으로 합쳤다 — 12차 #B31) */
+
+/* ============================================================
+   단계별 실행 (W3) — 건너뛴 단계 · 단계 수 · 진행 방식 고정 배지
+   ============================================================ */
+.task-skipped {
+  color: var(--skipped-text);
+  background-color: var(--skipped-surface);
+  border-color: var(--skipped-border);
+}
+
+.task-skipped .task-icon {
+  color: var(--skipped-icon);
+}
+
+.task-group-status.status-skipped {
+  background-color: var(--skipped-surface);
+  color: var(--skipped-text);
+}
+
+.progress-percentage-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+}
+
+.progress-steps {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 비활성 옵션 — 카드 전체에 opacity 를 걸지 않는다 (9차 #L24).
+ *
+ * opacity 는 스택 컨텍스트를 만들어 **자식이 더 진해질 수 없다**. 그래서 「이 환경에서
+ * 사용 불가」 배지(6.8:1 → 2.9:1)와 설명문(4.4:1 → 2.2:1)이 함께 흐려져, 왜 못 고르는지가
+ * 가장 읽기 어려워졌다. 면제되는 것은 비활성 컨트롤의 **라벨**이지 그 안의 사유 설명이
+ * 아니다. W2 의 형제 규칙(.vendor-mode-card.disabled)도 같은 기준으로 맞췄다 — 종전에는 이
+ * 주석이 「같은 기준」이라고 단언했지만 실제로 W2 는 설명문·배지에 opacity 를 유지하고
+ * 있었다(10차에서 정렬). 주석은 선언이 아니라 사실이어야 한다. */
+.installation-mode-option.disabled {
+  cursor: not-allowed;
+  background-color: var(--bg-gray);
+}
+
+/* 비활성 신호는 배경·커서·네이티브 disabled·「사용 불가」 배지가 이미 전달한다. 글자는
+ * 흐리는 대신 보조 색으로 낮춘다 — 배지가 제목 안에 있어 제목을 흐리면 배지도 함께 흐려진다. */
+.installation-mode-option.disabled .installation-mode-text > strong {
+  color: var(--text-secondary);
+}
+
+.installation-mode-option.disabled .installation-mode-desc {
+  color: var(--text-secondary);
+}
+
+.installation-mode-option.disabled:hover {
+  border-color: var(--border-color);
+  background-color: var(--bg-gray);
+}
+
+.installation-mode-badge {
+  display: inline-block;
+  margin-left: var(--spacing-xs);
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.installation-mode-badge-unavailable {
+  color: var(--warning-text);
+  background-color: var(--warning-surface);
+  border: 1px solid var(--warning-border);
+}
+
+.installation-mode-forced-notice,
+.execution-mode-vendor-notice {
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.btn-warning {
+  color: var(--text-white);
+  background-color: var(--warning-solid);
+  border-color: var(--warning-solid);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: var(--warning-solid-hover);
+  border-color: var(--warning-solid-hover);
+}
+
+.btn-warning:active:not(:disabled) {
+  background-color: var(--warning-solid-active);
+  border-color: var(--warning-solid-active);
+}
+
+/* ---------------------------------------------------------------------------
+ * 결과 섹션 등장 전환 (완료 / 실패 / 중단)
+ *
+ * 종전에는 JS 가 인라인 style 로 opacity·transition 을 직접 박았다. 인라인 우선순위
+ * 때문에 그 상태로는 prefers-reduced-motion 을 존중할 방법이 없다 — 전정 장애가 있는
+ * 사용자는 전환을 끌 수 없었다. 전환은 여기가 소유하고 JS 는 클래스만 붙인다.
+ * ------------------------------------------------------------------------- */
+.result-section-enter {
+  opacity: 0;
+  transition: opacity 0.5s ease-in;
+}
+
+.result-section-enter--visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-section-enter {
+    transition: none;
+  }
+
+  .progress-bar-fill,
+  .task-item,
+  .task-group-items {
+    transition: none;
+    animation: none;
+  }
 }

@@ -40,7 +40,7 @@ use RecursiveIteratorIterator;
  *
  * @scenario langpack_copy=active_parity
  *
- * @effects every_bundled_langpack_key_exists_in_the_active_copy
+ * 효과 요약(마커 아님 — 평문): every_bundled_langpack_key_exists_in_the_active_copy
  */
 class LangPackActiveCopyParityTest extends ModuleTestCase
 {

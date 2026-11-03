@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -768,6 +770,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트 공격이 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 경로는 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
         'file_type_not_allowed' => '허용되지 않은 파일 타입입니다. 확장자: :extension (허용: :allowed)',
     ],
 
@@ -790,6 +793,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트가 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 접근은 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
     ],
 
     // 플러그인 경로 검증 메시지
@@ -800,6 +804,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트가 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 접근은 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
     ],
 
     // 인증 관련 검증 메시지
@@ -868,6 +873,11 @@ return [
             'required' => '경로는 필수입니다.',
             'string' => '경로는 문자열이어야 합니다.',
         ],
+    ],
+
+    // IP 허용 목록 (웹 크론 호출 제한 — App\Rules\ValidIpAllowList)
+    'ip_allow_list' => [
+        'invalid' => '":value" 은(는) 올바른 IP 주소나 대역 표기가 아닙니다. 한 줄에 하나씩 또는 쉼표로 구분해 적어 주세요.',
     ],
 
     // 설정값 검증 메시지
@@ -1085,6 +1095,11 @@ return [
         'outbound_proxy_bypass_array' => '프록시 예외 목록은 배열이어야 합니다.',
         'outbound_proxy_bypass_item_string' => '프록시 예외 항목은 문자열이어야 합니다.',
         'outbound_proxy_bypass_item_max' => '프록시 예외 항목은 :max자를 초과할 수 없습니다.',
+        'trusted_proxies_present' => '신뢰할 프록시 목록이 요청에 없습니다.',
+        'trusted_proxies_array' => '신뢰할 프록시 목록은 배열이어야 합니다.',
+        'trusted_proxies_max' => '신뢰할 프록시는 :max개를 초과할 수 없습니다.',
+        'trusted_proxy_address_invalid' => '신뢰할 프록시 주소 형식이 올바르지 않습니다. IP 주소 또는 CIDR 로 입력하세요 (예: 10.0.0.1, 10.0.0.0/24).',
+        'trusted_proxy_address_max' => '신뢰할 프록시 주소는 :max자를 초과할 수 없습니다.',
 
         // 목록 한계값
         'pagination_result_cap_integer' => '총 건수 집계 상한은 숫자여야 합니다.',
@@ -1364,6 +1379,12 @@ return [
         'timezone' => '시간대',
         'language' => '언어',
         'default_language' => '기본 언어',
+        // 실행 방식·예약 작업 필드 (관리자 '시스템' 탭)
+        'system.execution_mode' => '실행 방식',
+        'system.cron_mode' => '예약 작업 실행 방식',
+        'system.cron_allowed_ips' => '예약 작업 허용 주소',
+        'system.cron_min_interval' => '예약 작업 최소 호출 간격',
+        'system.cron_visit_fallback' => '방문자 접속 시 예약 작업 실행',
         // 본인인증(IDV) 필드
         'identity_default_provider' => '기본 프로바이더',
         'identity_purpose_providers' => '목적별 프로바이더',
@@ -1560,6 +1581,7 @@ return [
         'sql_query_log' => 'SQL 쿼리 로그',
         'outbound_proxy' => '아웃바운드 프록시 주소',
         'outbound_proxy_bypass' => '프록시 예외 목록',
+        'trusted_proxies' => '신뢰할 프록시 목록',
         'core_update_github_url' => '코어 업데이트 GitHub 주소',
         'core_update_github_token' => '코어 업데이트 GitHub 토큰',
         'geoip_enabled' => 'GeoIP 사용',

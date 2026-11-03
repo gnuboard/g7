@@ -1,3 +1,4 @@
+import { withBasePrefix } from '../../../support/assetUrl';
 /**
  * useEditEntryFab.ts
  *
@@ -50,7 +51,9 @@ export function shouldRenderEditEntryFab(input: FabVisibilityInput): boolean {
  * @returns 새 탭에서 열 진입 URL
  */
 export function buildEditEntryUrl(templateIdentifier: string, currentRoutePath: string): string {
-  const base = `/admin/layout-editor/${encodeURIComponent(templateIdentifier)}`;
+  // 형제 `buildEditorUrl` 과 같은 이유로 접두사를 붙인다 — 이 값은 새 탭에서
+  // 브라우저가 그대로 여는 주소다 (12차 G3).
+  const base = withBasePrefix(`/admin/layout-editor/${encodeURIComponent(templateIdentifier)}`);
   const route = currentRoutePath && currentRoutePath.length > 0 ? `?route=${encodeURIComponent(currentRoutePath)}` : '';
   return `${base}${route}`;
 }

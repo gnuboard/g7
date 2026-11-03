@@ -101,6 +101,42 @@ class InstallerCliOwnershipTest extends TestCase
     }
 
     /**
+     * 워커 생존 판정은 웹 잠금 획득과 같은 판정(installerActiveWorkerIsAlive)이다 — 워커가 선언한 유효 시간
+     * (`worker_stale_after`)을 존중하고, 미래 시각 심장박동은 stale 로 본다.
+     *
+     * 태스크 실행 중인 웹 워커는 심장박동을 갱신하지 못한다(600초 예산). 15초 고정 판정이면 1분 전 심장박동의
+     * 살아 있는 워커를 죽은 것으로 보고 --takeover 가 그 설치를 가로챈다.
+     *
+     * @effects cli_worker_liveness_follows_shared_judgment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_worker_liveness_follows_the_shared_judgment(): void
+    {
+        $this->writeInstallerState([
+            'owner_hash' => str_repeat('b', 64), 'installation_status' => 'running', 'generation' => 5,
+            'active_worker_id' => 'w-1', 'last_heartbeat' => time() - 60, 'worker_stale_after' => 600,
+        ]);
+
+        $run = $this->runCli(['--output=json', '--no-interaction', '--accept-license', '--takeover']);
+
+        $this->assertSame(5, $run['exit'], '선언한 유효 시간 안의 웹 워커를 넘겨받았다');
+        $this->assertSame('cli_error_web_worker_active', $this->eventsNamed($run['events'], 'error')[0]['message_key'] ?? null);
+
+        $judged = $this->runCliCode(
+            '$now = time();'
+            .'echo "__RESULT__=".json_encode(['
+            .'installer_worker_recently_active(["active_worker_id" => "w", "last_heartbeat" => $now - 60]),'
+            .'installer_worker_recently_active(["active_worker_id" => "w", "last_heartbeat" => $now + 3600]),'
+            .'installer_worker_recently_active(["active_worker_id" => null, "last_heartbeat" => $now]),'
+            .'installer_worker_recently_active(["active_worker_id" => "w", "last_heartbeat" => $now]),'
+            .']);'
+        );
+
+        $this->assertSame([false, false, false, true], $judged['result'], '선언 없는 60초 전·미래 시각·점유자 없음은 stale, 방금 심장박동은 활동 중');
+    }
+
+    /**
      * 넘겨받으면 웹 세션의 비밀(runtime.php)·삭제 확인·설치 계획 서명을 폐기하고 터미널 소유로 각인한다.
      *
      * @effects cli_takeover_discards_web_runtime_and_drop_confirm

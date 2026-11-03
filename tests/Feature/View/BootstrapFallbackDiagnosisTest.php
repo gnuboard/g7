@@ -19,8 +19,6 @@ use Tests\TestCase;
  * 분기 로직 검사는 그 파일을, 서버가 넘기는 값(문구·URL)은 파샬의 JSON 데이터 블록을 본다.
  *
  * @scenario entrypoint=user, failure_mode=parse_error
- *
- * @effects bootstrap_partial_emits_reason_branch, incompatible_strings_defined_per_locale
  */
 class BootstrapFallbackDiagnosisTest extends TestCase
 {
@@ -210,7 +208,7 @@ class BootstrapFallbackDiagnosisTest extends TestCase
      *
      * @scenario surface=user_shell, csp=none, failure=none
      *
-     * @effects shell_observes_bundle_syntax_error
+     * @effects shell_observes_bundle_syntax_error, parse_error_listener_is_installed_on_window
      *
      * @return void 반환값 없음
      */
@@ -312,7 +310,7 @@ class BootstrapFallbackDiagnosisTest extends TestCase
      *
      * @scenario surface=user_shell, csp=none, failure=none
      *
-     * @effects shell_js_is_es5_only
+     * @effects shell_js_is_es5_only, inline_bootstrap_uses_es5_syntax_only
      *
      * @return void 반환값 없음
      */

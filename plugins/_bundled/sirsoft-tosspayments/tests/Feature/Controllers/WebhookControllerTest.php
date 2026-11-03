@@ -22,9 +22,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * 가상계좌 입금통보(deposit) — secret 대조 / 리플레이 멱등 / status 분기 / 상태 가드.
  *
  * @scenario webhook_status=done, webhook_secret=match, replay=first
- *
- * @effects deposit_done_completes_payment, deposit_canceled_fails_payment,
- *          webhook_secret_verified, webhook_replay_idempotent, non_waiting_deposit_is_noop
  */
 class WebhookControllerTest extends PluginTestCase
 {

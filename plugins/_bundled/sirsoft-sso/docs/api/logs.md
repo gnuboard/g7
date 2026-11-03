@@ -30,8 +30,8 @@
 | outcome | query | string | 아니오 | 영문 소문자와 밑줄, 20자 | 결과 `handoff`, `pending`, `link_pending`, `linked`, `reauth`, `test`, `failed`, `denied` |
 | intent | query | string | 아니오 | `login`, `link`, `reauth`, `test` | 시작 의도 |
 | status_class | query | string | 아니오 | `success`, `error` | 이 목록에서는 쓰지 않는다(SCIM 수신 목록 전용) |
-| from | query | string | 아니오 | `Y-m-d` | 이 날짜 0시부터 |
-| to | query | string | 아니오 | `Y-m-d`, `from` 이후 | 이 날짜 23:59:59 까지 |
+| from | query | date | 아니오 | `Y-m-d` | 이 날짜 0시부터 |
+| to | query | date | 아니오 | `Y-m-d`, `from` 이후 | 이 날짜 23:59:59 까지 |
 | page | query | integer | 아니오 | 1 이상 | 페이지 번호 |
 | per_page | query | integer | 아니오 | 1~100 | 페이지당 건수(기본 20) |
 
@@ -45,6 +45,8 @@ Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -85,7 +87,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.logs.view`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.logs.view`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
@@ -109,8 +111,8 @@ HTTP/1.1 200
 | status_class | query | string | 아니오 | `success`, `error` | `success` 는 상태 400 미만, `error` 는 400 이상 |
 | outcome | query | string | 아니오 | 영문 소문자와 밑줄, 20자 | 이 목록에서는 쓰지 않는다(로그인 시도 목록 전용) |
 | intent | query | string | 아니오 | `login`, `link`, `reauth`, `test` | 이 목록에서는 쓰지 않는다(로그인 시도 목록 전용) |
-| from | query | string | 아니오 | `Y-m-d` | 이 날짜 0시부터 |
-| to | query | string | 아니오 | `Y-m-d`, `from` 이후 | 이 날짜 23:59:59 까지 |
+| from | query | date | 아니오 | `Y-m-d` | 이 날짜 0시부터 |
+| to | query | date | 아니오 | `Y-m-d`, `from` 이후 | 이 날짜 23:59:59 까지 |
 | page | query | integer | 아니오 | 1 이상 | 페이지 번호 |
 | per_page | query | integer | 아니오 | 1~100 | 페이지당 건수(기본 20) |
 
@@ -124,6 +126,8 @@ Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -162,7 +166,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.logs.view`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.logs.view`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->

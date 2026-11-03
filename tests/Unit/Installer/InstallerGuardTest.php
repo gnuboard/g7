@@ -2,7 +2,11 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 진입 가드 회귀 테스트
@@ -18,12 +22,24 @@ use PHPUnit\Framework\TestCase;
  * installer_is_completed() 의 결정론적 판정 결과만 검증한다.
  * 410 응답 본문은 PoC 매뉴얼 검증 영역.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerGuardTest extends TestCase
 {
+    use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
+
     private static string $tempBase = '';
 
     private static string $skipReason = '';
 
+    /**
+     * 클래스 공용 임시 BASE_PATH 와 저장 폴더를 갖추고 진입 가드 파일을 불러온다.
+     *
+     * 다른 테스트가 BASE_PATH 를 임시 폴더 밖으로 먼저 정해 두었으면 실제 환경 파일을 지우지 않도록 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         // 안전 가드: 본 테스트는 BASE_PATH/.env 와 BASE_PATH/storage/app/g7_installed 를
@@ -54,6 +70,11 @@ class InstallerGuardTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/api/_guard.php';
     }
 
+    /**
+     * 건너뛸 사유가 있으면 건너뛰고, 아니면 이전 테스트가 남긴 완료 신호 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -65,12 +86,22 @@ class InstallerGuardTest extends TestCase
         $this->cleanup();
     }
 
+    /**
+     * 테스트가 만든 완료 신호 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->cleanup();
         parent::tearDown();
     }
 
+    /**
+     * 임시 BASE_PATH 의 설치 완료 잠금 파일과 환경 파일을 지운다 (건너뛰는 중이면 아무것도 하지 않는다).
+     *
+     * @return void 반환값 없음
+     */
     private function cleanup(): void
     {
         // skip 상태(= BASE_PATH 가 실 루트)면 파괴적 정리를 절대 수행하지 않는다.
@@ -88,11 +119,29 @@ class InstallerGuardTest extends TestCase
         }
     }
 
+    /**
+     * 완료 신호(잠금 파일, 환경 파일 플래그)가 하나도 없으면 설치 완료로 보지 않는지 확인한다.
+     *
+     * @scenario installation_state=not_started
+     *
+     * @effects guard_returns_false_when_no_signals_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_signals_means_not_completed(): void
     {
         $this->assertFalse(installer_is_completed());
     }
 
+    /**
+     * 설치 완료 잠금 파일만 있어도 일반 가드가 설치 완료로 판정하는지 확인한다.
+     *
+     * @scenario installation_state=completed_lock_only
+     *
+     * @effects guard_returns_true_when_lock_file_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_lock_file_only_marks_completed(): void
     {
         file_put_contents(BASE_PATH.'/storage/app/g7_installed', '');
@@ -100,6 +149,15 @@ class InstallerGuardTest extends TestCase
         $this->assertTrue(installer_is_completed());
     }
 
+    /**
+     * 환경 파일의 설치 완료 플래그가 true 이면 잠금 파일 없이도 설치 완료로 판정하는지 확인한다.
+     *
+     * @scenario installation_state=completed_env_only
+     *
+     * @effects guard_returns_true_when_env_flag_true_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_env_flag_only_marks_completed(): void
     {
         file_put_contents(BASE_PATH.'/.env', "APP_ENV=local\nINSTALLER_COMPLETED=true\n");
@@ -107,6 +165,15 @@ class InstallerGuardTest extends TestCase
         $this->assertTrue(installer_is_completed());
     }
 
+    /**
+     * 따옴표로 감싼 true 도 설치 완료 플래그로 받아들이는지 확인한다.
+     *
+     * @scenario installation_state=completed_env_only
+     *
+     * @effects guard_returns_true_when_env_flag_quoted_true_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_env_flag_accepts_quoted_true(): void
     {
         file_put_contents(BASE_PATH.'/.env', 'INSTALLER_COMPLETED="true"'."\n");
@@ -114,6 +181,15 @@ class InstallerGuardTest extends TestCase
         $this->assertTrue(installer_is_completed());
     }
 
+    /**
+     * 설치 완료 플래그 값 1 도 참으로 받아들이는지 확인한다.
+     *
+     * @scenario installation_state=completed_env_only
+     *
+     * @effects guard_returns_true_when_env_flag_one_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_env_flag_accepts_one(): void
     {
         file_put_contents(BASE_PATH.'/.env', 'INSTALLER_COMPLETED=1'."\n");
@@ -121,6 +197,15 @@ class InstallerGuardTest extends TestCase
         $this->assertTrue(installer_is_completed());
     }
 
+    /**
+     * 설치 완료 플래그가 false 이면 설치 완료로 보지 않는지 확인한다.
+     *
+     * @scenario installation_state=in_progress
+     *
+     * @effects guard_returns_false_when_env_flag_false_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_env_flag_false_does_not_mark_completed(): void
     {
         file_put_contents(BASE_PATH.'/.env', "APP_ENV=local\nINSTALLER_COMPLETED=false\n");
@@ -128,6 +213,15 @@ class InstallerGuardTest extends TestCase
         $this->assertFalse(installer_is_completed());
     }
 
+    /**
+     * 환경 파일은 있으나 설치 완료 플래그 줄이 없으면 설치 완료로 보지 않는지 확인한다.
+     *
+     * @scenario installation_state=in_progress
+     *
+     * @effects guard_returns_false_when_env_missing_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_env_flag_missing_does_not_mark_completed(): void
     {
         file_put_contents(BASE_PATH.'/.env', "APP_ENV=local\n");
@@ -135,6 +229,15 @@ class InstallerGuardTest extends TestCase
         $this->assertFalse(installer_is_completed());
     }
 
+    /**
+     * 잠금 파일과 환경 파일 플래그가 함께 있으면 설치 완료로 판정하는지 확인한다.
+     *
+     * @scenario installation_state=completed_both
+     *
+     * @effects guard_returns_true_when_both_signals_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_both_signals_present_marks_completed(): void
     {
         file_put_contents(BASE_PATH.'/storage/app/g7_installed', '');
@@ -151,6 +254,15 @@ class InstallerGuardTest extends TestCase
     //  설계상의 호출 순서 때문 — 자가 차단 회귀 가드).
     // ------------------------------------------------------------------------
 
+    /**
+     * 잠금 파일만 있고 환경 파일 병합 전인 정상 첫 마무리 호출을 마무리 전용 가드가 막지 않는지 확인한다.
+     *
+     * @scenario finalize_guard_signal=lock_only, g7_installed_lock_state=present_before_finalize
+     *
+     * @effects finalize_guard_passes_when_only_g7_installed_lock_is_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_guard_passes_with_lock_only(): void
     {
         // 정상 1회차 finalize 시나리오: 락 파일은 존재하나 .env 머지 아직 안 됨
@@ -162,12 +274,30 @@ class InstallerGuardTest extends TestCase
         );
     }
 
+    /**
+     * 환경 파일 자체가 없는 신규 설치에서 마무리 전용 가드가 통과시키는지 확인한다.
+     *
+     * @scenario finalize_guard_signal=neither
+     *
+     * @effects finalize_guard_passes_when_env_lacks_installer_completed_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_guard_passes_with_no_env_file(): void
     {
         // .env 자체가 없는 신규 설치 시나리오
         $this->assertFalse(installer_finalize_is_completed());
     }
 
+    /**
+     * 이미 마무리되어 환경 파일 플래그가 true 인 상태의 재호출을 마무리 전용 가드가 막는지 확인한다.
+     *
+     * @scenario finalize_guard_signal=env_completed_true_only
+     *
+     * @effects finalize_guard_blocks_when_env_has_installer_completed_true_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_guard_blocks_when_env_completed_true(): void
     {
         // 이미 finalize 된 상태 — 멱등 차단
@@ -176,6 +306,15 @@ class InstallerGuardTest extends TestCase
         $this->assertTrue(installer_finalize_is_completed());
     }
 
+    /**
+     * 잠금 파일과 환경 파일 플래그가 함께 있을 때 마무리 전용 가드가 막는지 확인한다.
+     *
+     * @scenario finalize_guard_signal=lock_and_env_completed_true
+     *
+     * @effects finalize_guard_blocks_when_env_has_installer_completed_true_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_guard_blocks_with_lock_and_env_completed(): void
     {
         // 락 + .env true 동시 존재 → 차단 (멱등)
@@ -185,6 +324,15 @@ class InstallerGuardTest extends TestCase
         $this->assertTrue(installer_finalize_is_completed());
     }
 
+    /**
+     * 환경 파일 플래그가 false 이면 마무리 전용 가드가 통과시키는지 확인한다.
+     *
+     * @scenario finalize_guard_signal=neither
+     *
+     * @effects finalize_guard_passes_when_env_lacks_installer_completed_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_guard_passes_when_env_completed_false(): void
     {
         file_put_contents(BASE_PATH.'/.env', "INSTALLER_COMPLETED=false\n");
@@ -192,6 +340,15 @@ class InstallerGuardTest extends TestCase
         $this->assertFalse(installer_finalize_is_completed());
     }
 
+    /**
+     * 마무리 전용 가드가 따옴표 true, 1, yes 를 모두 완료 플래그로 받아들이는지 확인한다.
+     *
+     * @scenario finalize_guard_signal=env_completed_true_only
+     *
+     * @effects finalize_guard_blocks_when_env_has_installer_completed_true_with_quoted_value, finalize_guard_accepts_alternative_truthy_values_1_and_yes
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_guard_accepts_quoted_and_alt_truthy_values(): void
     {
         file_put_contents(BASE_PATH.'/.env', 'INSTALLER_COMPLETED="true"'."\n");
@@ -218,15 +375,30 @@ class InstallerGuardTest extends TestCase
     // exit/header 는 단위에서 검증 불가하므로 소스 정적 검사로 회귀를 못박는다.
     // ------------------------------------------------------------------------
 
+    /**
+     * 상태 관리 엔드포인트 소스가 있는지 확인하고 주석을 걷어낸 원문을 돌려준다.
+     *
+     * @return string 주석이 제거된 상태 관리 엔드포인트 소스
+     */
     private function stateManagementSource(): string
     {
         $path = dirname(__DIR__, 3).'/public/install/api/state-management.php';
 
         $this->assertFileExists($path, 'state-management.php 가 존재해야 한다');
 
-        return (string) file_get_contents($path);
+        // 주석을 지운 뒤 대조한다 — 원문에는 주석 처리된 배선도 글자로 남아, 원문 대조는 「그 배선이 살아 있다」를 증명하지 못한다 (12차 메타 검사 ①).
+        return $this->stripComments((string) file_get_contents($path));
     }
 
+    /**
+     * 상태 관리 엔드포인트 소스가 가드 파일을 불러오는지 주석을 걷어낸 원문으로 확인한다.
+     *
+     * @scenario entry_point=state_management
+     *
+     * @effects state_management_loads_guard_file
+     *
+     * @return void 반환값 없음
+     */
     public function test_state_management_loads_guard_file(): void
     {
         $src = $this->stateManagementSource();
@@ -238,6 +410,15 @@ class InstallerGuardTest extends TestCase
         );
     }
 
+    /**
+     * 상태 관리 엔드포인트가 일반 가드가 아니라 마무리 전용 가드를 부르는지 확인한다.
+     *
+     * @scenario entry_point=state_management
+     *
+     * @effects state_management_calls_finalize_guard_not_general_guard
+     *
+     * @return void 반환값 없음
+     */
     public function test_state_management_calls_finalize_guard_not_general_guard(): void
     {
         $src = $this->stateManagementSource();
@@ -257,6 +438,15 @@ class InstallerGuardTest extends TestCase
         );
     }
 
+    /**
+     * 상태 관리 엔드포인트에서 가드 호출이 API 객체 생성보다 앞에 있는지 확인한다.
+     *
+     * @scenario entry_point=state_management
+     *
+     * @effects state_management_guard_runs_before_api_instantiation
+     *
+     * @return void 반환값 없음
+     */
     public function test_state_management_guard_runs_before_api_instantiation(): void
     {
         $src = $this->stateManagementSource();
@@ -273,6 +463,15 @@ class InstallerGuardTest extends TestCase
         );
     }
 
+    /**
+     * 잠금 파일만 있는 완료 직전 폴링 구간에서 상태 관리 엔드포인트의 가드가 통과시키는지 확인한다.
+     *
+     * @scenario entry_point=state_management
+     *
+     * @effects state_management_polling_passes_with_lock_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_state_management_polling_passes_with_lock_only(): void
     {
         // 핵심 비파괴 불변식: complete_flag 직후~finalize 전 구간(락만 존재)에서
@@ -286,6 +485,15 @@ class InstallerGuardTest extends TestCase
         );
     }
 
+    /**
+     * 환경 파일 플래그까지 기록된 완전 완료 상태에서 상태 관리 엔드포인트가 막히는지 확인한다.
+     *
+     * @scenario entry_point=state_management, installation_state=completed_env_only
+     *
+     * @effects state_management_blocks_when_env_completed_true
+     *
+     * @return void 반환값 없음
+     */
     public function test_state_management_blocks_when_env_completed(): void
     {
         // 완전 완료 상태(.env 플래그 set)에서는 get/reset/abort 가 차단되어야 한다 —

@@ -1,3 +1,4 @@
+import { stripBasePrefix, withBasePrefix } from '../../../support/assetUrl';
 /**
  * useEditorMode.ts
  *
@@ -31,7 +32,11 @@ const LAYOUT_EDITOR_URL_RE = /^\/admin\/layout-editor\/([^/?#]+)\/?$/;
  * @returns 편집 모드 진입 정보 또는 null (편집 모드 아님)
  */
 export function checkLayoutEditorMode(pathname: string): { templateIdentifier: string } | null {
-  const match = LAYOUT_EDITOR_URL_RE.exec(pathname);
+  // 패턴은 `^/admin/…$` 로 고정 앵커라 하위 폴더 배치의 주소(`/g7/admin/…`)는 맞지
+  // 않는다 — 벗기지 않으면 그 배치에서 편집기가 **아예 부팅하지 않는다** (12차 G3).
+  // 판정을 여기서 하는 이유: 이 함수가 「편집기 주소인가」의 SSoT 라, 호출부마다
+  // 벗기게 하면 한 곳만 빠져도 그 진입점에서 조용히 부팅이 안 된다.
+  const match = LAYOUT_EDITOR_URL_RE.exec(stripBasePrefix(pathname));
   if (!match) return null;
   return { templateIdentifier: match[1] };
 }
@@ -83,7 +88,11 @@ export function buildEditorUrl(
   routePath?: string | null,
   layoutName?: string | null,
 ): string {
-  const base = `/admin/layout-editor/${encodeURIComponent(templateIdentifier)}`;
+  // 이 값은 `pushState` / `<a href>` 로 브라우저에 그대로 실리고, 소비처가
+  // `window.location.pathname` 과 **문자열 비교**해 중복 항목을 거른다. 접두사를
+  // 붙이지 않으면 하위 폴더 배치에서 그 비교가 언제나 불일치라 클릭마다 히스토리가
+  // 쌓이고, 주소창은 사이트 밖을 가리킨다 (12차 G3).
+  const base = withBasePrefix(`/admin/layout-editor/${encodeURIComponent(templateIdentifier)}`);
   if (!routePath || routePath.length === 0) return base;
   // 별도 편집 모드 가상 path → ?edit=
   if (routePath.startsWith('__')) {

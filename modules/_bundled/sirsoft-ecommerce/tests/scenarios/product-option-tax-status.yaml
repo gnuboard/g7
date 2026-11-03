@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#612 |
 #   축 셋(상품 기본값 × 옵션 지정 × 표면)의 전 교차곱은 한 시험이 재현하지 않는다. 실효 과세 종류 판정
 #   (옵션 ?? 상품) 4×3 은 단위(ProductTaxStatusTest)가, 금액 갈래는 order-vat-amount 매니페스트가 잠근다.
 #   이 매니페스트는 저장·검증·조회·복사·필터 표면이 그 값을 잃지 않는지만 본다.

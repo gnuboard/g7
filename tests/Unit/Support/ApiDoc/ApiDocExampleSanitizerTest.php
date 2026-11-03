@@ -163,13 +163,21 @@ class ApiDocExampleSanitizerTest extends TestCase
             'token' => '75|abcdefghijklmnopqrstuvwxyz0123456789ABCD',
             'install_path' => base_path(),
             'url' => 'https://dev-box.dev/admin',
+            'token_issued' => true,
+            'cron_url' => 'https://dev-box.dev/api/cron/run?token=s3cr3tvalue&mode=all',
         ]];
 
-        $schema = (new ResponseSchemaInferrer)->infer((new ApiDocExampleSanitizer)->sanitize($body, ['api.local-box.dev']));
+        $sanitized = (new ApiDocExampleSanitizer)->sanitize($body, ['api.local-box.dev']);
+        $schema = (new ResponseSchemaInferrer)->infer($sanitized);
         $samples = collect($schema['fields'])->pluck('sample', 'name');
 
         $this->assertSame('user@example.com', $samples['email']);
         $this->assertSame('{MASKED}', $samples['token']);
+        // 참/거짓은 비밀을 담을 수 없어 가리지 않고, 값 안의 쿼리 자격증명은 그 자리만 가린다.
+        // 표 샘플은 추론기가 글자로 적고 긴 값을 자르므로 마스킹 결과는 정제 결과에서 직접 본다.
+        $this->assertSame('true', $samples['token_issued']);
+        $this->assertTrue($sanitized['data']['token_issued']);
+        $this->assertSame('https://example.com/api/cron/run?token={MASKED}&mode=all', $sanitized['data']['cron_url']);
         $this->assertSame('<설치 경로>', $samples['install_path']);
         $this->assertSame('https://example.com/admin', $samples['url']);
     }

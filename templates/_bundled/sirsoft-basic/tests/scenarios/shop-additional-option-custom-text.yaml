@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 화면마다 검사하는 계약이 다르다(상세의 필수 가드는 장바구니에 없다). 교차 조합에는 뜻이 없고, 효과마다 그 효과를 여는 화면을 테스트 docblock 이 직접 적는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 화면마다 검사하는 계약이 다르다(상세의 필수 가드는 장바구니에 없다). 교차 조합에는 뜻이 없고, 효과마다 그 효과를 여는 화면을 테스트 docblock 이 직접 적는다.
 feature: 추가옵션 직접입력(custom_text)과 주문 목록 추가옵션 요약
 
 description: |

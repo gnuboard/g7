@@ -2567,7 +2567,7 @@ class TemplateManager implements TemplateManagerInterface
         }
 
         // extensions/{module-identifier}/ 폴더 순회
-        $moduleDirectories = glob($extensionsPath.'/*', GLOB_ONLYDIR);
+        $moduleDirectories = ExtensionManager::listDirectories($extensionsPath);
 
         if (empty($moduleDirectories)) {
             Log::debug('Extension 오버라이드 모듈 폴더 없음', ['template' => $templateIdentifier]);

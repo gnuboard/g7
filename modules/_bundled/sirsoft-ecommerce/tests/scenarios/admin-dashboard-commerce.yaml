@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   axes 의 cross product 는 표현용으로 폭이 넓지만 의미 있는 입력 조합은 5개 내외다.
 #   비즈니스 로직 effects (순매출/판매수량 7종 상태 집계 / 변화율 분기 / 빈 상태 / 상태 배지) 는
 #   PHPUnit Unit (EcommerceDashboardServiceTest) + Feature (DashboardApiTest) 로 단언이 끝나고,

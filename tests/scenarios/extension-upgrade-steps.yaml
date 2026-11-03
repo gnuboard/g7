@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. range, step_type 은 runUpgradeSteps 에만, filename 은 스텝 파일명 파싱에만 쓰이므로 subject 와 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변종이다. range, step_type 은 runUpgradeSteps 에만, filename 은 스텝 파일명 파싱에만 쓰이므로 subject 와 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
 feature: 확장 버전별 업그레이드 스텝 실행 (runUpgradeSteps, UpgradeContext, 스텝 파일명 규약)
 
 description: |

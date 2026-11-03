@@ -32,6 +32,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * 정상적인 레이아웃 서빙 전체 플로우 테스트
+     *
+     * @effects public_layout_serving_returns_the_stored_layout_json
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_layout_serving_flow(): void
     {
@@ -109,6 +113,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿에 대한 404 에러 테스트
+     *
+     * @effects public_layout_serving_returns_404_for_missing_or_inactive_sources
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_template(): void
     {
@@ -124,6 +132,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃에 대한 404 에러 테스트
+     *
+     * @effects public_layout_serving_returns_404_for_missing_or_inactive_sources
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_layout(): void
     {
@@ -150,6 +162,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * 비활성화된 템플릿에 대한 404 에러 테스트
+     *
+     * @effects public_layout_serving_returns_404_for_missing_or_inactive_sources
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_inactive_template(): void
     {
@@ -186,6 +202,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * 레이아웃 캐싱 전체 플로우 테스트
+     *
+     * @effects serving_cache_key_uses_server_current_version
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_caching_flow(): void
     {
@@ -257,6 +277,10 @@ class LayoutServingTest extends TestCase
      *
      * api 미들웨어 그룹에 기본 throttle이 적용되어 있으므로
      * 헤더 존재 여부만 확인합니다.
+     *
+     * @effects public_layout_serving_returns_the_stored_layout_json
+     *
+     * @return void 반환값 없음
      */
     public function test_rate_limiting_headers_are_present(): void
     {
@@ -293,6 +317,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * 레이아웃 상속 전체 플로우 테스트
+     *
+     * @effects public_layout_serving_merges_the_inherited_base_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_inheritance_complete_flow(): void
     {
@@ -394,6 +422,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * XSS 필터링 테스트
+     *
+     * @effects public_layout_serving_returns_the_stored_layout_json
+     *
+     * @return void 반환값 없음
      */
     public function test_xss_filtering_in_layout_content(): void
     {
@@ -444,6 +476,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * 복잡한 레이아웃 구조 서빙 테스트
+     *
+     * @effects public_layout_serving_returns_the_stored_layout_json
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_complex_layout_structure(): void
     {
@@ -556,6 +592,10 @@ class LayoutServingTest extends TestCase
 
     /**
      * API 사용량 로깅 플로우 테스트
+     *
+     * @effects public_layout_serving_returns_the_stored_layout_json
+     *
+     * @return void 반환값 없음
      */
     public function test_api_usage_logging_flow(): void
     {
@@ -594,6 +634,12 @@ class LayoutServingTest extends TestCase
      * gzip 압축된 레이아웃 서빙 테스트
      *
      * Accept-Encoding: gzip 헤더가 있으면 응답이 압축되어야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_compresses_compressible_responses_for_accepting_clients
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_gzip_compressed_layout_when_client_accepts(): void
     {
@@ -661,7 +707,98 @@ class LayoutServingTest extends TestCase
     }
 
     /**
+     * gzip 클라이언트의 재검증이 304 로 끝나야 합니다.
+     *
+     * 압축 미들웨어는 압축본의 ETag 에 `-gzip` 접미사를 붙인다 — content-coding 이 다르면
+     * 다른 표현이므로 옳다(RFC 9110 §8.8.1). 브라우저는 그 값을 그대로 `If-None-Match` 로
+     * 되돌려 보내므로, 재검증 쪽이 접미사를 벗겨 비교하지 않으면 **영원히 불일치**해 304 가
+     * 성립하지 않는다. 그러면 레이아웃 JSON 이 매 재검증마다 전문 200 으로 다시 나가는데,
+     * 오류도 경고도 없이 대역폭·응답시간만 늘어나는 형태라 드러나지 않는다.
+     *
+     * 이 왕복은 반드시 `Accept-Encoding: gzip` 을 실어야 한다 — 그 헤더가 없으면 압축이
+     * 일어나지 않아 접미사도 붙지 않고, 엄격 비교로도 통과해 변이가 살아남는다.
+     *
+     * @scenario encoding=gzip, conditional_request=if_none_match
+     *
+     * @effects gzip_marks_encoded_representation_with_distinct_etag
+     *
+     * @return void 반환값 없음
+     */
+    public function test_gzip_client_revalidation_returns_304(): void
+    {
+        $template = Template::create([
+            'identifier' => 'sirsoft-admin_basic',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+            'version' => '1.0.0',
+            'type' => 'admin',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
+        ]);
+
+        $components = [];
+        for ($i = 0; $i < 50; $i++) {
+            $components[] = [
+                'type' => 'div',
+                'props' => ['class' => "component-{$i}"],
+                'children' => [['type' => 'span', 'props' => [], 'children' => ["Content for component {$i} with padding text"]]],
+            ];
+        }
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'revalidated-dashboard',
+            'content' => ['meta' => ['title' => 'Revalidated'], 'data_sources' => [], 'components' => $components],
+        ]);
+
+        $url = "/api/layouts/{$template->identifier}/{$layout->name}.json";
+
+        $first = $this->withHeaders(['Accept-Encoding' => 'gzip, deflate'])->get($url);
+        $first->assertStatus(200);
+        $this->assertSame('gzip', $first->headers->get('Content-Encoding'), '전제: 이 응답은 압축되어야 이 테스트가 의미를 갖는다');
+
+        $etag = $first->headers->get('ETag');
+        $this->assertNotNull($etag);
+        $this->assertStringContainsString('-gzip', $etag, '전제: 압축본의 ETag 에는 표현 접미사가 붙는다');
+
+        // 브라우저가 하는 그대로 — 받은 값을 손대지 않고 되돌려 보낸다.
+        $second = $this->withHeaders(['Accept-Encoding' => 'gzip, deflate', 'If-None-Match' => $etag])->get($url);
+
+        $second->assertStatus(304);
+
+        // `Vary` 는 200 과 **같은 값**이어야 한다. 종전에는 존재만 단언했는데, 그 값은
+        // 조건부가 아니라 고정 문자열이라 구현이 무엇을 하든 성립했다 — 즉 이 줄은
+        // 게이트가 아니라 형태 기록이었다. 200 과 대조하면 실제로 잠긴다.
+        $this->assertSame(
+            $first->headers->get('Vary'),
+            $second->headers->get('Vary'),
+            '304 가 200 과 다른 Vary 축을 실으면 공유 캐시가 잘못된 표현을 재사용한다'
+        );
+        $this->assertSame(
+            $first->headers->get('Cache-Control'),
+            $second->headers->get('Cache-Control'),
+            '304 는 200 이 실었을 캐시 정책을 그대로 싣는다 (RFC 9110 §15.4.5)'
+        );
+
+        // `ETag` 도 같은 축이다. 접미사는 본문이 있는 응답에만 붙으므로(304 는 압축
+        // 미들웨어가 건너뛴다) 종전에는 같은 요청이 200 에서 `"…-gzip"`, 304 에서 `"…"`
+        // 를 내보냈다 — 공유 캐시가 gzip 본문을 identity 검증자로 갱신하게 되어, 200 에서
+        // 표현을 갈라 놓은 이유가 그 자리에서 사라진다 (7차 G3 라운드 C5).
+        $this->assertSame(
+            $first->headers->get('ETag'),
+            $second->headers->get('ETag'),
+            '304 의 ETag 가 같은 요청의 200 과 다르다 — 공유 캐시가 두 표현을 뒤섞는다'
+        );
+    }
+
+    /**
      * Accept-Encoding 헤더가 없으면 압축하지 않아야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_leaves_responses_uncompressed_without_gzip_acceptance
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_compress_layout_when_client_does_not_accept_gzip(): void
     {
@@ -709,6 +846,12 @@ class LayoutServingTest extends TestCase
 
     /**
      * 작은 레이아웃은 압축하지 않아야 합니다 (1KB 미만).
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_skips_responses_below_the_size_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_compress_small_layout(): void
     {
@@ -745,6 +888,12 @@ class LayoutServingTest extends TestCase
 
     /**
      * gzip 압축 시 압축 효율성 테스트
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_compresses_compressible_responses_for_accepting_clients
+     *
+     * @return void 반환값 없음
      */
     public function test_gzip_compression_reduces_response_size(): void
     {
@@ -816,6 +965,8 @@ class LayoutServingTest extends TestCase
      * @scenario compile_unit=layout,source_health=valid
      *
      * @effects injected_comments_never_reach_the_public_serving_response
+     *
+     * @return void 반환값 없음
      */
     public function test_strips_developer_comments_from_public_serving(): void
     {
@@ -932,6 +1083,8 @@ class LayoutServingTest extends TestCase
      * @scenario compile_unit=layout,source_health=valid
      *
      * @effects injected_comments_in_extension_fragments_never_reach_the_public_serving_response
+     *
+     * @return void 반환값 없음
      */
     public function test_strips_developer_comments_from_extension_injected_fragments(): void
     {
@@ -1033,6 +1186,8 @@ class LayoutServingTest extends TestCase
      * @scenario compile_unit=layout,source_health=valid
      *
      * @effects injected_comments_in_template_owned_extension_fragments_never_reach_the_public_serving_response
+     *
+     * @return void 반환값 없음
      */
     public function test_strips_developer_comments_from_template_owned_extension_fragments(): void
     {
@@ -1112,6 +1267,10 @@ class LayoutServingTest extends TestCase
      * 한글이 포함된 응답이 \uXXXX 이스케이프 없이 raw UTF-8 로 직렬화되어야 합니다.
      *
      * JSON_UNESCAPED_UNICODE 적용으로 멀티바이트 문자의 전송 크기를 줄인다.
+     *
+     * @effects public_layout_serving_emits_unescaped_utf8
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_korean_as_unescaped_utf8(): void
     {
@@ -1177,6 +1336,8 @@ class LayoutServingTest extends TestCase
      * @scenario compile_unit=layout,source_health=valid
      *
      * @effects injected_comments_in_base_layouts_never_reach_the_child_serving_response
+     *
+     * @return void 반환값 없음
      */
     public function test_strips_developer_comments_inherited_from_base_layout(): void
     {
@@ -1267,7 +1428,11 @@ class LayoutServingTest extends TestCase
     /**
      * 프로덕션에서 레이아웃 응답은 공개 캐시 헤더를 유지한다 (#122 작업 D — successWithCache 환경 분기 동반 효과)
      *
+     * @scenario environment=production
+     *
      * @effects fallback_api_serves_etag_304
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_has_public_cache_headers_in_production(): void
     {
@@ -1301,7 +1466,11 @@ class LayoutServingTest extends TestCase
     /**
      * 개발 환경에서 레이아웃 응답은 no-cache (dev 레이아웃 반영성 — #122 작업 D 환경 분기)
      *
+     * @scenario environment=dev
+     *
      * @effects fallback_api_no_cache_in_dev
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_no_cache_in_development(): void
     {

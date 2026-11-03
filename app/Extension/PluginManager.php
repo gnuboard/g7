@@ -407,7 +407,7 @@ class PluginManager implements PluginManagerInterface
 
         // _pending 감지: 활성 디렉토리 부재 + _pending 존재 시 스테이징 설치 흐름
         $activePath = $this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName;
-        $composerDoneInPending = false;
+        $vendorResolved = false;
         $resolvedVendorMode = $vendorMode;
 
         if (! File::isDirectory($activePath)
@@ -427,7 +427,7 @@ class PluginManager implements PluginManagerInterface
                             $onProgress,
                         );
                         $resolvedVendorMode = $vendorResult->mode;
-                        $composerDoneInPending = true;
+                        $vendorResolved = true;
                     } catch (VendorInstallException $e) {
                         Log::warning('플러그인 _pending Vendor 의존성 설치 실패', [
                             'plugin' => $pluginName,
@@ -461,6 +461,48 @@ class PluginManager implements PluginManagerInterface
         ExtensionManager::registerExtensionAutoloadPaths('plugins', $pluginName);
 
         try {
+            // _bundled 소스 설치(웹 인스톨러의 정상 경로)와 force 재설치는 위 _pending 분기를
+            // 타지 않는다 — 그 분기는 스테이징 사본이 있을 때만 열린다. 그러면 남는 통로가
+            // Phase 4.5 의 raw composer 뿐이라, `--vendor-mode=bundled` 로 요청해도 동봉
+            // `vendor-bundle.zip` 이 쓰이지 않고 composer 를 실행할 수 없는 호스팅에서는
+            // vendor 가 빈 확장이 「설치 완료」로 남는다(DB 에는 bundled 로 기록되고, 이후
+            // 업데이트만 그 모드를 상속해 번들로 채운다 — 설치만 비어 있는 상태).
+            //
+            // 복사 뒤 활성 디렉토리에 같은 resolver 를 적용한다. zip·manifest 는 함께 복사되므로
+            // 그 디렉토리가 곧 유효한 소스이고(docs/extension/vendor-bundle.md §7.1), 원본
+            // `_bundled` 는 vendor/ 로 오염되지 않는다. 플러그인 부팅(getPlugin)과 프로바이더 등록
+            // 전에 두어야 ServiceProvider·시더가 자기 의존성을 볼 수 있다.
+            //
+            // 이 단계는 설치를 중단시키지 않는다(VendorInstallException 은 아래에서 잡는다).
+            // 그럼에도 rollback try 안에 두는 것은, 그 밖의 Throwable 이 났을 때 방금 만든
+            // 활성 디렉토리가 고아로 남지 않게 하기 위함이다.
+            if (! $vendorResolved
+                && ! app()->environment('testing')
+                && $this->extensionManager->hasComposerDependenciesAt($activePath)) {
+                $onProgress?->__invoke('composer', __('extensions.progress.vendor_install'));
+                try {
+                    $vendorResult = $this->installVendorViaResolver(
+                        $pluginName,
+                        $activePath,
+                        $vendorMode,
+                        'install',
+                        null,
+                        $onProgress,
+                    );
+                    $resolvedVendorMode = $vendorResult->mode;
+                    $vendorResolved = true;
+                } catch (VendorInstallException $e) {
+                    // 사유를 설치 경고에도 남긴다 — 이 실패는 설치를 멈추지 않으므로, 로그에만
+                    // 두면 「vendor 없이 설치 완료」가 조용히 지나간다
+                    Log::warning('플러그인 Vendor 의존성 설치 실패', [
+                        'plugin' => $pluginName,
+                        'source_dir' => $activePath,
+                        'error' => $e->getMessage(),
+                    ]);
+                    LifecycleWarnings::current()->add('composer_install', $pluginName, $e->getMessage());
+                }
+            }
+
             // 부팅 뒤에 놓인 디렉터리라 프로바이더($repositories 바인딩)가 등록된 적이 없다 — 시더·install()
             // 이 저장소 인터페이스를 해석하기 전에 부팅 때와 같은 규칙으로 등록한다(7.1.3)
             ExtensionProviderRegistrar::ensureRegistered('plugins', $pluginName);
@@ -607,8 +649,9 @@ class PluginManager implements PluginManagerInterface
             $this->initializePluginSettings($plugin);
 
             // Phase 4.5: Composer 의존성 설치 (외부 패키지가 있는 경우에만)
-            // _pending에서 이미 설치한 경우 스킵 (vendor/가 활성 디렉토리에 복사됨)
-            if (! $composerDoneInPending) {
+            // 위에서 resolver 가 vendor/ 를 구성했으면 스킵 — 남는 것은 resolver 가 실패했거나
+            // (번들 무결성 불일치 등) 이 경로가 처음부터 대상이 아니었던 경우뿐이다
+            if (! $vendorResolved) {
                 $onProgress?->__invoke('composer', __('extensions.progress.composer_install'));
                 if (! app()->environment('testing')
                     && $this->extensionManager->hasComposerDependencies('plugins', $pluginName)) {
@@ -762,6 +805,13 @@ class PluginManager implements PluginManagerInterface
         $layoutWarnings = [];
 
         if ($result) {
+            // 활성화도 메뉴 동기화를 지난다 — 플러그인의 activate() 가 메뉴를 직접 심는 구현이면
+            // 그 경로에는 `plugin.{id}.admin_menus.translations` 필터가 없어 언어팩이 넣어 둔
+            // 번역이 원문으로 되돌아간다(실측: 활성화 직후 ja 라벨 소실). 필터를 아는 지점은
+            // createPluginMenus 한 곳이므로 그것을 지나게 하고, 각 플러그인이 훅 이름을 사본으로
+            // 갖지 않게 한다. helper 가 멱등이라 재호출은 무해하다.
+            $this->createPluginMenus($plugin);
+
             $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), [
                 'status' => ExtensionStatus::Active->value,
                 'deactivated_reason' => null,
@@ -1373,8 +1423,8 @@ class PluginManager implements PluginManagerInterface
 
                     if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                         $assets = [
-                            'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js']) : null,
-                            'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css']) : null,
+                            'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js'], $plugin->getVersion()) : null,
+                            'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css'], $plugin->getVersion()) : null,
                             'priority' => $loadingConfig['priority'] ?? 100,
                         ];
                     }
@@ -1478,8 +1528,8 @@ class PluginManager implements PluginManagerInterface
 
                     if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                         $assets = [
-                            'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js']) : null,
-                            'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css']) : null,
+                            'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js'], $plugin->getVersion()) : null,
+                            'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css'], $plugin->getVersion()) : null,
                             'priority' => $loadingConfig['priority'] ?? 100,
                         ];
                     }
@@ -1567,8 +1617,8 @@ class PluginManager implements PluginManagerInterface
 
             if (isset($builtPaths['js']) || isset($builtPaths['css'])) {
                 $assets = [
-                    'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js']) : null,
-                    'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css']) : null,
+                    'js' => isset($builtPaths['js']) ? AssetUrl::pluginAsset($identifier, $builtPaths['js'], $plugin->getVersion()) : null,
+                    'css' => isset($builtPaths['css']) ? AssetUrl::pluginAsset($identifier, $builtPaths['css'], $plugin->getVersion()) : null,
                     'priority' => $loadingConfig['priority'] ?? 100,
                 ];
             }
@@ -1992,7 +2042,7 @@ class PluginManager implements PluginManagerInterface
 
         foreach ($migrationPaths as $migrationPath) {
             // 디렉토리 내 마이그레이션 파일 목록 (역순으로 정렬 - 최신 것부터 롤백)
-            $migrationFiles = glob($migrationPath.'/*.php');
+            $migrationFiles = ExtensionManager::listDirectoryFiles($migrationPath, '.php');
 
             if (empty($migrationFiles)) {
                 Log::info('롤백할 마이그레이션 파일이 없습니다.', [
@@ -2851,7 +2901,7 @@ class PluginManager implements PluginManagerInterface
         $namespace = $this->convertDirectoryToNamespace($pluginDirName);
 
         // 시더 파일들을 찾아서 실행
-        $seederFiles = File::glob($seederPath.'/*Seeder.php');
+        $seederFiles = ExtensionManager::listDirectoryFiles($seederPath, 'Seeder.php');
 
         foreach ($seederFiles as $seederFile) {
             $fileName = basename($seederFile, '.php');
@@ -2919,7 +2969,7 @@ class PluginManager implements PluginManagerInterface
         $identifier = $plugin->getIdentifier();
         $migrationNames = [];
         foreach ($plugin->getMigrations() as $migrationPath) {
-            foreach (glob($migrationPath.'/*.php') ?: [] as $file) {
+            foreach (ExtensionManager::listDirectoryFiles($migrationPath, '.php') as $file) {
                 $migrationNames[] = pathinfo($file, PATHINFO_FILENAME);
             }
         }
@@ -2973,7 +3023,7 @@ class PluginManager implements PluginManagerInterface
                     $this->cleanupDynamicPluginData($plugin);
                 }
                 foreach ($plugin->getMigrations() as $migrationPath) {
-                    $files = glob($migrationPath.'/*.php') ?: [];
+                    $files = ExtensionManager::listDirectoryFiles($migrationPath, '.php');
                     rsort($files);
                     foreach ($files as $file) {
                         if (in_array(pathinfo($file, PATHINFO_FILENAME), $snapshot['migrations'], true)) {

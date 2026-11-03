@@ -130,6 +130,20 @@ describe('HeroSlider', () => {
     expect(links[0].getAttribute('href')).toBe('/shop/1');
   });
 
+  // @scenario surface=link_href_carries_site_mount_prefix
+  it('하위 폴더 사이트에서는 사이트 안 링크 href 에 마운트 접두사를 붙이고, 바깥 주소는 그대로 둔다', () => {
+    (window as any).G7Config = { basePath: '/g7' };
+    try {
+      const { container, rerender } = render(<HeroSlider banners={[banner(1)]} />);
+      expect((container.querySelector('a.hs-slider__link') as HTMLAnchorElement).getAttribute('href')).toBe('/g7/shop/1');
+
+      rerender(<HeroSlider banners={[banner(1, { button_text: '보러 가기', link_url: 'https://example.com/a', link_new_window: true })]} />);
+      expect((container.querySelector('a.hs-slider__button') as HTMLAnchorElement).getAttribute('href')).toBe('https://example.com/a');
+    } finally {
+      delete (window as any).G7Config;
+    }
+  });
+
   // @scenario surface=empty_button_makes_whole_slide_link
   it('버튼 문구가 없으면 슬라이드 전체를 덮는 제목 이름의 링크를 두고, 문구는 링크 밖에 둔다', () => {
     const { container } = render(<HeroSlider banners={[banner(1)]} />);

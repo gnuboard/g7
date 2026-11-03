@@ -520,7 +520,7 @@ $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], 
 |----|-----|-----|
 | `type` | string | og:type (product/article/website 등) |
 | `title` / `description` | string | 텍스트 |
-| `image` | string (절대 URL) | og:image |
+| `image` | string (절대 URL) | og:image — 조립은 `SiteUrl::absolute()` (아래 참조) |
 | `image_secure_url` | string | og:image:secure_url (HTTPS) |
 | `image_width` / `image_height` | int\|null | 픽셀 크기 |
 | `image_type` | string | image/jpeg 등 MIME |
@@ -539,6 +539,34 @@ $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], 
 | `extra` | array<{name,content}> | 자유 twitter:* |
 
 **`$structured_data`**: Schema.org JSON-LD 배열 (`@type` 필수). 청취자가 자유롭게 키 추가/수정 가능. SeoRenderer 가 `@context: https://schema.org` 자동 prepend.
+
+### 절대 주소의 오리진과 마운트 접두사
+
+봇은 페이지 주소를 모른 채 색인하므로 `og:image` · `twitter:image` · `schema.image` · 봇 화면의 `src`/`href` 는 **오리진까지 붙은 절대 주소**여야 한다. 오리진은 요청이 아니라 사이트 주소(`APP_URL`)에서 온다 — 서버가 만드는 절대 주소는 `App\Support\SiteUrl` 이 단일 출처이고(봇 화면의 `SeoUrl` 도 여기에 위임한다), 요청 Host 로 폴백하지 않는다(아래 [「요청 Host 를 믿지 않습니다」](#요청-host-를-믿지-않습니다-seourl--데이터소스-호출-주소)). 회원이 브라우저로 여는 사용자 화면 주소는 `ScreenUrl` 로 만든다([routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다)).
+
+하위 폴더 설치(`https://host/g7/`)에서는 그 조립에 함정이 둘 더 있고, 방향이 서로 반대라 한쪽만 막으면 다른 쪽이 남는다.
+
+| ❌ 금지 | 무슨 일이 벌어지나 |
+|--------|------------------|
+| `url($path)` | 그 값의 생산자(`Attachment::previewUrlForSlug()` 등)가 **이미 마운트 접두사를 실었다** — `url()` 이 한 번 더 실어 `/g7/g7/…` 로 404 |
+| `str_starts_with($v, 'http') ? $v : AssetUrl::absolute($v)` | 프로토콜 상대(`//cdn.x/y.png`)·상대 경로(`img.png`)·`data:` 를 오리진에 그대로 이어 붙인다. 루트 상대(`/images/logo.png`)에는 반대로 **접두사를 채우지 않는다** |
+
+`SiteUrl::absolute()` 가 그 단일 지점이다 — 하위 폴더 설치에서 이미 접두사가 붙은 경로(`/g7/…`)를 넘겨도 접두사를 다시 붙이지 않고, 이미 절대 주소인 값은 그대로 돌려준다. `AssetUrl::siteAbsolute()` 는 `SiteUrl::absolute()` 에 위임하는 호환용 이름이다. 오리진 없이 같은 사이트 안의 상대 경로만 필요하면 `AssetUrl::sitePath()`.
+
+**정본 주소(canonical · `og:url` · `hreflang` · 사이트맵 `<loc>`)도 같은 규칙이다.** 같은 페이지의 `og:image` 와 정본 주소가 서로 다른 오리진을 가리키면, TLS 를 앞단에서 끝내는 프록시(요청은 `http` 로 도착)나 내부 호스트명으로 도착하는 크롤러 요청에서 **한 페이지 안의 두 절대 주소가 서로 다른 오리진**을 가리키고, 사이트맵은 콘솔(`seo:generate-sitemap`)이 만들었는지 웹 요청이 만들었는지에 따라 오리진이 달라진다. 크롤러는 그것을 오류 없이 다른 사이트로 색인한다. `SeoRenderer`(canonical·og:url·hreflang)와 `SitemapGenerator`(정적 라우트·기여자 `url` → `loc`)는 사이트 주소 기준으로 만들며, 입력은 접두사 없는 요청 경로(`$request->getPathInfo()`)라 접두사는 한 번만 실린다. 기여자가 `loc` 을 직접 만들 때도 `url()` 이 아니라 `SiteUrl::absolute()` 를 쓴다 (아래 유즈케이스).
+
+같은 규칙을 지나는 서버측 절대 주소가 넷 더 있다 — 어느 하나라도 `url()` 이면 그 주소만 요청 호스트를 싣고, 접두사를 이미 품은 값에는 접두사가 한 번 더 실린다.
+
+| 지점 | 주소 | 어긋나면 |
+|------|------|---------|
+| `SitemapFileStore::childUrl()` | 사이트맵 **색인**의 자식 `<loc>` | 부모(색인)와 자식(항목)의 오리진이 한 사이트맵 안에서 갈린다 — 콘솔 생성이면 `http://localhost` |
+| `SitemapIndexer` → `SitemapGenerator::entryLoc()` | 증분 색인(리스너 경유)의 `url` → `loc` | 같은 리소스의 `<loc>` 이 전체 재생성과 증분에서 다르다. 규칙은 `entryLoc()` 하나가 소유한다 |
+| `DataSourceResolver` | 봇 렌더가 부르는 내부 API 주소 | `/g7/api/…` 를 품은 데이터소스가 `/g7/g7/api/…` 가 되어 봇 화면에서만 데이터가 빈다(fallback 이 오류를 흡수한다) |
+| `SeoRenderer` `_global.site_url` 폴백 | `general.site_url` 이 빈 사이트의 JSON-LD `WebSite.url` 등 | 같은 화면의 canonical 은 설정 오리진, `site_url` 은 요청 호스트 |
+
+알림·메일·비밀번호 재설정 링크와 결제·본인인증의 복귀·통보 주소도 같다(`SiteUrl`, 회원이 여는 화면은 `ScreenUrl`) — `config('app.url').'/path'` 는 `APP_URL` 의 후행 슬래시를 그대로 실어 `https://host/g7//login` 을 만들고, `url()` 은 요청 호스트를 싣는다. 저장 쪽에서는 `general.site_url` 이 후행 슬래시 없이 저장된다(요청 정규화).
+
+정적 검사는 봇 렌더러의 속성 조립 루프를 **도출**해 그 루프가 `src`/`href` 를 이 헬퍼로 처리하는지 판정한다 — 「`'src'` 리터럴이 있는 줄」을 모집단으로 삼으면 그 이름을 적지 않는 방출 지점이 구조적으로 보이지 않아, 실제로 네 번째 지점이 그렇게 누락된 적이 있다.
 
 **유즈케이스**:
 
@@ -595,7 +623,7 @@ $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
 
 ### 도메인 스키마 ownership — seoOgDefaults / seoTwitterDefaults / seoStructuredData
 
-모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` 자동 검증이 자동 차단).
+모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — 정적 검사가 자동 차단).
 
 ```php
 class EcommerceModule extends AbstractModule
@@ -658,12 +686,12 @@ class EcommerceSitemapContributor extends AbstractSitemapContributor
     public function getIdentifier(): string { return 'sirsoft-ecommerce'; }
 
     // 한 건씩 yield — 1.4M 배열을 메모리에 만들지 않음. 쿼리는 Repository 의
-    // stream*ForSitemap() 위임(lazyById, service-direct-data-access 규율).
+    // stream*ForSitemap() 위임(lazyById — Service 직접 데이터 접근 금지 규율).
     // 리소스 단위 증분(SitemapIndexer) 매칭을 위해 resource_type/resource_id 를 함께 emit.
     public function getUrlsLazy(): iterable
     {
         foreach ($this->products->streamVisibleForSitemap() as $p) {
-            yield ['loc' => url("/shop/{$p->id}"), 'lastmod' => $p->updated_at?->toW3cString(),
+            yield ['loc' => SiteUrl::absolute("/shop/{$p->id}"), 'lastmod' => $p->updated_at?->toW3cString(),
                    'resource_type' => 'product', 'resource_id' => (string) $p->id];
         }
     }
@@ -803,7 +831,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 
 - **테이블**: `resource_type`/`resource_id`/`loc`/`loc_hash`(=`sha256(loc)`)/`lastmod`/`changefreq`/`priority`/`contributor`/`is_visible`. unique 는 `(resource_type, resource_id, loc_hash)` — `loc string(2048)` utf8mb4 는 InnoDB 키 길이(3072 byte)를 초과하므로 ascii 64 해시로 identity 를 유지합니다(상세: docs/database-guide.md).
 - **Repository**: `SitemapUrlRepositoryInterface`(`upsertForResource`=delete-후-insert 멱등 / `removeForResource` / `streamVisible`(lazyById) / `countVisible` / `replaceAllForContributor`). `SeoServiceProvider` 가 singleton 바인딩.
-- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(`service-direct-data-access` 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md). 부모 리소스가 비공개·삭제·재공개되어 자식 수만 건을 한꺼번에 바꿀 때는 `deindexResources($type, $ids)` / `indexResources($type, $contributor, [$id => $entries])` 를 씁니다 — 리소스마다 부르면 큐 작업 시간 제한(기본 60초)을 넘길 수 있습니다(게시글 27,000건 실측: 건별 255초 / 묶음 7초). 묶음 색인도 filter 훅은 리소스마다 호출하고, 저장만 1,000건 단위 삭제·삽입으로 처리합니다.
+- **인덱서**: `SitemapIndexer::indexResource($type,$model,$entries)` / `deindexResource($type,$model)` — 리스너가 직접 모델/DB 를 만지지 않고 이 서비스를 경유합니다(Service 직접 데이터 접근 금지 규율). 제3자 확장은 filter 훅 `sitemap.index.collect_for_resource` 로 리소스→entries 를 가공/추가할 수 있습니다(docs/extension/hooks.md). 부모 리소스가 비공개·삭제·재공개되어 자식 수만 건을 한꺼번에 바꿀 때는 `deindexResources($type, $ids)` / `indexResources($type, $contributor, [$id => $entries])` 를 씁니다 — 리소스마다 부르면 큐 작업 시간 제한(기본 60초)을 넘길 수 있습니다(게시글 27,000건 실측: 건별 255초 / 묶음 7초). 묶음 색인도 filter 훅은 리소스마다 호출하고, 저장만 1,000건 단위 삭제·삽입으로 처리합니다.
 - **리스너**: 모듈 SEO 리스너가 `after_create/update/delete` 에서 공개상태를 판정해 index/deindex 하고 `GenerateSitemapJob::dispatch()`(유니크 락 디바운스)를 겁니다. 리소스 단위 증분에서 자식 파일 URL 수가 임계 미만으로 줄어드는 것(5000→4999)은 감안하며, 균등 재분배(리밸런싱)는 full 재생성 때만 합니다.
 
 ## 재생성 모드 (SitemapGenerationMode)

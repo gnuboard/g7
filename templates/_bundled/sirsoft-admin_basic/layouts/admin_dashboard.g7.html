@@ -181,6 +181,8 @@
             <p data-ref="top_alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
             <p data-ref="top_alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
             <div data-ref="top_alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
+              <!-- 조치 화면으로 가는 링크. 리스너가 action_path 를 실어 보내는데 이것을 읽는 노드가 없으면 경고 문구만 뜨고 운영자가 갈 곳을 스스로 찾아야 한다. 경고(warning) 알림은 이 상단 구역에 그려지므로(예약 작업 정지 알림이 그렇다) 아래 목록과 같은 링크를 여기에도 둔다. -->
+              <a data-ref="top_alert_action_link_{{$idx}}" data-if="{{alert.action_path &amp;&amp; alert.action_label}}" href="{{alert.action_path ?? '#'}}" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white rounded hover:no-underline">{{alert.action_label}}</a>
               <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
                 <on type="click">
                   <!-- 복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.
@@ -523,6 +525,8 @@
                 <p data-ref="alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
                 <p data-ref="alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
                 <div data-ref="alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
+                  <!-- 조치 화면으로 가는 링크. 리스너가 action_path 를 실어 보내는데 이것을 읽는 노드가 없으면 경고 문구만 뜨고 운영자가 갈 곳을 스스로 찾아야 한다. -->
+                  <a data-ref="alert_action_link_{{$idx}}" data-if="{{alert.action_path &amp;&amp; alert.action_label}}" href="{{alert.action_path ?? '#'}}" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white rounded hover:no-underline">{{alert.action_label}}</a>
                   <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
                     <on type="click">
                       <!-- 복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —

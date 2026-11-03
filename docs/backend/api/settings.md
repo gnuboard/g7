@@ -4,7 +4,6 @@
 
 ---
 
-
 ## 목록 한계값 (`advanced` 탭)
 
 대용량 목록에서 총 건수를 세는 범위와 직접 요청할 수 있는 페이지 번호의 상한입니다.
@@ -58,7 +57,7 @@ IP 는 신뢰 프록시 해석 뒤의 값이다 — 리버스 프록시 뒤에�
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Settings 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -105,6 +104,8 @@ _단건 응답: `data` 객체의 필드._
 | geoip | object | `{"geoip_enabled":false,"geoip_license_key":null,"geoip_au…` | GeoIP 원본 카테고리 (GeoIP 사용 여부·MaxMind 라이선스 키·DB 자동 갱신 사용). advanced 탭에 병합된 파생 뷰 |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 탭 설정 그룹. channels 는 알림 채널 목록으로 각 원소가 id(채널 식별자)·is_active(활성 여부)·sort_order(표시 순서)를 가짐 |
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
+| pagination | object | `{"pagination_result_cap":10000,"pagination_max_page":1000}` | 목록 한계값 카테고리 — 총 건수를 정확히 세는 상한과 직접 요청할 수 있는 최대 페이지 번호 |
+| system | object | `{"execution_mode":"auto","cron_mode":"auto","cron_allowed…` | 실행 방식·예약 작업 카테고리 — 커맨드 실행 모드와 웹 크론 설정. 호출 번호(토큰)는 이 응답에 실리지 않는다 |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
 | _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 일곱 필드로 구성 |
@@ -166,17 +167,18 @@ HTTP/1.1 200
             ],
             "image_max_width": 2000,
             "image_max_height": 2000,
-            "image_quality": 85
+            "image_quality": 85,
+            "...": "(2개 키 생략, 총 7개)"
         },
         "seo": {
-            "meta_title_suffix": "",
-            "meta_description": "",
-            "meta_keywords": "",
-            "google_analytics_id": "",
-            "google_site_verification": "",
-            "...": "(23개 키 생략, 총 28개)"
+            "meta_title_suffix": "| 그누보드7",
+            "meta_description": "그누보드7 데모 사이트 — 커뮤니티와 쇼핑몰을 한 곳에서 만나보세요.",
+            "meta_keywords": "그누보드7, 커뮤니티, 쇼핑몰, 오픈소스 CMS",
+            "google_analytics_id": null,
+            "google_site_verification": null,
+            "...": "(24개 키 생략, 총 29개)"
         },
-        "...": "(12개 키 생략, 총 17개)"
+        "...": "(13개 키 생략, 총 18개)"
     }
 }
 ```
@@ -189,6 +191,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -215,6 +219,7 @@ HTTP/1.1 200
 | advanced | body | array | 아니오 | — | 고급 탭 설정 묶음 (캐시·디버그·코어 업데이트·GeoIP 설정) |
 | notifications | body | array | 아니오 | — | 알림 탭 설정 묶음. channels 배열로 각 알림 채널의 id·is_active(활성 여부)·sort_order(표시 순서)를 저장 |
 | identity | body | array | 아니오 | — | 본인인증(IDV) 탭 설정 묶음 (기본 provider·목적별 provider 매핑·챌린지 유효시간·최대 시도 횟수) |
+| system | body | array | 아니오 | — | 시스템 탭 컨테이너 — 실행 방식·예약 작업 설정을 담는다 |
 | privacy | body | array | 아니오 | — | 개인정보 탭 설정 묶음 (탈퇴 회원 잔여정보 파기·휴면 전환·휴면 후 자동 탈퇴의 사용 여부와 기간) |
 | notifications.channels | body | array | 아니오 | — | 알림 채널 목록. 각 원소는 `id`(채널 식별자, 필수·최대 50자)·`is_active`(활성 여부, 필수 boolean)·`sort_order`(표시 순서, 0 이상 정수) 로 구성 |
 | general.site_name | body | string | 예 | max 100 | general.site 이름 (식별자) |
@@ -226,6 +231,12 @@ HTTP/1.1 200
 | general.language | body | string | 예 | — | 언어 코드 |
 | general.currency | body | string | 아니오 | max 10 | 통화 코드 (ISO 4217 — 예: KRW) |
 | general.maintenance_mode | body | boolean | 아니오 | — | 점검 모드 사용 여부 (사이트 접근 차단) |
+| general.asset_url_mode | body | string | 아니오 | — | 자산 URL 형태 — `auto` / `extension`(확장자 형태) / `extensionless`(확장자 없는 형태). 확장자로 끝나는 동적 응답을 서버의 정적 최적화 블록이 가로채는 환경에서 후자를 쓴다 |
+| system.execution_mode | body | string | 아니오 | — | 웹 요청 안의 커맨드 실행 방식 — `auto`(환경 감지) / `subprocess`(별도 프로세스) / `inprocess`(같은 요청 안) |
+| system.cron_mode | body | string | 아니오 | — | 예약 작업 실행 방식 — `auto` / `web`(주소 호출만) / `cron`(서버 크론만) / `both` |
+| system.cron_allowed_ips | body | string | 아니오 | max 1000 | 웹 크론 호출을 허용할 IP·CIDR 목록 (줄바꿈 또는 쉼표 구분). 비우면 제한하지 않는다 |
+| system.cron_min_interval | body | integer | 아니오 | min 0, max 1440 | 웹 크론 최소 호출 간격(분). 간격 미만 호출은 실행 없이 정상 응답하고, 그 사이 시각은 다음 유효 호출의 소급 창이 덮는다 (0 = 제한 없음) |
+| system.cron_visit_fallback | body | boolean | 아니오 | — | 방문자 접속 시 예약 작업 실행 여부. 기본 꺼짐 — 켜면 방문이 없는 사이트에서는 예약도 돌지 않는다 |
 | general.site_logo | body | array | 아니오 | — | 사이트 로고 이미지 |
 | mail.mailer | body | string | 아니오 | — | 메일 발송 드라이버 (smtp/mailgun/ses) |
 | mail.host | body | string | 아니오 | max 255 | 호스트 주소 |
@@ -267,6 +278,11 @@ HTTP/1.1 200
 | seo.cache_ttl | body | integer | 아니오 | min 60, max 86400 | 캐시 유효 시간 (초) |
 | seo.sitemap_enabled | body | boolean | 아니오 | — | sitemap.xml 생성 사용 여부 |
 | seo.sitemap_cache_ttl | body | integer | 아니오 | min 3600, max 604800 | sitemap 캐시 유효 시간 (초) |
+| seo.sitemap_urls_per_file | body | integer | 아니오 | min 1000, max 50000 | 사이트맵 자식 파일 하나에 담는 URL 수 (분할 기준). 상한은 sitemaps.org 프로토콜 제한이다 |
+| seo.sitemap_gzip | body | boolean | 아니오 | — | 사이트맵 자식 파일을 gzip 으로 압축할지 여부. 인덱스 파일은 항상 비압축이다 |
+| seo.sitemap_serve_stale_on_miss | body | boolean | 아니오 | — | 신선도가 만료됐을 때 기존 세트를 그대로 서빙할지 여부. `false` 면 503 을 반환한다 |
+| seo.sitemap_max_urls_per_contributor | body | integer | 아니오 | min 0 | 수집기 하나가 실을 수 있는 URL 상한 (0 = 무제한). 초과분은 잘리고 경고 로그가 남는다 |
+| seo.sitemap_hreflang_enabled | body | boolean | 아니오 | — | 다국어 alternate(hreflang) 링크를 함께 출력할지 여부 |
 | seo.generator_enabled | body | boolean | 아니오 | — | SEO 페이지 생성기 사용 여부 |
 | seo.generator_content | body | string | 아니오 | max 200 | SEO 렌더링 본문 생성 방식 |
 | security.registration_enabled | body | boolean | 아니오 | — | 일반 회원가입 받기(7.2.0, 기본 true). 끄면 공개 가입 API 가 403 `auth.registration_disabled` 이고 소셜 로그인 플러그인의 신규 가입도 닫힌다. 관리자 추가·외부 인증 확장의 회원 생성은 계속된다. 다른 보안 칸 없이 보내도 된다(부분 저장) |
@@ -275,6 +291,10 @@ HTTP/1.1 200
 | security.auth_token_lifetime | body | integer | 아니오 | min 0, max 3600 | 인증 토큰 유효 시간 (분) |
 | security.max_login_attempts | body | integer | 아니오 | min 0, max 100 | 로그인 실패 허용 횟수 (초과 시 잠금) |
 | security.login_lockout_time | body | integer | 아니오 | min 0, max 1440 | 로그인 잠금 지속 시간 (분) |
+| security.password_min_length | body | integer | 아니오 | min 6, max 64 | 비밀번호 최소 길이 |
+| security.require_password_special_char | body | boolean | 아니오 | — | 비밀번호에 특수문자를 반드시 포함할지 여부 |
+| security.two_factor_auth | body | boolean | 아니오 | — | 2단계 인증 사용 여부 |
+| security.allow_internal_outbound_urls | body | boolean | 아니오 | — | 내부 네트워크 주소로의 아웃바운드 호출을 허용할지 여부 (기본 차단 — 켜면 SSRF 방어가 완화된다) |
 | security.ip_restriction_enabled | body | boolean | 아니오 | — | IP 접근 제한 마스터 토글 (기본 false). 끄면 아래 목록·규칙은 저장만 되고 적용되지 않는다 |
 | security.admin_allowed_ips | body | array | 아니오 | max 100 | 관리자 영역(관리자 화면·코어/확장 관리자 API·관리자 로그인 API)에 접근을 허용할 IP·CIDR 목록. **빈 목록 = 이 축 미적용**. 앞뒤 공백·빈 항목·중복은 저장 전에 정리된다 |
 | security.admin_allowed_ips.* | body | string | 아니오 | IPv4·IPv6·CIDR (`203.0.113.0/24`, `2001:db8::/32`) | 허용 항목. 호스트명·범위 표기(`a-b`)·와일드카드(`192.168.*`)는 422 |
@@ -310,24 +330,28 @@ HTTP/1.1 200
 | advanced.stats_cache_ttl | body | integer | 아니오 | min 0, max 14400 | 통계 캐시 만료 시간 (초, 0 = 만료 없음) |
 | advanced.seo_cache_enabled | body | boolean | 아니오 | — | SEO 캐시 사용 여부 (SEO 메타데이터를 캐시) |
 | advanced.seo_cache_ttl | body | integer | 아니오 | min 0, max 14400 | SEO 캐시 만료 시간 (초, 0 = 만료 없음) |
+| advanced.seo_sitemap_cache_ttl | body | integer | 아니오 | min 3600, max 604800 | 사이트맵 메타 캐시 만료 시간(초) |
 | advanced.debug_mode | body | boolean | 아니오 | — | 디버그 모드 사용 여부 (상세 오류 노출) |
 | advanced.sql_query_log | body | boolean | 아니오 | — | SQL 쿼리 로그 기록 여부 |
-| advanced.outbound_proxy | body | string | 아니오 | max 500, 스킴 `http`/`https`/`socks4`/`socks4a`/`socks5`/`socks5h` | 외부 HTTP 호출이 경유할 프록시 주소 (예: `socks5h://127.0.0.1:1080`). 빈 값이면 사용하지 않으며, 디버그 모드가 꺼져 있으면 저장되어도 적용되지 않는다 |
+| advanced.outbound_proxy | body | string | 아니오 | max 500 | 외부 HTTP 호출이 경유할 프록시 주소 (예: `socks5h://127.0.0.1:1080`). 빈 값이면 사용하지 않으며, 디버그 모드가 꺼져 있으면 저장되어도 적용되지 않는다 |
 | advanced.outbound_proxy_bypass | body | array | 아니오 | — | 프록시를 경유하지 않을 호스트 목록 |
 | advanced.outbound_proxy_bypass.* | body | string | 아니오 | max 255 | 프록시 예외 호스트 |
+| advanced.trusted_proxies | body | array | 아니오 | 최대 50개 | 신뢰할 리버스 프록시 목록. 빈 배열은 「아무 프록시도 신뢰하지 않음」이라는 **명시적 선택**이며, 키를 보내지 않으면 기존 값이 유지된다 (`.env` 의 `TRUSTED_PROXIES` 권위가 살아 있는 상태) |
+| advanced.trusted_proxies.* | body | string | 아니오 | max 60 | 신뢰할 프록시 주소. IPv4/IPv6 또는 CIDR, 혹은 직전 호출 IP 만 신뢰하는 `*` |
 | advanced.core_update_github_url | body | string | 아니오 | max 500 | 코어 업데이트를 확인할 GitHub 저장소 URL |
 | advanced.core_update_github_token | body | string | 아니오 | max 500 | 프라이빗 저장소의 코어/확장 업데이트에 사용할 GitHub 액세스 토큰 (공개 저장소는 비워둘 수 있음) |
 | advanced.geoip_enabled | body | boolean | 아니오 | — | IP 기반 타임존 감지(GeoIP) 사용 여부 |
 | advanced.geoip_license_key | body | string | 아니오 | max 200 | MaxMind GeoLite2 라이선스 키 |
 | advanced.geoip_auto_update_enabled | body | boolean | 아니오 | — | GeoIP DB 자동 업데이트 사용 여부 (주 1회 자동 재다운로드) |
+| advanced.pagination_result_cap | body | integer | 아니오 | min 0, max 1000000 | 총 건수를 정확히 세는 상한. 0 이면 항상 전부 센다 |
+| advanced.pagination_max_page | body | integer | 아니오 | min 0, max 100000 | 주소로 직접 요청할 수 있는 최대 페이지 번호. 0 이면 제한하지 않는다 |
 | drivers.storage_driver | body | string | 아니오 | — | 스토리지 드라이버 (local/s3) |
-| drivers.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 훅 등록 디스크). 카탈로그(`available_drivers.public_asset`)에 없는 값은 422 |
 | drivers.s3_bucket | body | string | 아니오 | max 255 | S3 버킷명 |
-| drivers.s3_region | body | string | 아니오 | max 64, 소문자 영숫자·하이픈 (`^[a-z0-9-]+$`) | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`, MinIO 관례는 `us-east-1`) |
+| drivers.s3_region | body | string | 아니오 | max 64 | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`, MinIO 관례는 `us-east-1`) |
 | drivers.s3_access_key | body | string | 아니오 | max 255 | S3 액세스 키 |
 | drivers.s3_secret_key | body | string | 아니오 | max 255 | S3 시크릿 키 |
-| drivers.s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님) |
-| drivers.s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`) |
+| drivers.s3_url | body | string | 아니오 | max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님) |
+| drivers.s3_endpoint | body | string | 아니오 | max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`) |
 | drivers.s3_use_path_style | body | boolean | 아니오 | — | S3 path-style 주소 사용 여부 — MinIO 등 path-style 전용 스토리지에서 true |
 | drivers.cache_driver | body | string | 아니오 | — | 캐시 드라이버 (file/redis/memcached) |
 | drivers.redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 |
@@ -358,6 +382,7 @@ HTTP/1.1 200
 | drivers.log_driver | body | string | 아니오 | — | 로그 드라이버 (single/daily/stack) |
 | drivers.log_level | body | string | 아니오 | — | 로그 레벨 (debug/info/warning/error 등) |
 | drivers.log_days | body | integer | 아니오 | min 1, max 365 | 로그 파일 보관 일수 |
+| drivers.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 훅 등록 디스크). 카탈로그(`available_drivers.public_asset`)에 없는 값은 422 |
 | identity.default_provider | body | string | 아니오 | max 100 | 본인인증 기본 프로바이더 (목적별로 지정되지 않은 경우 사용). 예: `g7:core.mail` |
 | identity.purpose_providers | body | array | 아니오 | — | 본인인증 목적(Purpose)별 프로바이더 매핑. 미지정 목적은 기본 프로바이더를 사용 |
 | identity.challenge_ttl_minutes | body | integer | 아니오 | min 1, max 1440 | 발급된 인증 코드/링크(challenge)의 유효시간 (분) |
@@ -413,6 +438,9 @@ Content-Type: application/json
     "identity": [
         "예시값"
     ],
+    "system": [
+        "예시값"
+    ],
     "notifications.channels": [
         "예시값"
     ],
@@ -425,6 +453,11 @@ Content-Type: application/json
     "general.currency": "예시값",
     "general.maintenance_mode": true,
     "general.asset_url_mode": "https://example.com",
+    "system.execution_mode": "예시값",
+    "system.cron_mode": "예시값",
+    "system.cron_allowed_ips": "예시값",
+    "system.cron_min_interval": 1,
+    "system.cron_visit_fallback": true,
     "general.site_logo": [
         "예시값"
     ],
@@ -447,6 +480,8 @@ Content-Type: application/json
     "upload.image_max_width": 1,
     "upload.image_max_height": 1,
     "upload.image_quality": 1,
+    "upload.orphan_cleanup_enabled": true,
+    "upload.orphan_retention_days": 1,
     "seo.meta_title_suffix": "예시 제목",
     "seo.meta_description": "예시 내용입니다.",
     "seo.meta_keywords": "예시값",
@@ -506,6 +541,10 @@ Content-Type: application/json
     "advanced.seo_sitemap_cache_ttl": 1,
     "advanced.debug_mode": true,
     "advanced.sql_query_log": true,
+    "advanced.outbound_proxy": "예시값",
+    "advanced.outbound_proxy_bypass": [
+        "예시값"
+    ],
     "advanced.core_update_github_url": "https://example.com",
     "advanced.core_update_github_token": "{YOUR_TOKEN}",
     "advanced.geoip_enabled": true,
@@ -548,6 +587,7 @@ Content-Type: application/json
     "drivers.log_driver": "예시값",
     "drivers.log_level": "예시값",
     "drivers.log_days": 1,
+    "drivers.public_asset_disk": "예시값",
     "identity.default_provider": "예시값",
     "identity.purpose_providers": [
         "예시값"
@@ -717,6 +757,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 개인정보 보유기간·휴면의 **처리 대상 건수를 미리** 돌려줍니다. 관리자 > 환경설정 > 개인정보 탭의 「대상 N건」 배지가 이 값을 씁니다. 읽기 전용이며 데이터를 바꾸지 않습니다.
@@ -851,6 +893,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 현재 애플리케이션 키(`APP_KEY`)를 마스킹된 형태로 조회합니다. 관리자 화면에서 앱 키 존재/일부만 표시하는 용도이며, 전체 키 원문은 반환하지 않습니다.
@@ -906,6 +950,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 현재 설정을 백업 파일로 저장합니다. 응답 `data.backup_path` 에 생성된 백업 경로를 반환하며, 이 경로는 이후 `POST /restore` 의 `backup_path` 로 사용할 수 있습니다. 설정 변경 전 스냅샷을 남길 때 사용합니다.
@@ -953,6 +999,7 @@ _이 엔드포인트는 성공 응답을 반환하지 않습니다. 데이터베
 | 501 | Not Implemented | 항상 (데이터베이스 백업 미제공, `settings.database_backup_unavailable`) |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -1004,6 +1051,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 500 | Internal Server Error | 캐시 정리 중 예외가 발생한 경우 (`settings.cache_clear_error`) |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -1066,6 +1114,8 @@ _단건 응답: `data` 객체의 필드 (GeoIpDatabaseService::updateDatabase() 
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 MaxMind GeoLite2-City DB 를 즉시 재다운로드합니다. GeoIpDatabaseService 에 위임하며 동기(즉시) 실행되므로 웹서버/PHP-FPM 타임아웃(90초 이상)이 필요합니다. 라이선스 키 미설정 시 400, 키가 잘못된 경우 401, 연결 실패/기타 오류 시 500 을 반환합니다. 정기 갱신은 스케줄(`geoip:update`)이 담당하고, 이 엔드포인트는 수동 갱신 트리거입니다.
@@ -1118,6 +1168,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1185,6 +1237,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 애플리케이션 키(`APP_KEY`)를 재생성합니다. 라우트 미들웨어 단계에서 최고관리자(`is_super`)만 허용하고, Service 단계에서 요청자 본인의 비밀번호가 일치하는지 다시 확인합니다(불일치 시 401). 성공 시 새 키를 `.env` 의 `APP_KEY` 에 기록하고 config 캐시를 재생성하며, 응답 `data.app_key` 에 새 키를 반환합니다. 앱 키 변경은 기존 암호화 값/서명 무효화를 동반하므로 주의가 필요합니다.
@@ -1245,6 +1299,8 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 이전에 만든 설정 백업에서 설정을 복원합니다. `backup_path` 로 `POST /backup` 이 반환한 백업 경로를 지정합니다. 복원 성공 시 시스템 설정 캐시를 무효화합니다. 잘못된 설정을 되돌릴 때 사용합니다.
@@ -1284,8 +1340,8 @@ _단건 응답: `data` 객체의 필드._
 | laravel_version | string | `12.62.0` | 프레임워크 Laravel 버전 (`app()->version()`) |
 | environment | string | `local` | 현재 실행 환경 (`app()->environment()` — local/production/testing 등) |
 | cpu_info | string | `Intel(R) Core(TM) Ultra 5 225H` | CPU 모델명 (OS별 시스템 probe 산물). 수집 실패 시 "알 수 없음" 폴백 |
-| memory_usage | object | `{"total":"31.49 GB","used":"24.31 GB","free":"7.18 GB","p…` | 물리 메모리 사용량. total/used/free 는 사람이 읽기 쉬운 단위 문자열, percentage 는 사용률(%) |
-| disk_usage | object | `{"total":"474.72 GB","used":"408.15 GB","free":"66.57 GB"…` | 설치 볼륨 디스크 사용량. total/used/free 단위 문자열 + percentage 사용률(%) |
+| memory_usage | object | `{"total":"31.49 GB","used":"24.31 GB","free":"7.18 GB","p…` | 물리 메모리 사용량. total/used/free 는 사람이 읽기 쉬운 단위 문자열, percentage 는 사용률(%). 측정 불가(외부 명령 실행 차단 등으로 수집 경로 없음) 시 total/used/free 는 "알 수 없음", percentage 는 `null` — `0` 은 실측 0% 다 |
+| disk_usage | object | `{"total":"474.72 GB","used":"408.15 GB","free":"66.57 GB"…` | 설치 볼륨 디스크 사용량. total/used/free 단위 문자열 + percentage 사용률(%). 측정 불가 시 percentage `null` (memory_usage 와 같은 계약) |
 | php_memory_limit | string | `512M` | PHP `memory_limit` ini 값 |
 | max_execution_time | string | `36000초` | PHP `max_execution_time` ini 값 (초 단위 접미사 부착) |
 | upload_max_filesize | string | `2G` | PHP `upload_max_filesize` ini 값 |
@@ -1393,6 +1449,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1742,11 +1800,504 @@ HTTP/1.1 200
 
 **설명**
 
-리버스 프록시 뒤에서 구동 중인지, 그리고 신뢰할 프록시가 지정되어 있는지를 진단합니다. **읽기 전용이며 대응하는 쓰기 엔드포인트가 없습니다** — 값은 `.env` 의 `TRUSTED_PROXIES` 로만 변경합니다.
+리버스 프록시 뒤에서 구동 중인지, 그리고 신뢰할 프록시가 지정되어 있는지를 진단합니다. 이 엔드포인트는 **읽기 전용**입니다 — 값 저장은 설정 저장 엔드포인트의 `advanced.trusted_proxies` 가 맡고, 저장 전 확인은 [POST /api/admin/settings/test-trusted-proxy](#post-apiadminsettingstest-trusted-proxy) 가 맡습니다.
+
+`configured_proxies` 는 **실제로 적용 중인 값**입니다. 저장값이 있으면 그것이, 없으면 `.env` 의 `TRUSTED_PROXIES` 가 그 자리에 옵니다 — 저장한 적 없는 설치에서 `.env` 설정이 조용히 사문화되지 않도록 한 것입니다.
 
 판정식은 "HTTPS 인식 실패" 가 아니라 `forwarded_headers 가 비어 있지 않음 AND trusted_configured 가 거짓` 입니다. HTTP 전용 사이트가 프록시 뒤에 있는 구성에서는 혼합 콘텐츠 차단이 없어 화면이 정상으로 보이지만, 방문자 IP 기록·통보 IP 화이트리스트·로그인 시도 제한은 그대로 어긋나기 때문입니다.
 
 같은 판정을 관리자 대시보드 알림, 환경설정 > 고급 화면, 설치 마법사, `php artisan trusted-proxy:status` 가 공유합니다. 설정 방법과 도입 시 후속 조치는 [reverse-proxy.md](../reverse-proxy.md) 를 참고하세요.
+
+
+### GET /api/admin/settings/system/cron-token
+<!-- @generated:start:api.admin.settings.system.cron-token -->
+- **라우트명**: `api.admin.settings.system.cron-token`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@cronToken`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/system/cron-token HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| url | string | `https://example.com/api/system/cron/run?…` | 호출 번호가 실린 절대 호출 주소 (하위 폴더 마운트 접두사·오리진 포함). 문서 예시의 번호는 마스킹된다 |
+| header_name | string | `X-G7-Cron-Token` | 번호를 헤더로 실을 때 쓰는 헤더 이름 |
+| issued_at | string | `2026-08-31T05:00:28+00:00` | issued 일시 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "호출 주소를 조회했습니다.",
+    "data": {
+        "url": "https://api.example.com/api/system/cron/run?token={MASKED}",
+        "header_name": "X-G7-Cron-Token",
+        "issued_at": "2026-08-31T05:00:28+00:00"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+
+
+**설명**
+
+웹 크론 호출 주소를 돌려주는 **전용** 경로다. 그 주소에는 인증 없이 예약 작업을 실행할 수 있는 호출 번호가 들어 있으므로, 일반 설정 조회(`GET /api/admin/settings`)·단건 조회(`GET /api/admin/settings/{key}`)·상태 조회(`GET .../system/status`) 어디에도 실리지 않는다. 이 경로가 유일한 통로다.
+
+**권한이 `core.settings.read` 가 아니라 `core.settings.update` 인 이유** — 이 값은 자격증명이다. 설정을 읽을 수만 있는 계정이 그것을 얻으면 등급 구분이 사라진다. 관리자 화면의 [보기]·[복사] 버튼도 같은 기준으로 수정 권한이 있을 때만 노출된다.
+
+번호가 아직 발급되지 않았으면 **이 호출 시점에 발급**한다. 운영자가 [보기] 를 눌렀다는 것은 그 주소를 쓰겠다는 뜻이고, 발급 버튼을 따로 두면 빈 값만 보이기 때문이다.
+
+| `data` 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| url | string | 번호가 실린 절대 호출 주소. 하위 폴더 마운트의 접두사와 오리진이 붙어 있어 호스팅 제어판에 그대로 붙여넣을 수 있다 |
+| header_name | string | 번호를 헤더로 실을 때 쓰는 헤더 이름 (`X-G7-Cron-Token`) |
+| issued_at | string\|null | 번호 발급 시각 (ISO 8601) |
+
+응답 예시의 번호는 문서 생성 시 마스킹된다.
+
+
+### POST /api/admin/settings/system/cron-token/rotate
+<!-- @generated:start:api.admin.settings.system.cron-token.rotate -->
+- **라우트명**: `api.admin.settings.system.cron-token.rotate`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@rotateCronToken`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/system/cron-token/rotate HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| url | string | `https://example.com/api/system/cron/run?…` | 호출 번호가 실린 절대 호출 주소 (하위 폴더 마운트 접두사·오리진 포함). 문서 예시의 번호는 마스킹된다 |
+| header_name | string | `X-G7-Cron-Token` | 번호를 헤더로 실을 때 쓰는 헤더 이름 |
+| issued_at | string | `2026-08-31T05:01:13+00:00` | issued 일시 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "호출 번호를 재발급했습니다. 기존 주소는 즉시 무효가 됩니다.",
+    "data": {
+        "url": "https://api.example.com/api/system/cron/run?token={MASKED}",
+        "header_name": "X-G7-Cron-Token",
+        "issued_at": "2026-08-31T05:01:13+00:00"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+
+
+**설명**
+
+호출 번호를 새로 발급한다. **기존 주소는 즉시 무효**가 되므로, 호스팅 제어판이나 외부 예약 서비스에 등록해 둔 주소를 바꾸지 않으면 예약 작업이 그 시점부터 실행되지 않는다. 관리자 화면은 이 사실을 확인 모달로 먼저 알린다.
+
+접근 로그에 쿼리스트링이 남는 환경에서 주소가 유출됐다고 판단될 때 쓰는 경로다. 응답 형태는 조회와 같다.
+
+
+### POST /api/admin/settings/system/cron/run
+<!-- @generated:start:api.admin.settings.system.cron.run -->
+- **라우트명**: `api.admin.settings.system.cron.run`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@runSchedule`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/system/cron/run HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| started_at | string | `2026-08-31T05:01:13+00:00` | started 일시 |
+| finished_at | string | `2026-08-31T05:01:16+00:00` | finished 일시 |
+| duration_ms | integer | `3179` | 이번 호출의 소요 시간(밀리초) |
+| due | integer | `3` | 소급 창 안에서 실행 대상으로 뽑힌 예약 수 |
+| executed | integer | `3` | 실제로 실행한 예약 수 |
+| failed | integer | `0` | 실패한 예약 수 (커맨드 되뽑기 실패 포함) |
+| skipped | integer | `0` | 건너뛴 예약 수 (조건 미충족·중복 실행 방지·다른 서버 담당) |
+| truncated | boolean | `false` | 실행 시간 상한에 걸려 남은 예약을 다음 호출로 넘겼는지 여부 |
+| events | array | `[{"name":"start \/b cmd \/v:on \/c \"(\"C:\\laragon\\bin\…` | 이벤트 정의 목록 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "예약 작업 실행을 마쳤습니다.",
+    "data": {
+        "started_at": "2026-08-31T05:01:13+00:00",
+        "finished_at": "2026-08-31T05:01:16+00:00",
+        "duration_ms": 3179,
+        "due": 3,
+        "executed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "truncated": false,
+        "events": [
+            {
+                "name": "start /b cmd /v:on /c \"(\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" dashboard:broadcast-resources & \"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" schedule:finish \"framework\\schedule-2cc9df99ea408fb2532d26890a921a1250b61d8d\" ^!ERRORLEVEL^!) > \"NUL\" 2>&1\"",
+                "expression": "* * * * *",
+                "status": "executed"
+            },
+            {
+                "name": "\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" layout-previews:cleanup > \"NUL\" 2>&1",
+                "expression": "*/30 * * * *",
+                "status": "executed"
+            },
+            {
+                "name": "\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" identity:expire-challenges > \"NUL\" 2>&1",
+                "expression": "0 * * * *",
+                "status": "executed"
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+
+
+**설명**
+
+관리자 화면의 [지금 실행] 이 부르는 경로다. 공개 웹 크론 주소와 **같은 러너**를 돌리되, 최소 호출 간격은 적용하지 않는다 — 그 제한은 외부의 과다 호출을 막기 위한 것이고, 이 경로는 권한을 확인한 운영자의 명시적 행동이기 때문이다.
+
+응답의 `data` 는 공개 웹 크론과 같은 실행 요약(`due`/`executed`/`failed`/`skipped`/`truncated`/`events`)이다. 필드 뜻은 `GET /api/system/cron/run` 항목을 참조한다.
+
+
+### POST /api/admin/settings/system/detect
+<!-- @generated:start:api.admin.settings.system.detect -->
+- **라우트명**: `api.admin.settings.system.detect`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@detect`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/system/detect HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| detection | object | `{"mode":"subprocess","blocked_functions":[],"php_binary":…` | 환경 감지 결과 — `mode`/`blocked_functions`/`php_binary`/`php_probe`(사유는 `message_localized` 로 번역되어 온다) |
+| effective_mode | string | `subprocess` | 실제로 적용되는 실행 모드 (명시 설정 > 감지 순서로 해석한 결과) |
+| configured_mode | string | `auto` | 운영자가 저장한 실행 모드 설정값 (`auto` 면 미고정) |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "실행 환경을 다시 감지했습니다.",
+    "data": {
+        "detection": {
+            "mode": "subprocess",
+            "blocked_functions": [],
+            "php_binary": "php",
+            "php_probe": {
+                "status": "valid",
+                "version": "8.3.26",
+                "sapi": "cli",
+                "message": "PHP 8.3.26 (최소 요구 버전 8.2.0 충족)",
+                "message_key": "php_probe_ok",
+                "message_params": {
+                    "version": "8.3.26",
+                    "min_version": "8.2.0"
+                },
+                "message_localized": "PHP 8.3.26 확인 (최소 요구 8.2.0)"
+            }
+        },
+        "effective_mode": "subprocess",
+        "configured_mode": "auto"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+
+
+**설명**
+
+실행 환경을 그 자리에서 다시 판정한다. 호스팅이 `disable_functions` 나 PHP 실행 파일 배치를 바꾼 뒤 운영자가 저장된 판정을 갱신하는 수단이다.
+
+**저장된 설정을 덮지 않는다.** `system.execution_mode` 가 `auto` 가 아니면 그 고정값이 계속 우선하며, 이 호출은 **근거만** 갱신한다. 응답이 감지 결과와 유효 모드를 함께 실어 화면이 그 차이("자동 판정은 CLI 없음인데 운영자가 CLI 사용으로 고정해 두었다")를 보일 수 있게 한다.
+
+| `data` 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| detection.mode | string | 환경 감지가 내린 모드 (`subprocess` / `inprocess`) |
+| detection.blocked_functions | array | 호스팅이 차단한 실행 함수 목록 (판정 근거) |
+| detection.php_binary | string | 판정에 쓴 PHP 실행 파일 경로 |
+| detection.php_probe | object | PHP 실행 파일 확인 결과 — `status`/`version`/`sapi`/`message_key`/`message_localized` |
+| effective_mode | string | 실제로 적용되는 모드 (명시 설정 > 감지 순서로 해석한 결과) |
+| configured_mode | string | 운영자가 저장한 설정값 (`auto` 면 미고정) |
+
+`php_probe.message_localized` 는 서버가 번역해 내려보내는 사유 문구다. 화면은 동적 번역 키에 치환값을 조합할 수단이 없어 그 자리가 비어 버리므로, 번역은 서버에서 끝난다.
+
+
+### GET /api/admin/settings/system/status
+<!-- @generated:start:api.admin.settings.system.status -->
+- **라우트명**: `api.admin.settings.system.status`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SystemExecutionController@show`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/system/status HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| execution | object | `{"effective_mode":"subprocess","configured_mode":"auto","…` | 실행 방식 상태 — `effective_mode`/`configured_mode`/`detection` |
+| cron | object | `{"mode":"auto","min_interval_minutes":5,"visit_fallback_e…` | 예약 작업 상태 — 실행 방식·최소 간격·방문 폴백·번호 발급 여부·마지막 실행 요약·미실행 경고 판정 |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "실행 방식 정보를 조회했습니다.",
+    "data": {
+        "execution": {
+            "effective_mode": "subprocess",
+            "configured_mode": "auto",
+            "detection": {
+                "mode": "subprocess",
+                "blocked_functions": [],
+                "php_binary": "php",
+                "php_probe": {
+                    "status": "valid",
+                    "version": "8.3.26",
+                    "sapi": "cli",
+                    "message": "PHP 8.3.26 (최소 요구 버전 8.2.0 충족)",
+                    "message_key": "php_probe_ok",
+                    "message_params": {
+                        "version": "8.3.26",
+                        "min_version": "8.2.0"
+                    },
+                    "message_localized": "PHP 8.3.26 확인 (최소 요구 8.2.0)"
+                }
+            }
+        },
+        "cron": {
+            "mode": "auto",
+            "min_interval_minutes": 5,
+            "visit_fallback_enabled": false,
+            "token_issued": true,
+            "token_issued_at": "{MASKED}",
+            "last_run": {
+                "started_at": "2026-08-31T05:01:13+00:00",
+                "finished_at": "2026-08-31T05:01:16+00:00",
+                "duration_ms": 3179,
+                "due": 3,
+                "executed": 3,
+                "failed": 0,
+                "skipped": 0,
+                "truncated": false,
+                "events": [
+                    {
+                        "name": "start /b cmd /v:on /c \"(\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" dashboard:broadcast-resources & \"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" schedule:finish \"framework\\schedule-2cc9df99ea408fb2532d26890a921a1250b61d8d\" ^!ERRORLEVEL^!) > \"NUL\" 2>&1\"",
+                        "expression": "* * * * *",
+                        "status": "executed"
+                    },
+                    {
+                        "name": "\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" layout-previews:cleanup > \"NUL\" 2>&1",
+                        "expression": "*/30 * * * *",
+                        "status": "executed"
+                    },
+                    {
+                        "name": "\"C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe\" \"artisan\" identity:expire-challenges > \"NUL\" 2>&1",
+                        "expression": "0 * * * *",
+                        "status": "executed"
+                    }
+                ]
+            },
+            "last_executed_at": "2026-08-31T05:01:16+00:00",
+            "stale": false,
+            "stale_after_days": 2,
+            "recent_history": [
+                {
+                    "id": 42,
+                    "name": "sitemap:generate",
+                    "expression": "0 4 * * *",
+                    "status": "success",
+                    "trigger_type": "scheduled",
+                    "started_at": "2026-08-31T04:00:02+00:00",
+                    "duration": 3,
+                    "error_output": null
+                }
+            ],
+            "state_persist_failed": false
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+
+
+**설명**
+
+환경설정 「시스템」 탭이 화면을 그리는 데 쓰는 상태다. 실행 방식 카드(현재 모드·판정 근거)와 예약 작업 카드(실행 방식·최소 간격·마지막 실행)가 이 한 응답을 소비한다.
+
+**호출 번호는 싣지 않는다.** 발급되어 있는지(`cron.token_issued`)와 언제 발급됐는지만 알리고, 값 자체는 전용 경로로만 내려간다.
+
+| `data` 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| execution.effective_mode | string | 실제로 적용되는 실행 모드 |
+| execution.configured_mode | string | 운영자가 저장한 설정값 (`auto` 면 미고정) |
+| execution.detection | object | 판정 근거 (`POST .../system/detect` 와 같은 형태) |
+| cron.mode | string | 예약 작업 실행 방식 (`auto`/`web`/`cron`/`both`) |
+| cron.min_interval_minutes | integer | 최소 호출 간격(분). 0 이면 제한 없음 |
+| cron.visit_fallback_enabled | boolean | 방문 트리거 폴백 사용 여부 |
+| cron.token_issued | boolean | 호출 번호 발급 여부 (**값은 싣지 않는다**) |
+| cron.token_issued_at | string\|null | 번호 발급 시각 |
+| cron.last_run | object\|null | 마지막 실행 요약 (`finished_at`/`duration_ms`/`due`/`executed`/`failed`/`skipped`/`truncated`) |
+| cron.last_executed_at | string\|null | 예약이 마지막으로 **실행된** 시각. 최소 간격에 걸려 되돌아간 호출은 여기에 실리지 않는다 |
+| cron.stale | boolean | 미실행 경고 발화 여부 (마지막 실행 이후 `stale_after_days` 경과) |
+| cron.stale_after_days | integer | 경고 발화 기준 일수 |
+| cron.recent_history | array | 코드로 등록된 예약의 최근 실행 이력 (시각 역순, 최대 20건). `last_run` 은 직전 1회만 담고 다음 호출에 덮이므로 지난 실행은 이 목록으로만 되짚을 수 있다 |
+| cron.recent_history[].name | string\|null | 예약 표시명 (실행 시점 스냅샷) |
+| cron.recent_history[].expression | string\|null | 실행 주기 (실행 시점 스냅샷) |
+| cron.recent_history[].status | string\|null | `success` / `failed` |
+| cron.recent_history[].trigger_type | string\|null | `scheduled`(주기 도래) / `manual`(화면의 [지금 실행]) |
+| cron.recent_history[].started_at | string\|null | 실행 시작 시각 (ISO 8601) |
+| cron.recent_history[].duration | integer\|null | 소요 시간(초) |
+| cron.recent_history[].error_output | string\|null | 실패 사유 (성공이면 null) |
+| cron.state_persist_failed | boolean | 실행 상태 파일 쓰기 실패 여부. `true` 면 점검 시각이 남지 않아 다음 호출의 소급 창이 상한까지 열리고 창 안의 예약이 매 호출 전부 다시 실행된다 |
 
 
 ### POST /api/admin/settings/test-driver
@@ -1765,11 +2316,11 @@ HTTP/1.1 200
 | queue_driver | body | string | 아니오 | — | 큐 드라이버 (sync/database/redis) |
 | websocket_enabled | body | boolean | 아니오 | — | WebSocket 사용 여부 |
 | s3_bucket | body | string | 아니오 | max 255 | S3 버킷명 |
-| s3_region | body | string | 아니오 | max 64, 소문자 영숫자·하이픈 (`^[a-z0-9-]+$`) | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`) |
+| s3_region | body | string | 아니오 | max 64 | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`) |
 | s3_access_key | body | string | 아니오 | max 255 | S3 액세스 키 |
 | s3_secret_key | body | string | 아니오 | max 255 | S3 시크릿 키 |
-| s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 연결 테스트에는 사용되지 않음 |
-| s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — 테스트 시 실제 아웃바운드 대상에 반영 (S3 호환 스토리지용) |
+| s3_url | body | string | 아니오 | max 500 | S3 공개 URL(CDN) base — 연결 테스트에는 사용되지 않음 |
+| s3_endpoint | body | string | 아니오 | max 500 | S3 API 엔드포인트 — 테스트 시 실제 아웃바운드 대상에 반영 (S3 호환 스토리지용) |
 | s3_use_path_style | body | boolean | 아니오 | — | S3 path-style 주소 사용 여부 (MinIO 등) |
 | redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 |
 | redis_port | body | integer | 아니오 | min 1, max 65535 | Redis 포트 번호 |
@@ -1784,6 +2335,8 @@ HTTP/1.1 200
 | websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버(백엔드 발송용) 호스트 주소 — 미입력 시 클라이언트 값으로 폴백 |
 | websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 — 미입력 시 클라이언트 값으로 폴백 |
 | websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https) — 미입력 시 클라이언트 값으로 폴백 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_driver_connection_validation_rules`).
 
 > WebSocket 테스트는 클라이언트/서버 양측 endpoint 를 모두 probe 합니다. 백엔드 broadcast 는 서버 endpoint 를 사용하므로, 서버 endpoint 실패 시 별도 메시지(`settings.websocket_server_test_failed`)로 구분 보고됩니다.
 
@@ -1874,82 +2427,11 @@ _단건 응답: `data` 객체의 필드 (DriverConnectionTester::testAll() 산�
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 폼에 입력한 드라이버 접속 정보(S3·Redis·Memcached·Websocket 등)로 실제 연결을 시도해 결과를 반환합니다. 설정을 저장하기 전에 접속 정보가 유효한지 확인하는 용도입니다. 모든 테스트 통과 시 성공 메시지, 일부 실패 시에도 HTTP 성공 응답으로 항목별 결과(`all_passed=false` 포함)를 함께 반환합니다.
-
-
-### POST /api/admin/settings/test-outbound-proxy
-<!-- @generated:start:api.admin.settings.test-outbound-proxy -->
-- **라우트명**: `api.admin.settings.test-outbound-proxy`
-- **컨트롤러**: `AppHttpControllersApiAdminSettingsController@testOutboundProxy`
-- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| outbound_proxy | body | string | 예 | max 500, 스킴 `http`/`https`/`socks4`/`socks4a`/`socks5`/`socks5h` | 검사할 프록시 주소 |
-| outbound_proxy_bypass | body | array | 아니오 | — | 프록시를 경유하지 않을 호스트 목록 |
-| outbound_proxy_bypass.* | body | string | 아니오 | max 255 | 프록시 예외 호스트 |
-
-**요청 예시**
-
-```http
-POST /api/admin/settings/test-outbound-proxy HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-Content-Type: application/json
-
-{
-    "outbound_proxy": "socks5h://127.0.0.1:1080",
-    "outbound_proxy_bypass": ["internal.example.com"]
-}
-```
-
-**응답 필드** (`data` 내부)
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| success | boolean | `true` | 프록시를 거쳐 외부에 도달했는지 여부. `false` 여도 HTTP 200 으로 응답한다 — 연결 실패는 요청 처리 실패가 아니라 진단 결과다 |
-| egress_ip | string|null | `203.0.113.9` | 프록시를 거쳤을 때 상대편에 보이는 출발지 IP. 외부 서비스에 등록할 값이며 실패 시 `null` |
-| elapsed_ms | integer | `512` | 검사에 걸린 시간 (밀리초) |
-| error | string|null | `cURL error 7: Failed to connect` | 실패 시에만 채워지는 원인 원문 (관리자 진단용) |
-
-**응답 예시**
-
-```json
-{
-    "success": true,
-    "message": "프록시 연결에 성공했습니다. 외부 서비스에는 이 IP 로 보입니다.",
-    "data": {
-        "success": true,
-        "message_key": "settings.outbound_proxy_test_success",
-        "egress_ip": "203.0.113.9",
-        "elapsed_ms": 512,
-        "error": null
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우 |
-
-<!-- @generated:end -->
-
-**설명**
-
-입력한 프록시로 외부에 연결해 보고, 성공하면 그 프록시를 거쳤을 때 상대편에 보이는 출발지 IP 를 함께 반환합니다. 이 IP 는 운영자가 결제사·외부 서비스의 허용 목록에 등록해야 하는 값이라, 설정을 저장하기 전에 확인할 수 있도록 제공합니다.
-
-검사 대상은 **이번 요청이 제출한 값**입니다. 저장된 설정이나 전역 프록시 옵션을 보지 않으므로, 저장 전에도 그대로 확인할 수 있고 이 호출이 다른 요청의 경로를 바꾸지도 않습니다.
-
-조회 대상은 `config('core.outbound_proxy.egress_lookup_urls')` 가 소유하며 순차 시도합니다. 목록을 비우면 도달성만 확인하고 IP 는 보고하지 않습니다(폐쇄망 대응).
 
 
 ### POST /api/admin/settings/test-mail
@@ -2041,9 +2523,177 @@ _단건 응답: `data` 객체의 필드 (발송 성공 시에만 반환)._
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 폼에 입력한 메일 설정으로 지정한 주소에 테스트 메일을 발송합니다. 요청에서 전달한 값(호스트·포트·인증 정보 등)을 저장된 메일 설정 위에 임시로 덮어써 그 값으로만 발송을 시도하므로, 설정을 저장하기 전에 실제 발송 가능 여부를 검증할 수 있습니다. 성공 시 발송한 제목/본문을 응답에 포함하고, 실패 시 오류 사유와 함께 500 을 반환합니다.
+
+
+### POST /api/admin/settings/test-outbound-proxy
+<!-- @generated:start:api.admin.settings.test-outbound-proxy -->
+- **라우트명**: `api.admin.settings.test-outbound-proxy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@testOutboundProxy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| outbound_proxy | body | string | 예 | max 500 | 검사할 프록시 주소 |
+| outbound_proxy_bypass | body | array | 아니오 | — | 프록시를 경유하지 않을 호스트 목록 |
+| outbound_proxy_bypass.* | body | string | 아니오 | max 255 | 프록시 예외 호스트 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_outbound_proxy_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/test-outbound-proxy HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "outbound_proxy": "예시값",
+    "outbound_proxy_bypass": [
+        "예시값"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| success | boolean | `true` | 프록시를 거쳐 외부에 도달했는지 여부. `false` 여도 HTTP 200 으로 응답한다 — 연결 실패는 요청 처리 실패가 아니라 진단 결과다 |
+| egress_ip | string|null | `203.0.113.9` | 프록시를 거쳤을 때 상대편에 보이는 출발지 IP. 외부 서비스에 등록할 값이며 실패 시 `null` |
+| elapsed_ms | integer | `512` | 검사에 걸린 시간 (밀리초) |
+| error | string|null | `cURL error 7: Failed to connect` | 실패 시에만 채워지는 원인 원문 (관리자 진단용) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "프록시 연결에 성공했습니다. 외부 서비스에는 이 IP 로 보입니다.",
+    "data": {
+        "success": true,
+        "message_key": "settings.outbound_proxy_test_success",
+        "egress_ip": "203.0.113.9",
+        "elapsed_ms": 512,
+        "error": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우 |
+
+<!-- @generated:end -->
+
+
+**설명**
+
+입력한 프록시로 외부에 연결해 보고, 성공하면 그 프록시를 거쳤을 때 상대편에 보이는 출발지 IP 를 함께 반환합니다. 이 IP 는 운영자가 결제사·외부 서비스의 허용 목록에 등록해야 하는 값이라, 설정을 저장하기 전에 확인할 수 있도록 제공합니다.
+
+검사 대상은 **이번 요청이 제출한 값**입니다. 저장된 설정이나 전역 프록시 옵션을 보지 않으므로, 저장 전에도 그대로 확인할 수 있고 이 호출이 다른 요청의 경로를 바꾸지도 않습니다.
+
+조회 대상은 `config('core.outbound_proxy.egress_lookup_urls')` 가 소유하며 순차 시도합니다. 목록을 비우면 도달성만 확인하고 IP 는 보고하지 않습니다(폐쇄망 대응).
+
+
+### POST /api/admin/settings/test-trusted-proxy
+<!-- @generated:start:api.admin.settings.test-trusted-proxy -->
+- **라우트명**: `api.admin.settings.test-trusted-proxy`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@testTrustedProxy`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| trusted_proxies | body | array | 예 (키 자체는 필수) | 최대 50개 | 검사할 신뢰 프록시 후보 목록. 빈 배열은 「아무 프록시도 신뢰하지 않음」이라는 정상 선택이므로 `required` 가 아니라 `present` 다 |
+| trusted_proxies.* | body | string | 아니오 | max 60 | IPv4/IPv6 또는 CIDR, 혹은 직전 호출 IP 만 신뢰하는 `*` |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.test_trusted_proxy_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/admin/settings/test-trusted-proxy HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "trusted_proxies": [
+        "*"
+    ]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| candidate | array | `["*"]` | 정규화된 후보 목록 (빈 토큰·중복 제거, `**` → `*`) |
+| mode | string | `nearest` | 후보가 해당하는 화면 모드 — `none` · `nearest` · `list` |
+| forwarded_headers | array | `["X-Forwarded-For","X-Forwarded-Proto"]` | 이번 요청이 실제로 수신 중인 전달 헤더 이름 |
+| remote_addr | string\|null | `10.0.0.5` | 직전 호출 IP (`REMOTE_ADDR`) |
+| current.client_ip | string\|null | `10.0.0.5` | **현재 설정**에서 방문자 IP 로 해석되는 값 |
+| current.is_secure | boolean | `false` | 현재 설정에서의 HTTPS 인식 여부 |
+| result.client_ip | string\|null | `203.0.113.9` | **후보값**을 적용했을 때 방문자 IP 로 해석되는 값 |
+| result.is_secure | boolean | `true` | 후보값 적용 시 HTTPS 인식 여부 |
+| result.trusted | array | `["10.0.0.5"]` | 후보값이 실제로 신뢰하게 되는 앞단 주소 목록 (`*` 는 직전 호출 IP 하나로 풀린다) |
+| changed | boolean | `true` | 방문자 IP 또는 HTTPS 인식이 달라지는지 여부 |
+| verdict | string | `resolves` | 판정 — `no_headers`(앞단 미감지) · `resolves`(체인에서 해석됨) · `unchanged`(그대로) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "이 값이면 방문자 IP 가 프록시 너머의 실제 주소로 해석됩니다.",
+    "data": {
+        "candidate": ["*"],
+        "mode": "nearest",
+        "forwarded_headers": ["X-Forwarded-For", "X-Forwarded-Proto"],
+        "remote_addr": "10.0.0.5",
+        "current": { "client_ip": "10.0.0.5", "is_secure": false },
+        "result": { "client_ip": "203.0.113.9", "is_secure": true, "trusted": ["10.0.0.5"] },
+        "changed": true,
+        "verdict": "resolves"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | `trusted_proxies` 키가 없거나, 항목이 IP·CIDR·`*` 가 아닌 경우 |
+
+<!-- @generated:end -->
+
+
+**설명**
+
+저장하지 않고, **이번 요청**에 후보값을 적용했다면 방문자 IP 와 HTTPS 인식이 어떻게 해석될지 돌려줍니다. 이 설정은 틀려도 오류를 내지 않고 방문자 IP 만 조용히 어긋나므로 저장 후에 알아차릴 단서가 없고, HTTPS 종단 구성에서 잘못 저장하면 관리자 화면 자체에 들어가지 못해 되돌릴 통로가 사라집니다. 그 사고를 막는 자리입니다.
+
+판정은 프레임워크의 해석기(`Illuminate\Http\Middleware\TrustProxies`)를 그대로 돌려 얻습니다 — 같은 규칙을 여기서 다시 구현하면 검사 결과와 실제 적용이 갈리고, 그 어긋남은 이 기능이 막으려는 결함과 같은 모양이 됩니다.
+
+검사는 전역 신뢰 상태(`Request::setTrustedProxies()` 는 정적입니다)와 `trustedproxy.proxies` 를 잠시 바꿨다가 반드시 되돌립니다. 호출 전후의 런타임 상태는 같습니다.
+
+`verdict` 가 `unchanged` 면 후보 목록에 앞단 프록시 주소가 빠져 있을 수 있습니다. `no_headers` 는 앞단이 아예 감지되지 않은 상태로, 프록시를 쓰지 않는 직접 노출 구성에서는 정상입니다.
 
 
 ### GET /api/admin/settings/{key}
@@ -2100,6 +2750,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 단일 설정 키의 값을 조회합니다. 응답의 `data.key` 는 요청한 키, `data.value` 는 해당 설정 값입니다. 통합 조회(`GET /api/admin/settings`)와 달리 특정 키 하나만 필요할 때 사용합니다.
@@ -2116,7 +2768,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | key | path | string | 예 | — | 대상 설정/항목의 키 |
-| value | body | string | 예 | max 1000 | 값 |
+| value | body | string | 아니오 | — | 값 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.update_validation_rules`).
 
@@ -2161,10 +2813,14 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 단일 설정 키의 값을 업데이트합니다. 경로의 `key` 로 대상 설정을, 본문의 `value` 로 새 값을 지정합니다. 탭 단위 일괄 저장(`POST /api/admin/settings`)과 달리 개별 키 하나만 변경할 때 사용합니다. 검증 실패 시 422, 그 외 오류 시 500 을 반환합니다.
 
 `.env` 가 값을 정하는 키(`env-priority` 가 켜져 있고 그 키의 환경변수가 명시된 경우 — 예: `MAIL_HOST` → `mail.host`)는 값과 관계없이 422 입니다(`validation.setting.value.env_locked`, 7.1.4). 탭 일괄 저장은 그런 키를 조용히 버리지만, 단건 저장은 그 키 하나를 지목한 요청이라 거부합니다. 터미널의 `php artisan settings:set` 도 같은 키를 같은 사유로 거부합니다.
+
+값의 형태가 정해진 키는 탭 일괄 저장과 **같은 표**(`SettingShapeRules`)로 검증합니다. `system.cron_allowed_ips` 는 IP·CIDR 목록 문자열이어야 하고, `debug.trusted_proxies` 는 50개 이하의 배열이며 각 항목이 60자 이하의 IP 또는 CIDR 이어야 합니다(콤마 문자열은 422). 한쪽 경로에만 형태 검증이 있으면 다른 쪽이 우회로가 됩니다.
 
 

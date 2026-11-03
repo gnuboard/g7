@@ -77,6 +77,8 @@ describe('useLayoutDocument — golden save', () => {
     delete (globalThis as any).fetch;
   });
 
+  // @scenario save_outcome=valid_save, save_payload_origin=route_only
+  // @effects save_invokes_put_layouts_endpoint_and_creates_version
   it('PATCH → save(200) → newLockVersion 갱신 + dirty=false', async () => {
     const { result } = renderHook(() => useLayoutDocument(), { wrapper });
 
@@ -118,6 +120,8 @@ describe('useLayoutDocument — 409 Conflict', () => {
     delete (globalThis as any).fetch;
   });
 
+  // @scenario save_outcome=optimistic_concurrency
+  // @effects save_conflict_409_returns_concurrent_modification_with_versions
   it('save 응답이 409 면 concurrent_modification 결과 + 버전 정보 전달', async () => {
     const { result } = renderHook(() => useLayoutDocument(), { wrapper });
     await waitFor(() => expect(result.current.document).not.toBeNull());
@@ -152,6 +156,8 @@ describe('useLayoutDocument — 422 Validation', () => {
     delete (globalThis as any).fetch;
   });
 
+  // @scenario save_outcome=validation_fails_422
+  // @effects save_returns_422_with_validation_errors_when_invalid
   it('save 응답이 422 면 validation_failed + errors 전달', async () => {
     const { result } = renderHook(() => useLayoutDocument(), { wrapper });
     await waitFor(() => expect(result.current.document).not.toBeNull());
@@ -194,6 +200,8 @@ describe('useLayoutDocument — 활성 확장 재검증 가드', () => {
     delete (globalThis as any).fetch;
   });
 
+  // @scenario save_payload_origin=route_with_extension_child
+  // @effects layout_extension_save_guard_blocks_inactive_extension_new_nodes
   it('sessionAddedPaths 가 비활성 확장 노드를 가리키면 save 가 차단되고 PUT 미호출', async () => {
     const { result } = renderHook(() => useLayoutDocument(), { wrapper });
     await waitFor(() => expect(result.current.document).not.toBeNull());
@@ -215,6 +223,8 @@ describe('useLayoutDocument — 활성 확장 재검증 가드', () => {
     expect((globalThis as any).fetch).toHaveBeenCalledTimes(1);
   });
 
+  // @scenario save_outcome=valid_save, save_payload_origin=route_with_extension_child
+  // @effects layout_extension_save_guard_blocks_inactive_extension_new_nodes
   it('활성 확장이면 통과', async () => {
     (globalThis as any).fetch.mockResolvedValueOnce(mockOk({ ok: true }, 2));
 
@@ -248,6 +258,8 @@ describe('useLayoutDocument — 네트워크 실패', () => {
     delete (globalThis as any).fetch;
   });
 
+  // @scenario save_payload_origin=route_only
+  // @effects save_network_failure_returns_network_error_with_message
   it('save 중 fetch reject → kind=network_error + message 전달', async () => {
     const { result } = renderHook(() => useLayoutDocument(), { wrapper });
     await waitFor(() => expect(result.current.document).not.toBeNull());
@@ -296,6 +308,8 @@ describe('useLayoutDocument — 중첩 경로 layoutName PUT URL 슬래시 보�
     delete (globalThis as any).fetch;
   });
 
+  // @scenario save_outcome=valid_save, save_payload_origin=route_only
+  // @effects save_put_url_preserves_nested_layout_name_slashes
   it('PUT URL 이 슬래시를 인코딩하지 않고 raw 로 보존 (auth%2F... 금지)', async () => {
     const { result } = renderHook(() => useLayoutDocument(), { wrapper: nestedWrapper });
     await waitFor(() => expect(result.current.document).not.toBeNull());
@@ -337,6 +351,7 @@ describe('useLayoutDocument — 409 본문이 errors 아래에 버전을 담는 
     delete (globalThis as any).fetch;
   });
 
+  /** @effects save_conflict_reads_versions_from_response_helper_errors_payload */
   it('ResponseHelper 형식(errors.current_version) 에서도 최신/내 버전을 읽는다 — 종전 배너 「최신 버전: -1」', async () => {
     const { result } = renderHook(() => useLayoutDocument(), { wrapper });
     await waitFor(() => expect(result.current.document).not.toBeNull());

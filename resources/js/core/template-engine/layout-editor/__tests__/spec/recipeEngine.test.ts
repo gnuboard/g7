@@ -60,24 +60,32 @@ const widthArbitrary: EditorControlSpec = {
 };
 
 describe('applyRecipe — classToken (택1 옵션)', () => {
+  // @scenario apply_type=classToken, widget=select
+  // @effects recipe_class_token_option_replaces_same_group_and_clear_removes_only_group_tokens
   it('옵션 선택 시 토큰을 className 에 추가한다', () => {
     const node: EditorNode = { name: 'H1' };
     const next = applyRecipe(node, textAlign, 'center');
     expect(next.props?.className).toBe('text-center');
   });
 
+  // @scenario apply_type=classToken, widget=select
+  // @effects recipe_class_token_option_replaces_same_group_and_clear_removes_only_group_tokens
   it('같은 group 의 기존 토큰을 교체한다', () => {
     const node: EditorNode = { name: 'H1', props: { className: 'text-left font-bold' } };
     const next = applyRecipe(node, textAlign, 'right');
     expect(next.props?.className).toBe('font-bold text-right');
   });
 
+  // @scenario apply_type=classToken, widget=select, prop_value_kind=empty_clear
+  // @effects recipe_class_token_option_replaces_same_group_and_clear_removes_only_group_tokens
   it('value=undefined(기본) 면 group 토큰만 제거하고 나머지는 보존한다', () => {
     const node: EditorNode = { name: 'H1', props: { className: 'text-center font-bold' } };
     const next = applyRecipe(node, textAlign, undefined);
     expect(next.props?.className).toBe('font-bold');
   });
 
+  // @scenario apply_type=classToken, widget=select, prop_value_kind=empty_clear
+  // @effects recipe_class_token_option_replaces_same_group_and_clear_removes_only_group_tokens
   it('마지막 group 토큰 제거 시 className 키 자체를 제거한다', () => {
     const node: EditorNode = { name: 'H1', props: { className: 'text-center' } };
     const next = applyRecipe(node, textAlign, undefined);
@@ -98,6 +106,8 @@ describe('applyRecipe — groupTokens (옵션 밖 기본 토큰 교체)', () => 
     ],
   } as unknown as EditorControlSpec;
 
+  // @scenario apply_type=classToken, widget=select
+  // @effects recipe_group_tokens_family_is_replaced_even_outside_options
   it('옵션에 없는 기본 토큰(font-medium)도 같은 group 으로 교체된다 — 핵심 회귀', () => {
     // 노드 기본 className 이 font-medium(옵션 밖). bold 적용 시 font-medium 이 남으면 안 됨.
     const node: EditorNode = { name: 'Span', props: { className: 'text-sm font-medium opacity-90' } };
@@ -109,6 +119,8 @@ describe('applyRecipe — groupTokens (옵션 밖 기본 토큰 교체)', () => 
     expect(cls).toContain('opacity-90');
   });
 
+  // @scenario apply_type=classToken, widget=select, prop_value_kind=empty_clear
+  // @effects recipe_group_tokens_family_is_replaced_even_outside_options
   it('해제(undefined) 시 groupTokens 패밀리의 기본 토큰도 제거된다', () => {
     const node: EditorNode = { name: 'Span', props: { className: 'font-medium text-sm' } };
     const next = applyRecipe(node, fontWeight, undefined);
@@ -117,6 +129,8 @@ describe('applyRecipe — groupTokens (옵션 밖 기본 토큰 교체)', () => 
     expect(cls).toContain('text-sm');
   });
 
+  // @scenario apply_type=classToken, widget=select
+  // @effects recipe_group_tokens_family_is_replaced_even_outside_options
   it('reverseResolve — 옵션 밖 기본 토큰(font-light)은 매칭 안 됨(고급값) 이지만 적용 시 교체된다', () => {
     // 역해석: font-light 는 옵션이 아니라 매칭 안 됨(고급으로 분류). 그래도 새 적용은 교체.
     const node: EditorNode = { name: 'Span', props: { className: 'font-light' } };
@@ -139,12 +153,16 @@ describe('applyRecipe — toggle off 옵션(apply 없는 비-빈 value)', () => 
     ],
   };
 
+  // @scenario apply_type=classToken, widget=toggle
+  // @effects recipe_toggle_off_option_without_apply_removes_group_token
   it('on 옵션 선택 시 group 토큰을 단다', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'flex gap-4' } };
     const next = applyRecipe(node, flexWrap, 'wrap');
     expect(next.props?.className).toBe('flex gap-4 flex-wrap');
   });
 
+  // @scenario apply_type=classToken, widget=toggle
+  // @effects recipe_toggle_off_option_without_apply_removes_group_token
   it('off 옵션(apply 없는 value) 선택 시 group 토큰을 제거한다', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'flex gap-4 flex-wrap' } };
     const next = applyRecipe(node, flexWrap, 'nowrap');
@@ -152,6 +170,8 @@ describe('applyRecipe — toggle off 옵션(apply 없는 비-빈 value)', () => 
     expect(next.props?.className).toBe('flex gap-4');
   });
 
+  // @scenario apply_type=classToken, widget=toggle
+  // @effects recipe_toggle_off_option_without_apply_removes_group_token
   it('off 옵션 선택을 reverseResolve 로 역해석하면 미매칭(off)이다', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'flex gap-4' } };
     const r = reverseResolve(node, flexWrap);
@@ -161,12 +181,16 @@ describe('applyRecipe — toggle off 옵션(apply 없는 비-빈 value)', () => 
 });
 
 describe('applyRecipe — styleProp / cssVar / propValue', () => {
+  // @scenario apply_type=styleProp, stored_shape=string
+  // @effects recipe_style_and_css_var_and_token_template_primitives_write_the_node
   it('styleProp 단일 속성을 props.style 에 설정한다', () => {
     const node: EditorNode = { name: 'P' };
     const next = applyRecipe(node, textColor, '#1a1a1a');
     expect((next.props?.style as Record<string, unknown>).color).toBe('#1a1a1a');
   });
 
+  // @scenario apply_type=styleProp, stored_shape=object
+  // @effects recipe_style_and_css_var_and_token_template_primitives_write_the_node
   it('styleProp 다중 속성(배경 이미지) values 묶음을 설정한다', () => {
     const node: EditorNode = { name: 'Div' };
     const next = applyRecipe(node, bgImage, undefined as never);
@@ -187,24 +211,32 @@ describe('applyRecipe — styleProp / cssVar / propValue', () => {
     void next;
   });
 
+  // @scenario apply_type=cssVar, stored_shape=string
+  // @effects recipe_style_and_css_var_and_token_template_primitives_write_the_node
   it('cssVar 를 props.style 에 설정한다', () => {
     const node: EditorNode = { name: 'Div' };
     const next = applyRecipe(node, brandVar, '#0ea5e9');
     expect((next.props?.style as Record<string, unknown>)['--brand']).toBe('#0ea5e9');
   });
 
+  // @scenario widget=select, prop_value_kind=string
+  // @effects propvalue_string_roundtrips_through_props
   it('propValue 를 props 에 설정한다', () => {
     const node: EditorNode = { name: 'Img' };
     const next = applyRecipe(node, widthProp, 'lg');
     expect(next.props?.size).toBe('lg');
   });
 
+  // @scenario apply_type=classToken, stored_shape=string
+  // @effects recipe_style_and_css_var_and_token_template_primitives_write_the_node
   it('tokenTemplate 자유값을 임의값 클래스로 합성한다', () => {
     const node: EditorNode = { name: 'Div' };
     const next = applyRecipe(node, widthArbitrary, '320px');
     expect(next.props?.className).toBe('w-[320px]');
   });
 
+  // @scenario apply_type=styleProp, stored_shape=absent
+  // @effects recipe_style_and_css_var_and_token_template_primitives_write_the_node
   it('빈 style 객체는 props.style 키를 남기지 않는다', () => {
     const node: EditorNode = { name: 'P', props: { style: { color: '#000' } } };
     const next = applyRecipe(node, textColor, undefined);
@@ -227,6 +259,8 @@ describe('applyRecipe — image 위젯 객체값 분해', () => {
     },
   };
 
+  // @scenario apply_type=styleProp, widget_output=image_object, stored_shape=object, consumer=div_background
+  // @effects styleprop_bundle_four_property_decomposition_is_unchanged
   it('image 위젯 객체값을 4개 CSS 속성으로 분해하고 url 을 url(...) 로 래핑한다', () => {
     const node: EditorNode = { name: 'Div' };
     const next = applyRecipe(node, bgImageReal, {
@@ -244,6 +278,8 @@ describe('applyRecipe — image 위젯 객체값 분해', () => {
     expect(style.backgroundPosition).toBe('center');
   });
 
+  // @scenario apply_type=styleProp, widget_output=image_object_empty_url, consumer=div_background
+  // @effects styleprop_bundle_four_property_decomposition_is_unchanged
   it('url 미지정 객체는 backgroundImage 를 설정하지 않는다(부분 객체 안전)', () => {
     const node: EditorNode = { name: 'Div' };
     const next = applyRecipe(node, bgImageReal, { size: 'contain' });
@@ -252,6 +288,8 @@ describe('applyRecipe — image 위젯 객체값 분해', () => {
     expect(style.backgroundSize).toBe('contain');
   });
 
+  // @scenario apply_type=styleProp, widget_output=image_object, consumer=div_background
+  // @effects styleprop_bundle_four_property_decomposition_is_unchanged
   it('이미 url(...) 래핑된 값은 이중 래핑하지 않는다', () => {
     const node: EditorNode = { name: 'Div' };
     const next = applyRecipe(node, bgImageReal, { url: 'url(/b.png)', size: 'cover' });
@@ -259,6 +297,8 @@ describe('applyRecipe — image 위젯 객체값 분해', () => {
     expect(style.backgroundImage).toBe('url(/b.png)');
   });
 
+  // @scenario apply_type=styleProp, widget_output=image_object, stored_shape=object, consumer=div_background
+  // @effects styleprop_bundle_four_property_decomposition_is_unchanged
   it('라운드트립 — 분해 적용 후 reverseResolve 가 객체로 역조립한다', () => {
     const node: EditorNode = { name: 'Div' };
     const applied = applyRecipe(node, bgImageReal, {
@@ -279,6 +319,8 @@ describe('applyRecipe — image 위젯 객체값 분해', () => {
 
   // 레거시 손상값 — 수정 이전 저장본은 size/repeat/position 에 image 값 객체가 통째로
   // 들어가 있을 수 있다(브라우저 실측 시 409 payload 의 backgroundPosition:{object}).
+  // @scenario apply_type=styleProp, widget_output=image_object, stored_shape=object, consumer=div_background
+  // @effects styleprop_bundle_four_property_decomposition_is_unchanged
   it('레거시 손상값(position 에 객체)이 있던 노드에 새 값 적용 시 4속성 모두 스칼라로 정정', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -304,6 +346,8 @@ describe('applyRecipe — image 위젯 객체값 분해', () => {
     expect(typeof style.backgroundPosition).toBe('string');
   });
 
+  // @scenario apply_type=styleProp, stored_shape=object, consumer=div_background
+  // @effects styleprop_bundle_four_property_decomposition_is_unchanged
   it('reverseResolve 는 손상된 객체값 position 을 스칼라로 정화하거나 폐기한다', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -325,6 +369,8 @@ describe('applyRecipe — image 위젯 객체값 분해', () => {
     expect(typeof v.position).toBe('string');
   });
 
+  // @scenario apply_type=styleProp, widget_output=undefined_cleared, consumer=div_background
+  // @effects styleprop_bundle_four_property_decomposition_is_unchanged
   it('value=undefined 면 4개 배경 속성을 모두 제거한다', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -343,32 +389,44 @@ describe('applyRecipe — image 위젯 객체값 분해', () => {
 });
 
 describe('reverseResolve — apply 타입별 현재값 역해석', () => {
+  // @scenario apply_type=classToken, stored_shape=string
+  // @effects recipe_reverse_resolve_reads_current_value_per_apply_type
   it('classToken 택1 — 현재 토큰에서 옵션 value 를 역해석한다', () => {
     const node: EditorNode = { name: 'H1', props: { className: 'font-bold text-right' } };
     const r = reverseResolve(node, textAlign);
     expect(r).toEqual({ value: 'right', matched: true, conflict: undefined });
   });
 
+  // @scenario apply_type=styleProp, stored_shape=string
+  // @effects recipe_reverse_resolve_reads_current_value_per_apply_type
   it('styleProp — props.style 에서 현재값을 역해석한다', () => {
     const node: EditorNode = { name: 'P', props: { style: { color: '#abc' } } };
     expect(reverseResolve(node, textColor)).toEqual({ value: '#abc', matched: true });
   });
 
+  // @scenario apply_type=cssVar, stored_shape=string
+  // @effects recipe_reverse_resolve_reads_current_value_per_apply_type
   it('cssVar — props.style 의 변수에서 역해석한다', () => {
     const node: EditorNode = { name: 'Div', props: { style: { '--brand': '#fff' } } };
     expect(reverseResolve(node, brandVar)).toEqual({ value: '#fff', matched: true });
   });
 
+  // @scenario apply_type=propValue, stored_shape=string
+  // @effects recipe_reverse_resolve_reads_current_value_per_apply_type
   it('propValue — props 에서 역해석한다', () => {
     const node: EditorNode = { name: 'Img', props: { size: 'sm' } };
     expect(reverseResolve(node, widthProp)).toEqual({ value: 'sm', matched: true });
   });
 
+  // @scenario apply_type=classToken, stored_shape=string
+  // @effects recipe_reverse_resolve_reads_current_value_per_apply_type
   it('tokenTemplate — 임의값 클래스에서 값을 역추출한다', () => {
     const node: EditorNode = { name: 'Div', props: { className: 'mx-2 w-[480px]' } };
     expect(reverseResolve(node, widthArbitrary)).toEqual({ value: '480px', matched: true });
   });
 
+  // @scenario apply_type=classToken, stored_shape=absent
+  // @effects recipe_reverse_resolve_flags_unmatched_as_advanced_and_group_conflict
   it('매칭 토큰/스타일이 없으면 matched:false (고급값 분류)', () => {
     const node: EditorNode = { name: 'H1', props: { className: 'custom-pipe-class' } };
     expect(reverseResolve(node, textAlign)).toEqual({ value: undefined, matched: false });
@@ -376,6 +434,8 @@ describe('reverseResolve — apply 타입별 현재값 역해석', () => {
     expect(reverseResolve(node2, textColor)).toEqual({ value: undefined, matched: false });
   });
 
+  // @scenario apply_type=classToken, stored_shape=string
+  // @effects recipe_reverse_resolve_flags_unmatched_as_advanced_and_group_conflict
   it('같은 group 토큰이 2개 이상이면 conflict:true (첫 매칭 우선)', () => {
     const node: EditorNode = { name: 'H1', props: { className: 'text-left text-right' } };
     const r = reverseResolve(node, textAlign);
@@ -395,6 +455,8 @@ describe('applyRecipe ↔ reverseResolve 라운드트립 대칭', () => {
   ];
 
   for (const c of cases) {
+    // @scenario apply_type=classToken, stored_shape=string
+    // @effects recipe_apply_and_reverse_resolve_roundtrip_symmetrically
     it(`${c.name} — apply 후 reverseResolve 가 같은 값을 돌려준다`, () => {
       const applied = applyRecipe({ name: 'X' }, c.control, c.value);
       const resolved = reverseResolve(applied, c.control);
@@ -405,6 +467,8 @@ describe('applyRecipe ↔ reverseResolve 라운드트립 대칭', () => {
 });
 
 describe('입력 불변성', () => {
+  // @scenario apply_type=classToken, stored_shape=string
+  // @effects recipe_apply_keeps_the_input_node_immutable
   it('applyRecipe 는 입력 노드를 변경하지 않는다', () => {
     const node: EditorNode = { name: 'H1', props: { className: 'text-left', style: { color: '#000' } } };
     const snapshot = JSON.stringify(node);
@@ -433,16 +497,22 @@ describe('/7 — dimension width/height (options + control-level apply 폴백)',
     ],
   };
 
+  // @scenario apply_type=styleProp, stored_shape=string
+  // @effects recipe_control_level_apply_fallback_applies_dimension_values
   it('자유 픽셀 값(옵션에 없는 320px) → control-level styleProp 으로 style.width 적용', () => {
     const out = applyRecipe({ name: 'Button' }, widthCtrl, '320px');
     expect((out.props?.style as Record<string, unknown>)?.width).toBe('320px');
   });
 
+  // @scenario apply_type=styleProp, stored_shape=string
+  // @effects recipe_control_level_apply_fallback_applies_dimension_values
   it('프리셋 칩 값(옵션에 있는 100%) → 옵션 apply 부재 시 control-level styleProp 으로 적용', () => {
     const out = applyRecipe({ name: 'Button' }, widthCtrl, '100%');
     expect((out.props?.style as Record<string, unknown>)?.width).toBe('100%');
   });
 
+  // @scenario apply_type=styleProp, stored_shape=string
+  // @effects recipe_control_level_apply_fallback_applies_dimension_values
   it('리사이즈 px 문자열 → reverseResolve 가 동일 값 역해석 (양방향 동기)', () => {
     const applied = applyRecipe({ name: 'Button' }, widthCtrl, '248px');
     const resolved = reverseResolve(applied, widthCtrl);
@@ -450,11 +520,15 @@ describe('/7 — dimension width/height (options + control-level apply 폴백)',
     expect(resolved.value).toBe('248px');
   });
 
+  // @scenario apply_type=styleProp, stored_shape=absent
+  // @effects recipe_control_level_apply_fallback_applies_dimension_values
   it('기본(빈값) → style.width 제거', () => {
     const applied = applyRecipe({ name: 'Button', props: { style: { width: '320px' } } }, widthCtrl, undefined);
     expect((applied.props?.style as Record<string, unknown> | undefined)?.width).toBeUndefined();
   });
 
+  // @scenario apply_type=classToken, stored_shape=string
+  // @effects recipe_control_level_apply_fallback_applies_dimension_values
   it('per-option apply 가 있는 컨트롤은 폴백 영향 없음 (옵션 apply 우선)', () => {
     const seg: EditorControlSpec = {
       widget: 'segmented',
@@ -491,12 +565,16 @@ describe('propValue 임의 prop 편집 (icon-picker / options-list / text)', () 
     apply: { type: 'propValue', propKey: 'required' },
   };
 
+  // @scenario widget=icon-picker, prop_value_kind=string
+  // @effects icon_picker_select_writes_icon_name_to_propValue, propvalue_string_roundtrips_through_props
   it('icon-picker 아이콘명 문자열을 props.name 에 기록 + 역해석', () => {
     const applied = applyRecipe({ name: 'Icon' }, iconName, 'fa-star');
     expect(applied.props?.name).toBe('fa-star');
     expect(reverseResolve(applied, iconName)).toEqual({ value: 'fa-star', matched: true });
   });
 
+  // @scenario widget=options-list, prop_value_kind=array
+  // @effects propvalue_array_roundtrips_through_props
   it('options-list 옵션 배열을 props.options 에 기록 + 역해석 (배열 round-trip)', () => {
     const options = [
       { value: 'a', label: 'A' },
@@ -509,12 +587,16 @@ describe('propValue 임의 prop 편집 (icon-picker / options-list / text)', () 
     expect(resolved.value).toEqual(options);
   });
 
+  // @scenario widget=toggle, prop_value_kind=boolean
+  // @effects propvalue_boolean_roundtrips_through_props
   it('toggle 불리언 prop 을 props.required 에 기록 + 역해석', () => {
     const applied = applyRecipe({ name: 'Input' }, requiredCtrl, true);
     expect(applied.props?.required).toBe(true);
     expect(reverseResolve(applied, requiredCtrl)).toEqual({ value: true, matched: true });
   });
 
+  // @scenario widget=icon-picker, prop_value_kind=empty_clear
+  // @effects propvalue_empty_or_undefined_deletes_prop
   it('빈 문자열/undefined 는 prop 을 삭제한다 (기본/미적용 복원)', () => {
     const seeded: EditorNode = { name: 'Icon', props: { name: 'fa-star' } };
     expect(applyRecipe(seeded, iconName, '').props?.name).toBeUndefined();
@@ -525,6 +607,8 @@ describe('propValue 임의 prop 편집 (icon-picker / options-list / text)', () 
     expect(applyRecipe(seededOpts, optionsCtrl, undefined).props?.options).toBeUndefined();
   });
 
+  // @scenario widget=icon-picker, prop_value_kind=string
+  // @effects propvalue_dark_scope_is_noop_inline_lossless
   it('propValue 편집은 다크 scope 에서 no-op (인라인 무손실 보존)', () => {
     const node: EditorNode = { name: 'Icon', props: { name: 'fa-star' } };
     const out = applyRecipe(node, iconName, 'fa-heart', { colorScheme: 'dark', breakpoint: 'base' });
@@ -584,10 +668,12 @@ describe('image 위젯 × 단일 값 슬롯 (공개 #135)', () => {
     expect(applyRecipe(seeded, logoCtrl, { size: 'contain' }).props?.logo).toBeUndefined();
   });
 
+  /** @effects image_object_without_url_or_with_empty_url_deletes_the_prop */
   it('1-4 빈 url 은 prop 을 삭제한다', () => {
     expect(applyRecipe({ name: 'Header' }, logoCtrl, { url: '' }).props?.logo).toBeUndefined();
   });
 
+  /** @effects image_object_without_url_or_with_empty_url_deletes_the_prop */
   it('1-5 undefined(기본으로 되돌리기) 는 prop 을 삭제한다', () => {
     const seeded: EditorNode = { name: 'Header', props: { logo: '/old.png' } };
     expect(applyRecipe(seeded, logoCtrl, undefined).props?.logo).toBeUndefined();
@@ -605,6 +691,7 @@ describe('image 위젯 × 단일 값 슬롯 (공개 #135)', () => {
     expect(next.props?.tooltip).toEqual({ position: 'left' });
   });
 
+  /** @effects non_image_widget_object_and_array_props_are_preserved_intact */
   it('1-7 오탐 가드 — options-list 배열은 그대로 보존한다', () => {
     const optionsCtrl: EditorControlSpec = {
       widget: 'options-list',
@@ -624,6 +711,7 @@ describe('image 위젯 × 단일 값 슬롯 (공개 #135)', () => {
     expect((next.props?.style as Record<string, unknown>)['--hero']).toBe('url(/a.png)');
   });
 
+  /** @effects image_object_narrows_to_wrapped_css_url_in_cssvar_and_single_styleprop */
   it('1-9 단일 styleProp 슬롯도 CSS 문맥이므로 url(...) 로 감싼다', () => {
     const singleBg: EditorControlSpec = {
       widget: 'image',
@@ -665,6 +753,7 @@ describe('image 위젯 × 단일 값 슬롯 (공개 #135)', () => {
     expect(reverseResolve(node, logoCtrl)).toEqual({ value: { url: '/a.png' }, matched: true });
   });
 
+  /** @effects stored_string_is_rewrapped_as_url_object_for_the_widget */
   it('2-2 값이 없으면 미매칭', () => {
     expect(reverseResolve({ name: 'Header', props: {} }, logoCtrl)).toEqual({
       value: undefined,
@@ -679,6 +768,7 @@ describe('image 위젯 × 단일 값 슬롯 (공개 #135)', () => {
     expect(reverseResolve(node, logoCtrl)).toEqual({ value: { url: expr }, matched: true });
   });
 
+  /** @effects legacy_css_url_wrapping_is_stripped_for_component_prop_sink */
   it('2-4 레거시 url(...) 저장값은 언래핑해 되감는다', () => {
     const node: EditorNode = { name: 'Header', props: { logo: 'url(/a.png)' } };
     expect(reverseResolve(node, logoCtrl)).toEqual({ value: { url: '/a.png' }, matched: true });
@@ -737,23 +827,27 @@ describe('number 위젯 값 — propValue 숫자 기록', () => {
     apply: { type: 'propValue', propKey: 'maxVisibleBoards' },
   };
 
+  /** @effects propvalue_number_roundtrips_through_props_without_string_coercion */
   it('4-1 숫자를 그대로 props 에 기록한다 (문자열로 변질되지 않음)', () => {
     const next = applyRecipe({ name: 'Header' }, maxBoards, 5);
     expect(next.props?.maxVisibleBoards).toBe(5);
     expect(typeof next.props?.maxVisibleBoards).toBe('number');
   });
 
+  /** @effects propvalue_zero_is_preserved_not_deleted */
   it('4-2 0 은 유효값이라 삭제되지 않는다', () => {
     const next = applyRecipe({ name: 'Header' }, maxBoards, 0);
     expect(next.props?.maxVisibleBoards).toBe(0);
   });
 
+  /** @effects propvalue_empty_or_undefined_deletes_prop */
   it('4-3 빈 문자열·undefined 는 prop 을 삭제한다', () => {
     const seeded: EditorNode = { name: 'Header', props: { maxVisibleBoards: 5 } };
     expect(applyRecipe(seeded, maxBoards, '').props?.maxVisibleBoards).toBeUndefined();
     expect(applyRecipe(seeded, maxBoards, undefined).props?.maxVisibleBoards).toBeUndefined();
   });
 
+  /** @effects propvalue_number_roundtrips_through_props_without_string_coercion, propvalue_zero_is_preserved_not_deleted */
   it('4-4 라운드트립 — 숫자 그대로 역해석', () => {
     const applied = applyRecipe({ name: 'Header' }, maxBoards, 7);
     expect(reverseResolve(applied, maxBoards)).toEqual({ value: 7, matched: true });
@@ -776,6 +870,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     apply: { type: 'nodeKey', nodeKey: 'dataKey' } as unknown as string,
   };
 
+  /** @effects nodekey_apply_writes_node_top_level_key_not_props */
   it('5-1 노드 최상위에 기록하고 props 를 오염시키지 않는다', () => {
     const next = applyRecipe({ name: 'Form' }, dataKeyCtrl, 'orderer') as EditorNode &
       Record<string, unknown>;
@@ -783,12 +878,14 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     expect(next.props?.dataKey).toBeUndefined();
   });
 
+  /** @effects nodekey_apply_empty_or_undefined_removes_the_key */
   it('5-2 빈 문자열은 키를 삭제한다', () => {
     const seeded = { name: 'Form', dataKey: 'orderer' } as EditorNode;
     const next = applyRecipe(seeded, dataKeyCtrl, '') as EditorNode & Record<string, unknown>;
     expect('dataKey' in next).toBe(false);
   });
 
+  /** @effects nodekey_apply_empty_or_undefined_removes_the_key */
   it('5-3 undefined 도 키를 삭제한다', () => {
     const seeded = { name: 'Form', dataKey: 'orderer' } as EditorNode;
     const next = applyRecipe(seeded, dataKeyCtrl, undefined) as EditorNode &
@@ -796,11 +893,13 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     expect('dataKey' in next).toBe(false);
   });
 
+  /** @effects nodekey_reverse_resolve_reads_node_top_level_key */
   it('5-4 역해석 — 노드 최상위에서 읽는다', () => {
     const node = { name: 'Form', dataKey: 'orderer' } as EditorNode;
     expect(reverseResolve(node, dataKeyCtrl)).toEqual({ value: 'orderer', matched: true });
   });
 
+  /** @effects nodekey_reverse_resolve_reads_node_top_level_key */
   it('5-5 역해석 — 값이 없으면 미매칭', () => {
     expect(reverseResolve({ name: 'Form' }, dataKeyCtrl)).toEqual({
       value: undefined,
@@ -808,6 +907,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     });
   });
 
+  /** @effects nodekey_apply_refuses_reserved_children_key */
   it('5-6 예약키 가드 — nodeKey:"children" 은 no-op (노드 파괴 차단)', () => {
     const evil: EditorControlSpec = {
       widget: 'text',
@@ -820,6 +920,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     expect(reverseResolve(node, evil)).toEqual({ value: undefined, matched: false });
   });
 
+  /** @effects nodekey_apply_ignores_device_and_dark_scope */
   it('5-7 디바이스 scope 도 최상위에 쓴다 (responsive 브랜치는 런타임이 안 읽는다)', () => {
     const next = applyRecipe({ name: 'Form' }, dataKeyCtrl, 'orderer', {
       colorScheme: 'light',
@@ -829,6 +930,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     expect(next.responsive).toBeUndefined();
   });
 
+  /** @effects nodekey_reverse_resolve_reads_node_top_level_key, nodekey_apply_ignores_device_and_dark_scope */
   it('5-8 디바이스 scope 역해석도 최상위에서 — placeholder 흐림을 만들지 않는다', () => {
     const node = { name: 'Form', dataKey: 'orderer' } as EditorNode;
     expect(
@@ -836,6 +938,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     ).toEqual({ value: 'orderer', matched: true });
   });
 
+  /** @effects nodekey_apply_ignores_device_and_dark_scope */
   it('5-9 다크 scope 는 no-op (인라인 무손실 보존)', () => {
     const node = { name: 'Form', dataKey: 'orderer' } as EditorNode;
     expect(applyRecipe(node, dataKeyCtrl, 'other', { colorScheme: 'dark', breakpoint: 'base' })).toBe(
@@ -843,6 +946,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     );
   });
 
+  /** @effects nodekey_apply_keeps_the_input_node_immutable */
   it('5-10 입력 노드는 변경되지 않는다 (불변)', () => {
     const node = { name: 'Form' } as EditorNode;
     const snapshot = JSON.stringify(node);
@@ -850,6 +954,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
     expect(JSON.stringify(node)).toBe(snapshot);
   });
 
+  /** @effects nodekey_apply_noops_on_non_string_or_empty_key */
   it('5-11 비-문자열/빈 nodeKey 는 no-op', () => {
     const bad: EditorControlSpec = {
       widget: 'text',

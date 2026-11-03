@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 
 /**
@@ -14,6 +15,7 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 class InstallerDbTestGateTest extends TestCase
 {
     use RunsInstallerSubprocess;
+    use ScansPhpSourceFunctions;
 
     /**
      * 임시 루트 준비.
@@ -48,14 +50,14 @@ class InstallerDbTestGateTest extends TestCase
      */
     public function test_db_test_failure_paths_do_not_store_false(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/check-configuration.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/check-configuration.php');
 
         $this->assertStringNotContainsString("\$_SESSION['db_write_tested'] = false", $source);
         $this->assertStringNotContainsString("\$_SESSION['db_read_tested'] = false", $source);
         // 검사 본문(공유 함수)은 PDOException·Exception 두 경로를 모두 실패 결과로 돌려주고,
         // 웹 껍데기는 실패 결과 하나의 분기에서 기록을 지운다.
         $this->assertMatchesRegularExpression('/if \(! \$result\[\'success\'\]\) \{\s*\n(?:\s*\/\/[^\n]*\n)*\s*installer_forget_db_test\(\$isReadDb\);/', $source, '실패 결과면 기록을 지운다');
-        $shared = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/db-check.php');
+        $shared = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/db-check.php');
         $this->assertStringContainsString('} catch (PDOException $e) {', $shared);
         $this->assertStringContainsString('} catch (Exception $e) {', $shared);
         $this->assertStringNotContainsString('$_SESSION', $shared, '공유 검사 함수는 세션을 쓰지 않는다');
@@ -70,7 +72,7 @@ class InstallerDbTestGateTest extends TestCase
      */
     public function test_step3_does_not_use_isset_for_db_test_flag(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
 
         $this->assertStringNotContainsString("isset(\$_SESSION['db_write_tested'])", $source);
         $this->assertStringNotContainsString("isset(\$_SESSION['db_read_tested'])", $source);

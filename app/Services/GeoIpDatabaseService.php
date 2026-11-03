@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Extension\ExtensionManager;
 use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\HookManager;
 use App\Support\ConfigCacheHelper;
@@ -362,10 +363,18 @@ class GeoIpDatabaseService
      */
     private function findMmdbFile(string $extractPath, string $editionId): ?string
     {
-        $pattern = $extractPath.DIRECTORY_SEPARATOR.$editionId.'_*'.DIRECTORY_SEPARATOR.$editionId.'.mmdb';
-        $found = glob($pattern);
+        // 나열은 단일 지점을 쓴다 — GeoIP DB 갱신은 예약 작업이고, 무CLI 환경에서 그
+        // 스케줄은 **웹 요청 안에서** 실행되므로 `glob` 이 막힌 호스팅에서는 이 자리가
+        // 치명 오류가 된다 (12차 G3 라운드).
+        foreach (ExtensionManager::listDirectories($extractPath, $editionId.'_') as $versionDir) {
+            $candidate = $versionDir.DIRECTORY_SEPARATOR.$editionId.'.mmdb';
 
-        return ! empty($found) ? $found[0] : null;
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -490,10 +490,29 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "if": "{{systemInfo?.data?.memory_usage?.percentage != null}}",
                                             "props": {
                                                 "className": "text-heading"
                                             },
-                                            "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)"
+                                            "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage}}%)"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{systemInfo?.data != null && systemInfo?.data?.memory_usage?.percentage == null}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.info.not_measurable"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{systemInfo?.data == null}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "-"
                                         }
                                     ]
                                 },
@@ -515,10 +534,29 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "if": "{{systemInfo?.data?.disk_usage?.percentage != null}}",
                                             "props": {
                                                 "className": "text-heading"
                                             },
-                                            "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)"
+                                            "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage}}%)"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{systemInfo?.data != null && systemInfo?.data?.disk_usage?.percentage == null}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.info.not_measurable"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{systemInfo?.data == null}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "-"
                                         }
                                     ]
                                 },

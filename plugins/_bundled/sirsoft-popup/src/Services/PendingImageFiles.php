@@ -58,7 +58,7 @@ class PendingImageFiles
     public function stale(int $before, int $limit): array
     {
         $records = [];
-        foreach (glob($this->directory().'/*.json') ?: [] as $file) {
+        foreach ($this->recordFiles() as $file) {
             try {
                 $row = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
                 if (! is_array($row) || ! is_string($row['path'] ?? null) || ! is_string($row['hash'] ?? null)
@@ -81,6 +81,32 @@ class PendingImageFiles
         }
 
         return $records;
+    }
+
+    /**
+     * 대장 디렉토리의 `*.json` 항목 경로를 이름순으로 반환합니다.
+     *
+     * `glob` 은 호스팅이 막을 수 있는 함수라(PHP 8 은 막힌 함수 호출이 `Error`) `scandir` 로 나열한다 — 막힌 서버에서
+     * 매일 정리 작업이 죽지 않게. `glob('*.json')` 과 같게 점으로 시작하는 이름은 빼고 이름순을 지킨다.
+     *
+     * @return array<int, string> 항목 파일 경로
+     */
+    private function recordFiles(): array
+    {
+        $directory = $this->directory();
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        $files = [];
+        foreach (scandir($directory) ?: [] as $name) {
+            if ($name[0] === '.' || ! str_ends_with($name, '.json') || ! is_file($directory.'/'.$name)) {
+                continue;
+            }
+            $files[] = $directory.'/'.$name;
+        }
+
+        return $files;
     }
 
     /**

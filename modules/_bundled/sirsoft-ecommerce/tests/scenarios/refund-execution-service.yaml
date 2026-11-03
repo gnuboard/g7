@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   이 매니페스트의 세 축(환불 수단 × PG 왕복 여부 × 복원 대상)은 한 Unit 메서드가 동시에
 #   재현하지 않는다 — 복원(쿠폰·마일리지·재고·현금영수증)은 `execute()` 와 별개로 직접 호출해
 #   격리 검증하고, 장부 누적은 수단·왕복 축만 곱한다. 조합의 실체는 클레임 접수 경로

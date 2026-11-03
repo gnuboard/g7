@@ -1015,6 +1015,12 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_user_list/_partial_filter_section.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-mileage.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-address.g7.html',
+        // ── issue609(무CLI 호스팅·하위 폴더 설치) 의 develop-7.2.0 병합(2026-10-31)이 JSON 에서 저작본으로 옮긴 조각 3건 —
+        // 환경설정 시스템 탭(실행 방식·웹 크론)·업데이트 탭(화면에서 코어 업데이트)·웹 크론 호출 번호 재발급 확인 창.
+        // 주석 앵커(S21)를 채웠고, 짝 `.json` 은 굽기 산출물이라 이 게이트가 굽기 최신·escape 0 을 잰다.
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_system.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_update.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_cron_token_rotate.g7.html',
     ];
 
     /**
@@ -1171,7 +1177,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
                 continue;
             }
 
-            $jsonFile = preg_replace('/\.g7\.html$/i', '.json', $markupFile);
+            $jsonFile = preg_replace('/\.g7\.html$/iu', '.json', $markupFile);
             $source = File::get($markupFile);
 
             if (str_contains($source, '<json')) {

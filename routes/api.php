@@ -55,6 +55,7 @@ use App\Http\Controllers\Api\Admin\SeoCacheController as AdminSeoCacheController
 use App\Http\Controllers\Api\Admin\SeoCandidateController;
 use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Api\Admin\SystemExecutionController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
 use App\Http\Controllers\Api\Admin\UnplacedBundledNoticeController as AdminUnplacedBundledNoticeController;
@@ -78,7 +79,9 @@ use App\Http\Controllers\Api\Public\PublicModuleController;
 use App\Http\Controllers\Api\Public\PublicPluginController;
 use App\Http\Controllers\Api\Public\PublicProfileController;
 use App\Http\Controllers\Api\Public\PublicSearchController;
+use App\Http\Controllers\Api\Public\PublicStorageController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
+use App\Http\Controllers\Api\Public\WebCronController;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Models\IdentityVerificationLog;
 use App\Support\LocaleTag;
@@ -269,6 +272,21 @@ Route::group([], function () use ($publicDataThrottle) {
     // DB 미접근·무인증·no-store. 상세: App\Http\Controllers\Api\Public\AssetProbeController
     Route::dualSuffix('system/asset-probe', 'js', [AssetProbeController::class, 'probe'])
         ->name('api.public.system.asset-probe');
+
+    // 공개 스토리지(storage/app/public) 읽기 전용 서빙 (B-3) — public/storage 심볼릭
+    // 링크를 만들 수 없는 호스팅의 대체 통로. 링크가 있으면 URL 생성기가 정적 경로
+    // (/storage/...)를, 없으면 이 라우트를 자동 선택한다. 확장자로 끝나는 와일드카드
+    // 자산 라우트이므로 dualAsset 이중 등록 의무 (R33).
+    Route::dualAsset('system/public-storage', [PublicStorageController::class, 'serve'])
+        ->name('api.public.system.public-storage');
+
+    // 웹 크론 — 서버 크론을 걸 수 없는 호스팅의 예약 작업 진입점 (A-5).
+    // 호스팅 제어판의 URL 호출형 예약 실행이나 외부 크론 서비스가 이 주소를 부른다.
+    // 인증은 전용 호출 번호(상수 시간 비교) + 선택적 IP 제한이며, 통과하면 실행 건수와
+    // 무관하게 언제나 200 이다 — 외부 서비스는 비-200 을 장애로 보고 알림을 쏟는다.
+    // 주소가 정적 확장자로 끝나지 않으므로 이중 등록 헬퍼는 쓰지 않는다.
+    Route::get('system/cron/run', [WebCronController::class, 'run'])
+        ->name('api.public.system.cron.run');
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
@@ -822,7 +840,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('test-mail', [AdminSettingsController::class, 'testMail'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-mail');
         Route::post('test-driver', [AdminSettingsController::class, 'testDriverConnection'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-driver');
         Route::post('test-outbound-proxy', [AdminSettingsController::class, 'testOutboundProxy'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-outbound-proxy');
+        Route::post('test-trusted-proxy', [AdminSettingsController::class, 'testTrustedProxy'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-trusted-proxy');
         Route::post('geoip/update', [AdminGeoIpController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.geoip.update');
+        // 실행 방식·예약 작업 (W5) — `{key}` 와일드카드보다 **앞에** 둔다.
+        // 뒤에 두면 `system/status` 가 설정 키 `system` 의 조회로 잡힌다.
+        Route::prefix('system')->group(function () {
+            Route::get('status', [SystemExecutionController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system.status');
+            Route::post('detect', [SystemExecutionController::class, 'detect'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system.detect');
+            // 호출 번호는 인증 없는 실행 자격증명이라 조회에도 update 권한을 요구한다 (D20).
+            Route::get('cron-token', [SystemExecutionController::class, 'cronToken'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.system.cron-token');
+            Route::post('cron-token/rotate', [SystemExecutionController::class, 'rotateCronToken'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.system.cron-token.rotate');
+            Route::post('cron/run', [SystemExecutionController::class, 'runSchedule'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.system.cron.run');
+        });
+
         Route::get('{key}', [AdminSettingsController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.show');
         Route::put('{key}', [AdminSettingsController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.update');
     });
@@ -840,6 +870,26 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('changelog', [AdminCoreUpdateController::class, 'changelog'])
             ->middleware('permission:admin,core.settings.read')
             ->name('api.admin.core-update.changelog');
+
+        // 웹 단계 실행 (W6) — 적용 경로는 **별도 권한**을 요구한다 (D4). 설정을 고칠 수
+        // 있다는 것과 코어를 갈아 끼울 수 있다는 것은 다른 등급이고, 이 권한이 없는
+        // 관리자에게는 화면에서 영역 자체가 보이지 않는다.
+        //
+        // 이 세 경로의 URI 는 `MaintenanceModePage::MAINTENANCE_EXEMPT_URIS` 와 짝이다 —
+        // 업데이트가 스스로 켠 점검 모드에 진행·되돌리기가 갇히면 안 되기 때문이다.
+        // 한쪽만 바꾸면 진행이 503 으로 멈추므로 계약 테스트가 둘을 대조한다.
+        Route::get('status', [AdminCoreUpdateController::class, 'status'])
+            ->middleware('permission:admin,core.system.update')
+            ->name('api.admin.core-update.status');
+        Route::post('start', [AdminCoreUpdateController::class, 'start'])
+            ->middleware('permission:admin,core.system.update')
+            ->name('api.admin.core-update.start');
+        Route::post('advance', [AdminCoreUpdateController::class, 'advance'])
+            ->middleware('permission:admin,core.system.update')
+            ->name('api.admin.core-update.advance');
+        Route::post('dismiss', [AdminCoreUpdateController::class, 'dismiss'])
+            ->middleware('permission:admin,core.system.update')
+            ->name('api.admin.core-update.dismiss');
     });
 
     // 메뉴 관리

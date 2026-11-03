@@ -13,6 +13,27 @@ class MaintenanceModePage
     use DetectsRequestLocale;
 
     /**
+     * 점검 중에도 통과시키는 경로 (라우트 이름이 아니라 URI 로 판정한다).
+     *
+     * 웹 코어 업데이트는 **스스로 점검 모드를 켠 뒤** 다음 단계를 같은 브라우저에서
+     * 이어 호출한다. 그 요청까지 503 으로 막으면 사이트를 세워 놓고 진행할 수단이
+     * 사라진다 — 「유지보수 모드에 갇혀 복구할 수 없는 상태 금지」(A-7 설계 4)가
+     * 성립하려면 진행·되돌리기 경로가 점검 중에도 열려 있어야 한다.
+     *
+     * 우회 쿠키(`laravel_maintenance`)도 함께 발급하지만 그것만 믿지 않는다 — 쿠키는
+     * 만료되고, 브라우저가 지울 수 있으며, 다른 기기에서 접속한 운영자에게는 없다.
+     * 이 목록은 그 모든 경우에도 남는 마지막 통로다.
+     *
+     * 여기 있는 경로는 전부 인증 + `core.system.update` 권한 뒤에 있다 —
+     * 통과시키는 것은 미들웨어 한 겹이지 접근 통제가 아니다.
+     */
+    public const MAINTENANCE_EXEMPT_URIS = [
+        'api/admin/core-update/status',
+        'api/admin/core-update/advance',
+        'api/admin/core-update/dismiss',
+    ];
+
+    /**
      * Maintenance 모드일 때 전용 정적 페이지를 렌더링합니다.
      *
      * DB, API, JS 에셋에 의존하지 않는 자체 완결 Blade 페이지를 반환합니다.
@@ -31,6 +52,11 @@ class MaintenanceModePage
 
         // secret 쿠키가 있으면 통과 (관리자 접근)
         if ($this->hasValidBypassCookie($request)) {
+            return $next($request);
+        }
+
+        // 웹 코어 업데이트의 진행·되돌리기 경로는 점검 중에도 열어 둔다.
+        if ($request->is(self::MAINTENANCE_EXEMPT_URIS)) {
             return $next($request);
         }
 

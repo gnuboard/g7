@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: action, response, entry, login_identifier, locale 축은 판정 API 응답, 우회 쿼리,
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 action, response, entry, login_identifier, locale 축은 판정 API 응답, 우회 쿼리,
 # 식별자 설정을 열거한 것이다. 시험은 조건식을 값별로 평가해 갈래를 밟으며 축 전체의 곱을 화면으로 띄우지 않는다.
 # 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
 

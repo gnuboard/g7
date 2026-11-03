@@ -13,8 +13,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * order_sheet_mode / 결제수단 토글 / 삽입 위치 / core_payment_method 선언을 검증한다.
  *
  * @scenario order_sheet_mode=true, payment_method=toss_card
- *
- * @effects enabled_methods_exposed_with_core_mapping
  */
 class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
 {
@@ -346,9 +344,17 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
 
         foreach ($expected as $id => $mark) {
             $this->assertArrayHasKey($id, $byId, "{$id} 가 주입되지 않았다");
+
+            // 7.2.0 부터 PG 플러그인마다 자기 CSS 접두사(`paytosspayments:` 등)로 클래스를 공급한다 —
+            // 같은 브랜드인지는 접두사를 뗀 유틸리티로 비교한다(다른 PG 도 같은 색, 다른 접두사).
+            $actual = $byId[$id]['brand_mark'] ?? null;
+            if (is_array($actual) && isset($actual['class'])) {
+                $actual['class'] = (string) preg_replace('/(^|\s)paytosspayments:/', '$1', (string) $actual['class']);
+            }
+
             $this->assertSame(
                 $mark,
-                $byId[$id]['brand_mark'] ?? null,
+                $actual,
                 "{$id} 의 브랜드 마크가 다른 PG 와 다르다 — 같은 브랜드가 PG 마다 달라 보인다"
             );
         }

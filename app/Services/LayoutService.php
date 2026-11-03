@@ -2067,11 +2067,24 @@ class LayoutService
     }
 
     /**
-     * defines(재사용 컴포넌트 정의)를 필터링합니다.
+     * defines(재사용 정의)를 필터링합니다.
      *
-     * @param  array  $defines  defines 배열
+     * `defines` 는 **키가 의미를 갖는 맵**이다 — 레이아웃은 `{{_defines.settingsTabs}}` 처럼
+     * 키로 참조하고(`ParameterDescriber` 의 API 문서도 「정의 맵」으로 선언한다), 병합도
+     * `mergeDefines()` 가 `array_merge` 로 문자열 키를 보존한 채 넘겨준다. 종전에는 이 필터가
+     * `$filtered[] = $define` 로 재색인해 그 키를 버렸다 — `{"settingsTabs": […]}` 가
+     * `[[…]]` 로 나가면 `_defines.settingsTabs` 는 undefined 가 되고, 표현식은 `?? []` 폴백을
+     * 타 **오류도 경고도 없이 화면 요소만 사라진다**(환경설정 탭 13개·회원 폼 국가 48개·
+     * 마이페이지 국가/언어·이커머스 통화 국기). 편집기도 같은 `serve` 응답을 캔버스로 읽으므로
+     * 그 상태에서 저장하면 망가진 형태가 원본에 기록된다.
+     *
+     * 리스트 형태(문서가 기술하는 「define 객체 목록」)도 계속 성립해야 한다 — 권한으로 중간
+     * 항목이 빠진 뒤 원래 정수 키를 그대로 두면 구멍 난 배열이 되어 JSON 이 객체로 직렬화된다.
+     * 그래서 키는 보존하되 **입력이 리스트였을 때만** 마지막에 재색인한다.
+     *
+     * @param  array  $defines  defines 맵(키 = 정의 이름) 또는 define 객체 목록
      * @param  User|null  $user  현재 사용자
-     * @return array 필터링된 defines 배열
+     * @return array 필터링된 defines — 입력이 맵이면 키 보존, 리스트면 재색인
      */
     private function filterDefines(array $defines, ?User $user): array
     {

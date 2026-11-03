@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Seo 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -70,6 +70,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -138,6 +140,8 @@ HTTP/1.1 200
 | 500 | Internal Server Error | 캐시 무효화(`invalidateByLayout` / `clearAll`) 중 예외가 발생한 경우 (`messages.error_occurred`) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -209,6 +213,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -298,6 +304,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 Sitemap 재생성 진행상황과 실시간 연결 가능 여부를 조회합니다. SEO 탭 진입 시 초기 로드에 사용되며, `realtime_enabled` 가 false(웹소켓 미사용)일 때는 프론트가 진행 중(`queued`/`running`/`writing`) 동안 이 API 를 3초 간격으로 폴링합니다. 실시간 연결이 켜져 있으면 폴링 대신 `core.admin.seo.sitemap` 채널의 `sitemap.progress.updated` 이벤트로 즉시 갱신됩니다.
@@ -367,6 +375,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 SEO 캐시 적중 현황을 최근 7일 기준으로 전체·레이아웃별·모듈별로 조회합니다. 봇 대상 사전 렌더 캐시가 얼마나 효과적으로 재사용되는지(적중률, 렌더 비용 절감)를 모니터링하는 관리자 대시보드용 통계입니다.
@@ -426,6 +436,8 @@ HTTP/1.1 200
 | 500 | Internal Server Error | 워밍업 처리 중 예외가 발생한 경우 (`messages.error_occurred`) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 

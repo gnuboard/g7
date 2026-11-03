@@ -22,6 +22,7 @@
 import type { ActionContext } from '../types';
 import { formatAmountInCurrency } from './calculateCurrencyPrices';
 import { claimRequestConfig, uploadPendingClaimFiles } from './claimImageHandlers';
+import { routePath } from '../apiUrl';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ClaimApply')) ?? {
     log: (...args: unknown[]) => console.log('[Ecom:ClaimApply]', ...args),
@@ -199,7 +200,8 @@ export function resolveClaimApplyRoute(): { claimType: string; preselected: stri
         return { claimType: '', preselected: '' };
     }
 
-    const segments = String(window.location.pathname || '').split('/').filter(Boolean);
+    // 화면 경로는 앱 기준(마운트 접두사를 벗긴 값)으로 읽는다 — 하위 폴더 배치의 접두사 구간이 경로 조각에 섞이지 않게.
+    const segments = String(routePath(window.location.pathname || '')).split('/').filter(Boolean);
     const applyIndex = segments.lastIndexOf('apply');
     const claimType = applyIndex >= 0 ? (segments[applyIndex + 1] ?? '') : '';
 
@@ -262,6 +264,7 @@ function readEngineRouteGeneration(): number | null {
  */
 export function captureRouteGeneration(): RouteGenerationToken {
     const href = typeof window !== 'undefined' && window.location
+        // base-path:allow 표식은 같은 화면의 브라우저 주소끼리 대조한다(뒤에 읽는 값도 location 그대로) — 벗기지 않는다.
         ? String(window.location.pathname ?? '') + String(window.location.search ?? '')
         : '';
 
@@ -297,7 +300,8 @@ export function isSameRouteGeneration(token: RouteGenerationToken): boolean {
 export function resolveClaimEditNumber(): string {
     if (typeof window === 'undefined' || !window.location) return '';
 
-    const segments = String(window.location.pathname || '').split('/').filter(Boolean);
+    // 화면 경로는 앱 기준(마운트 접두사를 벗긴 값)으로 읽는다.
+    const segments = String(routePath(window.location.pathname || '')).split('/').filter(Boolean);
     const editIndex = segments.lastIndexOf('edit');
 
     if (editIndex < 1) return '';

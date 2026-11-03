@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 화면 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
+
 return [
     // 설정 관련 메시지
     'fetch_success' => '설정을 성공적으로 가져왔습니다.',
@@ -34,9 +36,13 @@ return [
     'queue_status_loaded' => '큐 워커 상태를 불러왔습니다.',
     'static_cache_republished' => '초기 화면 정적 파일을 다시 만들었습니다.',
     'static_cache_republish_failed' => '초기 화면 정적 파일을 다시 만들지 못했습니다. 사이트는 정상 동작합니다.',
+    'trusted_proxy_probe_no_headers' => '앞단 프록시가 감지되지 않아 이 값으로 달라지는 것이 없습니다. 프록시를 쓰지 않는 구성이라면 「신뢰하지 않음」이 올바른 값입니다.',
+    'trusted_proxy_probe_resolves' => '이 값이면 방문자 IP 가 프록시 너머의 실제 주소로 해석됩니다.',
+    'trusted_proxy_probe_unchanged' => '이 값으로도 방문자 IP 가 그대로입니다 — 목록에 앞단 프록시 주소가 빠져 있을 수 있습니다.',
 
     // 앱 키 관련 메시지
     'invalid_password' => '비밀번호가 일치하지 않습니다.',
+    'app_key_env_write_failed' => '.env 파일을 쓰지 못해 애플리케이션 키를 재생성하지 않았습니다. 디스크 여유 공간과 파일 권한을 확인해 주세요.',
     'password_required' => '비밀번호를 입력해주세요.',
     'app_key_regenerated' => '어플리케이션 키가 성공적으로 재생성되었습니다.',
     'app_key_regenerate_failed' => '어플리케이션 키 재생성에 실패했습니다.',
@@ -44,6 +50,38 @@ return [
 
     // 시스템 정보 관련
     'seconds' => '초',
+
+    // 실행 방식·예약 작업 화면 (관리자 '시스템' 탭)
+    'execution' => [
+        'fetch_success' => '실행 방식 정보를 조회했습니다.',
+        'fetch_failed' => '실행 방식 정보 조회에 실패했습니다.',
+        'detect_success' => '실행 환경을 다시 감지했습니다.',
+        'detect_failed' => '실행 환경 감지에 실패했습니다.',
+    ],
+
+    // 실행 모드 (웹 요청 안의 커맨드 실행 방식)
+    'execution_mode' => [
+        'auto' => '자동으로 판단',
+        'subprocess' => '항상 CLI 사용',
+        'inprocess' => '항상 CLI 없이',
+    ],
+
+    // PHP 바이너리 probe 사유 (App\Support\PhpBinaryResolver · ExecutionEnvironment 가
+    // `message_key` 로 실어 보낸다 — 접두사 없는 키라 소비처가 이 네임스페이스를 붙인다:
+    // `__('settings.'.$result['message_key'], $result['message_params'])`).
+    'php_probe_ok' => 'PHP :version 확인 (최소 요구 :min_version)',
+    // 서버 명령용 PHP 와 사이트가 도는 PHP 의 계열이 다를 때 (공유 호스팅에서 흔하다).
+    // 막지 않고 사실만 알린다 — 설치·업데이트가 사이트와 다른 런타임에서 수행된다.
+    'php_probe_ok_web_version_differs' => 'PHP :version 확인 (최소 요구 :min_version). 다만 사이트는 PHP :web_version 으로 동작하고 있어 서버 명령은 다른 버전에서 실행됩니다.',
+    'php_probe_version_low' => 'PHP :version 은 최소 요구 버전 :min_version 보다 낮습니다.',
+    'php_probe_empty_path' => 'PHP 실행 파일 경로가 비어 있습니다.',
+    'php_probe_file_missing' => 'PHP 실행 파일을 찾을 수 없습니다: :path',
+    'php_probe_exec_failed' => 'PHP 실행 파일을 실행하지 못했습니다: :path',
+    'php_probe_unparsable' => 'PHP 버전을 읽지 못했습니다.',
+    'php_probe_exec_unavailable' => '이 서버에서는 외부 명령 실행이 막혀 있어 PHP 실행 파일을 확인하지 못했습니다.',
+    'php_probe_failed' => 'PHP 실행 파일 확인에 실패했습니다.',
+    'php_probe_functions_blocked' => '이 서버에서는 별도 프로세스 실행에 필요한 기능이 막혀 있어 확인을 건너뛰었습니다.',
+    'php_probe_auto_detected' => 'PHP 실행 파일을 자동으로 찾았습니다: :path',
 
     // 드라이버 라벨 (DriverRegistryService 가 활성 언어팩 별로 조회)
     'drivers' => [
@@ -186,6 +224,145 @@ return [
         'apply_mode_prune' => '파일 적용: 전체 덮어쓰기 + 제거된 파일 정리를 수행했습니다 (--prune).',
         'apply_mode_fallback' => '파일 적용: 백업이 없어 증분 적용을 건너뛰고 전체 덮어쓰기를 수행했습니다. 사용자 커스텀 파일 보존을 원하면 다음부터는 백업을 유지한 채 업데이트하세요.',
 
+        // 루트 진입·보호 파일 통보
+        'root_index_replaced' => '루트 진입 파일(:path)이 코어 판본이 아니어서 코어 shim 으로 교체했습니다 — 교체 직전 내용을 :copy 에 사본으로 남겼습니다. 이 사이트가 프로젝트 루트에 자체 index.php 를 두고 있었다면 그 파일에서 내용을 되찾으세요 (업데이트 백업은 성공 시 삭제됩니다).',
+        'root_index_replaced_not_preserved' => '루트 진입 파일(:path)이 코어 판본이 아니어서 코어 shim 으로 교체했습니다 — 교체 직전 내용을 사본으로 남기지 못했습니다(storage/app/core-update 쓰기 실패). 이 사이트가 프로젝트 루트에 자체 index.php 를 두고 있었다면 그 내용은 복구할 수 없습니다.',
+        'root_index_unreadable' => '루트 진입 파일(:path)을 읽지 못해 코어 판본인지 확인하지 못한 채 교체했습니다 — 읽지 못했으므로 사본도 남기지 못했습니다. 그 파일에 자체 내용이 있었다면 복구할 수 없습니다.',
+        'already_running' => '다른 코어 업데이트가 이미 실행 중입니다 — 그 실행이 끝난 뒤 다시 시도하세요. 두 실행이 겹치면 되돌리기용 백업이 서로 덮어써져 복구할 수 없습니다.',
+        'run_lock_unavailable' => '동시 실행 보호를 켤 수 없어 그대로 진행합니다 (:reason) — 이 상태에서는 업데이트를 **한 번에 하나만** 실행하세요. 두 실행이 겹치면 되돌리기용 백업이 서로 덮어써져 복구할 수 없습니다.',
+        'run_lock_unknown_reason' => '잠금 파일을 열 수 없습니다 (:path) — 권한·디스크 여유·open_basedir 를 확인하세요',
+        'root_file_copy_failed' => '루트 진입·보호 파일(:path)을 갱신하지 못했습니다 — 그 파일이 구버전으로 남았습니다. 파일과 파일이 든 디렉토리 양쪽의 쓰기 권한을 확인한 뒤 다시 시도하세요. 나머지 항목은 정상적으로 갱신되었습니다.',
+        'root_htaccess_preserved' => '루트 보호 규칙 파일(:path)에서 코어 관리 블록 마커(`# BEGIN G7` / `# END G7`, 줄 시작)를 찾지 못해 갱신하지 않았습니다 — 마커가 지워졌거나 형태가 바뀐(들여쓰기·다른 문자열이 덧붙음) 상태이며, 코어 보호 규칙이 적용되지 않은 채입니다. 일부러 지운 것이 아니라면 릴리즈 판본의 `.htaccess` 블록을 문서 루트 파일에 그대로 두고 다시 시도하세요.',
+        'root_htaccess_created' => '루트 보호 규칙 파일(:path)을 새로 만들었습니다 — 프로젝트 루트가 웹에 열려 있던 배치라면 이제 보호됩니다. 다만 이 사이트를 `/public/…` 주소로 접근해 왔다면 그 주소는 이제 정본 주소로 이동(301)하며, 문서 루트를 바꿀 수 없는 서버라면 그대로 두는 것이 맞습니다.',
+        'root_htaccess_write_failed' => '루트 보호 규칙 파일을 쓰지 못했습니다 (:path) — 보호 규칙이 구버전으로 남았습니다. 그 파일과 파일이 든 디렉토리 양쪽의 쓰기 권한을 확인한 뒤 다시 시도하세요 (교체는 대상 파일의 디렉토리에 임시 파일을 만든 뒤 바꿔 넣으므로 그 디렉토리에도 쓰기 권한이 필요합니다). 그 파일이 심볼릭 링크라면 링크가 아니라 링크 대상 파일과 그 대상이 든 디렉토리의 권한입니다.',
+        'deploy_fragment_preserved' => '서버 설정 조각(:path)은 운영자가 수정한 판본이라 그대로 두고, 새 판본을 :dist 로 옆에 두었습니다. 두 파일의 차이를 확인해 직접 합친 뒤(nginx 는 이 파일을 include 로 읽으므로 합친 뒤 reload) .dist 파일은 지우세요 — 합치지 않으면 새 판본의 보호 규칙이 이 서버에 적용되지 않습니다.',
+        'deploy_fragment_dist_write_failed' => '서버 설정 조각(:path)은 운영자가 수정한 판본이라 그대로 두었지만, 새 판본을 :dist 로 옆에 쓰지 못했습니다(디렉토리 쓰기 권한 확인). 릴리즈 판본의 같은 파일과 직접 비교해 합치세요.',
+        'root_htaccess_read_failed' => '루트 보호 규칙 파일을 읽지 못했습니다 (:path) — 갱신을 건너뛰었고 보호 규칙이 구버전으로 남았습니다. 파일 소유자와 읽기 권한을 확인한 뒤 다시 시도하세요.',
+        'root_htaccess_duplicate_block' => '루트 보호 규칙 파일(:path)에 코어 관리 블록이 두 벌 이상 있습니다 — 자동 갱신을 건너뛰었습니다. 중복 블록을 하나만 남기고 지운 뒤 다시 시도하세요.',
+        'root_htaccess_broken_block' => '루트 보호 규칙 파일(:path)의 코어 관리 블록이 손상되어 있습니다 (`# BEGIN G7` 과 `# END G7` 중 하나만 있거나 순서가 뒤바뀜) — 자동 갱신을 건너뛰었고, 그 파일은 지금 보호 규칙이 온전하지 않은 상태입니다(전송 중단이나 편집 중 잘림일 수 있습니다). 릴리즈 판본의 `.htaccess` 블록으로 바꿔 넣은 뒤 다시 시도하세요.',
+        'root_htaccess_source_invalid' => '릴리즈 판본의 루트 보호 규칙 파일에서 코어 관리 블록을 찾지 못했습니다 — 갱신을 건너뛰었습니다.',
+        'root_htaccess_destination_invalid' => '루트 보호 규칙 경로(:path)가 파일이 아닙니다 — 갱신을 건너뛰었습니다.',
+        'root_htaccess_splice_invalid' => '루트 보호 규칙 파일(:path)의 코어 관리 블록을 교체한 결과가 온전하지 않아 갱신을 건너뛰었습니다 — 블록 밖 내용을 확인한 뒤 다시 시도하세요.',
+        'root_web_config_preserved' => 'IIS 루트 보호 규칙 파일(:path)에서 코어 관리 블록 마커(`BEGIN G7` / `END G7` 을 담은 XML 주석 줄, 줄 시작)를 찾지 못해 갱신하지 않았습니다 — 마커가 지워졌거나 형태가 바뀐(들여쓰기·다른 문자열이 덧붙음) 상태이며, 코어 보호 규칙이 적용되지 않은 채입니다. 일부러 지운 것이 아니라면 릴리즈 판본 `web.config` 의 블록을 그 파일에 그대로 두고 다시 시도하세요.',
+        'root_web_config_created' => 'IIS 루트 보호 규칙 파일(:path)을 새로 만들었습니다 — 프로젝트 루트가 웹에 열려 있던 배치라면 이제 보호됩니다(URL Rewrite 모듈이 있어야 읽힙니다). 이 사이트를 `/public/…` 주소로 접근해 왔다면 그 주소는 이제 정본 주소로 이동(301)합니다.',
+        'root_web_config_write_failed' => 'IIS 루트 보호 규칙 파일을 쓰지 못했습니다 (:path) — 보호 규칙이 구버전으로 남았습니다. 그 파일과 파일이 든 디렉토리 양쪽의 쓰기 권한을 확인한 뒤 다시 시도하세요 (교체는 대상 파일의 디렉토리에 임시 파일을 만든 뒤 바꿔 넣으므로 그 디렉토리에도 쓰기 권한이 필요합니다). 그 파일이 심볼릭 링크라면 링크 대상 파일과 그 대상이 든 디렉토리의 권한입니다.',
+        'root_web_config_read_failed' => 'IIS 루트 보호 규칙 파일을 읽지 못했습니다 (:path) — 갱신을 건너뛰었고 보호 규칙이 구버전으로 남았습니다. 파일 소유자와 읽기 권한을 확인한 뒤 다시 시도하세요.',
+        'root_web_config_duplicate_block' => 'IIS 루트 보호 규칙 파일(:path)에 코어 관리 블록이 두 벌 이상 있습니다 — 자동 갱신을 건너뛰었습니다. 중복 블록을 하나만 남기고 지운 뒤 다시 시도하세요.',
+        'root_web_config_broken_block' => 'IIS 루트 보호 규칙 파일(:path)의 코어 관리 블록이 손상되어 있습니다 (`BEGIN G7` 과 `END G7` 마커 주석 중 하나만 있거나 순서가 뒤바뀜) — 자동 갱신을 건너뛰었고, 그 파일은 지금 보호 규칙이 온전하지 않은 상태입니다(IIS 는 web.config 파싱에 실패하면 사이트 전체를 500 으로 만듭니다). 릴리즈 판본 `web.config` 의 블록으로 바꿔 넣은 뒤 다시 시도하세요.',
+        'root_web_config_source_invalid' => '릴리즈 판본의 IIS 루트 보호 규칙 파일에서 코어 관리 블록을 찾지 못했습니다 — 갱신을 건너뛰었습니다.',
+        'root_web_config_destination_invalid' => 'IIS 루트 보호 규칙 경로(:path)가 파일이 아닙니다 — 갱신을 건너뛰었습니다.',
+        'root_web_config_splice_invalid' => 'IIS 루트 보호 규칙 파일(:path)의 코어 관리 블록을 교체한 결과가 적형(well-formed) XML 이 아니어서 갱신을 건너뛰었습니다 — 블록 밖에 닫히지 않은 태그가 있을 수 있습니다(IIS 는 web.config 파싱에 실패하면 사이트 전체를 500 으로 만듭니다). 파일을 확인한 뒤 다시 시도하세요.',
+        'root_web_config_unrecognized_failure' => 'IIS 루트 보호 규칙 파일(:path) 갱신이 알 수 없는 사유(:result)로 끝났습니다 — 보호 규칙이 갱신되지 않았을 수 있으니 파일 내용을 직접 확인하세요.',
+        'deploy_fragment_dist_conflict' => '서버 설정 조각(:path)은 운영자가 수정한 판본이라 그대로 두었습니다. 옆에 있던 :dist 는 지금 릴리즈 판본과 내용이 달라(합치던 중일 수 있어) 덮어쓰지 않고, 새 판본을 :dist_new 로 두었습니다. 새 판본(.dist.new)을 기준으로 합친 뒤(nginx 는 이 파일을 include 로 읽으므로 합친 뒤 reload) .dist 와 .dist.new 를 지우세요.',
+        'deploy_fragment_ledger_seeded' => '서버 설정 조각(deploy/) :count개의 갱신 기준선을 기록했습니다.',
+        'deploy_fragment_ledger_seed_skipped' => '서버 설정 조각(deploy/)의 갱신 기준선은 이미 있거나 기록할 조각이 없어 그대로 둡니다.',
+        'deploy_fragment_ledger_seed_premise' => '이 기준선은 **지금 디스크에 있는 내용**을 코어가 배포한 판본으로 간주해 기록한 것입니다. 설치 직후가 아닌 시점(특히 되돌리기 직후)에 실행했다면, 직접 수정한 서버 설정 조각이 「수정하지 않은 것」으로 기록되어 다음 업데이트가 경고 없이 덮어씁니다. 수정한 조각이 있다면 지금 사본을 따로 보관하세요.',
+        'deploy_fragment_ledger_write_failed' => '서버 설정 조각의 갱신 기록(:ledger)을 쓰지 못했습니다 — 다음 코어 업데이트가 deploy/ 의 모든 조각을 「수정본」으로 보고 새 판본을 .dist 로 옆에 둡니다. storage/app 디렉토리의 쓰기 권한을 확인하세요.',
+        'storage_link_backup_inside_docroot' => '공개 파일 백업을 문서 루트 밖으로 옮기지 못했습니다 (:path) — 그 사본은 지금 웹에서 열립니다. 내용을 확인한 뒤 옮기거나 삭제하세요.',
+        'storage_link_backup_needs_review' => '공개 파일 전량 사본이 :path 에 남았습니다 — 문서 루트가 프로젝트 루트인 배치(설치 안내의 「문서 루트를 바꿀 수 없는 호스팅」)에서는 루트 보호 파일이 정상일 때만 가려집니다. 내용을 확인한 뒤 옮기거나 삭제하세요.',
+        'storage_link_backup_accumulated' => '손상된 공개 스토리지 백업이 :count개 쌓여 있습니다 (:path). 내용을 확인한 뒤 정리하세요 — 데이터 손실을 피하려 코어는 자동 삭제하지 않으며, `php artisan storage:prune-leftovers` 가 보존일이 지난 것만 최신 1개를 남기고 회수합니다.',
+        'root_htaccess_unrecognized_failure' => '루트 보호 규칙 파일(:path) 갱신이 알 수 없는 사유(:result)로 끝났습니다 — 보호 규칙이 갱신되지 않았을 수 있으니 파일 내용을 직접 확인하세요.',
+        'rollback_root_protection_missing' => '되돌린 뒤 루트 진입·보호 파일이 없습니다 (:paths) — 문서 루트가 public/ 인 표준 배치이거나 되돌린 판본에 원래 없던 파일이라면 정상입니다. 문서 루트를 프로젝트 루트로 쓰고 있다면 설정 파일이 웹에 노출된 상태이므로 즉시 그 파일을 복구하거나 문서 루트를 public/ 으로 바꾸세요.',
+        'rollback_docroot_residue' => '되돌리기가 문서 루트 안의 공개 파일 사본을 되살렸습니다 (:paths) — 그 사본은 웹에서 그대로 열립니다. 내용을 확인한 뒤 문서 루트 밖으로 옮기거나 삭제하세요.',
+
+        // ── 웹 단계 실행 ────────────────────────────────
+        //
+        // 진행 기록(`log_*`)은 운영자가 [기록 보기] 로 여는 줄이다. 무엇을 했는지가
+        // 아니라 **어디까지 갔는지**를 알 수 있어야 하므로 단계마다 한 줄을 남긴다.
+        'composer_unavailable' => '이 서버에서는 Composer 를 실행할 수 없습니다 (프로세스 실행 함수가 차단되어 있습니다). 번들 vendor 방식으로 진행하거나 SSH 가 가능한 환경에서 실행하세요.',
+        'web' => [
+            // 단계 이름 (화면의 진행 목록)
+            'steps' => [
+                'preflight' => '사전 점검',
+                'maintenance' => '점검 모드 전환',
+                'download' => '내려받기',
+                'backup' => '백업',
+                'vendor' => '의존성 준비',
+                'plan' => '적용 대상 산출',
+                'apply' => '파일 적용',
+                'vendor_copy' => '의존성 반영',
+                'migrate' => '데이터베이스 반영',
+                'upgrade_steps' => '업그레이드 스텝',
+                'bundled' => '번들 확장·언어팩',
+                'finalize' => '마무리',
+            ],
+
+            // 응답 메시지
+            'status_success' => '업데이트 상태를 가져왔습니다.',
+            'status_failed' => '업데이트 상태를 가져오지 못했습니다.',
+            'started' => '업데이트를 시작했습니다.',
+            'start_failed' => '업데이트를 시작하지 못했습니다.',
+            'advanced' => '단계를 수행했습니다.',
+            'advance_failed' => '단계를 수행하지 못했습니다.',
+            'dismissed' => '업데이트 기록을 지웠습니다.',
+            'dismiss_failed' => '업데이트 기록을 지우지 못했습니다.',
+
+            // 진행 제어
+            'no_active_run' => '진행 중인 업데이트가 없습니다.',
+            'step_in_progress' => '다른 요청이 같은 단계를 수행하고 있습니다 — 잠시 후 다시 시도하세요.',
+            'still_running' => '업데이트가 아직 진행 중입니다. 끝난 뒤에 기록을 지울 수 있습니다.',
+            'missing_pending_path' => '내려받은 업데이트 파일의 위치를 찾지 못했습니다 — 처음부터 다시 시작하세요.',
+
+            // 사전 진단
+            'preflight_failed' => '사전 점검에서 문제가 발견되어 업데이트를 시작하지 않았습니다: :reasons',
+            'preflight_not_writable' => '다음 경로에 쓰기 권한이 없습니다: :paths — 웹에서 업데이트하려면 이 경로들을 웹 서버 계정이 쓸 수 있어야 합니다. FTP 프로그램에서 해당 폴더의 권한을 755(폴더)·644(파일)로, 그래도 쓰기 권한이 생기지 않으면 707·606 으로 바꾸세요. SSH 를 쓸 수 있다면 `php artisan core:update` 로 업데이트해도 됩니다.',
+            'preflight_low_disk' => '여유 공간이 부족합니다 (남은 공간 :free, 필요 추정 :required). 백업과 새 버전이 동시에 놓이는 구간이 있어 현재 크기의 몇 배가 필요합니다.',
+
+            // 수동 ZIP
+            'version_from_zip' => '(ZIP 추출 후 판별)',
+            'zip_file_invalid' => 'ZIP 파일 이름만 지정할 수 있습니다 (경로 없이 `.zip` 으로 끝나는 이름).',
+
+            // 착수 요청 항목 이름 (검증 오류 문구)
+            'attributes' => [
+                'update_bundled_extensions' => '번들 확장·언어팩 함께 업데이트',
+                'rebuild_search_index' => '검색 인덱스 다시 만들기',
+                'layout_strategy' => '레이아웃 처리 방식',
+                'zip_file' => '직접 올린 ZIP 파일',
+            ],
+            'zip_not_newer' => '지정한 ZIP 의 버전(:to)이 현재 버전(:from)보다 새롭지 않습니다. 웹 업데이트는 강제 재적용을 지원하지 않습니다.',
+
+            // 실패·되돌리기
+            'upgrade_steps_failed' => '업그레이드 스텝 실행에 실패했습니다: :output',
+            'handoff_exhausted' => '업그레이드 스텝이 새 프로세스 재진입을 반복 요청해 중단했습니다 (마지막 완료 지점 :after / 사유 :reason).',
+            'bundled_partial_failure' => '번들 확장·언어팩 중 :failed개가 업데이트되지 않았습니다. 코어는 정상 반영되었으며, 실패한 확장은 확장 관리 화면에서 개별로 다시 시도할 수 있습니다.',
+            'permission_warning' => '소유권·권한 복원에서 :target 의 :failed개 항목을 정상화하지 못했습니다 — 업로드 파일이나 캐시 쓰기에 문제가 생길 수 있으니 확인하세요.',
+            'maintenance_off_failed' => '점검 모드를 해제하지 못했습니다 (:error) — 사이트가 점검 화면에 머물러 있습니다. FTP 로 `storage/framework/down` 파일을 삭제하면 해제됩니다. SSH 를 쓸 수 있다면 `php artisan up` 을 실행해도 됩니다.',
+            'ownership_restore_failed' => '되돌린 뒤 파일 소유권·권한을 원래대로 되돌리지 못했습니다 (:error) — 사이트가 파일을 쓰지 못할 수 있으니 권한을 확인하세요.',
+
+            // 진행 기록
+            'log_started' => '업데이트 시작 (:from → :to)',
+            'log_preflight_ok' => '사전 점검 통과 (검사 경로 :checked개)',
+            'log_preflight_failed' => '사전 점검 실패 — 적용을 시작하지 않았습니다',
+            'log_maintenance_on' => '점검 모드 켜짐',
+            'log_maintenance_off' => '점검 모드 해제',
+            'log_downloaded' => ':version 내려받기 완료',
+            'log_zip_extracted' => '수동 ZIP 추출 완료 (:file → :version)',
+            'log_backup' => '백업 생성 완료 (:path)',
+            'log_vendor_skipped' => '의존성 변경 없음 — 준비 단계 건너뜀',
+            'log_vendor' => '의존성 준비 완료 (방식 :strategy, 패키지 :packages개)',
+            'log_manifest' => '신규 파일 목록 작성 (파일 :files개, 폴더 :dirs개)',
+            'log_manifest_failed' => '신규 파일 목록 작성 실패 — 되돌리기는 덮어쓰기만 수행합니다 (:error)',
+            'log_apply_list' => '적용 대상 산출 완료 (신규 :added개, 변경 :changed개)',
+            'log_apply_list_failed' => '적용 대상 산출 실패 — 전체 덮어쓰기로 진행합니다 (:error)',
+            'log_applied' => '코어 파일 적용 완료',
+            'log_vendor_copy_skipped' => '의존성 변경 없음 — 반영 단계 건너뜀',
+            'log_vendor_copied' => '의존성 반영 완료',
+            'log_migrated' => '마이그레이션 · 권한/메뉴 재동기 완료',
+            'log_upgrade_steps' => '업그레이드 스텝 :count개 실행 완료',
+            'log_handoff' => '업그레이드 스텝이 새 프로세스를 요청 (:after 까지 완료, 대상 :to) — 다음 단계 요청에서 이어서 실행합니다. 사유: :reason',
+            'log_bundled_skipped' => '번들 확장·언어팩 함께 업데이트를 선택하지 않았습니다',
+            'log_bundled_none' => '번들에 새 버전이 있는 확장·언어팩이 없습니다',
+            'log_bundled_placement' => '공식 번들 배치 판정 — 배치 :placed개, 미배치 :unplaced개(설치하지 않은 번들은 이번 업데이트에서 건너뜁니다)',
+            'log_bundled_record_restored' => '공식 번들 배치 기록을 업데이트 전 내용으로 되돌렸습니다',
+            'log_bundled' => '번들 확장·언어팩 업데이트 완료 (성공 :success, 실패 :failed)',
+            'log_spawn_fallback' => '별도 프로세스 실행 불가 — 같은 요청 안에서 실행합니다 (:reason)',
+            'log_finalized' => '마무리 완료 — 현재 버전 :version',
+            'log_step_failed' => ':step 단계에서 실패: :error',
+            'log_restored' => '백업본으로 되돌렸습니다',
+            'log_restored_partial' => '일부만 되돌렸습니다 (실패 항목: :targets)',
+            'log_restore_failed' => '되돌리기 실패: :error',
+        ],
+
         // GitHub API 에러 메시지
         'github_url_not_configured' => 'GitHub 저장소 URL이 설정되지 않았습니다.',
         'github_api_failed' => 'GitHub API에 연결할 수 없습니다.',
@@ -207,7 +384,7 @@ return [
 
         // 시스템 요구사항
         'system_requirements_failed' => '시스템 요구사항이 충족되지 않습니다:',
-        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 서버에 zip 확장을 설치한 뒤 다시 시도하세요.',
+        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 서버에 zip 확장을 설치하거나, 공유 호스팅이면 호스팅 업체에 활성화를 요청한 뒤 다시 시도하세요.',
         'manual_update_guide' => '수동 업데이트: GitHub에서 릴리스 ZIP을 다운로드하여 압축 해제 후, php artisan core:update --source=/압축해제/경로 명령어를 실행하세요.',
 
         // 추출 폴백 체인
@@ -215,8 +392,11 @@ return [
         'extracting_with' => ':method 방식으로 압축 해제 중...',
         'extract_empty' => '압축 해제된 디렉토리가 비어 있습니다.',
         'extract_fallback' => ':method 방식 실패: :error — 다음 방법을 시도합니다.',
-        'all_extract_methods_failed' => '모든 아카이브 추출 방법이 실패했습니다. --source 옵션으로 수동 업데이트를 시도하세요.',
-        'release_not_found' => 'GitHub 에서 코어 :version 배포본을 찾지 못했습니다 — 그 버전 태그가 아직 없거나 GitHub 에 연결하지 못했습니다. --source 또는 --zip 옵션으로 배포본을 직접 지정하세요.',
+        // 문구는 CLI 와 웹 화면이 함께 쓴다 — 한쪽에서만 실행할 수 있는 조작(예: 명령줄 옵션)을
+        // 담지 않는다. 무CLI 호스팅의 운영자는 이미 화면의 「직접 올린 ZIP 으로 업데이트」를
+        // 쓰고 있어, 그 자리에서 명령줄 옵션을 안내받으면 따를 방법이 없다.
+        'all_extract_methods_failed' => '압축 파일을 풀지 못했습니다. 파일이 온전히 올라갔는지 확인한 뒤 다시 시도해 주세요.',
+        'release_not_found' => 'GitHub 에서 코어 :version 배포본을 찾지 못했습니다 — 그 버전 태그가 아직 없거나 GitHub 에 연결하지 못했습니다. 배포본 ZIP 을 직접 받아 「직접 올린 ZIP 으로 업데이트」로 적용해 주세요.',
         'extension_release_not_found' => 'GitHub 저장소 :repository 에서 :version 배포본을 찾지 못했습니다 — 그 버전 태그가 아직 없거나 GitHub 에 연결하지 못했습니다.',
         'zip_file_not_found' => '지정된 ZIP 파일을 찾을 수 없습니다: :path',
         'source_vendor_missing' => '소스 디렉토리에 vendor가 없습니다. composer install이 실행되지 않았을 수 있습니다.',
@@ -227,6 +407,8 @@ return [
             'local_source_conflict' => '--local 은 --source / --zip 과 동시에 사용할 수 없습니다.',
             'zip_not_found' => '지정된 ZIP 파일이 존재하지 않습니다: :path',
             'source_not_found' => '지정된 소스 디렉토리가 존재하지 않습니다: :path',
+            'docroot_exposure_header' => '⚠ 공개 파일 사본 — 아래를 확인해야 합니다.',
+            'root_files_header' => '⚠ 루트 진입·보호 파일 — 진행은 계속되었지만 아래를 직접 확인해야 합니다.',
             'check_failed' => '업데이트 확인 실패: :error',
             'already_latest' => '현재 최신 버전입니다: :version',
             'current_version' => '현재 버전: :version',
@@ -266,11 +448,11 @@ return [
             'restored_partial' => '백업에서 부분 복원되었습니다.',
             'restore_failed_targets' => '복원 실패 항목: :targets',
             'restore_failed' => '백업 복원 실패: :error',
-            'cache_clear_failed' => '캐시 정리 실패 — 부팅 후 \'php artisan optimize:clear\' 수동 실행 필요: :error',
+            'cache_clear_failed' => '캐시 정리 실패 — 부팅 후 \'php artisan optimize:clear\' 를 수동으로 실행하세요. SSH 를 쓸 수 없으면 FTP 로 `bootstrap/cache` 의 `config.php`·`routes-v7.php`·`events.php` 를 삭제해도 됩니다: :error',
             'update_failed' => '코어 업데이트 실패: :error',
             'failure_report' => '실패 리포트: :path',
             'maintenance_disabled' => '복원 완료: 유지보수 모드가 해제되었습니다.',
-            'maintenance_disable_failed' => '유지보수 모드 해제 실패. 수동으로 해제하세요: php artisan up',
+            'maintenance_disable_failed' => '유지보수 모드 해제 실패. 수동으로 해제하세요: php artisan up (SSH 를 쓸 수 없으면 FTP 로 `storage/framework/down` 파일을 삭제)',
             'maintenance_kept' => '유지보수 모드가 유지됩니다.',
             'manual_recovery_required' => '수동 복구가 필요합니다:',
             'manual_restore_backup' => '백업에서 수동 복원: :command',
@@ -279,7 +461,7 @@ return [
             'run_previous_version' => '이전 버전으로 사이트를 운영하려면: php artisan up',
             'admin_access' => '관리자 접근: :secret',
             'manifest_clear_failed' => 'spawn 직전 패키지 매니페스트 삭제 실패 — 자식이 이전 설치본의 provider 목록으로 부팅할 수 있습니다 (권한·소유권 확인): :paths',
-            'hook_cache_failed' => '훅 캐시를 새 프로세스로 다시 굽지 못했습니다 — 업데이트 뒤 `php artisan hooks:cache` 를 실행하세요: :output',
+            'hook_cache_failed' => '훅 캐시를 새 프로세스로 다시 굽지 못했습니다 — 업데이트 뒤 `php artisan hooks:cache` 를 실행하세요. SSH 를 쓸 수 없으면 FTP 로 `bootstrap/cache/hooks.php` 를 삭제해도 됩니다(다음 요청부터 캐시 없이 스캔으로 동작): :output',
             'spawn' => [
                 'proc_open_disabled' => 'proc_open 비활성',
                 'proc_open_failed' => 'proc_open 자원 생성 실패',
@@ -402,13 +584,15 @@ return [
     | 신뢰 프록시 진단 (#124)
     |--------------------------------------------------------------------------
     |
-    | 값 편집은 .env 전용이다 — 화면에는 읽기 전용 진단만 노출한다.
+    | 값 편집은 환경설정 > 고급의 같은 카드에서 한다 — 무CLI 설치에는 `.env` 를
+    | 고칠 통로가 없어 진단만으로는 조치가 끝나지 않는다. `.env` 는 G7_ENV_PRIORITY 로
+    | 잠글 때만 우선한다.
     |
     */
 
     'trusted_proxy' => [
         'alert_title' => '신뢰 프록시가 설정되지 않았습니다',
-        'alert_message' => '프록시 헤더(:headers)를 받고 있으나 신뢰 프록시가 설정되지 않아, 모든 방문자가 같은 주소(:ip)로 기록되고 있습니다. .env 에 TRUSTED_PROXIES 를 지정하세요. 상세: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
+        'alert_message' => '프록시 헤더(:headers)를 받고 있으나 신뢰 프록시가 설정되지 않아, 모든 방문자가 같은 주소(:ip)로 기록되고 있습니다. 환경설정 > 고급 > 신뢰 프록시에서 신뢰 범위를 지정하세요. 상세: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
     ],
     // `settings:*` 명령 출력
     'console' => [

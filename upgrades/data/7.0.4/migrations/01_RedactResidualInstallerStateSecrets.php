@@ -162,7 +162,11 @@ final class RedactResidualInstallerStateSecrets implements DataMigration
 
         // file_put_contents — 기존 inode 의 권한·소유자를 그대로 유지 (CLI 컨텍스트에서
         // tmp+rename 하면 새 inode 가 CLI 사용자 소유가 되어 웹 서버 읽기가 깨질 수 있다).
-        if (@file_put_contents($statePath, $encoded, LOCK_EX) === false) {
+        // 부분 쓰기도 실패로 읽는다 — 잘린 상태 파일을 성공으로 보고하면
+        // 평문 비밀이 잔존하는데도 운영자가 경고를 받지 못한다.
+        $written = @file_put_contents($statePath, $encoded, LOCK_EX);
+
+        if ($written === false || $written !== strlen($encoded)) {
             $context->logger->warning(sprintf(
                 '[7.0.4] installer-state.json redact 재저장 실패 (%s) — 평문 잔존. 수동 삭제 권장: %s',
                 error_get_last()['message'] ?? 'unknown',

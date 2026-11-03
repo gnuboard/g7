@@ -4,7 +4,7 @@
  * `html-editor.json` 이 `mode: "replace"` 라 코어 HtmlEditor 가 렌더되지 않는다.
  * 편집기를 못 세우면 사용자에게는 빈 div 만 남아 글을 쓸 방법이 없었다.
  *
- * @scenario custom_source=none
+ * @scenario asset_class=vendored, outcome=failed
  * @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
  */
 
@@ -36,7 +36,7 @@ describe('CKEditor5 textarea 폴백', () => {
     });
 
     describe('단일 모드', () => {
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('textarea 를 세우고 초기 내용을 채운다', () => {
             renderTextareaFallback({
@@ -56,7 +56,7 @@ describe('CKEditor5 textarea 폴백', () => {
             expect(textarea.style.height).toBe('400px');
         });
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('폴백 렌더 즉시 _mode 를 text 로 못 박는다 (아무것도 입력하지 않고 저장해도 평문 처리)', () => {
             renderTextareaFallback({
@@ -74,7 +74,7 @@ describe('CKEditor5 textarea 폴백', () => {
             );
         });
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('입력이 form.content 로 동기화된다', () => {
             renderTextareaFallback({
@@ -124,7 +124,7 @@ describe('CKEditor5 textarea 폴백', () => {
             expect((container.querySelector('textarea') as HTMLTextAreaElement).readOnly).toBe(true);
         });
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('이미 폴백이 서 있으면 다시 만들지 않는다 (입력 중이던 내용 보존)', () => {
             renderTextareaFallback({
@@ -155,7 +155,7 @@ describe('CKEditor5 textarea 폴백', () => {
             activeLocale: 'ko',
         };
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('탭을 세우고 활성 로케일 값을 보여준다', () => {
             renderTextareaFallback({
@@ -171,7 +171,7 @@ describe('CKEditor5 textarea 폴백', () => {
             expect(textarea.value).toBe('한국어 본문');
         });
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('탭 전환 시 현재 입력을 커밋하고 다음 로케일 값을 채운다', () => {
             renderTextareaFallback({
@@ -196,7 +196,7 @@ describe('CKEditor5 textarea 폴백', () => {
             expect(updates['form.content_mode']).toBe('text');
         });
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('입력이 있는 로케일 탭에만 체크 표시가 뜬다', () => {
             renderTextareaFallback({
@@ -214,7 +214,7 @@ describe('CKEditor5 textarea 폴백', () => {
     });
 
     describe('재시도 승계', () => {
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('폴백에 입력한 내용을 편집기로 넘길 수 있다 (단일)', () => {
             renderTextareaFallback({
@@ -228,7 +228,7 @@ describe('CKEditor5 textarea 폴백', () => {
             expect(getTextareaFallbackValues(container)).toBe('폴백에서 쓴 글');
         });
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('폴백에 입력한 내용을 편집기로 넘길 수 있다 (다국어 — 커밋 전 현재 탭 포함)', () => {
             renderTextareaFallback({
@@ -246,7 +246,7 @@ describe('CKEditor5 textarea 폴백', () => {
             });
         });
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('제거하면 컨테이너가 비고 폴백 판정이 false 가 된다', () => {
             renderTextareaFallback({
@@ -260,7 +260,7 @@ describe('CKEditor5 textarea 폴백', () => {
             expect(container.innerHTML).toBe('');
         });
 
-        // @scenario custom_source=none
+        // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('폴백이 없는 컨테이너에서는 승계할 값이 없다', () => {
             expect(getTextareaFallbackValues(container)).toBeNull();

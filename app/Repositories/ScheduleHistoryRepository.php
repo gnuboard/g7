@@ -173,6 +173,26 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
     }
 
     /**
+     * 출처별 최근 실행 이력을 조회합니다.
+     *
+     * 정렬 마지막에 기본키를 덧붙여 전순서를 만든다 — `started_at` 은 같은 초에 여러
+     * 건이 쌓일 수 있어(한 번의 러너 호출이 여러 예약을 연달아 실행한다) 그것만으로는
+     * 같은 시각 구간의 순서가 호출마다 달라진다.
+     *
+     * @param  string  $source  이력 출처 (database|code)
+     * @param  int  $limit  최대 건수
+     * @return Collection 시각 역순 이력
+     */
+    public function getRecentBySource(string $source, int $limit = 20): Collection
+    {
+        return ScheduleHistory::where('source', $source)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
      * 여러 이력을 일괄 삭제합니다.
      *
      * @param  array  $ids  이력 ID 배열

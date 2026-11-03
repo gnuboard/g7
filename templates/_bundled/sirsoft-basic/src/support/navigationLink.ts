@@ -11,6 +11,7 @@
  */
 
 import { useSyncExternalStore } from 'react';
+import { sitePath } from './apiUrl';
 import { isSameOriginRequest } from './sameOriginRequest';
 
 const core = (): any => (window as any).G7Core;
@@ -161,7 +162,9 @@ export function navigateTo(path: string): void {
     return;
   }
   if (resolveLinkHref(path)?.external === false) {
-    window.location.href = path;
+    // 전체 다시 부르기는 브라우저가 그대로 여는 주소라 사이트 마운트 접두사를 붙인다(이미 붙은 값은 그대로 — 멱등).
+    // 엔진 navigate 는 라우터가 주소창에 쓸 때 붙이므로 위 분기에는 접두사 없는 경로를 넘긴다.
+    window.location.href = sitePath(path);
   }
 }
 

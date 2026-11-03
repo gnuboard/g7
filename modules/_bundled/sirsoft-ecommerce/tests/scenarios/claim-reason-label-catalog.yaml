@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   신청서 종류 × 파생 출처의 조합 중 실제로 생기는 것만 잰다 — 취소 이력(CN)은 교환 발 환불도
 #   반품 발과 같은 위임(`OrderRefund::reasonCatalogType`)을 타므로 반품 대표 1건으로 덮는다.
 #   effects 축은 면제하지 않는다.

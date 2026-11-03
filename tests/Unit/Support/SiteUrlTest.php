@@ -184,6 +184,137 @@ class SiteUrlTest extends TestCase
     }
 
     /**
+     * 하위 폴더 사이트 주소에서 경로가 마운트 접두사를 이미 가지면 다시 붙이지 않는다 (absolute).
+     *
+     * 서버가 만드는 사이트 경로에는 접두사를 이미 실은 값(`AssetUrl::sitePath()` 결과)과 싣지 않은 값이
+     * 섞여 도착한다. 앞의 것에 한 번 더 붙이면 `/g7/g7/…` 가 되어 사이트 밖(404)을 가리킨다. 접두사가
+     * 경계 없이 이어진 다른 경로(`/g7x`)는 보유가 아니다.
+     *
+     * @scenario host_header=canonical, sink=site_url_helper
+     *
+     * @effects site_url_absolute_shape
+     *
+     * @return void 반환값 없음
+     */
+    public function test_absolute_does_not_repeat_mount_prefix(): void
+    {
+        config(['app.url' => self::SITE.'/g7/']);
+
+        // 접두사 없는 경로 — 사이트 주소(오리진 + 접두사) 뒤에 붙는다
+        $this->assertSame(self::SITE.'/g7/login', SiteUrl::absolute('/login'));
+        $this->assertSame(self::SITE.'/g7/a/b', SiteUrl::absolute('a/b/'));
+        $this->assertSame(self::SITE.'/g7', SiteUrl::absolute('/'));
+        $this->assertSame(self::SITE.'/g7?x=1', SiteUrl::absolute('?x=1'));
+
+        // 접두사를 이미 가진 경로 — 오리진 + 입력 경로
+        $this->assertSame(self::SITE.'/g7/api/x', SiteUrl::absolute('/g7/api/x'));
+        $this->assertSame(self::SITE.'/g7', SiteUrl::absolute('/g7'));
+        $this->assertSame(self::SITE.'/g7', SiteUrl::absolute('/g7/'));
+        $this->assertSame(self::SITE.'/g7?tab=1', SiteUrl::absolute('/g7?tab=1'));
+        $this->assertSame(self::SITE.'/g7/shop?x=1&y=2', SiteUrl::absolute('/g7/shop?x=1&y=2'));
+        $this->assertSame(self::SITE.'/g7#top', SiteUrl::absolute('/g7#top'));
+        $this->assertSame(self::SITE.'/g7/a', SiteUrl::absolute('g7/a'));
+
+        // 경계 없이 이어진 다른 경로 — 접두사 보유가 아니다
+        $this->assertSame(self::SITE.'/g7/g7x/foo', SiteUrl::absolute('/g7x/foo'));
+
+        // 완전한 URL 은 그대로
+        $this->assertSame('https://cdn.example.test/g7/x.png', SiteUrl::absolute('https://cdn.example.test/g7/x.png'));
+
+        // 다단 접두사
+        config(['app.url' => self::SITE.'/sites/g7']);
+        $this->assertSame(self::SITE.'/sites/g7/x', SiteUrl::absolute('/sites/g7/x'));
+        $this->assertSame(self::SITE.'/sites/g7/sites/x', SiteUrl::absolute('/sites/x'));
+        $this->assertSame('/sites/g7', SiteUrl::basePath());
+    }
+
+    /**
+     * 루트 설치(사이트 주소에 경로 없음)에서는 접두사 판정이 개입하지 않는다.
+     *
+     * @scenario host_header=canonical, sink=site_url_helper
+     *
+     * @effects site_url_absolute_shape
+     *
+     * @return void 반환값 없음
+     */
+    public function test_root_install_has_no_mount_prefix(): void
+    {
+        $this->assertSame('', SiteUrl::basePath());
+        $this->assertSame(self::SITE.'/g7/api/x', SiteUrl::absolute('/g7/api/x'));
+        $this->assertSame(self::SITE.'/g7/api/x', SiteUrl::forPath('/g7/api/x'));
+        $this->assertSame(self::SITE.'/', SiteUrl::forPath('/'));
+
+        config(['app.url' => self::SITE.'/']);
+        $this->assertSame('', SiteUrl::basePath());
+        $this->assertSame(self::SITE.'/login', SiteUrl::absolute('/login'));
+    }
+
+    /**
+     * 요청 경로(하위 폴더 설치에서는 접두사를 싣고 온다)도 접두사를 다시 붙이지 않고, 사이트 밖으로 나가지 않는다.
+     *
+     * @scenario host_header=canonical, sink=site_url_helper
+     *
+     * @effects site_url_for_path_stays_inside_site
+     *
+     * @return void 반환값 없음
+     */
+    public function test_for_path_does_not_repeat_mount_prefix(): void
+    {
+        config(['app.url' => self::SITE.'/g7']);
+
+        $this->assertSame(self::SITE.'/g7/products/1?page=2', SiteUrl::forPath('/g7/products/1?page=2'));
+        $this->assertSame(self::SITE.'/g7', SiteUrl::forPath('/g7'));
+        $this->assertSame(self::SITE.'/g7?ref=x', SiteUrl::forPath('/g7?ref=x'));
+        $this->assertSame(self::SITE.'/g7/products/1', SiteUrl::forPath('/products/1'));
+        $this->assertSame(self::SITE.'/g7/g7x', SiteUrl::forPath('/g7x'));
+        $this->assertSame(self::SITE.'/g7/', SiteUrl::forPath(''));
+
+        // `//evil` 방어는 그대로 — 앞 슬래시를 모두 떼고 사이트 주소 안 경로로 붙는다
+        $this->assertSame(self::SITE.'/g7/evil.com/x', SiteUrl::forPath('//evil.com/x'));
+        $this->assertSame(self::SITE.'/g7/evil.com', SiteUrl::forPath('/\\evil.com'));
+        $this->assertSame(self::SITE.'/g7//evil.com', SiteUrl::forPath('/g7//evil.com'));
+        $this->assertSame(self::SITE.'/g7/x', SiteUrl::forPath('//g7/x'));
+    }
+
+    /**
+     * 사이트 주소가 비면 접두사 판정과 무관하게 상대 경로다 (요청 Host 폴백 없음).
+     *
+     * @scenario host_header=forged, sink=site_url_helper
+     *
+     * @effects site_url_empty_base_stays_relative
+     *
+     * @return void 반환값 없음
+     */
+    public function test_empty_site_url_mount_prefix_stays_relative(): void
+    {
+        config(['app.url' => '']);
+        $this->forgeRequest('https://attacker.example/g7/');
+
+        $this->assertSame('', SiteUrl::basePath());
+        $this->assertSame('/g7/api/x', SiteUrl::absolute('/g7/api/x'));
+        $this->assertSame('/g7/api/x', SiteUrl::forPath('/g7/api/x'));
+    }
+
+    /**
+     * 접두사 보유 판정 — 끝·`/`·`?`·`#` 경계만 보유로 본다.
+     *
+     * @scenario host_header=canonical, sink=site_url_helper
+     *
+     * @effects site_url_absolute_shape
+     *
+     * @return void 반환값 없음
+     */
+    public function test_has_path_prefix_boundaries(): void
+    {
+        $this->assertTrue(SiteUrl::hasPathPrefix('/g7', '/g7'));
+        $this->assertTrue(SiteUrl::hasPathPrefix('/g7/x', '/g7'));
+        $this->assertTrue(SiteUrl::hasPathPrefix('/g7?x=1', '/g7'));
+        $this->assertTrue(SiteUrl::hasPathPrefix('/g7#top', '/g7'));
+        $this->assertFalse(SiteUrl::hasPathPrefix('/g7x/foo', '/g7'));
+        $this->assertFalse(SiteUrl::hasPathPrefix('/x/g7', '/g7'));
+    }
+
+    /**
      * 같은 출처 판정 — 브라우저와 PHP 해석이 갈리는 입력은 모두 거부.
      *
      * @return array<string, array{0: string, 1: bool}> 입력 주소와 기대 판정

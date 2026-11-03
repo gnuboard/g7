@@ -112,7 +112,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * 운영 모드에서 자격증명이 비어 있으면 아이디·비밀번호·발신번호 오류로 422 를 돌려준다.
      *
-     * @scenario test_mode=off,credentials=empty
+     * @scenario test_mode=off, credential_state=empty
      *
      * @effects test_mode_off_empty_credentials_return_422_for_bizppurio_id_password_sender_number
      *
@@ -134,7 +134,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * 운영 모드에서도 API 키와 발신프로필 키는 필수가 아니다.
      *
-     * @scenario test_mode=off,credentials=empty
+     * @scenario test_mode=off, credential_state=empty
      *
      * @effects test_mode_off_does_not_require_api_key_or_sender_key
      *
@@ -158,7 +158,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * 검증 오류 문구가 영문 키가 아니라 한국어 필드 이름을 쓴다.
      *
-     * @scenario test_mode=off,credentials=empty,locale=ko
+     * @scenario test_mode=off, credential_state=empty
      *
      * @effects validation_error_messages_use_localized_field_labels
      *
@@ -191,7 +191,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
      * 언어별 이름을 등록했다. ja 이름은 번들 일본어 언어팩 파일의 실제 값을 그대로 싣는다 — 언어팩에
      * 항목이 빠져도 red 가 된다.
      *
-     * @scenario test_mode=on,field_kind=credential,locale=ja
+     * @scenario test_mode=on, field_kind=credential
      *
      * @effects validation_error_labels_follow_request_locale_for_every_settings_field
      *
@@ -279,7 +279,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * 운영 모드에서 자격증명을 모두 채우면 저장된다.
      *
-     * @scenario test_mode=off,credentials=filled,locale=ko
+     * @scenario test_mode=off, credential_state=filled
      *
      * @effects test_mode_off_filled_credentials_return_200
      *
@@ -300,7 +300,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * 검수 모드에서는 자격증명이 비어 있어도 저장된다.
      *
-     * @scenario test_mode=on,credentials=empty,locale=ko
+     * @scenario test_mode=on, credential_state=empty
      *
      * @effects test_mode_on_empty_credentials_return_200
      *
@@ -321,7 +321,7 @@ class BizppurioLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * 비밀번호는 설정 파일에 평문으로 남지 않고 읽을 때 원문으로 복호화된다.
      *
-     * @scenario test_mode=off,credentials=filled
+     * @scenario test_mode=off, credential_state=filled
      *
      * @effects password_is_not_stored_as_plaintext_in_settings_file, password_decrypts_back_to_original_via_settings_service_get
      *

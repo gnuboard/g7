@@ -2,7 +2,10 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 작업 목록 조립 — 해석기 설치 순서(종류 횡단 의존 반영)를 그대로 작업 순서로 쓰는지 잠근다(#153).
@@ -10,8 +13,12 @@ use PHPUnit\Framework\TestCase;
  * 종전 runInstallationTasks() 는 종류별 고정 foreach(관리자 템플릿 → 모듈 → 플러그인 → 사용자 템플릿)로 작업을 만들어
  * 모듈이 플러그인에 의존하면 사전 검증을 통과한 뒤 모듈 설치에서 멈췄다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerTaskListOrderTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 해석기 함수를 로드한다.
      *
@@ -134,7 +141,9 @@ class InstallerTaskListOrderTest extends TestCase
     /**
      * runInstallationTasks() 가 해석기 install_order 로 확장 작업을 만들고, 해석 실패 시에만 종류 순서로 물러난다.
      *
-     * task-runner.php 는 진입과 함께 작업을 실행하는 파일이라 소스 배선을 대조한다.
+     * task-runner.php 는 진입과 함께 작업을 실행하는 파일이라 소스 배선을 대조한다. 작업 목록은 세 진행 모드
+     * (SSE·폴링·단계별)와 터미널 설치가 함께 쓰는 buildInstallationTaskList() 한 곳이 만들고, 순서 결정은
+     * installerExtensionInstallOrder() 가 소유한다 — runInstallationTasks() 는 그 목록을 돌기만 한다.
      *
      * @scenario surface=installer, edge=module_to_plugin
      *
@@ -144,17 +153,42 @@ class InstallerTaskListOrderTest extends TestCase
      */
     public function test_task_runner_builds_extension_tasks_from_install_order(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
-        $body = substr($source, (int) strpos($source, 'function runInstallationTasks()'));
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
+        $slice = static function (string $signature) use ($source): string {
+            $start = strpos($source, $signature);
+            if ($start === false) {
+                return '';
+            }
+            $body = substr($source, $start);
+            $end = strpos($body, "\n    }\n");
 
-        $this->assertStringContainsString("? \$ordered['install_order']", $body);
-        $this->assertStringContainsString(': installer_category_install_order($selectedExtensions);', $body);
-        $this->assertStringContainsString('foreach (installer_extension_install_tasks($installOrder) as $extensionTask)', $body);
-        $this->assertStringNotContainsString("foreach (\$selectedExtensions['modules']", $body);
-        $this->assertStringNotContainsString("foreach (\$selectedExtensions['plugins']", $body);
+            return $end === false ? $body : substr($body, 0, $end);
+        };
+
+        $runner = $slice('function runInstallationTasks()');
+        $order = $slice('function installerExtensionInstallOrder(');
+        $list = $slice('function buildInstallationTaskList()');
+        $this->assertNotSame('', $runner, 'runInstallationTasks 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+        $this->assertNotSame('', $order, 'installerExtensionInstallOrder 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+        $this->assertNotSame('', $list, 'buildInstallationTaskList 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+
+        // 실행 루프는 공용 목록을 돈다 — 확장 작업을 따로 만들지 않는다.
+        $this->assertStringContainsString('foreach (buildInstallationTaskList() as $task)', $runner);
+        $this->assertStringNotContainsString("foreach (\$selectedExtensions['modules']", $runner);
+        $this->assertStringNotContainsString("foreach (\$selectedExtensions['plugins']", $runner);
+
+        // 순서: 해석기 install_order, 해석 실패(오류·자동 포함 필요) 때만 종류 순서.
+        $this->assertStringContainsString("? \$ordered['install_order']", $order);
+        $this->assertStringContainsString(': installer_category_install_order($selectedExtensions);', $order);
+
+        // 목록: 그 순서로 확장 작업을 만들고, 마무리 작업보다 앞에 둔다.
+        $this->assertStringContainsString('$installOrder = installerExtensionInstallOrder($selectedExtensions);', $list);
+        $this->assertStringContainsString('foreach (installer_extension_install_tasks($installOrder) as $extensionTask)', $list);
+        $this->assertStringNotContainsString("foreach (\$selectedExtensions['modules']", $list);
+        $this->assertStringNotContainsString("foreach (\$selectedExtensions['plugins']", $list);
         $this->assertLessThan(
-            strpos($body, "'id' => 'create_settings_json'"),
-            strpos($body, 'installer_extension_install_tasks($installOrder)'),
+            strpos($list, "'id' => 'create_settings_json'"),
+            strpos($list, 'installer_extension_install_tasks($installOrder)'),
             '확장 작업은 마무리 작업보다 먼저 와야 합니다.'
         );
     }
@@ -170,7 +204,7 @@ class InstallerTaskListOrderTest extends TestCase
      */
     public function test_precheck_failure_is_marked_rolled_back(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
         $body = substr($source, (int) strpos($source, 'function dependencyPrecheckSSE()'));
         $body = substr($body, 0, (int) strpos($body, "markTaskCompleted('dependency_precheck');"));
 
@@ -190,13 +224,13 @@ class InstallerTaskListOrderTest extends TestCase
     public function test_step4_restores_saved_selection_after_going_back(): void
     {
         $root = dirname(__DIR__, 3);
-        $view = (string) file_get_contents($root.'/public/install/views/4-extension-selection.php');
+        $view = $this->sourceWithoutComments($root.'/public/install/views/4-extension-selection.php');
         // 선택 상태는 비실행 JSON 데이터 블록으로 넘기고 단계 스크립트가 같은 전역에 옮긴다(#158 strict CSP)
         $this->assertStringContainsString("'selected_extensions' => (object) (\$state['selected_extensions'] ?? []),", $view);
-        $stepScript = (string) file_get_contents($root.'/public/install/assets/js/step-4-extension-selection.js');
+        $stepScript = $this->sourceWithoutComments($root.'/public/install/assets/js/step-4-extension-selection.js');
         $this->assertStringContainsString('window.INSTALLER_SELECTED_EXTENSIONS = data.selected_extensions || {};', $stepScript);
 
-        $reset = (string) file_get_contents($root.'/public/install/api/state-management.php');
+        $reset = $this->sourceWithoutComments($root.'/public/install/api/state-management.php');
         $body = substr($reset, (int) strpos($reset, 'private function resetState(): void'));
         $body = substr($body, 0, (int) strpos($body, 'saveInstallationStateCas('));
         $this->assertStringNotContainsString('selected_extensions', $body, '초기화가 고른 확장을 지우면 돌아가서 다시 고를 것이 없다');

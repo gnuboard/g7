@@ -435,7 +435,9 @@ describe('상품 단위 일괄 전이 (D25)', () => {
      * 코어가 로그인 경로에서 같은 결함을 이미 한 번 고쳤고(7.0.11), 같은 부류가 클레임 전이
      * 경로에 남아 있었다.
      *
-     * @scenario claim_type=exchange, network=offline
+     * 축 요약(마커 아님 — 평문): 전이 요청의 전송이 끊긴 상태.
+     *
+     * @scenario claim_type=exchange
      * @effects claim_item_transition_network_error_shows_localized_message
      */
     it('네트워크 오류는 영문 원문 대신 번역된 안내로 뜬다', async () => {

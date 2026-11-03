@@ -33,6 +33,11 @@ class ProvideNecessaryStorageKeysListener implements HookListenerInterface
             // 관리자 주문 목록 표시 열(`g7_order_visible_columns_{관리자 uuid}`) — 관리자별 업무 설정이라 지워지면
             // 새로고침마다 열 선택이 초기화된다. 예전에는 동의 플러그인 출하 목록에 하드코딩돼 있었다(1.3.2 부터 이 모듈이 제공).
             'g7_order_*',
+            // 방문자가 헤더에서 직접 고른 표시 통화·배송 국가 — 화면 테마·언어와 같은 「사용자가 고른 표시
+            // 설정」(WP29 §3.6)이다. 빠지면 고른 값이 저장은 되면서 다음 방문 부팅에 회수돼 기본값으로 돌아간다
+            // (쓰기 면제만으로는 막히지 않는다 — 회수 경로는 허용 목록만 본다). 설계 결정 2026-10-31.
+            'g7_preferred_currency',
+            'g7_preferred_shipping_country',
         ],
         'sessionStorage' => [
             // 비회원 주문 조회 토큰 (30분)

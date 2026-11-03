@@ -10,7 +10,6 @@
  * 대상: 설치 요구사항의 쓰기 디렉터리(REQUIRED_DIRECTORIES, 존재하는 것만, 하위 전체) → 계정:그룹,
  *       .env → 소유자 유지·그룹만 웹서버 그룹·0640, 남은 runtime.php → 계정 소유·0600.
  */
-
 if (! function_exists('g7_cli_is_root')) {
     /**
      * 유효 사용자가 root 인지 (Windows 는 항상 false).
@@ -48,7 +47,8 @@ if (! function_exists('g7_cli_resolve_web_user')) {
                 return null;
             }
         } else {
-            $gr = @posix_getgrgid((int) $pw['gid']);
+            // 그룹 조회는 하드닝 프로필이 막을 수 있다 — 막히면 아래 폴백(gid 숫자)과 같은 갈래로 간다.
+            $gr = installerHasFunction('posix_getgrgid') ? @posix_getgrgid((int) $pw['gid']) : false;
             $group = is_array($gr) ? (string) $gr['name'] : (string) $pw['gid'];
         }
 
@@ -119,15 +119,26 @@ if (! function_exists('installer_cli_apply_web_user')) {
             }
         }
 
+        // 권한 비트 조정 — chmod 는 하드닝 프로필이 막을 수 있고 막히면 호출 자체가 Error 다. 막혔으면 실패로 남겨
+        // 호출자가 수동 명령을 안내하게 한다(조용히 건너뛰면 .env 가 웹서버 그룹에 열리지 않은 채 완료로 보인다).
+        $chmod = static function (string $path, int $mode) use (&$failed): void {
+            if (! installerHasFunction('chmod')) {
+                $failed[$path] = 'chmod unavailable';
+
+                return;
+            }
+            @chmod($path, $mode);
+        };
+
         // .env 는 소유자를 바꾸지 않는다 — 운영자 계정이 계속 편집할 수 있게 그룹 읽기만 연다.
         if ($targets['env'] !== null) {
             $apply($targets['env'], false);
-            @chmod($targets['env'], 0640);
+            $chmod($targets['env'], 0640);
         }
 
         if ($targets['runtime'] !== null) {
             $apply($targets['runtime'], true);
-            @chmod($targets['runtime'], 0600);
+            $chmod($targets['runtime'], 0600);
         }
 
         return ['changed' => $changed, 'failed' => $failed];

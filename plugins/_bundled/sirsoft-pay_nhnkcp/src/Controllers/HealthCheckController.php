@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Support\ExecutionEnvironment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -243,7 +244,12 @@ class HealthCheckController extends AdminBaseController
             (string) ($_SERVER['SERVER_ADDR'] ?? ''),
             (string) request()->server('LOCAL_ADDR', ''),
             (string) ($_SERVER['LOCAL_ADDR'] ?? ''),
-            gethostbyname((string) gethostname()),
+            // 호스팅이 gethostname·gethostbyname 중 하나라도 차단하면 후보 하나가 비는 것뿐이다 — 앞의
+            // 서버 변수 후보들이 이미 같은 값을 내고, 판정은 normalizeIp 가 빈 값을 걸러 낸다. 두 함수는
+            // 따로 차단될 수 있으므로 각각 판정한다.
+            ExecutionEnvironment::hasFunction('gethostname') && ExecutionEnvironment::hasFunction('gethostbyname')
+                ? gethostbyname((string) gethostname())
+                : '',
         ];
 
         foreach ($candidates as $candidate) {
@@ -279,8 +285,8 @@ class HealthCheckController extends AdminBaseController
      */
     private function checkExecFunction(): array
     {
-        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
-        $isDisabled = in_array('exec', $disabled, true) || ! function_exists('exec');
+        // 가용성 판정은 코어 SSoT 가 소유한다 — function_exists 와 disable_functions 를 함께 본다.
+        $isDisabled = ! ExecutionEnvironment::hasFunction('exec');
 
         if ($isDisabled) {
             return [

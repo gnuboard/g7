@@ -46,6 +46,7 @@ const selectCtrl: EditorControlSpec = {
 afterEach(() => cleanup());
 
 describe('ControlRenderer — 데이터 연결 값 보호 공용 게이트', () => {
+  /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls, bound_value_protection_is_a_single_shared_gate_for_every_widget */
   it('number 위젯도 바인딩 값이면 원문 배지로 디그레이드된다 (image 전용이 아니다)', () => {
     const node: EditorNode = { type: 'basic', name: 'Header', props: { maxVisibleBoards: EXPR } };
     render(<ControlRenderer controlKey="hdrMax" control={numberCtrl} node={node} t={t} onPatch={vi.fn()} />);
@@ -55,6 +56,7 @@ describe('ControlRenderer — 데이터 연결 값 보호 공용 게이트', () 
     expect(screen.queryByTestId('g7le-number-input')).toBeNull();
   });
 
+  /** @effects bound_value_protection_is_a_single_shared_gate_for_every_widget */
   it('select 위젯도 동일하게 걸린다 (닫힌 집합이라 표현식을 표시할 수 없다)', () => {
     const node: EditorNode = { type: 'basic', name: 'Div', props: { size: EXPR } };
     render(<ControlRenderer controlKey="sz" control={selectCtrl} node={node} t={t} onPatch={vi.fn()} />);
@@ -62,6 +64,7 @@ describe('ControlRenderer — 데이터 연결 값 보호 공용 게이트', () 
     expect(screen.getByTestId('g7le-control-sz-expression').textContent).toBe(EXPR);
   });
 
+  /** @effects replace_affordance_reopens_editing_without_emitting_a_change */
   it('「직접 지정으로 바꾸기」 → 위젯이 열리고, 그 클릭만으로는 값을 바꾸지 않는다', () => {
     const onPatch = vi.fn();
     const node: EditorNode = { type: 'basic', name: 'Header', props: { maxVisibleBoards: EXPR } };
@@ -74,6 +77,7 @@ describe('ControlRenderer — 데이터 연결 값 보호 공용 게이트', () 
     expect(onPatch).not.toHaveBeenCalled();
   });
 
+  /** @effects restore_affordance_recovers_the_original_binding_after_replacement */
   it('해제 뒤 「되돌리기」가 노출되고, 원문을 다시 기록한다 (편도 금지)', () => {
     const patches: EditorNode[] = [];
 
@@ -115,6 +119,7 @@ describe('ControlRenderer — 데이터 연결 값 보호 공용 게이트', () 
     expect(screen.getByTestId('g7le-control-hdrMax-expression').textContent).toBe(EXPR);
   });
 
+  /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls */
   it('바인딩이 아닌 평범한 값은 종전대로 위젯이 렌더된다 (회귀 가드)', () => {
     const node: EditorNode = { type: 'basic', name: 'Header', props: { maxVisibleBoards: 5 } };
     render(<ControlRenderer controlKey="hdrMax" control={numberCtrl} node={node} t={t} onPatch={vi.fn()} />);
@@ -123,6 +128,7 @@ describe('ControlRenderer — 데이터 연결 값 보호 공용 게이트', () 
     expect((screen.getByTestId('g7le-number-input') as HTMLInputElement).value).toBe('5');
   });
 
+  /** @effects bound_value_protection_is_a_single_shared_gate_for_every_widget */
   it('자체 처리 위젯(image)은 공용 게이트를 타지 않는다 — 위젯 자신의 배지를 쓴다', () => {
     const imageCtrl: EditorControlSpec = {
       widget: 'image',

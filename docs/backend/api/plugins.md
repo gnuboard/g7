@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Plugins 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -320,7 +320,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
 | 409 | Conflict | 필요한 의존 확장(모듈/플러그인)이 설치·활성화되지 않은 경우 (`force: true` 로 우회 가능) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 활성화 처리 중 예외 발생 (`plugins.activate_error`) |
@@ -387,11 +387,13 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 업데이트 확인 중 예외 발생 (`plugins.check_updates_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 설치된 모든 플러그인에 대해 GitHub·번들 소스를 조회하여 새 버전 배포 여부를 일괄 확인합니다. `core.plugins.install` 권한이 필요합니다. 파라미터 없이 호출하며, 각 플러그인의 업데이트 가능 여부와 감지된 최신 버전 정보를 반환합니다. 플러그인 목록 화면 진입 시 업데이트 뱃지를 갱신하는 용도로 사용됩니다.
 
@@ -500,7 +502,7 @@ _단건 응답: `data` 객체의 필드 — 비활성화된 플러그인 리소�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
 | 409 | Conflict | 이 플러그인에 의존하는 활성 템플릿/모듈/플러그인이 있는 경우 (`force: true` 로 우회 가능) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 비활성화 처리 중 예외 발생 (`plugins.deactivate_error`) |
@@ -625,7 +627,7 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패 또는 설치 실패 (`plugin_name` 에 번역된 설치 실패 사유 — 이미 설치됨/대기소 미존재/의존성 미충족 등) |
 | 500 | Server Error | 설치 처리 중 예외 발생 (`plugins.installation_failed`) |
 
@@ -738,11 +740,13 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님/50MB 초과) 또는 ZIP 처리 실패 (plugin.json 미존재/형식 오류/식별자 누락/이미 설치됨) |
 | 500 | Server Error | 설치 처리 중 예외 발생 (`plugins.install_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 업로드된 ZIP 파일에서 플러그인을 설치합니다. `core.plugins.install` 권한이 필요하며, 파일은 최대 50MB(51200KB)까지 허용됩니다. ZIP 압축 해제 후 plugin.json 검증을 거쳐 설치하며, 성공 시 201 상태로 설치된 플러그인 정보를 반환합니다. 설치 전 manifest 만 미리 확인하려면 `manifest-preview` 를 먼저 호출하는 것이 안전합니다.
 
@@ -846,11 +850,13 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 형식 오류(GitHub 저장소 URL 아님) 또는 다운로드/압축 해제/검증 실패 (저장소 미존재·ZIP URL 미발견·plugin.json 오류·이미 설치됨) |
 | 500 | Server Error | 설치 처리 중 예외 발생 (`plugins.install_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** GitHub 저장소 URL 에서 플러그인을 내려받아 설치합니다. `core.plugins.install` 권한이 필요합니다. `github_url` 로 지정한 공개 저장소의 릴리스/소스를 받아 압축 해제·검증 후 설치하며, 성공 시 201 상태로 설치된 플러그인 정보를 반환합니다.
 
@@ -1025,6 +1031,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 현재 설치된 플러그인만 조회합니다(미설치 항목 제외). 이 엔드포인트는 세부 권한 미들웨어 없이 `auth:sanctum` 인증만 요구하므로, 다른 화면이 활성/설치된 플러그인 목록을 참조할 때 사용하는 경량 조회 API 입니다. 페이지네이션 없이 설치된 항목 배열을 반환합니다.
 
 
@@ -1099,10 +1107,12 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님/50MB 초과) 또는 미리보기 처리 실패 (`plugins.preview_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 업로드된 ZIP 파일의 plugin.json manifest 와 검증 결과만 추출합니다(실제 설치는 수행하지 않음). `core.plugins.install` 권한이 필요하며 파일은 최대 50MB 까지 허용됩니다. 설치 모달에서 사용자가 파일 선택 직후 manifest 유효성과 검증 실패 사유를 미리 확인하는 용도입니다. 검증 오류 시 422 로 사유를 반환합니다.
 
@@ -1171,11 +1181,13 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패 또는 레이아웃 갱신 실패 (`plugin_name` 에 레이아웃 JSON 파싱/검증 오류 사유) |
 | 500 | Server Error | 갱신 처리 중 예외 발생 (`plugins.refresh_layouts_error`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인의 레이아웃 파일을 다시 읽어 DB 에 동기화합니다. `core.plugins.activate` 권한이 필요합니다. 파일에서 변경된 레이아웃은 갱신되고 삭제된 레이아웃은 DB 에서도 제거되며, 응답으로 created/updated/deleted/unchanged 건수를 반환합니다. 플러그인의 `_bundled` 레이아웃 JSON 을 수정한 뒤 재빌드 없이 반영할 때 사용합니다.
 
@@ -1238,11 +1250,13 @@ Authorization: Bearer {YOUR_TOKEN}
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.uninstall`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패 또는 제거 실패 (`plugin_name` 에 번역된 제거 실패 사유 — 미설치/진행 중 상태 등) |
 | 500 | Server Error | 제거 처리 중 예외 발생 (`plugins.uninstall_error`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인을 시스템에서 제거합니다. `core.plugins.uninstall` 권한이 필요합니다. 활성 디렉토리만 삭제하고 `_bundled` 원본은 보존합니다. `delete_data: true` 인 경우 플러그인이 생성한 DB 데이터까지 함께 삭제하며, 기본값은 데이터 보존입니다. 삭제될 데이터 범위는 사전에 `uninstall-info` 로 확인할 수 있습니다.
 
@@ -1265,7 +1279,7 @@ Authorization: Bearer {YOUR_TOKEN}
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/changelog?source=active&from_version=%EC%98%88%EC%8B%9C%EA%B0%92&to_version=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/admin/plugins/{identifier}/changelog?source=active&from_version=%EC%98%88%EC%8B%9C%EA%B0%92&to_version=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1430,6 +1444,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 특정 플러그인의 변경 내역(CHANGELOG)을 조회합니다. `core.plugins.read` 권한이 필요합니다. `source` 로 조회 출처를(active: 활성 설치본, bundled: 번들 원본, github: 원격 저장소) 선택하고, `from_version`·`to_version` 으로 버전 구간을 좁힐 수 있습니다. 업데이트 전 사용자에게 변경 사항을 안내하는 데 사용됩니다.
 
 
@@ -1448,7 +1464,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/dependent-templates HTTP/1.1
+GET /api/admin/plugins/{identifier}/dependent-templates HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1506,6 +1522,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 이 플러그인에 의존하는 템플릿 목록을 조회합니다. `core.plugins.read` 권한이 필요합니다. 응답으로 의존 템플릿 배열과 총 개수를 반환하며, 플러그인 비활성화·제거 전 영향을 받는 템플릿을 사용자에게 미리 알리는 데 사용됩니다.
 
 
@@ -1524,7 +1542,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/license HTTP/1.1
+GET /api/admin/plugins/{identifier}/license HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1567,6 +1585,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인에 포함된 라이선스 파일의 원문 내용을 반환합니다. `core.plugins.read` 권한이 필요합니다. `identifier` 는 소문자·숫자·하이픈·언더스코어 형식만 허용되며 형식에 맞지 않거나 라이선스 파일이 없으면 404 를 반환합니다. 라이선스 고지 화면에 전문을 표시하는 용도입니다.
 
 
@@ -1585,7 +1605,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/settings HTTP/1.1
+GET /api/admin/plugins/{identifier}/settings HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1634,6 +1654,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인의 현재 설정 값을 조회합니다. `core.plugins.read` 권한이 필요합니다. 저장된 설정이 없거나 플러그인을 찾을 수 없으면 404 를 반환합니다. 설정 페이지 진입 시 폼의 현재 값을 채우는 용도이며, 폼 스키마/UI 구성은 별도의 `settings/layout` 엔드포인트에서 조회합니다.
 
 설정 스키마(getSettingsSchema)에 `public_asset_disk` 키를 선언한 플러그인(예: `sirsoft-ckeditor5`)은 응답 `data` 에 공개 자산 디스크 카탈로그 `available_public_asset_disks` 가 함께 부착됩니다 — 각 항목은 `{id, label(로케일별 맵), provider?}` 구조입니다. 설정 화면이 코어 환경설정 API(`core.settings.read`)를 따로 조회하지 않고 이 응답 하나로 선택지를 구성하게 하기 위한 것으로, 이 키는 저장 대상이 아니며 PUT 시 검증 whitelist 에서 걸러집니다.
@@ -1655,7 +1677,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-PUT /api/admin/plugins/sirsoft-daum_postcode/settings HTTP/1.1
+PUT /api/admin/plugins/{identifier}/settings HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1699,6 +1721,8 @@ _단건 응답: `data` 는 저장 후 다시 조회한 설정 값 맵입니다. 
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인의 설정 값을 저장합니다. `core.plugins.update` 권한이 필요합니다. 저장 대상은 검증을 통과한 값뿐이며, 검증 규칙은 해당 플러그인이 선언한 설정 스키마에서 생성됩니다. 스키마에 없는 필드를 요청에 포함해도 저장되지 않습니다. PluginManager 에 등록되지 않은 플러그인은 저장 자체가 수행되지 않아 500 을 반환합니다. 성공 시 갱신된 설정 값을 함께 반환합니다. 설정 스키마에 `public_asset_disk` 키를 선언한 플러그인은 저장 응답에도 `available_public_asset_disks` 카탈로그가 재부착됩니다 (GET 응답과 동형 — 저장 직후 화면 폼 상태 갱신용).
 
 **권한 값(7.1.0)** 요청 본문의 `abilities` 키는 저장하지 않고 버린다(화면이 조회 응답을 그대로 되돌려 보내므로 섞여 온다). 저장 응답에도 `abilities.can_update` 가 실린다.
@@ -1718,7 +1742,7 @@ _단건 응답: `data` 는 저장 후 다시 조회한 설정 값 맵입니다. 
 **요청 예시**
 
 ```http
-GET /api/admin/plugins/sirsoft-daum_postcode/settings/layout HTTP/1.1
+GET /api/admin/plugins/{identifier}/settings/layout HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -1730,12 +1754,13 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
+| comment | string | `다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을…` | 레이아웃 작성자 주석 — 화면에 렌더되지 않는 설명 |
 | version | string | `1.0.0` | 플러그인 버전 |
 | layout_name | string | `plugin_settings` | 레이아웃 식별자 (파일 경로 기반 — 예: board/popular) |
-| permissions | array | `[]` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
 | extends | string | `_admin_base` | 상속하는 베이스 레이아웃 이름 (미상속 시 null) |
 | meta | object | `{"title":"$t:sirsoft-daum_postcode.settings.title","descr…` | 메타 정보 객체 (title/description/seo 등) |
 | data_sources | array | `[{"id":"settings","label_key":"$t:sirsoft-daum_postcode.e…` | API 데이터 소스 정의 배열 (id/endpoint/method) |
+| permissions | array | `[]` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
 | slots | object | `{"content":[{"id":"plugin_settings_content","type":"basic…` | 슬롯별 삽입 콘텐츠 맵 (베이스 레이아웃의 slot 위치에 주입) |
 | pageConfig | object | `{"notice":"$t:sirsoft-daum_postcode.settings.notice","gui…` | 페이지 단위 설정 객체 |
 | schema | object | `{"display_mode":{"type":"enum","options":["popup","layer"…` | 스키마 정의 객체 |
@@ -1753,17 +1778,15 @@ HTTP/1.1 200
     "success": true,
     "message": "성공적으로 처리되었습니다.",
     "data": {
+        "comment": "다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다",
         "version": "1.0.0",
         "layout_name": "plugin_settings",
-        "permissions": [
-            "core.plugins.update"
-        ],
         "extends": "_admin_base",
         "meta": {
             "title": "$t:sirsoft-daum_postcode.settings.title",
             "description": "$t:sirsoft-daum_postcode.settings.description"
         },
-        "...": "(4개 키 생략, 총 9개)"
+        "...": "(3개 키 생략, 총 8개)"
     }
 }
 ```
@@ -1778,6 +1801,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 설정 페이지의 UI 구성과 설정 스키마(레이아웃)를 조회합니다. `core.plugins.read` 권한이 필요합니다. 레이아웃이 정의되지 않았거나 플러그인을 찾을 수 없으면 404 를 반환합니다. 설정 값 조회(`settings`)와 짝을 이루어 설정 화면을 렌더링하는 데 사용됩니다.
 
@@ -1899,6 +1924,8 @@ _단건 응답: `data` 객체의 필드 (PluginResource::toDetailArray + 언어�
 | 500 | Server Error | 조회 처리 중 예외 발생 (`plugins.fetch_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 플러그인의 상세 정보를 조회합니다. `core.plugins.read` 권한이 필요합니다. 목록보다 자세한 `toDetailArray()` 형태를 반환하며, 이 플러그인이 지원하는 번들 언어팩 정보가 함께 주입됩니다. 플러그인을 찾을 수 없으면 404 를 반환합니다.
 
@@ -2079,12 +2106,14 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 대상 확장을 찾을 수 없거나 프리뷰 빌드 중 예외 발생 (`plugins.fetch_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 설치 시 함께 처리될 cascade 후보(의존 확장 + 동반 가능한 번들 언어팩) 트리를 반환합니다. `core.plugins.install` 권한이 필요합니다. 설치 모달 오픈 시 호출되어 사용자가 함께 설치할 항목을 선택하도록 노출하며, ZIP 업로드 기반의 `manifest-preview` 와 달리 이미 알려진 식별자에 대한 GET 조회입니다.
 
@@ -2165,12 +2194,14 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.uninstall`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 플러그인이 존재하지 않는 경우 (`plugins.not_found`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 삭제 정보 조회 중 예외 발생 (`plugins.uninstall_info_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 제거 시 삭제될 데이터 정보를 조회합니다. `core.plugins.uninstall` 권한이 필요합니다. 제거 확인 모달에서 사용자에게 어떤 데이터가 사라지는지 미리 보여주는 용도이며, 플러그인을 찾을 수 없으면 404 를 반환합니다.
 
@@ -2282,7 +2313,7 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`core.plugins.install`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 업데이트 실패 (`plugin_name` 에 번역된 사유 — 다운그레이드 차단, 강제 업데이트 소스 없음, 코어 버전 비호환, 진행 중 상태 등) |
 | 409 | Conflict | 같은 플러그인의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) |
@@ -2309,7 +2340,7 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 **요청 예시**
 
 ```http
-GET /api/plugins/assets/sirsoft-daum_postcode?identifier=example-key&path=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/plugins/assets/{identifier}?path=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -2345,10 +2376,12 @@ ETag: "a1b2c3d4e5f6"
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 에셋 서빙(`GET /api/plugins/assets/{identifier}/{path}`)의 확장자 없는 이중 모드 변형입니다. 파일 경로를 경로 세그먼트 대신 `?file=` 쿼리로 받으며, 검증·에러·캐시 동작은 경로 세그먼트 형태와 동일합니다. `.js`·`.css` 주소를 가로채는 정적 파일 최적화 서버 설정에서 확장자 붙은 주소가 404 가 될 때 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
@@ -2369,7 +2402,7 @@ ETag: "a1b2c3d4e5f6"
 **요청 예시**
 
 ```http
-GET /api/plugins/assets/sirsoft-daum_postcode/{path}?identifier=example-key HTTP/1.1
+GET /api/plugins/assets/{identifier}/{path} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -2408,6 +2441,8 @@ ETag: "a1b2c3d4e5f6"
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인의 개별 프론트엔드 에셋 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 경로·확장자 보안 검증은 FormRequest 에서 완료됩니다. 플러그인 미존재·파일 미존재·허용되지 않은 파일 유형은 각각 404/404/403 으로 응답하고, 정상 파일은 ETag 와 1년 캐시 헤더를 붙여 반환합니다. 소스맵 등 개별 에셋을 직접 참조할 때 사용되며, 통합 로딩은 `bundle.js`/`bundle.css` 를 사용합니다.
 
 
@@ -2432,6 +2467,8 @@ Accept: application/json
 **응답 필드** (`data` 내부)
 
 _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플러그인 CSS 를 병합한 텍스트를 그대로 서빙합니다 (성공 시 200 또는 304)._
+
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
 
 | 응답 헤더 | 예시값 | 용도/설명 |
 | --- | --- | --- |
@@ -2460,6 +2497,8 @@ _선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-
 
 <!-- @generated:end -->
 
+
+
 **설명** 활성 플러그인들의 프론트엔드 CSS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 판정은 모듈 번들과 같은 단일 지점을 공유합니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/css), 선언한 산출물이 소실·판독 불가면 503, 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙합니다. 페이지가 플러그인 스타일을 요청 1건으로 로드하도록 합니다.
 
 
@@ -2484,6 +2523,8 @@ Accept: application/json
 **응답 필드** (`data` 내부)
 
 _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플러그인 IIFE JS 를 병합한 텍스트를 그대로 서빙합니다 (성공 시 200 또는 304)._
+
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
 
 | 응답 헤더 | 예시값 | 용도/설명 |
 | --- | --- | --- |
@@ -2510,6 +2551,8 @@ Cache-Control: public, max-age=31536000
 _선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-Control: no-cache, private`) — 배포 중 `dist` 가 잠깐 비었거나 경로가 어긋난 상태입니다. 에셋을 선언한 활성 확장이 없거나, 선언한 산출물이 전부 존재하되 비어 있으면(스타일 규칙이 아직 없는 확장) 정상 빈 200 입니다._
 
 <!-- @generated:end -->
+
+
 
 **설명** 활성 플러그인들의 프론트엔드 IIFE JS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 판정은 모듈 번들과 같은 단일 지점을 공유합니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/javascript), 선언한 산출물이 소실·판독 불가면 503, 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙합니다. 프론트는 `G7Config.bundleUrls` 를 읽어 이 번들을 로드합니다.
 
@@ -2538,6 +2581,8 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플�
 텍스트를 그대로 서빙합니다 (성공 시 200 또는 304). `GET /api/plugins/bundle.css`
 와 동일 응답입니다._
 
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
+
 | 응답 헤더 | 예시값 | 용도/설명 |
 | --- | --- | --- |
 | Content-Type | `text/css` | 항상 CSS |
@@ -2562,6 +2607,8 @@ Cache-Control: public, max-age=31536000
 _에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활성 에셋이 하나도 없는 경우에도 빈 200 을 반환합니다._
 
 <!-- @generated:end -->
+
+
 
 **설명** 플러그인 CSS 번들(`GET /api/plugins/bundle.css`)의 확장자 없는 이중 모드 변형입니다. 동작·응답이 확장자 형태와 동일하며, `.css` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
@@ -2590,6 +2637,8 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 플�
 텍스트를 그대로 서빙합니다 (성공 시 200 또는 304). `GET /api/plugins/bundle.js`
 와 동일 응답입니다._
 
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
+
 | 응답 헤더 | 예시값 | 용도/설명 |
 | --- | --- | --- |
 | Content-Type | `text/javascript` | 항상 JavaScript |
@@ -2616,6 +2665,8 @@ _에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인 JS 번들(`GET /api/plugins/bundle.js`)의 확장자 없는 이중 모드 변형입니다. 동작·응답이 확장자 형태와 동일하며, `.js` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
@@ -2634,12 +2685,14 @@ _에러 응답 없음 — 공개 조회이며 요청 파라미터가 없고, 활
 **요청 예시**
 
 ```http
-GET /api/plugins/sirsoft-daum_postcode/components HTTP/1.1
+GET /api/plugins/{identifier}/components HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
 
 **응답 필드** (`data` 내부)
+
+
 
 _이 엔드포인트는 `success/message/data` 봉투를 사용하지 않습니다 — 플러그인의
 `components.json` 원문을 그대로 JSON body 로 반환합니다 (`Cache-Control: public,
@@ -2683,6 +2736,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 플러그인 컴포넌트 매니페스트(`GET /api/plugins/{identifier}/components.json`)의 확장자 없는 이중 모드 변형입니다. 응답·캐시·폴백 동작이 확장자 형태와 동일하며, `.json` 주소를 가로채는 정적 파일 최적화 서버 설정에서 프론트가 이 형태로 자동 전환합니다 (자산 URL 이중 모드).
 
 
@@ -2701,12 +2756,14 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-GET /api/plugins/sirsoft-daum_postcode/components.json HTTP/1.1
+GET /api/plugins/{identifier}/components.json HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
 
 **응답 필드** (`data` 내부)
+
+
 
 _이 엔드포인트는 `success/message/data` 봉투를 사용하지 않습니다 — 플러그인의 `components.json` 원문을 그대로 JSON body 로 반환합니다 (`Cache-Control: public, max-age=3600`). 파일이 없는 구버전 플러그인은 빈 객체(`{}`) 로 폴백합니다._
 
@@ -2768,7 +2825,7 @@ Cache-Control: public, max-age=3600
 **요청 예시**
 
 ```http
-GET /api/plugins/sirsoft-daum_postcode/editor-spec HTTP/1.1
+GET /api/plugins/{identifier}/editor-spec HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```

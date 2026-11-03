@@ -46,7 +46,7 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 | 헤더 | 값 | 용도/설명 |
 | --- | --- | --- |
 | Content-Type | `image/jpeg` | 업로드 시 저장된 이미지의 MIME 타입 (`product_review_images.mime_type`) |
-| Cache-Control | `public, max-age=31536000` | 공개 이미지 장기 캐싱 (1년) |
+| Cache-Control | `public, max-age=31536000, must-revalidate` (프로덕션) / `no-cache` (그 외) | 코어 파일 서빙 단일 지점이 환경에 따라 정하는 캐싱 정책 — `ETag`·`Last-Modified`·`Expires` 동반, 조건부 요청은 304 |
 | Content-Disposition | `inline; filename=review.jpg` | 원본 파일명(`original_filename`). 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 `inline`, 그 밖(SVG 포함)은 `attachment` + CSP sandbox. 모든 응답에 `X-Content-Type-Options: nosniff` (KVE-2026-2366) |
 | X-Content-Type-Options | `nosniff` | 브라우저가 내용을 추측해 다른 형식으로 렌더하지 않게 한다 |
 
@@ -55,7 +55,10 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 ```http
 HTTP/1.1 200 OK
 Content-Type: image/jpeg
-Cache-Control: public, max-age=31536000
+Cache-Control: public, max-age=31536000, must-revalidate
+ETag: "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"
+Last-Modified: Wed, 15 Jul 2026 00:00:00 GMT
+Expires: Thu, 15 Jul 2027 00:00:00 GMT
 Content-Disposition: inline; filename=review.jpg
 X-Content-Type-Options: nosniff
 
@@ -83,6 +86,6 @@ X-Content-Type-Options: nosniff
 
 이미지 서빙은 **부모 리뷰가 노출(VISIBLE) 상태일 때로 한정**됩니다(KVE-2026-1914). 숨김·블라인드·대기 상태 리뷰의 이미지는 해시가 유효해도 서빙되지 않고 404 를 반환합니다 — 본문이 감춰진 리뷰의 이미지가 해시만으로 노출되는 것을 막고, 존재 자체를 드러내지 않기 위해 "이미지 없음"과 동일한 404 로 응답합니다. 노출 상태 리뷰의 이미지는 별도 인증 없이 공개 접근할 수 있습니다.
 
-브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 숨김 리뷰의 이미지를 싣는 관리자 응답(리뷰 목록·상세)의 `download_url` 에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 직렬화되며, 이 엔드포인트는 유효한 서명을 상태 게이트와 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 종전과 동일하게 404 로 차단됩니다. 노출(VISIBLE) 리뷰의 `download_url` 은 무서명 공개 URL(직접 URL/CDN 또는 이 API 경로)을 유지합니다.
+브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 숨김 리뷰의 이미지를 싣는 관리자 응답(리뷰 목록·상세)의 `download_url` 에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 직렬화되며, 이 엔드포인트는 유효한 서명을 상태 게이트와 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 종전과 동일하게 404 로 차단됩니다. 노출(VISIBLE) 리뷰의 `download_url` 은 무서명 공개 URL(직접 URL/CDN 또는 이 API 경로)을 유지합니다. 사이트를 하위 폴더(예: `/g7`)에 설치하면 서명 URL 은 설치 폴더 접두사를 실은 경로(`/g7/api/…`)로 내려가며, 서명은 접두사를 뺀 경로에 걸리고 검증도 접두사를 뺀 요청 경로로 하므로 그 주소 그대로 열면 서명이 유효합니다.
 
-
+**캐시 계약** 응답은 코어 파일 서빙 단일 지점과 같은 규칙을 따릅니다 — 검증자 `ETag`(행 메타 `disk|path|updated_at|file_size` 의 MD5, 따옴표 포함)·`Last-Modified`(행의 `updated_at`)를 싣고, 요청의 `If-None-Match`(`-gzip` 접미사·다중값·`W/` 흡수) 또는 `If-Modified-Since` 가 일치하면 본문 없는 `304 Not Modified` 를 200 과 같은 `Cache-Control`·`Expires` 와 함께 돌려줍니다. `Cache-Control` 은 프로덕션에서 `public, max-age=31536000, must-revalidate`(자산 버전 `?v=` 가 없는 URL 이라 `immutable` 은 붙지 않음), 그 외 환경에서는 `no-cache` 입니다. 사용자 업로드물이라 응답 압축 대상에서 제외됩니다.

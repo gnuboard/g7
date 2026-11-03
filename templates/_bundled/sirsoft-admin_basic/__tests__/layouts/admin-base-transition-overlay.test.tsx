@@ -380,7 +380,15 @@ describe('admin_settings 탭 콘텐츠 영역 spinner (이슈 #245)', () => {
         // tab_navigation 은 #399 Phase 1.3 에서 sticky 래퍼(sticky_header) 안으로 이동했으므로
         // slots.content[0] 의 직접 자식이 아니다. 재귀 findById 로 중첩 깊이와 무관하게 탐색한다.
         const tabNav = findById((adminSettings as any).slots?.content ?? [], 'tab_navigation');
-        const expectedPartials = ((tabNav as any)?.props?.tabs ?? [])
+        // 탭 목록의 출처는 `props.tabs` 배열에서 `defines.settingsTabs` 로 옮겨졌다 — 권한으로
+        // 걸러야 할 탭이 생기면서, 목록이 서버의 레이아웃 필터를 타야 했기 때문이다. 그래서
+        // `props.tabs` 는 이제 그 상수를 읽는 **표현식 문자열**이고 여기서 map 할 수 없다.
+        // 목록의 SSoT 를 따라가되, 배열을 직접 들고 있는 옛 모양도 그대로 받는다.
+        const declaredTabs: any[] = Array.isArray((tabNav as any)?.props?.tabs)
+            ? (tabNav as any).props.tabs
+            : ((adminSettings as any).defines?.settingsTabs ?? []);
+        expect(declaredTabs.length, '탭 목록의 출처를 찾지 못했습니다.').toBeGreaterThan(0);
+        const expectedPartials = declaredTabs
             .map((tab: any) => `partials/admin_settings/_tab_${tab.id}.json`);
         expect(partials.map((c: any) => c.partial)).toEqual(expectedPartials);
     });

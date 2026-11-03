@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
 feature: sso_role_mapping
 description: |
   IdP 그룹 → 역할 매핑 — managed_only·authoritative·first_only, 수동 역할 보존, 최고관리자 불변, 그룹 비교(대소문자, LDAP DN), 로그인 적용, 최고관리자 전용 설정 검사, 일괄 역할 훅만 발화.

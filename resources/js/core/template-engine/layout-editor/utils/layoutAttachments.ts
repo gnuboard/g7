@@ -19,6 +19,7 @@
  */
 
 import { buildAuthHeaders } from './authToken';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /** 첨부 1건 — 백엔드 LayoutAttachmentResource 필드 */
 export interface LayoutAttachment {
@@ -56,7 +57,7 @@ export async function listLayoutAttachments(
     `/api/admin/templates/${encodeId(templateIdentifier)}/layout-attachments` +
     `?layout_name=${encodeURIComponent(layoutName)}`;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(withBasePrefix(url), {
       method: 'GET',
       headers: buildAuthHeaders(),
       credentials: 'same-origin',
@@ -93,7 +94,7 @@ export async function uploadLayoutAttachment(
   form.append('file', file);
   form.append('layout_name', layoutName);
   try {
-    const res = await fetch(url, {
+    const res = await fetch(withBasePrefix(url), {
       method: 'POST',
       headers: buildAuthHeaders(),
       body: form,
@@ -120,7 +121,7 @@ export async function deleteLayoutAttachment(
 ): Promise<AttachmentResult<true>> {
   const url = `/api/admin/templates/layout-attachments/${encodeId(String(attachmentId))}`;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(withBasePrefix(url), {
       method: 'DELETE',
       headers: buildAuthHeaders(),
       credentials: 'same-origin',

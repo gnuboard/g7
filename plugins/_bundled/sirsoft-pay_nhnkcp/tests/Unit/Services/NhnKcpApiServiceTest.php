@@ -338,7 +338,10 @@ class NhnKcpApiServiceTest extends PluginTestCase
      *
      * @scenario call=cancel
      *
-     * @effects cancel_payment_calls_cli_with_full_cancel_params
+     * @effects cancel_payment_calls_cli_with_full_cancel_params,
+     *   net_cancel_sends_pg_cancel_api_call,
+     *   net_cancel_passes_approved_tno,
+     *   net_cancel_full_omits_amount_fields
      *
      * @return void 반환값 없음
      */

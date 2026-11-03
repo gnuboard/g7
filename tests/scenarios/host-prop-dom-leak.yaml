@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 3축 조합은 exclusions 제외 후에도 누출 경로별로 의미가 겹친다(prop_shape 는 extension_point 호스트 축에서만 갈린다). 조합 전수가 아니라 경로별 대표 케이스를 단위 테스트가 덮는다. effects·test_files 검사는 켜 둔다 — 19차가 축 한정 문법을 만든 이유가 전면 면제로 그 둘까지 끄던 것이었다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#476 3축 조합은 exclusions 제외 후에도 누출 경로별로 의미가 겹친다(prop_shape 는 extension_point 호스트 축에서만 갈린다). 조합 전수가 아니라 경로별 대표 케이스를 단위 테스트가 덮는다. effects·test_files 검사는 켜 둔다 — 축 한정 문법을 만든 이유가 전면 면제로 그 둘까지 끄던 것이었다.
 
 feature: 호스트 DOM 으로 새면 안 되는 props (engine-v1.55.1)
 
@@ -27,6 +27,8 @@ axes:
   leak_path: [extension_point_host, form_auto_binding]
   prop_shape: [object, array, primitive, dom_standard]
   autobinding_declared: [false, unset]
+  # 아래 축은 시험별 입력 변종이다 — test_files 의 @scenario 가 쓰는 축이며 조합 곱 대상이 아니다
+  screen: [ecommerce_settings, board_post_detail, board_post_form, ecommerce_product_form]
 
 exclusions:
   - { leak_path: extension_point_host, autobinding_declared: false, reason: "autoBinding 선언은 Form 자동 바인딩 축의 판정값 — extension_point 호스트 필터와 무관" }

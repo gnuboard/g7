@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -17,12 +19,18 @@ use PHPUnit\Framework\TestCase;
  * (`db_write_host` 공백) 상태 파일·세션을 건드리지 않는다. 그래서 `STATE_PATH` 를
  * 정의하지 않으며, 인접 Installer 테스트의 상수 선점과도 무관하다.
  *
- * @scenario vector=handleStep3Post, payload_class=argument_injection_dash_r, expected_outcome=return_invalid_message
- *
- * @effects step3_post_rejects_disallowed_binary_paths_before_save
+ * 효과 요약(마커 아님 — 평문): 형태 위반 바이너리 경로는 저장 전에 거부되고 정상 경로는 통과한다.
+ * 조합과 효과 표식은 각 테스트 메서드가 단다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerStep3BinaryPathStoreGuardTest extends TestCase
 {
+    /**
+     * 언어 스텁과 BASE_PATH 등 Step 3 처리기가 읽는 상수를 세우고, 인스톨러 함수와 바이너리 경로 정책과 요청 처리기를 한 번 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -34,12 +42,22 @@ class InstallerStep3BinaryPathStoreGuardTest extends TestCase
         if (! defined('SUPPORTED_LANGUAGES')) {
             define('SUPPORTED_LANGUAGES', ['ko' => '한국어', 'en' => 'English']);
         }
+        // config.php 를 require 하면 BASE_PATH 가 실 저장소 루트로 박히므로 이 클래스가 쓰는
+        // 상수만 같은 값으로 세운다 (SUPPORTED_LANGUAGES 와 같은 이유).
+        if (! defined('MAX_APP_NAME_LENGTH')) {
+            define('MAX_APP_NAME_LENGTH', 100);
+        }
 
         require_once $projectRoot.'/public/install/includes/functions.php';
         require_once $projectRoot.'/public/install/includes/binary-path-policy.php';
         require_once $projectRoot.'/public/install/includes/request-handler.php';
     }
 
+    /**
+     * 테스트가 채운 POST 전역을 비워 다음 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $_POST = [];
@@ -75,7 +93,11 @@ class InstallerStep3BinaryPathStoreGuardTest extends TestCase
     /**
      * PHP 자리에 코드 실행 플래그를 넣으면 저장 시점에 거부된다.
      *
-     * @return void
+     * @scenario vector=handleStep3Post, payload_class=argument_injection_dash_r, expected_outcome=return_invalid_message
+     *
+     * @effects step3_post_rejects_disallowed_binary_paths_before_save, php_slot_rejects_leading_hyphen
+     *
+     * @return void 반환값 없음
      */
     public function test_step3_rejects_php_binary_with_code_execution_flag(): void
     {
@@ -91,7 +113,11 @@ class InstallerStep3BinaryPathStoreGuardTest extends TestCase
     /**
      * Composer 자리에 셸 메타문자가 있으면 저장 시점에 거부된다.
      *
-     * @return void
+     * @scenario vector=handleStep3Post, payload_class=shell_meta_redirect, expected_outcome=return_invalid_message
+     *
+     * @effects step3_post_rejects_disallowed_binary_paths_before_save
+     *
+     * @return void 반환값 없음
      */
     public function test_step3_rejects_composer_binary_with_shell_metachars(): void
     {
@@ -106,7 +132,11 @@ class InstallerStep3BinaryPathStoreGuardTest extends TestCase
      * `escapeshellarg` 는 "하나의 인자" 임만 보장하므로, 인터프리터 + 임의 스크립트
      * 조합은 그 스크립트를 그대로 실행한다. 이 자리를 저장 시점에서도 닫는다.
      *
-     * @return void
+     * @scenario vector=handleStep3Post, payload_class=interpreter_plus_script, expected_outcome=return_invalid_message
+     *
+     * @effects step3_post_rejects_disallowed_binary_paths_before_save
+     *
+     * @return void 반환값 없음
      */
     public function test_step3_rejects_interpreter_plus_arbitrary_script_pair(): void
     {
@@ -129,7 +159,7 @@ class InstallerStep3BinaryPathStoreGuardTest extends TestCase
      *
      * @effects step3_post_accepts_legitimate_binary_paths
      *
-     * @return void
+     * @return void 반환값 없음
      */
     #[DataProvider('legitimateBinaryInputProvider')]
     public function test_step3_accepts_legitimate_binary_paths(array $post, string $field): void
@@ -146,7 +176,7 @@ class InstallerStep3BinaryPathStoreGuardTest extends TestCase
     /**
      * 저장 시점 검증을 통과해야 하는 정상 입력 목록.
      *
-     * @return array<string, array{array<string, string>, string}>
+     * @return array<string, array{array<string, string>, string}> 경우 이름 → [POST 본문, 통과해야 하는 필드]
      */
     public static function legitimateBinaryInputProvider(): array
     {

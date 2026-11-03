@@ -58,6 +58,7 @@
             $g7EditorBundle = public_path('build/core/layout-editor.min.js');
             $g7DevToolsBundle = public_path('build/core/devtools.min.js');
             $g7Config = [
+                'basePath' => \App\Support\AssetUrl::basePrefix(),
                 'settings' => (object) ($frontendSettings ?? []),
                 'plugins' => (object) ($pluginSettings ?? []),
                 'modules' => (object) ($moduleSettings ?? []),

@@ -11,12 +11,7 @@ use Tests\TestCase;
  * 이 판정을 도메인마다 각자 구현하면 규칙이 검색 모듈 수만큼 갈라진다.
  * 코어가 규칙을 소유한다는 것을 여기서 고정한다.
  *
- * @scenario case=search_cursor_policy
- *
- * @effects cursor_starts_on_first_page,
- *          deep_page_without_cursor_stays_on_offset,
- *          cursor_requires_real_columns,
- *          unknown_sort_name_falls_back_to_offset
+ * @scenario navigation=keyset_cursor
  */
 class SearchPagePolicyTest extends TestCase
 {
@@ -37,6 +32,8 @@ class SearchPagePolicyTest extends TestCase
      * 첫 페이지는 커서가 없는 것이 정상이므로 이를 "커서 없음" 이 아니라 "시작점" 으로 읽는다.
      *
      * @effects cursor_starts_on_first_page
+     *
+     * @return void 반환값 없음
      */
     public function test_first_page_starts_cursor_mode(): void
     {
@@ -54,6 +51,8 @@ class SearchPagePolicyTest extends TestCase
      * 커서로 바꿔 버리면 첫 페이지로 되돌아가 링크가 가리키던 자리를 잃는다.
      *
      * @effects deep_page_without_cursor_stays_on_offset
+     *
+     * @return void 반환값 없음
      */
     public function test_deep_page_without_cursor_stays_on_offset(): void
     {
@@ -67,6 +66,8 @@ class SearchPagePolicyTest extends TestCase
      * 깊은 페이지라도 커서를 들고 왔으면 커서로 이어가는지 확인
      *
      * @effects cursor_starts_on_first_page
+     *
+     * @return void 반환값 없음
      */
     public function test_cursor_wins_over_page_number(): void
     {
@@ -79,6 +80,8 @@ class SearchPagePolicyTest extends TestCase
      * 실제 컬럼 정렬 + 커서가 있으면 커서로 응답하는지 확인
      *
      * @effects cursor_requires_real_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_real_column_sort_with_cursor_uses_cursor(): void
     {
@@ -98,6 +101,8 @@ class SearchPagePolicyTest extends TestCase
      * 관련도순은 FULLTEXT 점수라는 계산값으로 정렬하므로 WHERE 절 경계로 쓸 수 없다.
      *
      * @effects unknown_sort_name_falls_back_to_offset
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_sort_name_falls_back_to_offset(): void
     {
@@ -111,6 +116,8 @@ class SearchPagePolicyTest extends TestCase
      * 허용 목록에 없는 컬럼으로 정렬하면 커서를 쓰지 않는지 확인
      *
      * @effects cursor_requires_real_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_column_outside_whitelist_falls_back_to_offset(): void
     {

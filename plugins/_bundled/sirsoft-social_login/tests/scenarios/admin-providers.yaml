@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 제공자 설정·연결 테스트·진단·통계·회원 연결은 서로 다른 관리자 표면이라 축을 곱하면 성립하지 않는 조합만 늘어난다 — 표면별 시험으로 나눴다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 제공자 설정·연결 테스트·진단·통계·회원 연결은 서로 다른 관리자 표면이라 축을 곱하면 성립하지 않는 조합만 늘어난다 — 표면별 시험으로 나눴다.
 feature: social_login_admin_providers
 coverage_strategy: pairwise
 description: |

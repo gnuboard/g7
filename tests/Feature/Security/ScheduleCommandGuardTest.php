@@ -831,7 +831,9 @@ class ScheduleCommandGuardTest extends TestCase
     /**
      * 슈퍼 관리자도 인터프리터 인라인 코드는 저장할 수 없다 (권한 분기 무관 동일 차단).
      *
-     * @scenario command_class=inline_code, enforcement_point=store, caller_role=super_admin
+     * (caller_role=super_admin — 미선언 축은 평문으로)
+     *
+     * @scenario command_class=inline_code, enforcement_point=store
      *
      * @effects inline_code_flags_rejected
      *

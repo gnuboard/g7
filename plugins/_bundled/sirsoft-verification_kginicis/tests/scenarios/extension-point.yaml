@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 Phase E′ Extension Point 슬롯 통합 + UX 재정의 시나리오 매트릭스 SSoT.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 Phase E′ Extension Point 슬롯 통합 + UX 재정의 시나리오 매트릭스 SSoT.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: KG이니시스 본인인증 — 코어 IDV 모달 Extension Point 슬롯 통합 + UX 재정의
 
@@ -12,6 +13,8 @@ description: |
     - 사용자가 인증 팝업을 직접 닫은 경우 모달은 열린 채 유지 → 시작 버튼 재클릭으로 재시도 가능
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  identity_core: [missing]
   flow_stage:
     - modal_opens_with_intro_card    # 코어 모달 자동 표시 + 슬롯에 사전 안내 카드 + "본인인증 시작" 버튼 노출 (providerInProgress=false)
     - user_clicks_start              # 사용자가 모달 안 Button 클릭 → startAuth handler 진입

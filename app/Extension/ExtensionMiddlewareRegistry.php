@@ -4,6 +4,7 @@ namespace App\Extension;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
+use App\Extension\Testing\ExtensionTestAllowlist;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -349,12 +350,33 @@ class ExtensionMiddlewareRegistry implements ExtensionMiddlewareRegistryInterfac
      */
     protected function activeExtensions(): iterable
     {
+        // 테스트 allowlist 확인 — allowlist 밖 확장은 ServiceProvider 가 등록되지 않으므로
+        // 미들웨어만 파이프라인에 올리면 해석 시점에 의존 바인딩이 없어 요청이 500 이 된다.
+        // 확장 등록 행은 테스트 프로세스 간 DB 에 남을 수 있어 활성 판정만으로는 부족하다 —
+        // 형제 경로(`PluginManager::registerPluginHookListeners()`)가 이미 같은 가드를 갖는데
+        // 이 자리만 빠져 있었다. DB 가 비어 있는 동안에는 드러나지 않다가, 확장이 설치된
+        // 데이터베이스로 코어 테스트를 돌리는 순간 그 확장의 미들웨어가 코어 요청을 죽인다
+        // (G8 실측 2026-09-02 · 계획서 §9.12.5 F11).
+        $allowlistActive = ExtensionTestAllowlist::isActive();
+
         foreach (app(ModuleManager::class)->getActiveModules() as $module) {
-            yield [$module, $module->getIdentifier(), 'module'];
+            $identifier = $module->getIdentifier();
+
+            if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('module', $identifier)) {
+                continue;
+            }
+
+            yield [$module, $identifier, 'module'];
         }
 
         foreach (app(PluginManager::class)->getActivePlugins() as $plugin) {
-            yield [$plugin, $plugin->getIdentifier(), 'plugin'];
+            $identifier = $plugin->getIdentifier();
+
+            if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('plugin', $identifier)) {
+                continue;
+            }
+
+            yield [$plugin, $identifier, 'plugin'];
         }
     }
 
@@ -362,6 +384,8 @@ class ExtensionMiddlewareRegistry implements ExtensionMiddlewareRegistryInterfac
      * 인덱스 캐시를 무효화합니다 (확장 활성/비활성/설치/제거/리로드 시).
      *
      * IDV `IdentityPolicy::flushRouteScopeCache()` 미러 정적 메서드.
+     *
+     * @return void 반환값 없음
      */
     public static function flush(): void
     {

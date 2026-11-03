@@ -1,4 +1,5 @@
 import React from 'react';
+import { routePath, sitePath } from '../../apiUrl';
 import { ProviderSymbol, type ProviderBrand } from '../../support/ProviderSymbol';
 
 /** 버튼이 하는 일 — 로그인·가입은 시작 주소로 이동, 연결·재확인은 로그인 회원의 API 를 거친다. */
@@ -117,11 +118,14 @@ function buttonText(intent: ProviderButtonsIntent, brand: ProviderBrand, label: 
  * @returns 이동 주소
  */
 function startHref(startUrl: string, redirect?: string): string {
+  // 서버가 주는 시작 주소는 앱 기준 경로(`route(..., false)`, 접두사 없음)다. 링크는 브라우저가 그대로 여는 주소라 사이트
+  // 마운트 접두사를 붙인다 — 붙이지 않으면 하위 폴더 배치(`https://host/g7/`)에서 로그인 버튼이 사이트 밖으로 나간다.
+  // 복귀 경로(`redirect`)는 서버가 받아 다시 조립하므로 앱 기준 그대로 싣는다.
   if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//')) {
-    return startUrl;
+    return sitePath(startUrl);
   }
 
-  return `${startUrl}${startUrl.includes('?') ? '&' : '?'}redirect=${encodeURIComponent(redirect)}`;
+  return sitePath(`${startUrl}${startUrl.includes('?') ? '&' : '?'}redirect=${encodeURIComponent(redirect)}`);
 }
 
 /**
@@ -189,7 +193,8 @@ export const ProviderButtons: React.FC<ProviderButtonsProps> = ({
               onClick={() =>
                 intent === 'link'
                   ? dispatch('startLink', { provider: key })
-                  : dispatch('startReauth', { provider: key, return: typeof window !== 'undefined' ? window.location.pathname : '/' })
+                  // 복귀 경로는 서버가 다시 조립하는 앱 기준 경로라 마운트 접두사를 벗겨 싣는다(로그인 `redirect` 와 같은 기준).
+                  : dispatch('startReauth', { provider: key, return: typeof window !== 'undefined' ? routePath(window.location.pathname) : '/' })
               }
               {...common}
             >

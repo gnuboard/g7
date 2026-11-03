@@ -22,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInter
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -36,6 +37,7 @@ class ProductImageService
     use ReappliesPermissionScope;
     use ResolvesRowStorage;
     use ResolvesStoredExtension;
+    use ServesImageWithRowValidators;
 
     /**
      * ProductImageService 생성자
@@ -105,6 +107,14 @@ class ProductImageService
         // 스토리지에 파일 저장 (category: 'images')
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
+
+        // 축소는 **같은 경로를 제자리에서 갈아 끼운다.** 그 과정이 `is_file()` 로 그 경로를
+        // stat 하므로 PHP 공유 stat 캐시가 채워지고, 뒤따르는 `getSize()` 는 그 캐시를 그대로
+        // 읽어 **축소 전 크기**를 돌려준다. `getimagesize()` 는 파일을 직접 읽으므로
+        // width/height 만 축소본을 가리키고 크기만 어긋난다 — 한 행의 두 값이 서로 다른
+        // 파일을 가리키는 상태다. 형제 넷(코어 2 · 게시판 · 페이지)은 같은 사유로 이미 이
+        // 처리를 갖는다 (12차 G3 라운드 D3 — 11차가 형제 절반에만 적용했다).
+        clearstatcache(true, $file->getRealPath());
 
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
@@ -222,10 +232,25 @@ class ProductImageService
             // 파일 이동 (get + put + delete) — 행 disk 기준 (이동 후에도 행 disk 불변)
             $rowStorage = $this->storageForRow($image->disk);
             $content = $rowStorage->get('images', $image->path);
-            if ($content) {
-                $rowStorage->put('images', $newPath, $content);
-                $rowStorage->delete('images', $image->path);
+
+            // 읽기에 실패하면 **행을 그대로 두고 건너뛴다.** 종전에는 falsy 를 조용히 접고도
+            // 아래에서 `path` 를 최종 경로로 갱신했는데, 그러면 행은 옮겨진 자리를 가리키고
+            // 파일은 임시 경로에 남는다 — 그리고 이 메서드 끝의 임시 디렉토리 정리가 그
+            // 임시본을 지워 **상품 이미지가 오류도 로그도 없이 영구 유실**된다.
+            // 형제 둘(게시판·페이지)은 11차에 같은 자리를 고쳤다 (12차 G3 라운드 D4).
+            if ($content === null || $content === '') {
+                Log::error('임시 상품 이미지를 읽지 못해 연결을 건너뜁니다 — 행을 그대로 둡니다', [
+                    'image_id' => $image->id,
+                    'disk' => $image->disk,
+                    'path' => $image->path,
+                    'product_id' => $productId,
+                ]);
+
+                continue;
             }
+
+            $rowStorage->put('images', $newPath, $content);
+            $rowStorage->delete('images', $image->path);
 
             // DB 업데이트: product_id 설정, temp_key 제거, path 변경, sort_order 재배치, is_thumbnail 해제
             $this->repository->update($image->id, [
@@ -387,12 +412,31 @@ class ProductImageService
     }
 
     /**
-     * 이미지 다운로드 응답 생성
+     * 이미지 다운로드 응답 생성 (하위호환 표면)
      *
-     * @param  string  $hash  이미지 해시 (12자)
-     * @return StreamedResponse|null 이미지 스트림 또는 없을 경우 null
+     * 캐시 계약(검증자·304)은 이 스트림에 실리지 않는다 — `getFileInfo()` 가 돌려주는 메타를
+     * 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 넘겨 입힌다. 이 메서드는 그
+     * 정보의 `response` 만 돌려준다.
+     *
+     * @param  string  $hash  이미지 해시
+     * @return StreamedResponse|null 이미지 스트림 또는 null
      */
     public function download(string $hash): ?StreamedResponse
+    {
+        return $this->getFileInfo($hash)['response'] ?? null;
+    }
+
+    /**
+     * 이미지 서빙 정보 조회 (스트림 + 검증자 메타)
+     *
+     * 캐싱 헤더·검증자 비교·304 는 코어 단일 지점이 만든다 — 이 서비스는 코어 형제
+     * (`App\Services\AttachmentService::getFileInfo()`)와 같은 형태의 서빙 정보만 돌려준다
+     * (14차 G3 라운드).
+     *
+     * @param  string  $hash  이미지 해시
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, max_age: int}|null 서빙 정보 또는 null
+     */
+    public function getFileInfo(string $hash): ?array
     {
         $image = $this->repository->findByHash($hash);
 
@@ -400,17 +444,11 @@ class ProductImageService
             return null;
         }
 
-        $response = $this->storageForRow($image->disk)->response(
-            'images',
-            $image->path,
-            $image->original_filename,
-            [
-                'Content-Type' => $image->mime_type,
-                'Cache-Control' => 'public, max-age=31536000',
-            ]
-        );
+        // 서빙 정보(스트림 + 검증자 메타)는 `ServesImageWithRowValidators` 단일 지점이 만든다
+        // (형제 두 이미지 서비스와 같은 계약 — 11차 G3 라운드 B11-12 · 14차 코어 지점 경유).
+        $info = $this->imageServeInfo($image);
 
-        if (! $response) {
+        if (! $info) {
             Log::error('상품 이미지 스토리지에 없음', [
                 'product_image_id' => $image->id,
                 'path' => $image->path,
@@ -420,10 +458,12 @@ class ProductImageService
             return null;
         }
 
-        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
-        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
+        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366).
+        // 서빙 정보의 스트림에 굳혀 두면 코어 지점(`streamedFileResponseFromMeta()`)이 같은 응답 객체에
+        // 캐시 계약을 더해 내보낸다.
+        InlineMediaPolicy::harden($info['response'], $image->mime_type, $image->original_filename);
 
-        return $response;
+        return $info;
     }
 
     /**

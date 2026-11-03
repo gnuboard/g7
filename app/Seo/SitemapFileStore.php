@@ -3,6 +3,7 @@
 namespace App\Seo;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Support\AssetUrl;
 use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -73,7 +74,17 @@ class SitemapFileStore
     /**
      * 자식 sitemap 의 공개 절대 URL 을 반환합니다.
      *
-     * sitemapindex 의 <loc> 값이며, web 라우트 `/sitemap-{n}.xml` 과 대응합니다.
+     * sitemapindex 의 <loc> 값이며, web 라우트와 대응합니다. 자산 URL 모드가
+     * 확장자 없는 형태면 `/sitemap-{n}/xml` 을 쓴다 — 그 모드를 고른 사이트는
+     * 정적 최적화 블록이 `.xml` 을 가로채는 서버라, 확장자 형태를 <loc> 에 적으면
+     * 봇이 따라간 자식이 전부 404 가 되고 색인이 조용히 비어 버린다. gzip 여부는
+     * manifest 가 정하므로 그 모드에서는 두 형태가 같은 주소로 모인다
+     * (컨트롤러가 URL 접미사를 보지 않는다 — 7차 G3 라운드 B-6).
+     *
+     * 오리진·접두사는 사이트 주소(`app.url`) 기준 단일 지점(`SiteUrl::absolute()`)이 만든다 —
+     * 요청 Host 로 폴백하지 않고, 접두사는 멱등으로 실린다. 여기만 `url()` 이면 색인의 자식
+     * 주소는 요청 호스트(콘솔이면 `http://localhost`)를 싣고 자식 안의 항목은 설정 오리진을
+     * 실어, 한 사이트맵 안에서 부모와 자식의 오리진이 갈린다 (16차 G3 라운드 B-1).
      *
      * @param  int  $n  자식 번호 (1부터)
      * @param  bool  $gzip  gzip 압축 여부
@@ -82,6 +93,10 @@ class SitemapFileStore
     public static function childUrl(int $n, bool $gzip = false): string
     {
         // 보안: 요청 Host 가 아니라 사이트 주소 기준 — sitemapindex 가 위조 Host 로 굳지 않게 한다.
+        if (AssetUrl::isExtensionless()) {
+            return SiteUrl::absolute('/sitemap-'.$n.'/xml');
+        }
+
         return SiteUrl::absolute('/'.self::childFilename($n, $gzip));
     }
 
@@ -123,32 +138,71 @@ class SitemapFileStore
     /**
      * sitemapindex 를 스트리밍 응답으로 반환합니다.
      *
+     * 캐시 계약(검증자·304)은 이 스트림에 실리지 않는다 — `indexInfo()` 가 돌려주는 메타를
+     * 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 넘겨 입힌다.
+     *
      * @return StreamedResponse|null 인덱스 스트림 (세트가 없으면 null)
      */
     public function indexResponse(): ?StreamedResponse
+    {
+        return $this->indexInfo()['response'] ?? null;
+    }
+
+    /**
+     * sitemapindex 서빙 정보를 반환합니다 (스트림 + 검증자 메타).
+     *
+     * 검증자는 **manifest** 에서 만든다 — 커밋 시각(`generated_at`)과 파일 이름이면 한 세트를
+     * 결정적으로 가리키고, 파일 stat 이 없어 원격 디스크에서도 같다. 종전에는 두 sitemap 통로에
+     * 검증자가 하나도 없어 봇이 매번 전문(최대 50MB)을 받아 갔다 — 정적 서빙(링크가 되는
+     * 서버)은 같은 파일에 ETag·Last-Modified 를 붙이므로 링크 유무로 동작이 갈리는 상태였다
+     * (14차 G3 라운드).
+     *
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, last_modified: int|null}|null 서빙 정보 (세트가 없으면 null)
+     */
+    public function indexInfo(): ?array
     {
         if (! $this->exists()) {
             return null;
         }
 
-        return $this->storage->response(
+        $response = $this->storage->response(
             self::CATEGORY,
             self::LIVE_DIR.'/'.self::INDEX_FILE,
             self::INDEX_FILE,
             ['Content-Type' => 'application/xml'],
         );
+
+        if ($response === null) {
+            return null;
+        }
+
+        return [
+            'response' => $response,
+            ...$this->serveMeta(self::INDEX_FILE),
+        ];
     }
 
     /**
      * 자식 sitemap 을 스트리밍 응답으로 반환합니다.
      *
      * 실제 저장된 파일명은 manifest 에서 조회하므로, 생성 이후 gzip 설정이
-     * 바뀌어도 커밋된 세트를 그대로 서빙합니다.
+     * 바뀌어도 커밋된 세트를 그대로 서빙합니다. 캐시 계약은 `childInfo()` 참조.
      *
      * @param  int  $n  자식 번호 (1부터)
      * @return StreamedResponse|null 자식 스트림 (없으면 null)
      */
     public function childResponse(int $n): ?StreamedResponse
+    {
+        return $this->childInfo($n)['response'] ?? null;
+    }
+
+    /**
+     * 자식 sitemap 서빙 정보를 반환합니다 (스트림 + 검증자 메타).
+     *
+     * @param  int  $n  자식 번호 (1부터)
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, last_modified: int|null}|null 서빙 정보 (없으면 null)
+     */
+    public function childInfo(int $n): ?array
     {
         $filename = $this->childFile($n);
         if ($filename === null) {
@@ -160,12 +214,41 @@ class SitemapFileStore
             $headers['Content-Encoding'] = 'gzip';
         }
 
-        return $this->storage->response(
+        $response = $this->storage->response(
             self::CATEGORY,
             self::LIVE_DIR.'/'.$filename,
             $filename,
             $headers,
         );
+
+        if ($response === null) {
+            return null;
+        }
+
+        return [
+            'response' => $response,
+            ...$this->serveMeta($filename),
+        ];
+    }
+
+    /**
+     * manifest 기준 서빙 검증자 메타를 만듭니다 — 인덱스·자식 두 통로가 같은 값을 쓴다.
+     *
+     * `.xml` 과 `.xml.gz` 는 다른 표현이므로 파일 이름이 ETag 소스에 들어간다.
+     *
+     * @param  string  $filename  서빙하는 파일 이름
+     * @return array{etag_source: string, mime_type: string, last_modified: int|null}
+     */
+    private function serveMeta(string $filename): array
+    {
+        $generatedAt = $this->lastGeneratedAt();
+        $lastModified = $generatedAt !== null ? strtotime($generatedAt) : false;
+
+        return [
+            'etag_source' => implode('|', ['sitemap', $filename, (string) $generatedAt]),
+            'mime_type' => 'application/xml',
+            'last_modified' => $lastModified === false ? null : $lastModified,
+        ];
     }
 
     /**

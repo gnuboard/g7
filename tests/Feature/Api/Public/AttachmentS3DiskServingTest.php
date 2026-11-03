@@ -30,10 +30,14 @@ class AttachmentS3DiskServingTest extends TestCase
      * 원격(S3) 디스크 의미를 재현하는 스토리지 대역을 컨텍스트 바인딩합니다.
      *
      * @param  string  $content  스트림으로 서빙될 바이트
+     * @return void 반환값 없음
      */
     private function bindRemoteDiskStorage(string $content = 'png-bytes'): void
     {
         $storage = Mockery::mock(StorageInterface::class);
+        // 행 disk 해석(`ResolvesRowStorage::storageForRow`)이 주입 스토리지의 disk 이름을 먼저 묻는다 —
+        // 's3' 와 다른 이름을 돌려줘야 `withDisk('s3')` 분기로 들어간다 (14차 G3 라운드).
+        $storage->shouldReceive('getDisk')->andReturn('local');
         $storage->shouldReceive('withDisk')->andReturnSelf();
         $storage->shouldReceive('exists')->andReturn(true);
         // S3 어댑터의 path('') 의미 재현 — 로컬 stat 불가능한 값 (라이브 로그의 '\2026/…' 원인)
@@ -55,6 +59,8 @@ class AttachmentS3DiskServingTest extends TestCase
 
     /**
      * s3 디스크 이미지 행을 생성합니다.
+     *
+     * @return Attachment disk 가 s3 이고 PNG 경로를 가진 첨부 행
      */
     private function makeS3ImageAttachment(): Attachment
     {
@@ -73,6 +79,8 @@ class AttachmentS3DiskServingTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=follow_s3
      *
      * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_disk_image_attachment_serves_200_with_cache_headers(): void
     {
@@ -92,6 +100,12 @@ class AttachmentS3DiskServingTest extends TestCase
      *
      * ETag 는 파일 stat 이 아닌 행 메타(디스크·경로·수정시각·크기) 기반이어야
      * 원격 디스크에서도 결정적이다.
+     *
+     * @scenario attachment_disk=follow_s3, conditional_request=if_none_match, consumer=attachment
+     *
+     * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_disk_image_attachment_etag_roundtrip_yields_304(): void
     {
@@ -111,9 +125,50 @@ class AttachmentS3DiskServingTest extends TestCase
     }
 
     /**
+     * 첨부 통로도 `Last-Modified` 를 내보내고 `If-Modified-Since` 를 처리한다.
+     *
+     * 8차 라운드가 스트림 서빙 헬퍼에 이 축을 넣으며 「첨부 통로까지 배선」이라고 적었는데,
+     * 그 축을 재는 테스트는 **템플릿 레이아웃 첨부 라우트 하나**뿐이었다. 첨부 쪽 배선
+     * (`AttachmentService::getFileInfo()` 의 `last_modified` 키 → 컨트롤러의
+     * `lastModifiedAt:`)을 `null` 로 바꿔도 전 스위트가 초록이다 — ETag 를 쓰지 않는
+     * 프록시가 매번 전문을 받아 가는 상태가 무게이트로 남는다.
+     *
+     * @scenario conditional_request=ims, consumer=attachment
+     *
+     * @effects attachment_stream_declares_last_modified_and_honours_ims
+     *
+     * @return void 반환값 없음
+     */
+    public function test_attachment_stream_declares_last_modified_and_honours_if_modified_since(): void
+    {
+        $this->bindRemoteDiskStorage();
+        $attachment = $this->makeS3ImageAttachment();
+
+        $first = $this->get('/api/attachment/'.$attachment->hash);
+        $first->assertStatus(200);
+
+        $lastModified = (string) $first->headers->get('Last-Modified');
+        $this->assertNotEmpty(
+            $lastModified,
+            '첨부 스트림이 Last-Modified 를 내보내지 않는다 — ETag 를 쓰지 않는 프록시가 매번 전문을 받아 간다'
+        );
+
+        $second = $this->withHeaders(['If-Modified-Since' => $lastModified])
+            ->get('/api/attachment/'.$attachment->hash);
+
+        $second->assertStatus(304);
+    }
+
+    /**
      * 로컬 디스크 이미지 행의 서빙 계약(200 + ETag)이 유지되어야 합니다 (혼재 회귀 가드).
      *
      * 기존 행은 행 disk 로 계속 서빙된다 — s3 전환 후에도 과거 로컬 행이 깨지면 안 된다.
+     *
+     * @scenario attachment_disk=local_default, consumer=attachment
+     *
+     * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_local_disk_image_attachment_still_serves(): void
     {

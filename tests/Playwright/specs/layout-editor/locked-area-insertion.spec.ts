@@ -16,7 +16,7 @@
  * 신규 노드는 `__source` 미부여라 저장 마스킹(stripInheritedNodes)이 항상 route
  * 콘텐츠로 보존한다.
  *
- * 효과 요약(마커 아님 — 평문): locked_node_shows_insertion_plus_via_anchor, insertion_inserts_outside_locked_group_as_sibling.
+ * 효과 요약(마커 아님 — 평문): locked_node_shows_insertion_plus_via_anchor_box, insertion_inserts_outside_locked_group_as_sibling_of_anchor.
  */
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -111,7 +111,7 @@ async function selectByPathAndLockKind(page: Page, path: string): Promise<string
 }
 
 test.describe('@layout-editor 잠긴 영역 요소 추가(+) 복원', () => {
-  /** @effects locked_node_shows_insertion_plus_via_anchor */
+  /** @effects locked_node_shows_insertion_plus_via_anchor_box */
   test('확장 주입 조각 선택 → 잠금이어도 + 버튼이 조각 박스 경계에 화면 내 노출', async ({ page }) => {
     await openRegisterEditor(page);
     const res = await selectByText(page, '마케팅 동의|광고성 이메일', 30);
@@ -123,7 +123,7 @@ test.describe('@layout-editor 잠긴 영역 요소 추가(+) 복원', () => {
     expect(res.enabledInViewCount as number).toBeGreaterThan(0);
   });
 
-  /** @effects locked_node_shows_insertion_plus_via_anchor */
+  /** @effects locked_node_shows_insertion_plus_via_anchor_box */
   test('데이터 반복(인기글/최근글) 영역 선택 → data_bound 여도 + 버튼이 화면 내 노출', async ({ page }) => {
     await openHomeEditor(page);
     const res = await selectByText(page, '최근 게시글|샘플 게시글|게시글', 30);
@@ -141,7 +141,7 @@ test.describe('@layout-editor 잠긴 영역 요소 추가(+) 복원', () => {
    *
    * 저장하지 않는다 — 편집기 문서에만 반영되므로 사이트 레이아웃은 그대로 남는다.
    */
-  /** @effects insertion_inserts_outside_locked_group_as_sibling */
+  /** @effects insertion_inserts_outside_locked_group_as_sibling_of_anchor */
   test('잠긴 조각의 + 로 요소를 추가하면 묶음 안이 아니라 형제로 들어간다', async ({ page }) => {
     await openRegisterEditor(page);
     const res = await selectByText(page, '마케팅 동의|광고성 이메일', 30);

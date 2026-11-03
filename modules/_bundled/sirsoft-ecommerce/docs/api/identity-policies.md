@@ -52,6 +52,8 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
+_목록 응답: `data.data[]` 배열 항목의 필드._
+
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | data | array | `[{...}]` | 정책 행 목록 (행 필드는 코어 정책 리소스와 같음: id·key·scope·target·purpose·provider_id·grace_minutes·enabled·priority·conditions·source_type·source_identifier·applies_to·fail_mode·user_overrides·created_at·updated_at·abilities) |
@@ -64,6 +66,24 @@ Authorization: Bearer {YOUR_TOKEN}
 | meta.per_page | integer | `10` | 쪽당 개수 |
 | meta.total | integer | `9` | 전체 개수 |
 | meta.last_page | integer | `1` | 마지막 쪽 |
+| id | integer | `21` | 기본 키 (내부 식별자) |
+| key | string | `sirsoft-ecommerce.checkout.before_pay` | 정책 키 (고유) |
+| scope | string | `hook` | 적용 시점 (route: 경로 / hook: 서비스 훅 / custom: 확장이 직접 검사하는 키) |
+| target | string | `sirsoft-ecommerce.checkout.before_pay…` | 적용 위치 (scope 에 따라 라우트 이름, 훅 이름 또는 사용자 지정 키) |
+| purpose | string | `checkout_verification` | 이 정책이 요구하는 인증 목적 |
+| provider_id | null | `null` | provider 식별자 (연관 리소스 참조) |
+| grace_minutes | integer | `30` | 인증 후 유예 시간(분) — 그 안에 같은 목적으로 인증했으면 다시 묻지 않음 (0 이면 매번) |
+| enabled | boolean | `false` | 활성 여부 (false 면 인증을 요구하지 않음) |
+| priority | integer | `100` | 우선순위 (같은 대상에 활성 정책이 여럿이면 값이 큰 정책부터 검사) |
+| conditions | null | `null` | 추가 매칭 조건 (http_method, changed_fields, user_role, signup_stage). 없으면 null |
+| source_type | string | `module` | 정책 출처 (module: 이커머스가 선언한 정책 / admin: 운영자가 이 탭에서 추가한 정책) |
+| source_identifier | string | `sirsoft-ecommerce` | 출처 식별자 (이 경로에서는 언제나 `sirsoft-ecommerce`) |
+| applies_to | string | `self` | 적용 대상 사용자 (self: 일반 사용자 / admin: 관리자 / both: 모두) |
+| fail_mode | string | `block` | 인증 실패 시 동작 (block: 차단 / log_only: 기록만 남기고 통과) |
+| user_overrides | array | `[]` | 운영자가 선언 기본값에서 바꾼 칸 목록 (선언형 정책만 해당, 시더를 다시 돌려도 유지) |
+| created_at | string | `2026-08-06 10:15:36` | 생성 일시 |
+| updated_at | string | `2026-08-06 10:15:36` | 최종 수정 일시 |
+| abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
 
@@ -148,7 +168,9 @@ HTTP/1.1 200
 | conditions | body | object | 아니오 | — | 추가 조건 |
 | applies_to | body | string | 예 | self, admin, both | 적용 대상 |
 | fail_mode | body | string | 예 | block, log_only | 실패 처리 |
-| source_identifier | body | string | 아니오 | — | 무시됩니다 — 언제나 `sirsoft-ecommerce` 로 만듭니다 |
+| source_identifier | body | string | 아니오 | max 100 | 무시됩니다 — 언제나 `sirsoft-ecommerce` 로 만듭니다 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity_policy.store_validation_rules`).
 
 **요청 예시**
 
@@ -239,11 +261,15 @@ HTTP/1.1 201
 | grace_minutes | body | integer | 아니오 | 0~43200 | 유예 시간(분) |
 | provider_id | body | string | 아니오 | max 64 | 인증 제공자 |
 | fail_mode | body | string | 아니오 | block, log_only | 실패 처리 |
+| key | body | string | 아니오 | max 120 | 정책 키 (운영자 정책만 반영) |
+| scope | body | string | 아니오 | route, hook, custom | 적용 시점 (운영자 정책만 반영) |
+| target | body | string | 아니오 | max 255 | 적용 위치 (운영자 정책만 반영, 수정 뒤 대상이 이커머스 지점이 아니면 422) |
 | purpose | body | string | 아니오 | max 64 | 인증 목적 |
 | priority | body | integer | 아니오 | 0~65535 | 우선순위 |
 | conditions | body | object | 아니오 | — | 추가 조건 |
 | applies_to | body | string | 아니오 | self, admin, both | 적용 대상 |
-| key / scope / target | body | string | 아니오 | — | 운영자 정책(`source_type=admin`)일 때만 반영 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity_policy.update_validation_rules`).
 
 **요청 예시**
 
@@ -255,7 +281,10 @@ Authorization: Bearer {YOUR_TOKEN}
 Content-Type: application/json
 
 {
-    "enabled": false
+    "enabled": false,
+    "key": "ecommerce-checkout-guard",
+    "scope": "hook",
+    "target": "sirsoft-ecommerce.checkout.before_payment"
 }
 ```
 
@@ -271,7 +300,7 @@ _단건 응답: 고친 정책 — 목록 행과 같은 필드._
     "message": "수정되었습니다.",
     "data": {
         "id": 31,
-        "key": "ecommerce-custom-bulk",
+        "key": "ecommerce-checkout-guard",
         "enabled": false,
         "source_type": "admin",
         "source_identifier": "sirsoft-ecommerce",
@@ -309,6 +338,8 @@ _단건 응답: 고친 정책 — 목록 행과 같은 필드._
 | --- | --- | --- | --- | --- | --- |
 | id | path | integer | 예 | — | 정책 ID (이커머스 몫이어야 함) |
 
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity_policy.destroy_validation_rules`).
+
 **요청 예시**
 
 ```http
@@ -339,6 +370,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.identity.policies.update`)이 없거나, 모듈이 선언한 정책을 지우려는 경우 |
 | 404 | Not Found | 정책이 없거나 이커머스 몫이 아닌 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

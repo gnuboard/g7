@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#609 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 28건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(페이지네이션)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: bounded_total_pagination
 
@@ -30,6 +33,7 @@ axes:
   query_shape: [flat, grouped, deferred_join, fulltext]
   cap_source: [settings, config_fallback, hook_override, unlimited]
   surface: [core_repository, module_search, admin_datagrid, product_grid]
+  link: [board-secret-thread-visibility]                # 다른 매니페스트 시나리오와 잇는 교차 참조 표기 — 게시판 테스트 마킹에 이미 쓰이던 축 (#609 부채 정리, cross_product 면제)
 
 exclusions:
   - { navigation: keyset_cursor, query_shape: fulltext, reason: "관련도순은 계산값 정렬이라 커서 경계로 쓸 수 없다 — KeysetPaginator::supports 가 거부하고 offset 을 유지한다" }
@@ -129,6 +133,17 @@ effects:
   # "몇 번 읽었는가" 를 직접 세야만 회귀가 드러난다.
   - post_detail_reads_post_row_once
   - post_detail_reads_board_row_once
+  # ── 페이지 모듈 목록 조회 비용 (#519 F5 — 609 docblock 정리에서 선언으로 올림) ──
+  # 행 수가 늘어도 조회 횟수가 그대로인지, 발행 목록 정렬 색인이 실제 실행계획에서 골라지는지 잰다.
+  - page_list_query_count_stable
+  - page_search_query_count_stable
+  - published_sort_index_exists
+  - published_sort_index_column_order
+  - page_list_query_uses_published_sort_index
+  - extension_translation_key_detector_flags_non_core_groups
+  - extension_translation_key_detector_ignores_namespaced_keys
+  - cursor_starts_on_first_page
+  - deep_page_without_cursor_stays_on_offset
 
 # scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
 scale:

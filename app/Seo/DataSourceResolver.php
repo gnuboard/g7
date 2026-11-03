@@ -3,6 +3,7 @@
 namespace App\Seo;
 
 use App\Support\OutboundUrlValidator;
+use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -239,7 +240,9 @@ class DataSourceResolver
             return null;
         }
 
-        $fullUrl = $join ? $base.'/'.ltrim($endpoint, '/') : $endpoint;
+        // 이어 붙일 때 마운트 접두사는 멱등이다 — 접두사를 품은 endpoint(`/g7/api/…`)에 사이트 주소의
+        // 접두사를 한 번 더 싣지 않는다 (`SiteUrl::join()`, 16차 G3 라운드 B-7).
+        $fullUrl = $join ? SiteUrl::join($base, '/'.ltrim($endpoint, '/')) : $endpoint;
         $siteHost = OutboundUrlValidator::normalizeHost($baseParts['host']);
 
         if ($siteHost === null || ! OutboundUrlValidator::isHostAllowed(

@@ -76,6 +76,18 @@ interface ScheduleHistoryRepositoryInterface
     public function getRecentByScheduleId(int $scheduleId, int $limit = 10): Collection;
 
     /**
+     * 출처별 최근 실행 이력을 조회합니다.
+     *
+     * 코드로 등록된 예약(`source=code`)은 대응하는 `schedules` 행이 없어 스케줄 ID 로는
+     * 뽑을 수 없다 — 웹 크론 러너가 남긴 이력을 화면에 보이려면 이 통로가 필요하다.
+     *
+     * @param  string  $source  이력 출처 (database|code)
+     * @param  int  $limit  최대 건수
+     * @return Collection<int, ScheduleHistory> 시각 역순 이력
+     */
+    public function getRecentBySource(string $source, int $limit = 20): Collection;
+
+    /**
      * 여러 이력을 일괄 삭제합니다.
      *
      * @param  array  $ids  이력 ID 배열

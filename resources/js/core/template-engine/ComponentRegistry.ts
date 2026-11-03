@@ -373,6 +373,7 @@ export class ComponentRegistry {
       );
       // 정적 게시본(bake) 우선 (#122) — 편집기 경로(v0)는 legacy 직행 유지.
       // miss 는 fetchStaticFirst 가 legacy 로 폴백하고, legacy 측이 fetchWithRetry 를 재사용한다.
+      // base-path:allow 첫 인자는 `extStaticUrl()` 산출물 아니면 null 이다 — 삼항이라 게이트가 형태를 읽지 못한다.
       const response = await fetchStaticFirst(
         this.cacheVersion > 0
           ? extStaticUrl(`templates/${this.templateId}/components.json`, this.cacheVersion)

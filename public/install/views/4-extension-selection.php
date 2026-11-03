@@ -234,6 +234,10 @@
         'save_failed' => lang('save_failed'),
         'next' => lang('next'),
         'extension_load_failed' => lang('extension_load_failed'),
+        // 서버가 갈라 낸 스캔 실패 3사유 — 키가 없으면 화면이 「HTTP 500」만 그린다 (19차 S-4)
+        'scan_directory_listing_unavailable' => lang('scan_directory_listing_unavailable'),
+        'no_admin_template_error' => lang('no_admin_template_error'),
+        'scan_failed_see_log' => lang('scan_failed_see_log'),
         'dep_auto_badge_label' => lang('dep_auto_badge_label'),
         'dep_lock_message' => lang('dep_lock_message'),
         'dep_version_required' => lang('dep_version_required'),
@@ -249,4 +253,4 @@
         'language_pack_scope_template' => lang('language_pack_scope_template'),
     ],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
-<script src="<?= INSTALLER_BASE_URL ?>/assets/js/step-4-extension-selection.js?v=<?= time() ?>"></script>
+<script src="<?= e(INSTALLER_BASE_URL) ?>/assets/js/step-4-extension-selection.js?v=<?= time() ?>"></script>

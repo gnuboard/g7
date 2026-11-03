@@ -82,6 +82,7 @@ export function openExternalReceiptWindow(url: unknown, name: string, features: 
     const popup = window.open('', name, features);
     if (popup) {
         popup.opener = null;
+        // base-path:allow 바로 위에서 https 로 시작함을 확인한 PG 영수증 절대 URL 이다 — 사이트 경로가 아니다.
         popup.location.href = url;
     }
 

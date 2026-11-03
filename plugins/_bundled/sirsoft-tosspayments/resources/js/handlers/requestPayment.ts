@@ -16,6 +16,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { sitePath } from '../apiUrl';
 import { buildGuestOwnershipHeaders } from '../guestOrderToken';
 import { rememberPendingClose } from '../paymentCloseReport';
 
@@ -467,7 +468,9 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
             if (claimReturnUrl) {
                 G7Core?.state?.setLocal?.({ isSubmittingOrder: false });
-                window.location.href = claimReturnUrl;
+                // 서버가 주는 신청서 상세 주소는 앱 내 경로(`/mypage/...`)라 사이트 마운트 접두사를 붙여 이동한다
+                // (절대 URL·이미 접두사가 붙은 값은 그대로 — 멱등).
+                window.location.href = sitePath(claimReturnUrl);
 
                 return;
             }

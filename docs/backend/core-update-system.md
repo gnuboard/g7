@@ -18,8 +18,11 @@
 ## 실행 환경 전제 (CRITICAL)
 
 ```text
-⚠️ core:update 는 SSH/CLI 환경에서 코어 파일 소유자(보통 FTP/SSH 사용자)가
+⚠️ core:update **커맨드** 는 SSH/CLI 환경에서 코어 파일 소유자(보통 FTP/SSH 사용자)가
    직접 실행한다고 가정합니다.
+
+   SSH 가 없는 호스팅을 위한 웹 단계 실행은 §15 가 다룹니다 — 같은 서비스를 같은 순서로
+   부르되, 오케스트레이션만 다릅니다(한 요청 = 한 단계).
 ```
 
 ### 권한 모델
@@ -27,8 +30,9 @@
 | 실행 환경 | 권한 가정 | 권장 사용 |
 |----------|----------|----------|
 | **SSH/CLI 직접 실행** | 사용자 = 파일 소유자 → 모든 코어 파일 쓰기 가능 | ✅ 정상 사용 (권장) |
-| **웹 인스톨러 (`public/install/`)** | PHP-FPM 사용자 (www-data 등) — 권한 제한적 | ⚠️ vendor 번들 모드로만 신규 설치 가능. 코어 업데이트는 미지원 |
+| **웹 인스톨러 (`public/install/`)** | PHP-FPM 사용자 (www-data 등) — 권한 제한적 | ⚠️ vendor 번들 모드로만 신규 설치 가능 |
 | **터미널 설치 (`php g7-install`, 7.1.4)** | 실행한 셸 사용자 — root 면 `--web-user` 필수(끝나면 쓰기 폴더 소유권을 웹서버 계정으로 넘김) | ✅ 최초 설치·재설치(`--reinstall`). 설치 뒤 업데이트는 `core:update` |
+| **관리자 화면의 웹 단계 실행** (§15) | PHP-FPM 사용자 | ✅ 서버 명령을 쓸 수 없는 호스팅용. 착수 전 쓰기 가능성을 진단해 불가하면 시작하지 않는다 |
 | **www-data 로 CLI 실행** | 코어 파일 소유자와 다를 수 있음 | ⚠️ 비권장 — 권한 거부 가능 |
 
 ### 권한 거부 발생 시 대처
@@ -63,6 +67,7 @@
 12. [에러 처리 및 로깅](#12-에러-처리-및-로깅)
 13. [유지보수 모드](#13-유지보수-모드)
 14. [코어 vs 확장 업데이트 비교](#14-코어-vs-확장-업데이트-비교)
+15. [웹 단계 실행 (관리자 화면)](#15-웹-단계-실행-관리자-화면)
 
 ---
 
@@ -150,6 +155,8 @@
 묻는 시점은 소스별로 가장 이르다. `--source`·`--local`·`--zip` 은 시작 확인 직후, **유지보수 모드를 켜기 전**에 묻는다(`--zip` 은 압축을 풀지 않고 목록만 읽으며, PHP zip 확장이 없으면 추출 직후로 미룬다). GitHub 에서 받는 경우만 Step 4 다운로드 직후 유지보수 중에 묻고, 질문 앞에 「사이트가 유지보수 중입니다」를 표시한다. 그 시점에 `--bundled-sources` 의 식별자가 배포본에 없으면 백업·파일 적용 전이므로 받은 배포본을 지우고 유지보수를 풀고 실패로 끝낸다.
 
 판정 결과는 `storage/app/core_update/bundled_sources.json` 에 남는다(미배치 목록·의존성으로 배치한 번들·고른 번들·해시). 관리자 목록 화면 안내와 `core:bundled-sources` 가 이 기록을 쓰며, 업데이트가 롤백되면 이전 기록으로 되돌린다. 완료 요약은 기존 설치 확장 업데이트, 의존성으로 배치한 번들(필요로 한 확장 표시), 고른 번들, 배치하지 않은 번들(나중에 배치하는 명령 안내)의 4구분으로 출력하고, 디스크에 있던 미설치 번들 갱신 수를 한 줄 덧붙인다.
+
+**관리자 화면(웹 단계) 업데이트**도 같은 판정을 거친다. 웹에는 운영자에게 물을 자리가 없으므로 운영자 선택 없이(`--bundled-sources` 를 주지 않은 비대화 기본값과 같다) 항상 갱신 대상만 배치하고 나머지는 건너뛴다. 계획 단계가 판정의 건너뛸 경로를 신규 파일 기록과 증분 적용 목록에, 적용 단계가 파일 적용에 넘기고, 적용 직후 같은 기록 파일에 결과를 남긴다(되돌리기는 이전 기록으로 복원). 배포본이 custom 예약 자리(아래 「custom 자리」)에 파일을 싣거나 개발자 패키지가 새 코어와 맞지 않으면 내려받기 단계에서 멈춘다 — 아직 백업과 파일 적용 전이라 되돌리기는 받은 배포본 정리와 유지보수 해제뿐이고, 중단 사유는 CLI 와 같은 기록 파일에 남아 업데이트 화면이 보여 준다.
 
 > **효력 시점**: Step 7 은 업데이트를 실행하는 쪽(이전 버전)의 코드로 돈다. 그래서 이 판정은 **7.1.1 로 올린 뒤의 업데이트부터** 적용되고, 7.1.0 → 7.1.1 업데이트는 7.1.0 코드가 돌려 지금까지처럼 모두 배치한다. 이미 깔린 쓰지 않는 번들은 `php artisan core:bundled-sources prune` 으로 정리한다(아래 「사후 관리 명령」).
 
@@ -296,6 +303,49 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 > - **층 2 (복구)**: 업데이트 종료 시점(정상 Step 11 + 핸드오프 catch)에 `StorageLinkHelper::ensurePublicStorageLink()` 를 호출해 `public/storage` 가 정상 링크인지 확인하고, 부재/손상이면 `storage/app/public` 을 가리키는 링크를 (필요 시 `.broken.{YmdHis}` rename 백업 후) 재생성한다. 버전 무관 매 업데이트 실행. Windows `SeCreateSymbolicLink` 권한 부족 시 junction(`mklink /J`) 폴백까지 시도하고, 그래도 실패하면 rename 원복 + 수동 `storage:link` 안내(데이터 손실 없음). 롤백 catch 경로는 백업 복원이 링크를 원상 회복하므로 대상 아님.
 >   - **소유권 상속**: `symlink()` 은 소유권 인자가 없어 sudo 실행 시 링크가 root:root 로 생성된다. 재생성 직후 부모 `public/` 의 owner/group 을 기준으로 `lchown`/`lchgrp`(링크 자체 대상 — `chown` 은 target 을 따라감) 보정해 원래 앱 실행 유저 소유를 유지한다. 이 프로젝트의 "신규 항목은 부모 소유권 상속"(`FilePermissionHelper`) 컨벤션과 일치. 비-POSIX/함수 부재/권한 부족 시 무해하게 skip.
 > - 이 복구 로직은 beta.5 DataMigration `RecoverPublicStorageSymlink` 와 `StorageLinkHelper` 로 일원화되어 있다(부재→재생성 케이스까지 상위호환).
+
+> **루트 보호 파일(`/index.php`·`/.htaccess`)의 갱신 결과는 반드시 소비한다.** 루트 `.htaccess` 만은 통째 복사가 아니라 코어 관리 블록(`# BEGIN G7` ~ `# END G7`)만 교체한다 — 블록 밖의 운영자 규칙을 보존하기 위해서다. 그 갱신기(`RootHtaccessUpdater::apply()`)는 `bool` 이 아니라 `RESULT_*` 문자열을 돌려주며, 호출부는 아래 갈래를 **모두** 처리해야 한다.
+>
+> | 결과 | 뜻 | 호출부가 할 일 |
+> |---|---|---|
+> | `updated` · `unchanged` | 정상 | 없음 |
+> | `preserved` | 대상에 코어 관리 블록이 없어 **손대지 않았다** | `noticeMessage()` 를 운영자에게 노출. 운영자가 일부러 지웠을 수도 있지만, 예전 사이트의 `.htaccess` 가 그대로 있거나 전송 중단으로 빈 파일이 된 경우도 같은 결과다 — 후자는 **보호 규칙이 미적용으로 남았다**는 뜻이고, 문서 루트가 프로젝트 루트인 배치에서 그것은 설정 파일 노출이다 |
+> | `created` | 대상이 없어 **새로 만들었다** | `noticeMessage()` 를 운영자에게 노출. 프로젝트 루트가 웹에 열려 있던 배치라면 이제 보호되지만, 그 사이트가 `/public/…` 주소를 써 왔다면 **그 주소가 정본 주소로 301 이동한다** — 주소 체계가 바뀐다는 뜻이라 운영자가 알아야 한다 |
+> | `duplicate_block` · `broken_block` · `source_invalid` · `destination_invalid` · `read_failed` | 실패 | `isFailure()` 로 판정하고 `failureMessage()` 를 노출. 업데이트 자체는 계속한다. `read_failed` 는 소스·대상을 **읽지 못한** 경우다 — 그것을 `preserved` 로 접으면 「운영자가 지웠다」로 오인된다. `broken_block` 은 마커가 **하나만** 있거나(BEGIN 만 · END 만) 역순인 경우다 — 지운 것이 아니라 **잘린** 것이라(전송 중단·부분 쓰기·손편집) 그 파일은 지금 보호 규칙이 온전하지 않으며, 이것도 `preserved` 로 접으면 안내가 원인을 가린다. 마커가 하나도 없는 파일만 `preserved` 다 |
+> | `write_failed` | 쓰지 못했다 — 보호 규칙이 구버전으로 남았다 | 위 행과 같다 |
+>
+>
+> **보호 대상은 루트 `.htaccess` 하나다.** `public/.htaccess` 는 마커 블록 방식이 아니라
+> `public` 디렉토리 복사로 갱신되며, 운영자 수정본은 증분 판정에서 `changed` 로 분류되어
+> 코어 판본으로 덮인다(백업에는 원본이 남는다). 레이아웃 ②에서는 요청이 두 파일을 차례로
+> 지나가는데 그중 하나만 보존되는 구조이므로, 서버 규칙을 덧붙일 때는 **루트 `.htaccess` 의
+> 블록 밖**에 적는다.
+>
+> 결과를 버리면 그 사이트는 「적용 완료」만 보고 무방비로 남는다. 콘솔 커맨드는 `CoreUpdateService::getLastRootFileWarnings()` 로 모아 한 번에 출력하며, **롤백 경로도 같은 통로를 쓴다** — 되돌리기가 그 두 파일을 지웠을 때 그 사실이 로그 파일에만 남으면 운영자는 알 수 없다. 웹 오케스트레이터를 만들 때도 같은 갈래를 같은 통로로 처리한다 — 통보 대상은 `preserved` 와 `created` **둘**이다.
+
+> **루트 `web.config` 는 `.htaccess` 와 같은 마커 블록 규칙을 따른다.** `BEGIN G7` / `END G7` 을 담은 XML 주석 한 줄씩이 경계이고(`<configuration>` 바로 안쪽, 줄 시작), 코어는 그 블록(`system.webServer` 요소 전체)만 교체한다 — 운영자가 블록 밖에 둔 `<configuration>` 의 다른 자식 요소(`<system.web>`·`<location>`)는 보존되고 결과는 유효한 XML 로 남는다. 종전에는 이 파일이 「코어 소유, 통째 교체」였다 — 같은 사이트에서 두 파일이 정반대로 동작했다. 판정 로직(마커 없음·두 벌·손상·CRLF·읽기/쓰기 실패·링크 대상·부분 쓰기)은 `AbstractRootMarkerFileUpdater` 하나가 소유하고, `RootHtaccessUpdater`·`RootWebConfigUpdater` 는 마커 문자열·로그 태그·문구 키 접두만 정한다. 어느 루트 파일이 갱신기를 지나는지는 `CoreBackupHelper::ROOT_MARKER_FILE_UPDATERS`(보호 파일 SSoT 에서 도출)가 정하며, 정상 targets 분기와 자동 발견 폴백 분기 둘 다 그 표를 본다. `web.config` 의 통보 문구는 `settings.core_update.root_web_config_*` 다.
+>
+> **형제 파일 루트 `index.php` 도 같은 통로를 쓴다.** 그 파일은 마커 블록이 없어 통째로 교체되는데, 교체 대상이 코어 shim 이 아니면(레이아웃 ③ 사이트가 두던 자체 랜딩·리다이렉트) 그 내용은 백업에만 남는다. `CoreUpdateService::recordRootIndexReplacement()` 가 그 사실을 같은 경고 버퍼에 싣는다. 교체 직전 사본의 디렉토리 이름은 `BackupDirectoryName::stamp()` 가 만든다 — 잔존물 정리기의 판정 정규식이 같은 곳을 보므로 한쪽만 바뀌는 일이 없다.
+
+> **`deploy/**` 서버 설정 조각은 운영자 수정본을 보존한다.** 조각 머리말이 운영자에게 그 파일을 직접 고치라고 지시하고(`fastcgi_pass`·하위 폴더 접두사), nginx 는 그 파일을 `include` 로 제자리에서 읽는다. 그래서 `deploy` 대상은 디렉토리 통째 복사가 아니라 `CoreUpdateService::applyDeployFragments()` 가 파일마다 판정한다 — 근거는 **코어가 마지막으로 쓴 내용의 해시 원장**(`storage/app/core-update/deploy-fragments.json`)이다. 백업 스냅샷은 근거가 못 된다(현재 디스크의 사본이라 언제나 현재 디스크와 같다).
+>
+> | 디스크 상태 | 동작 | 통보 |
+> |---|---|---|
+> | 새 판본과 같다 | 원장만 갱신, 잔존 `.dist` 제거 | 없음 |
+> | 없다 | 신규 복사 | 없음 |
+> | 원장의 해시와 같다(코어가 쓴 그대로) | 정상 갱신 + 잔존 `.dist` 제거 | 없음 |
+> | 그 외 — 운영자 수정본, 또는 원장이 없어 판정 불가(이 기능 이전 설치본의 첫 업데이트) | 덮어쓰지 않고 새 판본을 `<이름>.dist` 로 옆에 둔다. **원장에는 새 판본의 해시를 기록한다** | `deploy_fragment_preserved` 를 같은 경고 버퍼에 싣는다 |
+> | 위와 같은데 옛 `.dist` 가 이미 있고 그 내용이 새 판본과 다르다 | `.dist` 는 덮어쓰지 않고(운영자가 합치던 중간 작업일 수 있다) 새 판본을 `<이름>.dist.new` 로 둔다. `.dist.new` 는 코어가 만든 파일이라 다음 업데이트가 자유롭게 갱신한다 | `deploy_fragment_dist_conflict` |
+>
+> **원장의 의미는 「코어가 마지막으로 제시한 판본」이다** — 「코어가 쓴 것」이 아니다. 보존한 조각도 새 판본의 해시를 기록하기 때문에, 운영자가 안내대로 `.dist` 를 합쳐 파일이 새 판본과 같아지면 다음 업데이트에서 디스크 == 원장이라 정상 갱신으로 탈출한다. 합치지 않으면 디스크 ≠ 원장이라 보존이 유지된다. 기록하지 않으면 원장이 없던 사이트는 합친 뒤에도 **매 업데이트마다** 「판정 불가 → `.dist`」 가 반복된다(오류 없음).
+>
+> **원장이 없는 설치본은 씨앗한다.** 설치 완료 시점(인스톨러)과 7.2.0 업그레이드 스텝(`upgrades/data/7.2.0/migrations/05_SeedDeployFragmentLedger.php`)이 `CoreUpdateService::seedDeployFragmentLedger($projectRoot)` 와 같은 로직으로 현재 디스크의 해시를 원장에 쓴다 — 그 시점의 디스크는 **사이드카(`.dist`·`.dist.new`)가 없는 조각에 한해** 릴리즈 판본과 같다. 사이드카가 있는 조각은 씨앗하지 않는다(씨앗하면 운영자 수정본이 「코어가 쓴 그대로」로 읽혀 다음 업데이트가 덮어쓴다). 원장이 이미 있으면 손대지 않는다. 스텝은 업그레이드 경로 규율(기존 클래스의 신규 메서드 호출 금지)로 로컬 로직을 갖고, 서비스 씨앗기와의 결과 일치는 `tests/Unit/Upgrades/SeedDeployFragmentLedgerTest` 가 대조한다.
+>
+> **원장 쓰기 실패는 통보 통로에 실린다** (`deploy_fragment_ledger_write_failed`) — 원장은 다음 업데이트의 판정 근거라, 쓰지 못한 채 넘기면 그 사이트는 다음 업데이트에서 전 조각이 「판정 불가」로 떨어지고 운영자는 이유를 알 수 없다. 보존·충돌·쓰기 실패는 전부 업그레이드 로그 채널(`upgrade`)에도 함께 남는다.
+>
+> `.dist`·`.dist.new` 는 웹에서 열리지 않는다 — `deploy/` 디렉토리와 `dist` 확장자가 네 서버 조각의 차단 목록에 모두 있다(`ServerConfigParityTest`). 이 경로는 orphan 을 지우지 않는다(`--prune` 이어도) — 운영자가 둔 파일이 사라지는 것이 곧 이 규칙이 막는 결함이다. 롤백(`restoreFromBackup()`)은 `.dist`·`.dist.new` 와 원장을 함께 걷는다: 복원된 내용이 코어가 쓴 것인지 운영자 수정본인지 그 자리에서는 알 수 없으므로 다음 업데이트가 「판정 불가 → 보존 + 안내」 쪽으로 떨어지게 둔다 — 그리고 그 보존이 원장을 다시 씨앗하므로 한 번뿐이다.
+
+> **경고는 반환값에도 실린다.** `applyUpdate()` 는 `['root_file_warnings' => list<string>]` 을, `restoreFromBackup()` 은 `['failed_targets' => list<string>, 'root_file_warnings' => list<string>]` 을 돌려준다 — `getLastRootFileWarnings()` 와 같은 값이다. 콘솔 커맨드도 정상 경로·롤백 경로에서는 **반환값**을 출력 통로에 넘기고, 게터는 적용이 예외로 끊겨 반환값이 없는 경로에서만 쓴다 — 커맨드마저 게터만 쓰면 반환값 축은 소비처가 0 이라 조용히 죽는다. 무CLI 웹 워커처럼 커맨드가 아닌 소비처에게는 반환값이 곧 계약이다.
 
 > **자동 발견 폴백의 배경 (engine-v / beta.4 이후)**: Step 7 은 부모 프로세스의 `config('app.update.targets')` 를 사용한다. 부모는 업그레이드 *직전* 의 코드/메모리 상태이므로 신버전이 도입한 신규 최상위 디렉토리(예: beta.4 의 `lang-packs/`) 가 부모의 stale targets 에서 누락된다. 폴백은 이 결함을 안전망으로 차단하며, `config/app.php` 의 `update.protected_paths` 가 런타임 데이터(`storage`)·로컬 환경(`.env*`)·별도 파이프라인 산출물(`vendor`)·개발 메타(`.git`/`.claude`/`.serena` 등) 의 의도치 않은 덮어쓰기를 방지한다.
 
@@ -867,12 +917,22 @@ php artisan core:check-updates
 
 > 파일: `app/Http/Controllers/Api/Admin/CoreUpdateController.php`
 
-| 메서드 | 경로 | 설명 |
-|--------|------|------|
-| GET | `/api/admin/core-update/check-updates` | 코어 업데이트 확인 (422 시 check_failed) |
-| POST | `/api/admin/core-update/changelog` | 코어 변경 로그 조회 (from_version, to_version) |
+| 메서드 | 경로 | 권한 | 설명 |
+|--------|------|------|------|
+| POST | `/api/admin/core-update/check` | `core.settings.read` | 코어 업데이트 확인 (422 시 check_failed) |
+| GET | `/api/admin/core-update/changelog` | `core.settings.read` | 코어 변경 로그 조회 (from_version, to_version) |
+| GET | `/api/admin/core-update/status` | `core.system.update` | 웹 실행 상태 (업데이트 화면이 그리는 상태의 근거) |
+| POST | `/api/admin/core-update/start` | `core.system.update` | 실행 등록 (단계는 수행하지 않음) |
+| POST | `/api/admin/core-update/advance` | `core.system.update` | 다음 단계 **하나**를 수행 |
+| POST | `/api/admin/core-update/dismiss` | `core.system.update` | 끝난 실행의 기록 정리 |
 
-> ActivityLog: `checkForUpdates` 호출 시 `core_update.check` 액티비티 기록
+적용 경로 셋은 설정 수정과 **다른 권한**을 요구합니다 — 설정을 고치는 것과 코어를 갈아
+끼우는 것은 실패 시 되돌리는 비용이 다릅니다.
+
+파라미터·응답 필드·예시는 [api/core-update.md](api/core-update.md) 가 소유합니다.
+
+> ActivityLog: 확인은 `core_update.check`, 웹 실행은 `core_update.started` ·
+> `core_update.completed` · `core_update.failed` 를 기록합니다.
 
 ---
 
@@ -1012,6 +1072,168 @@ URL: https://example.com/{secret}
 | **로깅** | 타임스탬프 성공/실패 로그 + 실패 보고서 | laravel.log | laravel.log |
 
 ---
+
+## 15. 웹 단계 실행 (관리자 화면)
+
+> 파일: `app/CoreUpdate/{CoreUpdateOrchestrator,CoreUpdateRunState,CoreUpdatePreflight,CoreUpdateStep,CoreUpdateOptions}.php`
+
+SSH 를 쓸 수 없는 호스팅을 위해 관리자 화면(환경설정 > 업데이트)에서 같은 업데이트를
+수행합니다. **일은 신설하지 않습니다** — `CoreUpdateService` 와 기존 콘솔 커맨드
+(`core:execute-upgrade-steps` · `core:execute-bundled-updates`)를 그대로 부르고,
+오케스트레이터는 **순서·재개·되돌리기**만 맡습니다.
+
+### 왜 한 요청에 한 단계인가
+
+파일을 교체한 프로세스가 사라진 클래스를 참조하면 치명 오류가 납니다(실사례:
+2026-04-17). 그래서 단계마다 요청을 끊고, 그 다음 요청은 **신버전 코드로 새로 부팅된
+프로세스**가 처리합니다.
+
+**순서 불변식**: 업그레이드 스텝(`upgrade_steps`)은 파일 적용(`apply`)과 **반드시 다른
+요청**에서 실행합니다. CLI 는 그 격리를 `proc_open` 스폰으로 얻지만 스폰이 막힌 호스팅에는
+그 수단이 없고, 요청 경계가 그것을 대신합니다. 계약 테스트
+(`tests/Unit/CoreUpdate/CoreUpdateStepContractTest.php` ·
+`CoreUpdatePipelineParityTest.php`)가 이 불변식을 고정합니다.
+
+`apply` 단계는 마지막에 컴파일 캐시 파일(`config`·`routes`·`services`·`packages`·`events`)을
+**삭제만** 합니다. 그 자리에서 `clearAllCaches()` 를 부르면 `package:discover` 등이 방금
+교체된 파일을 구버전 프로세스에서 로드하게 되므로, 남은 정리는 다음 요청과 마무리 단계가
+맡습니다.
+
+### 단계
+
+| 순서 | 키 | 내용 |
+| --- | --- | --- |
+| 1 | `preflight` | 시스템 요구사항 · `_pending` 경로 · **적용 대상 전 경로의 쓰기 가능성** · 여유 공간 |
+| 2 | `maintenance` | 유지보수 모드 활성화 |
+| 3 | `download` | 내려받기 또는 운영자 ZIP 추출 |
+| 4 | `backup` | 백업 + 소유권 스냅샷(전체 · 항목별) |
+| 5 | `vendor` | `_pending` vendor 구성 (변경 없으면 스킵) |
+| 6 | `plan` | 신규 파일 manifest + 3-way 증분 적용 목록 |
+| 7 | `apply` | 코어 파일 적용 (증분 고정) |
+| 8 | `vendor_copy` | vendor 디렉토리 복사 |
+| 9 | `migrate` | `runMigrations()` + `reloadCoreConfigAndResync()` |
+| 10 | `upgrade_steps` | 러너 경유 `core:execute-upgrade-steps --steps-only` |
+| 11 | `bundled` | 러너 경유 `core:execute-bundled-updates --manifest=…` (선택) |
+| 12 | `finalize` | 버전 기록 · 캐시 · 소유권 복원 · 링크 복구 · 정리 · 유지보수 해제 |
+
+### 안전 기본값 (웹 전용 고정)
+
+`--force` · `--prune` · `--no-backup` · `--no-maintenance` · `--vendor-mode` · `--source` ·
+`--local` 은 **웹 동선에 입력 표면 자체가 없습니다.** 검증에서 거르는 형태를 택하지 않은
+이유는 규칙 한 줄만 풀면 켜지는 값이 남기 때문입니다 — `CoreUpdateOptions` 에는 그 필드가
+없고, `StartCoreUpdateRequest` 에도 그 키가 없습니다. CLI 는 그 선택들을 그대로 유지합니다.
+
+받는 선택은 넷뿐입니다: 번들 확장·언어팩 동시 업데이트(기본 켬) · 검색 인덱스 재생성
+(기본 끔) · 전역 레이아웃 전략(기본 `overwrite`) · 수동 ZIP 파일명.
+
+### 진행 상태와 재개
+
+`storage/app/core-update/web-run.json` 이 요청 경계를 넘는 유일한 기억입니다. 증분 적용
+목록은 커질 수 있어 사이드카 파일(`web-run-apply-list.json`)로 분리합니다.
+
+`CoreUpdateService` 의 실행 잠금(`flock`)은 프로세스 수명에 묶여 요청 사이를 잇지
+못하므로, 요청 경계를 넘는 직렬화는 상태 파일의 **점유(토큰 + 심박)** 가 맡습니다. 심박을
+읽을 수 없으면 **보유 중으로 봅니다**(fail-closed) — 판정 불능을 「오래됨」으로 접으면
+진행 중인 다른 요청의 점유를 빼앗기 때문입니다. `flock` 은 같은 요청 구간에서 **동시에
+도는 CLI 실행**을 막는 데 계속 쓰입니다.
+
+### 사전 조건은 누르기 전에 보인다
+
+착수 화면(`GET /api/admin/core-update/status`)은 응답의 `preflight` 로 쓰기 권한·여유 공간
+판정을 함께 받습니다. 실행 1단계에서만 재면 쓰기 권한이 없는 호스팅의 운영자는 **사이트를
+점검 모드로 보낸 뒤에야** 그 사실을 알게 됩니다.
+
+화면용 요약은 **얕게** 잽니다 — 각 대상 경로의 쓰기 비트와 여유 공간까지입니다. 하위 전수
+순회와 트리 크기 추정은 저장소 규모에 따라 십수 초가 걸려(실측) 화면을 여는 요청에 실을 수
+없습니다. 전수 판정은 착수 1단계가 소유하며 **차단의 권위도 그쪽에 있습니다.**
+
+진단 대상은 `update.targets` 만이 아니라 **웹 흐름이 실제로 쓰는 경로 전부**입니다 —
+`backup_only`(vendor)는 targets 에 없지만 `vendor_copy` 단계가 덮어쓰고 되돌리기도 그리로
+복원합니다. 빠뜨리면 「진단은 통과했는데 적용에서 실패」가 재현되고, 그때는 이미 파일 적용이
+끝난 뒤라 되돌리기까지 부분 실패합니다.
+
+### 진행은 화면이 스스로 이어간다
+
+한 요청이 한 단계만 수행하므로 **반복 호출의 주체는 화면**입니다. 진행·되돌리기 상태를
+그리는 지점이 마운트될 때 자동으로 다음 단계를 부르며, 그래서 브라우저를 닫았다 다시
+들어와도 진행이 이어집니다. 이 배선이 없으면 진행률만 복원되고 아무도 `advance` 를 부르지
+않아 **사이트가 점검 모드에 멈춘 채** 남습니다 — 실패 시의 「조작 없이 되돌린다」도 다음
+호출이 복원을 수행하는 구조라 같은 배선에 기댑니다.
+
+자동 경로에는 페이지 수명당 상한이 있습니다. 반복 호출 상한으로 멈춘 진행이 곧바로 자동
+재개되면 같은 왕복이 무한히 돌기 때문이며, 그 뒤로는 [이어서 진행] 이 유일한 진행 수단이
+됩니다(그 버튼은 이 상한을 쓰지 않습니다).
+
+### 실패와 되돌리기
+
+단계가 실패하면 상태가 `rolling_back` 으로 전이하고, 이어지는 `advance` 호출이 백업 복원을
+수행합니다 — 운영자 조작이 필요 없습니다. 화면에서 가장 중요한 정보는 「실패했다」가 아니라
+**「지금 사이트는 멀쩡하다」**이므로, 되돌리기 결과를 실패 사유와 분리해 표시합니다.
+복원까지 실패한 경우(`rollback_failed`)에만 수동 복구 절차·백업 위치·실패 리포트 경로를
+엽니다.
+
+업그레이드 스텝이 새 프로세스를 요구하면(`UpgradeHandoffException`) CLI 는 재실행 명령을
+안내하고 끝내지만, 웹에서는 **다음 요청이 곧 새 프로세스**이므로 같은 단계를 이어서
+수행합니다(상한 `MAX_HANDOFF_CONTINUATIONS`).
+
+**업그레이드 스텝 단계는 스폰 실패 모드를 `fallback` 으로 강제합니다.**
+`CoreUpdateService::runUpgradeSteps()` 의 stale 메모리 가드는 `config('app.version')` 이
+목표 버전보다 낮으면 「부모가 구버전 코드를 들고 있다」로 판정하고, 배포 기본값(`abort`)
+에서는 그 자리에서 핸드오프를 던집니다. CLI 는 자식 프로세스 env 에 `APP_VERSION=toVersion`
+을 실어 그 판정을 피합니다.
+
+웹에서는 그 판정의 **전제 자체가 성립하지 않습니다** — 이 단계는 파일 적용과 다른 요청이라
+이미 신버전 코드로 부팅된 프로세스이고, `.env` 의 `APP_VERSION` 은 마무리 단계까지 옛 값으로
+남습니다. 강제하지 않으면 매 요청이 같은 판정을 반복해 핸드오프가 상한까지 소진되고,
+**정상 적용된 코어가 되돌려집니다.** 강제 채널은 `config()`(in-process 러너)와
+`$_ENV`/`$_SERVER`(서브프로세스 자식)이며, `putenv` 는 쓰지 않습니다 — 그 값은 프로세스
+수명에 남아 같은 워커의 다음 요청까지 모드를 바꿉니다.
+
+**되돌리기는 성공 경로와 같은 강도로 마무리합니다.** 파일을 제자리에 놓는 것으로 끝나지
+않습니다 — 시작 전 스냅샷으로 소유권·퍼미션을 복원하고(복원 실패는 경고로 노출), 컴파일
+캐시는 **파일만** 지우며(`clearAllCaches()` 를 부르면 되돌린 디스크를 신버전 클래스를 든
+프로세스가 재발견합니다), 파일을 쓰는 구간이므로 단계 수행과 **같은 잠금** 안에서 돕니다.
+
+### 유지보수 모드에 갇히지 않는다
+
+업데이트는 스스로 유지보수 모드를 켭니다. 진행·되돌리기 경로가 그 안에 갇히면 사이트를
+세워 놓고 이어 갈 수단이 사라지므로 두 겹으로 엽니다:
+
+1. `MaintenanceModePage::MAINTENANCE_EXEMPT_URIS` — `status`·`advance`·`dismiss` 세 경로.
+   실제 라우트 URI 와의 일치는 계약 테스트가 고정합니다(어긋나면 진행이 503 으로 멈춥니다).
+2. `advance` 응답이 싣는 유지보수 우회 쿠키 — 관리자 화면(SPA 셸·다른 조회 API)까지 엽니다.
+
+쿠키만으로는 부족합니다(만료·다른 기기·쿠키 차단). 목록만으로도 부족합니다(관리자 화면
+자체가 열리지 않습니다).
+
+### 권한과 활동 로그
+
+`core.system.update` 는 설정 수정과 분리된 권한이며 최고관리자 역할에만 기본
+부여됩니다. 이 권한이 없는 관리자에게 화면은 업데이트 영역을 **비활성이 아니라
+미표시**로 다룹니다.
+
+실행·성공·실패는 훅(`core.core_update.started` · `.completed` · `.failed`)으로 발행되고
+`CoreActivityLogListener` 가 활동 로그에 남깁니다. 실패 로그에는 되돌리기 결과가 함께
+실립니다 — 「실패했다」와 「사이트가 지금 어떤 상태인가」는 다른 사실입니다.
+
+이 세 훅은 **웹 업데이트 경로(`CoreUpdateOrchestrator`)에서만 발행됩니다.** SSH/CLI 의
+`php artisan core:update` 는 발행하지 않으므로, 이 훅을 구독하는 확장은 CLI 업데이트를
+관측하지 못합니다 — 활동 로그에도 CLI 실행은 남지 않습니다.
+
+### 수동 ZIP 소스
+
+외부 접속이 막힌 서버는 릴리스 ZIP 을 `storage/app/core_pending` 에 올려 두고 이름으로
+지정합니다. 디렉토리는 서버가 정하고 **이름만** 받으며, 해석 결과가 그 디렉토리 밖을
+가리키면 거부합니다. 이후는 자동 내려받기와 같은 파이프라인이며, 버전 비교도 동일하게
+적용됩니다(웹에는 `--force` 가 없습니다).
+
+### 정리 주체
+
+전개 디렉토리(`storage/app/core_pending/core_*`)는 `cleanupPending()` 이 정상·처리된 실패
+경로에서만 지웁니다. 치명 오류·요청 시간 초과·강제 종료에서는 그 코드가 돌지 않으므로,
+`StorageLeftoverPruneService` 의 `core_pending_staging` 대상군이 보존일이 지난 것을
+회수합니다. 이름 규약은 `CoreUpdateService::PENDING_DIR_PREFIX` 가 소유하고 정리 쪽이 그
+상수를 읽습니다.
 
 ## 참고 파일 위치
 

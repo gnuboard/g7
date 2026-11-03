@@ -150,12 +150,71 @@
             "comment": "설정값 전체 — **탭 조건이 없는 유일한 소스**다(어느 탭에서도 폼의 뿌리이므로).\n       응답을 `_local.form` 으로 풀어 편집 대상으로 삼고, 드라이버 원본값은 따로 남긴다\n       (드라이버 탭이 \"바뀐 항목만 연결 시험을 다시 요구\" 하려면 처음 값이 있어야 한다).\n       권한은 전역으로 올려 조각들이 각자 읽는다."
         },
         {
+            "id": "core_update_status",
+            "label_key": "$t:editor.data_source.core_update_status",
+            "type": "api",
+            "endpoint": "/api/admin/core-update/status",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'update' && (_global.settingsAbilities?.can_core_update !== false)}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "run": null,
+                    "steps": [],
+                    "total_steps": 0,
+                    "manual_sources": [],
+                    "modified_layouts": {
+                        "has_modified": false,
+                        "count": 0,
+                        "extensions": []
+                    },
+                    "preflight": null
+                }
+            },
+            "comment": "코어 업데이트 진행 기록 — 업데이트 탭에서만, 코어 업데이트 권한이 없다고 확정되지 않은 동안 받는다.\n       진행 중인 실행(run)·단계 목록·직접 올린 ZIP 목록·사용자가 고친 레이아웃 수·사전 점검 결과를 서버가 돌려준다.\n       진행 중에는 업데이트 핸들러가 같은 모양을 _global.coreUpdateStatus 에 실어 이 응답보다 앞세운다(아래 계산값 coreUpdate*).\n       권한 응답이 오기 전(`settingsAbilities` 가 비어 있는 동안)에는 이 소스도 불리므로, 권한 없는 관리자가 주소로 업데이트 탭에 들어오면 403 이 난다 —\n       위 언어팩 소스처럼 조용히 넘긴다(fallback 이 빈 기록을 싣고, 탭 항목과 본문은 `can_core_update` 가 참일 때만 보인다)."
+        },
+        {
+            "id": "system_status",
+            "label_key": "$t:editor.data_source.system_status",
+            "type": "api",
+            "endpoint": "/api/admin/settings/system/status",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'system'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "execution": {
+                        "effective_mode": "subprocess",
+                        "configured_mode": "auto",
+                        "detection": {
+                            "blocked_functions": [],
+                            "php_probe": {}
+                        }
+                    },
+                    "cron": {
+                        "mode": "auto",
+                        "token_issued": false,
+                        "last_run": null
+                    }
+                }
+            },
+            "comment": "실행 방식·예약 작업 상태 — 시스템 탭에서만 받는다. 지금 쓰는 실행 방식과 그렇게 판정한 근거(막힌 함수·PHP 실행 검사),\n       웹 크론 방식·호출 번호 발급 여부·마지막 실행·최근 이력을 돌려준다. 호출 주소 자체는 싣지 않는다(보기·복사 때 따로 받는다)."
+        },
+        {
             "id": "systemInfo",
             "label_key": "$t:editor.data_source.systemInfo",
             "type": "api",
             "endpoint": "/api/admin/settings/system-info",
             "method": "GET",
-            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}",
+            "if": "{{['info', 'update'].includes(query.tab || _global.activeSettingsTab || 'general')}}",
             "auto_fetch": true,
             "auth_required": true,
             "fallback": {
@@ -166,7 +225,7 @@
                     "server_software": "-"
                 }
             },
-            "comment": "서버·프레임워크 정보 — 정보 탭에서만 받는다(읽기 전용이라 저장 대상이 아니다)."
+            "comment": "서버·프레임워크 정보 — 정보 탭과 업데이트 탭에서 받는다(읽기 전용이라 저장 대상이 아니다. 업데이트 탭은 현재 버전 표시에 쓴다)."
         },
         {
             "id": "staticCacheStatus",
@@ -695,6 +754,9 @@
         "coreUpdateInfo": null,
         "coreChangelog": null,
         "loadingChangelog": false,
+        "cronUrlRevealing": false,
+        "cronUrlCopying": false,
+        "coreUpdateDismissing": false,
         "policyForm": null,
         "policyErrors": null,
         "policyIsNew": true,
@@ -710,7 +772,17 @@
         "queueConnectionList": "{{(function() { const d = _local.form?.drivers ?? {}; const list = Array.isArray(d.queue_connections) ? d.queue_connections.filter(c => typeof c === 'string') : []; if (list.length > 0) return list; return d.queue_driver && d.queue_driver !== 'sync' ? [d.queue_driver] : []; })()}}",
         "queueErrors": "{{(function() { const e = _local.errors; const empty = { connections: [], namesRoot: [], names: {} }; if (!e || typeof e !== 'object') return empty; return Object.entries(e).reduce((out, [k, v]) => { const msgs = Array.isArray(v) ? v : [v]; if (k === 'drivers.queue_connections' || k.startsWith('drivers.queue_connections.')) return { ...out, connections: [...out.connections, ...msgs] }; if (k === 'drivers.queue_names') return { ...out, namesRoot: [...out.namesRoot, ...msgs] }; if (k.startsWith('drivers.queue_names.')) { const conn = k.slice('drivers.queue_names.'.length).split('.')[0]; return { ...out, names: { ...out.names, [conn]: [...(out.names[conn] ?? []), ...msgs] } }; } return out; }, empty); })()}}",
         "errorsWithoutIpRules": "{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) => !k.startsWith('security.ip_restriction_rules')); return rest.length > 0 ? Object.fromEntries(rest) : null; })()}}",
-        "ipRestrictionEnabled": "{{!!_local.form?.security?.ip_restriction_enabled && _local.form?.security?.ip_restriction_enabled !== '0' && _local.form?.security?.ip_restriction_enabled !== 'false'}}"
+        "ipRestrictionEnabled": "{{!!_local.form?.security?.ip_restriction_enabled && _local.form?.security?.ip_restriction_enabled !== '0' && _local.form?.security?.ip_restriction_enabled !== 'false'}}",
+        "trustedProxyList": "{{_local.form?.advanced?.trusted_proxies ?? []}}",
+        "trustedProxyLocked": "{{(_local.form?._meta?.env_locked ?? {})['advanced.trusted_proxies'] === true}}",
+        "trustedProxyMode": "{{(_local.form?.advanced?.trusted_proxies ?? []).includes('*') ? 'nearest' : ((_local.trustedProxyListMode || (_local.form?.advanced?.trusted_proxies ?? []).length > 0) ? 'list' : 'none')}}",
+        "coreUpdateStatus": "{{_global.coreUpdateStatus ?? core_update_status?.data ?? null}}",
+        "coreUpdateRun": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.run ?? null}}",
+        "coreUpdateSteps": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.steps ?? []}}",
+        "coreUpdateTotalSteps": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.total_steps ?? 0}}",
+        "coreUpdateManualSources": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.manual_sources ?? []}}",
+        "coreUpdateModified": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.modified_layouts ?? null}}",
+        "coreUpdatePreflight": "{{(_global.coreUpdateStatus ?? core_update_status?.data)?.preflight ?? null}}"
     },
     "permissions": [
         "core.settings.read"
@@ -732,6 +804,8 @@
             "language_packs",
             "sitemap_status",
             "staticCacheStatus",
+            "system_status",
+            "core_update_status",
             "trustedProxy",
             "queueStatus",
             "coreSchedules",
@@ -773,7 +847,7 @@
         {
             "comment": "주소의 탭 키가 아래 탭 바에 없으면(저장 묶음 이름 `notifications`·오래된 즐겨찾기 등) 탭 본문 게이트가 모두\n         거짓이라 본문이 통째로 빈다. 기본 탭으로 바꿔 연다 — 목록은 탭 바와 같아야 한다(회귀 테스트가 대조한다).",
             "handler": "setState",
-            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}",
+            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}",
             "params": {
                 "target": "global",
                 "activeSettingsTab": "general"
@@ -782,7 +856,7 @@
         {
             "comment": "audit:allow layout-list-context-navigate-merge-query 알 수 없는 탭 키 정정 — 그 탭의 목록 쿼리는 의미가 없어 물려받지 않는다(탭 전환과 같은 규칙).",
             "handler": "navigate",
-            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}",
+            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}",
             "params": {
                 "path": "/admin/settings",
                 "replace": true,
@@ -1078,6 +1152,17 @@
                                             "label": "$t:admin.settings.tabs.privacy"
                                         },
                                         {
+                                            "id": "system",
+                                            "href": "/admin/settings?tab=system",
+                                            "label": "$t:admin.settings.tabs.system"
+                                        },
+                                        {
+                                            "id": "update",
+                                            "href": "/admin/settings?tab=update",
+                                            "label": "$t:admin.settings.tabs.update",
+                                            "if": "{{_global.settingsAbilities?.can_core_update ?? false}}"
+                                        },
+                                        {
                                             "id": "info",
                                             "href": "/admin/settings?tab=info",
                                             "label": "$t:admin.settings.tabs.info"
@@ -1234,6 +1319,12 @@
                                 "partial": "partials/admin_settings/_tab_privacy.json"
                             },
                             {
+                                "partial": "partials/admin_settings/_tab_system.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_update.json"
+                            },
+                            {
                                 "partial": "partials/admin_settings/_tab_info.json"
                             }
                         ]
@@ -1242,7 +1333,7 @@
                         "id": "footer_buttons",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info' && (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}",
+                        "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info' && (_global.activeSettingsTab || query.tab || 'general') !== 'update' && (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}",
                         "props": {
                             "className": "sticky-footer-buttons"
                         },
@@ -1503,6 +1594,10 @@
         {
             "comment": "초기 화면 정적 파일 재게시 확인 창 — 전체 재생성이라 누르기 전에 한 번 묻는다.",
             "partial": "partials/admin_settings/_modal_static_cache_republish.json"
+        },
+        {
+            "comment": "웹 크론 호출 번호 재발급 확인 창(시스템 탭) — 재발급하면 등록해 둔 옛 호출 주소가 바로 무효가 되므로 한 번 묻는다.",
+            "partial": "partials/admin_settings/_modal_cron_token_rotate.json"
         },
         {
             "comment": "알림 템플릿 편집 창 — 정의 하나의 채널별 본문을 고친다.",

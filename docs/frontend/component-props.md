@@ -392,6 +392,29 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 기본 Button은 `loading` 속성으로 스피너를 자동 표시하지 않습니다. 비동기 버튼은 기존 레이아웃처럼 처리 상태를 `disabled`에 연결하고, 자식 `Icon(name: "spinner")`을 같은 상태로 조건부 표시합니다. 성공·실패 모두 처리 상태를 해제해야 합니다. 부분 조회 탭처럼 포커스를 유지해야 하는 컨트롤은 `aria-disabled`와 액션 실행 조건을 함께 사용합니다.
 
+### className 규약 — 베이스 `btn` 과 색 변형은 **함께** 쓴다
+
+`btn` 이 베이스이고(`inline-flex` · `gap-2` · `px-4 py-2` · `text-sm` · `font-medium` ·
+`rounded-lg` · transition · disabled 처리), `btn-primary` 계열은 **색만** 갖는다
+(background / text / border). 그래서 베이스를 빼고 변형만 달면 padding·모서리·굵기가
+통째로 빠진 **브라우저 기본 버튼**이 그대로 나간다.
+
+| className | 베이스 필요 | 이유 |
+|---|---|---|
+| `btn-primary` `btn-secondary` `btn-outline` `btn-ghost` `btn-neutral` `btn-success` `btn-danger` `btn-warning` `btn-info` | **필요** | 색만 갖는다 |
+| `btn-icon` `btn-preset` `btn-date` `btn-badge` | 불필요 | padding·모서리를 스스로 갖는다 |
+| `btn-sm` | `btn` 과 함께 | 크기 수정자(`px-3 py-1.5`)일 뿐 색이 없다 |
+
+```json
+"className": "btn btn-secondary"      // ✅
+"className": "btn-secondary"          // ❌ padding 0 · radius 0 · font-weight 400
+```
+
+삼항식도 **가지마다** 베이스를 넣는다 — `{{cond ? 'btn btn-primary' : 'btn btn-outline'}}`.
+
+오류가 나지 않고 클릭도 되므로 테스트·콘솔이 잡지 못한다. 정적 룰
+`layout-button-variant-needs-base-class` 가 커밋 전에 막는다.
+
 ### 레이아웃 JSON 사용 예시
 
 ```html

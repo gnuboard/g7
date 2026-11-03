@@ -20,17 +20,18 @@ use Tests\TestCase;
  * 분류 대상은 손으로 열거하지 않고 스키마(`frontend_schema.*.merge_into === 'advanced'`)
  * 에서 도출합니다. 새 카테고리가 고급 탭에 합류해도 이 테스트가 자동으로 그것을 셉니다.
  *
- * @scenario case=advanced_tab_category_persistence
- *
- * @effects pagination_limits_persist_from_admin_settings
- * @effects advanced_tab_persists_every_merged_category
+ * @scenario cap_source=settings
  */
 class AdvancedTabCategoryPersistenceTest extends TestCase
 {
     /**
      * 고급 탭에서 저장한 목록 상한값이 pagination 카테고리에 기록되는지 확인합니다.
      *
+     * @scenario cap_source=settings
+     *
      * @effects pagination_limits_persist_from_admin_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_pagination_limits_saved_from_advanced_tab_are_persisted(): void
     {
@@ -63,7 +64,11 @@ class AdvancedTabCategoryPersistenceTest extends TestCase
      *
      * 모집단은 스키마에서 도출하므로, 분류표가 뒤처지면 그 카테고리에서 실패합니다.
      *
+     * @scenario cap_source=settings
+     *
      * @effects advanced_tab_persists_every_merged_category
+     *
+     * @return void 반환값 없음
      */
     public function test_every_category_merged_into_advanced_is_persisted(): void
     {

@@ -1745,6 +1745,8 @@
     "trustedProxy": "Trusted proxy diagnostic",
     "user": "User",
     "users": "Users",
+    "system_status": "Execution method and scheduled task status",
+    "core_update_status": "Core update status",
     "analytics_overview": "Analytics overview",
     "analytics_realtime": "Realtime visitors",
     "analytics_realtime_ws": "Realtime broadcast",

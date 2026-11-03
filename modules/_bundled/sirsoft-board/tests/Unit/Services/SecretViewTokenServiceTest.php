@@ -16,7 +16,7 @@ use ReflectionProperty;
  *
  * 브라우저 토큰 1개 + 서버의 글별 grant. 재사용·누적·만료·상한·신원 결속·키 해시를 고정한다.
  *
- * @scenario link=board-secret-thread-password
+ * 소속 시나리오(마커 아님 — 평문): board-secret-thread-password
  */
 class SecretViewTokenServiceTest extends ModuleTestCase
 {

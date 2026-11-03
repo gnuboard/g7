@@ -103,6 +103,7 @@
   "refresh": "更新",
   "activate": "有効化",
   "skip": "スキップ",
+  "copy": "コピー",
   "tag_input": {
     "remove": "{{label}}を削除",
     "results": "結果 {{count}}件",

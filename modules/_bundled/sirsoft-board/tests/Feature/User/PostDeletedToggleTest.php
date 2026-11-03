@@ -8,7 +8,6 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
@@ -18,7 +17,6 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 삭제된 게시글/댓글이 목록에 노출되는지 검증합니다.
  *
  * @scenario viewer=manager
- * @effects manager_sees_deleted_post_original_title_and_content, manager_sees_deleted_comment_original_content
  */
 class PostDeletedToggleTest extends BoardTestCase
 {
@@ -26,11 +24,22 @@ class PostDeletedToggleTest extends BoardTestCase
 
     private User $managerUser;
 
+    /**
+     * 이 시험이 쓰는 게시판 슬러그를 돌려준다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'deleted-toggle';
     }
 
+    /**
+     * 댓글을 켜고 비밀글과 금지어를 끈 시험용 게시판 속성을 돌려준다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 생성 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -43,6 +52,11 @@ class PostDeletedToggleTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 읽기 권한만 가진 일반 사용자와 manager 권한을 더 가진 사용자를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -83,6 +97,12 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager 권한 사용자는 abilities.can_view_deleted = true 반환
+     *
+     * @scenario viewer=manager
+     *
+     * @effects abilities_can_view_deleted_reflects_manager_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_receives_can_view_deleted_true_in_abilities(): void
     {
@@ -95,6 +115,12 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * 일반 사용자는 abilities.can_view_deleted = false 반환
+     *
+     * @scenario viewer=regular
+     *
+     * @effects abilities_can_view_deleted_reflects_manager_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_regular_user_receives_can_view_deleted_false_in_abilities(): void
     {
@@ -111,6 +137,12 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager + del=1 → 삭제된 게시글 목록에 포함
+     *
+     * @scenario viewer=manager
+     *
+     * @effects include_deleted_toggle_lists_deleted_posts_for_manager_only
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_with_include_deleted_sees_deleted_posts(): void
     {
@@ -134,6 +166,12 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager라도 include_deleted 파라미터 없으면 삭제된 게시글 미포함
+     *
+     * @scenario viewer=manager
+     *
+     * @effects include_deleted_toggle_lists_deleted_posts_for_manager_only
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_without_include_deleted_does_not_see_deleted_posts(): void
     {
@@ -155,6 +193,12 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * 일반 사용자는 del=1 파라미터를 넘겨도 삭제된 게시글 미포함
+     *
+     * @scenario viewer=regular
+     *
+     * @effects include_deleted_toggle_lists_deleted_posts_for_manager_only
+     *
+     * @return void 반환값 없음
      */
     public function test_regular_user_cannot_see_deleted_posts_even_with_include_deleted(): void
     {
@@ -180,6 +224,12 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager + del_cmt=1 → 삭제된 댓글 상세에 포함
+     *
+     * @scenario viewer=manager
+     *
+     * @effects include_deleted_comments_toggle_shows_deleted_comments_for_manager_only
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_with_include_deleted_comments_sees_deleted_comments(): void
     {
@@ -204,6 +254,12 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager라도 include_deleted_comments 없으면 삭제 댓글 미포함
+     *
+     * @scenario viewer=manager
+     *
+     * @effects include_deleted_comments_toggle_shows_deleted_comments_for_manager_only
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_without_include_deleted_comments_does_not_see_deleted_comments(): void
     {
@@ -226,6 +282,12 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * 일반 사용자는 del_cmt=1을 넘겨도 삭제 댓글 미포함
+     *
+     * @scenario viewer=regular
+     *
+     * @effects include_deleted_comments_toggle_shows_deleted_comments_for_manager_only
+     *
+     * @return void 반환값 없음
      */
     public function test_regular_user_cannot_see_deleted_comments_even_with_include_deleted_comments(): void
     {
@@ -255,6 +317,10 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager 권한자는 삭제된 게시글 상세에서 제목/본문 원본을 본다.
+     *
+     * @effects manager_sees_deleted_post_original_title_and_content
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_sees_deleted_post_original_title_and_content(): void
     {
@@ -275,6 +341,10 @@ class PostDeletedToggleTest extends BoardTestCase
 
     /**
      * manager 권한자는 삭제된 댓글의 원본 본문을 본다.
+     *
+     * @effects manager_sees_deleted_comment_original_content
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_sees_deleted_comment_original_content(): void
     {

@@ -135,7 +135,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -403,7 +403,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create\|sirsoft-page.pages.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `slug` 누락, `exclude_id` 가 정수가 아님 |
 
 <!-- @generated:end -->
@@ -819,7 +819,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -943,7 +943,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | page | path | string | 예 | — | 조회할 페이지 번호 (1부터 시작) |
-| versionId | path | string | 예 | — | 대상 version의 식별자 |
+| versionId | path | integer | 예 | — | 대상 version의 식별자 |
 
 **요청 예시**
 
@@ -1030,7 +1030,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | page | path | string | 예 | — | 조회할 페이지 번호 (1부터 시작) |
-| versionId | path | string | 예 | — | 대상 version의 식별자 |
+| versionId | path | integer | 예 | — | 대상 version의 식별자 |
 
 **요청 예시**
 
@@ -1211,10 +1211,27 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이
 ```http
 HTTP/1.1 200
 Content-Type: image/jpeg
-Content-Disposition: inline
+Content-Disposition: inline; filename=photo.jpg
 X-Content-Type-Options: nosniff
+Cache-Control: public, max-age=31536000, must-revalidate
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 
 (이미지 바이너리 스트림)
+```
+
+조건부 요청 (HTTP 304) — `If-None-Match` 가 현재 ETag 와 일치하거나, `If-None-Match` 없이 `If-Modified-Since` 가 수정 시각 이후이면 본문 없이 응답합니다. 304 는 200 이 실었을 `ETag`·`Last-Modified`·`Cache-Control`·`Expires` 를 그대로 싣습니다:
+
+```http
+GET /api/modules/sirsoft-page/pages/attachment/{hash}/preview HTTP/1.1
+If-None-Match: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+
+HTTP/1.1 304 Not Modified
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Cache-Control: public, max-age=31536000, must-revalidate
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 ```
 
 실패 시(첨부 미존재 · 이미지가 아닌 첨부 · 스토리지에 파일 없음):
@@ -1237,7 +1254,9 @@ X-Content-Type-Options: nosniff
 
 **설명** 이미지 첨부 썸네일을 인라인으로 미리봅니다(해시 기반, 12자). `download` 와 동일한 발행상태 게이트를 적용합니다 — 발행된 페이지의 썸네일은 누구나, 미발행 페이지의 썸네일은 `sirsoft-page.pages.read` 권한 관리자만 미리볼 수 있습니다. 무인가 사용자에게는 미발행 썸네일이 차단됩니다.
 
-브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 미발행 페이지의 관리자 응답(관리자 상세·미발행 미리보기)에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 `preview_url` 로 직렬화되며, 이 엔드포인트는 유효한 서명을 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 404 로 차단됩니다. 발행 페이지의 `preview_url` 은 종전과 동일한 무서명 공개 경로입니다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
+브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 미발행 페이지의 관리자 응답(관리자 상세·미발행 미리보기)에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 `preview_url` 로 직렬화되며, 이 엔드포인트는 유효한 서명을 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 404 로 차단됩니다. 발행 페이지의 `preview_url` 은 종전과 동일한 무서명 공개 경로입니다. 사이트를 하위 폴더(예: `/g7`)에 설치하면 이 서명 URL 은 설치 폴더 접두사를 실은 경로(`/g7/api/…`)로 내려간다 — 서명은 접두사를 뺀 경로에 걸리고 검증도 접두사를 뺀 요청 경로로 하므로, 그 주소 그대로 열면 서명이 유효하다. 무서명 `preview_url`·`download_url` 도 같은 접두사를 싣는다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
+
+**조건부 요청**: 응답은 행 메타(디스크·경로·수정 시각·크기) 기반 `ETag` 와 `Last-Modified` 를 싣고, 되돌아온 `If-None-Match`(우선) / `If-Modified-Since` 를 판정해 변경이 없으면 본문 없는 304 로 응답합니다. 판정은 코어 파일 서빙 헬퍼(`streamedFileResponse()`)가 하므로 다중값·`W/` 약한 검증자·압축 표현의 `-gzip` 접미사가 모두 인정되며, 304 에도 200 과 같은 캐시 헤더가 실립니다. 주소에 자산 버전(`?v=`)이 없으므로 `immutable` 은 붙지 않고(비운영 환경은 `no-cache`), 같은 주소의 이미지가 교체되면 재검증으로 도달합니다. 파일 이름 선언(`Content-Disposition`)은 스토리지 계층이 원본 파일명으로 만듭니다.
 
 
 ### GET /api/modules/sirsoft-page/pages/{slug}

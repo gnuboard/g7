@@ -86,6 +86,31 @@ class InstallerCliEmitterTest extends TestCase
     }
 
     /**
+     * 하위 명령 원문(`[cmd] ` 표식 log)은 사람이 읽는 출력에서 표식을 떼고 진행 줄과 구분해 찍는다.
+     *
+     * 웹 진행 화면은 이 줄을 진행 기록이 아니라 「명령 상세」로 보낸다. 터미널이 표식째 진행 줄로 찍으면 한 설치에
+     * 수천 줄인 명령 원문이 진행 기록을 덮는다. JSON 줄은 웹 SSE 와 같은 필드를 유지한다(표식 포함).
+     *
+     * @effects cli_emitter_separates_command_output_lines
+     *
+     * @return void 반환값 없음
+     */
+    public function test_command_output_lines_are_set_apart_from_progress_lines(): void
+    {
+        $run = $this->runCliCode(
+            '$text = new CliEmitter(null, false);'
+            .'$text->emit("log", ["message" => INSTALLER_COMMAND_OUTPUT_PREFIX."INFO  Running migrations."]);'
+            .'$text->emit("log", ["message" => "진행 줄"]);'
+            .'(new JsonLinesEmitter())->emit("log", ["message" => INSTALLER_COMMAND_OUTPUT_PREFIX."raw line"]);'
+        );
+
+        $this->assertStringContainsString("      │ INFO  Running migrations.\n", $run['raw'], '명령 원문이 구분되지 않았다');
+        $this->assertStringNotContainsString('[cmd] INFO', $run['raw'], '표식이 그대로 찍혔다');
+        $this->assertStringContainsString("    진행 줄\n", $run['raw'], '일반 진행 줄의 형태가 바뀌었다');
+        $this->assertSame([['event' => 'log', 'message' => '[cmd] raw line']], $run['events'], 'JSON 줄은 웹 SSE 와 같은 message 를 유지한다');
+    }
+
+    /**
      * 중단 신호 → `isConnectionAborted()` 참 (작업 실행기가 중단으로 멈춘다).
      *
      * @effects cli_emitter_abort_flag_maps_to_connection_aborted

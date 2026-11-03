@@ -9,6 +9,7 @@ use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Support\LifecycleWarnings;
@@ -16,6 +17,7 @@ use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Services\CoreUpdateService;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use App\Support\RouteCacheHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -167,7 +169,11 @@ class ExecuteUpgradeStepsCommand extends Command
         // `Aborted.` exit=1 회귀 발생 (882deb9b0 사각지대). env 시그널이 옵션 부재를 보완.
         //
         // 단독 호출 (운영자 수동) 시엔 env 미설정 → 모든 단계 정상 진행.
-        $isSpawnChild = getenv('G7_UPDATE_IN_PROGRESS') === '1';
+        // `getenv` 가 막힌 호스팅에서도 판정은 성립해야 한다 — 부모는 `$_ENV`/`$_SERVER`
+        // 에도 같은 값을 심고, 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다 (#609 D34).
+        $isSpawnChild = ($_ENV['G7_UPDATE_IN_PROGRESS']
+            ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
+            ?? (ExecutionEnvironment::hasFunction('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false)) === '1';
 
         // 사전 단계 (단독 실행 안전성 보장).
         //
@@ -224,6 +230,8 @@ class ExecuteUpgradeStepsCommand extends Command
                 'resumeCommand' => $e->resumeCommand,
             ], JSON_UNESCAPED_UNICODE);
 
+            $this->surfaceDocrootExposureWarnings($isSpawnChild);
+
             $this->line('[HANDOFF] '.$payload);
 
             Log::info('core:execute-upgrade-steps 핸드오프', [
@@ -245,6 +253,8 @@ class ExecuteUpgradeStepsCommand extends Command
             ]);
             $this->error($e->getMessage());
 
+            $this->surfaceDocrootExposureWarnings($isSpawnChild);
+
             $this->restoreUpgradeLogOwnership();
             $service->normalizeRuntimeOwnershipAfterRootRun();
 
@@ -255,6 +265,8 @@ class ExecuteUpgradeStepsCommand extends Command
         // 명시 종료 신호. [HANDOFF] 와 동일 구조의 라인 프로토콜. 정상 종료 (handoff 미발생) 경로
         // 에서만 발행되며, 부모는 exit=0 인데 본 라인이 부재하면 mode=abort 시 throw,
         // mode=fallback 시 in-process 진행 (`spawn_failure_mode`).
+        $this->surfaceDocrootExposureWarnings($isSpawnChild);
+
         $this->line('[STEPS_EXECUTED] '.json_encode([
             'count' => $stepsExecuted,
             'discovered' => $stepsDiscovered,
@@ -381,10 +393,74 @@ class ExecuteUpgradeStepsCommand extends Command
         // 코어('upgrade-*.log') + 확장('extension-upgrade-*.log') 두 채널의 daily 로그를 모두
         // 정합한다. glob 'upgrade-*.log' 는 'extension-' 접두사 파일을 매칭하지 못하므로
         // 두 패턴을 각각 순회한다.
+        //
+        // `glob` 은 하드닝 프로필이 흔히 막는 이름이고, 이 커맨드는 무CLI 환경에서
+        // `InProcessCommandRunner` 로 **웹 요청 안에서** 실행된다 — 막힌 호스팅에서는
+        // 함수 테이블에 없어 `Error`(치명)이고 `?: []` 는 그것을 막지 못한다(false 만 받는다).
+        // 소유권 정합은 실패해도 업데이트 자체를 되돌릴 이유가 없으므로 조용히 건너뛴다.
+        if (! ExecutionEnvironment::hasFunction('glob')) {
+            return;
+        }
+
         foreach (['upgrade-*.log', 'extension-upgrade-*.log'] as $pattern) {
             foreach (glob($logsDir.DIRECTORY_SEPARATOR.$pattern) ?: [] as $logFile) {
                 FilePermissionHelper::inheritOwnershipFromParent($logFile);
             }
         }
+    }
+
+    /**
+     * 이 프로세스가 만든 「공개 파일이 지금 웹에서 열린다」 통보를 부모에게 넘깁니다.
+     *
+     * 그 통보 버퍼는 **소비자만** 비우는데, 소비자(`CoreUpdateCommand`)는 부모 프로세스에만
+     * 있다. 그래서 업그레이드 스텝이 이 자식에서 `public/storage` 복구를 돌려 통보를 담아도,
+     * 자식 종료와 함께 폐기되어 콘솔에도 업데이트 기록에도 도달하지 않았다 — `upgrade` 로그
+     * 파일에만 남았고, 그 사실은 「공개 파일 전량 사본이 웹에서 열린다」이다.
+     *
+     * `[HANDOFF]` · `[STEPS_EXECUTED]` 와 같은 라인 프로토콜로 실어 보낸다. 구버전 부모는
+     * 이 접두사를 모르므로 그대로 콘솔에 중계된다 — 기록에는 못 닿아도 **사라지지는 않는다**.
+     *
+     * 단독 실행(부모 없음)이면 이 프로세스가 소비자이므로 콘솔에 직접 낸다.
+     *
+     * @param  bool  $isSpawnChild  부모 프로세스가 띄운 자식 실행인지 (true 면 라인 프로토콜로 부모에게 넘기고, 아니면 콘솔에 직접 낸다)
+     * @return void 반환값 없음
+     */
+    private function surfaceDocrootExposureWarnings(bool $isSpawnChild): void
+    {
+        $warnings = StorageLinkHelper::takeDocrootExposureWarnings();
+
+        if ($warnings === []) {
+            return;
+        }
+
+        if ($isSpawnChild) {
+            // 인코딩 실패를 삼키지 않는다. 백업 경로가 비-UTF8 바이트를 포함하는
+            // 파일시스템(로케일이 다른 공유 호스팅)에서 `json_encode` 는 `false` 를
+            // 돌려주고, 그러면 접두사만 실린 빈 줄이 나가 부모가 파싱하지 못한 채
+            // **노출 사실이 통째로 사라진다.** 치환으로 살려 보내고, 그래도 실패하면
+            // 원문 그대로 콘솔에 내어 부모의 원시 중계에 얹는다.
+            $payload = json_encode(
+                ['warnings' => array_values($warnings)],
+                JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
+            );
+
+            if (is_string($payload)) {
+                $this->line('[DOCROOT_EXPOSURE] '.$payload);
+
+                return;
+            }
+        }
+
+        $this->newLine();
+        // 이 통로에는 등급이 다른 두 종류가 섞인다 — 「지금 웹에서 열린다」(웹 트리 안
+        // 폴백)와 「옮기는 데 성공했으니 확인 후 지워라」(정상 결과)다. 머리말이 전자를
+        // 단정하면 문서 루트가 `public/` 인 표준 배치(절대다수)에서 노출이 아닌 상태에
+        // 노출 경보가 뜬다. 형제 축(`surfaceRootFileWarnings`)이 같은 이유로 단정 대신
+        // 완화 표현을 쓴다 — 등급은 각 문구가 스스로 말한다.
+        $this->warn(__('settings.core_update.console.docroot_exposure_header'));
+        foreach ($warnings as $warning) {
+            $this->warn('  - '.$warning);
+        }
+        $this->newLine();
     }
 }

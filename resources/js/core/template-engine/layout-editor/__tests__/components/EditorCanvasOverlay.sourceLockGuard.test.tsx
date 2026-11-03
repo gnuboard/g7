@@ -174,6 +174,7 @@ beforeEach(() => {
 });
 
 describe('EditorCanvasOverlay — 상속·주입 노드 인라인 편집 차단 (A3)', () => {
+  /** @effects route_edit_source_lock_blocks_inline_edit_delete_cut_and_duplicate_entry_points */
   it('N21 base 출처 평문 노드 더블클릭 → 인라인 편집기 미마운트', async () => {
     const { nodeEl } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -183,6 +184,7 @@ describe('EditorCanvasOverlay — 상속·주입 노드 인라인 편집 차단 
     expect(document.querySelector('[data-testid="g7le-inline-text-editor"]')).toBeNull();
   });
 
+  /** @effects route_owned_nodes_keep_inline_edit_delete_cut_and_duplicate */
   it('N22 회귀 가드 — route 출처 평문 노드 더블클릭은 그대로 진입한다', async () => {
     const { nodeEl } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -194,6 +196,7 @@ describe('EditorCanvasOverlay — 상속·주입 노드 인라인 편집 차단 
 });
 
 describe('EditorCanvasOverlay — 상속·주입 노드 구조 편집 차단 (A3)', () => {
+  /** @effects route_edit_source_lock_blocks_inline_edit_delete_cut_and_duplicate_entry_points */
   it('N23 base 출처 노드 선택 + 키보드 Delete → patchLayout 미호출', async () => {
     const { selectNode, patchSpy } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -204,6 +207,7 @@ describe('EditorCanvasOverlay — 상속·주입 노드 구조 편집 차단 (A3
     expect(patchSpy).not.toHaveBeenCalled();
   });
 
+  /** @effects route_edit_source_lock_blocks_inline_edit_delete_cut_and_duplicate_entry_points */
   it('N24 base 출처 노드 잘라내기(Ctrl+X) → patchLayout 미호출', async () => {
     const { selectNode, patchSpy } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -222,6 +226,7 @@ describe('EditorCanvasOverlay — 상속·주입 노드 구조 편집 차단 (A3
    * 초록이었다(라운드3 probe 실측). 계획서 §7.4 가 이 가드를 따로 둔 이유는
    * 「복사는 됐는데 원본이 남는」 어긋난 상태 방지, 즉 **클립보드에 기록되지 않는 것**이다.
    */
+  /** @effects route_edit_source_lock_blocks_inline_edit_delete_cut_and_duplicate_entry_points */
   it('N24d base 출처 노드 잘라내기 → 클립보드에도 기록되지 않는다', async () => {
     const { selectNode } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -236,6 +241,7 @@ describe('EditorCanvasOverlay — 상속·주입 노드 구조 편집 차단 (A3
    * N24e — N24d 의 「부재」가 공허하지 않음을 증명하는 반증 가드.
    * 같은 하네스에서 route 출처 노드는 실제로 클립보드에 실린다.
    */
+  /** @effects route_owned_nodes_keep_inline_edit_delete_cut_and_duplicate */
   it('N24e 회귀 가드 — route 출처 노드 잘라내기는 클립보드에 실린다', async () => {
     const { selectNode } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -246,6 +252,7 @@ describe('EditorCanvasOverlay — 상속·주입 노드 구조 편집 차단 (A3
     expect(readClipboard()).not.toBeNull();
   });
 
+  /** @effects route_edit_source_lock_blocks_inline_edit_delete_cut_and_duplicate_entry_points, element_overlay_base_locked_shows_edit_common_layout_affordance */
   it('N24b base 출처 노드는 복제 진입 경로 자체가 없다 (ⓘ 미렌더)', async () => {
     const { selectNode, patchSpy } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());
@@ -257,6 +264,7 @@ describe('EditorCanvasOverlay — 상속·주입 노드 구조 편집 차단 (A3
     expect(patchSpy).not.toHaveBeenCalled();
   });
 
+  /** @effects route_owned_nodes_keep_inline_edit_delete_cut_and_duplicate, context_menu_three_items_exactly_setting_duplicate_delete */
   it('N24c 회귀 가드 — route 출처 노드는 ⓘ→복제로 실제 복제된다', async () => {
     // 이 케이스가 없으면 N24b 의 「부재」 단언이 공허해진다 —
     // 복제 경로가 이 하네스에서 애초에 도달 가능함을 여기서 증명한다.
@@ -278,6 +286,7 @@ describe('EditorCanvasOverlay — 상속·주입 노드 구조 편집 차단 (A3
     expect(patchSpy).toHaveBeenCalled();
   });
 
+  /** @effects route_owned_nodes_keep_inline_edit_delete_cut_and_duplicate */
   it('N25 회귀 가드 — route 출처 노드는 Delete 로 정상 삭제된다', async () => {
     const { selectNode, patchSpy } = mount([BASE_TEXT, ROUTE_TEXT]);
     await waitFor(() => expect((window as any).__g7LayoutEditorHistory).toBeTruthy());

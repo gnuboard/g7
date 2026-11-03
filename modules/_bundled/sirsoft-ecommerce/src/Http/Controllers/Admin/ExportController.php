@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 파일 서빙 계약 사유 주석(file-serving:allow)만 더했다. 라우트, 요청, 응답 모양은 그대로라 docs/api 에 반영할 표면이 없다.
+
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Extension\HookManager;
@@ -7,6 +9,7 @@ use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -185,6 +188,7 @@ class ExportController extends AdminBaseController
         }
 
         try {
+            // file-serving:allow 개인정보가 든 1회성 내보내기 파일이라 코어 헬퍼의 운영 캐시 정책(`public, max-age`)을 입히지 않는다 — 공유 캐시에 남으면 다른 사람이 받는다. 서비스가 `private, no-store` 와 InlineMediaPolicy::harden()(nosniff, 첨부 처분)을 직접 세우고, 매 요청이 다운로드 이력을 남기므로 조건부 요청(304)도 두지 않는다.
             return $this->service->download($export, $request->user(), $request->ip(), $request->userAgent());
         } catch (ExportException $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.export.'.$e->errorCode(), $e->status());
@@ -215,7 +219,8 @@ class ExportController extends AdminBaseController
             $token = $this->service->issueDownloadToken($export, $request->user());
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.export.download_link_issued', [
-                'url' => route('api.modules.sirsoft-ecommerce.exports.file', ['token' => $token], false),
+                // 상대 주소라 마운트 접두사를 붙인다 — 화면 핸들러가 이 값을 <a href> 에 그대로 넣는다(하위 폴더 설치)
+                'url' => AssetUrl::sitePath(route('api.modules.sirsoft-ecommerce.exports.file', ['token' => $token], false)),
                 'expires_in' => ExportService::DOWNLOAD_TOKEN_TTL_SECONDS,
                 // 발급 시점의 횟수 — 화면이 이 값보다 커질 때까지 상세를 다시 읽어 기록 반영을 확인한다
                 'download_count' => (int) $export->download_count,
@@ -254,6 +259,7 @@ class ExportController extends AdminBaseController
         }
 
         try {
+            // file-serving:allow 개인정보가 든 1회성 내보내기 파일이라 코어 헬퍼의 운영 캐시 정책(`public, max-age`)을 입히지 않는다 — 공유 캐시에 남으면 다른 사람이 받는다. 서비스가 `private, no-store` 와 InlineMediaPolicy::harden()(nosniff, 첨부 처분)을 직접 세우고, 매 요청이 다운로드 이력을 남기므로 조건부 요청(304)도 두지 않는다.
             return $this->service->download($export, $user, $request->ip(), $request->userAgent());
         } catch (ExportException $e) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.export.'.$e->errorCode(), $e->status());

@@ -15,12 +15,14 @@ use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionDependencyOrder;
 use App\Support\RouteCacheHelper;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * 번들 확장(모듈/플러그인/템플릿/언어팩) 일괄 업데이트를 별도 PHP 프로세스에서 실행합니다.
@@ -210,7 +212,7 @@ class ExecuteBundledUpdatesCommand extends Command
      */
     protected function canSpawnProcess(): bool
     {
-        return function_exists('proc_open');
+        return ExecutionEnvironment::hasFunction('proc_open');
     }
 
     /**
@@ -595,7 +597,9 @@ class ExecuteBundledUpdatesCommand extends Command
             return null;
         }
 
-        $manifestPath = storage_path('app/core_pending'.DIRECTORY_SEPARATOR.'bundled-item-manifest_'.uniqid().'.json');
+        // 고유 이름은 차단 가능한 `uniqid()` 가 아니라 `Str::random()` 으로 만든다 (형제
+        // `BundledExtensionUpdatePrompt` 와 같은 처분 — 이 커맨드도 무CLI 환경에서 웹 요청 안으로 도달한다).
+        $manifestPath = storage_path('app/core_pending'.DIRECTORY_SEPARATOR.'bundled-item-manifest_'.Str::random(16).'.json');
         File::ensureDirectoryExists(dirname($manifestPath));
         File::put($manifestPath, json_encode($manifest, JSON_UNESCAPED_UNICODE));
 

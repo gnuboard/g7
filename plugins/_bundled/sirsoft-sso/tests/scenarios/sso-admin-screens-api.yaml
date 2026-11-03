@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
 feature: sso_admin_screens_api
 description: |
   SSO 관리자 화면 API — IdP 설정(CRUD, 비밀값 가림, 활성화 조건, 연결 테스트, SCIM 토큰), 정책 영향 미리보기와 저장 경로, 회원 연결(단건, 사전 등록, CSV, 해제, 관리자 대상 제한), 이력, 회원 상세·목록 주입, 마이페이지 연결 카드, IdP 연속 실패 알림.

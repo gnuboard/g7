@@ -116,6 +116,10 @@ return [
         'advanced_pagination_result_cap_max' => 1000000,
         'advanced_pagination_max_page_min' => 0,
         'advanced_pagination_max_page_max' => 100000,
+
+        // 예약 작업 — 최소 호출 간격 (0 = 제한 없음, 상한 하루)
+        'system_cron_min_interval_min' => 0,
+        'system_cron_min_interval_max' => 1440,
     ],
 
     /*
@@ -176,6 +180,35 @@ return [
     */
     'static_cache' => [
         'enabled' => env('G7_STATIC_CACHE', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 예약 작업 러너 (웹 크론)
+    |--------------------------------------------------------------------------
+    | 서버 크론을 걸 수 없는 호스팅에서 예약 작업을 주소 호출로 돌리는 러너의 경계값입니다.
+    | 운영자 화면에 노출되는 것은 최소 호출 간격 하나뿐이고, 아래 둘은 실행 환경의 성질에
+    | 가까워 설정 화면 대신 여기에 둡니다.
+    |
+    | - max_runtime_seconds:    한 번의 호출이 쓰는 실행 시간 상한. 남은 대상은 다음 호출로
+    |                           넘어갑니다 — 무CLI 환경의 요청 시간 상한에 걸려 응답이
+    |                           통째로 끊기는 것을 막습니다. PHP 의 max_execution_time 이
+    |                           이 값보다 짧으면 러너가 그 8할로 줄여 씁니다(웹 기본 30초 → 24초).
+    | - catch_up_window_minutes: 소급 실행 판정의 상한 구간. 오래 호출되지 않은 사이트의 첫
+    |                           호출이 폭주하지 않도록 자릅니다. 하루로 두면 고정 시각
+    |                           (dailyAt) 작업이 각각 한 번씩만 밀려 실행됩니다.
+    | - min_interval_minutes:   최소 호출 간격의 기본값(운영자 미설정 시). 간격 미만 호출은
+    |                           실행 없이 정상 응답하며, 그 사이 시각은 다음 유효 호출의
+    |                           소급 창이 덮으므로 작업이 유실되지 않습니다.
+    | - stale_alert_days:       대시보드 "예약 작업 미실행" 경고의 발화 기준(일). 실행 모드와
+    |                           무관하게 전 환경에서 같은 기준으로 발화하고, 조치 안내 문구만
+    |                           모드에 따라 갈립니다.
+    */
+    'cron' => [
+        'max_runtime_seconds' => 50,
+        'catch_up_window_minutes' => 1440,
+        'min_interval_minutes' => 5,
+        'stale_alert_days' => 2,
     ],
 
     /*
@@ -614,6 +647,22 @@ return [
                     ['identifier' => 'core.language_packs.install', 'type' => 'admin', 'name' => ['ko' => '언어팩 설치', 'en' => 'Install Language Packs'], 'description' => ['ko' => 'ZIP/GitHub/URL 로 언어팩을 설치할 수 있습니다.', 'en' => 'Can install language packs from ZIP/GitHub/URL.'], 'order' => 2],
                     ['identifier' => 'core.language_packs.manage', 'type' => 'admin', 'name' => ['ko' => '언어팩 관리', 'en' => 'Manage Language Packs'], 'description' => ['ko' => '언어팩을 활성화/비활성화/제거할 수 있습니다.', 'en' => 'Can activate/deactivate/uninstall language packs.'], 'order' => 3],
                     ['identifier' => 'core.language_packs.update', 'type' => 'admin', 'name' => ['ko' => '언어팩 업데이트', 'en' => 'Update Language Packs'], 'description' => ['ko' => '설치된 언어팩의 업데이트를 확인하고 실행할 수 있습니다.', 'en' => 'Can check and apply updates for installed language packs.'], 'order' => 4],
+                ],
+            ],
+            [
+                // 코어 자신을 갈아 끼우는 권한은 **환경설정 묶음에 두지 않는다** (#609 D4).
+                // 설정을 고치는 것과 코어를 교체하는 것은 실패 시 되돌리는 비용이 다르고,
+                // 같은 묶음에 두면 권한 화면에서 둘이 뭉뚱그려져 별도 권한을 만든 취지를
+                // 잃는다. 이 권한이 없는 관리자에게는 환경설정의 업데이트 영역이
+                // 비활성이 아니라 **보이지 않는다**.
+                'identifier' => 'core.system',
+                'name' => ['ko' => '시스템 관리', 'en' => 'System Management'],
+                'description' => ['ko' => '코어 자체의 유지보수 권한', 'en' => 'Core maintenance permissions'],
+                'category' => 'system',
+                'order' => 14,
+                'type' => 'admin',
+                'permissions' => [
+                    ['identifier' => 'core.system.update', 'type' => 'admin', 'name' => ['ko' => '코어 업데이트', 'en' => 'Core Update'], 'description' => ['ko' => '그누보드7 코어를 새 버전으로 업데이트할 수 있습니다.', 'en' => 'Can update the Gnuboard7 core to a new version.'], 'order' => 1],
                 ],
             ],
             [

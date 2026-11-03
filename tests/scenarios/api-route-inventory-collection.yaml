@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. route_kind 값은 각각 한 범위(plugin, module, core)에만 실재하고 bundled_fallback 은 미설치 모듈에만 해당하므로 세 축을 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변종이다. route_kind 값은 각각 한 범위(plugin, module, core)에만 실재하고 bundled_fallback 은 미설치 모듈에만 해당하므로 세 축을 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
 feature: API 레퍼런스 라우트 수집 (ApiRouteInventory 의 확장 web 라우트 수집과 미설치 확장 폴백)
 
 description: |

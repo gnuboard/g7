@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#524 |
 #   cross product 면제는 `cross_product` 축 하나로 한정한다 — effects 커버리지는 계속 강제된다.
 #   이 매니페스트의 축은 화면이 받는 «입력 공간의 서술» 이고, 조합마다 서로 다른 동작이
 #   갈리는 분기가 아니다. 예컨대 표 컬럼 구성을 재는 테스트에 검색 대상·읽음 상태·회원
@@ -34,11 +34,21 @@ description: |
 #  permission : 운영자 권한 (read 만 / manage 까지)
 #  member_scope: 회원 한정(user_uuid) 으로 들어왔는가
 #  extra_filter: 그 목록만의 전용 필터
+#  surface    : 시험이 재는 화면 또는 응답 (네 목록, 회원 상세 응답, 회원 상세 탭)
+#  actor      : 요청 주체
+#  search_field: 검색 대상 갈래
+#  action     : 행에 거는 동작 (일괄 삭제, 답변)
+#  response   : 회원 상세 탭이 읽는 응답의 출처
 axes:
   list: [wishlist, cart, user_address, inquiry]
   permission: [read, manage]
   member_scope: [true, false, multi]
   extra_filter: [none, owner, is_default, is_answered]
+  surface: [admin_wishlist_list, admin_cart_list, admin_user_address_list, admin_product_inquiry_list, admin_user_detail, member_detail_tab]
+  actor: [admin]
+  search_field: [all, member]
+  action: [bulk_delete, reply]
+  response: [admin]
 
 # 의미 없는 조합 컷: 전용 필터는 그 목록에만 있다
 exclusions:
@@ -160,6 +170,9 @@ effects:
   - member_detail_tab_links_navigate_in_browser
   - admin_product_inquiry_bulk_delete_message_interpolates_count
   - admin_product_inquiry_bulk_delete_counts_cascaded_rows
+  # 찜, 장바구니, 상품문의 목록의 검색은 회원 한정을 건드리지 않는다(해제는 배너가 한다) — 배송지 목록과 다른 축이다
+  - ecommerce_admin_list_search_action_resets_page_keeps_member_scope
+  - ecommerce_admin_list_member_banner_shows_only_when_scoped
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminWishlistControllerTest.php

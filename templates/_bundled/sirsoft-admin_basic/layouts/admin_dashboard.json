@@ -469,6 +469,18 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "조치 화면으로 가는 링크. 리스너가 action_path 를 실어 보내는데 이것을 읽는 노드가 없으면 경고 문구만 뜨고 운영자가 갈 곳을 스스로 찾아야 한다. 경고(warning) 알림은 이 상단 구역에 그려지므로(예약 작업 정지 알림이 그렇다) 아래 목록과 같은 링크를 여기에도 둔다.",
+                                                        "id": "top_alert_action_link_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "A",
+                                                        "if": "{{alert.action_path && alert.action_label}}",
+                                                        "props": {
+                                                            "href": "{{alert.action_path ?? '#'}}",
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white rounded hover:no-underline"
+                                                        },
+                                                        "text": "{{alert.action_label}}"
+                                                    },
+                                                    {
                                                         "id": "top_alert_recover_button_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Button",
@@ -2015,6 +2027,18 @@
                                                                     "className": "flex-center gap-2 mt-2"
                                                                 },
                                                                 "children": [
+                                                                    {
+                                                                        "comment": "조치 화면으로 가는 링크. 리스너가 action_path 를 실어 보내는데 이것을 읽는 노드가 없으면 경고 문구만 뜨고 운영자가 갈 곳을 스스로 찾아야 한다.",
+                                                                        "id": "alert_action_link_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "A",
+                                                                        "if": "{{alert.action_path && alert.action_label}}",
+                                                                        "props": {
+                                                                            "href": "{{alert.action_path ?? '#'}}",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white rounded hover:no-underline"
+                                                                        },
+                                                                        "text": "{{alert.action_label}}"
+                                                                    },
                                                                     {
                                                                         "id": "alert_recover_button_{{$idx}}",
                                                                         "type": "basic",

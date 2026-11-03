@@ -100,7 +100,8 @@ return [
             'configured' => 'Trusted proxies are configured. X-Forwarded-* headers are trusted.',
             'not_configured' => 'Trusted proxies are not configured.',
             'not_configured_help' => 'If the site runs behind a proxy (AWS ALB, CloudFront, Cloudflare, nginx, ngrok),
-  set TRUSTED_PROXIES in .env. Without it, the access URL and visitor IP are
+  choose the trust scope in Settings > Advanced > Trusted proxies (with a pre-save check).
+  If the admin screen is unreachable, TRUSTED_PROXIES in .env also works. Without it, the access URL and visitor IP are
   seen from the proxy side, which breaks page display, IP logging and payment notifications.
   If the site is exposed directly without a proxy, leaving it unset is correct.',
             'details' => 'Details: :url',
@@ -167,9 +168,21 @@ return [
             'groups' => [
                 'staging' => 'Leftover update staging',
                 'temp' => 'Core temporary artifacts',
+                'storage_temp' => 'Composer fallback temporary directories',
+                'core_pending' => 'Leftover bundled update manifests',
+                'core_pending_staging' => 'Leftover core update extraction directories',
+                'core_update_preserved' => 'Pre-replacement copies from core updates',
+                'core_update_reports' => 'Core update report logs',
+                'public_storage_broken' => 'Backups of broken public storage links',
+                'public_storage_broken_docroot' => 'Backups of broken public storage links (inside the document root)',
+                'installer_probes' => 'Installer probe and install leftovers',
+                'installer_state_corrupt' => 'Copies of corrupt installer state',
                 'vendor_bundle_staging' => 'Vendor bundle staging',
                 'extension_backups' => 'Extension backups',
                 'core_backups' => 'Core backups',
+                'root_entry_temp' => 'Temporary root entry and protection files',
+                'stale_swap_files' => 'Leftover extension sync locks',
+                'env_backups' => '.env copies kept by finalize',
                 'legacy_browser_log' => 'Legacy browser log',
             ],
             'group_count' => ':label: :count',

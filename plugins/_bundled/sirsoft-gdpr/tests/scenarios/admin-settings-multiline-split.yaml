@@ -1,0 +1,17 @@
+feature: GDPR 관리자 설정 — 여러 줄 입력의 줄 분리
+
+description: |
+  운영자가 여러 줄로 입력한 설정값(차단 도메인 목록 등)을 줄 단위로 가르는 지점.
+  PCRE `\R` 은 `u` 수식자가 없으면 바이트 단위로 판정해 0x85(NEL) 를 개행으로 보므로,
+  마지막 바이트가 0x85 인 한글(예: 「종」 = EC A2 85)이 든 줄이 글자 한가운데서 쪼개진다.
+  실제 줄 종결자(CR·LF·CRLF)만 가른다.
+
+axes:
+  input_shape: [multiline_text]
+  charset: [korean_nel_byte, ascii]
+
+effects:
+  - operator_multiline_input_is_split_only_at_real_line_terminators
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Http/Requests/UpdateAdminSettingsRequestLineSplitTest.php

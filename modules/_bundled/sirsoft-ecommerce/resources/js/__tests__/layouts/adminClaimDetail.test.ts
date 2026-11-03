@@ -286,7 +286,8 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
    * 파일 하나를 세 진입점이 공유한다 (D26) — 복제하면 한 곳만 고쳐졌을 때 나머지 두 경로가
    * 조용히 옛 규칙으로 남는다.
    *
-   * @scenario completion_entry=detail
+   * 축 요약(마커 아님 — 평문): 세 진입점 가운데 상세 화면의 진입점을 본다.
+   *
    * @effects claim_complete_modal_shared_not_copied
    */
   it('완료 처리 모달은 목록이 소유한 파일을 그대로 참조한다', () => {
@@ -489,7 +490,9 @@ describe('배송 정보 — 회수·재발송 통합 (D17-② · D14)', () => {
    * 두 뱃지는 서로 다른 사실을 말한다 (D14) — 하나로 합치면 운영자가 값이 되돌아간 건과
    * 고객이 손댄 건을 구분할 수 없다.
    *
-   * @scenario claim_type=exchange, redelivery_address=changed
+   * 축 요약(마커 아님 — 평문): 재발송지가 바뀐 교환 신청서.
+   *
+   * @scenario claim_type=exchange
    * @effects claim_redelivery_two_badges_distinct
    */
   it('재발송지 뱃지 2종이 서로 다른 근거를 읽는다', () => {

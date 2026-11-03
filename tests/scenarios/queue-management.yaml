@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#17 |
 #   큐 관리 API 는 목록(대기·실패·처리 기록) × 동작(재시도·삭제) × 배치(등록·미등록·sync) 축이 서로 독립이다.
 #   목록 필터는 한 테스트가 행 묶음을 심고 검색 대상·필터마다 응답을 대조하고, 재시도 배치는 경우마다 한 메서드로
 #   나눈다(조합을 곱하면 같은 판정을 반복할 뿐이다). 화면 축(e2e)은 S6 의 Playwright spec 이 덮는다. effects·test_files 는
@@ -31,6 +31,19 @@ axes:
   # 큐 작업 조회 권한이 없는 관리자(스케줄 조회만)의 큐 탭 — 탭 숨김·직접 진입 권한 안내·요청 생략·받기 실패 안내
   case: [queue_permission]
   sort: [default, created_at, available_at, attempts, failed_at, id, finished_at, duration_ms]
+  # 아래 축은 시험별 입력 변종이다 — test_files 의 @scenario 가 쓰는 축이며 조합 곱 대상이 아니다
+  filter: [queue, connection, failed_date, status, search_field, created_date]
+  detail: [failed]
+  target: [missing]
+  size: [mixed, over_limit, 0, 1, 100, 101]
+  surface: [status, defaults, save_request, form_request, error_message]
+  flush: [terminating, buffer_full]
+  chain: [fail_retry_process]
+  days: [valid, 0, 91, non_numeric]
+  retention: ["null", 0, 1, 30, 90, 91, non_numeric]
+  field: [search_field, per_page, date_range, status, sort_by, sort_order]
+  item: [invalid, duplicated]
+  payload: [regular, scheduled_job, encrypted, other_class, scheduled_job_real, job_type_queue_mode, "null", empty, broken_json]
 
 effects:
   - queue_api_requires_auth

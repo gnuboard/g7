@@ -348,7 +348,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 임시 주문이 만료되었거나 존재하지 않음. 메시지: `임시 주문 정보를 찾을 수 없습니다.` |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 조회/재계산 중 예외 발생 |
 
 <!-- @generated:end -->

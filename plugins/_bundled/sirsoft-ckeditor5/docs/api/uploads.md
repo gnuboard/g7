@@ -48,6 +48,8 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
+
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | data[].id | integer | `12` | 업로드 기록 ID (삭제 요청의 대상 식별자) |

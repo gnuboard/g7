@@ -8,8 +8,10 @@
  * 그룹격리/셀트리/shape 정합 회귀를 잠그고, 본 E2E 는 라이브 마운트·저장·반영을 브라우저로
  * 확인한다(§공통 5단계 — 항목 patch 만으로 통과 금지).
  *
- * @scenario data_surface=single_array, component=DonutChart, operation=edit_field, field_widget=number
- * @scenario data_surface=multi_array, component=BarChart, operation=edit_field, field_widget=number_list
+ * 상세(마커 아님 — 평문): DonutChart(single_object_array)·BarChart(multi_array) 필드를 number/number_list
+ * 위젯으로 편집(operation=edit_field, field_widget=number·number_list).
+ *
+ * @scenario data_surface=single_object_array, data_surface=multi_array, aspect=field_widget
  * @effects property_modal_dispatches_data_builtin_node_editor_in_props_tab_by_kind,
  *   array_editor_number_widget_writes_numeric_value,
  *   array_group_renders_multiple_array_editors_per_group,

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
 feature: sso_scim
 description: |
   SCIM 2.0 서버 — Bearer 인증과 수신 이력, ServiceProviderConfig·ResourceTypes·Schemas, Users(목록 필터 3, 생성, 교체, PATCH 3, 삭제=퇴사), Groups(소속, 역할 매핑 재적용), 대조 키(userName/externalId).

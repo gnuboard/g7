@@ -21,7 +21,7 @@ class AllowedTemplateFileType implements ValidationRule
         'json',
 
         // Images
-        'png', 'jpg', 'jpeg', 'svg', 'webp', 'gif',
+        'png', 'jpg', 'jpeg', 'svg', 'webp', 'gif', 'ico',
 
         // Fonts
         'woff', 'woff2', 'ttf', 'otf', 'eot',
@@ -43,6 +43,11 @@ class AllowedTemplateFileType implements ValidationRule
 
     /**
      * 허용된 파일 타입인지 검증
+     *
+     * @param  string  $attribute  검증 대상 필드명
+     * @param  mixed  $value  검증할 템플릿 파일 경로
+     * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

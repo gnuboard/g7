@@ -88,6 +88,17 @@ effects:
   - code_editor_marks_compile_errors_in_monaco_with_g7_markup_owner
   - code_editor_opens_extension_fragments_in_the_markup_tab
   - code_editor_saves_the_last_edit_inside_the_debounce_window
+  # 6곳 읽기 묶음 전체 — 브라우저 spec 머리말이 단 묶음 효과
+  - code_editor_markup_readers_receive_the_live_buffer
+  # 늦게 붙은 편집기가 옵션을 다시 받는다 (CodeEditor.lateMount)
+  - code_editor_reapplies_options_after_late_mount
+  # 복사와 내려받기 핸들러 (copyMarkupToClipboard, downloadMarkupFile)
+  - markup_copied_via_clipboard_api
+  - execcommand_fallback_when_api_missing
+  - empty_content_skipped
+  - clipboard_failure_reports_false_with_toast
+  - markup_downloaded_as_g7_html_file
+  - filename_normalized
   # CodeEditor 컴포넌트 계약 — 축 조합이 아니라 prop 단위 약속이라 `@effects` 만 단다.
   - code_editor_renders_with_default_props
   - code_editor_shows_the_value_prop

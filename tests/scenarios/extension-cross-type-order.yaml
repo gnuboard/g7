@@ -56,6 +56,8 @@ effects:
   - installer_step5_precheck_failure_shows_back_to_step4
   - installer_step5_other_failure_keeps_retry_primary
   - installer_step5_failure_title_has_no_raw_task_key
+  # 설치 마법사 — Step 5 진행 목록이 실행 순서(종류를 넘는 의존 순서) 그대로 그려진다
+  - installer_view_task_list_follows_execution_order
   # 설치 마법사 — Step 5 실패 화면 되돌아가기 확인 창·상태 초기화 로그(DB 를 건드리기 전 실패에는 DB 수동 정리 안내 없음)
   - installer_step5_back_to_extensions_confirm_has_no_db_notice
   - installer_step5_back_confirm_accept_resets_state
@@ -101,6 +103,8 @@ test_files:
   # Step 5 브라우저 로직은 installer.js 함수 단위 추출 + 가짜 DOM 으로 node 에서 잰다
   # (실행: node --test tests/installer/installer-step5-required-by.test.cjs).
   - tests/installer/installer-step5-required-by.test.cjs
+  # Step 5 진행 목록 — 뷰를 실제 렌더하고 설치 순서 함수만 공용 픽스처 스캔으로 대신한다
+  - tests/Unit/Installer/InstallerTaskListViewParityTest.php
   # 실패 화면 되돌아가기 확인 창 — 뷰의 실패 버튼 마크업 + installer.js 를 jsdom 에서 싣고 새로고침 복원 경로로 띄운다
   - resources/js/tests/installer/installer-step5-back-confirm.test.ts
   # 상태 초기화의 DB 수동 정리 안내 — state-management.php 를 격리 프로세스로 실제 호출한다

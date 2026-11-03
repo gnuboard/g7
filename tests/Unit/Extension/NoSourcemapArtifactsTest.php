@@ -22,6 +22,12 @@ class NoSourcemapArtifactsTest extends TestCase
 {
     /**
      * git 추적 파일 중 .map 이 하나도 없는지 테스트
+     *
+     * @scenario map_file_on_disk=absent
+     *
+     * @effects no_sourcemap_files_tracked_by_git
+     *
+     * @return void 반환값 없음
      */
     public function test_no_sourcemap_files_are_tracked_by_git(): void
     {
@@ -39,6 +45,10 @@ class NoSourcemapArtifactsTest extends TestCase
      * .gitignore 가 소스맵을 실제로 무시하는지 테스트
      *
      * 규칙이 존재해도 다른 규칙에 의해 무력화될 수 있으므로 git 에 직접 판정시킨다.
+     *
+     * @effects gitignore_actually_ignores_sourcemap_files
+     *
+     * @return void 반환값 없음
      */
     public function test_gitignore_actually_ignores_sourcemap_files(): void
     {
@@ -61,6 +71,10 @@ class NoSourcemapArtifactsTest extends TestCase
      *
      * 판정 대상은 워킹트리(= 지금 배포하면 나갈 상태)다. HEAD(직전 커밋)를 보면
      * 워킹트리에서 이미 고친 내용을 반영하지 못한다.
+     *
+     * @effects tracked_build_output_has_no_source_mapping_url
+     *
+     * @return void 반환값 없음
      */
     public function test_tracked_build_output_has_no_source_mapping_url(): void
     {
@@ -91,6 +105,12 @@ class NoSourcemapArtifactsTest extends TestCase
      * `--production` 빌드는 `.map` 을 생성하지 않지만 **기존 파일을 지우지도 않는다**.
      * 따라서 한 번이라도 dev 빌드를 돌린 트리에는 stale 한 소스맵이 그대로 남는다
      * (실측: `GET /build/core/template-engine.min.js.map` → 200 + 원본 노출).
+     *
+     * @scenario serving_target=core_webroot, extension_type=core
+     *
+     * @effects public_build_dir_has_no_sourcemap_artifacts
+     *
+     * @return void 반환값 없음
      */
     public function test_public_build_dir_has_no_sourcemap_artifacts(): void
     {
@@ -126,6 +146,10 @@ class NoSourcemapArtifactsTest extends TestCase
      * 않지만, 배포본 위생상 남아 있어서는 안 된다.
      *
      * `_bundled` 원본이 없는 활성 디렉토리는 배포본에 실리지 않는 로컬 잔재이므로 제외한다.
+     *
+     * @effects active_extension_dirs_have_no_sourcemap_artifacts
+     *
+     * @return void 반환값 없음
      */
     public function test_active_extension_dirs_have_no_sourcemap_artifacts(): void
     {
@@ -200,7 +224,9 @@ class NoSourcemapArtifactsTest extends TestCase
         $process = new Process(array_merge(['git'], $args), base_path());
         $process->run();
 
-        $lines = preg_split('/\R/', trim($process->getOutput())) ?: [];
+        // `\R` 은 UTF-8 모드가 아니면 바이트 0x85 도 개행으로 본다 — 비-ASCII 경로가
+        // 목록에 들어오면 한 경로가 두 줄로 갈려 어느 쪽도 실재하지 않는 이름이 된다.
+        $lines = preg_split('~\r\n|\r|\n~', trim($process->getOutput())) ?: [];
 
         return array_values(array_filter($lines, fn (string $line): bool => $line !== ''));
     }

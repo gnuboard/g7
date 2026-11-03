@@ -5,6 +5,7 @@ namespace Tests\Unit\Seo;
 use App\Seo\ExpressionEvaluator;
 use App\Seo\SeoMetaResolver;
 use App\Services\SettingsService;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -46,6 +47,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 상품에 meta_title이 있으면 상품의 meta_title + 코어 suffix를 사용합니다.
      *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
+     *
      * @return void 반환값 없음
      */
     public function test_product_with_meta_title_uses_product_meta_title_and_suffix(): void
@@ -68,6 +71,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 상품에 meta_title이 없고 모듈 템플릿이 있으면 모듈 템플릿 + suffix를 사용합니다.
+     *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
      *
      * @return void 반환값 없음
      */
@@ -103,6 +108,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 상품에 meta_title이 없고 모듈 템플릿도 없으면 코어 fallback + suffix를 사용합니다.
      *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
+     *
      * @return void 반환값 없음
      */
     public function test_product_without_meta_title_no_module_template_uses_core_fallback(): void
@@ -128,6 +135,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 카테고리에 meta_title이 있으면 카테고리의 meta_title + suffix를 사용합니다.
      *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
+     *
      * @return void 반환값 없음
      */
     public function test_category_with_meta_title_uses_category_meta_title_and_suffix(): void
@@ -150,6 +159,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 페이지에 seo_meta.title이 있으면 페이지의 seo_meta.title + suffix를 사용합니다.
+     *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
      *
      * @return void 반환값 없음
      */
@@ -176,6 +187,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 페이지에 seo_meta.title이 없으면 코어 fallback + suffix를 사용합니다.
      *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
+     *
      * @return void 반환값 없음
      */
     public function test_page_without_seo_meta_title_uses_core_fallback(): void
@@ -197,6 +210,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 코어 title suffix가 비어 있으면 suffix가 없습니다.
+     *
+     * @effects title_suffix_is_composed_with_one_separator_space
      *
      * @return void 반환값 없음
      */
@@ -220,6 +235,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 모듈 템플릿 변수 {product_name}이 실제 상품명으로 치환됩니다.
+     *
+     * @effects seo_vars_resolve_from_declared_sources
      *
      * @return void 반환값 없음
      */
@@ -252,6 +269,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 상품에 meta_keywords가 있으면 상품의 키워드를 사용합니다.
      *
+     * @effects keywords_and_description_follow_resource_then_core_fallback
+     *
      * @return void 반환값 없음
      */
     public function test_keywords_from_product(): void
@@ -271,6 +290,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 상품 키워드가 배열인 경우 쉼표로 결합합니다.
+     *
+     * @effects keywords_and_description_follow_resource_then_core_fallback
      *
      * @return void 반환값 없음
      */
@@ -292,6 +313,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 상품 키워드가 없으면 코어 키워드를 사용합니다.
      *
+     * @effects keywords_and_description_follow_resource_then_core_fallback
+     *
      * @return void 반환값 없음
      */
     public function test_keywords_falls_back_to_core(): void
@@ -312,6 +335,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * Google Analytics ID가 반환됩니다.
      *
+     * @effects google_analytics_id_is_exposed
+     *
      * @return void 반환값 없음
      */
     public function test_google_analytics_id_returned(): void
@@ -323,6 +348,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * OG 태그에 이미지가 있으면 og:image가 포함됩니다.
+     *
+     * @effects og_tags_are_built_from_resolved_meta
      *
      * @return void 반환값 없음
      */
@@ -359,6 +386,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * OG 태그에 이미지가 없으면 og:image가 포함되지 않습니다.
      *
+     * @effects og_tags_are_built_from_resolved_meta
+     *
      * @return void 반환값 없음
      */
     public function test_og_tags_without_image_excludes_og_image(): void
@@ -379,6 +408,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 구조화 데이터(JSON-LD)에 @context가 포함되어 생성됩니다.
+     *
+     * @effects structured_data_json_ld_is_safe_and_well_formed
      *
      * @return void 반환값 없음
      */
@@ -417,6 +448,8 @@ class SeoMetaResolverTest extends TestCase
      * script 요소를 재생성하지 못하도록 `<`·`>` 를 유니코드 이스케이프해야 한다.
      * (봇 UA 는 누구나 위장할 수 있으므로 반사형 XSS 벡터가 된다.)
      *
+     * @effects structured_data_json_ld_is_safe_and_well_formed
+     *
      * @return void 반환값 없음
      */
     public function test_structured_data_escapes_script_breakout_in_json_ld(): void
@@ -445,6 +478,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 구조화 데이터가 없으면 jsonLd는 null입니다.
      *
+     * @effects structured_data_json_ld_is_safe_and_well_formed
+     *
      * @return void 반환값 없음
      */
     public function test_no_structured_data_returns_null_json_ld(): void
@@ -456,6 +491,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 모듈 SEO가 비활성화되면 모듈 템플릿을 사용하지 않습니다.
+     *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
      *
      * @return void 반환값 없음
      */
@@ -491,6 +528,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 페이지의 seo_meta.keywords가 있으면 해당 키워드를 사용합니다.
      *
+     * @effects keywords_and_description_follow_resource_then_core_fallback
+     *
      * @return void 반환값 없음
      */
     public function test_page_seo_meta_keywords_used(): void
@@ -512,6 +551,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 페이지의 seo_meta.description이 있으면 해당 설명을 사용합니다.
+     *
+     * @effects keywords_and_description_follow_resource_then_core_fallback
      *
      * @return void 반환값 없음
      */
@@ -539,6 +580,8 @@ class SeoMetaResolverTest extends TestCase
      * (이전 회귀: og 미선언 시 빈 문자열 반환 — Slack/Facebook 미리보기 무시)
      * 신규 동작: og:type=website 기본값 + 코어 설정의 site_name fallback 으로 최소 보장.
      *
+     * @effects og_site_name_emitted_from_core_setting
+     *
      * @return void 반환값 없음
      */
     public function test_empty_og_config_emits_default_type_and_site_name(): void
@@ -555,6 +598,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 코어 설정값이 null(JSON에 null 저장)일 때도 정상 동작합니다.
+     *
+     * @effects seo_meta_resolution_tolerates_null_and_multilingual_values
      *
      * @return void 반환값 없음
      */
@@ -583,6 +628,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * OG 태그의 HTML이 제거되고 순수 텍스트만 남습니다.
+     *
+     * @effects og_tags_are_built_from_resolved_meta
      *
      * @return void 반환값 없음
      */
@@ -619,6 +666,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * description이 비어있을 때 레이아웃 og.description에서 fallback합니다.
      *
+     * @effects keywords_and_description_follow_resource_then_core_fallback
+     *
      * @return void 반환값 없음
      */
     public function test_description_fallback_from_layout_og_description(): void
@@ -652,6 +701,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 모듈 템플릿 변수가 다국어 객체일 때 현재 로케일 값으로 치환됩니다.
      *
+     * @effects seo_vars_resolve_from_declared_sources
+     *
      * @return void 반환값 없음
      */
     public function test_template_variable_substitution_with_localized_value(): void
@@ -683,6 +734,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 구조화 데이터의 description 필드에서 HTML이 제거됩니다.
+     *
+     * @effects structured_data_json_ld_is_safe_and_well_formed
      *
      * @return void 반환값 없음
      */
@@ -717,6 +770,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 결과 배열에 모든 필수 키가 포함됩니다.
      *
+     * @effects seo_meta_result_has_every_required_key
+     *
      * @return void 반환값 없음
      */
     public function test_result_contains_all_required_keys(): void
@@ -747,6 +802,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * vars의 {{expression}} 바인딩이 context에서 해석됩니다.
      *
+     * @effects seo_vars_resolve_from_declared_sources
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_vars_expression_binding(): void
@@ -774,6 +831,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * vars의 $module_settings: 접두사가 모듈 설정에서 값을 가져옵니다.
+     *
+     * @effects seo_vars_resolve_from_declared_sources
      *
      * @return void 반환값 없음
      */
@@ -805,6 +864,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * vars의 $core_settings: 접두사가 코어 설정에서 값을 가져옵니다.
      *
+     * @effects seo_vars_resolve_from_declared_sources
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_vars_core_settings(): void
@@ -834,6 +895,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * vars의 $query: 접두사가 쿼리 파라미터에서 값을 가져옵니다.
      *
+     * @effects seo_vars_resolve_from_declared_sources
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_vars_query_param(): void
@@ -858,6 +921,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * vars 선언으로 치환된 결과가 모듈 설정 title 템플릿에 적용됩니다.
+     *
+     * @effects seo_vars_resolve_from_declared_sources
      *
      * @return void 반환값 없음
      */
@@ -889,6 +954,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * page_type이 레이아웃에서 제공되면 해당 모듈 설정 키를 사용합니다.
      *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
+     *
      * @return void 반환값 없음
      */
     public function test_page_type_from_layout(): void
@@ -918,6 +985,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * vars 미선언 시 치환 없이 템플릿 원본이 반환됩니다.
      *
+     * @effects seo_vars_resolve_from_declared_sources
+     *
      * @return void 반환값 없음
      */
     public function test_no_vars_no_substitution(): void
@@ -944,6 +1013,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * page_type 미선언 시 모듈 템플릿을 건너뜁니다.
+     *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
      *
      * @return void 반환값 없음
      */
@@ -975,6 +1046,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * vars의 표현식에서 없는 context 경로를 참조하면 빈 문자열을 반환합니다.
      *
+     * @effects seo_vars_resolve_from_declared_sources
+     *
      * @return void 반환값 없음
      */
     public function test_vars_missing_context_returns_empty(): void
@@ -997,6 +1070,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * vars의 다국어 객체가 현재 로케일 값으로 해석됩니다.
+     *
+     * @effects seo_vars_resolve_from_declared_sources
      *
      * @return void 반환값 없음
      */
@@ -1033,6 +1108,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 플러그인 Tier 2 타이틀 템플릿이 해석됩니다.
      *
+     * @effects plugin_seo_templates_resolve_like_module_templates
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_title_with_plugin_template(): void
@@ -1056,6 +1133,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 플러그인 Tier 2 설명 템플릿이 해석됩니다.
      *
+     * @effects plugin_seo_templates_resolve_like_module_templates
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_description_with_plugin_template(): void
@@ -1076,6 +1155,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * $plugin_settings: 변수 표현식이 해석됩니다.
+     *
+     * @effects plugin_seo_templates_resolve_like_module_templates
      *
      * @return void 반환값 없음
      */
@@ -1098,6 +1179,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * moduleIdentifier=null, pluginIdentifier=값일 때 플러그인 경로로 해석됩니다.
+     *
+     * @effects plugin_seo_templates_resolve_like_module_templates
      *
      * @return void 반환값 없음
      */
@@ -1128,6 +1211,8 @@ class SeoMetaResolverTest extends TestCase
      * 명시적 모듈 ID가 vars에서 올바르게 해석됩니다.
      * moduleIdentifier가 제공되면 Tier 2 템플릿에서 명시적 ID vars를 사용합니다.
      *
+     * @effects seo_vars_resolve_from_declared_sources
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_vars_explicit_module_id_when_module_null(): void
@@ -1152,6 +1237,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 명시적 모듈 ID 없이 기존 moduleIdentifier 컨텍스트로 해석됩니다 (하위 호환).
+     *
+     * @effects seo_vars_resolve_from_declared_sources
      *
      * @return void 반환값 없음
      */
@@ -1186,6 +1273,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * aggregateRating의 필수 값이 모두 비어있으면 JSON-LD에서 제거됩니다.
      *
+     * @effects structured_data_aggregaterating_only_when_reviews_exist
+     *
      * @return void 반환값 없음
      */
     public function test_structured_data_removes_empty_aggregate_rating(): void
@@ -1219,6 +1308,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * aggregateRating에 유효한 값이 있으면 JSON-LD에 포함됩니다.
+     *
+     * @effects structured_data_aggregaterating_only_when_reviews_exist
      *
      * @return void 반환값 없음
      */
@@ -1261,6 +1352,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 타입 표기(`@type`)가 없는 일반 하위 객체는 빈 값이어도 제거되지 않습니다.
      *
+     * @effects structured_data_json_ld_is_safe_and_well_formed
+     *
      * @return void 반환값 없음
      */
     public function test_structured_data_keeps_non_typed_empty_objects(): void
@@ -1295,6 +1388,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * _seo.product.title이 context에 있으면 Tier 2로 사용됩니다.
      *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
+     *
      * @return void 반환값 없음
      */
     public function test_seo_context_title_used_as_tier2(): void
@@ -1322,6 +1417,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * Tier 3 (resource meta_title)가 _seo context보다 우선합니다.
+     *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
      *
      * @return void 반환값 없음
      */
@@ -1356,6 +1453,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * _seo context 없고 moduleIdentifier도 null이면 빈 타이틀로 fallback합니다.
      *
+     * @effects meta_title_tier_chain_resolves_in_priority_order
+     *
      * @return void 반환값 없음
      */
     public function test_no_seo_context_and_no_module_falls_through(): void
@@ -1377,6 +1476,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * resolve()는 og 데이터를 배열로 반환합니다 (HTML 렌더 지연 패턴).
+     *
+     * @effects og_tags_are_built_from_resolved_meta
      *
      * @return void 반환값 없음
      */
@@ -1400,7 +1501,144 @@ class SeoMetaResolverTest extends TestCase
     }
 
     /**
+     * 선언 경로의 `og:image` 가 마운트 접두사를 **한 번만** 싣는다.
+     *
+     * 이 자리에 오는 값은 레이아웃이 선언한 표현식의 평가 결과이고, 그 표현식을
+     * **모듈이 편집기 칩으로 광고한다** — `sirsoft-board` 는 `{{post.data.thumbnail}}`,
+     * `sirsoft-ecommerce` 는 `{{product.data.thumbnail_url}}` 를 칩으로 제시한다.
+     * 두 값의 생산자는 `AssetUrl::basePrefix()` 를 이미 실어 주므로, 종전의 `url()`
+     * (오리진 + 접두사)로는 `https://host/g7/g7/api/…` 가 나가고 그 주소는 404 다.
+     *
+     * 9차가 게시판 모듈의 **기본값** 경로에서 고친 것과 같은 실패가 한 계층 위
+     * (코어 해석기)에 남아 있었다 — 운영자가 편집기에서 칩을 고르는 순간 재현된다
+     * (10차 G3 라운드 X-2).
+     *
+     * @effects declared_og_image_carries_the_mount_prefix_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declared_og_image_carries_the_mount_prefix_once(): void
+    {
+        // 마운트를 **실제로** 재현한다. `forceBasePrefix` 만 걸면 `url()` 은 그 값을
+        // 보지 않아 되돌림 변이가 동작 축에서 조용히 통과한다 — `url()` 의 오리진은
+        // config 가 아니라 **요청 root** 이므로 `URL::forceRootUrl()` 까지 걸어야
+        // 그 헬퍼가 진짜로 이중 접두를 만든다 (10차 실측 · 9차 A-2 와 같은 방식).
+        Config::set('app.url', 'https://example.test/g7');
+        URL::forceRootUrl('https://example.test/g7');
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $seoConfig = [
+                'og' => [
+                    'image' => '{{product.data.thumbnail_url}}',
+                    'image_secure_url' => '{{product.data.thumbnail_url}}',
+                ],
+                'twitter' => ['image' => '{{product.data.thumbnail_url}}'],
+            ];
+            // 생산자(`ProductImage::apiDownloadUrl()`)가 접두사를 실은 값
+            $context = ['product' => ['data' => [
+                'thumbnail_url' => '/g7/api/modules/sirsoft-ecommerce/product-image/abc',
+            ]]];
+
+            $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+            foreach ([$result['og']['image'], $result['og']['image_secure_url'], $result['twitter']['image']] as $url) {
+                $this->assertStringNotContainsString('/g7/g7/', $url, '접두사가 두 번 실렸다 — 그 주소는 404 다');
+                $this->assertStringStartsWith('http', $url);
+                $this->assertStringEndsWith('/g7/api/modules/sirsoft-ecommerce/product-image/abc', $url);
+            }
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+            URL::forceRootUrl(null);
+        }
+    }
+
+    /**
+     * 접두사가 없는 사이트 경로에는 접두사를 **채운다** — 반대 방향 대조.
+     *
+     * 레이아웃이 리터럴로 적은 경로(`/img/og.png`)에 접두사를 붙일 주체는 이 자리뿐이다.
+     * 오리진만 붙이는 것으로 고치면 이쪽이 조용히 깨진다.
+     *
+     * @effects declared_og_image_carries_the_mount_prefix_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declared_og_image_gains_the_prefix_when_it_has_none(): void
+    {
+        Config::set('app.url', 'https://example.test/g7');
+        URL::forceRootUrl('https://example.test/g7');
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $result = $this->resolver->resolve(
+                ['og' => ['image' => '/img/og.png']],
+                [],
+                'sirsoft-ecommerce',
+                null,
+                [],
+            );
+
+            $this->assertStringEndsWith('/g7/img/og.png', $result['og']['image']);
+            $this->assertStringStartsWith('http', $result['og']['image']);
+            $this->assertStringNotContainsString('/g7/g7/', $result['og']['image']);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+            URL::forceRootUrl(null);
+        }
+    }
+
+    /**
+     * 사이트 경로가 아닌 값은 손대지 않는다 — 과잉 전환 대조.
+     *
+     * @effects declared_og_image_carries_the_mount_prefix_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declared_og_image_leaves_non_site_paths_untouched(): void
+    {
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $result = $this->resolver->resolve(
+                ['og' => ['image' => '//cdn.example.com/y.png']],
+                [],
+                'sirsoft-ecommerce',
+                null,
+                [],
+            );
+
+            $this->assertSame('//cdn.example.com/y.png', $result['og']['image']);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+    }
+
+    /**
+     * 봇 메타의 자산 주소를 `url()` 로 만들지 않는다 (소스 계약).
+     *
+     * 값 단언만으로는 재발을 못 막는다 — `config('app.url')` 에 접두사가 없는 개발
+     * 환경에서는 `url()` 도 같은 값을 내기 때문이다.
+     *
+     * @effects declared_og_image_carries_the_mount_prefix_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_meta_resolver_never_builds_asset_urls_with_the_url_helper(): void
+    {
+        $source = (string) file_get_contents(base_path('app/Seo/SeoMetaResolver.php'));
+        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
+
+        $this->assertSame(
+            0,
+            preg_match_all('/(?<![\w>$])url\s*\(/', $code),
+            'SeoMetaResolver 가 `url()` 을 쓴다 — 그 헬퍼는 오리진과 마운트 접두사를 함께 붙이므로 접두사를 이미 실은 값에서 이중 접두가 된다',
+        );
+    }
+
+    /**
      * og:image:width / og:image:height 가 코어 설정 fallback 으로 채워집니다.
+     *
+     * @effects og_image_width_height_emitted_from_core_default
      *
      * @return void 반환값 없음
      */
@@ -1428,6 +1666,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * og:site_name 은 코어 설정 fallback (general.site_name) 을 사용합니다.
      *
+     * @effects og_site_name_emitted_from_core_setting
+     *
      * @return void 반환값 없음
      */
     public function test_og_site_name_fallback_to_core_general_site_name(): void
@@ -1450,6 +1690,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * Twitter 카드 데이터가 OG 데이터를 fallback 으로 사용합니다.
+     *
+     * @effects twitter_image_falls_back_to_og_image
      *
      * @return void 반환값 없음
      */
@@ -1478,6 +1720,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * og.extra 배열의 자유 메타태그가 출력에 포함됩니다.
      *
+     * @effects og_extra_meta_tags_are_emitted
+     *
      * @return void 반환값 없음
      */
     public function test_og_extra_meta_tags_rendered(): void
@@ -1505,6 +1749,10 @@ class SeoMetaResolverTest extends TestCase
      *
      * issue#300: og:title="- 무선 마우스 #99" 슬랙/페이스북 미리보기 제목 깨짐
      *
+     * @scenario template_separator_state=leading_var_empty
+     *
+     * @effects title_no_leading_dash_when_var_empty
+     *
      * @return void 반환값 없음
      */
     public function test_module_template_title_no_leading_dash_when_var_empty(): void
@@ -1531,6 +1779,10 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 회귀: 옵셔널 그룹 [{var} - ] 신택스 — var 채워지면 그룹 keep, 비면 통째 drop.
      *
+     * @scenario template_separator_state=optional_group_filled
+     *
+     * @effects title_optional_group_kept_when_filled
+     *
      * @return void 반환값 없음
      */
     public function test_module_template_title_optional_group_filled(): void
@@ -1556,6 +1808,10 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 모듈 제목 템플릿의 선택 그룹은 변수가 비면 그룹째 빠집니다.
      *
+     * @scenario template_separator_state=optional_group_empty
+     *
+     * @effects title_optional_group_dropped_when_empty
+     *
      * @return void 반환값 없음
      */
     public function test_module_template_title_optional_group_empty_var_dropped(): void
@@ -1580,6 +1836,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * resolveStructuredDataArray 는 배열 형태로 반환하여 hook 변경이 가능합니다.
+     *
+     * @effects structured_data_json_ld_is_safe_and_well_formed
      *
      * @return void 반환값 없음
      */
@@ -1698,6 +1956,8 @@ class SeoMetaResolverTest extends TestCase
      * config 값이 ["ko" => "...", "en" => "..."] 배열이 됨.
      * 이전 회귀: SeoRenderer 가 봇 요청에서 항상 Array to string ErrorException → SPA fallback.
      *
+     * @effects seo_meta_resolution_tolerates_null_and_multilingual_values
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_handles_multilingual_array_in_core_settings(): void
@@ -1732,6 +1992,8 @@ class SeoMetaResolverTest extends TestCase
      * getResourceMetaField / getPageSeoMetaField / resolveKeywords 의 `(string) $value` 가
      * "Array to string conversion" → SPA fallback 회귀 차단.
      *
+     * @effects seo_meta_resolution_tolerates_null_and_multilingual_values
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_handles_multilingual_array_in_resource_meta_columns(): void
@@ -1759,6 +2021,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 회귀: 페이지 seo_meta 객체 안에 다국어 JSON array 가 있어도 throw 없이 동작.
+     *
+     * @effects seo_meta_resolution_tolerates_null_and_multilingual_values
      *
      * @return void 반환값 없음
      */
@@ -1793,6 +2057,8 @@ class SeoMetaResolverTest extends TestCase
      *
      * (이 회귀는 #300 작업의 substituteVars 강화에서 도입됨 — 이전 str_replace 기반은
      *  array 받아도 fatal 안 났음.)
+     *
+     * @effects seo_meta_resolution_tolerates_null_and_multilingual_values
      *
      * @return void 반환값 없음
      */
@@ -1834,6 +2100,8 @@ class SeoMetaResolverTest extends TestCase
      * 이전 회귀: SeoMetaResolver.resolveVarExpression 의 `(string) g7_module_settings(...)`
      * 가 array → "Array to string conversion" → render() throw → SPA fallback.
      *
+     * @effects seo_meta_resolution_tolerates_null_and_multilingual_values
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_vars_handles_multilingual_array_in_module_settings(): void
@@ -1866,6 +2134,8 @@ class SeoMetaResolverTest extends TestCase
      * 회귀: 레이아웃 og.title 이 직접 다국어 객체 리터럴 형식인 경우에도
      * resolveOgData 가 throw 없이 현재 로케일 값으로 변환.
      *
+     * @effects seo_meta_resolution_tolerates_null_and_multilingual_values
+     *
      * @return void 반환값 없음
      */
     public function test_resolve_handles_multilingual_array_in_layout_og_field(): void
@@ -1894,6 +2164,8 @@ class SeoMetaResolverTest extends TestCase
      * 제목이 있으면 공백을 복원해 잇고, 제목이 비면 매달린 구분자를 떼어낸다.
      * (blade 는 title.titleSuffix 단순 연결 — 조립 규칙은 이 메서드가 SSoT)
      *
+     * @effects title_suffix_is_composed_with_one_separator_space
+     *
      * @return void 반환값 없음
      */
     public function test_compose_title_suffix_restores_space_between_title_and_trimmed_suffix(): void
@@ -1903,6 +2175,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 접미사에 선행 공백이 이미 있으면 그대로 잇습니다.
+     *
+     * @effects title_suffix_is_composed_with_one_separator_space
      *
      * @return void 반환값 없음
      */
@@ -1914,6 +2188,8 @@ class SeoMetaResolverTest extends TestCase
     /**
      * 제목이 비면 접미사 앞의 매달린 구분자를 떼어냅니다.
      *
+     * @effects title_suffix_is_composed_with_one_separator_space
+     *
      * @return void 반환값 없음
      */
     public function test_compose_title_suffix_strips_dangling_separator_when_title_is_empty(): void
@@ -1924,6 +2200,8 @@ class SeoMetaResolverTest extends TestCase
 
     /**
      * 접미사가 비어 있으면 빈 문자열을 돌려줍니다.
+     *
+     * @effects title_suffix_is_composed_with_one_separator_space
      *
      * @return void 반환값 없음
      */

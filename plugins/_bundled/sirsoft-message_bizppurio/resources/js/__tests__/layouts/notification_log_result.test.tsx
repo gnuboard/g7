@@ -14,6 +14,8 @@
  * 빈 셀(-)인지 확인한다.
  *
  * @vitest-environment jsdom
+ *
+ * @scenario e2e_view_action=view_result_cell
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

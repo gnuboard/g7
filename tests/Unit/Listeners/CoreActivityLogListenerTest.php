@@ -174,7 +174,8 @@ class CoreActivityLogListenerTest extends TestCase
         // #736 D23 회원 등록·수정의 역할 변경(core.user.after_update_roles) +1 → 85.
         // #798 외부 인증 — 회원 차단·차단 해제·모든 기기 로그아웃(core.user.after_block·after_unblock·
         // after_sessions_revoked) +3 → 88.
-        $this->assertCount(88, $hooks);
+        // #609 코어 업데이트 웹 단계 실행(core.core_update.started·completed·failed) +3 → 91.
+        $this->assertCount(91, $hooks);
         $this->assertSame(
             ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
             $hooks['core.user.after_update_roles'] ?? null,
@@ -185,6 +186,18 @@ class CoreActivityLogListenerTest extends TestCase
             'core.user.after_sessions_revoked' => 'handleUserAfterSessionsRevoked',
         ] as $hook => $method) {
             $this->assertSame(['method' => $method, 'priority' => 20, 'sync' => true], $hooks[$hook] ?? null, $hook);
+        }
+
+        // 숫자만 세면 「구독은 했는데 핸들러가 없다」가 통과한다 — 등록된 훅 전부가
+        // 실제 메서드를 가리키는지 함께 본다.
+        foreach ($hooks as $hook => $handler) {
+            $method = is_array($handler) ? ($handler['method'] ?? null) : $handler;
+
+            $this->assertIsString($method, "훅 {$hook} 의 핸들러 이름을 읽지 못했다.");
+            $this->assertTrue(
+                method_exists(CoreActivityLogListener::class, $method),
+                "훅 {$hook} 가 존재하지 않는 메서드 {$method} 를 가리킨다.",
+            );
         }
     }
 

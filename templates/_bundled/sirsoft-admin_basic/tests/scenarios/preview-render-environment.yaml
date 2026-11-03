@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 컴포넌트(7)×미리보기 기기(3)×렌더 환경 유무(2) 조합은 컴포넌트마다 읽는 값이 달라 곱으로 전개해도 의미가 없다. 컴포넌트마다 「환경 우선」과 「환경 없음 폴백」을 effects 로 잠근다. effects·test_files 축은 계속 검사한다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#714 컴포넌트(7)×미리보기 기기(3)×렌더 환경 유무(2) 조합은 컴포넌트마다 읽는 값이 달라 곱으로 전개해도 의미가 없다. 컴포넌트마다 「환경 우선」과 「환경 없음 폴백」을 effects 로 잠근다. effects·test_files 축은 계속 검사한다.
 feature: 레이아웃 편집기 미리보기 렌더 환경 — 관리자 기본 템플릿 컴포넌트 (공개 이슈 #141)
 
 description: |
@@ -18,6 +18,17 @@ axes:
   component: [CardGrid, DataGrid, RichSelect, SlotContainer, Modal, FileTreePicker, CodeWorkspace]
   preview_device: [desktop, tablet, mobile]
   render_env: [present, absent]
+  # 컴포넌트마다 읽는 값이 달라 그 컴포넌트의 테스트만 쓰는 축. 마킹이 `a|b` 로 적은 것은 한 테스트가
+  # 그 값들을 함께 잰다는 뜻이고, 여기에는 낱값으로 적는다.
+  window_width: [1440, "390→1440"]      # CardGrid, FileTreePicker, CodeWorkspace: 브라우저 창 폭(390→1440 은 창 크기 변경)
+  render_width: [390, 820, 1280]        # FileTreePicker, CodeWorkspace: 미리보기가 주는 렌더 폭
+  use_responsive: [absent]              # FileTreePicker: G7Core.useResponsive 훅이 없는 환경
+  view: [desktop, mobile_card]          # DataGrid: 표 보기와 모바일 카드 보기
+  paths: [cell, subrow, footer_cell, footer_text, expand, card_cell, footer_card]  # DataGrid: 렌더 환경을 넘기는 경로
+  render_path: [component_layout, footer]   # RichSelect component_layout, Modal footer
+  slot_registration: [with_render_env, without_render_env]  # SlotContainer: 등록 항목이 렌더 환경을 갖는가
+  container_context: [present, absent]  # SlotContainer: 컨테이너 자신의 렌더 환경이 있는가
+  edit_mode: [true]                     # SlotContainer, Modal: 렌더 환경이 편집 모드를 싣는다
 
 effects:
   - preview_cell_render_follows_preview_width                  # CardGrid·DataGrid 셀이 렌더 환경을 받는다

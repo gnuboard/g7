@@ -246,6 +246,7 @@ export function useEditorUrlSync(templateIdentifier: string): void {
       state.selectedRoute?.path ?? null,
       state.selectedRoute?.layoutName ?? null,
     );
+    // base-path:allow 현재 주소 문자열 비교용 — 접두사를 품은 원본끼리 견준다
     const currentUrl = `${window.location.pathname}${window.location.search}`;
     const prevMode = prevEditModeRef.current;
     prevEditModeRef.current = state.editMode;
@@ -255,8 +256,10 @@ export function useEditorUrlSync(templateIdentifier: string): void {
     // route → 별도 편집 모드 진입: pushState(뒤로가기로 직전 라우트 복귀 가능).
     const enteringEditMode = prevMode === 'route' && state.editMode !== 'route';
     if (enteringEditMode && window.history.pushState) {
+      // base-path:allow `buildEditorUrl()` 이 이미 withBasePrefix 를 적용해 돌려준 값이다
       window.history.pushState(window.history.state, '', expectedUrl);
     } else {
+      // base-path:allow `buildEditorUrl()` 이 이미 withBasePrefix 를 적용해 돌려준 값이다
       window.history.replaceState(window.history.state, '', expectedUrl);
     }
   }, [state.selectedRoute, state.editMode, state.routeTree, templateIdentifier]);

@@ -14,6 +14,7 @@ use App\Http\Requests\Settings\SaveSettingsRequest;
 use App\Http\Requests\Settings\TestDriverConnectionRequest;
 use App\Http\Requests\Settings\TestMailRequest;
 use App\Http\Requests\Settings\TestOutboundProxyRequest;
+use App\Http\Requests\Settings\TestTrustedProxyRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
 use App\Privacy\DormantAccountService;
@@ -25,6 +26,7 @@ use App\Services\OutboundProxyTester;
 use App\Services\PasswordExpiryService;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SettingsService;
+use App\Services\TrustedProxyProbe;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\TrustedProxyDiagnostic;
@@ -51,6 +53,7 @@ class SettingsController extends AdminBaseController
      * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
      * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      * @param  QueueWorkerRegistry  $queueWorkerRegistry  큐 워커 등록·상태 (#139)
+     * @param  TrustedProxyProbe  $trustedProxyProbe  신뢰 프록시 사전 검사
      */
     public function __construct(
         private SettingsService $settingsService,
@@ -61,7 +64,8 @@ class SettingsController extends AdminBaseController
         private PrivacyRetentionManager $privacyRetentionManager,
         private DormantAccountService $dormantAccountService,
         private PasswordExpiryService $passwordExpiryService,
-        private QueueWorkerRegistry $queueWorkerRegistry
+        private QueueWorkerRegistry $queueWorkerRegistry,
+        private TrustedProxyProbe $trustedProxyProbe
     ) {
         parent::__construct();
     }
@@ -259,9 +263,16 @@ class SettingsController extends AdminBaseController
     /**
      * 신뢰 프록시(리버스 프록시) 설정 진단 결과를 조회합니다 (#124).
      *
-     * 읽기 전용이다 — 값 편집 엔드포인트는 두지 않는다. 이 값은 "앱이 프록시 없이 도달
-     * 가능한가" 라는 배포 구조 지식이 있어야 정할 수 있고, 웹에서 편집 가능해지면 관리자
-     * 계정 탈취가 곧 X-Forwarded-For 위조 경로가 된다. 편집은 `.env` 전용이다.
+     * 이 엔드포인트는 진단만 돌려준다. 값은 환경설정 > 고급의 신뢰 프록시 카드에서
+     * 저장하고(`debug.trusted_proxies`), 저장 전 확인은 {@see testTrustedProxy()} 가 맡는다.
+     *
+     * **편집을 화면에 연 이유(#609)**: 원래 이 값은 `.env` 전용이었다. 그 전제는 셸로
+     * `.env` 를 고칠 수 있다는 것인데, 무CLI·고정 docroot 설치에는 그 통로가 없어 진단이
+     * "고칠 수 없는 경고" 로 끝났다. 남는 위험 — 관리자 계정이 탈취되면 공격자가 신뢰
+     * 프록시를 열어 X-Forwarded-For 를 위조할 수 있다 — 은 사라지지 않았다. 다만 그 시점의
+     * 공격자는 이미 `core.settings.update` 를 쥐고 있어 메일·디버그·드라이버 설정까지
+     * 바꿀 수 있으므로, 이 키 하나를 잠가서 얻는 실익이 통로 부재의 대가보다 작다고 봤다.
+     * `.env` 를 배포 기준값으로 쓰는 설치는 `G7_ENV_PRIORITY` 로 이 키를 잠글 수 있다.
      *
      * 판정 대상은 관리자 브라우저의 **실제 요청**이므로 현재 요청을 그대로 쓴다.
      * 입력을 받지 않는 읽기 전용 조회라 FormRequest 를 두지 않는다.
@@ -271,6 +282,32 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 신뢰 프록시 후보값을 저장 전에 검사합니다 (#609).
+     *
+     * 저장하지 않고, 이번 요청에 그 값을 적용했을 때 방문자 IP·HTTPS 인식이 어떻게 해석되는지
+     * 돌려준다. 이 설정은 틀려도 오류를 내지 않으므로(방문자 IP 만 조용히 어긋난다) 저장 후에
+     * 알아차릴 단서가 없고, HTTPS 종단 구성에서 잘못 저장하면 관리자 화면 자체에 못 들어가
+     * 되돌릴 통로가 사라진다. 그 사고를 막는 자리다.
+     *
+     * 검사 대상은 저장된 설정이 아니라 이번 요청이 제출한 값이다.
+     *
+     * @param  TestTrustedProxyRequest  $request  검증된 요청
+     * @return JsonResponse 검사 결과
+     */
+    public function testTrustedProxy(TestTrustedProxyRequest $request): JsonResponse
+    {
+        $result = $this->trustedProxyProbe->probe(
+            $request,
+            (array) ($request->validated()['trusted_proxies'] ?? [])
+        );
+
+        // 후보값이 기대와 다른 결과를 내는 것은 요청 처리 실패가 아니라 진단 결과다 —
+        // 200 으로 결과를 돌려주고 판정은 페이로드의 `verdict` 가 말한다
+        // (아웃바운드 프록시 연결 테스트와 같은 규약).
+        return $this->success('settings.trusted_proxy_probe_'.$result['verdict'], $result);
     }
 
     /**

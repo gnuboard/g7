@@ -25,6 +25,8 @@ class PublicPageControllerTest extends FeatureTestCase
 {
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -43,6 +45,10 @@ class PublicPageControllerTest extends FeatureTestCase
         $storageMock->shouldReceive('response')->andReturnUsing(
             fn () => new StreamedResponse(fn () => print ('file content'), 200)
         );
+        // 다운로드 통로는 `download()` 프리미티브(첨부 disposition)를 쓴다 — 코어 첨부 통로와 같은 형태 (G3 회차 15)
+        $storageMock->shouldReceive('download')->andReturnUsing(
+            fn () => new StreamedResponse(fn () => print ('file content'), 200, ['Content-Type' => 'application/pdf'])
+        );
         $this->app->instance(StorageInterface::class, $storageMock);
 
         // PageAttachmentService 는 contextual binding 으로 모듈 도메인 Storage 를 받으므로
@@ -55,6 +61,8 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 테스트 정리
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -67,6 +75,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 발행된 페이지를 슬러그로 조회할 수 있는지 확인
+     *
+     * @scenario viewer=guest, published=published
+     *
+     * @effects guest_sees_published_page
+     *
+     * @return void 반환값 없음
      */
     public function test_public_can_view_published_page_by_slug(): void
     {
@@ -92,6 +106,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 미발행 페이지 슬러그로 조회 시 404를 반환하는지 확인
+     *
+     * @scenario viewer=guest, published=unpublished
+     *
+     * @effects guest_gets_404_for_unpublished_page
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_page_returns_404(): void
     {
@@ -111,6 +131,10 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 슬러그로 조회 시 404를 반환하는지 확인
+     *
+     * @scenario viewer=guest
+     *
+     * @return void 반환값 없음
      */
     public function test_nonexistent_slug_returns_404(): void
     {
@@ -123,6 +147,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 조회 권한(pages.read) 관리자는 미발행 페이지를 미리볼 수 있는지 확인
+     *
+     * @scenario viewer=page_reader, published=unpublished
+     *
+     * @effects page_reader_admin_previews_unpublished_page_with_200, preview_response_exposes_is_preview_true_only_for_unpublished_preview
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_with_read_permission_can_preview_unpublished_page(): void
     {
@@ -150,6 +180,12 @@ class PublicPageControllerTest extends FeatureTestCase
      * 썸네일 <img>·다운로드는 브라우저 직접 GET 이라 토큰을 실을 수 없어 인증 라우트로
      * 두면 401 로 깨진다. 게시판·이커머스 표준과 동일하게 공개 hash 라우트로 단일화하고,
      * 미발행 콘텐츠 보안은 다운로드 권한 게이트(공개 라우트 내부)로 담당한다.
+     *
+     * @scenario viewer=page_reader, published=unpublished
+     *
+     * @effects preview_attachments_use_public_hash_url
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_preview_unpublished_page_attachments_use_public_url(): void
     {
@@ -190,6 +226,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 페이지 권한이 없는 일반 회원은 미발행 페이지를 미리볼 수 없음(404)
+     *
+     * @scenario viewer=member, published=unpublished
+     *
+     * @effects member_gets_404_for_unpublished_page
+     *
+     * @return void 반환값 없음
      */
     public function test_non_admin_user_cannot_preview_unpublished_page(): void
     {
@@ -211,6 +253,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * pages.read 권한이 없는 관리자(다른 모듈 admin)는 미발행 페이지를 미리볼 수 없음(404)
+     *
+     * @scenario viewer=other_admin, published=unpublished
+     *
+     * @effects other_admin_without_pages_read_gets_404_for_unpublished_page
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_without_pages_read_cannot_preview_unpublished_page(): void
     {
@@ -232,6 +280,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 발행된 페이지의 첨부 URL은 관리자 요청이어도 공개용 라우트를 유지하는지 확인
+     *
+     * @scenario viewer=page_reader, published=published
+     *
+     * @effects published_page_attachments_use_public_hash_url_even_for_admin
+     *
+     * @return void 반환값 없음
      */
     public function test_published_page_attachments_use_public_url_even_for_admin(): void
     {
@@ -267,6 +321,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 발행된 페이지 조회 시 첨부파일 목록이 포함되는지 확인
+     *
+     * @scenario viewer=guest, published=published
+     *
+     * @effects guest_sees_published_page
+     *
+     * @return void 반환값 없음
      */
     public function test_published_page_includes_attachments(): void
     {
@@ -308,6 +368,10 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 해시로 공개 다운로드 시 404를 반환하는지 확인
+     *
+     * @scenario serving_type=download, viewer=guest
+     *
+     * @return void 반환값 없음
      */
     public function test_public_download_nonexistent_hash_returns_404(): void
     {
@@ -318,6 +382,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 미발행 페이지의 첨부파일 다운로드 시 404를 반환하는지 확인
+     *
+     * @scenario serving_type=download, published=unpublished, viewer=guest
+     *
+     * @effects download_unpublished_blocked_404_for_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_public_download_unpublished_page_attachment_returns_404(): void
     {
@@ -350,6 +420,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 해시로 공개 미리보기 시 404를 반환하는지 확인
+     *
+     * @scenario serving_type=preview, viewer=guest
+     *
+     * @effects preview_nonexistent_hash_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_public_preview_nonexistent_hash_returns_404(): void
     {
@@ -367,6 +443,12 @@ class PublicPageControllerTest extends FeatureTestCase
      * preview 도 download 와 동일한 발행상태 게이트를 적용한다. 권한자 화면의
      * <img> 썸네일은 응답 직렬화 시점에 발급되는 한시 서명 URL 이 담당한다
      * (PublicPageAttachmentAccessTest 서명 축 참조).
+     *
+     * @scenario serving_type=preview, published=unpublished, viewer=guest
+     *
+     * @effects preview_unpublished_blocked_404_for_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_public_preview_unpublished_image_blocked_for_guest(): void
     {
@@ -399,6 +481,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 발행 페이지의 이미지 첨부 미리보기(썸네일)는 200을 반환한다.
+     *
+     * @scenario serving_type=preview, published=published, viewer=guest
+     *
+     * @effects preview_published_returns_200_for_any_viewer
+     *
+     * @return void 반환값 없음
      */
     public function test_public_preview_published_image_returns_200(): void
     {
@@ -432,6 +520,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 미발행 페이지 첨부 다운로드는 비로그인에게 404로 차단된다.
+     *
+     * @scenario serving_type=download, published=unpublished, viewer=guest
+     *
+     * @effects download_unpublished_blocked_404_for_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_download_unpublished_attachment_blocked_for_guest(): void
     {
@@ -464,6 +558,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 미발행 페이지 첨부 다운로드는 권한 없는 일반 회원에게 404로 차단된다.
+     *
+     * @scenario serving_type=download, published=unpublished, viewer=member
+     *
+     * @effects download_unpublished_blocked_404_for_member
+     *
+     * @return void 반환값 없음
      */
     public function test_download_unpublished_attachment_blocked_for_member(): void
     {
@@ -498,6 +598,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 미발행 페이지 첨부 다운로드는 pages.read 권한 관리자에게 200(스트리밍)을 허용한다.
+     *
+     * @scenario serving_type=download, published=unpublished, viewer=page_reader_admin
+     *
+     * @effects download_unpublished_allowed_200_for_page_reader_admin
+     *
+     * @return void 반환값 없음
      */
     public function test_download_unpublished_attachment_allowed_for_admin_with_read(): void
     {
@@ -531,6 +637,12 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 발행 페이지 첨부 다운로드는 누구나 200(스트리밍)을 허용한다.
+     *
+     * @scenario serving_type=download, published=published, viewer=guest
+     *
+     * @effects download_published_returns_200_for_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_download_published_attachment_allowed_for_guest(): void
     {

@@ -165,8 +165,30 @@ class RollbackStaleFilesCommand extends Command
         if ($backups === []) {
             return null;
         }
-        // listBackups 는 정렬 보장이 약하므로 mtime 기준으로 다시 정렬
-        usort($backups, fn ($a, $b) => filemtime($b['path']) <=> filemtime($a['path']));
+        // listBackups 는 정렬 보장이 약하므로 mtime 기준으로 다시 정렬한다.
+        //
+        // 형제 선택기(`StorageLeftoverPruneService::pruneBackupSet`)와 **같은 규율**을 쓴다:
+        //   ① `filemtime()` 실패(`false`)를 보존 방향으로 접는다 — 접지 않으면 `false` 가
+        //      정수 비교에서 0 으로 강등돼 그 백업이 맨 뒤로 밀리고, 롤백이 **가장 최신이
+        //      아닌** 백업을 고른다(조회 실패는 「아주 오래됐다」가 아니다).
+        //   ② 마지막 결정자로 경로를 세워 **전순서**를 만든다 — `filemtime` 은 초 해상도라
+        //      같은 초에 만들어진 두 백업의 순서가 열거 순서에 좌우된다. 롤백 대상이
+        //      디렉토리 나열 순서로 갈리면 재현되지 않는 복구가 된다 (23차 G3 라운드 D23-10).
+        $mtime = static function (string $path): int {
+            $t = @filemtime($path);
+
+            return $t === false ? PHP_INT_MAX : $t;
+        };
+
+        usort($backups, static function (array $a, array $b) use ($mtime): int {
+            $byMtime = $mtime($b['path']) <=> $mtime($a['path']);
+
+            if ($byMtime !== 0) {
+                return $byMtime;
+            }
+
+            return strcmp((string) $b['path'], (string) $a['path']);
+        });
 
         return $backups[0]['path'] ?? null;
     }

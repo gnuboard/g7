@@ -5,6 +5,7 @@ namespace App\Console\Commands\Settings;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Exceptions\SettingsConsoleException;
 use App\Services\SettingsConsoleService;
+use App\Support\ExecutionEnvironment;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
 
@@ -96,7 +97,10 @@ class SettingsSetCommand extends Command
      */
     private function resolveRawValue(string $key, bool $sensitive): ?string
     {
-        $fromEnv = getenv('G7_SETTING_VALUE');
+        // getenv 가 막힌 PHP 에서는 호출 자체가 Error 다 — CLI 가 $_SERVER 에 심어 둔 환경변수로 대신 읽는다.
+        $fromEnv = ExecutionEnvironment::hasFunction('getenv')
+            ? getenv('G7_SETTING_VALUE')
+            : ($_SERVER['G7_SETTING_VALUE'] ?? false);
         if (is_string($fromEnv) && $fromEnv !== '') {
             return $fromEnv;
         }

@@ -7,6 +7,7 @@ use App\Exceptions\CoreVersionMismatchException;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Support\BootDeferredLog;
 use App\Support\CoreUpdateContext;
+use App\Support\ExecutionEnvironment;
 use Composer\Semver\Semver;
 use Exception;
 
@@ -61,7 +62,13 @@ class CoreVersionChecker
     public static function getCoreVersion(): string
     {
         if (CoreUpdateContext::isInProgress()) {
-            $envVersion = $_ENV['APP_VERSION'] ?? $_SERVER['APP_VERSION'] ?? getenv('APP_VERSION');
+            // `getenv` 는 `??` 사슬의 **꼬리**다 — 앞의 두 항이 폴백이라는 판정은 성립하지 않는다.
+            // `variables_order` 는 통상 `E` 를 포함하지 않아 `$_ENV` 가 비어 있고 `$_SERVER` 에도
+            // 그 키가 없으므로, 업데이트 트리 안에서는 매번 이 호출에 도달한다. `getenv` 가 차단된
+            // 호스팅에서는 PHP 8 이 함수 테이블에서 제거하므로 `Error` 로 요청 자체가 죽는다 (16차 A-1).
+            $envVersion = $_ENV['APP_VERSION']
+                ?? $_SERVER['APP_VERSION']
+                ?? (ExecutionEnvironment::hasFunction('getenv') ? getenv('APP_VERSION') : false);
             if (is_string($envVersion) && $envVersion !== '') {
                 return $envVersion;
             }

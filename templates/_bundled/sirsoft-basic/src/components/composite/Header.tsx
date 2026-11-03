@@ -13,6 +13,7 @@
  * └─────────────────────────────────────────────────────────────────┘
  */
 
+import { routePath } from '../../support/apiUrl';
 import React, { useState, useRef, useEffect, useId } from 'react';
 
 // 기본 컴포넌트 import
@@ -221,7 +222,7 @@ const Header: React.FC<HeaderProps> = ({
   const [showMoreBoards, setShowMoreBoards] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState(routePath(window.location.pathname));
   const userMenuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
@@ -245,7 +246,7 @@ const Header: React.FC<HeaderProps> = ({
 
   // 경로 변경 감지 (SPA 네비게이션 대응)
   useEffect(() => {
-    const handlePopState = () => setCurrentPath(window.location.pathname);
+    const handlePopState = () => setCurrentPath(routePath(window.location.pathname));
     window.addEventListener('popstate', handlePopState);
 
     // G7Core의 navigate 이벤트 감지
@@ -253,7 +254,7 @@ const Header: React.FC<HeaderProps> = ({
     // audit:allow extension-private-core-internals reason: 템플릿 자기 컴포넌트가 원본 pushState 를 그대로 호출하고 현재 경로만 갱신하는 래퍼
     history.pushState = function(...args) {
       originalPushState.apply(this, args);
-      setCurrentPath(window.location.pathname);
+      setCurrentPath(routePath(window.location.pathname));
     };
 
     return () => {

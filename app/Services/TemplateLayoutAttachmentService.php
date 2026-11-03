@@ -7,6 +7,7 @@ use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\TemplateLayoutAttachment;
+use App\Services\Concerns\ResolvesRowStorage;
 use App\Support\ImageResizer;
 use App\Support\PublicAssetDisk;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,6 +27,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class TemplateLayoutAttachmentService
 {
+    use ResolvesRowStorage;
+
     /** 스토리지 카테고리 — {category}/{path} 경로 패턴의 prefix */
     private const STORAGE_CATEGORY = 'template-layout-attachments';
 
@@ -73,6 +76,15 @@ class TemplateLayoutAttachmentService
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용).
         // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 기록이 모두 축소본을 본다.
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
+
+        // 위 한 줄의 약속("모두 축소본을 본다")을 실제로 성립시킨다.
+        //
+        // 축소는 **제자리 덮어쓰기**이고, `ImageResizer::resizeInPlace()` 는 쓰기 **전에**
+        // `is_file()` 로 그 경로를 stat 하므로 PHP 공유 stat 캐시가 반드시 채워진다. 그 뒤의
+        // `getSize()` 는 그 캐시를 그대로 읽어 **축소 전 크기**를 돌려주고, 그 값이 행의
+        // `size` 로 기록돼 실제 저장 바이트와 어긋난다. 형제 `sirsoft-board` 는 같은 사유로
+        // 이미 이 처리를 갖는다 (11차 G3 라운드 B11-4).
+        clearstatcache(true, $file->getRealPath());
 
         $stored = $this->storage
             ->withDisk($disk)
@@ -182,8 +194,8 @@ class TemplateLayoutAttachmentService
         }
 
         // 게이트를 통과한 disk 는 PublicAssetDisk::resolve() 가 존재를 이미 확인했다.
-        return $this->storage
-            ->withDisk($attachment->disk)
+        // 행 disk 는 고아 disk 방어(`storageForRow()`)를 거친다 — 형제 서빙, 삭제 자리와 같은 판정이다.
+        return $this->storageForRow($attachment->disk)
             ->url(self::STORAGE_CATEGORY, $attachment->path);
     }
 

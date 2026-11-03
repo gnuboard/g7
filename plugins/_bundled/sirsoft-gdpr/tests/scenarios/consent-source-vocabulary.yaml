@@ -1,0 +1,27 @@
+feature: GDPR 동의 이력 — 출처 필터의 「회원탈퇴」 노출
+
+description: |
+  관리자 「동의 이력」 화면의 출처 필터가 `withdraw`(회원탈퇴 시 일괄 철회) 출처를
+  드러내고, 그 체크박스를 켜고 끌 때 목록이 다시 조회되는지를 고정한다.
+
+  배경: `ConsentSource` 에 `withdraw` case 가 없어 그 출처로 기록된 행이 출처 필터
+  **어느 값으로도 걸러지지 않았다**. 목록에는 보이는데 필터로는 닿지 않는 상태라
+  오류도 빈 결과도 남지 않는다 — 운영자에게는 「그런 행이 없다」와 구분되지 않는다.
+
+  정적 축(Enum ↔ 레이아웃 ↔ ko/en/ja 라벨)은 `ConsentSourceVocabularyParityTest` 가
+  따로 잰다. 이 매니페스트는 **브라우저에서 보이고 동작하는가** 축만 담는다 —
+  정적 검사는 체크박스가 실제로 렌더되는지도, 눌렀을 때 재조회되는지도 모른다.
+
+axes:
+  source_filter: [withdraw]
+  toggle: [on, on_then_off]
+
+exclusions:
+  - { source_filter: withdraw, toggle: on, reason: "켜기만 하는 축은 노출 확인(체크박스 가시성)이 대표하며, 재조회는 on_then_off 가 왕복까지 잰다" }
+
+effects:
+  - withdraw_checkbox_visible
+  - withdraw_filter_updates_query_and_refetches
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Playwright/specs/admin/consent-log-source-filter.spec.ts

@@ -1,3 +1,6 @@
+// @scenario source_kind=data_source
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 // e2e:allow 레이아웃 편집기 데이터 연결 속성패널 UI — dnd-kit/합성 이벤트 의존으로 Playwright 자동화 부적합, Chrome MCP 매트릭스(6-b 캔버스 라이브 §공통 검증) + 단위/레이아웃 렌더링 테스트로 검증 (specTypes.ts L1 과 동일 정책)
 /**
  * DataBindingSection.test.tsx — 데이터 연결 영역 RTL

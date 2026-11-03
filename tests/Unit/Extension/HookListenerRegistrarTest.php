@@ -22,9 +22,8 @@ use Tests\TestCase;
  *
  * 리스너 등록 시 큐/동기 분기와 filter 등록을 검증합니다.
  *
- * @effects cache_registered_action_dispatches_queue_job,
- *   cache_registered_sync_action_executes_immediately,
- *   cache_registered_filter_executes_synchronously_and_returns_value
+ * 효과 요약(마커 아님 — 평문): 캐시로 등록된 Action 리스너의 큐 디스패치, sync 리스너의 즉시 실행,
+ * filter 리스너의 동기 실행과 반환값 전달은 각 테스트 메서드가 잰다.
  */
 class HookListenerRegistrarTest extends TestCase
 {
@@ -59,7 +58,7 @@ class HookListenerRegistrarTest extends TestCase
      *
      * @scenario declaration=none
      *
-     * @effects action_listener_queued_by_default
+     * @effects action_listener_queued_by_default, cache_registered_action_dispatches_queue_job
      *
      * @return void 반환값 없음
      */
@@ -119,7 +118,7 @@ class HookListenerRegistrarTest extends TestCase
      *
      * @scenario declaration=sync_only
      *
-     * @effects sync_listener_runs_immediately
+     * @effects sync_listener_runs_immediately, cache_registered_sync_action_executes_immediately
      *
      * @return void 반환값 없음
      */
@@ -141,7 +140,7 @@ class HookListenerRegistrarTest extends TestCase
      *
      * @scenario declaration=filter_only
      *
-     * @effects filter_listener_runs_synchronously
+     * @effects filter_listener_runs_synchronously, cache_registered_filter_executes_synchronously_and_returns_value
      *
      * @return void 반환값 없음
      */

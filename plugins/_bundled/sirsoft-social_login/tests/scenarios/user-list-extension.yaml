@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 권한 없는 관리자에게는 필터 값이 무엇이든 조건을 걸지 않으므로(권한 축이 필터 축을 무력화) 두 축을 곱하면 같은 결과만 늘어난다 — 권한별 시험으로 나눴다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 권한 없는 관리자에게는 필터 값이 무엇이든 조건을 걸지 않으므로(권한 축이 필터 축을 무력화) 두 축을 곱하면 같은 결과만 늘어난다 — 권한별 시험으로 나눴다.
 feature: social_login_user_list_extension
 coverage_strategy: pairwise
 description: |

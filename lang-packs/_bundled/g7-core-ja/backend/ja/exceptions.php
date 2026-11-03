@@ -72,11 +72,20 @@ return [
         'vendor_dir_not_found' => 'vendor/ディレクトリが存在しません。最初にcomposer installを実行してください: :path',
         'composer_binary_not_found' => 'Composerバイナリが見つかりません。COMPOSER_BINARY環境変数を設定するか、composerをPATHに追加してください。',
     ],
+    // 파일 서빙 헬퍼 — 호출부 계약 위반 (개발자 대상)
+    'file_serving' => [
+        'meta_key_missing' => 'ファイル配信メタに必須キーがありません: :key',
+    ],
+
     'seo' => [
         'sitemap_write_failed' => 'Sitemapファイルの記録に失敗しました: :path',
         'sitemap_gzip_failed' => 'Sitemap子ファイルの圧縮に失敗しました: :file',
         'sitemap_temp_file_unreadable' => 'Sitemap一時ファイルを読み込めません: :file',
         'sitemap_stat_group_column_unsupported' => 'サポートされていないグループ基準列です: :column',
+    ],
+    'execution' => [
+        'spawn_unavailable' => 'このサーバーでは外部プロセスを実行できません (:reason)。実行モードを確認してください。',
+        'spawn_failed' => 'コマンド実行プロセスを開始できませんでした: :command',
     ],
     'layout_markup' => [
         'error_at' => ':file (:line行 :column列): :detail [:code]',
@@ -205,6 +214,10 @@ return [
         'nested_action_debounce_ignored' => ':handler アクションに指定した debounce は適用されません — 条件・順序・結果処理の内側や、イベント受信・失敗処理・初回表示時のアクションは毎回すぐ実行されます。画面で直接操作するアクション(<on type> 直下のアクション、例: <sequence :debounce>)に指定してください。',
         'mixed_debounce_flushed' => ':name の :event に debounce を指定したアクションとすぐ実行するアクションが混在しています — すぐ実行するアクションが動くたびに待機中の debounce アクションも即時実行され、入力のたびに実行されます。待たせるには、このイベントのアクションをすべて debounce に揃えてください。',
         'entry_only_key_ignored' => ':key は画面で直接操作するアクションにのみ適用されます。この位置(イベント受信・失敗処理・初期アクション・内側のアクション)の :handler アクションでは無視されます。',
+    ],
+    'schedule_extraction' => [
+        'not_artisan' => 'Artisan の実行文字列ではありません(php/artisan の接頭辞がありません)。',
+        'command_name_missing' => 'コマンド名が見つかりませんでした。',
     ],
     'storage' => [
         'unsafe_path' => '許可されていない保存パスです。',

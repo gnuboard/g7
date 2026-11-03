@@ -12,12 +12,14 @@ use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionDependencyOrder;
 use App\Support\RouteCacheHelper;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * 코어 업데이트 완료 후 _bundled 번들에 신버전이 포함된
@@ -39,6 +41,19 @@ use Illuminate\Support\Facades\Log;
 trait BundledExtensionUpdatePrompt
 {
     use RendersLayoutSyncResult;
+
+    /**
+     * 자식 프로세스에 넘길 번들 업데이트 매니페스트의 위치 (`storage/` 기준 상대 경로).
+     *
+     * 정리 주체는 아래 `spawnBundledUpdates()` 의 `finally` 하나뿐이었다 — FPM 타임아웃 ·
+     * OOM-kill 로 그 코드가 돌지 않으면 파일이 영구히 남는다. 회수는
+     * `StorageLeftoverPruneService` 의 `core_pending` 대상군이 맡고, 이름 규약의 일치는
+     * 계약 테스트가 이 상수를 소스에서 읽어 잠근다 (11차 G3 라운드 E11-9).
+     */
+    private const BUNDLED_MANIFEST_DIR = 'app/core_pending';
+
+    /** 번들 업데이트 매니페스트 파일 이름 접두사. */
+    private const BUNDLED_MANIFEST_PREFIX = 'bundled-updates-manifest_';
 
     /**
      * 번들 업데이트 목록 수집.
@@ -364,11 +379,15 @@ trait BundledExtensionUpdatePrompt
      */
     private function spawnBundledUpdates(array $manifest): ?array
     {
-        if (! function_exists('proc_open')) {
+        // 가용성 판정은 SSoT 한 곳이 소유한다 (#609 D34 이관 완료) — 판정이 틀리면
+        // in-process 폴백으로 넘어가지 못하고 그 자리에서 `Error` 로 죽는다.
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return null;
         }
 
-        $manifestPath = storage_path('app/core_pending'.DIRECTORY_SEPARATOR.'bundled-updates-manifest_'.uniqid().'.json');
+        // 고유 이름은 차단 가능한 `uniqid()` 가 아니라 `Str::random()` 으로 만든다 —
+        // 이 경로는 무CLI 환경에서 웹 요청 안(in-process)으로도 도달한다.
+        $manifestPath = storage_path(self::BUNDLED_MANIFEST_DIR.DIRECTORY_SEPARATOR.self::BUNDLED_MANIFEST_PREFIX.Str::random(16).'.json');
         File::ensureDirectoryExists(dirname($manifestPath));
         File::put($manifestPath, json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
@@ -391,7 +410,10 @@ trait BundledExtensionUpdatePrompt
             ];
 
             // ENV 합집합 + 업데이트 트리면 APP_VERSION·G7_UPDATE_IN_PROGRESS 고정 (#145 F10 — 상속 env 의 옛 버전이
-            // 자식의 config/hooks 캐시에 구워지지 않게 한다)
+            // 자식의 config/hooks 캐시에 구워지지 않게 한다).
+            // 상속 env 의 `getenv` 판정과 `$_SERVER` 폴백은 형제 러너(SubprocessCommandRunner::inheritedEnvironment)
+            // 가 SSoT 로 갖는다 — 이 자리는 `proc_open` 가드 안쪽이라 「proc_open 은 되는데 getenv 만 막힌」
+            // 조합에서 무가드 호출이 치명 종료한다. UpdateChildEnv::build() 가 그 러너를 경유한다.
             $env = UpdateChildEnv::build();
 
             // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고,
@@ -484,7 +506,7 @@ trait BundledExtensionUpdatePrompt
         // proc_open 이 없는 서버: 확장마다 config·라우트 캐시를 다시 굽는 일회용 앱 부팅이 이 프로세스에 쌓이지 않도록
         // 재굽기를 끝에 한 번으로 모은다(그 사이 캐시를 읽는 새 프로세스는 뜰 수 없다). proc_open 은 있는데 자식을
         // 못 띄운 경우는 종전대로 항목마다 굽는다 — 그 사이 뜨는 composer 등이 옛 캐시로 부팅하지 않게.
-        if (! function_exists('proc_open')) {
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(fn () => $this->runBulkUpdateItemsInProcess(
                 $moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex,
             )));

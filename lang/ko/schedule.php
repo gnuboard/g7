@@ -210,6 +210,30 @@ return [
         'command_class' => '명령 클래스',
     ],
 
+    // 웹 크론 (예약 작업 주소 호출)
+    'cron' => [
+        'invalid_token' => '호출 번호가 올바르지 않습니다.',
+        'ip_not_allowed' => '허용되지 않은 주소에서의 호출입니다.',
+        'disabled' => '예약 작업이 서버 크론 전용으로 설정되어 있어 주소 호출로는 실행하지 않습니다.',
+        'throttled' => '최소 호출 간격이 지나지 않아 이번 호출은 실행하지 않았습니다. 밀린 작업은 다음 호출에서 함께 처리됩니다.',
+        'completed' => '예약 작업 실행을 마쳤습니다.',
+        'run_failed' => '예약 작업 실행에 실패했습니다.',
+        'token_fetch_success' => '호출 주소를 조회했습니다.',
+        'token_fetch_failed' => '호출 주소 조회에 실패했습니다.',
+        'token_rotated' => '호출 번호를 재발급했습니다. 기존 주소는 즉시 무효가 됩니다.',
+        'token_rotate_failed' => '호출 번호 재발급에 실패했습니다.',
+        'console_summary' => '예약 작업 :due건 중 :executed건 실행, :failed건 실패, :skipped건 건너뜀 (:duration ms)',
+        'console_truncated' => '실행 시간 상한에 걸려 남은 작업은 다음 호출로 넘겼습니다.',
+    ],
+
+    // 대시보드 경고 (예약 작업 미실행)
+    'alerts' => [
+        'not_running_title' => '예약 작업이 :days일째 실행되지 않았습니다',
+        'not_running_guidance_web' => '환경설정 > 시스템에서 호출 주소를 복사해 호스팅 관리자 페이지의 예약 실행에 등록해 주세요.',
+        'not_running_guidance_cron' => '서버에 등록한 예약 실행(crontab)이 정상 동작하는지 확인해 주세요.',
+        'not_running_action' => '예약 작업 설정 열기',
+    ],
+
     // 권한
     'permissions' => [
         'read' => '스케줄 조회',

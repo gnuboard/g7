@@ -59,6 +59,8 @@ function extractFunction(name) {
 const FUNCTIONS = [
     'lang', 'escapeHtml', 'getTranslationKey', 'getTaskName', 'getStoredExtensionName', 'getTaskDisplayName',
     'getTaskDomId', 'getGroupLabel', 'getTaskRequiredByLabel', 'splitTaskKey', 'renderTaskList', 'showError',
+    // getTaskName·showError 가 부르는 보조 함수 — 빠지면 샌드박스가 ReferenceError 로 전부 멈춘다
+    'splitCompositeTaskKey', 'setResumeButtonsDisabled',
 ];
 
 /** classList 흉내 */
@@ -75,7 +77,7 @@ function classList(initial) {
 
 /** 가짜 요소 */
 function el(classes = []) {
-    return { innerHTML: '', textContent: '', style: {}, classList: classList(classes), dataset: {}, setAttribute() {}, querySelector: () => null };
+    return { innerHTML: '', textContent: '', style: {}, classList: classList(classes), dataset: {}, setAttribute() {}, focus() {}, querySelector: () => null };
 }
 
 /**
@@ -126,12 +128,14 @@ function sandbox(pulledBy) {
         setTimeout: () => 0,
         // showError 가 부르는 화면 전환 함수는 이 시험의 관심 밖이다
         hideInstallationStartSection() {}, showInstallationProgressSection() {}, hideAbortButton() {}, setTaskStatus() {}, scrollResultIntoView() {},
+        // 진행 카드 접기·아이콘 같은 화면 보조 함수도 이 시험의 관심 밖이다 (행 아이콘은 빈 문자열)
+        setInstallationCardCollapsed() {}, setInstallationCardInteractive() {}, taskIdentityFromElement: () => ({ taskId: null, target: null }), getIconSvg: () => '',
         installationCompleted: false,
         lastRollbackFailure: null,
         INSTALLATION_TASKS: [],
     };
     vm.createContext(ctx);
-    vm.runInContext('var installationCompleted = false; var lastRollbackFailure = null;\n' + FUNCTIONS.map(extractFunction).join('\n'), ctx);
+    vm.runInContext('var installationCompleted = false; var lastRollbackFailure = null; var lastErrorSkippable = false; var lastFailureBeforeDatabase = false;\n' + FUNCTIONS.map(extractFunction).join('\n'), ctx);
     return { ctx, elements, title };
 }
 
@@ -180,11 +184,44 @@ test('여러 확장이 요구하면 이름을 쉼표로 잇고, 이름이 없으
 });
 
 /**
+ * 화면은 확장 작업을 실행 순서대로 한 묶음(extensions)에 담는다 — 그룹 id 가 더는 카테고리가 아니라
+ * 배지는 항목의 kind 로 찾아야 하고, 행 순서는 서버 목록 순서 그대로다.
+ *
+ * @effects installer_step5_required_by_badge_on_pulled_install_row
+ * @effects installer_view_task_list_follows_execution_order
+ */
+test('실행 순서 한 묶음(extensions)에서도 배지를 kind 로 찾고 행 순서를 그대로 그린다', () => {
+    const { ctx, elements } = sandbox({ 'plugins:sirsoft-ckeditor5': ['modules:sirsoft-page'] });
+    ctx.window.INSTALLER_LANG.task_group_extensions = '확장 기능';
+    ctx.window.INSTALLER_TASK_GROUPS = [
+        {
+            id: 'extensions',
+            labelKey: 'task_group_extensions',
+            tasks: [
+                { id: 'plugin_install', target: 'sirsoft-ckeditor5', kind: 'plugins' },
+                { id: 'plugin_activate', target: 'sirsoft-ckeditor5', kind: 'plugins' },
+                { id: 'module_install', target: 'sirsoft-page', kind: 'modules' },
+                { id: 'module_activate', target: 'sirsoft-page', kind: 'modules' },
+            ],
+        },
+    ];
+    vm.runInContext('renderTaskList()', ctx);
+
+    const html = elements['task-list'].innerHTML;
+    assert.deepEqual(badges(html), [['plugin_install', 'sirsoft-ckeditor5', '페이지에 필요']]);
+    assert.deepEqual(
+        html.split('class="task-item ').slice(1).map((row) => /data-task-id="([^"]*)"/.exec(row)[1]),
+        ['plugin_install', 'plugin_activate', 'module_install', 'module_activate'],
+    );
+    assert.equal((html.match(/class="task-group"/g) || []).length, 1);
+});
+
+/**
  * @effects installer_step5_precheck_failure_shows_back_to_step4
  */
 test('사전 검증 실패면 「Step 4 로 돌아가기」를 드러내고 재시도를 보조 버튼으로', () => {
     const { ctx, elements } = sandbox({});
-    vm.runInContext("showError('의존성 사전 검증 실패', '확장 의존 관계가 순환합니다: modules:a → plugins:b → modules:a', 'dependency_precheck', 'dependency_precheck_failed')", ctx);
+    vm.runInContext("showError('의존성 사전 검증 실패', '확장 의존 관계가 순환합니다: modules:a → plugins:b → modules:a', 'dependency_precheck', false, null, 'dependency_precheck_failed')", ctx);
 
     assert.equal(elements['back-to-extensions-btn'].classList.contains('hidden'), false);
     assert.equal(elements['retry-installation-btn'].classList.contains('btn-secondary'), true);
@@ -199,7 +236,7 @@ test('사전 검증 실패면 「Step 4 로 돌아가기」를 드러내고 재�
  */
 test('다른 실패면 「Step 4 로 돌아가기」는 숨기고 재시도가 주 버튼', () => {
     const { ctx, elements } = sandbox({});
-    vm.runInContext("showError('모듈 설치에 실패했습니다', '세부', 'module_install', 'error_module_install_failed')", ctx);
+    vm.runInContext("showError('모듈 설치에 실패했습니다', '세부', 'module_install', false, null, 'error_module_install_failed')", ctx);
 
     assert.equal(elements['back-to-extensions-btn'].classList.contains('hidden'), true);
     assert.equal(elements['retry-installation-btn'].classList.contains('btn-primary'), true);
@@ -212,7 +249,7 @@ test('다른 실패면 「Step 4 로 돌아가기」는 숨기고 재시도가 �
  */
 test('state 의 failed_task(id:target)가 실패 제목에 번역 키 그대로 새지 않는다', () => {
     const { ctx, title } = sandbox({});
-    vm.runInContext("showError('모듈 설치에 실패했습니다', null, 'module_install:sirsoft-page', 'error_module_install_failed')", ctx);
+    vm.runInContext("showError('모듈 설치에 실패했습니다', null, 'module_install:sirsoft-page', false, null, 'error_module_install_failed')", ctx);
 
     assert.equal(title.textContent, '설치 실패 - 페이지 모듈 설치 (sirsoft-page)');
     assert.doesNotMatch(title.textContent, /task_module_install/);

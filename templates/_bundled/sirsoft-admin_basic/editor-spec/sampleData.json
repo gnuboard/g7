@@ -1,6 +1,96 @@
 {
   "comment": "admin 자체 + 코어 SSoT 도메인. locales/admin_menus/me/installed_modules/active_plugins/users 등. 실제 데이터소스 ID 는 착수 시점 admin 레이아웃 data_sources 로 재검증 — 본 블록은 코어 SSoT/공통 폴백.",
   "byDataSourceId": {
+    "core_update_status": {
+      "data": {
+        "run": null,
+        "steps": [
+          { "key": "preflight", "label": "사전 점검", "position": 1 },
+          { "key": "maintenance_on", "label": "점검 모드 전환", "position": 2 },
+          { "key": "backup", "label": "백업", "position": 3 },
+          { "key": "download", "label": "내려받기", "position": 4 },
+          { "key": "extract", "label": "압축 풀기", "position": 5 },
+          { "key": "apply", "label": "파일 적용", "position": 6 },
+          { "key": "migrate", "label": "마이그레이션", "position": 7 },
+          { "key": "upgrade_steps", "label": "업그레이드 스텝", "position": 8 },
+          { "key": "cache_rebuild", "label": "캐시 재생성", "position": 9 },
+          { "key": "maintenance_off", "label": "점검 모드 해제", "position": 10 }
+        ],
+        "total_steps": 10,
+        "manual_sources": [
+          { "name": "g7-7.0.10.zip", "size": 18734592, "modified_at": "2026-09-01T11:20:00+09:00" }
+        ],
+        "modified_layouts": {
+          "has_modified": true,
+          "count": 2,
+          "extensions": ["sirsoft-board", "sirsoft-admin_basic"]
+        },
+        "preflight": {
+          "ok": false,
+          "blocked": ["storage/framework/views"],
+          "checked": 18,
+          "disk": {
+            "ok": true,
+            "free_bytes": 3221225472,
+            "required_bytes": 536870912
+          },
+          "errors": ["쓰기 권한이 없는 경로가 있습니다."]
+        }
+      }
+    },
+    "system_status": {
+      "data": {
+        "execution": {
+          "effective_mode": "inprocess",
+          "configured_mode": "auto",
+          "detection": {
+            "blocked_functions": ["proc_open", "exec"],
+            "php_probe": {
+              "message_localized": "PHP 실행 파일을 찾지 못해 웹 안에서 직접 실행합니다."
+            }
+          }
+        },
+        "cron": {
+          "mode": "web",
+          "min_interval_minutes": 5,
+          "visit_fallback_enabled": true,
+          "token_issued": true,
+          "token_issued_at": "2026-08-30T09:12:00+09:00",
+          "last_run": {
+            "finished_at": "2026-09-01T04:00:07+09:00",
+            "duration_ms": 1840,
+            "executed": 6,
+            "failed": 0
+          },
+          "last_executed_at": "2026-09-01T04:00:07+09:00",
+          "stale": false,
+          "stale_after_days": 3,
+          "recent_history": [
+            {
+              "id": 3120,
+              "name": "seo:generate-sitemap",
+              "expression": "0 4 * * *",
+              "status": "success",
+              "trigger_type": "web_cron",
+              "started_at": "2026-09-01T04:00:05+09:00",
+              "duration": 1.84,
+              "error_output": null
+            },
+            {
+              "id": 3119,
+              "name": "queue:prune-batches",
+              "expression": "0 3 * * *",
+              "status": "success",
+              "trigger_type": "web_cron",
+              "started_at": "2026-08-31T03:00:02+09:00",
+              "duration": 0.42,
+              "error_output": null
+            }
+          ],
+          "state_persist_failed": false
+        }
+      }
+    },
     "memberNotifications": {
       "data": {
         "data": [

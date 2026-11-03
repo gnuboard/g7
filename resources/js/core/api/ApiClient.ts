@@ -4,6 +4,7 @@ import { createLogger } from '../utils/Logger';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isSameOriginRequestUrl } from '../support/navPolicy';
 import type { G7DevToolsCore } from '../devtools/G7DevToolsCore';
+import { basePrefix, withBasePrefix } from '../support/assetUrl';
 
 const logger = createLogger('ApiClient');
 
@@ -75,7 +76,11 @@ class ApiClient {
 
   constructor(config: ApiClientConfig = {}) {
     this.config = {
-      baseURL: config.baseURL || '/api',
+      // 사이트가 문서 루트 하위 폴더(`https://host/g7/`)에 설치된 배치에서 `/api` 는
+      // **사이트 밖**을 가리킨다 — 문서 루트에 다른 사이트가 있으면 그 사이트의 응답을
+      // 받는다. 서버가 렌더한 자산 URL 은 `AssetUrl::basePrefix()` 로 접두사를 갖고
+      // 있으므로, 여기만 루트 상대로 두면 같은 화면에서 두 규칙이 공존한다.
+      baseURL: config.baseURL || withBasePrefix('/api'),
       timeout: config.timeout || 30000,
       onTokenExpired: config.onTokenExpired, // eslint-disable-line deprecation/deprecation
       onUnauthorized: config.onUnauthorized,
@@ -180,8 +185,38 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         // URL이 이미 /api로 시작하면 baseURL 제거 (중복 방지)
-        if (config.url?.startsWith('/api') && config.baseURL === '/api') {
-          config.baseURL = '';
+        //
+        // 비교 대상은 **리터럴 `/api` 가 아니라 실제 baseURL** 이다. 기본값은
+        // `withBasePrefix('/api')` 라 하위 폴더 배치(`https://host/g7/`)에서는 `/g7/api`
+        // 이고, 리터럴과 비교하면 그 조건이 **영원히 거짓**이라 중복 제거가 걸리지 않는다.
+        // 그러면 axios 가 `/g7/api` + `/api/…` 를 이어붙여 `/g7/api/api/…` 로 나가 404 가
+        // 되는데, **루트 설치에서는 정상**이라 개발 환경에서 재현되지 않는다.
+        // (실물 호출부: 이커머스 관리자 상품·옵션 일괄수정 — 15차 G3 라운드)
+        // 비우지 않고 **접두사만 남긴다.** `''` 로 두면 `/api/…` 가 그대로 나가 이번엔
+        // 마운트 접두사가 사라진다 — 중복을 없애려다 반대쪽으로 어긋나는 형태다.
+        // 루트 설치에서는 접두사가 빈 문자열이라 종전과 동일하다.
+        // **양방향이다.** 들어오는 `url` 은 두 형태 중 하나다 — 접두사가 없는 `/api/…`
+        // (호출부가 그냥 적은 것)와 접두사가 이미 붙은 `/g7/api/…` (서버가
+        // `AssetUrl::basePrefix()` 로 붙여 준 값이 그대로 넘어온 것: 게시판 첨부
+        // `download_url` → `G7Core.api.get(url)`). 한쪽만 다루면 다른 쪽이 깨진다.
+        //  - 접두사 없음 → baseURL 을 접두사만 남긴다 (`/g7` + `/api/…`).
+        //  - 접두사 있음 → baseURL 을 **비운다** (`'' + /g7/api/…`).
+        // 접두사가 붙은 값을 종전 판정(`url.startsWith('/api')`)으로 보면 거짓이라
+        // baseURL(`/g7/api`)이 남아 `/g7/api/g7/api/…` 가 됐다 — 15차가 고친 것의
+        // 반대 방향 짝이고, 루트 설치에서는 접두사가 빈 문자열이라 재현되지 않는다.
+        const apiBase = withBasePrefix('/api');
+        const prefix = basePrefix();
+
+        if (config.url && (config.baseURL === apiBase || config.baseURL === '/api')) {
+          const carriesPrefix =
+            prefix !== '' &&
+            (config.url === apiBase || config.url.startsWith(`${apiBase}/`));
+
+          if (carriesPrefix) {
+            config.baseURL = '';
+          } else if (config.url.startsWith('/api')) {
+            config.baseURL = prefix;
+          }
         }
 
         // 인증 토큰은 동일 출처 요청에만 첨부한다. 공개 자산 디스크(S3/CDN)를 켜면

@@ -97,8 +97,55 @@
       </default>
     </error-handling>
   </data-source>
-  <!-- 서버·프레임워크 정보 — 정보 탭에서만 받는다(읽기 전용이라 저장 대상이 아니다). -->
-  <data-source id="systemInfo" label_key="$t:editor.data_source.systemInfo" type="api" endpoint="/api/admin/settings/system-info" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}" :auto_fetch="true" :auth_required="true">
+  <!-- 코어 업데이트 진행 기록 — 업데이트 탭에서만, 코어 업데이트 권한이 없다고 확정되지 않은 동안 받는다.
+       진행 중인 실행(run)·단계 목록·직접 올린 ZIP 목록·사용자가 고친 레이아웃 수·사전 점검 결과를 서버가 돌려준다.
+       진행 중에는 업데이트 핸들러가 같은 모양을 _global.coreUpdateStatus 에 실어 이 응답보다 앞세운다(아래 계산값 coreUpdate*).
+       권한 응답이 오기 전(`settingsAbilities` 가 비어 있는 동안)에는 이 소스도 불리므로, 권한 없는 관리자가 주소로 업데이트 탭에 들어오면 403 이 난다 —
+       위 언어팩 소스처럼 조용히 넘긴다(fallback 이 빈 기록을 싣고, 탭 항목과 본문은 `can_core_update` 가 참일 때만 보인다). -->
+  <data-source id="core_update_status" label_key="$t:editor.data_source.core_update_status" type="api" endpoint="/api/admin/core-update/status" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'update' &amp;&amp; (_global.settingsAbilities?.can_core_update !== false)}}" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="run" :value="null"/>
+        <field name="steps" :value="[]"/>
+        <field name="total_steps" :value="0"/>
+        <field name="manual_sources" :value="[]"/>
+        <field name="modified_layouts">
+          <field name="has_modified" :value="false"/>
+          <field name="count" :value="0"/>
+          <field name="extensions" :value="[]"/>
+        </field>
+        <field name="preflight" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 실행 방식·예약 작업 상태 — 시스템 탭에서만 받는다. 지금 쓰는 실행 방식과 그렇게 판정한 근거(막힌 함수·PHP 실행 검사),
+       웹 크론 방식·호출 번호 발급 여부·마지막 실행·최근 이력을 돌려준다. 호출 주소 자체는 싣지 않는다(보기·복사 때 따로 받는다). -->
+  <data-source id="system_status" label_key="$t:editor.data_source.system_status" type="api" endpoint="/api/admin/settings/system/status" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'system'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="execution">
+          <field name="effective_mode" value="subprocess"/>
+          <field name="configured_mode" value="auto"/>
+          <field name="detection">
+            <field name="blocked_functions" :value="[]"/>
+            <field name="php_probe" :value="{}"/>
+          </field>
+        </field>
+        <field name="cron">
+          <field name="mode" value="auto"/>
+          <field name="token_issued" :value="false"/>
+          <field name="last_run" :value="null"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 서버·프레임워크 정보 — 정보 탭과 업데이트 탭에서 받는다(읽기 전용이라 저장 대상이 아니다. 업데이트 탭은 현재 버전 표시에 쓴다). -->
+  <data-source id="systemInfo" label_key="$t:editor.data_source.systemInfo" type="api" endpoint="/api/admin/settings/system-info" method="GET" if="{{['info', 'update'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
     <fallback>
       <field name="data">
         <field name="php_version" value="-"/>
@@ -378,6 +425,9 @@
     <field name="coreUpdateInfo" :value="null"/>
     <field name="coreChangelog" :value="null"/>
     <field name="loadingChangelog" :value="false"/>
+    <field name="cronUrlRevealing" :value="false"/>
+    <field name="cronUrlCopying" :value="false"/>
+    <field name="coreUpdateDismissing" :value="false"/>
     <field name="policyForm" :value="null"/>
     <field name="policyErrors" :value="null"/>
     <field name="policyIsNew" :value="true"/>
@@ -393,6 +443,16 @@
   <computed name="queueErrors">{{(function() { const e = _local.errors; const empty = { connections: [], namesRoot: [], names: {} }; if (!e || typeof e !== 'object') return empty; return Object.entries(e).reduce((out, [k, v]) =&gt; { const msgs = Array.isArray(v) ? v : [v]; if (k === 'drivers.queue_connections' || k.startsWith('drivers.queue_connections.')) return { ...out, connections: [...out.connections, ...msgs] }; if (k === 'drivers.queue_names') return { ...out, namesRoot: [...out.namesRoot, ...msgs] }; if (k.startsWith('drivers.queue_names.')) { const conn = k.slice('drivers.queue_names.'.length).split('.')[0]; return { ...out, names: { ...out.names, [conn]: [...(out.names[conn] ?? []), ...msgs] } }; } return out; }, empty); })()}}</computed>
   <computed name="errorsWithoutIpRules">{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) =&gt; !k.startsWith('security.ip_restriction_rules')); return rest.length &gt; 0 ? Object.fromEntries(rest) : null; })()}}</computed>
   <computed name="ipRestrictionEnabled">{{!!_local.form?.security?.ip_restriction_enabled &amp;&amp; _local.form?.security?.ip_restriction_enabled !== '0' &amp;&amp; _local.form?.security?.ip_restriction_enabled !== 'false'}}</computed>
+  <computed name="trustedProxyList">{{_local.form?.advanced?.trusted_proxies ?? []}}</computed>
+  <computed name="trustedProxyLocked">{{(_local.form?._meta?.env_locked ?? {})['advanced.trusted_proxies'] === true}}</computed>
+  <computed name="trustedProxyMode">{{(_local.form?.advanced?.trusted_proxies ?? []).includes('*') ? 'nearest' : ((_local.trustedProxyListMode || (_local.form?.advanced?.trusted_proxies ?? []).length &gt; 0) ? 'list' : 'none')}}</computed>
+  <computed name="coreUpdateStatus">{{_global.coreUpdateStatus ?? core_update_status?.data ?? null}}</computed>
+  <computed name="coreUpdateRun">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.run ?? null}}</computed>
+  <computed name="coreUpdateSteps">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.steps ?? []}}</computed>
+  <computed name="coreUpdateTotalSteps">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.total_steps ?? 0}}</computed>
+  <computed name="coreUpdateManualSources">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.manual_sources ?? []}}</computed>
+  <computed name="coreUpdateModified">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.modified_layouts ?? null}}</computed>
+  <computed name="coreUpdatePreflight">{{(_global.coreUpdateStatus ?? core_update_status?.data)?.preflight ?? null}}</computed>
   <permissions>
     <permission>core.settings.read</permission>
   </permissions>
@@ -410,6 +470,8 @@
     <wait-for>language_packs</wait-for>
     <wait-for>sitemap_status</wait-for>
     <wait-for>staticCacheStatus</wait-for>
+    <wait-for>system_status</wait-for>
+    <wait-for>core_update_status</wait-for>
     <wait-for>trustedProxy</wait-for>
     <wait-for>queueStatus</wait-for>
     <wait-for>coreSchedules</wait-for>
@@ -436,9 +498,9 @@
     </set-state>
     <!-- 주소의 탭 키가 아래 탭 바에 없으면(저장 묶음 이름 `notifications`·오래된 즐겨찾기 등) 탭 본문 게이트가 모두
          거짓이라 본문이 통째로 빈다. 기본 탭으로 바꿔 연다 — 목록은 탭 바와 같아야 한다(회귀 테스트가 대조한다). -->
-    <set-state if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}" target="global" activeSettingsTab="general"/>
+    <set-state if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}" target="global" activeSettingsTab="general"/>
     <!-- audit:allow layout-list-context-navigate-merge-query 알 수 없는 탭 키 정정 — 그 탭의 목록 쿼리는 의미가 없어 물려받지 않는다(탭 전환과 같은 규칙). -->
-    <navigate if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}" path="/admin/settings" :replace="true">
+    <navigate if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'system', 'update', 'info'].includes(query.tab)}}" path="/admin/settings" :replace="true">
       <query tab="general"/>
     </navigate>
     <!-- 앱 키 재생성 창에서 외부 수단(회사 계정 다시 로그인 등)으로 본인 확인을 마치고 돌아왔다(7.2.0) — 받아 온 확인 토큰을 담고,
@@ -488,6 +550,8 @@
             <item id="language_packs" href="/admin/settings?tab=language_packs" label="$t:admin.settings.tabs.language_packs" if="{{_computed.canReadLanguagePacks !== false}}"/>
             <item id="identity" href="/admin/settings?tab=identity" label="$t:admin.settings.tabs.identity"/>
             <item id="privacy" href="/admin/settings?tab=privacy" label="$t:admin.settings.tabs.privacy"/>
+            <item id="system" href="/admin/settings?tab=system" label="$t:admin.settings.tabs.system"/>
+            <item id="update" href="/admin/settings?tab=update" label="$t:admin.settings.tabs.update" if="{{_global.settingsAbilities?.can_core_update ?? false}}"/>
             <item id="info" href="/admin/settings?tab=info" label="$t:admin.settings.tabs.info"/>
           </prop>
           <on type="change" event="onTabChange">
@@ -547,9 +611,11 @@
         <include src="partials/admin_settings/_tab_language_packs.g7.html"/>
         <include src="partials/admin_settings/_tab_identity.g7.html"/>
         <include src="partials/admin_settings/_tab_privacy.g7.html"/>
+        <include src="partials/admin_settings/_tab_system.g7.html"/>
+        <include src="partials/admin_settings/_tab_update.g7.html"/>
         <include src="partials/admin_settings/_tab_info.g7.html"/>
       </div>
-      <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">
+      <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'update' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">
         <!-- 취소 — 저장하지 않은 변경을 버리고 받은 값으로 되돌린다 -->
         <button type="button" data-ref="cancel_button" class="btn btn-secondary">
           <on type="click">
@@ -645,6 +711,8 @@
   <modal src="partials/admin_settings/_modal_cache_delete.g7.html"/>
   <!-- 초기 화면 정적 파일 재게시 확인 창 — 전체 재생성이라 누르기 전에 한 번 묻는다. -->
   <modal src="partials/admin_settings/_modal_static_cache_republish.g7.html"/>
+  <!-- 웹 크론 호출 번호 재발급 확인 창(시스템 탭) — 재발급하면 등록해 둔 옛 호출 주소가 바로 무효가 되므로 한 번 묻는다. -->
+  <modal src="partials/admin_settings/_modal_cron_token_rotate.g7.html"/>
   <!-- 알림 템플릿 편집 창 — 정의 하나의 채널별 본문을 고친다. -->
   <modal src="partials/admin_settings/_modal_notification_template_form.g7.html"/>
   <!-- 알림 템플릿 미리보기 창 — 치환값을 넣어 실제 발송 모습을 보여 준다. -->

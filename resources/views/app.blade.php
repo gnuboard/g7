@@ -56,6 +56,12 @@
             $g7EditorBundle = public_path('build/core/layout-editor.min.js');
             $g7DevToolsBundle = public_path('build/core/devtools.min.js');
             $g7Config = [
+                // 사이트가 마운트되는 경로 접두사 (루트 설치면 빈 문자열, 하위 폴더면 `/g7`).
+                // 서버의 `AssetUrl::basePrefix()` 를 **그대로 부른다** — 자산 URL 을 만드는
+                // 쪽과 모드를 변환하는 쪽이 규칙을 공유하지 않으면, 하위 폴더 배치에서
+                // R33 자가 복구가 그 URL 을 몰라보고 통째로 무력해진다. 종전에는 같은 식을
+                // 여기 손으로 한 벌 더 적어 두고 주석으로만 「같은 값이어야 한다」고 선언했다.
+                'basePath' => \App\Support\AssetUrl::basePrefix(),
                 'settings' => (object) ($frontendSettings ?? []),
                 'plugins' => (object) ($pluginSettings ?? []),
                 'modules' => (object) ($moduleSettings ?? []),

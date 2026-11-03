@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   cross product 자동 전개는 audit 실행 환경에 js-yaml 이 없어 fallback YAML 파서가
 #   nested axes 배열을 읽지 못하는 한계로 검출되지 않는다(동일 한계로 다른 번들 시나리오도
 #   audit:allow 처리됨). 본 기능은 백엔드 전용 변경(체크아웃 마일리지 검증)으로,
@@ -13,6 +14,9 @@ description: |
   상류 UX 선차단만 추가한다.
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  actor: [member]
+  change_mode: [api]
   balance_state:
     - zero            # 잔액 0
     - has_balance     # 잔액 보유

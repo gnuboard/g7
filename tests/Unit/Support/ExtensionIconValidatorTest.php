@@ -15,7 +15,7 @@ use Tests\TestCase;
  *
  * 소유 시나리오: `extension-icons` (축 매핑은 각 테스트 메서드에 있다)
  *
- * @effects icon_resolves_manifest_over_convention, invalid_icon_is_not_served_and_row_falls_back
+ * 효과 요약(마커 아님 — 평문): icon_resolves_manifest_over_convention, invalid_icon_is_not_served_and_row_falls_back
  */
 class ExtensionIconValidatorTest extends TestCase
 {

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 거절된 시작의 콜백 단계)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 거절된 시작의 콜백 단계)이 대부분이라 명목상이다.
 feature: sso_oidc_protocol
 description: |
   OIDC 드라이버와 id_token 검증 — 모의 IdP 변종 카탈로그(부록 C-1) 전수, 알고리즘 허용 목록, iss/aud/azp, 시간 오차, nonce, at_hash, kid 회전 1회 갱신, back-channel logout_token, refresh 갱신(주기 점검), PKCE·nonce·state 전송.

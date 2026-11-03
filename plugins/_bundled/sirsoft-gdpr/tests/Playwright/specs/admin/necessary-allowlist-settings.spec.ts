@@ -81,7 +81,7 @@ async function readSavedAllowlist(page: Page): Promise<Record<string, string[]>>
   });
 }
 
-// @scenario scope=all, permitted=yes
+// @scenario scope=all, locked=locked_item
 // @effects e2e_allowlist_cards_render_three_scopes, e2e_locked_chips_render_readonly
 test('필수 저장 항목 카드가 저장소별로 3개 렌더되고 잠금 칩이 읽기 전용으로 표시된다', async ({ page, privacyManageToken }) => {
   await authenticatePage(page, privacyManageToken);
@@ -115,7 +115,7 @@ test('필수 저장 항목 카드가 저장소별로 3개 렌더되고 잠금 �
   await expect(lockedLocal.locator('button')).toHaveCount(0);
 });
 
-// @scenario scope=localStorage, item=valid, permitted=yes
+// @scenario scope=localStorage, notation=exact, locked=operator_item, request=valid_item
 // @effects e2e_allowlist_tag_persists_after_reload, e2e_allowlist_reaches_inline_payload, allowlist_exposed_in_inline_payload_via_frontend_schema, locked_set_exposed_in_inline_payload
 test('허용목록에 항목을 추가해 저장하면 새로고침 후에도 유지되고 인라인 페이로드에 실린다', async ({ page, privacyManageToken }) => {
   await authenticatePage(page, privacyManageToken);
@@ -172,7 +172,7 @@ test('허용목록에 항목을 추가해 저장하면 새로고침 후에도 �
   }
 });
 
-// @scenario scope=cookie, item=invalid, permitted=yes
+// @scenario scope=cookie, request=invalid_format
 // @effects e2e_allowlist_invalid_item_rejected
 test('형식 위반 항목은 422 로 거부되고 그 카드에 에러가 표시된다', async ({ page, privacyManageToken }) => {
   await authenticatePage(page, privacyManageToken);

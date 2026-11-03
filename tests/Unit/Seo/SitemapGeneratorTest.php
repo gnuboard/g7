@@ -10,6 +10,8 @@ use App\Seo\SitemapGenerator;
 use App\Seo\SitemapWriter;
 use App\Seo\TemplateRouteResolver;
 use App\Services\TemplateService;
+use App\Support\AssetUrl;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Log;
@@ -57,6 +59,11 @@ class SitemapGeneratorTest extends TestCase
         // 실행 머신의 영속 설정에 다국어 hreflang 검증 결과가 좌우되지 않도록 명시 고정한다.
         Config::set('g7_settings.core.seo.sitemap_hreflang_enabled', true);
 
+        // `loc` 의 오리진은 설정(`app.url`)이 우선이다 (`ScreenUrl::toAbsolute()`). 개발 사이트의
+        // `app.url` 이 그대로 흘러들면 `url()` 기대값(요청 호스트 http://localhost)과 갈리므로
+        // 둘이 같은 값을 내는 상태로 고정한다. 갈리는 경우는 아래 전용 테스트가 명시적으로 만든다.
+        Config::set('app.url', 'http://localhost');
+
         $this->routeResolver = Mockery::mock(TemplateRouteResolver::class);
         $this->templateService = Mockery::mock(TemplateService::class);
         $this->collector = Mockery::mock(SeoDeclarationCollector::class);
@@ -90,7 +97,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 기여자를 등록하면 getContributors()에 포함되는지 확인합니다.
      *
-     * @scenario generator=register_contributor_adds_to_list
+     * @effects sitemap_contributors_register_by_identifier
      *
      * @return void 반환값 없음
      */
@@ -111,7 +118,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 동일 식별자로 기여자를 중복 등록하면 마지막 것만 유지되는지 확인합니다.
      *
-     * @scenario generator=register_contributor_overwrites_same_identifier
+     * @effects sitemap_contributors_register_by_identifier
      *
      * @return void 반환값 없음
      */
@@ -137,7 +144,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * generate()가 기여자 URL을 포함한 유효한 sitemap XML을 반환하는지 확인합니다.
      *
-     * @scenario generator=generate_returns_valid_xml
+     * @effects sitemap_xml_is_generated_from_contributor_urls
      *
      * @return void 반환값 없음
      */
@@ -202,7 +209,7 @@ class SitemapGeneratorTest extends TestCase
      *
      * @scenario static=dynamic_path
      *
-     * @effects static_route_skips_dynamic_and_expression_paths
+     * @effects static_route_skips_dynamic_and_expression_paths, static_routes_are_collected_without_private_or_dynamic_paths
      *
      * @return void 반환값 없음
      */
@@ -469,7 +476,7 @@ class SitemapGeneratorTest extends TestCase
      *
      * @scenario static=contributor_failure
      *
-     * @effects sitemap_failures_are_reported_and_generation_continues
+     * @effects sitemap_failures_are_reported_and_generation_continues, contributor_failure_does_not_stop_other_contributors
      *
      * @return void 반환값 없음
      */
@@ -508,7 +515,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 기여자의 url 키가 절대 경로 loc으로 변환되는지 확인합니다.
      *
-     * @scenario generator=generate_converts_contributor_url_to_absolute_loc
+     * @effects indexed_url_normalized_to_site_absolute_loc
      *
      * @return void 반환값 없음
      */
@@ -546,7 +553,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 기여자와 정적 라우트가 모두 없을 때 빈 urlset XML을 반환하는지 확인합니다.
      *
-     * @scenario generator=generate_with_no_contributors_returns_empty_urlset
+     * @effects sitemap_xml_is_generated_from_contributor_urls
      *
      * @return void 반환값 없음
      */
@@ -571,7 +578,9 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 다국어 지원 시 xmlns:xhtml 네임스페이스가 포함되는지 확인합니다.
      *
-     * @scenario generator=multilingual_xml_includes_xhtml_namespace
+     * @scenario multilingual=on
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
      *
      * @return void 반환값 없음
      */
@@ -596,7 +605,9 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 다국어 지원 시 각 로케일별 <url> 항목이 생성되는지 확인합니다.
      *
-     * @scenario generator=multilingual_xml_generates_url_per_locale
+     * @scenario multilingual=on
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
      *
      * @return void 반환값 없음
      */
@@ -629,7 +640,9 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 다국어 지원 시 xhtml:link hreflang alternate 태그가 포함되는지 확인합니다.
      *
-     * @scenario generator=multilingual_xml_includes_hreflang_alternates
+     * @scenario multilingual=on
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
      *
      * @return void 반환값 없음
      */
@@ -672,7 +685,9 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 단일 로케일 시 기존 형식(xhtml 네임스페이스 없음)을 유지하는지 확인합니다.
      *
-     * @scenario generator=single_locale_uses_standard_xml_format
+     * @scenario multilingual=off
+     *
+     * @effects single_locale_sitemap_keeps_the_standard_format
      *
      * @return void 반환값 없음
      */
@@ -707,7 +722,9 @@ class SitemapGeneratorTest extends TestCase
     /**
      * renderUrlBlock()이 단일 언어 <url> 블록을 생성하는지 확인합니다.
      *
-     * @scenario generator=render_url_block_single_locale
+     * @scenario multilingual=off
+     *
+     * @effects single_locale_sitemap_keeps_the_standard_format
      *
      * @return void 반환값 없음
      */
@@ -729,7 +746,9 @@ class SitemapGeneratorTest extends TestCase
     /**
      * renderUrlBlock()이 다국어에서 로케일별 블록과 hreflang을 생성하는지 확인합니다.
      *
-     * @scenario generator=render_url_block_multilingual
+     * @scenario multilingual=on
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
      *
      * @return void 반환값 없음
      */
@@ -748,7 +767,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * XML 특수문자가 이스케이프되는지 확인합니다.
      *
-     * @scenario generator=render_url_block_escapes_xml_special_characters
+     * @effects sitemap_url_block_escapes_xml_special_characters
      *
      * @return void 반환값 없음
      */
@@ -764,7 +783,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * urlset 헤더/푸터가 로케일 수에 따라 분기되는지 확인합니다.
      *
-     * @scenario generator=urlset_header_switches_on_multilingual
+     * @effects multilingual_sitemap_emits_hreflang_alternates
      *
      * @return void 반환값 없음
      */
@@ -784,7 +803,7 @@ class SitemapGeneratorTest extends TestCase
      * generateToWriter()가 기여자 URL을 writer 에 한 건씩 전달하고
      * 상대 url 을 절대 loc 으로 변환하는지 확인합니다.
      *
-     * @scenario generator=generate_to_writer_streams_entries_without_cross_merge
+     * @effects sitemap_contributors_are_streamed_one_at_a_time
      *
      * @return void 반환값 없음
      */
@@ -834,7 +853,7 @@ class SitemapGeneratorTest extends TestCase
      * 모든 기여자의 URL 을 배열로 모은 뒤 한 번에 쓰는 구현이라면, 두 번째 기여자의
      * getUrls() 가 호출되는 시점에 writer 는 아직 비어 있다. 이 테스트는 그 구현을 걸러낸다.
      *
-     * @scenario generator=generate_to_writer_drains_each_contributor_before_calling_the_next
+     * @effects sitemap_contributors_are_streamed_one_at_a_time
      *
      * @return void 반환값 없음
      */
@@ -875,7 +894,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * 한 기여자가 실패해도 다른 기여자의 URL 이 계속 기록되는지 확인합니다.
      *
-     * @scenario generator=generate_to_writer_isolates_contributor_failure
+     * @effects contributor_failure_does_not_stop_other_contributors
      *
      * @return void 반환값 없음
      */
@@ -910,7 +929,7 @@ class SitemapGeneratorTest extends TestCase
      * getUrls() 를 호출하면 예외를 던지는 기여자를 사용해, generateToWriter 가
      * 지연 경로(getUrlsLazy)만 탄다는 것을 증명한다.
      *
-     * @scenario generator=generate_to_writer_uses_lazy_path_for_capable_contributor
+     * @effects sitemap_contributors_are_streamed_one_at_a_time
      *
      * @return void 반환값 없음
      */
@@ -965,7 +984,7 @@ class SitemapGeneratorTest extends TestCase
     /**
      * getUrlsLazy 가 없는 raw 기여자는 기존 getUrls() 경로로 소진된다 (하위호환).
      *
-     * @scenario generator=generate_to_writer_uses_get_urls_for_raw_contributor
+     * @effects sitemap_contributors_are_streamed_one_at_a_time
      *
      * @return void 반환값 없음
      */
@@ -1027,6 +1046,55 @@ class SitemapGeneratorTest extends TestCase
         }
 
         return $entries;
+    }
+
+    /**
+     * 사이트맵 `loc` 의 오리진은 **설정(`app.url`)이 우선**이다 — 정적 라우트와 기여자 URL 양쪽.
+     *
+     * 종전 `url()` 은 요청의 호스트를 실었다. 사이트맵은 콘솔(`seo:generate-sitemap`)이 만들면
+     * 요청이 없어 `app.url` 을, 웹 요청이 만들면 그 요청의 호스트를 실어 **같은 사이트의
+     * 사이트맵이 생성 경로에 따라 다른 오리진**을 가졌다. 페이지의 정본 주소(canonical)와
+     * 같은 단일 지점(`ScreenUrl::toAbsolute()` — 「사용자 화면 URL」, 비면 사이트 주소)으로 통일한다
+     * (15차 G3 라운드 W4-1). 정적 화면은 SEO 선언 수집기 경로(#155)로 실제 generate() 를 거쳐 잰다.
+     *
+     * @effects sitemap_loc_origin_follows_configured_site_url
+     *
+     * @return void 반환값 없음
+     */
+    public function test_loc_는_요청_호스트가_아니라_설정_오리진을_싣는다(): void
+    {
+        config(['app.url' => 'https://example.com/g7']);
+        // 「사용자 화면 URL」이 비어 있어야 사이트 주소(app.url)가 기준이 된다 — 실행 머신의 영속 설정을 끊는다.
+        Config::set('g7_settings.core.general.user_screen_url', '');
+        AssetUrl::forceBasePrefix('/g7');
+        app()->instance('request', Request::create('http://other/sitemap.xml'));
+
+        $this->collector->shouldReceive('collect')->andReturn([
+            $this->declaration('/about'),
+            // 이미 접두사를 가진 값은 두 번 실리지 않는다.
+            $this->declaration('/g7/contact'),
+        ]);
+
+        $contributor = Mockery::mock(SitemapContributorInterface::class);
+        $contributor->shouldReceive('getIdentifier')->andReturn('ecommerce');
+        $contributor->shouldReceive('getUrls')->andReturn([
+            ['url' => '/products/shoes'],
+        ]);
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        try {
+            $this->generator->registerContributor($contributor);
+            $xml = $this->generator->generate();
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+
+        $static = $this->entriesOf($xml);
+
+        $this->assertSame('https://example.com/g7/about', $static[0]['loc'], '정적 라우트 loc 이 요청 호스트를 실었다');
+        $this->assertSame('https://example.com/g7/contact', $static[1]['loc'], '접두사가 두 번 실렸다');
+        $this->assertStringContainsString('<loc>https://example.com/g7/products/shoes</loc>', $xml, '기여자 loc 이 요청 호스트를 실었다');
+        $this->assertStringNotContainsString('http://other', $xml);
     }
 }
 

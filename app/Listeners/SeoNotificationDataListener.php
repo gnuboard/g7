@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 
 /**
  * SEO 알림 데이터 필터 리스너
@@ -74,7 +75,6 @@ class SeoNotificationDataListener implements HookListenerInterface
 
         $result = is_array($args[0] ?? null) ? $args[0] : [];
         $data = $result['data'] ?? [];
-        $baseUrl = config('app.url');
 
         return [
             'notifiable' => null,
@@ -84,7 +84,7 @@ class SeoNotificationDataListener implements HookListenerInterface
                 'url_count' => (string) ($data['url_count'] ?? 0),
                 'child_count' => (string) ($data['child_count'] ?? 1),
                 'action_url' => ScreenUrl::absolute('admin.settings.seo', '/admin/settings?tab=seo', [], ScreenUrl::SCOPE_ADMIN),
-                'site_url' => $baseUrl,
+                'site_url' => SiteUrl::base(),
             ],
             'context' => [
                 'trigger_user_id' => $triggeredBy,
@@ -106,7 +106,6 @@ class SeoNotificationDataListener implements HookListenerInterface
         }
 
         $result = is_array($args[0] ?? null) ? $args[0] : [];
-        $baseUrl = config('app.url');
 
         return [
             'notifiable' => null,
@@ -115,7 +114,7 @@ class SeoNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'error' => (string) ($result['message'] ?? ''),
                 'action_url' => ScreenUrl::absolute('admin.settings.seo', '/admin/settings?tab=seo', [], ScreenUrl::SCOPE_ADMIN),
-                'site_url' => $baseUrl,
+                'site_url' => SiteUrl::base(),
             ],
             'context' => [
                 'trigger_user_id' => $triggeredBy,

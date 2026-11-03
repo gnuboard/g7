@@ -179,7 +179,7 @@
                     </success>
                     <fail>
                       <set-state target="local" :outboundProxyTesting="false" :outboundProxyTest="null" outboundProxyTestMessage="{{error.message}}"/>
-                      <toast type="error" message="{{error.message}}"/>
+                      <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
                     </fail>
                     <body outbound_proxy="{{_local.form?.advanced?.outbound_proxy}}" outbound_proxy_bypass="{{_local.form?.advanced?.outbound_proxy_bypass ?? []}}"/>
                   </api-call>
@@ -336,31 +336,136 @@
       <h3 class="card-title">$t:admin.settings.advanced.trusted_proxy</h3>
       <div class="card-description">$t:admin.settings.advanced.trusted_proxy_desc</div>
       <div class="row-stack">
-        <div data-ref="trusted_proxy_status_row" class="flex-between">
+        <div data-ref="trusted_proxy_status_row" class="flex-between-responsive">
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_status</span>
-          <span data-ref="trusted_proxy_status_badge" class="{{trustedProxy?.data?.status === 'warning' ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : (trustedProxy?.data?.status === 'ok' ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300')}}">{{trustedProxy?.data?.status === 'warning' ? $t('admin.settings.advanced.trusted_proxy_status_warning') : (trustedProxy?.data?.status === 'ok' ? $t('admin.settings.advanced.trusted_proxy_status_ok') : $t('admin.settings.advanced.trusted_proxy_status_not_applicable'))}}</span>
+          <!-- 상태 배지는 업데이트 탭의 「최신 버전」 배지와 같은 `StatusBadge` 자산을 쓴다 — 손으로 조립한 span 은 색만 비슷하고 아이콘·테두리·크기가 다른 화면과 어긋난다. -->
+          <status-badge data-type="composite" data-ref="trusted_proxy_status_badge" status="{{trustedProxy?.data?.status === 'warning' ? 'warning' : (trustedProxy?.data?.status === 'ok' ? 'success' : 'default')}}" label="{{trustedProxy?.data?.status === 'warning' ? $t('admin.settings.advanced.trusted_proxy_status_warning') : (trustedProxy?.data?.status === 'ok' ? $t('admin.settings.advanced.trusted_proxy_status_ok') : $t('admin.settings.advanced.trusted_proxy_status_not_applicable'))}}"/>
         </div>
-        <div class="flex-between">
+        <div class="flex-between-responsive">
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_configured</span>
           <span class="text-heading">{{trustedProxy?.data?.trusted_configured ? (trustedProxy?.data?.configured_proxies ?? '-') : $t('admin.settings.advanced.trusted_proxy_not_configured')}}</span>
         </div>
-        <div class="flex-between">
+        <div class="flex-between-responsive">
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_forwarded_headers</span>
           <span class="text-heading">{{(trustedProxy?.data?.forwarded_headers ?? []).length > 0 ? trustedProxy?.data.forwarded_headers.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none')}}</span>
         </div>
-        <div class="flex-between">
+        <div class="flex-between-responsive">
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_is_secure</span>
           <span class="text-heading">{{trustedProxy?.data?.is_secure === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (trustedProxy?.data?.is_secure === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-')}}</span>
         </div>
-        <div class="flex-between">
+        <div class="flex-between-responsive">
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_client_ip</span>
           <span class="text-heading">{{trustedProxy?.data?.client_ip ?? '-'}}</span>
         </div>
-        <div class="flex-between">
+        <div class="flex-between-responsive">
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_remote_addr</span>
           <span class="text-heading">{{trustedProxy?.data?.remote_addr ?? '-'}}</span>
         </div>
         <div data-ref="trusted_proxy_same_ip_hint" data-if="{{trustedProxy?.data?.status === 'warning' &amp;&amp; trustedProxy?.data?.client_ip &amp;&amp; trustedProxy?.data?.client_ip === trustedProxy?.data?.remote_addr}}" class="form-hint text-amber-700 dark:text-amber-400">$t:admin.settings.advanced.trusted_proxy_same_ip_hint</div>
+        <div data-ref="trusted_proxy_edit">
+          <div class="flex-center">
+            <span class="text-heading">$t:admin.settings.advanced.trusted_proxy_scope</span>
+            <badge data-type="composite" data-if="{{_computed.trustedProxyLocked}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+          </div>
+          <p class="text-label-subtle">$t:admin.settings.advanced.trusted_proxy_scope_desc</p>
+          <div data-ref="trusted_proxy_modes" class="flex flex-col gap-1 mt-2">
+            <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <!-- 신뢰하지 않음 — 목록을 비우고 목록 모드 표식도 내려 계산값 trustedProxyMode 가 'none' 으로 돌아가게 한다. 빈 목록만으로는 직전에 목록 모드였는지 가릴 수 없다. 저장은 하단 공용 저장 버튼이 맡는다. -->
+              <input type="radio" name="trusted_proxy_mode" value="none" checked="{{_computed.trustedProxyMode === 'none'}}" :autoBinding="false" disabled="{{_computed.isReadOnly || _computed.trustedProxyLocked}}" class="radio mt-0.5">
+                <on type="change">
+                  <set-state target="local" :hasChanges="true" :trustedProxyListMode="false" form.advanced.trusted_proxies="{{[]}}"/>
+                </on>
+              </input>
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.settings.advanced.trusted_proxy_mode_none</span>
+                <p class="text-tertiary">$t:admin.settings.advanced.trusted_proxy_mode_none_desc</p>
+              </div>
+            </label>
+            <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <!-- 가장 가까운 프록시만 신뢰 — 서버 규약에서 `*` 한 항목이 이 뜻이다. 목록 모드 표식은 내린다. -->
+              <input type="radio" name="trusted_proxy_mode" value="nearest" checked="{{_computed.trustedProxyMode === 'nearest'}}" :autoBinding="false" disabled="{{_computed.isReadOnly || _computed.trustedProxyLocked}}" class="radio mt-0.5">
+                <on type="change">
+                  <set-state target="local" :hasChanges="true" :trustedProxyListMode="false" form.advanced.trusted_proxies="{{['*']}}"/>
+                </on>
+              </input>
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.settings.advanced.trusted_proxy_mode_nearest</span>
+                <p class="text-tertiary">$t:admin.settings.advanced.trusted_proxy_mode_nearest_desc</p>
+              </div>
+            </label>
+            <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <!-- 지정한 주소만 신뢰 — 직전 값에서 `*` 만 걷어 내고 나머지 주소는 살린다. 목록이 비어 있어도 목록 입력칸이 남도록 목록 모드 표식을 올린다. -->
+              <input type="radio" name="trusted_proxy_mode" value="list" checked="{{_computed.trustedProxyMode === 'list'}}" :autoBinding="false" disabled="{{_computed.isReadOnly || _computed.trustedProxyLocked}}" class="radio mt-0.5">
+                <on type="change">
+                  <set-state target="local" :hasChanges="true" :trustedProxyListMode="true" form.advanced.trusted_proxies="{{(_local.form?.advanced?.trusted_proxies ?? []).filter(v => v !== '*')}}"/>
+                </on>
+              </input>
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.settings.advanced.trusted_proxy_mode_list</span>
+                <p class="text-tertiary">$t:admin.settings.advanced.trusted_proxy_mode_list_desc</p>
+              </div>
+            </label>
+          </div>
+          <div data-ref="trusted_proxy_list_field" data-if="{{_computed.trustedProxyMode === 'list'}}" class="mt-2">
+            <label class="form-label">$t:admin.settings.advanced.trusted_proxy_list_label</label>
+            <tag-input data-type="composite" name="advanced.trusted_proxies" :creatable="true" placeholder="$t:admin.settings.advanced.trusted_proxy_list_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly || _computed.trustedProxyLocked}}"/>
+            <p class="form-hint">$t:admin.settings.advanced.trusted_proxy_list_hint</p>
+          </div>
+          <span data-if="{{_local.errors?.['advanced.trusted_proxies']}}" class="form-error">{{_local.errors?.['advanced.trusted_proxies']?.[0] ?? ''}}</span>
+          <p data-ref="trusted_proxy_spoof_warning" data-if="{{_computed.trustedProxyMode !== 'none'}}" class="form-hint text-amber-600 dark:text-amber-400">$t:admin.settings.advanced.trusted_proxy_spoof_warning</p>
+          <p data-ref="trusted_proxy_env_locked_notice" data-if="{{_computed.trustedProxyLocked}}" class="form-hint">$t:admin.settings.advanced.trusted_proxy_env_locked_notice</p>
+          <div data-ref="trusted_proxy_probe_row" class="flex items-center gap-3 mt-2 flex-wrap">
+            <!-- 시스템 탭의 「다시 감지」와 같은 보조 버튼 자산·진행 표시를 쓴다. 회색 채움 임의 클래스는 이 화면에서만 다른 모양이 되고, 스피너가 없으면 왕복 중에 같은 버튼이 다시 눌린다. -->
+            <button data-ref="btn_probe_trusted_proxy" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_computed.isReadOnly || _local.trustedProxyProbing}}">
+              <on event="click">
+                <!-- 진행 표시를 먼저 켠다 — 아래 블록이 왕복하는 동안 버튼이 잠기고 돈다. -->
+                <set-state target="local" :trustedProxyProbing="true"/>
+              </on>
+              <on event="click">
+                <!-- 저장하지 않은 편집 중 목록으로 시험한다 — 저장하기 전에 그 값이면 클라이언트 IP 와 HTTPS 판정이 어떻게 바뀌는지 아래 결과 상자에 현재 값과 나란히 보여 준다. 진행 플래그는 성공과 실패 양쪽에서 되돌린다. -->
+                <api-call target="/api/admin/settings/test-trusted-proxy" :auth_required="true" method="POST">
+                  <success>
+                    <set-state target="local" :trustedProxyProbing="false" trustedProxyProbe="{{response.data}}" trustedProxyProbeMessage="{{response.message}}"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :trustedProxyProbing="false" :trustedProxyProbe="null" :trustedProxyProbeMessage="null"/>
+                    <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
+                  </fail>
+                  <body trusted_proxies="{{(_local.form?.advanced?.trusted_proxies ?? [])}}"/>
+                </api-call>
+              </on>
+              <icon data-if="{{_local.trustedProxyProbing}}" name="spinner" class="spinner-sm"/>
+              <span>$t:admin.settings.advanced.trusted_proxy_probe_button</span>
+            </button>
+            <span class="text-hint">$t:admin.settings.advanced.trusted_proxy_probe_hint</span>
+          </div>
+          <div data-ref="trusted_proxy_probe_result" data-if="{{_local.trustedProxyProbe}}" class="mt-2 p-3 rounded-md border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+            <p class="text-heading mb-2">$t:admin.settings.advanced.trusted_proxy_probe_title</p>
+            <div class="row-stack">
+              <div class="flex-between-responsive">
+                <span class="text-label">$t:admin.settings.advanced.trusted_proxy_probe_client_ip</span>
+                <div class="text-right">
+                  <span data-if="{{(_local.trustedProxyProbe?.current?.client_ip ?? '-') !== (_local.trustedProxyProbe?.result?.client_ip ?? '-')}}" class="line-through text-gray-400 dark:text-gray-500 mr-2">{{(_local.trustedProxyProbe?.current?.client_ip ?? '-')}}</span>
+                  <span class="text-heading">{{(_local.trustedProxyProbe?.result?.client_ip ?? '-')}}</span>
+                </div>
+              </div>
+              <div class="flex-between-responsive">
+                <span class="text-label">$t:admin.settings.advanced.trusted_proxy_probe_is_secure</span>
+                <div class="text-right">
+                  <span data-if="{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.current?.is_secure) !== (v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.result?.is_secure)}}" class="line-through text-gray-400 dark:text-gray-500 mr-2">{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.current?.is_secure)}}</span>
+                  <span class="text-heading">{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.result?.is_secure)}}</span>
+                </div>
+              </div>
+              <div class="flex-between-responsive">
+                <span class="text-label">$t:admin.settings.advanced.trusted_proxy_probe_trusted</span>
+                <div class="text-right">
+                  <span class="text-heading">{{((_local.trustedProxyProbe?.result?.trusted ?? []).length > 0 ? _local.trustedProxyProbe.result.trusted.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none'))}}</span>
+                </div>
+              </div>
+            </div>
+            <p class="form-hint mt-2">{{_local.trustedProxyProbeMessage}}</p>
+          </div>
+        </div>
         <div data-ref="trusted_proxy_doc_hint" class="form-hint">
           <span>$t:admin.settings.advanced.trusted_proxy_doc_hint</span>
           <a data-ref="trusted_proxy_doc_link" href="https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md" target="_blank" rel="noopener noreferrer" class="ml-1 underline hover:no-underline">docs/backend/reverse-proxy.md</a>

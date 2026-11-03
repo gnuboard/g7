@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#597 |
 #   A-2 는 코어 알림 발송 이력 화면에 비즈뿌리오 결과(도달·실패사유·잔액부족·대체발송)를 얹는
 #   작업이다(코어 앱·코어 테이블 무수정). axes cross product 의 런타임 효과는 계층별로 전수 가드된다:
 #     - 연결고리(코어 로그↔dispatch): NotificationLogLinkTest — 실제 훅 체인(after_log_sent/
@@ -89,6 +89,19 @@ effects:
   - e2e_open_history_shows_result_column
   - e2e_result_cell_shows_status_reason_and_badges
   - e2e_member_recipient_links_to_user_detail
+  # 결과 조회 API, 최근 결과, 리포지토리 세부 (PHPUnit 이 이미 재던 것을 #609 에서 명시)
+  - lookup_rejects_unauthenticated_with_401
+  - recent_lookup_requires_messaging_view_permission
+  - recent_lookup_returns_result_map_without_params
+  - lookup_empty_log_ids_returns_200_with_empty_map
+  - lookup_failure_result_includes_reason_code_label
+  - find_by_log_ids_empty_input_returns_empty
+  - recent_linked_keyed_excludes_unlinked_and_keys_by_log_id
+  - recent_linked_keyed_respects_limit_newest_first
+  - inspection_mode_snapshot_included_in_result
+  - legacy_dispatch_without_inspection_snapshot_yields_null
+  - recent_results_returns_linked_results_keyed_by_log_id
+  - sent_content_included_in_result
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/NotificationLogLinkTest.php

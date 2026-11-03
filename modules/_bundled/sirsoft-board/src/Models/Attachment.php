@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Models;
 
 use App\Helpers\InlineMediaPolicy;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -174,7 +175,12 @@ class Attachment extends Model
 
         // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
         // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
-        return '/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash;
+        //
+        // 마운트 접두사는 손조립이 놓치는 축이다. 코어 형제(`App\Models\Attachment`)가
+        // 같은 사유로 이미 `AssetUrl::basePrefix()` 를 붙였는데 이 확장만 빠져 있었다 —
+        // 소비 지점이 `Img.src` 라 라우터를 거치지 않아 접두사를 붙일 주체가 여기밖에
+        // 없고, 하위 폴더 배치에서는 오류 없이 첨부가 전부 깨진다.
+        return AssetUrl::basePrefix().'/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash;
     }
 
     /**
@@ -213,17 +219,23 @@ class Attachment extends Model
     public function previewUrlForSlug(string $slug, bool $signed = false): string
     {
         if ($signed) {
-            return URL::temporarySignedRoute(
+            // 상대 서명 URL 은 요청의 base URL(마운트 접두사)을 벗긴 경로에 서명된다
+            // (`RouteUrlGenerator::to()`). 검증도 base 를 뺀 `'/'.$request->path()` 로 다시
+            // 조립하므로(`UrlGenerator::hasCorrectSignature()`), 접두사는 서명된 값 **밖**에
+            // 붙인다 — 붙여도 서명은 성립하고, 붙이지 않으면 하위 폴더 설치에서 사이트 밖을 가리킨다.
+            return AssetUrl::sitePath(URL::temporarySignedRoute(
                 'api.modules.sirsoft-board.boards.attachment.preview',
                 now()->addMinutes(self::SIGNED_PREVIEW_TTL_MINUTES),
                 ['slug' => $slug, 'hash' => $this->hash],
                 absolute: false
-            );
+            ));
         }
 
         // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
         // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
-        return '/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$this->hash.'/preview';
+        //
+        // 접두사 사유는 위 `getDownloadUrlAttribute` 와 같다.
+        return AssetUrl::basePrefix().'/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$this->hash.'/preview';
     }
 
     /**

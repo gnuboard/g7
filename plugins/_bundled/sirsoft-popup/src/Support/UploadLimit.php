@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\Popup\Support;
 
+use App\Support\ExecutionEnvironment;
+
 /**
  * 팝업 이미지 업로드 한도 — 실제로 받을 수 있는 크기는 플러그인 설정과 서버 PHP 두 값 중 가장 작은 값이다.
  *
@@ -35,8 +37,8 @@ class UploadLimit
     public static function serverLimitMb(): float
     {
         $limits = array_filter([
-            self::iniBytes((string) ini_get('upload_max_filesize')),
-            self::iniBytes((string) ini_get('post_max_size')),
+            self::iniSettingBytes('upload_max_filesize'),
+            self::iniSettingBytes('post_max_size'),
         ], fn (int $bytes) => $bytes > 0);
 
         return $limits === [] ? 0.0 : round(min($limits) / 1048576, 2);
@@ -67,6 +69,24 @@ class UploadLimit
             'server_limit_mb' => self::serverLimitMb(),
             'effective_mb' => self::effectiveMb(),
         ];
+    }
+
+    /**
+     * PHP 설정 값을 바이트로 읽습니다 — 호스팅이 `ini_get` 을 막았으면 읽을 수 없으므로 0(제한 없음과 같게 다룬다)이다.
+     *
+     * PHP 8 은 막힌 함수를 함수 표에서 지워 호출 자체가 `Error` 다. 막힌 서버에서는 플러그인 설정 한도만 남고,
+     * PHP 한도를 넘는 파일은 종전처럼 업로드 검증에서 빈 파일로 걸러진다.
+     *
+     * @param  string  $key  php.ini 키(upload_max_filesize·post_max_size)
+     * @return int 바이트(0 이면 제한 없음 또는 읽을 수 없음)
+     */
+    public static function iniSettingBytes(string $key): int
+    {
+        if (! ExecutionEnvironment::hasFunction('ini_get')) {
+            return 0;
+        }
+
+        return self::iniBytes((string) ini_get($key));
     }
 
     /**

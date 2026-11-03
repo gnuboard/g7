@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 행별 권한은 스코프(self/전체/없음) × 행(본인/타인) × 래핑(단건/이중/컬렉션)이지만, 래핑 축은 스코프 해석이 중첩 리소스를 풀어내는지만 보므로 self 스코프 한 조합으로 충분하다 — 곱하면 같은 판정만 반복된다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 행별 권한은 스코프(self/전체/없음) × 행(본인/타인) × 래핑(단건/이중/컬렉션)이지만, 래핑 축은 스코프 해석이 중첩 리소스를 풀어내는지만 보므로 self 스코프 한 조합으로 충분하다 — 곱하면 같은 판정만 반복된다.
 feature: user_per_item_abilities
 coverage_strategy: pairwise
 description: |

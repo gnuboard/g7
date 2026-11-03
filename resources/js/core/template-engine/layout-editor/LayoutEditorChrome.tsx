@@ -83,7 +83,7 @@ import { buildCoreActionRecipeSeed } from './spec/coreActionRecipes';
 import { registerCoreWidgets } from './spec/registerCoreWidgets';
 import { registerCoreEditors } from './spec/registerCoreEditors';
 import { exposeLayoutEditorGlobals } from './spec/exposeLayoutEditorGlobals';
-import { suffixed } from '../../support/assetUrl';
+import { suffixed, withBasePrefix } from '../../support/assetUrl';
 
 /**
  * 편집기 셸 최소 너비(px) — 이 아래로는 셸을 압착하지 않고 브라우저 가로 스크롤로 흡수한다.
@@ -315,7 +315,7 @@ function LayoutEditorChromeBody({
         // admin 템플릿 API 는 Sanctum 토큰 인증(Bearer) — buildAuthHeaders 로 토큰 첨부.
         // 종전 plain Accept 헤더만 보내 401 로 떨어지면 type/name/version 미수신 → 식별자 폴백.
         const response = await fetch(
-          `/api/admin/templates/${encodeURIComponent(templateIdentifier)}`,
+          withBasePrefix(`/api/admin/templates/${encodeURIComponent(templateIdentifier)}`),
           { credentials: 'same-origin', headers: buildAuthHeaders() }
         );
         if (!response.ok) return;
@@ -346,7 +346,7 @@ function LayoutEditorChromeBody({
       try {
         // 충분한 per_page 로 1페이지에 전체 수신(설치 템플릿은 소수). include_hidden=false.
         const response = await fetch(
-          `/api/admin/templates/?per_page=100&page=1`,
+          withBasePrefix(`/api/admin/templates/?per_page=100&page=1`),
           { credentials: 'same-origin', headers: buildAuthHeaders() }
         );
         if (!response.ok) return;

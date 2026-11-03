@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: 텍스트 데이터 연결 UI 는 속성 모달(dnd-kit/합성 이벤트 의존)이라 Playwright/브라우저 axis 부적합(InlineBindingSection.tsx L1 e2e:allow 동일 정책). 5개 직교 축 cross product 350 케이스의 입력 조합·후속 효과는 단위 4파일(inlineBindingUtils 24 + textComponents 9 + InlineBindingSection 8 + TranslationField 토큰가드 2 = 43 green)이 전수 커버하고, 캔버스 라이브 반영·저장·실사용자화면 렌더는 Chrome MCP §공통 검증 매트릭스로 확인. 개별 케이스 docblock 마킹보다 RTL 전수 테스트가 SSoT.
+# audit:allow test-scenario-coverage reason: issue:#609 텍스트 데이터 연결 UI 는 속성 모달(dnd-kit/합성 이벤트 의존)이라 Playwright/브라우저 axis 부적합(InlineBindingSection.tsx L1 e2e:allow 동일 정책). 5개 직교 축 cross product 350 케이스의 입력 조합·후속 효과는 단위 4파일(inlineBindingUtils 24 + textComponents 9 + InlineBindingSection 8 + TranslationField 토큰가드 2 = 43 green)이 전수 커버하고, 캔버스 라이브 반영·저장·실사용자화면 렌더는 Chrome MCP §공통 검증 매트릭스로 확인. 개별 케이스 docblock 마킹보다 RTL 전수 테스트가 SSoT.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 34건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(레이아웃 편집기)의 몫이며, 좁히는 시점에 함께 처리한다.
 feature: 레이아웃 편집기 텍스트(보간) 데이터 연결 — text 의 {{...}} 보간 조각을 [속성] 탭에서 조각 단위 교체/해제/끝에 추가 + 번역 탭 토큰 보호
 phase: 3
 session: 9-b

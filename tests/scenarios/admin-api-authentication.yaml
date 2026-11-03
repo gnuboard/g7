@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. accept, endpoint 는 비인증 접근 시험에만 의미가 있고 login, logout, refresh 는 관리자에게만 시험하므로 actor 와 action 을 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변종이다. accept, endpoint 는 비인증 접근 시험에만 의미가 있고 login, logout, refresh 는 관리자에게만 시험하므로 actor 와 action 을 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
 feature: 관리자 API 인증 (로그인, 로그아웃, 토큰 갱신, 비인증과 일반 사용자 차단)
 
 description: |

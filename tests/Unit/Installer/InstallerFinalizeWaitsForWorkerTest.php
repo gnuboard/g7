@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,9 +31,18 @@ use PHPUnit\Framework\TestCase;
  * 같은 규칙으로 캐시를 쓰는 가짜 스크립트다. DB 는 쓰지 않는다.
  *
  * 시나리오 SSoT: tests/scenarios/installer-worker-termination.yaml
+ *
+ * `BASE_PATH` 는 하위 프로세스 스크립트 안에서만 정의하지만, 인스톨러 격리 게이트는 문자열 속 정의도
+ * 정의로 본다(판정 불가를 정의로 치는 fail-closed). 그래서 클래스 단위 격리를 선언하고, 임시 트리는
+ * 메서드마다(tearDown) 지우되 setUp 이 도중에 실패해 tearDown 이 돌지 않은 트리까지 클래스 끝에서 지운다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerFinalizeWaitsForWorkerTest extends TestCase
 {
+    /** @var array<int, string> 이 클래스가 만든 임시 BASE_PATH 트리 (tearDownAfterClass 가 남은 것을 지운다) */
+    private static array $createdBases = [];
+
     private const INSTALLER_DB_USER = 'g7_installer_user';
 
     private const WORKER_ID = 'worker-sim';
@@ -51,6 +62,7 @@ class InstallerFinalizeWaitsForWorkerTest extends TestCase
 
         $this->projectRoot = str_replace('\\', '/', dirname(__DIR__, 3));
         $this->tempBase = str_replace('\\', '/', sys_get_temp_dir()).'/g7-finalize-wait-'.bin2hex(random_bytes(4));
+        self::$createdBases[] = $this->tempBase;
 
         foreach (['storage/app', 'storage/logs', 'storage/installer', 'bootstrap/cache', 'sessions'] as $dir) {
             @mkdir($this->tempBase.'/'.$dir, 0755, true);
@@ -100,6 +112,23 @@ class InstallerFinalizeWaitsForWorkerTest extends TestCase
     }
 
     /**
+     * 메서드 tearDown 이 돌지 못한 임시 트리(setUp 이 도중에 실패한 경우)를 지운다.
+     *
+     * @return void 반환값 없음
+     */
+    public static function tearDownAfterClass(): void
+    {
+        foreach (self::$createdBases as $base) {
+            if (is_dir($base)) {
+                (new self('cleanup'))->removeDirectory($base);
+            }
+        }
+        self::$createdBases = [];
+
+        parent::tearDownAfterClass();
+    }
+
+    /**
      * 워커가 설정 캐시를 만드는 중에 finalize 가 불려도 병합은 워커가 끝난 뒤에 하고,
      * 남는 설정 캐시는 병합된 .env 의 DB 계정과 설치 완료 플래그를 담는다.
      *
@@ -138,7 +167,12 @@ class InstallerFinalizeWaitsForWorkerTest extends TestCase
         $this->assertTrue($cache['installer_completed'], '설정 캐시의 설치 완료 플래그가 병합된 .env 와 다르다');
         $this->assertSame('artisan', $cache['built_by'], '병합 뒤 설정 캐시를 다시 만들지 않았다');
 
-        $this->assertStringContainsString('DB_WRITE_USERNAME="'.self::INSTALLER_DB_USER.'"', (string) file_get_contents($this->tempBase.'/.env'));
+        // 안전 문자셋 값은 `.env` 표기를 바꾸지 않고 원문으로 남는다(mergeRuntimeIntoEnv 의 escapeEnvLineValue,
+        // InstallerRuntimeHelperTest 가 같은 표기를 잠근다) — 줄 전체가 설치 정보 계정이어야 한다.
+        $this->assertMatchesRegularExpression(
+            '/^DB_WRITE_USERNAME='.preg_quote(self::INSTALLER_DB_USER, '/').'\r?$/m',
+            (string) file_get_contents($this->tempBase.'/.env')
+        );
         $this->assertFileDoesNotExist($this->tempBase.'/storage/installer/runtime.php');
         $this->assertFileDoesNotExist($this->tempBase.'/storage/installer-state.json');
     }
@@ -319,6 +353,7 @@ class InstallerFinalizeWaitsForWorkerTest extends TestCase
             return null;
         }
 
+        // meta:allow raw-source-read — 생산 소스가 아니라 이 테스트가 만든 임시 설정 캐시 파일을 실행해 값을 얻는다.
         $values = eval('?>'.file_get_contents($path));
 
         return is_array($values) ? $values : null;
@@ -537,6 +572,7 @@ PHP;
 
         proc_close($process);
 
+        // meta:allow raw-source-read — 소스가 아니라 자식 프로세스의 표준 출력과 표준 오류를 읽는다.
         return [
             'timed_out' => $timedOut,
             'output' => (string) @file_get_contents($handle['out']).(string) @file_get_contents($handle['err']),

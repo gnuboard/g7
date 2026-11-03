@@ -6,6 +6,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Contracts\Repositories\LanguagePackTranslationRepositoryInterface;
 use App\Enums\LanguagePackScope;
+use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Listeners\LanguagePack\MergeCustomTranslations;
 use App\Listeners\LanguagePack\MergeFrontendLanguage;
@@ -200,7 +201,7 @@ class LanguagePackServiceProvider extends ServiceProvider
             if ($target === '') {
                 continue;
             }
-            foreach (glob($seedDir.DIRECTORY_SEPARATOR.'*.json') as $seedFile) {
+            foreach (ExtensionManager::listDirectoryFiles($seedDir, '.json') as $seedFile) {
                 $entity = pathinfo($seedFile, PATHINFO_FILENAME);
                 if ($entity === 'notifications') {
                     HookManager::addFilter("seed.{$target}.notifications.translations", function ($definitions) use ($injector, $target) {

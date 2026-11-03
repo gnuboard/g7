@@ -254,7 +254,6 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 | 우선순위 | 세 칸 — ① `@layer g7-extension`(의미) ② 층 없는 규칙(배치·유틸리티) ③ 템플릿의 확장 CSS 덮기 파일 |
 | 다크 모드 | `<html data-g7-color-scheme>` 중립 표식(`dark`·`light`)만 본다. `.dark` 선택자는 쓰지 않는다 |
 | 서빙 | 코어가 층을 평탄화한다(`g7-extension`·`properties` 만 남김) |
-| 정적 검사 | `extension-css-namespace`, `extension-class-self-contained` |
 
 ### 앞글자 선언 — `assets.css.namespace`
 
@@ -922,10 +921,10 @@ GET /api/plugins/bundle.css?v={version}
 | 규율 | 내용 | 자동 검증 |
 |------|------|---------|
 | priority 순서 | manifest `loading.priority` 오름차순만. 확장 이름 하드코딩 금지 | (선언형) |
-| `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | `extension-bundle-concat-separator` |
+| `\n;\n` 구분자 | IIFE 사이는 `\n;\n`(JS)/`\n`(CSS). 미사용 시 ASI 붕괴 → 전체 파싱 에러 | 정적 검사 |
 | 소스맵 | prod strip, dev 는 개별 에셋 서빙 절대 URL 로 rewrite | - |
-| same-origin | 번들 URL 은 `/api/...` 만 (CDN 금지 — gdpr preblocker 자기차단 방지) | `extension-bundle-url-same-origin` |
-| 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지. 소실 판정만 선언 축 게터 `getDeclaredAssetAbsolutePaths()` | `extension-bundle-asset-path-getter` |
+| same-origin | 번들 URL 은 `/api/...` 만 (CDN 금지 — gdpr preblocker 자기차단 방지) | 정적 검사 |
+| 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지. 소실 판정만 선언 축 게터 `getDeclaredAssetAbsolutePaths()` | 정적 검사 |
 | 확장별 try/catch | 파일 읽기 실패 시 해당 확장만 skip, 나머지 병합 지속 | (메모리+회귀테스트) |
 | CSS url() | 상대 `url()`·`@import` 참조는 그 확장의 절대 자산 URL 로 **치환**해 병합. 병합본의 주소는 어느 확장의 dist 디렉토리도 아니라 상대 해석이 반드시 어긋난다 | (계약 테스트) |
 | CSS 층 평탄화 | `assets.css.namespace` 를 선언한 확장의 CSS 만 `g7-extension`·`properties` 층을 남기고 나머지 층 래퍼·순서 선언을 걷어 병합. 개별 자산 서빙과 같은 처리 — [서빙 — 층 평탄화](#서빙--층-평탄화) | (계약 테스트) |

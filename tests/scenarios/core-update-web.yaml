@@ -1,0 +1,200 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 단계 전수 완주는 실제 릴리스 ZIP 을 내려받아 파일을 교체하고 마이그레이션을 돌린다 — 테스트 프로세스 안에서 수행하면 저장소 자신이 교체되고 실패 시 되돌릴 대상이 테스트 환경이 된다. 게다가 `execution_mode=inprocess`·`spawn_fallback=forced_inprocess` 축은 `disable_functions` 로만 재현되는 실행 프로세스의 성질이라 PHPUnit/Playwright 어느 쪽도 그 조합을 만들 수 없다(계획서 §8 자동화 한계). 경계 조건(순서 불변식·권한·착수 가드·안전 기본값·재개/점유)은 test_files 가 전수 커버하고, 조합 종단은 P0 격리 환경 실측(§9 S13, G8)이 담당한다.
+
+feature: 코어 업데이트 웹 단계 실행 (무CLI 호스팅 — 이슈 #609 A-7 / W6)
+
+description: |
+  코어 업데이트는 지금까지 CLI 전용이었다. 환경설정 화면은 `php artisan core:update`
+  명령어를 문구로 안내할 뿐이라, SSH 가 없는 호스팅에서는 코어를 올릴 수단이 없었다.
+
+  이 매니페스트는 **웹 버튼만으로 코어가 올라가고, 중간 실패 시 자동으로 되돌아오는**
+  동선의 시나리오 매트릭스다. 핵심은 세 가지다:
+
+  1. **한 요청 = 한 단계.** 파일을 교체한 프로세스가 사라진 클래스를 참조하면 fatal 이
+     난다(§7 R25). 특히 업그레이드 스텝은 파일 적용 **다음 요청**에서 돌아야 하고, 그
+     요청이 곧 신버전 코드로 부팅된 새 프로세스다 — 무CLI 환경에서 spawn 격리를 대신하는
+     것이 이 성질이다. 진행 지점은 상태 파일이 갖고, 브라우저는 그것을 이어 호출한다.
+
+  2. **웹에는 위험한 선택이 없다 (D27).** `--force`(버전 비교 생략) · `--prune`(전체
+     덮어쓰기 + 삭제) · `--no-backup`(되돌릴 것 없음) · `--no-maintenance` 는 CLI 전용으로
+     남고 웹 동선에는 **입력 표면 자체가 없다**. 검증으로 거르는 형태를 택하지 않은 이유는
+     규칙 한 줄만 풀면 켜지는 값이 남기 때문이다.
+
+  3. **실패는 조작 없이 되돌린다 (D10).** 단계가 실패하면 되돌리기 대기 상태로 전이하고,
+     다음 호출이 백업 복원을 수행한다. 복원까지 실패한 경우에만 수동 복구 절차를 연다.
+     화면에서 가장 중요한 정보는 「실패했다」가 아니라 **「지금 사이트는 멀쩡하다」**이다.
+
+  권한은 설정 수정과 **다른 등급**이다 (D4) — 설정을 고치는 것과 코어를 갈아 끼우는 것은
+  실패 시 되돌리는 비용이 다르다. 그 권한이 없는 관리자에게는 화면에서 영역 자체가
+  보이지 않는다(비활성이 아니라 미표시).
+
+  수동 ZIP 경로(㉯ — D18)는 아웃바운드가 막힌 서버용이다. 운영자가 릴리스 ZIP 을 FTP 로
+  올려 두고 고급 접기에서 고르면, 이후는 자동 내려받기와 **같은 단계식 파이프라인**을
+  탄다 — 새 로직을 만들지 않는다(§7 R28).
+
+axes:
+  # 착수 지점
+  actor: [with_permission, without_permission]          # D4 — 신규 권한 보유 여부
+  source: [github_download, manual_zip]                 # ㉯ (D18) — 자동 내려받기 / 운영자 ZIP
+  run_state: [idle, running, rolling_back, finished]    # 화면이 고르는 W6 4상태의 근거
+
+  # 착수 선택 (D27 이 남긴 넷)
+  bundled_extensions: [on, off]                         # D28 — 번들 확장·언어팩 함께
+  rebuild_search_index: [on, off]                       # 그 창에서만 유효 (재생성 옵트인)
+  layout_strategy: [overwrite, keep]                    # D29 — 전역 전략
+
+  # 실행 환경
+  execution_mode: [subprocess, inprocess]               # 무CLI 는 in-process 로 판정된다
+  spawn_fallback: [not_needed, forced_inprocess]        # §7 R26 — 스폰 불가 시 강제 전환
+
+  # 진행·실패
+  failing_step: [none, preflight, download, apply, upgrade_steps, bundled]
+  rollback_outcome: [not_needed, restored, restore_failed]
+  handoff: [none, continued, exhausted]                 # 업그레이드 스텝의 새 프로세스 요청
+
+  # 동시성·재개
+  concurrency: [single, duplicate_request, stale_claim]
+
+effects:
+  # 단계·순서
+  - step_order_keeps_safety_invariants
+  - every_case_appears_in_the_sequence
+  - apply_and_upgrade_steps_live_in_different_step_methods
+  - the_web_pipeline_covers_every_service_call_the_cli_makes
+  - no_stale_omission_declarations_remain
+
+  # 재개·점유
+  - progress_survives_a_new_state_instance
+  - options_round_trip_through_the_state_file
+  - a_second_request_cannot_take_a_live_claim
+  - a_stale_claim_is_reclaimed
+  - an_unreadable_heartbeat_is_treated_as_held
+  - apply_list_round_trips_through_a_sidecar_file
+  - a_new_run_does_not_inherit_the_previous_apply_list
+  - clear_removes_both_the_state_and_the_sidecar
+  - logs_are_capped
+
+  # 안전 기본값 (D27)
+  - the_start_request_has_no_input_for_dangerous_cli_options
+  - the_options_object_has_no_dangerous_fields
+  - defaults_are_the_safe_side
+  - an_unknown_layout_strategy_falls_back_to_overwrite
+  - the_orchestrator_never_passes_destructive_arguments
+  - the_cli_keeps_its_dangerous_options
+
+  # 권한 (D4)
+  - settings_update_permission_alone_cannot_reach_the_apply_endpoints
+  - settings_abilities_expose_the_core_update_permission
+  - update_tab_is_hidden_without_permission
+
+  # 착수 가드
+  - a_second_start_is_refused_while_a_run_is_active
+  - dismiss_is_refused_while_a_run_is_active
+  - advance_without_a_run_is_refused
+  - a_finished_run_can_be_dismissed
+  - status_returns_the_shape_the_screen_needs
+
+  # 수동 ZIP (㉯ — D18)
+  - zip_file_names_are_stripped_of_path_components
+  - starting_with_a_missing_zip_is_refused_before_anything_changes
+  - a_zip_name_with_path_components_is_rejected
+  - uploaded_zip_files_appear_in_the_manual_source_list
+  - manual_zip_lives_behind_advanced
+
+  # 점검 모드 (A-7 설계 4)
+  - maintenance_exempt_uris_match_the_registered_routes
+  - every_step_has_a_translated_label
+
+  # 화면 (W6)
+  - start_sends_only_safe_options
+  - the_start_controls_appear_only_when_there_is_something_to_apply
+  - the_failure_screen_offers_a_way_forward
+  - a_failed_update_check_leaves_its_reason_on_screen
+  - an_interrupted_run_continues_without_operator_action
+  - server_notices_reach_the_screen
+
+  # 사전 조건 · 되돌리기 마무리 · 스폰 강제 (검증 라운드 1 에서 신설)
+  - the_start_screen_receives_the_preflight_verdict
+  - preflight_covers_every_path_the_web_run_writes_to
+  - the_rollback_path_finishes_as_strongly_as_the_success_path
+  - the_upgrade_step_stage_forces_the_inprocess_fallback_mode
+
+  # 정리 주체 (G3 회차 6 이관)
+  - core_pending_staging_has_a_pruner
+
+  # 요청 경계·자동 이어받기 (검증 라운드 2)
+  - advance_runs_exactly_one_step_per_request
+  - idle_visits_do_not_consume_the_auto_resume_budget
+  - starting_a_run_restores_the_auto_resume_budget
+  - interpolated_messages_render_their_values_on_screen
+  - registered_core_update_handlers_perform_their_work
+
+  # 실패 갈래 (검증 라운드 3 — 실측으로 재현 가능함이 확인되어 원장에서 승격)
+  - a_failed_rollback_opens_the_manual_recovery_guidance
+  - preflight_blocks_the_run_when_target_paths_are_not_writable
+
+  # 현장 제보 2026-09-12 — 탭의 버튼이 베이스 클래스(`btn`) 없이 색 변형만 달아 브라우저
+  # 기본 버튼으로 나갔다. 존재·클릭·요청 단언은 하나도 깨지지 않아 기존 테스트가 전부
+  # 초록이었다. 그래서 **계산된 값**(padding·모서리·굵기)을 재는 케이스로 잠근다.
+  - update_tab_buttons_carry_the_button_base_class
+
+  # 609 후속(7.2.0 병합 뒤) — 7.2.0 이 CLI 에 더한 배포본 판정 두 가지(공식 번들 배치 #146, custom 사전 검사 #792)를
+  # 웹 단계도 거친다. 웹만 미설치 번들을 통째로 받거나 custom 충돌 배포본을 그대로 적용하던 갈림을 잰다.
+  - the_web_run_skips_unplaced_bundles_like_the_cli
+  - the_web_run_stops_before_backup_when_the_release_hits_a_custom_reserved_path
+  - the_web_run_restores_the_bundled_placement_record_on_rollback
+  - shared_core_update_message_population_is_derived_and_non_empty
+  - shared_message_cli_exemptions_are_still_needed
+  - shared_core_update_messages_name_no_command_line_only_action
+  - recovery_guidance_locale_channels_each_yield_files
+  - no_message_claims_the_command_line_is_the_only_way
+  - recovery_guidance_exemptions_are_still_needed
+  - recovery_guidance_never_points_only_at_ssh
+
+pending_effects:
+  # 아래는 **아직 재는 테스트가 없다**. 무CLI(P0) 프로필에서만 재현되는 축이라 PHPUnit·
+  # Playwright 어느 쪽으로도 자동화할 수 없다 — `disable_functions` 는 실행 프로세스의
+  # 성질이고 테스트 프로세스가 그것을 바꿀 수 없기 때문이다(§8 자동화 한계).
+  # G8(브라우저 실측 전수)이 P0 환경에서 수행하며, 그때까지 이 목록이 미커버 사실을 소유한다.
+  #
+  # G8 실측 결과 (2026-09-02 · P0 무CLI 프로필 `http://localhost:8090`). 항목은 **지우지
+  # 않는다** — 사람이 한 번 재었다는 사실과 자동으로 재는 테스트가 생겼다는 사실은 다르고,
+  # 지우면 census 에서 빠져 다음 릴리즈에 다시 미커버로 남는다. 각 줄의 주석이 그 결과를
+  # 소유하며, 상세 근거는 계획서 §9.11.2 · §9.11.4 D군에 있다.
+  - a_failing_step_rolls_back_without_operator_action        # D10 — [G8 측정 완료] 손상 ZIP 으로 download 단계 실패 → 조작 없이 rolled_back, `restored=true`·`maintenance_left_on=false`, 홈 200 복귀
+  # (승격됨 — `a_failed_rollback_opens_the_manual_recovery_guidance` 는 이제 effects 에 있다.
+  #  실측으로 재현되는 것이 확인되어 `CoreUpdateWebFlowTest` 가 자동으로 잰다. 그 측정에서
+  #  F14(안내가 SSH 를 무조건으로 지시)를 발견해 고쳤고 `NoCliRecoveryGuidanceTest` 가 문구를 잠근다.)
+  - the_upgrade_steps_run_in_a_request_after_file_application  # R25 — [G8 측정 완료] 12단계 완주에서 apply(7)와 upgrade_steps(10) 사이에 vendor_copy·migrate 두 요청이 놓여 요청 경계 확보
+  - spawn_failure_forces_inprocess_execution                 # R26 — [G8 측정 완료] 프로필 자체가 `exec,proc_open,shell_exec` 차단이고 그 위에서 설치 62단계·업데이트 12단계 2회 완주
+  - bundled_extensions_and_language_packs_update_in_one_run  # §0.4 — [G8 부분] 한 실행 안에서는 「갱신할 것 없음」까지만 확인. 실제 갱신은 모듈 1.1.1→1.1.2 · 언어팩 1.0.2→1.0.3 을 각각 버튼/API 로 성립시켰다
+  - the_admin_screen_stays_reachable_while_maintenance_is_on # [G8 측정 완료] 공개 홈 503 인 동안 status·advance·dismiss 200 + 관리자 화면 200 — **우회 쿠키 없는 새 클라이언트**로 측정
+  # (승격됨 — `preflight_blocks_the_run_when_target_paths_are_not_writable` 는 이제 effects 에 있다.
+  #  권한을 인위로 뺏는 대신 진단을 대역으로 갈아 끼워 재며, 「막혔다」뿐 아니라
+  #  **아무것도 바꾸지 않은 채 막혔다**(`files_were_applied=false`)까지 단언한다.)
+
+test_files:
+  - tests/Unit/CoreUpdate/CoreUpdateStepContractTest.php
+  - tests/Unit/CoreUpdate/CoreUpdateWebBundledAndCustomPreflightTest.php
+  - tests/Unit/CoreUpdate/CoreUpdateRunStateTest.php
+  - tests/Unit/CoreUpdate/CoreUpdateSafeDefaultsTest.php
+  - tests/Unit/CoreUpdate/CoreUpdatePipelineParityTest.php
+  - tests/Feature/Api/Admin/CoreUpdateWebFlowTest.php
+  # 코어 `_pending` 전개본의 정리 주체 — G3 회차 6 이 G6 로 넘긴 축
+  - tests/Unit/Services/StorageLeftoverPruneServiceTest.php
+  # 화면 배선·권한 게이트·안전 기본값 (W6)
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-core-update-tab.test.tsx
+  - tests/Playwright/specs/admin/settings-core-update-tab.spec.ts
+  - tests/Unit/CoreUpdate/CoreUpdateSharedMessageChannelTest.php
+  - tests/Unit/CoreUpdate/NoCliRecoveryGuidanceTest.php
+
+coverage_strategy: pairwise
+
+# 「단계 전수 완주」를 PHPUnit 으로 재지 않는 이유: 그 흐름은 실제 릴리스 ZIP 을 내려받아
+# 파일을 교체하고 마이그레이션을 돌린다. 테스트 프로세스 안에서 수행하면 저장소 자신이
+# 교체되고, 실패 시 되돌릴 대상이 테스트 환경 자체가 된다. 그래서 이 매니페스트는
+# **경계 조건**(순서 불변식 · 권한 · 착수 가드 · 안전 기본값 · 재개·점유)을 자동으로 잠그고,
+# 종단 완주는 P0 프로필의 실측으로 남긴다.
+#
+# `execution_mode` · `spawn_fallback` 축은 러너(`CommandRunnerResolver`)가 소유하고 G1 이
+# 이미 등가 계약 테스트로 고정했다. 이 매니페스트는 그 러너를 **경유한다**는 사실만 잰다
+# (`the_web_pipeline_covers_every_service_call_the_cli_makes` 가 그 통로를 본다).

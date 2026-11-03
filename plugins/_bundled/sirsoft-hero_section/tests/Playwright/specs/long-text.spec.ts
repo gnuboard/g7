@@ -26,9 +26,7 @@ const VARIANTS = {
 
 for (const [name, [title, description, button]] of Object.entries(VARIANTS)) {
   // @scenario surface=long_text_fits_slot
-  // @scenario surface=long_text_fits_slot, script=ko
-  // @scenario surface=long_text_fits_slot, script=ja
-  // @scenario surface=long_text_fits_slot, script=nospace
+  // 변종: script=ko·ja·nospace
   // @effects long_text_not_lost
   test(`최대 길이 문구(${name})가 데스크톱·태블릿·모바일 구좌에서 잘리지 않는다`, async ({ page, request, managerToken, created }) => {
     const marker = `[${name}-${Date.now()}]`;
@@ -179,7 +177,8 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     await expect(scroll).toHaveAttribute('tabindex', '-1');
   });
 
-  // @scenario surface=long_text_scroll_keyboard_and_touch, link=whole_slide
+  // @scenario surface=long_text_scroll_keyboard_and_touch
+  // 변종: link=whole_slide
   // @effects long_text_not_lost
   test('버튼 없는 전체 링크 배너도 넘치는 문구 영역이 링크 밖에 있어 탭·스크롤이 되고, 문구를 누르면 링크로 간다', async ({ page, request, managerToken, created }) => {
     // 버튼이 없으면 한글 최대 길이는 휴대폰 구좌에 들어간다 — 더 많이 줄바꿈하는 일본어 최대 길이로 넘치게 한다

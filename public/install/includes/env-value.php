@@ -34,7 +34,7 @@ if (! function_exists('serializeEnvValue')) {
      * .env 에 기록할 값을 직렬화합니다.
      *
      * CR/LF/NUL 이 포함되면 InvalidArgumentException 을 던집니다(조용한 삭제 금지).
-     * 그 외에는 백슬래시·큰따옴표를 이스케이프하고 큰따옴표로 감쌉니다.
+     * 그 외에는 백슬래시·큰따옴표를 이스케이프하고 `${` 보간을 차단한 뒤 큰따옴표로 감쌉니다.
      *
      * @param  string  $value  직렬화할 값
      * @return string 큰따옴표로 감싼 값
@@ -54,6 +54,14 @@ if (! function_exists('serializeEnvValue')) {
         }
 
         $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
+
+        // `${VAR}` 보간 차단. phpdotenv 는 큰따옴표 안에서도 `${NAME}` 을 이미 로드된 환경
+        // 변수 값으로 치환하므로, 값을 따옴표로 감싸는 것만으로는 다른 변수 값이 이 값에
+        // 흘러드는 것을 막지 못한다. `\$` 는 phpdotenv 가 리터럴 `$` 로 해석하는 escape
+        // sequence 라(EntryParser::ESCAPE_SEQUENCE_STATE) 값 자체는 그대로 복원된다.
+        // 보간 문법은 `${` 뿐이므로 그 조합만 이스케이프한다 — 비밀번호에 흔한 단독 `$`
+        // 는 원문 그대로 남는다. (#609 20차 #12)
+        $escaped = str_replace('${', '\\${', $escaped);
 
         return '"'.$escaped.'"';
     }

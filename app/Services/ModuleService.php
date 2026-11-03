@@ -15,6 +15,9 @@ use App\Extension\HookManager;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Models\Module;
+use App\Rules\AllowedModuleFileType;
+use App\Services\Concerns\ResolvesExtensionAssetType;
+use App\Services\Concerns\SecuresExtensionAssetPath;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
@@ -25,6 +28,9 @@ use Illuminate\Validation\ValidationException;
 
 class ModuleService
 {
+    use ResolvesExtensionAssetType;
+    use SecuresExtensionAssetPath;
+
     /**
      * 검색 가능한 필드 목록
      */
@@ -997,10 +1003,21 @@ class ModuleService
             ];
         }
 
-        // 2. 파일 경로 구성 (모듈 루트 기준)
-        $filePath = base_path("modules/{$identifier}/{$path}");
+        // 2. Path Traversal 2차 봉쇄 — 요청 규칙이 1차이고 이것이 2차다.
+        //    형제 통로(템플릿)는 이 계층을 갖고 있었는데 여기만 없어, 규칙 한 줄이
+        //    무력해지면 이 통로에는 남는 방어선이 없었다.
+        $safePath = $this->sanitizeExtensionAssetPath($path);
 
-        // 3. 파일 존재 확인
+        // 3. 파일 경로 구성 (모듈 루트 기준)
+        $basePath = base_path('modules/'.$identifier);
+        // 구분자는 `/` 로 잇는다 — Windows 에서 `DIRECTORY_SEPARATOR` 로 이으면
+        // `base_path()` 가 돌려준 `/` 구간과 섞여 `modules/x\dist/js/a.js` 같은 혼합
+        // 경로가 되고, 그 값을 그대로 돌려받는 소비처·계약 테스트가 어긋난다.
+        // 봉쇄 판정(`extensionAssetPathIsContained`)은 `realpath()` 로 정규화한 뒤
+        // 비교하므로 이 자리의 구분자에 영향받지 않는다 (14차 G3 라운드).
+        $filePath = $basePath.'/'.$safePath;
+
+        // 4. 파일 존재 확인
         if (! file_exists($filePath) || ! is_file($filePath)) {
             return [
                 'success' => false,
@@ -1010,8 +1027,34 @@ class ModuleService
             ];
         }
 
-        // 4. MIME 타입 감지
-        $mimeType = $this->getMimeType($filePath);
+        // 정제만으로는 심볼릭 링크 경유 탈출을 걸러내지 못한다 — 해석된 절대 경로가
+        // 기준 안인지 재확인한다.
+        if (! $this->extensionAssetPathIsContained($filePath, $basePath)) {
+            return [
+                'success' => false,
+                'filePath' => null,
+                'mimeType' => null,
+                'error' => 'file_not_found',
+            ];
+        }
+
+        // 5. 보안 검증 (허용된 확장자만) — 요청 규칙이 1차이고 이것이 2차다.
+        //    형제 통로(템플릿)는 이 계층을 갖고 있었는데 여기만 없어, 세 컨트롤러가 공통으로
+        //    갖는 `file_type_not_allowed` 403 분기가 이 통로에서는 도달 불가였다. 「요청
+        //    규칙이 이미 막으니 무해하다」는 방어가 되지 않는다 — 서비스는 확장에 열려 있어
+        //    요청 규칙을 거치지 않는 호출부가 생기면 그 순간 남는 방어선이 없다.
+        //    목록은 규칙 클래스가 SSoT 다(운영에서 소스맵을 차단하는 환경 분기가 거기 있다).
+        if (! $this->extensionAssetExtensionIsAllowed($filePath, AllowedModuleFileType::getAllowedExtensions())) {
+            return [
+                'success' => false,
+                'filePath' => null,
+                'mimeType' => null,
+                'error' => 'file_type_not_allowed',
+            ];
+        }
+
+        // 6. MIME 타입 감지
+        $mimeType = $this->extensionAssetMimeType($filePath);
 
         return [
             'success' => true,
@@ -1092,38 +1135,6 @@ class ModuleService
         $decoded = json_decode((string) file_get_contents($path), true);
 
         return is_array($decoded) ? $decoded : null;
-    }
-
-    /**
-     * MIME 타입 감지
-     *
-     * @param  string  $filePath  파일 경로
-     * @return string MIME 타입
-     */
-    private function getMimeType(string $filePath): string
-    {
-        $mimeTypes = [
-            'js' => 'application/javascript',
-            'mjs' => 'application/javascript',
-            'css' => 'text/css',
-            'json' => 'application/json',
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'svg' => 'image/svg+xml',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'ico' => 'image/x-icon',
-            'woff' => 'font/woff',
-            'woff2' => 'font/woff2',
-            'ttf' => 'font/ttf',
-            'otf' => 'font/otf',
-            'eot' => 'application/vnd.ms-fontobject',
-        ];
-
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-
-        return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
 
     /**

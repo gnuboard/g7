@@ -17,6 +17,8 @@ use Tests\TestCase;
  * DashboardController 테스트
  *
  * 대시보드 API 엔드포인트를 테스트합니다.
+ *
+ * 커버 축: shell_exec_guard_surface dashboard_cpu·dashboard_memory / measurement_result measured·not_measurable
  */
 class DashboardControllerTest extends TestCase
 {
@@ -373,7 +375,7 @@ class DashboardControllerTest extends TestCase
      *
      * @scenario area=resources
      *
-     * @effects resources_returns_200_when_probe_fails
+     * @effects resources_returns_200_when_probe_fails, resources_probe_failure_returns_null_percentage_not_zero
      *
      * @return void 반환값 없음
      */
@@ -389,7 +391,8 @@ class DashboardControllerTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertSame('gray', $response->json('data.cpu.color'));
-        $this->assertSame(0, $response->json('data.cpu.percentage'));
+        // 측정 불가는 0% 가 아니라 null 로 내려간다 (A-8)
+        $this->assertNull($response->json('data.cpu.percentage'));
         // memory/disk 구조는 정상 유지
         $response->assertJsonStructure([
             'data' => [

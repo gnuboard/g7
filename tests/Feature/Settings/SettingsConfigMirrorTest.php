@@ -28,8 +28,6 @@ use Tests\TestCase;
  * 재부팅으로는 결함이 드러나지 않기 때문이다.
  *
  * @scenario scope=core, scope=plugin, trigger=save, trigger=boot, field_sensitivity=sensitive
- *
- * @effects core_mirror_refreshed_after_save, core_mirror_refreshed_after_set_setting, plugin_mirror_refreshed_after_save, plugin_mirror_merges_defaults, sensitive_fields_absent_from_mirror_on_boot, sensitive_fields_absent_from_mirror_on_refresh, sensitive_fields_still_readable_via_dedicated_getter, page_module_mirror_exists
  */
 class SettingsConfigMirrorTest extends TestCase
 {
@@ -37,6 +35,12 @@ class SettingsConfigMirrorTest extends TestCase
 
     /**
      * A1: 코어 설정 저장 후 같은 프로세스의 미러가 신값을 읽는다.
+     *
+     * @scenario scope=core, trigger=save, field_sensitivity=normal, value_origin=saved_override, consumer=mirror_helper
+     *
+     * @effects core_mirror_refreshed_after_save
+     *
+     * @return void 반환값 없음
      */
     public function test_core_settings_mirror_is_refreshed_after_save(): void
     {
@@ -51,6 +55,12 @@ class SettingsConfigMirrorTest extends TestCase
 
     /**
      * A1: setSetting() 경로도 같은 무효화 처리를 받는다.
+     *
+     * @scenario scope=core, trigger=save, field_sensitivity=normal, value_origin=saved_override, consumer=mirror_helper
+     *
+     * @effects core_mirror_refreshed_after_set_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_set_setting_also_refreshes_core_mirror(): void
     {
@@ -67,7 +77,11 @@ class SettingsConfigMirrorTest extends TestCase
      * 부팅과 저장이 서로 다른 인스턴스를 만들면 한쪽 구현만 고쳐도 초록으로 남는다 —
      * 컨테이너 단일 해석이 "두 경로가 같은 코드를 쓴다" 의 실질적 근거다.
      *
+     * @scenario scope=core, trigger=boot
+     *
      * @effects boot_and_save_share_one_fill_implementation
+     *
+     * @return void 반환값 없음
      */
     public function test_boot_path_fills_the_mirror_through_the_container_instance(): void
     {
@@ -76,6 +90,12 @@ class SettingsConfigMirrorTest extends TestCase
             /** @var int refreshCore 호출 횟수 */
             public int $coreRefreshes = 0;
 
+            /**
+             * 실제 재채움 대신 호출 횟수만 세어, 부팅 경로가 컨테이너의 미러 인스턴스를 거쳤는지 판정할 수 있게 한다.
+             *
+             * @param  JsonConfigRepository|null  $configRepository  부모 시그니처와 맞추기 위한 설정 저장소 (스파이는 쓰지 않는다)
+             * @return void 반환값 없음
+             */
             public function refreshCore(?JsonConfigRepository $configRepository = null): void
             {
                 $this->coreRefreshes++;
@@ -99,7 +119,11 @@ class SettingsConfigMirrorTest extends TestCase
     /**
      * A2/A4: 플러그인 미러는 defaults 병합·복호화를 마친 값(전용 게터와 같은 형태)을 담는다.
      *
-     * @effects plugin_mirror_matches_dedicated_getter_shape
+     * @scenario scope=plugin, field_sensitivity=normal, value_origin=defaults_only, consumer=mirror_helper, consumer=dedicated_getter
+     *
+     * @effects plugin_mirror_matches_dedicated_getter_shape, plugin_mirror_merges_defaults
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_settings_mirror_uses_the_service_value_not_raw_file(): void
     {
@@ -137,6 +161,12 @@ class SettingsConfigMirrorTest extends TestCase
      *
      * 미러는 봇 전용 화면 생성기가 키 제한 없이 조회하는 경로이므로, 민감값이 실리면
      * 레이아웃이 그 키를 참조하는 순간 평문이 봇 HTML 로 나간다.
+     *
+     * @scenario scope=plugin, trigger=boot, field_sensitivity=sensitive, consumer=mirror_helper, consumer=dedicated_getter
+     *
+     * @effects sensitive_fields_absent_from_mirror_on_boot, sensitive_fields_absent_from_mirror_on_refresh, sensitive_fields_still_readable_via_dedicated_getter
+     *
+     * @return void 반환값 없음
      */
     public function test_sensitive_plugin_fields_never_reach_the_mirror(): void
     {
@@ -168,7 +198,11 @@ class SettingsConfigMirrorTest extends TestCase
     /**
      * A2/A7: 플러그인 저장 경로가 미러 재채움을 호출하고, 그 결과에 민감값이 없다.
      *
-     * @effects sensitive_fields_absent_from_mirror_after_save
+     * @scenario scope=plugin, trigger=save, field_sensitivity=sensitive, value_origin=saved_override, consumer=mirror_helper, consumer=dedicated_getter
+     *
+     * @effects sensitive_fields_absent_from_mirror_after_save, plugin_mirror_refreshed_after_save
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_save_triggers_mirror_refresh(): void
     {
@@ -177,6 +211,12 @@ class SettingsConfigMirrorTest extends TestCase
             /** @var array<int, string> 재채움 요청을 받은 식별자 */
             public array $refreshed = [];
 
+            /**
+             * 실제 재채움 대신 요청받은 플러그인 식별자만 기록해, 저장 경로가 재채움을 불렀는지 판정할 수 있게 한다.
+             *
+             * @param  string  $identifier  재채움을 요청받은 플러그인 식별자
+             * @return void 반환값 없음
+             */
             public function refreshPlugin(string $identifier): void
             {
                 $this->refreshed[] = $identifier;
@@ -231,7 +271,11 @@ class SettingsConfigMirrorTest extends TestCase
      * 복원은 설정 전체를 갈아엎는 쓰기다. 캐시만 비우면 같은 프로세스가 복원 전 값을
      * 계속 읽어, 운영자가 "복원했는데 아무것도 안 바뀐" 상태를 본다.
      *
+     * @scenario scope=core, trigger=save, value_origin=saved_override, consumer=mirror_helper
+     *
      * @effects core_mirror_refreshed_after_restore
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_refreshes_the_core_mirror(): void
     {
@@ -255,7 +299,11 @@ class SettingsConfigMirrorTest extends TestCase
     /**
      * A9: 플러그인 설정 초기화도 미러를 다시 채운다.
      *
+     * @scenario scope=plugin, trigger=save, value_origin=defaults_only, consumer=mirror_helper
+     *
      * @effects plugin_mirror_refreshed_after_reset
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_reset_refreshes_the_mirror(): void
     {
@@ -280,6 +328,12 @@ class SettingsConfigMirrorTest extends TestCase
 
     /**
      * A5: sirsoft-page 미러가 존재하고 defaults.json 값을 담는다.
+     *
+     * @scenario scope=module, value_origin=defaults_only, consumer=mirror_helper
+     *
+     * @effects page_module_mirror_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_page_module_mirror_exists(): void
     {
@@ -310,6 +364,7 @@ class SettingsConfigMirrorTest extends TestCase
      *
      * @param  array<string, array<string, mixed>>  $schema  설정 스키마
      * @param  array<string, mixed>  $defaults  설정 기본값
+     * @return void 반환값 없음
      */
     private function bindStubPlugin(array $schema, array $defaults): void
     {

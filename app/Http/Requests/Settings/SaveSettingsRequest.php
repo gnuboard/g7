@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 검증 오류 문구에 쓰는 항목 이름(attributes)만 더했다. 라우트, 요청 키, 검증 규칙, 응답 모양은 그대로이고 API 문서는 오류 문구 원문을 싣지 않아 반영할 표면이 없다.
+
 namespace App\Http\Requests\Settings;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
@@ -17,7 +19,6 @@ use App\Services\DriverRegistryService;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SettingsService;
 use App\Support\AllowedExtensions;
-use App\Support\AssetUrl;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\IpAccessMatcher;
@@ -188,11 +189,34 @@ class SaveSettingsRequest extends FormRequest
         ]);
 
         $this->normalizeAllowedExtensions();
+        $this->normalizeSiteUrl();
         $this->normalizeIpRestrictionLists();
         $this->normalizeCspHostList();
         $this->normalizePrivacyIntegerFields();
         $this->normalizeSecurityIntegerFields();
         $this->normalizeConsentProvider();
+    }
+
+    /**
+     * 사이트 주소(`general.site_url`)의 후행 슬래시를 저장 전에 걷어냅니다.
+     *
+     * 운영자가 `https://example.com/g7/` 로 적으면 그 값에 `/path` 를 잇는 소비처마다 `//` 가
+     * 생긴다. 소비처에서 걷어내면 한 곳이 빠지고, 저장 경로 진입 전 한 곳에서 걷어내면 그 형태가
+     * 설정 파일에 남지 않는다 (16차 G3 라운드 B-4). 문자열이 아닌 값은 검증 규칙이 판정한다.
+     *
+     * @return void 입력을 제자리에서 고친다
+     */
+    private function normalizeSiteUrl(): void
+    {
+        $general = $this->input('general');
+
+        if (! is_array($general) || ! is_string($general['site_url'] ?? null)) {
+            return;
+        }
+
+        $general['site_url'] = rtrim(trim($general['site_url']), '/');
+
+        $this->merge(['general' => $general]);
     }
 
     /**
@@ -526,7 +550,7 @@ class SaveSettingsRequest extends FormRequest
         $rules = [
             // 탭 식별자
             // 여기 빠진 탭 이름으로 저장하면 본문이 아무리 올바라도 422 다 — 탭을 신설하면 반드시 함께 넣는다.
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy', 'system'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -540,6 +564,7 @@ class SaveSettingsRequest extends FormRequest
             'identity' => ['sometimes', 'array'],
             'analytics' => ['sometimes', 'array'],
             'privacy' => ['sometimes', 'array'],
+            'system' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
             'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
@@ -559,10 +584,26 @@ class SaveSettingsRequest extends FormRequest
             // 자산 URL 방식 — 정적 최적화 서버 대응 (이슈 #486).
             // 임의 문자열이 들어오면 AssetUrl::mode() 가 기본값으로 폴백하지만,
             // 저장 단계에서 막아 설정 파일에 뜻 모를 값이 남지 않게 한다.
-            'general.asset_url_mode' => ['nullable', 'string', Rule::in([
-                AssetUrl::MODE_EXTENSION,
-                AssetUrl::MODE_EXTENSIONLESS,
-            ])],
+            // 허용값은 단건 저장(UpdateSettingRequest)과 같은 표(EnumeratedSettingValues)를 쓴다.
+            'general.asset_url_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('general.asset_url_mode')],
+
+            // 실행 모드 — 웹 요청 안의 커맨드 실행 방식 (#609).
+            'system.execution_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('system.execution_mode')],
+
+            // 예약 작업(웹 크론) — 허용값은 단건 저장과 같은 표를 쓴다.
+            // 호출 번호(토큰)는 여기에 없다 (D20) — 전용 API 로만 발급·조회한다.
+            'system.cron_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('system.cron_mode')],
+            'system.cron_allowed_ips' => array_merge(
+                ['nullable', 'string', 'max:1000'],
+                SettingShapeRules::rulesFor('system.cron_allowed_ips'),
+            ),
+            'system.cron_min_interval' => [
+                'nullable',
+                'integer',
+                'min:'.config('core.settings_limits.system_cron_min_interval_min', 0),
+                'max:'.config('core.settings_limits.system_cron_min_interval_max', 1440),
+            ],
+            'system.cron_visit_fallback' => ['nullable', 'boolean'],
             'general.site_logo' => ['nullable', 'array'],
             'general.site_logo.*' => ['integer', Rule::exists(Attachment::class, 'id')],
 
@@ -710,6 +751,11 @@ class SaveSettingsRequest extends FormRequest
             'advanced.outbound_proxy' => ['nullable', 'string', 'max:500', new ValidOutboundProxyUrl],
             'advanced.outbound_proxy_bypass' => ['nullable', 'array'],
             'advanced.outbound_proxy_bypass.*' => ['string', 'max:255'],
+
+            // 신뢰 프록시 (advanced 탭) — 태그 배열. 빈 배열은 「신뢰하지 않음」이라 정상값이다.
+            // 형태는 단건 저장(PUT settings/{key}, 저장 키 `debug.trusted_proxies`)과 한 표를 쓴다
+            'advanced.trusted_proxies' => ['nullable', ...SettingShapeRules::rulesFor('debug.trusted_proxies')],
+            'advanced.trusted_proxies.*' => SettingShapeRules::itemRulesFor('debug.trusted_proxies'),
 
             // 코어 업데이트 설정 (advanced 탭)
             'advanced.core_update_github_url' => ['nullable', 'url', 'max:500'],
@@ -1606,6 +1652,10 @@ class SaveSettingsRequest extends FormRequest
             'advanced.outbound_proxy_bypass.array' => __('validation.settings.outbound_proxy_bypass_array'),
             'advanced.outbound_proxy_bypass.*.string' => __('validation.settings.outbound_proxy_bypass_item_string'),
             'advanced.outbound_proxy_bypass.*.max' => __('validation.settings.outbound_proxy_bypass_item_max'),
+            'advanced.trusted_proxies.array' => __('validation.settings.trusted_proxies_array'),
+            'advanced.trusted_proxies.max' => __('validation.settings.trusted_proxies_max'),
+            'advanced.trusted_proxies.*.string' => __('validation.settings.trusted_proxy_address_invalid'),
+            'advanced.trusted_proxies.*.max' => __('validation.settings.trusted_proxy_address_max'),
 
             // 목록 한계값
             'advanced.pagination_result_cap.integer' => __('validation.settings.pagination_result_cap_integer'),
@@ -1777,12 +1827,21 @@ class SaveSettingsRequest extends FormRequest
             'identity' => __('validation.attributes.settings_tab_identity'),
             'analytics' => __('validation.attributes.settings_tab_analytics'),
             'privacy' => __('validation.attributes.settings_tab_privacy'),
+            'system' => __('common.system'),
             // 배열 항목 — 인덱스가 붙은 원시 키(seo.bot_user_agents.0 …)가 문구에 실리지 않도록
             // 와일드카드 한 줄로 전 인덱스를 덮는다.
             'general.site_logo.*' => __('validation.attributes.site_logo'),
             'seo.bot_user_agents.*' => __('validation.attributes.bot_user_agents'),
             'seo.og_image_default.*' => __('validation.attributes.og_image_default'),
             'advanced.outbound_proxy_bypass.*' => __('validation.attributes.outbound_proxy_bypass'),
+            'advanced.trusted_proxies.*' => __('validation.attributes.trusted_proxies'),
+            // 시스템 탭(#609) — 라벨 문구는 lang 의 점 표기 키(`validation.attributes` 안 `'system.execution_mode'` 등)에 있다.
+            // 규칙 키와 같은 이름으로 여기서도 이어 둔다(라벨 누락 검사가 이 표를 단일 근거로 본다).
+            'system.execution_mode' => $this->dottedAttributeLabel('system.execution_mode'),
+            'system.cron_mode' => $this->dottedAttributeLabel('system.cron_mode'),
+            'system.cron_allowed_ips' => $this->dottedAttributeLabel('system.cron_allowed_ips'),
+            'system.cron_min_interval' => $this->dottedAttributeLabel('system.cron_min_interval'),
+            'system.cron_visit_fallback' => $this->dottedAttributeLabel('system.cron_visit_fallback'),
             'security.ip_restriction_rules.*' => __('validation.attributes.ip_restriction_rules'),
             'security.admin_allowed_ips.*' => __('validation.attributes.admin_allowed_ips'),
             'security.csp_extra_script_hosts.*' => __('validation.attributes.csp_extra_script_hosts'),
@@ -1898,6 +1957,7 @@ class SaveSettingsRequest extends FormRequest
             'advanced.sql_query_log' => __('validation.attributes.sql_query_log'),
             'advanced.outbound_proxy' => __('validation.attributes.outbound_proxy'),
             'advanced.outbound_proxy_bypass' => __('validation.attributes.outbound_proxy_bypass'),
+            'advanced.trusted_proxies' => __('validation.attributes.trusted_proxies'),
             'advanced.core_update_github_url' => __('validation.attributes.core_update_github_url'),
             'advanced.core_update_github_token' => __('validation.attributes.core_update_github_token'),
             'advanced.geoip_enabled' => __('validation.attributes.geoip_enabled'),
@@ -1954,5 +2014,21 @@ class SaveSettingsRequest extends FormRequest
         $attributes = array_merge($attributes, $this->analyticsSettingsAttributes('analytics'));
 
         return HookManager::applyFilters('core.settings.save_validation_attributes', $attributes, $this);
+    }
+
+    /**
+     * `validation.attributes` 안의 점 표기 키 라벨을 읽습니다.
+     *
+     * 번역 파일은 시스템 탭 라벨을 `'system.execution_mode' => '실행 방식'` 처럼 점이 든 한 키로 둔다. `__()` 는 점을
+     * 경로로 읽어 그 키에 닿지 못하므로 배열을 받아 그대로 찾는다.
+     *
+     * @param  string  $key  점 표기 키
+     * @return string 라벨 (없으면 키 그대로)
+     */
+    private function dottedAttributeLabel(string $key): string
+    {
+        $labels = (array) __('validation.attributes');
+
+        return (string) ($labels[$key] ?? $key);
     }
 }

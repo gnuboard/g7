@@ -106,6 +106,9 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         //    매니페스트는 두지 않았다. 귀속 실측: 커밋 `07fd45e6b`(#645) 도입, 이 트랙 변경 0.
         //    #789 가 게시판 매니페스트(`board-secret-thread-visibility`·`board-secret-content-bypass-paths`)에 등재해
         //    `SecretPostChildWriteGateTest`·`PostSecretVerifyPasswordTest` 2행을 해소했다.
+        //    issue609 가 PG 매니페스트(nhnkcp·nicepayments 의 `security-callback-defense`)와 코어 `installer-security-hardening`
+        //    에 등재해(develop-7.2.0 병합 2026-10-31 합류) `PreventsReplayCallbackTest` 2행·`CliInjectionDefenseTest`·
+        //    `AuthTokenDedupeKeyTest`·`InstallerStep3EnvValueGuardTest` 5행을 해소했다.
         'modules/_bundled/sirsoft-board/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'modules/_bundled/sirsoft-board/tests/Unit/Repositories/UserCommentedActivityDeferredJoinTest.php' => '목록 지연 조인 트랙 소유 (그룹 쿼리 총 건수·컬럼 프루닝).',
         'modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductListPayloadSizeBenchmarkTest.php' => '목록 응답 축소 트랙 소유 (페이로드 바이트·쿼리 수).',
@@ -117,10 +120,6 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-gdpr/tests/Feature/GdprConsentAtomicityTest.php' => 'GDPR 트랙 소유 (동의 철회·삭제의 원자성).',
         'plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/VbankNotifyReplayTest.php' => 'PG 트랙 소유 (가상계좌 통보 재생 방어).',
         'plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Support/BackendMessageKeyResolutionTest.php' => 'PG 트랙 소유 (백엔드 메시지 키의 로케일 해석).',
-        'plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Concerns/PreventsReplayCallbackTest.php' => 'PG 트랙 소유 (콜백 재생 방어).',
-        'plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Services/CliInjectionDefenseTest.php' => 'PG 트랙 소유 (CLI 인자 주입 방어).',
-        'plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Concerns/PreventsReplayCallbackTest.php' => 'PG 트랙 소유 (콜백 재생 방어).',
-        'plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Controllers/AuthTokenDedupeKeyTest.php' => 'PG 트랙 소유 (인증 토큰 중복 제거 키).',
         'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/CleanInicisRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
         'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/PluginCacheContextualBindingTest.php' => '확장 캐시 바인딩 트랙 소유 (플러그인 컨텍스추얼 바인딩).',
         'plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CleanKcpRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',

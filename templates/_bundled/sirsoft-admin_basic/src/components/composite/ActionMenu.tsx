@@ -6,6 +6,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다(컴포넌트 기본값은 영어 — data-binding-i18n.md)
@@ -411,7 +412,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
               return (
                 <a
                   key={item.id}
-                  href={link.href}
+                  href={sitePath(link.href)}
                   {...(link.external || item.target === '_blank'
                     ? { target: '_blank', rel: 'noopener noreferrer' }
                     : item.target ? { target: item.target } : {})}

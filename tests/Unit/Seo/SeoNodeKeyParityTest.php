@@ -100,6 +100,8 @@ class SeoNodeKeyParityTest extends TestCase
      * 봇 대상 자산에서 사용되는 노드 키가 모두 판정된 목록 안에 있습니다.
      *
      * @effects unclassified_node_key_is_detected
+     *
+     * @return void 반환값 없음
      */
     public function test_all_node_keys_in_bot_facing_assets_are_classified(): void
     {
@@ -113,6 +115,7 @@ class SeoNodeKeyParityTest extends TestCase
             }
 
             foreach ($this->collectNodeKeys($decoded) as $key) {
+                // `_comment` 로 시작하는 키는 전부 저자 주석이다 — 접두사 판정은 isCommentKey() 가 한다.
                 if (! in_array($key, $known, true) && ! $this->isCommentKey($key)) {
                     $unknown[$key][] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
                 }
@@ -150,6 +153,8 @@ class SeoNodeKeyParityTest extends TestCase
      * 바로 그 형태이므로, 감시망이 비어 있는 채로 초록이 되는 상황을 여기서 차단한다.
      *
      * @effects node_rooted_partials_are_scanned
+     *
+     * @return void 반환값 없음
      */
     public function test_scan_covers_node_rooted_partial_documents(): void
     {
@@ -174,6 +179,8 @@ class SeoNodeKeyParityTest extends TestCase
      * 스캔 대상 파일 중 노드 루트 partial 이 실제로 다수를 차지하며 모두 수집됩니다.
      *
      * @effects node_rooted_partials_are_scanned
+     *
+     * @return void 반환값 없음
      */
     public function test_node_rooted_partials_are_not_silently_skipped(): void
     {
@@ -207,6 +214,8 @@ class SeoNodeKeyParityTest extends TestCase
      * 지원/무시 목록이 서로 겹치지 않습니다 (분류 모호성 차단).
      *
      * @effects key_classification_is_unambiguous
+     *
+     * @return void 반환값 없음
      */
     public function test_supported_and_ignored_key_lists_are_disjoint(): void
     {
@@ -218,21 +227,76 @@ class SeoNodeKeyParityTest extends TestCase
     }
 
     /**
+     * 봇 렌더링 대상이 되는 레이아웃/확장 자산 뿌리를 **저장소에서 도출**합니다.
+     *
+     * 종전에는 다섯 경로를 손으로 적었다(사용자 템플릿 하나 + 플러그인 셋). 그 목록은 확장이
+     * 늘어도 함께 늘지 않아, 새 번들 확장의 자산은 이 패리티 검사 밖에 남았다 — 실측 17 뿌리 중
+     * 5 만 보고 있었다 (15차 G3 라운드 F-49). `scandir` 로 도출한다 (`glob` 은 형제 룰이 이 트리에서
+     * 차단 가능 함수로 다루는 이름이다).
+     *
+     * 관리자 템플릿(`template.json` 의 `type: admin`)과 `admin/` 레이아웃은 인증이 필요해 봇이
+     * 접근할 수 없으므로 제외합니다. 모듈·플러그인의 `resources/layouts` 는 어느 템플릿에 등록되는지
+     * 폴더(`admin/`·`user/`)가 정하므로 뿌리로 넣고 경로 필터가 `admin/` 을 뺀다.
+     *
+     * @return array<int, string> 뿌리 절대 경로 목록 (정렬)
+     */
+    private function botFacingAssetRoots(): array
+    {
+        $roots = [];
+
+        $listDirs = static function (string $dir): array {
+            if (! is_dir($dir)) {
+                return [];
+            }
+            $entries = array_filter(scandir($dir) ?: [], static fn (string $e): bool => $e !== '.' && $e !== '..' && is_dir($dir.'/'.$e));
+            sort($entries);
+
+            return array_values($entries);
+        };
+
+        foreach (['modules', 'plugins'] as $kind) {
+            $container = base_path($kind.'/_bundled');
+            foreach ($listDirs($container) as $id) {
+                foreach (['layouts', 'extensions'] as $leaf) {
+                    $candidate = $container.'/'.$id.'/resources/'.$leaf;
+                    if (is_dir($candidate)) {
+                        $roots[] = $candidate;
+                    }
+                }
+            }
+        }
+
+        $templates = base_path('templates/_bundled');
+        foreach ($listDirs($templates) as $id) {
+            $manifest = $templates.'/'.$id.'/template.json';
+            $meta = is_file($manifest) ? json_decode((string) file_get_contents($manifest), true) : null;
+            if (is_array($meta) && ($meta['type'] ?? null) === 'admin') {
+                continue;
+            }
+            foreach (['layouts', 'extensions'] as $leaf) {
+                $candidate = $templates.'/'.$id.'/'.$leaf;
+                if (is_dir($candidate)) {
+                    $roots[] = $candidate;
+                }
+            }
+        }
+
+        sort($roots);
+
+        return $roots;
+    }
+
+    /**
      * 봇 렌더링 대상이 되는 레이아웃/확장 자산 파일 목록을 반환합니다.
      *
-     * 관리자 템플릿과 admin 레이아웃은 인증이 필요해 봇이 접근할 수 없으므로 제외합니다.
+     * 모집단이 비면 이 검사는 아무것도 재지 않는다 — 그 상태를 통과로 두지 않는다.
      *
      * @return array<int, string> 파일 절대 경로 목록
      */
     private function botFacingLayoutFiles(): array
     {
-        $roots = [
-            base_path('templates/_bundled/sirsoft-basic/layouts'),
-            base_path('templates/_bundled/sirsoft-basic/extensions'),
-            base_path('plugins/_bundled/sirsoft-ckeditor5/resources/extensions'),
-            base_path('plugins/_bundled/sirsoft-daum_postcode/resources/extensions'),
-            base_path('plugins/_bundled/sirsoft-gdpr/resources/extensions'),
-        ];
+        $roots = $this->botFacingAssetRoots();
+        $this->assertGreaterThanOrEqual(10, count($roots), '봇 대상 자산 뿌리 도출이 실물과 어긋났다 — 모집단이 비면 패리티 검사가 무의미하다');
 
         $files = [];
         foreach ($roots as $root) {
@@ -251,11 +315,125 @@ class SeoNodeKeyParityTest extends TestCase
                     continue;
                 }
 
+                // 확장 자산이 **관리자 레이아웃**을 겨냥하면(`target_layout: admin_*` · `_admin_base`)
+                // 그 화면도 인증 뒤라 봇 대상이 아니다 — 뿌리를 도출로 넓히며 들어온 축 (F-49).
+                $document = json_decode((string) file_get_contents($path), true);
+                $target = is_array($document) ? ($document['target_layout'] ?? null) : null;
+                if (is_string($target) && preg_match('/^_?admin(?:_|\/|$)/', $target) === 1) {
+                    continue;
+                }
+
+                // 확장점(`extension_point`)에 꽂히는 자산은 `target_layout` 이 없다 — 그 확장점을
+                // 여는 화면이 **관리자 레이아웃뿐**이면 같은 이유로 봇 대상이 아니다. 판정은 확장점을
+                // 여는 쪽을 저장소에서 도출해 한다 — 어디서도 찾지 못한 확장점은 봇 대상으로 남긴다.
+                $point = is_array($document) ? ($document['extension_point'] ?? null) : null;
+                if (is_string($point) && in_array($point, $this->adminOnlyExtensionPoints(), true)) {
+                    continue;
+                }
+
                 $files[] = $path;
             }
         }
 
         return $files;
+    }
+
+    /**
+     * 관리자 레이아웃에서만 열리는 확장점 이름 (도출 결과 memo).
+     *
+     * @var list<string>|null
+     */
+    private ?array $adminOnlyExtensionPoints = null;
+
+    /**
+     * 관리자 레이아웃에서만 열리고 봇 대상 레이아웃에서는 열리지 않는 확장점 이름.
+     *
+     * 관리자 쪽은 `type: admin` 템플릿의 레이아웃과 모듈·플러그인 `resources/layouts/admin/` 이고,
+     * 그 밖의 레이아웃·확장 자산(확장점 안에 확장점을 여는 조각 포함)은 봇 쪽이다. 한쪽에서라도
+     * 봇 쪽에서 열리면 관리자 전용이 아니다.
+     *
+     * @return list<string> 확장점 이름 목록
+     */
+    private function adminOnlyExtensionPoints(): array
+    {
+        if ($this->adminOnlyExtensionPoints !== null) {
+            return $this->adminOnlyExtensionPoints;
+        }
+
+        $admin = [];
+        $public = [];
+
+        $roots = [];
+        foreach (['modules', 'plugins'] as $kind) {
+            foreach (scandir(base_path($kind.'/_bundled')) ?: [] as $id) {
+                if ($id === '.' || $id === '..') {
+                    continue;
+                }
+                foreach (['layouts', 'extensions'] as $leaf) {
+                    $roots[] = [base_path($kind.'/_bundled/'.$id.'/resources/'.$leaf), false];
+                }
+            }
+        }
+        foreach (scandir(base_path('templates/_bundled')) ?: [] as $id) {
+            if ($id === '.' || $id === '..') {
+                continue;
+            }
+            $manifest = base_path('templates/_bundled/'.$id.'/template.json');
+            $meta = is_file($manifest) ? json_decode((string) file_get_contents($manifest), true) : null;
+            $isAdminTemplate = is_array($meta) && ($meta['type'] ?? null) === 'admin';
+            foreach (['layouts', 'extensions'] as $leaf) {
+                $roots[] = [base_path('templates/_bundled/'.$id.'/'.$leaf), $isAdminTemplate];
+            }
+        }
+
+        foreach ($roots as [$root, $isAdminRoot]) {
+            if (! is_dir($root)) {
+                continue;
+            }
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+            foreach ($iterator as $entry) {
+                if (! $entry->isFile() || $entry->getExtension() !== 'json') {
+                    continue;
+                }
+                $path = str_replace('\\', '/', $entry->getPathname());
+                $document = json_decode((string) file_get_contents($path), true);
+                if (! is_array($document)) {
+                    continue;
+                }
+                $target = $document['target_layout'] ?? null;
+                $isAdmin = $isAdminRoot
+                    || str_contains($path, '/admin/')
+                    || (is_string($target) && preg_match('/^_?admin(?:_|\/|$)/', $target) === 1);
+
+                if ($isAdmin) {
+                    $this->collectExtensionPointNames($document, $admin);
+                } else {
+                    $this->collectExtensionPointNames($document, $public);
+                }
+            }
+        }
+
+        return $this->adminOnlyExtensionPoints = array_values(array_diff(array_unique($admin), array_unique($public)));
+    }
+
+    /**
+     * 문서 안의 `type: extension_point` 노드 이름을 모읍니다.
+     *
+     * @param  array<mixed>  $node  문서 또는 노드
+     * @param  list<string>  $names  모을 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function collectExtensionPointNames(array $node, array &$names): void
+    {
+        if (($node['type'] ?? null) === 'extension_point' && is_string($node['name'] ?? null)) {
+            $names[] = $node['name'];
+        }
+
+        foreach ($node as $value) {
+            if (is_array($value)) {
+                $this->collectExtensionPointNames($value, $names);
+            }
+        }
     }
 
     /**
@@ -357,6 +535,7 @@ class SeoNodeKeyParityTest extends TestCase
      *
      * @param  mixed  $node  노드
      * @param  array  $keys  수집 결과 (참조)
+     * @return void 반환값 없음
      */
     private function collectFromNode(mixed $node, array &$keys): void
     {
@@ -376,6 +555,7 @@ class SeoNodeKeyParityTest extends TestCase
      *
      * @param  array  $node  노드
      * @param  array  $keys  수집 결과 (참조)
+     * @return void 반환값 없음
      */
     private function collectDescendantKeys(array $node, array &$keys): void
     {

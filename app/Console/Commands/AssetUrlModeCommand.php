@@ -113,12 +113,44 @@ class AssetUrlModeCommand extends Command
         );
 
         $this->line('  '.__('asset_url_mode.diagnose_title'));
-        $this->line('    curl -i '.rtrim(config('app.url'), '/').'/api/system/asset-probe.js');
-        $this->line('    curl -i '.rtrim(config('app.url'), '/').'/api/system/asset-probe');
+        // 운영자가 그대로 복사해 치는 주소다 — 하위 폴더 마운트에서 접두사가 빠지면
+        // 진단이 사이트 밖을 찔러 「둘 다 실패」로 보이고, 그 오답이 곧 모드 오판이 된다.
+        $this->line('    curl -i '.AssetUrl::siteAbsolute('/api/system/asset-probe.js'));
+        $this->line('    curl -i '.AssetUrl::siteAbsolute('/api/system/asset-probe'));
         $this->line('');
         $this->line('  '.__('asset_url_mode.diagnose_hint'));
         $this->line('');
         $this->line('  '.__('asset_url_mode.switch_hint'));
+        $this->line('');
+
+        $this->showBasePathStatus();
+    }
+
+    /**
+     * 요청이 없는 문맥(큐·콘솔)이 쓰는 마운트 접두사와 `APP_URL` 의 경로를 나란히 출력합니다.
+     *
+     * 웹 요청은 자기 마운트 위치를 알지만 큐가 만드는 메일·콘솔이 만드는 사이트맵은
+     * `APP_URL` 의 경로 부분만 안다. 두 값이 다르면 그 문맥이 만드는 주소가 전부 사이트 밖을
+     * 가리키는데, 웹에서는 재현되지 않아 운영자가 알 길이 없었다 — 이 커맨드가 유일하게
+     * 그 값을 보여 주는 자리다. 웹 요청 안에서의 불일치는 `AssetUrl::basePrefix()` 가
+     * 요청당 1회 경고 로그로 남긴다 (15차 G3 라운드 W4-4).
+     *
+     * @return void 반환값 없음
+     */
+    private function showBasePathStatus(): void
+    {
+        $contextPrefix = AssetUrl::basePrefix();
+        $configuredPrefix = AssetUrl::configuredBasePath();
+
+        $this->line('  '.__('asset_url_mode.base_path.title'));
+        $this->line('    '.__('asset_url_mode.base_path.context', ['prefix' => $contextPrefix === '' ? '/' : $contextPrefix]));
+        $this->line('    '.__('asset_url_mode.base_path.configured', ['prefix' => $configuredPrefix === '' ? '/' : $configuredPrefix, 'url' => (string) config('app.url')]));
+
+        if ($contextPrefix !== $configuredPrefix) {
+            $this->warn('  '.__('asset_url_mode.base_path.mismatch'));
+        }
+
+        $this->line('  '.__('asset_url_mode.base_path.hint'));
         $this->line('');
     }
 }

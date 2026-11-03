@@ -33,10 +33,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * 비회원 토큰 후속 액션(verify, cancel, 배송지 변경 등) 의 회원 주문 보호/경계를 검증한다.
  *
  * @scenario actor=guest, change_mode=manual, e2e_browser=chromium
- *
- * @effects guest_update_shipping_address_succeeds_with_valid_token,
- *   guest_update_shipping_address_blocked_404_without_or_invalid_token,
- *   guest_update_shipping_address_validation_422_when_recipient_fields_missing
  */
 class OrderControllerTest extends ModuleTestCase
 {
@@ -46,6 +42,11 @@ class OrderControllerTest extends ModuleTestCase
 
     protected ProductOption $productOption;
 
+    /**
+     * 장바구니 키와 판매 중인 옵션 상품(재고 있음)을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -80,6 +81,11 @@ class OrderControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 테스트가 남긴 마일리지 설정 파일을 지워 다른 테스트 오염을 막는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // Feature 테스트가 작성한 마일리지 설정 파일 정리 (다른 테스트 오염 방지)
@@ -92,6 +98,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 비회원 임시 주문 생성 헬퍼 (user_id = null, cart_key 기준)
+     *
+     * @return TempOrder 상품 옵션 2개, 30000원으로 계산된 비회원 임시주문
      */
     protected function createGuestTempOrder(): TempOrder
     {
@@ -130,6 +138,9 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 비회원 주문 생성 요청 페이로드
+     *
+     * @param  array  $overrides  기본 본문에 덮어쓸 값
+     * @return array 비회원 주문 생성 요청 본문
      */
     protected function guestOrderPayload(array $overrides = []): array
     {
@@ -165,6 +176,8 @@ class OrderControllerTest extends ModuleTestCase
      * 1. 비회원 주문 생성 성공
      *
      * @effects guest_orders_store_returns_201_with_order_number, guest_temp_order_matched_by_cart_key_not_user_id
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문_생성_성공(): void
     {
@@ -200,10 +213,13 @@ class OrderControllerTest extends ModuleTestCase
      * 존재하지 않는 페이지로 이동한다.
      *
      * @param  array<string, mixed>  $basicInfo  상점 기본 설정
+     * @param  string  $expectedPrefix  주문 완료 주소 앞에 붙어야 할 상점 경로 접두사
      *
      * @scenario route_setting=default, surface=order_complete_redirect, order_actor=guest
      *
      * @effects order_complete_redirect_follows_route_path, order_complete_redirect_drops_segment_when_no_route, resolver_falls_back_to_default_shop_when_unset, resolver_reflects_custom_route_path, resolver_returns_empty_base_when_no_route
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('shopRoutePathProvider')]
     public function test_주문_완료_이동주소가_상점_주소_설정을_따른다(array $basicInfo, string $expectedPrefix): void
@@ -230,7 +246,7 @@ class OrderControllerTest extends ModuleTestCase
     /**
      * 상점 주소 3축 (기본 / 변경 / 주소 없음)
      *
-     * @return array<string, array{0: array<string, mixed>, 1: string}>
+     * @return array<string, array{0: array<string, mixed>, 1: string}> 상점 기본 설정과 기대 경로 접두사 케이스
      */
     public static function shopRoutePathProvider(): array
     {
@@ -245,6 +261,8 @@ class OrderControllerTest extends ModuleTestCase
      * 2. 비회원 주문은 is_first_order = false 로 저장된다 (이슈 #55 정책)
      *
      * @effects guest_orders_store_returns_201_with_order_number
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문은_is_first_order_false(): void
     {
@@ -267,6 +285,8 @@ class OrderControllerTest extends ModuleTestCase
      * 3. 비회원 주문 응답에 민감 필드(admin_memo, 내부 스냅샷)가 노출되지 않는다
      *
      * @effects guest_orders_show_response_excludes_admin_memo_user_user_id_promotions_snapshot, guest_lookup_password_not_exposed_in_any_response
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문_응답에_민감필드_미노출(): void
     {
@@ -290,6 +310,8 @@ class OrderControllerTest extends ModuleTestCase
      * 4. 비회원 주문 생성 시 조회 비밀번호 누락이면 검증 실패
      *
      * @effects guest_lookup_password_min_length_enforced_at_order_creation
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문_조회비밀번호_누락_검증실패(): void
     {
@@ -313,6 +335,8 @@ class OrderControllerTest extends ModuleTestCase
      * 비회원은 주문 확인/배송/취소 알림을 받을 통로가 주문자 이메일뿐이므로 필수.
      *
      * @effects checkout_orderer_email_required_for_guest_optional_for_member
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문_이메일_누락_검증실패(): void
     {
@@ -338,6 +362,8 @@ class OrderControllerTest extends ModuleTestCase
      * 5. 조회 비밀번호 길이(8자 이상) 미충족 시 검증 실패
      *
      * @effects guest_lookup_password_min_length_enforced_at_order_creation
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_조회비밀번호_길이_미충족_검증실패(): void
     {
@@ -360,6 +386,8 @@ class OrderControllerTest extends ModuleTestCase
      * 6. 임시 주문 없이 비회원 주문 생성 시 실패
      *
      * @effects guest_temp_order_matched_by_cart_key_not_user_id
+     *
+     * @return void 반환값 없음
      */
     public function test_임시주문_없으면_비회원_주문_생성_실패(): void
     {
@@ -376,6 +404,8 @@ class OrderControllerTest extends ModuleTestCase
      * 7. 비회원은 회원 전용 주문 목록/상세 API에 접근할 수 없다 (401)
      *
      * @effects member_order_list_api_requires_authentication_401
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원은_회원_주문목록_ap_i_접근_불가(): void
     {
@@ -387,6 +417,8 @@ class OrderControllerTest extends ModuleTestCase
      * 8. 비회원 비통장 주문 생성 후 임시 주문이 즉시 삭제된다 (non-PG)
      *
      * @effects non_pg_guest_order_deletes_temp_order_immediately
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_무통장_주문_생성후_임시주문_삭제(): void
     {
@@ -411,6 +443,8 @@ class OrderControllerTest extends ModuleTestCase
      *
      * 확장 결제수단(nhnkcp_naverpay) 이 능력(PG 필요/고정/핸들러)을 갖도록 하여
      * 주문 생성 응답과 임시주문 보존이 실제 계약대로 동작하는지 검증할 수 있게 한다.
+     *
+     * @return void 반환값 없음
      */
     private function registerExtensionEasyPayMethod(): void
     {
@@ -459,6 +493,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects requires_pg_payment_true, pg_payment_handler_present, extension_id_passes_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_간편결제_주문_생성_응답이_p_g_결제_계약을_내려준다(): void
     {
@@ -500,6 +536,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
      *
      * @effects pg_payment_data_carries_tax_free_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_면세_상품이_섞인_주문은_결제_페이로드에_면세금액을_싣는다(): void
     {
@@ -546,6 +584,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects temp_order_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_간편결제_주문_생성후_임시주문이_보존된다(): void
     {
@@ -574,6 +614,8 @@ class OrderControllerTest extends ModuleTestCase
      * 9. 비회원 주문 생성 시 조회 비밀번호가 해시로 저장된다 (평문 미저장)
      *
      * @effects guest_lookup_password_stored_as_hash_not_plain
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_조회비밀번호_해시_저장(): void
     {
@@ -598,6 +640,8 @@ class OrderControllerTest extends ModuleTestCase
      * 10. 회원 주문은 조회 비밀번호 해시가 null 이다 (회원은 미요구)
      *
      * @effects member_order_stores_null_guest_lookup_password_hash
+     *
+     * @return void 반환값 없음
      */
     public function test_회원_주문은_조회비밀번호_해시_null(): void
     {
@@ -680,6 +724,8 @@ class OrderControllerTest extends ModuleTestCase
      * 수정 전: Carbon 이 strict 타입 경계라 문자열을 받으면 TypeError → 주문 생성 500.
      *
      * @effects order_creation_succeeds_with_string_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_무통장_주문은_입금기한_설정이_문자열이어도_생성된다(): void
     {
@@ -711,6 +757,8 @@ class OrderControllerTest extends ModuleTestCase
      * 10-B. 입금기한 설정이 문자열로 저장되어 있어도 회원 무통장 주문이 생성된다
      *
      * @effects order_creation_succeeds_with_string_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_회원_무통장_주문은_입금기한_설정이_문자열이어도_생성된다(): void
     {
@@ -774,6 +822,8 @@ class OrderControllerTest extends ModuleTestCase
      * HTTP 레벨에서도 따로 고정한다.
      *
      * @effects order_creation_succeeds_with_string_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_가상계좌_주문은_입금기한_설정이_문자열이어도_생성된다(): void
     {
@@ -810,6 +860,8 @@ class OrderControllerTest extends ModuleTestCase
      * 10-1. 회원 주문은 주문자 이메일이 없어도 생성된다 (이메일 필수는 비회원 한정)
      *
      * @effects checkout_orderer_email_required_for_guest_optional_for_member
+     *
+     * @return void 반환값 없음
      */
     public function test_회원_주문은_이메일_없어도_생성_성공(): void
     {
@@ -870,6 +922,8 @@ class OrderControllerTest extends ModuleTestCase
      * 추후 예치금 등 다른 비현금 충당이 추가되어도 동일하게 동작한다(판정 기준 = total_due_amount).
      *
      * @effects zero_due_amount_order_completes_without_pg
+     *
+     * @return void 반환값 없음
      */
     public function test_전액_마일리지_결제는_p_g_없이_결제완료(): void
     {
@@ -955,6 +1009,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 마일리지 기능을 활성화하는 Feature 테스트용 헬퍼 (결제액 100% 사용 허용).
+     *
+     * @return void 반환값 없음
      */
     protected function enableMileageForFeature(): void
     {
@@ -982,6 +1038,8 @@ class OrderControllerTest extends ModuleTestCase
      * 11. 비회원 주문 응답에 조회 비밀번호 해시가 노출되지 않는다 (모델 $hidden)
      *
      * @effects guest_lookup_password_not_exposed_in_any_response
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문_응답에_해시_미노출(): void
     {
@@ -993,6 +1051,10 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 비회원 주문을 생성하고 그 주문번호를 반환하는 헬퍼
+     *
+     * @param  string  $password  비회원 주문 조회 비밀번호
+     * @param  string  $phone  주문자 휴대폰번호
+     * @return string 생성된 주문번호
      */
     private function placeGuestOrder(string $password = 'guest1234', string $phone = '010-1234-5678'): string
     {
@@ -1019,6 +1081,8 @@ class OrderControllerTest extends ModuleTestCase
      * 12. 비회원 조회 인증 성공 시 토큰 발급
      *
      * @effects guest_orders_verify_returns_token_and_expires_at_30min
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_조회_인증_성공_토큰_발급(): void
     {
@@ -1040,6 +1104,8 @@ class OrderControllerTest extends ModuleTestCase
      * 13. 비밀번호 오류 시 "주문을 찾을 수 없습니다" (404 단일 응답)
      *
      * @effects guest_orders_verify_fails_with_404_for_wrong_phone_or_password
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_조회_비밀번호_오류_404(): void
     {
@@ -1056,6 +1122,8 @@ class OrderControllerTest extends ModuleTestCase
      * 14. 존재하지 않는 주문번호도 동일한 404 (존재 여부 비노출)
      *
      * @effects guest_orders_verify_fails_with_404_for_wrong_phone_or_password
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_조회_존재하지_않는_주문_404(): void
     {
@@ -1070,6 +1138,8 @@ class OrderControllerTest extends ModuleTestCase
      * 15. 전화번호 불일치 시 404 (정규화 후에도 다른 번호)
      *
      * @effects guest_orders_verify_fails_with_404_for_wrong_phone_or_password
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_조회_전화번호_불일치_404(): void
     {
@@ -1086,6 +1156,8 @@ class OrderControllerTest extends ModuleTestCase
      * 16. 조회 인증 요청 필수 필드 누락 시 422
      *
      * @effects guest_orders_verify_rejects_missing_required_fields_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_조회_필수필드_누락_422(): void
     {
@@ -1096,6 +1168,10 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 주문 생성 + 조회 인증으로 토큰까지 발급받아 [주문번호, 토큰]을 반환하는 헬퍼
+     *
+     * @param  string  $password  비회원 주문 조회 비밀번호
+     * @param  string  $phone  주문자 휴대폰번호
+     * @return array [주문번호, 비회원 주문 토큰]
      */
     private function placeGuestOrderAndToken(string $password = 'guest1234', string $phone = '010-1234-5678'): array
     {
@@ -1115,6 +1191,8 @@ class OrderControllerTest extends ModuleTestCase
      * 17. 토큰 없이 상세 조회 시 차단 (404)
      *
      * @effects guest_orders_show_requires_x_guest_order_token_header
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_상세_토큰_없으면_차단(): void
     {
@@ -1128,6 +1206,8 @@ class OrderControllerTest extends ModuleTestCase
      * 18. 토큰으로 상세 조회 성공
      *
      * @effects guest_orders_show_returns_order_with_valid_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_상세_토큰_조회_성공(): void
     {
@@ -1146,6 +1226,8 @@ class OrderControllerTest extends ModuleTestCase
      * 19. 비회원 상세 응답에 민감 필드가 노출되지 않는다
      *
      * @effects guest_orders_show_response_excludes_admin_memo_user_user_id_promotions_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_상세_민감필드_미노출(): void
     {
@@ -1172,6 +1254,8 @@ class OrderControllerTest extends ModuleTestCase
      * 20. 다른 주문 토큰으로 접근 차단 (404)
      *
      * @effects guest_orders_show_returns_404_for_expired_or_wrong_order_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_상세_다른주문_토큰_차단(): void
     {
@@ -1191,6 +1275,8 @@ class OrderControllerTest extends ModuleTestCase
      * 회원이 본인 회원 주문을 조회하면 기존과 동일하게 OrderResource 가 반환되어야 한다.
      *
      * @effects order_complete_backend_branches_member_vs_guest_by_auth_check_in_controller, order_complete_uses_unified_user_orders_endpoint_with_optional_sanctum
+     *
+     * @return void 반환값 없음
      */
     public function test_회원_상세_본인_회원주문_조회_성공(): void
     {
@@ -1262,6 +1348,8 @@ class OrderControllerTest extends ModuleTestCase
      * 본인 것이 아니면 404 로 차단되어야 한다 (정보 노출 방지).
      *
      * @effects showByOrderNumber_404_includes_errors_redirect_to_for_frontend_navigation, order_complete_backend_branches_member_vs_guest_by_auth_check_in_controller
+     *
+     * @return void 반환값 없음
      */
     public function test_회원_상세_타인_주문_차단(): void
     {
@@ -1287,6 +1375,8 @@ class OrderControllerTest extends ModuleTestCase
      * 전환되지 않아야 한다 (회원/비회원 컨텍스트 분리 보안 원칙).
      *
      * @effects order_complete_backend_branches_member_vs_guest_by_auth_check_in_controller, showByOrderNumber_404_includes_errors_redirect_to_for_frontend_navigation
+     *
+     * @return void 반환값 없음
      */
     public function test_회원_상세_비회원토큰_있어도_본인주문_아니면_404(): void
     {
@@ -1314,6 +1404,8 @@ class OrderControllerTest extends ModuleTestCase
      * 백엔드가 redirect_to 를 명시적으로 전송한다 (회원 분기 /mypage/orders 와 일관된 패턴).
      *
      * @effects showByOrderNumber_404_includes_errors_redirect_to_for_frontend_navigation, order_complete_401_404_clears_token_and_shows_lookup_link
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_상세_토큰_없으면_404_및_lookup_redirect(): void
     {
@@ -1333,6 +1425,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario route_setting=custom, surface=guest_lookup_redirect, order_actor=guest
      *
      * @effects guest_lookup_redirect_follows_route_path, resolver_reflects_custom_route_path
+     *
+     * @return void 반환값 없음
      */
     public function test_상점_주소_변경시_비회원_lookup_redirect도_따라간다(): void
     {
@@ -1351,6 +1445,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario route_setting=no_route, surface=guest_lookup_redirect, order_actor=guest
      *
      * @effects guest_lookup_redirect_drops_segment_when_no_route, resolver_returns_empty_base_when_no_route
+     *
+     * @return void 반환값 없음
      */
     public function test_주소_없는_상점은_비회원_lookup_redirect가_루트_경로다(): void
     {
@@ -1370,6 +1466,8 @@ class OrderControllerTest extends ModuleTestCase
      * 21. 토큰으로 주문 취소 성공 (결제완료 상태)
      *
      * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문_취소_성공(): void
     {
@@ -1412,6 +1510,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
      *
      * @effects guest_update_shipping_address_succeeds_with_valid_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_변경_성공(): void
     {
@@ -1456,6 +1556,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
      *
      * @effects guest_update_shipping_address_blocked_404_without_or_invalid_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_변경_토큰_없으면_차단(): void
     {
@@ -1478,6 +1580,8 @@ class OrderControllerTest extends ModuleTestCase
      * 24. 잘못된(위조) 토큰으로 배송지 변경 시 차단 (404)
      *
      * @effects guest_update_shipping_address_blocked_404_without_or_invalid_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_변경_잘못된_토큰_차단(): void
     {
@@ -1501,6 +1605,8 @@ class OrderControllerTest extends ModuleTestCase
      * 25. 토큰은 유효하나 받는분/연락처 누락 시 검증 실패 (422)
      *
      * @effects guest_update_shipping_address_validation_422_when_recipient_fields_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_변경_필수필드_누락_검증실패(): void
     {
@@ -1534,6 +1640,8 @@ class OrderControllerTest extends ModuleTestCase
      * 26. 비회원 환불 예상 — 토큰 없으면 미들웨어가 404 차단
      *
      * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_환불예상_토큰_없으면_차단(): void
     {
@@ -1552,6 +1660,8 @@ class OrderControllerTest extends ModuleTestCase
      * 27. 비회원 환불 예상 — 위조 토큰도 404 (정상 토큰과 동일 응답으로 정보 노출 차단)
      *
      * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_환불예상_위조토큰_차단(): void
     {
@@ -1570,6 +1680,8 @@ class OrderControllerTest extends ModuleTestCase
      * 28. 비회원 구매확정 — 토큰 없으면 미들웨어가 404 차단
      *
      * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_구매확정_토큰_없으면_차단(): void
     {
@@ -1587,6 +1699,8 @@ class OrderControllerTest extends ModuleTestCase
      * 29. 비회원 구매확정 — 위조 토큰도 404
      *
      * @effects guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_구매확정_위조토큰_차단(): void
     {
@@ -1608,6 +1722,8 @@ class OrderControllerTest extends ModuleTestCase
      * 회귀 가드로 검증한다. 라우트 정의에서 throttle 미들웨어가 사라지면 본 테스트가 실패한다.
      *
      * @effects guest_orders_verify_route_throttle_limits_to_20_per_minute_with_429
+     *
+     * @return void 반환값 없음
      */
     public function test_verify_throttle_20회_초과시_429(): void
     {
@@ -1641,6 +1757,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=intl_without_country_code, e2e_browser=chromium
      *
      * @effects guest_shipping_address_intl_combination_without_country_code_returns_422_validation_errors
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_해외조합_country_code_누락시_검증차단(): void
     {
@@ -1670,6 +1788,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=intl, e2e_browser=chromium
      *
      * @effects guest_shipping_address_switching_to_intl_clears_domestic_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_해외전환시_국내컬럼_초기화(): void
     {
@@ -1711,6 +1831,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
      *
      * @effects guest_shipping_address_domestic_country_code_requires_zipcode_and_address
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_국내_country_code_는_zipcode_와_address_를_요구한다(): void
     {
@@ -1742,6 +1864,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=intl, e2e_browser=chromium
      *
      * @effects guest_shipping_address_foreign_country_code_requires_intl_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_해외_country_code_는_해외_필수값을_요구한다(): void
     {
@@ -1771,6 +1895,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=intl, e2e_browser=chromium
      *
      * @effects guest_shipping_address_round_trip_between_domestic_and_intl_clears_opposite_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_국내_해외_왕복시_반대편_컬럼_초기화(): void
     {
@@ -1821,6 +1947,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
      *
      * @effects guest_update_shipping_address_domain_exception_returns_422_infra_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_도메인예외_422(): void
     {
@@ -1861,6 +1989,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario actor=guest, change_mode=manual, address_region=domestic, e2e_browser=chromium
      *
      * @effects guest_update_shipping_address_domain_exception_returns_422_infra_returns_500, guest_action_5xx_responses_exclude_exception_message
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_배송지_인프라예외_500(): void
     {
@@ -1891,6 +2021,8 @@ class OrderControllerTest extends ModuleTestCase
 
     /**
      * 사용자 선택 가능한 환불 사유 코드를 반환한다.
+     *
+     * @return string 활성화되고 사용자가 고를 수 있는 환불 사유 코드(없으면 테스트를 건너뛴다)
      */
     private function userSelectableRefundReason(): string
     {
@@ -1910,6 +2042,8 @@ class OrderControllerTest extends ModuleTestCase
      * 비회원 주문 취소: 도메인 예외는 기존 422 를 유지한다.
      *
      * @effects guest_cancel_domain_exception_returns_422_infra_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문취소_도메인예외_422(): void
     {
@@ -1934,6 +2068,8 @@ class OrderControllerTest extends ModuleTestCase
      * 비회원 주문 취소: 인프라 예외는 500 이며 예외 원문을 노출하지 않는다.
      *
      * @effects guest_cancel_domain_exception_returns_422_infra_returns_500, guest_action_5xx_responses_exclude_exception_message
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_주문취소_인프라예외_500(): void
     {
@@ -1961,6 +2097,8 @@ class OrderControllerTest extends ModuleTestCase
      * 비회원 구매확정: typed 도메인 예외가 없으므로 모든 예외가 500 이어야 한다.
      *
      * @effects guest_confirm_option_has_no_domain_exception_so_generic_catch_returns_500, guest_action_5xx_responses_exclude_exception_message
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_구매확정_인프라예외_500(): void
     {
@@ -1989,6 +2127,8 @@ class OrderControllerTest extends ModuleTestCase
      * 비회원 상세에도 회원 상세와 같은 진행단계 배열이 실린다 — 같은 partial 이 그린다.
      *
      * @effects order_progress_steps_seven_stages, order_progress_steps_carry_icon_and_variant, order_progress_reached_index_uses_stamps, order_status_badge_carries_icon
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원_상세에_진행단계가_실린다(): void
     {

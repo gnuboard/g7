@@ -160,6 +160,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // ==============================
   // 3. 메타 설정 섹션 헤더 + 페이지별 admin-card 구조
   // ==============================
+  // @scenario layout_file=modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html
+  // @effects ecommerce_seo_tab_meta_settings_header_uses_section_header_asset, ecommerce_seo_tab_replaces_card_accordion_with_admin_card_for_four_page_types, ecommerce_seo_tab_form_field_names_preserve_seo_meta_category_search_product_shop_index
   describe('메타 설정 섹션 (section-header + admin-card × 4)', () => {
     // @scenario case=seo_tab_c09
     // @effects seo_tab_layout_structure_holds

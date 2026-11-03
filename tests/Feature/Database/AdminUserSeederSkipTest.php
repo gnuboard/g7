@@ -20,11 +20,17 @@ class AdminUserSeederSkipTest extends TestCase
 {
     use DatabaseTransactions;
 
-    /** @var array<string, string|false> 원래 환경 변수 */
+    /** @var array<int, string> 이 검사가 다루는 설치 환경 변수 */
+    private const KEYS = ['INSTALLER_ADMIN_EMAIL', 'INSTALLER_ADMIN_PASSWORD'];
+
+    /** @var array<string, array{process: string|false, env: string|null, server: string|null}> 원래 환경 변수 */
     private array $originalEnv = [];
 
     /**
      * 설치 환경 변수를 기억합니다.
+     *
+     * 시더는 인스톨러의 `installerPutEnv()` 와 같은 세 통로(`$_ENV` → `$_SERVER` → `getenv()`)로 읽는다.
+     * 그래서 프로세스 환경만 기억하면 phpunit.xml 이 `$_ENV` 에 넣은 값이 판정을 가로챈다 — 세 통로를 모두 기억한다.
      *
      * @return void 반환값 없음
      */
@@ -32,8 +38,12 @@ class AdminUserSeederSkipTest extends TestCase
     {
         parent::setUp();
 
-        foreach (['INSTALLER_ADMIN_EMAIL', 'INSTALLER_ADMIN_PASSWORD'] as $key) {
-            $this->originalEnv[$key] = getenv($key);
+        foreach (self::KEYS as $key) {
+            $this->originalEnv[$key] = [
+                'process' => getenv($key),
+                'env' => $_ENV[$key] ?? null,
+                'server' => $_SERVER[$key] ?? null,
+            ];
         }
     }
 
@@ -45,10 +55,40 @@ class AdminUserSeederSkipTest extends TestCase
     protected function tearDown(): void
     {
         foreach ($this->originalEnv as $key => $value) {
-            putenv($value === false ? $key : "{$key}={$value}");
+            putenv($value['process'] === false ? $key : "{$key}={$value['process']}");
+
+            unset($_ENV[$key], $_SERVER[$key]);
+
+            if ($value['env'] !== null) {
+                $_ENV[$key] = $value['env'];
+            }
+            if ($value['server'] !== null) {
+                $_SERVER[$key] = $value['server'];
+            }
         }
 
         parent::tearDown();
+    }
+
+    /**
+     * 설치 환경 변수를 인스톨러(`installerPutEnv()`)처럼 세 통로에 함께 넣거나, 세 통로에서 함께 지웁니다.
+     *
+     * @param  string  $key  환경 변수 이름
+     * @param  string|null  $value  값 (null 이면 지운다)
+     * @return void 반환값 없음
+     */
+    private function setInstallerEnv(string $key, ?string $value): void
+    {
+        if ($value === null) {
+            putenv($key);
+            unset($_ENV[$key], $_SERVER[$key]);
+
+            return;
+        }
+
+        putenv("{$key}={$value}");
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
     }
 
     /**
@@ -62,8 +102,8 @@ class AdminUserSeederSkipTest extends TestCase
      */
     public function test_skips_without_installer_env(): void
     {
-        putenv('INSTALLER_ADMIN_EMAIL');
-        putenv('INSTALLER_ADMIN_PASSWORD');
+        $this->setInstallerEnv('INSTALLER_ADMIN_EMAIL', null);
+        $this->setInstallerEnv('INSTALLER_ADMIN_PASSWORD', null);
         $member = User::factory()->create();
         $before = User::count();
 
@@ -84,8 +124,8 @@ class AdminUserSeederSkipTest extends TestCase
      */
     public function test_skips_when_super_admin_exists(): void
     {
-        putenv('INSTALLER_ADMIN_EMAIL=seed-again@example.test');
-        putenv('INSTALLER_ADMIN_PASSWORD=Passw0rd!again');
+        $this->setInstallerEnv('INSTALLER_ADMIN_EMAIL', 'seed-again@example.test');
+        $this->setInstallerEnv('INSTALLER_ADMIN_PASSWORD', 'Passw0rd!again');
         $admin = User::factory()->create(['is_super' => true]);
         $member = User::factory()->create();
         $before = User::count();
@@ -110,8 +150,8 @@ class AdminUserSeederSkipTest extends TestCase
     public function test_creates_super_admin_on_install_path(): void
     {
         DB::table('users')->delete();
-        putenv('INSTALLER_ADMIN_EMAIL=install-path@example.test');
-        putenv('INSTALLER_ADMIN_PASSWORD=Passw0rd!install');
+        $this->setInstallerEnv('INSTALLER_ADMIN_EMAIL', 'install-path@example.test');
+        $this->setInstallerEnv('INSTALLER_ADMIN_PASSWORD', 'Passw0rd!install');
 
         $this->seed(AdminUserSeeder::class);
 

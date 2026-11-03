@@ -2,6 +2,7 @@
 
 namespace App\Extension\Helpers;
 
+use App\Extension\ExtensionManager;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -12,6 +13,24 @@ use Illuminate\Support\Facades\Log;
  */
 class ExtensionPendingHelper
 {
+    /**
+     * 잠긴 파일을 옆으로 치울 때 붙이는 접미사 조각 (`<원본>.g7stale_<uniqid>`).
+     *
+     * 이 이름은 **활성 확장 디렉토리 안**에 생긴다 — 배포 레이아웃 ②(문서 루트 =
+     * 프로젝트 루트)에서는 그 자리가 문서 루트 안이다. 즉시 삭제를 시도하지만 실패하면
+     * 남고, 그 뒤로 걷는 주체가 없었다: 「다음 제자리 동기화가 다시 삭제한다」는 그
+     * 확장을 다시 업데이트할 때만 성립한다.
+     *
+     * 회수는 `StorageLeftoverPruneService` 의 `stale_swap_files` 대상군이 맡고, 두 곳이
+     * 같은 값을 보도록 여기를 SSoT 로 둔다 (11차 G3 라운드 E11-9).
+     */
+    public const STALE_ASIDE_INFIX = '.g7stale_';
+
+    /**
+     * 옆으로 치운 파일 이름을 판정하는 정규식 — `uniqid()` 는 16진 13자다.
+     */
+    public const STALE_ASIDE_NAME_PATTERN = '/\.g7stale_[0-9a-f]{13}$/';
+
     /**
      * 복사에서 제외할 디렉토리명 목록
      *
@@ -572,7 +591,7 @@ class ExtensionPendingHelper
         // 4차: 잠긴 파일을 옆으로 치우고(rename 은 덮어쓰기와 별개 권한) 새 파일 생성.
         // 옆으로 치운 파일은 즉시 삭제를 시도하고, 실패해도 새 버전에 없는 파일이므로
         // 다음 제자리 동기화의 잔존 파일 제거가 다시 삭제를 시도한다.
-        $aside = $destination.'.g7stale_'.uniqid();
+        $aside = $destination.self::STALE_ASIDE_INFIX.uniqid();
         if (@rename($destination, $aside)) {
             @unlink($aside);
             if (@copy($source, $destination)) {
@@ -603,7 +622,7 @@ class ExtensionPendingHelper
         }
 
         // 삭제가 막힌 경우 옆으로 치워 원래 이름을 비운다
-        $aside = $path.'.g7stale_'.uniqid();
+        $aside = $path.self::STALE_ASIDE_INFIX.uniqid();
         if (@rename($path, $aside)) {
             @unlink($aside);
 
@@ -669,11 +688,8 @@ class ExtensionPendingHelper
     private static function cleanupSwapLeftovers(string $pendingPath, string $identifier): void
     {
         foreach (['_updating_', '_old_'] as $marker) {
-            $pattern = $pendingPath.DIRECTORY_SEPARATOR.$identifier.$marker.'*';
-            foreach (glob($pattern) ?: [] as $leftover) {
-                if (is_dir($leftover)) {
-                    self::bestEffortDeleteDirectory($leftover);
-                }
+            foreach (ExtensionManager::listDirectories($pendingPath, $identifier.$marker) as $leftover) {
+                self::bestEffortDeleteDirectory($leftover);
             }
         }
     }

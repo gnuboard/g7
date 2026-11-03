@@ -225,7 +225,9 @@ KG 이니시스 최신 연동 가이드로 다시 확인하세요). `local`/`tes
 주문 상세에서 구매거절확인을 호출할 수 있습니다.
 
 **CBT 연결 진단**: 일본 결제 테스트가 실패하면 관리자 CBT 연결 진단(§API)에서 서버 egress
-IP와 `devcbt.inicis.com` 443 연결 상태를 먼저 확인합니다.
+IP와 `devcbt.inicis.com` 443 연결 상태를 먼저 확인합니다. 진단 결과의 사이트 주소와 콜백 주소 호스트가
+다르면(`host_matches_app_url=false`) 앞단 프록시나 사이트 주소(`APP_URL`) 설정이 실제 접속 도메인과
+어긋난 것입니다.
 
 전체 API 목록(사용자/관리자)은 [docs/api/](docs/api/README.md) 를, 발행/구독 훅 목록은
 [docs/extension-points.md](docs/extension-points.md) 를 참고하세요.

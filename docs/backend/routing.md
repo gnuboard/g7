@@ -16,6 +16,7 @@
 7. catch-all 은 예약 프리픽스를 전수 제외 (가려진 라우트는 200 SPA 셸이라 단서가 없다)
 8. 조건부로만 열리는 라우트군의 게이트 = 그룹 미들웨어 단일 지점 (핸들러 개별 게이트 금지)
 9. 리다이렉트·콜백·제3자 전송·메일 링크의 절대 URL = SiteUrl::absolute() (url()·redirect('/x') 는 요청 Host 를 따른다)
+10. 라우트는 언제나 마운트 접두사 없이 등록 — 접두사는 AssetUrl(서버)·G7Core.url(브라우저)이 붙이고 벗긴다
 ```
 
 ---
@@ -174,6 +175,12 @@ SPA catch-all(`routes/web.php` 의 admin·user 그룹)은 등록되지 않은 �
 두 형태는 모두 영구 유지한다 — 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨진다.
 엔드포인트별 변환 규칙 표와 프로브 판정 절차: [API 레퍼런스 진입점](./api/README.md) "자산 URL 이중 모드".
 
+**반대 방향의 의무도 있다** — 운영자가 외부 서비스에 붙여넣는 주소는 애초에 정적 확장자로 끝나지
+않게 만든다. 웹 크론 호출 주소(`GET /api/system/cron/run`)가 그 예다. 이런 주소에 `.json` 같은 접미사를
+붙이면 이중 등록으로 되살릴 수는 있지만, 운영자가 이미 등록해 둔 주소가 어느 형태였는지에 따라 사이트가
+달라진다 — 처음부터 확장자를 두지 않는 편이 낫다. 그 성질은 회귀 테스트가 라우트 URI 를 직접 재서 고정한다
+(`WebCronEndpointTest::test_cron_route_is_named_and_has_no_static_extension`).
+
 ### catch-all 은 예약 프리픽스를 전수 제외한다
 
 catch-all 은 그 뒤에 등록된 라우트를 **가린다**. Laravel 은 등록 순서대로 매칭하므로, 예약 프리픽스가
@@ -263,6 +270,44 @@ Route::delete('clear', function () {
 게이트 미들웨어는 라우트와 함께 라우트 캐시에 구워지므로 캐시 상태에서도 유지된다. 다만 그 사실을
 가정하지 말고 캐시 상태에서의 차단도 함께 검증한다 — 라우트 캐시는 확장 설치·활성화 등 수명주기
 지점에서 자동 생성되므로 오히려 흔한 상태다.
+### 마운트 접두사 — 라우트는 언제나 접두사 없이 등록된다
+
+사이트는 문서 루트가 아니라 하위 폴더에 설치될 수 있다(`https://host/g7/`). 그래도 라우트 파일에는 그
+접두사(`/g7`)를 적지 않는다 — `Route::get('api/...')` 그대로다. 접두사는 라우트 정의가 아니라 **주소를 만들고
+읽는 두 경계**가 다룬다.
+
+| 방향 | 서버 | 브라우저 |
+|------|------|----------|
+| 붙인다 — 요청·이동 주소를 만들 때 | `App\Support\AssetUrl::basePrefix()` 가 접두사를 돌려주고 `sitePath()`(같은 사이트 안 상대 경로)가 그것을 붙인다. 크롤러·메일·제3자에 주는 절대 주소는 `SiteUrl`·`ScreenUrl`([절대 URL](#절대-url-은-사이트-주소로-만든다)) — 이미 접두사가 붙은 경로에 다시 붙이지 않는다 | 코어: `withBasePrefix()` 와 `resources/js/core/support/assetUrl.ts` 의 생성기 / 확장: `G7Core.url.api()` · `sitePath()` |
+| 벗긴다 — 브라우저 주소를 라우트 패턴과 대조할 때 | 프레임워크가 요청의 base URL 을 벗긴 경로로 라우팅한다 — 라우트 정의가 접두사를 모르는 이유 | 코어: `stripBasePrefix()` / 확장: `routePath()` |
+
+서버 쪽 `basePrefix()` 는 현재 요청의 base URL(프레임워크가 진입 스크립트 위치에서 도출)을 우선하고,
+요청 밖(콘솔·큐)에서는 `app.url` 에 담긴 경로 접두사로 폴백한다. 그래서 라우트를 등록하는 쪽은 배치를 몰라도
+되고, 주소를 **문자열로 조립하는 쪽**만 이 경계를 지키면 된다.
+
+하위 폴더 마운트에서 일어나는 일을 요약하면 다음과 같다.
+
+- 서버가 렌더한 주소(레이아웃 JSON 의 `href`·API 응답의 URL·SEO 봇 화면)는 이미 접두사를 갖고 나간다.
+- 브라우저 안에서 만드는 주소(`fetch('/api/…')`·`location.href` 대입·`history.pushState` 의 세 번째 인자)는
+  루트 상대라 접두사가 없다 — 그대로 쓰면 요청·이동이 사이트 밖으로 나가고, 증상은 오류가 아니라 버튼이
+  조용히 무반응인 것이다(문서 루트에 다른 사이트가 있으면 그쪽 응답을 받는다).
+- 브라우저 주소(`location.pathname`)를 라우트 패턴과 대조하는 쪽은 접두사를 **벗긴 뒤** 대조해야 한다.
+  벗기지 않으면 하위 폴더 사이트에서 그 대조가 언제나 불일치라 전 화면이 「없는 페이지」가 된다.
+- 붙이는 쪽과 벗기는 쪽은 다른 방향이다. 한쪽만 재는 회귀 테스트는 다른 쪽이 통째로 빠져도 통과하므로
+  양방향을 함께 잰다.
+- 서버가 만드는 **절대** 주소(알림·메일·비밀번호 재설정 링크 · 결제·본인인증의 복귀·통보 주소 · 사이트맵 ·
+  봇 화면)는 [「절대 URL 은 사이트 주소로 만든다」](#절대-url-은-사이트-주소로-만든다)를 따른다 — 다른 사람·시스템에
+  닿는 주소는 `SiteUrl`(사이트 주소 기준, 요청 Host 로 폴백하지 않음), 회원이 여는 사용자 화면 주소는 `ScreenUrl`.
+  하위 폴더 설치에서 이미 접두사가 붙은 경로(`/g7/…`)를 넘겨도 `SiteUrl` 은 접두사를 다시 붙이지 않는다.
+  `AssetUrl::siteAbsolute()` 는 `SiteUrl::absolute()` 에 위임하는 호환용 이름이다. `url()` 은 요청의 호스트·접두사를
+  실어 앞단 프록시 배치에서 사이트 밖을 가리키고 접두사를 품은 값에는 접두사를 한 번 더 싣는다. `config('app.url').'/path'`
+  는 `APP_URL` 의 후행 슬래시를 그대로 실어 `https://host/g7//path` 를 만든다 — 둘 다 오류 없이 깨진 링크로만
+  드러난다.
+
+확장 프론트엔드는 코어와 별도 번들이라 코어 함수를 `import` 할 수 없다 — `G7Core.url` 이 그 공식 수단이고,
+번들 확장은 같은 규칙의 헬퍼 사본(`apiUrl.ts`)을 바이트 동일하게 갖는다. 상세: [G7Core 전역 API "주소 조립
+(G7Core.url)"](../frontend/g7core-api.md#주소-조립-g7coreurl), 배치별 설치 절차와 하위 주소 설치:
+[INSTALL.md "방법 7: 문서 루트 고정 · 심볼릭 링크 불가 호스팅"](../../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅).
 
 ---
 
@@ -466,7 +511,7 @@ Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormR
 | 웹 라우트(결제·본인인증 콜백, 결과 브리지, PG 서버 통보·웹훅)의 FormRequest 가 기본 `failedValidation` 을 그대로 씀 | 브라우저가 오는 주소면 `failedValidation` 에서 `HttpResponseException(redirect(SiteUrl::absolute($failUrl)))` 로 명시 이동, PG 서버가 부르는 주소면 `HttpResponseException(ResponseHelper::validationError($validator->errors()))` 로 422 (규칙이 빈 배열이라 검증이 실패할 수 없는 요청은 해당 없음) |
 | `return_url` 같은 입력 주소를 요청 Host 와 비교해 허용 | `SiteUrl::isSameOrigin($url)` 로 사이트 주소와 비교 |
 
-`App\Support\SiteUrl` 이 사이트 주소(`config('app.url')` — 환경설정에 사이트 주소가 있으면 그 값) 기준 절대 URL 의 단일 출처다.
+`App\Support\SiteUrl` 이 사이트 주소(`config('app.url')` — 환경설정에 사이트 주소가 있으면 그 값) 기준 절대 URL 의 단일 출처다. 하위 폴더 설치(`APP_URL=https://host/g7`)에서도 같다 — 사이트 주소의 경로가 곧 마운트 접두사이고, 이미 접두사가 붙은 경로(`/g7/…`)를 넘겨도 다시 붙이지 않는다. 종전 이름 `AssetUrl::siteAbsolute()` 는 `SiteUrl::absolute()` 에 위임한다(호환). 같은 사이트 안의 상대 경로는 `AssetUrl::sitePath()`([마운트 접두사](#마운트-접두사--라우트는-언제나-접두사-없이-등록된다)).
 
 | 메서드 | 용도 |
 | --- | --- |
@@ -488,7 +533,7 @@ Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormR
 
 API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트·별칭)로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
 
-요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 `// audit:allow request-host-absolute-url reason: …` 를 단다. 회귀 가드: audit 룰 `request-host-absolute-url`, 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
+요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 그렇게 쓰는 이유를 주석으로 남긴다. 회귀 가드: 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
 
 ---
 
@@ -646,6 +691,8 @@ FQCN 정적 호출도 안전하다. 문제가 되는 것은 오토로드 경로�
 - [컨트롤러 계층 구조](./controllers.md) - 컨트롤러 네이밍 규칙
 - [미들웨어 등록 규칙](./middleware.md) - 미들웨어 실행 순서
 - [검증 로직 구현](./validation.md) - FormRequest 사용 규칙
+- [G7Core 전역 API "주소 조립 (G7Core.url)"](../frontend/g7core-api.md#주소-조립-g7coreurl) - 브라우저 쪽 마운트 접두사 처리
+- [INSTALL.md "방법 7"](../../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅) - 문서 루트 고정 배치·하위 주소 설치
 
 ### SEO 라우트
 

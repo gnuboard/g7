@@ -31,7 +31,11 @@ class ScheduleHistory extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'source',
         'schedule_id',
+        'event_key',
+        'event_name',
+        'event_expression',
         'started_at',
         'ended_at',
         'duration',
@@ -109,20 +113,20 @@ class ScheduleHistory extends Model
      */
     public function getDurationFormattedAttribute(): ?string
     {
-        if (!$this->duration) {
+        if (! $this->duration) {
             return null;
         }
 
         $seconds = $this->duration;
 
         if ($seconds < 60) {
-            return $seconds . __('schedule.duration.seconds');
+            return $seconds.__('schedule.duration.seconds');
         }
 
         $minutes = floor($seconds / 60);
         $remainingSeconds = $seconds % 60;
 
-        return $minutes . __('schedule.duration.minutes') . ' ' . $remainingSeconds . __('schedule.duration.seconds');
+        return $minutes.__('schedule.duration.minutes').' '.$remainingSeconds.__('schedule.duration.seconds');
     }
 
     /**
@@ -132,7 +136,7 @@ class ScheduleHistory extends Model
      */
     public function getMemoryUsageFormattedAttribute(): ?string
     {
-        if (!$this->memory_usage) {
+        if (! $this->memory_usage) {
             return null;
         }
 
@@ -145,7 +149,7 @@ class ScheduleHistory extends Model
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     /**
@@ -191,7 +195,7 @@ class ScheduleHistory extends Model
     /**
      * 성공한 이력만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeSuccessful(Builder $query): Builder
@@ -202,7 +206,7 @@ class ScheduleHistory extends Model
     /**
      * 실패한 이력만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeFailed(Builder $query): Builder
@@ -213,7 +217,7 @@ class ScheduleHistory extends Model
     /**
      * 실행 중인 이력만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeRunning(Builder $query): Builder
@@ -224,7 +228,7 @@ class ScheduleHistory extends Model
     /**
      * 수동 실행 이력만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeManual(Builder $query): Builder
@@ -235,7 +239,7 @@ class ScheduleHistory extends Model
     /**
      * 예약 실행 이력만 필터링하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeScheduled(Builder $query): Builder
@@ -246,7 +250,7 @@ class ScheduleHistory extends Model
     /**
      * 최신순으로 정렬하는 스코프
      *
-     * @param Builder $query 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @return Builder 정렬된 쿼리 빌더
      */
     public function scopeLatest(Builder $query): Builder

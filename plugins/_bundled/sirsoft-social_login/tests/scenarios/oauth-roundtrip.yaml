@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 의도 × 응답 × state 를 곱하면 state 가 틀린 조합은 응답 축에 도달하지 않아 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 의도 × 응답 × state 를 곱하면 state 가 틀린 조합은 응답 축에 도달하지 않아 명목상이다.
 feature: social_login_oauth_roundtrip
 description: |
   OAuth 왕복의 시작과 콜백을 HTTP 로 잰다. 관리자 연결 테스트는 로그인하지 않고 한 번만 보이는 결과 화면으로 끝나고,
@@ -17,6 +17,8 @@ axes:
   reconsent: ['1', absent, invalid]
   session: [fixed_id]
   email_trust: [flag, trust]
+  # 연결 테스트 결과에 보이는 프로필 상태
+  profile: [email_not_agreed]
 effects:
   - start_redirects_to_provider
   - start_reconsent_asks_provider_again

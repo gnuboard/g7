@@ -54,6 +54,7 @@ export function EditEntryFab(props: EditEntryFabProps): React.ReactElement | nul
       props.openWindow(url);
     } else if (typeof window !== 'undefined') {
       // 같은 탭 이동 — 새 탭/창 금지
+      // base-path:allow buildEditEntryUrl() 이 withBasePrefix() 로 조립한 값이다.
       window.location.assign(url);
     }
   };

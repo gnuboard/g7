@@ -232,7 +232,7 @@ return [
         'update_autoload' => [
             'generating' => '拡張のオートロードファイルを生成しています...',
             'generated' => 'オートロードファイルを正常に生成しました。',
-            'hooks_cache_regenerated' => '静的フックマッピングキャッシュを再生成しました。',
+            'hooks_cache_regenerated' => '静的拡張キャッシュ(フックマッピング、スケジュールコマンドマッピング)を再生成しました。',
             'failed' => 'オートロードファイルの生成中にエラーが発生しました: :error',
         ],
         'vendor_bundle_action' => [

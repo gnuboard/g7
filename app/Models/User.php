@@ -9,7 +9,7 @@ use App\Enums\PasswordExpiryPolicy;
 use App\Enums\PermissionType;
 use App\Enums\ScopeType;
 use App\Enums\UserStatus;
-use App\Support\SiteUrl;
+use App\Extension\Storage\CoreStorageDriver;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
@@ -648,8 +648,19 @@ class User extends Authenticatable implements HasLocalePreference
 
         // 레거시 방식: avatar 필드 (하위 호환)
         if (! empty($this->avatar)) {
-            // 보안: 요청 Host 가 아니라 사이트 주소 기준
-            return SiteUrl::absolute('/storage/attachments/avatars/'.$this->avatar);
+            // `public/storage` 링크가 없는 호스팅(B-3)에서는 정적 `/storage/...` 가 404 이므로
+            // 읽기 전용 서빙 라우트 URL 로 전환한다 — public 디스크 URL 생성과 같은 판정(SSoT).
+            //
+            // 두 분기를 손으로 조립하지 않고 **스토리지 드라이버에게 묻는다.** 손조립은
+            // `disks.public.url` 설정(운영자가 public 디스크를 CDN 으로 돌리는 경우)과
+            // `core.storage.filter_url` 훅(확장이 서명 URL·도메인으로 갈아끼우는 자리)을
+            // 둘 다 우회해, 그 사이트에서 **레거시 아바타만** 다른 곳을 가리킨다.
+            // 링크 가용 판정과 대체 서빙 URL 형태도 그 드라이버(`ResolvesPublicUrl`)가 이미
+            // 같은 SSoT 로 처리하므로, 여기서 분기를 복제할 이유가 없다.
+            //
+            // 보안: 요청 Host 가 아니라 설정 주소 기준이다 — 직접 URL 은 public 디스크 주소
+            // (`{APP_URL}/storage` 파생 또는 운영자 지정), 대체 서빙 라우트는 `APP_URL` 오리진을 싣는다.
+            return (new CoreStorageDriver('public'))->url('attachments/avatars', $this->avatar);
         }
 
         return null;

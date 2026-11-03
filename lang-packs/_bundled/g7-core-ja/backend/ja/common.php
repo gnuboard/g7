@@ -77,7 +77,8 @@ return [
             'configured' => '信頼プロキシが設定されています。X-Forwarded-* ヘッダーを信頼します。',
             'not_configured' => '信頼プロキシが設定されていません。',
             'not_configured_help' => 'プロキシ(AWS ALB, CloudFront, Cloudflare, nginx, ngrok)の背後で稼働している場合は
-  .env に TRUSTED_PROXIES を指定してください。未設定の場合、アクセスアドレス・訪問者 IP が
+  環境設定 > 詳細 > 信頼プロキシで信頼範囲を指定してください(保存前チェックあり)。
+  管理画面に入れない場合は .env の TRUSTED_PROXIES でも指定できます。未設定の場合、アクセスアドレス・訪問者 IP が
   プロキシ基準で認識され、画面表示・IP 記録・決済通知の受信がずれます。
   プロキシを使わず直接公開する構成であれば、未設定で正常です。',
             'details' => '詳細: :url',
@@ -144,9 +145,21 @@ return [
             'groups' => [
                 'staging' => 'アップデートステージングの残存物',
                 'temp' => 'コアの一時生成物',
+                'storage_temp' => 'composer フォールバック一時ディレクトリ',
+                'core_pending' => 'バンドルアップデートマニフェストの残存物',
+                'core_pending_staging' => 'コアアップデート展開ディレクトリの残存物',
+                'core_update_preserved' => 'コアアップデートの置き換え前コピー',
+                'core_update_reports' => 'コアアップデートのレポートログ',
+                'public_storage_broken' => '破損した公開ストレージリンクのバックアップ',
+                'public_storage_broken_docroot' => '破損した公開ストレージリンクのバックアップ (ドキュメントルート内)',
+                'installer_probes' => 'インストーラーの点検・インストール残存物',
+                'installer_state_corrupt' => 'インストーラーの破損状態コピー',
                 'vendor_bundle_staging' => 'vendor バンドルのステージング',
                 'extension_backups' => '拡張のバックアップ',
                 'core_backups' => 'コアのバックアップ',
+                'root_entry_temp' => 'ルート入口・保護ファイルの一時生成物',
+                'stale_swap_files' => '拡張同期ロックの残骸',
+                'env_backups' => 'finalize が残した .env 保存コピー',
                 'legacy_browser_log' => 'レガシーブラウザログ',
             ],
             'group_count' => ':label: :count 件',

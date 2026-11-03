@@ -13,7 +13,7 @@
 | 스타일 시스템 | `tailwind` |
 | 다크 모드 전략 | `ancestor-class` |
 
-> 분할 13블록 · 팔레트 81 · 스타일 컨트롤 307 · 편집 역량 89 · 중첩 컨테이너 20 · 프리뷰 샘플 113 · 페이지 상태 113 · 액션 레시피 16
+> 분할 13블록 · 팔레트 81 · 스타일 컨트롤 307 · 편집 역량 89 · 중첩 컨테이너 20 · 프리뷰 샘플 115 · 페이지 상태 113 · 액션 레시피 16
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -39,7 +39,7 @@
 | `componentCapabilities` | 컴포넌트별 편집 역량(어떤 속성을 편집기가 다루는가) | 89 | `editor-spec/componentCapabilities.json` |
 | `nesting.draggable` | 캔버스에서 끌어 옮길 수 있는 컴포넌트 | 87 | `editor-spec/nesting.json` |
 | `nesting.containers` | 자식을 담을 수 있는 컴포넌트와 그 허용 규칙 | 20 | `editor-spec/nesting.json` |
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 113 | `editor-spec/sampleData.json` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 115 | `editor-spec/sampleData.json` |
 | `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 29 | `editor-spec/sampleGlobal.json` |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 113 | `editor-spec/states.json` |
 | `stateLabels` | 상태값 친화 명칭 카탈로그 | 8 | `editor-spec/stateLabels.json` |
@@ -91,7 +91,7 @@
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 113 | `memberNotifications` · `trustedProxy` · `sitemap_status` · `sitemap_progress_ws` · `staticCacheStatus` · `queueStatus` · `locales` · `me` · `installed_modules` · `active_plugins` · `users` · `roles` … 외 101개 |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 115 | `core_update_status` · `system_status` · `memberNotifications` · `trustedProxy` · `sitemap_status` · `sitemap_progress_ws` · `staticCacheStatus` · `queueStatus` · `locales` · `me` · `installed_modules` · `active_plugins` … 외 103개 |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 미선언 | - |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 113 | `_admin_base` · `*/admin/users` · `*/admin/users/:id/edit` · `*/admin/settings` · `*/admin/reset-password` · `*/admin/roles/:id/edit` · `*/admin/identity/challenge` · `*/admin/templates/:type` · `*/admin/login` · `*/admin/forgot-password` · `*/admin/*/:identifier/language-packs` · `bulk_activate_confirm_modal` … 외 101개 |
 
@@ -99,7 +99,7 @@ _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습�
 <!-- @generated:editor-spec-samples END -->
 
 <!-- @intent START -->
-`byDataSourceId` 70종은 코어 관리자 화면 전체를 덮습니다. 이 템플릿의 샘플이 코어뿐
+`byDataSourceId` 73종은 코어 관리자 화면 전체를 덮습니다. 이 템플릿의 샘플이 코어뿐
 아니라 **여러 확장의 공용 ID**(`settings`·`roles`·`me` 등)까지 담는 것은 설계입니다 —
 확장마다 같은 ID 의 샘플을 각자 두면 어느 것이 쓰이는지가 합본 순서에 좌우됩니다.
 
@@ -107,9 +107,20 @@ _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습�
 드로어는 햄버거를 눌러야 열리는데 편집기 캔버스에는 클릭이 없으므로, 열린 상태를 주입하지
 않으면 드로어 **안쪽을 편집할 수 없습니다.**
 
-미커버로 잡힌 `trustedProxy` 는 신뢰 프록시 진단 영역입니다. 이 영역은 서버 구성에 따라
-내용이 달라지는 읽기 전용 진단이라 편집기에서 손댈 것이 없지만, 샘플이 없으면 그 자리가
-빈 채로 보여 운영자가 레이아웃이 깨진 것으로 오해할 수 있습니다.
+`trustedProxy`(신뢰 프록시 진단) · `system_status`(실행 방식·예약 작업) ·
+`core_update_status`(코어 업데이트)에도 샘플을 둡니다. 셋 다 서버 구성이나 진행 상태에 따라
+내용이 달라지는 **읽기 전용 영역**이라 편집기에서 손댈 것이 없어 보이지만, 샘플이 없으면 그
+자리가 빈 채로 보여 운영자가 레이아웃이 깨진 것으로 오해합니다. 실제 화면은 정상이라 오류도
+경고도 남지 않으므로 캔버스만 보고는 구분할 수 없습니다.
+
+세 샘플은 **조건부 영역이 실제로 렌더되는 상태**를 담습니다 — 신뢰 프록시 미설정, CLI 없는
+호스팅(`inprocess` + 웹 크론), 그리고 착수 전(`run: null`) + 사전 조건 미충족 + 수정된
+레이아웃 보유. 정상·빈 상태를 담으면 경고 영역·차단 목록·실행 이력·수동 파일 목록이 모두 빈
+채로 렌더되어, 정작 편집이 필요한 자리가 캔버스에 나타나지 않습니다.
+
+`core_update_status` 는 착수 화면(`run: null`)을 고른 것입니다. 진행 중 상태를 담으면
+서버가 그때만 덧붙이는 사전 조건·수정 레이아웃 안내가 빠지는데(진행 중에는 재계산하지
+않습니다), 그 둘이 이 탭에서 조건부로 나타나는 유일한 영역입니다.
 <!-- @intent END -->
 
 ## 수정 시 동반 의무

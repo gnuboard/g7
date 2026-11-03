@@ -7,10 +7,12 @@ use App\Models\NotificationDefinition;
 use App\Models\NotificationLog;
 use App\Models\NotificationTemplate;
 use App\Models\User;
+use App\Support\ScreenUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
  * 이커머스 모듈 알림 발송 이력 샘플 시더.
@@ -223,7 +225,7 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
         $productName = $order?->options->first()?->product_name;
         $productName = is_array($productName) ? ($productName[config('app.locale')] ?? $productName[config('app.fallback_locale')] ?? reset($productName) ?: '') : (string) $productName;
         $amount = $order ? ecommerce_format_price((float) $order->total_amount) : ecommerce_format_price(39000);
-        $siteUrl = rtrim((string) config('app.url'), '/');
+        $siteUrl = ScreenUrl::userBase();
 
         return [
             'name' => $recipient->name,
@@ -234,12 +236,12 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
             'app_name' => (string) config('app.name'),
             'site_url' => $siteUrl,
             'order_number' => $order?->order_number ?? sprintf('ORD-%s-%05d', $sentAt->format('Ymd'), mt_rand(1, 99999)),
-            'order_url' => $siteUrl.'/mypage/orders',
+            'order_url' => EcommerceScreenUrl::mypageOrders(absolute: true),
             'claim_number' => sprintf('CLM-%s-%04d', $sentAt->format('Ymd'), mt_rand(1, 9999)),
-            'claim_url' => $siteUrl.'/mypage/claims',
+            'claim_url' => EcommerceScreenUrl::mypageClaims(absolute: true),
             'claim_type_label' => ['교환', '반품', '환불'][array_rand(['교환', '반품', '환불'])],
-            'inquiry_url' => $siteUrl.'/mypage/inquiries',
-            'mileage_url' => $siteUrl.'/mypage/mileage',
+            'inquiry_url' => EcommerceScreenUrl::mypageInquiries(absolute: true),
+            'mileage_url' => EcommerceScreenUrl::mypageMileage(absolute: true),
             'product_name' => $productName !== '' ? $productName : '베이직 라운드 티셔츠',
             'total_amount' => $amount,
             'amount' => $amount,

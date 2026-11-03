@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\JobQueueService;
 use Illuminate\Console\Command;
 
@@ -13,15 +14,12 @@ use Illuminate\Console\Command;
  */
 class PruneQueueRecordsCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'queue:prune-records {--days= : 보관 기간(일, 1~90). 생략하면 환경설정 값(기본 7일)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '보관 기간이 지난 큐 처리 기록과 실패 작업을 정리합니다';
 
     /**
      * Execute the console command.

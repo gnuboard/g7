@@ -6,6 +6,8 @@
  * 받은 주소로는 같은 출처이거나 https 일 때만 이동한다(실행 스킴 차단).
  */
 
+import { routePath } from '../apiUrl';
+
 /** 플러그인 API 접두 (코어 API 클라이언트의 `/api` 뒤) */
 const API_PREFIX = '/plugins/sirsoft-social_login';
 
@@ -91,6 +93,7 @@ async function startRoundTrip(path: string, body?: Record<string, unknown>): Pro
       return false;
     }
 
+    // base-path:allow 서버가 주는 값은 제공자의 인가 주소(https 절대 주소)이고 safeProviderUrl() 이 절대 주소로 돌려준다.
     window.location.assign(url);
 
     return true;
@@ -131,7 +134,8 @@ export async function startLinkHandler(action: ProviderRedirectAction): Promise<
  */
 export async function startReauthHandler(action: ProviderRedirectAction): Promise<boolean> {
   const key = providerKey(action?.params?.provider);
-  const back = typeof action?.params?.return === 'string' ? action.params.return : window.location.pathname;
+  // 복귀 경로는 서버가 다시 조립하는 앱 기준 경로라 마운트 접두사를 벗겨 싣는다(버튼 컴포넌트와 같은 기준).
+  const back = typeof action?.params?.return === 'string' ? action.params.return : routePath(window.location.pathname);
 
   return key === null ? false : startRoundTrip(`/me/reauth/${key}/start`, { return: back });
 }

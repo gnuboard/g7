@@ -32,7 +32,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario scope=cookie, notation=exact, settings_state=seeded, request=key_absent
  *
- * @effects upgrade_appends_analytics_opt_out_cookie_when_absent,
+ * 효과 요약(마커 아님 — 평문): upgrade_appends_analytics_opt_out_cookie_when_absent,
  *   upgrade_leaves_allowlist_untouched_when_opt_out_cookie_present
  */
 class AppendAnalyticsOptOutToNecessaryAllowlistTest extends PluginTestCase

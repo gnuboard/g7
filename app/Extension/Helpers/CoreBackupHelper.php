@@ -32,7 +32,11 @@ class CoreBackupHelper
      */
     public static function createBackup(array $targets, ?\Closure $onProgress = null, array $excludes = []): string
     {
-        $timestamp = date('Ymd_His');
+        // 경로는 **초 단위 타임스탬프만으로는 고유하지 않다** — 그 사유는
+        // `BackupDirectoryName` 이 소유한다. 이름의 모양을 여기서 직접 조립하지 않는
+        // 이유도 같은 곳에 적혀 있다: 정리 쪽(`StorageLeftoverPruneService`)이 같은
+        // 클래스를 보고 판정하므로, 한쪽만 바꾸는 것이 구조적으로 불가능해야 한다.
+        $timestamp = BackupDirectoryName::stamp();
         $backupRoot = storage_path('app/core_backups');
         $backupPath = $backupRoot.DIRECTORY_SEPARATOR."core_{$timestamp}";
 
@@ -130,6 +134,18 @@ class CoreBackupHelper
                     'symlink_skipped' => $pruneResult['symlink_skipped'],
                     'failed_count' => $pruneResult['failed_count'],
                 ]);
+
+                // 루트 진입·보호 파일이 prune 대상에 들어갔다면 그 사실을 **경고로** 남긴다.
+                //
+                // 되돌리기 자체는 의도된 동작이다 — 그 두 파일이 없던 버전으로 돌아가는 것이
+                // 목적이다. 문제는 그 결과다: 문서 루트 = 프로젝트 루트인 사이트에서 보호
+                // 규칙 파일이 사라지면 `.env` 가 그대로 열린다. 정보 로그에 묻히면 운영자가
+                // 알 수 없으므로, 조치가 필요한 상태임을 로그 등급으로 구분해 남긴다.
+                self::warnIfRootProtectionFilesAreMissing(base_path());
+
+                // 되살아난 공개 파일 사본도 같은 등급으로 남긴다 — 백업은 업데이트 이전
+                // 스냅샷이라 그 시점의 `public/storage.broken.*` 를 그대로 되돌려 놓는다.
+                self::warnIfRollbackRestoredDocrootResidue(base_path());
             } catch (\Throwable $e) {
                 Log::warning('코어 자동 롤백 prune 실패 (overlay 복사는 완료)', [
                     'backup_path' => $backupPath,
@@ -526,6 +542,170 @@ class CoreBackupHelper
             $changed[] = $relative;
         }
         // 동일하면 제외 (코어 미변경 — 스킵)
+    }
+
+    /**
+     * 루트 진입·보호 파일 3종 (배포 레이아웃 ② 의 진입점 — D25).
+     *
+     * `config/app.php` 의 `update.targets` 가 이 셋을 함께 배포·갱신한다. 판정 목록을
+     * 여기 한 곳에 두는 이유는, 손으로 적힌 사본이 실제로 불완전했기 때문이다 — 롤백
+     * 소실 판정에는 `.htaccess` 만 있고 `web.config` 가 빠져 있었다. IIS 로 압축을 푼
+     * 사이트에서 그 파일은 **유일한** 보호 수단인데, 되돌리기가 그것을 지워도 경고가
+     * 발화하지 않아 운영자는 「백업에서 복원되었습니다」만 보고 창을 닫았다.
+     *
+     * @var array<int, string>
+     */
+    public const ROOT_PROTECTION_FILES = ['index.php', '.htaccess', 'web.config'];
+
+    /**
+     * 루트 보호 파일 중 **마커 블록 단위로 갱신하는** 파일과 그 갱신기 (G3 회차 16 W2 C-1).
+     *
+     * 키는 반드시 `ROOT_PROTECTION_FILES` 의 원소여야 하고(계약 테스트가 대조한다), 값은
+     * `AbstractRootMarkerFileUpdater` 의 자식이다. 코어 업데이트의 두 적용 분기(정상 targets ·
+     * 자동 발견 폴백)는 이 표로 「갱신기를 지나는가 / 통째 복사인가」를 가른다 — 종전에는
+     * `.htaccess` 리터럴 한 줄이 그 분기였고 `web.config` 는 그 옆에서 통째 복사로 떨어졌다.
+     * 루트 `index.php` 는 마커가 없는 shim 이라 이 표 밖(통째 교체)이다.
+     *
+     * @var array<string, class-string<AbstractRootMarkerFileUpdater>>
+     */
+    public const ROOT_MARKER_FILE_UPDATERS = [
+        '.htaccess' => RootHtaccessUpdater::class,
+        'web.config' => RootWebConfigUpdater::class,
+    ];
+
+    /**
+     * 정규화된 루트 파일 이름에 대응하는 마커 블록 갱신기를 돌려줍니다.
+     *
+     * @param  string  $rootFile  프로젝트 루트 기준 파일 이름 (`.htaccess` 등)
+     * @return class-string<AbstractRootMarkerFileUpdater>|null 갱신기 클래스. 마커 파일이 아니면 null
+     */
+    public static function rootMarkerFileUpdater(string $rootFile): ?string
+    {
+        return self::ROOT_MARKER_FILE_UPDATERS[$rootFile] ?? null;
+    }
+
+    /**
+     * 루트 진입·보호 파일 중 **없는 것**의 목록을 돌려줍니다.
+     *
+     * 판정을 로그 남기기와 분리한 이유: 롤백 결과를 콘솔에 실으려면 호출부가 그 목록을
+     * 손에 쥐어야 하고, 그 판정이 prune manifest 존재 여부에 묶여 있으면 안 되기 때문이다
+     * (manifest 가 없어 prune 을 건너뛴 경우에도 파일은 없을 수 있다).
+     *
+     * 세 파일을 **대칭으로** 본다. 서버 종류마다 실제로 보호를 수행하는 파일이 다르므로
+     * (Apache·LiteSpeed 는 `.htaccess`, IIS 는 `web.config`), 한쪽만 보면 그 서버의
+     * 배치에서만 경고가 조용히 사라진다.
+     *
+     * @param  string  $projectRoot  프로젝트 루트 절대 경로
+     * @return array<int, string> 없는 파일 이름 목록 (전부 있으면 빈 배열)
+     */
+    public static function missingRootProtectionFiles(string $projectRoot): array
+    {
+        $missing = [];
+
+        foreach (self::ROOT_PROTECTION_FILES as $rootFile) {
+            if (! File::exists($projectRoot.DIRECTORY_SEPARATOR.$rootFile)) {
+                $missing[] = $rootFile;
+            }
+        }
+
+        return $missing;
+    }
+
+    /**
+     * 롤백이 문서 루트 **안**에 되살린 공개 파일 사본의 목록을 돌려줍니다.
+     *
+     * 형제(`missingRootProtectionFiles()`)와 같은 이유로 판정을 로그 남기기와 분리한다 —
+     * 롤백 결과를 콘솔에 실으려면 호출부가 그 목록을 손에 쥐어야 하고, 그 판정이 prune
+     * manifest 존재 여부에 묶여 있으면 안 된다(manifest 가 없어 prune 을 건너뛴 경우에도
+     * 사본은 되살아난다).
+     *
+     * @param  string  $projectRoot  프로젝트 루트 절대 경로
+     * @return array<int, string> 되살아난 사본의 절대 경로 목록 (없으면 빈 배열)
+     */
+    public static function restoredDocrootResidue(string $projectRoot): array
+    {
+        $publicPath = $projectRoot.DIRECTORY_SEPARATOR.'public';
+
+        if (! is_dir($publicPath)) {
+            return [];
+        }
+
+        $entries = @scandir($publicPath);
+
+        if ($entries === false) {
+            return [];
+        }
+
+        $residue = [];
+        foreach ($entries as $entry) {
+            // 판정은 생산자 상수를 본다 — 리터럴 사본은 생산자가 규칙을 바꿀 때 조용히 빈다 (13차 G3 W1-8).
+            if (str_starts_with($entry, StorageLinkHelper::DOCROOT_BROKEN_PREFIX)) {
+                $residue[] = $publicPath.DIRECTORY_SEPARATOR.$entry;
+            }
+        }
+
+        return $residue;
+    }
+
+    /**
+     * 롤백 뒤 루트 진입·보호 파일이 사라졌으면 경고를 남깁니다.
+     *
+     * 되돌리기 자체는 의도된 동작이다 — 그 파일들이 없던 버전으로 돌아가는 것이 목적이고,
+     * 표준 배치(문서 루트 = `public/`)에서는 아무 영향도 없다. 문제가 되는 것은 **문서 루트가
+     * 프로젝트 루트인 사이트**다: 그 배치에서 루트 `.htaccess` 가 사라지면 보호·위임 규칙이
+     * 통째로 없어져 `.env` 가 그대로 열리고, 루트 `index.php` 가 사라지면 진입 자체가 막힌다.
+     *
+     * 그 창을 코드로 막지는 않는다(막으면 되돌리기가 되돌리기가 아니게 된다). 대신 등급을
+     * 나눠 남긴다 — 정보 로그에 묻히면 운영자는 사이트가 왜 열려 있는지 알 방법이 없다.
+     *
+     * @param  string  $projectRoot  프로젝트 루트 절대 경로
+     * @return void 반환값 없음
+     */
+    private static function warnIfRootProtectionFilesAreMissing(string $projectRoot): void
+    {
+        $missing = self::missingRootProtectionFiles($projectRoot);
+
+        if ($missing === []) {
+            return;
+        }
+
+        Log::warning('코어 자동 롤백 후 루트 진입·보호 파일이 없습니다 — 문서 루트가 프로젝트 루트인 배치라면 설정 파일이 웹에 노출됩니다', [
+            'missing' => $missing,
+            'project_root' => $projectRoot,
+            'remedy' => '되돌린 버전에 그 파일이 없다면 정상입니다. 문서 루트를 프로젝트 루트로 쓰고 있다면 즉시 문서 루트를 public/ 로 바꾸거나 보호 규칙 파일을 복구하세요.',
+        ]);
+    }
+
+    /**
+     * 롤백이 문서 루트 안에 공개 파일 사본을 **되살렸는지** 확인해 알립니다.
+     *
+     * 백업은 업데이트 **이전** 스냅샷이라 그 시점의 `public/storage.broken.*` 를 담고 있고,
+     * `public` 복원은 overlay 복사라 그 디렉토리가 그대로 돌아온다. 7.1.0 업그레이드 스텝이
+     * 이미 그것을 문서 루트 밖으로 옮긴 뒤라면, 롤백 후에는 **같은 공개 파일이 두 벌**이
+     * 되고 그중 하나는 웹에서 열린다.
+     *
+     * 자동으로 다시 옮기지는 않는다 — 되돌리기가 되돌리기여야 한다는 형제 판정과 충돌한다.
+     * 사실만 같은 등급으로 남긴다.
+     *
+     * 판정 자체는 `restoredDocrootResidue()` 가 소유한다 — 형제 축
+     * (`missingRootProtectionFiles()`)과 같은 규약으로, 그래야 롤백 호출부가 그 목록을
+     * 손에 쥐고 콘솔 통로에 실을 수 있다.
+     *
+     * @param  string  $projectRoot  프로젝트 루트 절대 경로
+     * @return void 반환값 없음
+     */
+    private static function warnIfRollbackRestoredDocrootResidue(string $projectRoot): void
+    {
+        $residue = self::restoredDocrootResidue($projectRoot);
+
+        if ($residue === []) {
+            return;
+        }
+
+        Log::warning('코어 자동 롤백이 문서 루트 안의 공개 파일 사본을 되살렸습니다 — 그 사본은 웹에서 열립니다', [
+            'residue' => $residue,
+            'remedy' => '내용을 확인한 뒤 문서 루트 밖으로 옮기거나 삭제하세요. 7.1.0 이상으로 다시 올리면 업그레이드 스텝이 같은 정리를 수행합니다.',
+        ]);
     }
 
     /**

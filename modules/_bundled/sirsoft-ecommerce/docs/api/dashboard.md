@@ -182,7 +182,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.dashboard.view`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -211,8 +211,6 @@ Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
-
-
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -243,7 +241,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.dashboard.view`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -280,7 +278,7 @@ _단건 응답: `data` 객체의 필드._
 | total_sales | integer | `0` | 표시 기간 순매출 합계 (기본 통화 자릿수로 라운딩) |
 | quantity_change | null | `null` | 직전 동일 기간 대비 판매 수량 증감율(%) (직전 합계 0 이면 null) |
 | sales_change | null | `null` | 직전 동일 기간 대비 순매출 증감율(%) (직전 합계 0 이면 null) |
-| updated_at | null | `null` | 최종 수정 일시 |
+| updated_at | string | `2026-11-01T01:46:48+00:00` | 최종 수정 일시 |
 | updated_at_display | string | `` | 집계 마지막 갱신 시각의 사용자 타임존 HH:mm 캡션 (갱신 이력 없으면 빈 문자열) |
 
 **응답 예시**

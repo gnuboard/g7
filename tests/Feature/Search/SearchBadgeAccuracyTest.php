@@ -15,13 +15,15 @@ use Tests\TestCase;
  * 모듈이 각자 자기 정확도 키를 내보내던 시절에는 어떤 배지는 받고 어떤 배지는 못 받았다.
  * 코어가 일괄로 붙인다는 성질을 여기서 잠근다.
  *
- * @scenario case=search_badge_accuracy
- *
- * @effects badge_accuracy_is_emitted_per_category,
- *          badge_accuracy_defaults_to_exact
+ * @scenario consumer=tab_badge
  */
 class SearchBadgeAccuracyTest extends TestCase
 {
+    /**
+     * 테스트가 core.search.results 에 걸어 둔 결과 조작 필터를 걷어내 다음 테스트의 검색 응답에 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::clearFilter('core.search.results');
@@ -33,6 +35,8 @@ class SearchBadgeAccuracyTest extends TestCase
      * 카테고리마다 정확도가 응답에 실리는지 확인
      *
      * @effects badge_accuracy_is_emitted_per_category
+     *
+     * @return void 반환값 없음
      */
     public function test_accuracy_is_emitted_for_every_category(): void
     {
@@ -69,6 +73,8 @@ class SearchBadgeAccuracyTest extends TestCase
      * 키 자체가 없으면 화면이 "정확도 정보 없음" 과 "정확함" 을 구분하지 못한다.
      *
      * @effects badge_accuracy_defaults_to_exact
+     *
+     * @return void 반환값 없음
      */
     public function test_category_without_accuracy_defaults_to_exact(): void
     {

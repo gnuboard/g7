@@ -231,7 +231,7 @@ class ResetPasswordCommandTest extends TestCase
         $output = Artisan::output();
 
         $this->assertSame(0, $exit, $output);
-        $lines = array_map('trim', preg_split('/\R/', $output));
+        $lines = array_map('trim', preg_split('/\R/u', $output));
         $noticeAt = array_search(__('user.commands.reset_password.generated_once'), $lines, true);
         $this->assertNotFalse($noticeAt, '1회 출력 안내 문구가 없다');
         $printed = (string) ($lines[$noticeAt + 1] ?? '');

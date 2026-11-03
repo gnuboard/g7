@@ -21,6 +21,9 @@ use App\Extension\HookManager;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ResolvesLanguageFragments;
 use App\Models\Template;
+use App\Rules\AllowedTemplateFileType;
+use App\Services\Concerns\ResolvesExtensionAssetType;
+use App\Services\Concerns\SecuresExtensionAssetPath;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\CustomAssets;
 use App\Support\ExtensionDependencies;
@@ -39,7 +42,9 @@ class TemplateService
     // 편집기 표면의 레이아웃/조각 읽기는 소스 SSoT 규약에 위임한다 (S19 ⑦ · R16).
     // 사본을 두면 `.g7.html` 을 못 보고, 그 결과가 "마크업 전용 레이아웃이 트리에서 사라짐" 이었다.
     use CollectsFragmentSources;
+    use ResolvesExtensionAssetType;
     use ResolvesLanguageFragments;
+    use SecuresExtensionAssetPath;
 
     /**
      * 직전 라우트 병합에서 활성 모듈 디렉토리가 비어 라우트가 누락됐는지 여부
@@ -750,16 +755,25 @@ class TemplateService
         }
 
         // 2. Path Traversal 방지
-        $safePath = $this->sanitizePath($path);
+        $safePath = $this->sanitizeExtensionAssetPath($path);
 
         // 3. 파일 경로 구성
         //
         // 템플릿 자산은 `dist/` 이하가 기본이지만, 운영자 소유 디렉토리(`custom/`)만은
         // 그 밖에 있다 — 빌드 산출물이 아니라 사람이 넣은 파일이고, 확장 교체가
-        // 보존하는 대상이라 빌드 디렉토리에 둘 수 없다.
-        $filePath = str_starts_with($safePath, CustomAssets::DIRECTORY.'/')
-            ? base_path("templates/{$identifier}/{$safePath}")
-            : base_path("templates/{$identifier}/dist/{$safePath}");
+        // 보존하는 대상이라 빌드 디렉토리에 둘 수 없다. **봉쇄 기준도 그에 맞춰 갈린다** —
+        // `dist` 로 고정하면 운영자 자산이 언제나 기준 밖이라 통째로 404 가 된다.
+        // 확장 루트를 기준으로 삼는 것은 형제 둘(모듈·플러그인)과 같은 형태다.
+        //
+        // 구분자는 `/` 로 잇는다 — Windows 에서 `DIRECTORY_SEPARATOR` 로 이으면
+        // `base_path()` 가 돌려준 `/` 구간과 섞여 `templates/x\dist/js/a.js` 같은 혼합
+        // 경로가 되고, 그 값을 그대로 돌려받는 소비처·계약 테스트가 어긋난다.
+        // 봉쇄 판정(`extensionAssetPathIsContained`)은 `realpath()` 로 정규화한 뒤
+        // 비교하므로 이 자리의 구분자에 영향받지 않는다 (14차 G3 라운드).
+        $basePath = str_starts_with($safePath, CustomAssets::DIRECTORY.'/')
+            ? base_path("templates/{$identifier}")
+            : base_path("templates/{$identifier}/dist");
+        $filePath = $basePath.'/'.$safePath;
 
         // 4. 파일 존재 확인
         if (! file_exists($filePath) || ! is_file($filePath)) {
@@ -771,8 +785,26 @@ class TemplateService
             ];
         }
 
+        // 정제만으로는 심볼릭 링크 경유 탈출을 걸러내지 못한다 — 해석된 절대 경로가
+        // 기준 안인지 재확인한다. 형제 둘(모듈·플러그인)은 이 계층을 갖는데 이 통로만
+        // 문자열 정제 하나로 서빙하고 있었다. trait 독블록은 그 반대로 적혀 있었고,
+        // 이 파일의 옛 주석이 근거로 삼던 「FormRequest 의 realpath 검사」는 요청 규칙
+        // 축이라 서비스를 직접 부르는 호출부에는 걸리지 않는다 (11차 G3 라운드).
+        if (! $this->extensionAssetPathIsContained($filePath, $basePath)) {
+            return [
+                'success' => false,
+                'filePath' => null,
+                'mimeType' => null,
+                'error' => 'file_not_found',
+            ];
+        }
+
         // 5. 보안 검증 (허용된 확장자만)
-        if (! $this->isAllowedExtension($filePath)) {
+        //    목록을 여기 다시 적으면 검증 계층과 서비스 계층이 갈린다 — 실제로 갈려 있었다:
+        //    검증은 local 환경에서 `map` 을 허용하는데(dev 빌드의 `sourceMappingURL` 이 404 를
+        //    남기지 않도록) 서비스 목록에는 없어 그 완화가 **사문**이었고, 결과는 404 가 아니라
+        //    403 이었다. `ico` 도 형제 두 규칙에만 있었다. 규칙 클래스가 SSoT 다.
+        if (! $this->extensionAssetExtensionIsAllowed($filePath, AllowedTemplateFileType::getAllowedExtensions())) {
             return [
                 'success' => false,
                 'filePath' => null,
@@ -782,7 +814,7 @@ class TemplateService
         }
 
         // 6. MIME 타입 감지
-        $mimeType = $this->getMimeType($filePath);
+        $mimeType = $this->extensionAssetMimeType($filePath);
 
         return [
             'success' => true,
@@ -2136,79 +2168,6 @@ class TemplateService
     private function decodeRoutesJson(string $content, bool $preserveEmptyMaps): mixed
     {
         return $preserveEmptyMaps ? EmptyMap::decodePreserving($content) : json_decode($content, true);
-    }
-
-    /**
-     * Path Traversal 방지를 위한 경로 정제
-     *
-     * @param  string  $path  파일 경로
-     * @return string 문자열 결과
-     */
-    private function sanitizePath(string $path): string
-    {
-        // ../ 및 ..\ 패턴 제거 — 결과가 안정될 때까지 반복한다.
-        //
-        // 1회성 치환이면 제거 자체가 새 패턴을 만들어낸다:
-        //   '....//' → 가운데 '../' 제거 → '../'  (탈출 시퀀스 복원)
-        // 현재는 FormRequest 의 realpath 검사가 앞단에서 막고 있으나,
-        // 방어 계층이 하나 무력한 상태로 두지 않는다.
-        do {
-            $previous = $path;
-            $path = str_replace(['../', '..\\'], '', $path);
-        } while ($path !== $previous);
-
-        // 절대 경로 방지
-        return ltrim($path, '/\\');
-    }
-
-    /**
-     * 허용된 파일 확장자 확인
-     *
-     * @param  string  $filePath  filePath
-     * @return bool 판정 결과
-     */
-    private function isAllowedExtension(string $filePath): bool
-    {
-        $allowedExtensions = [
-            'js', 'mjs', 'css', 'json',
-            'png', 'jpg', 'jpeg', 'svg', 'webp', 'gif',
-            'woff', 'woff2', 'ttf', 'otf', 'eot',
-        ];
-
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-
-        return in_array($extension, $allowedExtensions);
-    }
-
-    /**
-     * MIME 타입 감지
-     *
-     * @param  string  $filePath  filePath
-     * @return string 문자열 결과
-     */
-    private function getMimeType(string $filePath): string
-    {
-        $mimeTypes = [
-            'js' => 'application/javascript',
-            'mjs' => 'application/javascript',
-            'css' => 'text/css',
-            'json' => 'application/json',
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'svg' => 'image/svg+xml',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'woff' => 'font/woff',
-            'woff2' => 'font/woff2',
-            'ttf' => 'font/ttf',
-            'otf' => 'font/otf',
-            'eot' => 'application/vnd.ms-fontobject',
-        ];
-
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-
-        return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
 
     /**

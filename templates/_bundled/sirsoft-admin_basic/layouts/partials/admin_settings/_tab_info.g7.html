@@ -95,11 +95,15 @@
           </div>
           <div class="flex-between">
             <span class="text-label">$t:admin.settings.info.memory</span>
-            <span class="text-heading">{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)</span>
+            <span data-if="{{systemInfo?.data?.memory_usage?.percentage != null}}" class="text-heading">{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage}}%)</span>
+            <span data-if="{{systemInfo?.data != null &amp;&amp; systemInfo?.data?.memory_usage?.percentage == null}}" class="text-heading">$t:admin.settings.info.not_measurable</span>
+            <span data-if="{{systemInfo?.data == null}}" class="text-heading">-</span>
           </div>
           <div class="flex-between">
             <span class="text-label">$t:admin.settings.info.disk</span>
-            <span class="text-heading">{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)</span>
+            <span data-if="{{systemInfo?.data?.disk_usage?.percentage != null}}" class="text-heading">{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage}}%)</span>
+            <span data-if="{{systemInfo?.data != null &amp;&amp; systemInfo?.data?.disk_usage?.percentage == null}}" class="text-heading">$t:admin.settings.info.not_measurable</span>
+            <span data-if="{{systemInfo?.data == null}}" class="text-heading">-</span>
           </div>
           <div class="flex-between">
             <span class="text-label">$t:admin.settings.info.php_memory</span>

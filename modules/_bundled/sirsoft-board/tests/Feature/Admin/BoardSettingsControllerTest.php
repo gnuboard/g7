@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  *
  * BoardSettingsController의 CRUD + bulkApply + clearCache를 검증합니다.
  *
- * @effects permission_failure_rolls_back_all_boards,
+ * 효과 요약(마커 아님 — 평문): permission_failure_rolls_back_all_boards,
  *   permission_failure_response_has_rolled_back_and_board_name,
  *   column_failure_rolls_back_all_changes,
  *   column_failure_response_has_rolled_back_and_null_board

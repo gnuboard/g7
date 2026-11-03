@@ -199,6 +199,9 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/CalculationSnapshotPresenterTest.php
+  # 교환 신청 화면 시험 — 차액 분기(price_delta)와 청구 방식(charge_method)을 이 매니페스트의 축 어휘로 적는다.
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/userClaimApplyExchange.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-exchange.spec.ts
 
 notes: |
   **선언이 만든 칸 넷은 이 세션이 채웠다.** 착수 시점 `OrderExchangeServiceTest` 는 123케이스로

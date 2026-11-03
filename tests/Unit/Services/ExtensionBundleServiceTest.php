@@ -656,6 +656,50 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 원자 게시 임시 파일(`{type}.{version}.{kind}.tmp.<hex>`)이 나이 하한을 지나면 걷힌다.
+     *
+     * `writeAtomically` 는 rename 실패 시에만 tmp 를 지운다 — put 과 rename 사이에서 프로세스가
+     * 죽으면 남는데, 정리기는 번들 이름 패턴만 봐서 tmp 를 영원히 거르지 않았다 (13차 G3 W1-5).
+     * 진행 중인 게시를 지우지 않도록 나이 하한을 두고, 생성 규칙과 다른 이름은 건드리지 않는다.
+     *
+     * @effects cleanup_removes_stale_atomic_write_temp_files
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cleanup_removes_aged_atomic_write_tmp_files_only(): void
+    {
+        $bundleDir = storage_path('app/ext-bundles');
+        File::ensureDirectoryExists($bundleDir);
+
+        $stale = $bundleDir.'/module.200.js.tmp.0123456789abcdef';
+        $fresh = $bundleDir.'/plugin.200.css.tmp.fedcba9876543210';
+        $foreign = $bundleDir.'/module.200.js.tmp.backup';
+
+        File::put($stale, 'stale');
+        touch($stale, time() - 3600);
+        File::put($fresh, 'fresh');
+        File::put($foreign, 'operator');
+        touch($foreign, time() - 3600);
+        File::put($bundleDir.'/module.200.js', 'current');
+
+        try {
+            $this->moduleManager->shouldReceive('getActiveModules')->andReturn([]);
+
+            $deleted = $this->service()->cleanupStaleBundles(200);
+
+            $this->assertSame(1, $deleted);
+            $this->assertFileDoesNotExist($stale, '오래된 게시 tmp 를 걷는 주체가 없다 — 게시마다 하나씩 영구 누적된다');
+            $this->assertFileExists($fresh, '진행 중일 수 있는 신선한 tmp 를 지웠다');
+            $this->assertFileExists($foreign, '생성 규칙과 다른 이름을 지웠다');
+            $this->assertFileExists($bundleDir.'/module.200.js');
+        } finally {
+            @unlink($stale);
+            @unlink($fresh);
+            @unlink($foreign);
+        }
+    }
+
+    /**
      * 유형별 비우기는 그 유형 접두어의 번들 파일만 지운다.
      *
      * @effects clear_bundles_by_type_scopes_to_prefix
@@ -721,8 +765,12 @@ class ExtensionBundleServiceTest extends TestCase
         $bundleDir = storage_path('app/ext-bundles');
         File::ensureDirectoryExists($bundleDir);
 
-        $fresh = $bundleDir.'/module.200.js.tmp.11111';
-        $stale = $bundleDir.'/module.200.js.tmp.22222';
+        // 접미사는 **생산자와 같은 형태**여야 한다 — `writeAtomically` 는
+        // `bin2hex(random_bytes(8))`(16진 16자)을 쓰고 판정식도 `[0-9a-f]{16,}` 이다.
+        // 종전 픽스처는 10진 5자라 판정식이 조여진 뒤로 이 케이스가 「지워지지 않는다」로
+        // 고정돼 있었다 — 실제 잔해를 하나도 재현하지 못하는 픽스처였다.
+        $fresh = $bundleDir.'/module.200.js.tmp.1111111111111111';
+        $stale = $bundleDir.'/module.200.js.tmp.2222222222222222';
         File::put($fresh, 'writing now');
         File::put($stale, 'orphan');
         touch($stale, time() - 3600);

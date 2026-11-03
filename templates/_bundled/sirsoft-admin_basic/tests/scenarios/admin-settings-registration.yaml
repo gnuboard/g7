@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: value 축(true/false)은 토글이 싣는 boolean 의 두 값을 이름 붙인 것이고
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 value 축(true/false)은 토글이 싣는 boolean 의 두 값을 이름 붙인 것이고
 # 시험은 자동 바인딩 계약과 서버 기본값, 노출 스키마, 저장 규칙을 대조한다. locale 은 lang 키 검사에만 의미가 있다.
 # 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
 

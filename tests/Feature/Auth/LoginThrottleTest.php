@@ -238,6 +238,8 @@ class LoginThrottleTest extends TestCase
      *
      * @scenario user_existence=not_exists, credential=invalid
      *
+     * @effects nonexistent_email_attempt_stores_no_counter
+     *
      * @return void 반환값 없음
      */
     #[Test]

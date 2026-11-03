@@ -48,6 +48,9 @@ class KcpFrameController extends Controller
         </html>
         HTML;
 
+        // file-serving:allow 파일이 아니라 이 자리에서 만든 결제창 프레임 문서를 돌려준다 — 서빙 계약
+        // (nosniff·ETag·304·압축 제외) 의 대상이 아니다. 본문에 들어가는 값은 검증된 SDK 주소를
+        // 이스케이프한 것뿐이고 `no-store` 로 남기지 않는다. 형제 결제창 닫기 문서와 같은 처분이다.
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',

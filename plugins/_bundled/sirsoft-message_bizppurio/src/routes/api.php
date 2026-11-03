@@ -4,6 +4,7 @@ use App\Helpers\PermissionHelper;
 use App\Http\Middleware\EnforceIdentityPolicy;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Services\PluginSettingsService;
+use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\AlimtalkTemplateController;
 use Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController;
@@ -35,17 +36,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     //
     // 비즈뿌리오가 발송 결과(리포트)를 URL PUSH 로 전송할 수신 주소를 사이트 도메인
     // 기준 절대 URL 로 내려준다. url() 헬퍼는 리버스 프록시 뒤에서 요청 host 가
-    // localhost 로 떨어질 수 있어, 운영자가 관리하는 config('app.url') 을 신뢰 소스로
-    // 삼아 절대화한다. 운영자가 접속한 주소와 무관하게 항상 정식 도메인이 표시된다.
+    // localhost 로 떨어질 수 있어, 운영자가 관리하는 사이트 주소(SiteUrl)를 신뢰 소스로
+    // 삼아 절대화한다. 운영자가 접속한 주소와 무관하게 항상 정식 도메인이 표시되고,
+    // 하위 폴더에 설치한 사이트는 그 경로까지 붙는다.
     //
     // ※ 실제 리포트 수신 처리(POST /webhook) 는 Phase 4 에서 구현한다.
     Route::get('/report-url', function () {
-        $origin = rtrim((string) config('app.url', 'http://localhost'), '/');
-
         return response()->json([
             'success' => true,
             'data' => [
-                'url' => $origin.'/api/plugins/sirsoft-message_bizppurio/webhook',
+                'url' => SiteUrl::absolute('/api/plugins/sirsoft-message_bizppurio/webhook'),
                 // 설정 화면이 알림톡 템플릿 등록·검수·삭제·연결 확인 버튼을 잠그는 근거 — 그 API 들과 같은 권한(messaging.manage)
                 'abilities' => [
                     'can_manage_messaging' => PermissionHelper::check('sirsoft-message_bizppurio.messaging.manage', auth()->user()),

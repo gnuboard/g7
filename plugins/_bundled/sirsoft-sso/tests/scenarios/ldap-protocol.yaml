@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: IdP-initiated 와 SP 발 로그아웃)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: IdP-initiated 와 SP 발 로그아웃)이 대부분이라 명목상이다.
 feature: sso_ldap_protocol
 description: |
   LDAP/Active Directory 드라이버와 코어 외부 자격 증명 검증자 — 인증 순서(빈 비밀번호 거절, 서비스 바인드, 정확히 1건, 재바인드), 필터 이스케이프, AD objectGUID·비활성, 조회, 연결 시험, 코어 로그인 API 연동(자동 생성, 동의 대기 409, 실패 횟수, 잠긴 회원, 관리자 경로), ext-ldap 없음.

@@ -48,7 +48,7 @@ class OutboundRequestGuardTest extends TestCase
      *
      * @param  string  $url  내부망을 가리키는 다운로드 URL
      *
-     * @scenario entry_point=language_pack_url, target=loopback_or_private
+     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=language_pack_url
      *
      * @effects language_pack_install_from_url_rejects_normalized_internal_host
      *
@@ -93,7 +93,7 @@ class OutboundRequestGuardTest extends TestCase
      *
      * @param  string  $url  내부망을 가리키는 스케줄 URL
      *
-     * @scenario entry_point=schedule_url, target=loopback_or_private
+     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=schedule_url
      *
      * @effects schedule_url_rejects_normalized_internal_host
      *
@@ -108,7 +108,7 @@ class OutboundRequestGuardTest extends TestCase
     /**
      * 사내 엔드포인트 주기 호출은 내부 주소 허용 설정으로 가능하다 (운영 옵트인).
      *
-     * @scenario entry_point=schedule_url, target=loopback_or_private
+     * @scenario host_form=ascii, target=loopback_or_private, entry_point=schedule_url
      *
      * @effects allow_internal_outbound_setting_keeps_structural_check_only
      *
@@ -127,7 +127,7 @@ class OutboundRequestGuardTest extends TestCase
     /**
      * 내부 주소를 허용해도 userinfo(@) 로 목적지를 위장한 URL 은 계속 차단한다.
      *
-     * @scenario entry_point=schedule_url, target=loopback_or_private
+     * @scenario host_form=ascii, target=loopback_or_private, entry_point=schedule_url
      *
      * @effects userinfo_disguised_host_is_rejected, allow_internal_outbound_setting_keeps_structural_check_only
      *
@@ -148,7 +148,7 @@ class OutboundRequestGuardTest extends TestCase
      *
      * @param  string  $url  내부망을 가리키는 URL
      *
-     * @scenario entry_point=form_request_rule, target=loopback_or_private
+     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=form_request_rule
      *
      * @effects form_request_rule_rejects_normalized_internal_host
      *
@@ -171,7 +171,8 @@ class OutboundRequestGuardTest extends TestCase
     /**
      * 정규화가 정상 외부 URL 까지 막지는 않는다 (프론트도어 회귀 방지).
      *
-     * @scenario entry_point=form_request_rule, target=public
+     * @scenario host_form=ascii, target=public, entry_point=form_request_rule
+     * @scenario host_form=unicode_u_label, target=public, entry_point=form_request_rule
      *
      * @effects public_ascii_domain_still_allowed, real_internationalized_domain_still_allowed, punycode_a_label_still_allowed, non_standard_port_public_url_still_allowed
      *

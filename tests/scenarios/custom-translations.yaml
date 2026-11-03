@@ -1,4 +1,10 @@
-# audit:allow test-scenario-coverage reason: 본 시나리오는 #7(S8-1 백엔드 + S8-2 프론트) 동적 다국어 키 인프라 + 편집기 인라인 편집 + S8-2 후속(좀비 키 자동 감지 + 관리 모달) 회귀 가드. axis cross-product 는 Feature/Unit/Vitest 테스트(test_files)가 cover. E2E axis 는 Playwright spec(inline-edit-i18n.spec.ts / orphan-translation-manager.spec.ts)의 @scenario/@effects docblock 과 매칭. effects 는 키 자동생성·낙관적 잠금·런타임 병합·캐시 무효화·인라인 편집·로케일 전환·서식 툴바·번역 탭·좀비 감지·일괄 삭제 카테고리별로 enumerate.
+# audit:allow test-scenario-coverage reason: issue:#609 본 시나리오는 #7(S8-1 백엔드 + S8-2 프론트) 동적 다국어 키 인프라 + 편집기 인라인 편집 + S8-2 후속(좀비 키 자동 감지 + 관리 모달) 회귀 가드. axis cross-product 는 Feature/Unit/Vitest 테스트(test_files)가 cover. E2E axis 는 Playwright spec(inline-edit-i18n.spec.ts / orphan-translation-manager.spec.ts)의 @scenario/@effects docblock 과 매칭. effects 는 키 자동생성·낙관적 잠금·런타임 병합·캐시 무효화·인라인 편집·로케일 전환·서식 툴바·번역 탭·좀비 감지·일괄 삭제 카테고리별로 enumerate.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 82건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(동적 다국어 키 인프라)의 몫이며, 좁히는 시점에 함께 처리한다.
+#   ※ 최초 측정은 「미검증 0건」이었는데 그것은 사실이 아니었다 — 조합 수 995,328 이 상한을 넘어
+#     룰이 effects 대조 **전에** 조기 반환하고 있었다. 같은 라운드가 그 순서를 고쳐(상한은 실제로
+#     전개하는 경로에만 건다) 이 수치가 드러났다. 상한을 이유로 좁히지 못하는 상태는 해소됐다.
 
 feature: 템플릿 커스텀 다국어 키 + 편집기 인라인 편집 (template_custom_translations)
 
@@ -145,6 +151,25 @@ effects:
   - manager_live_usage_scans_current_canvas_via_collectReferencedCustomKeys
   - manager_locale_label_shows_language_name_plus_identifier
   - manager_translation_input_is_textarea_auto_grows_with_content
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - translation_param_values_apply_pipe_filters
+  # 609 테스트 매핑 부채 정리: 프론트 TranslationEngine.test.ts 의 it 단위 효과
+  - translation_engine_initializes_with_default_or_custom_options   # 기본 옵션과 사용자 옵션 양쪽으로 인스턴스가 만들어진다
+  - translation_engine_loads_locale_file_and_reports_failures   # 언어 파일을 주소 규칙대로 받아오고 HTTP 실패와 네트워크 오류를 TranslationError 로 알린다
+  - translation_engine_translates_dot_path_keys_with_params   # 점 경로 키를 번역하고 파라미터와 데이터 컨텍스트 값을 치환한다
+  - translation_engine_returns_the_key_when_translation_is_missing   # 어느 로케일에도 없는 키는 키 자체를 돌려준다
+  - translation_engine_falls_back_to_fallback_locale   # 현재 로케일 우선, 없으면 폴백 로케일 값을 쓴다
+  - translation_engine_resolves_inline_t_expressions_in_strings   # 문자열 안의 단일, 다중, 연속 $t: 표현식을 해석하고 일반 텍스트는 보존한다
+  - translation_engine_resolves_defer_prefixed_inline_keys   # 인라인 $t:defer: 접두도 파라미터와 함께 번역된다
+  - translation_param_expressions_evaluate_against_the_data_context   # 파라미터 {{}} 표현식이 엔진 컨텍스트($localized 등)와 데이터 값으로 평가되고 값이 사라지지 않는다
+  - translation_engine_caches_loaded_files_with_ttl   # 같은 언어 파일은 캐시에서 주고 TTL 만료, 초기화, 통계, 정리가 동작한다
+  - translation_error_carries_key_and_locale   # TranslationError 가 키와 로케일 정보를 담는다
+  - translation_engine_tolerates_edge_case_inputs   # 빈 키, 빈 값, null/undefined 파라미터와 컨텍스트, 잘못된 형식, 긴 키에서 던지지 않는다
+  - translation_params_accept_pipe_and_ampersand_separators   # 파이프와 앰퍼샌드로 구분한 다중 파라미터를 치환한다
+  - translation_data_chip_params_substitute_any_count_and_position   # 데이터 칩 파라미터를 개수와 위치, 불연속 번호에 상관없이 전부 치환한다
+  - translation_param_expressions_support_js_operators   # 파라미터 표현식의 ||, &&, 삼항, 산술 연산자와 공백 섞인 값을 처리한다
+  - translation_param_values_resolve_nested_t_tokens   # 파라미터 값 안의 =$t: 토큰을 사전 해석하고 깊이 제한 안에서 재귀 해석한다
+  - translation_engine_cache_version_busts_urls_and_clears_cache   # 캐시 버전이 요청 주소에 붙고 바뀌면 캐시를 비우되 로드 전 기존 번역은 유지한다
 
 test_files:
   - tests/Feature/Api/Admin/TemplateCustomTranslationControllerTest.php

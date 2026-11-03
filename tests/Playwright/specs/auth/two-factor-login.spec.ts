@@ -9,8 +9,8 @@
  * 되돌아가도록 fixture 가 원복을 담당한다. 되돌리지 못하면 이후 모든 로그인이 막히므로
  * 반드시 `mode: 'serial'` 로 한 워커에서만 실행한다.
  *
- * // @scenario controller=user,admin | two_factor=on | code=valid,invalid | resend=active
- * // @effects challenge_response_has_no_token, code_step_rendered_on_challenge, no_raw_typeerror_text, resend_cancels_previous_challenge, non_admin_two_factor_revokes_token
+ * 범위 요약: controller=user·admin, two_factor=on, code=valid·invalid, resend=active —
+ * 조합과 효과 귀속은 각 test 의 docblock 이 적는다 (파일 머리말 마킹은 메서드 단위 규율 밖).
  */
 import { test, expect, issueToken } from '../../fixtures/auth';
 import {
@@ -181,7 +181,7 @@ test('사용자 로그인 — 인증번호 다시 받기는 새 challenge 를 �
  * 새로고침 축은 잘못 저장된 토큰(`"undefined"`) 회귀도 함께 잡는다 — 그 값이 남으면 이후 요청이
  * 전부 401 이 되어 `/login?reason=session_expired` 로 튕겼다(공개 #133 의 두 번째 증상).
  *
- * // @scenario controller=user | two_factor=on | action=restart
+ * // @scenario controller=user, two_factor=on, action=restart
  * // @effects restart_resets_to_credential_step, init_actions_reset_two_factor_state
  */
 test('인증번호 단계 — 처음부터·새로고침·재진입 모두 1단계로 돌아온다', async ({ page }) => {
@@ -403,7 +403,7 @@ test('공개 본인인증 화면으로는 로그인 challenge 를 소진할 수 
  * 입력을 남기는 것이 확정된 동작이다(레이아웃의 `loginTwoFactor` onError 는 code 를
  * 건드리지 않는다). 비우도록 바뀌면 아래 `toHaveValue` 가 red 가 된다.
  *
- * // @scenario controller=user | two_factor=on | code=invalid,valid
+ * // @scenario controller=user, two_factor=on, code=invalid, code=valid
  * // @effects invalid_code_retries_until_success
  */
 test('인증번호 단계 — 세 번 틀려도 입력이 남고 네 번째 정답으로 로그인된다', async ({ page }) => {
@@ -453,7 +453,7 @@ test('인증번호 단계 — 세 번 틀려도 입력이 남고 네 번째 정�
  * 로그인이 끝난 직후의 상태 — 2단계 흔적이 남으면 다음에 로그인 화면을 열었을 때
  * 비밀번호 단계가 아니라 코드 단계가 뜬다.
  *
- * // @scenario controller=user | two_factor=on | code=valid
+ * // @scenario controller=user, two_factor=on, code=valid
  * // @effects session_state_cleared_after_two_factor_success
  */
 test('인증 완료 직후 — 2단계 상태가 지워지고 사용자·토큰이 자리 잡는다', async ({ page }) => {
@@ -499,7 +499,7 @@ test('인증 완료 직후 — 2단계 상태가 지워지고 사용자·토큰�
  * 두 번 나가면 두 번째가 이미 소진된 challenge 를 확인하려다 실패해, 로그인은 됐는데
  * 오류 문구가 함께 뜨는 상태가 된다.
  *
- * // @scenario controller=user | two_factor=on | code=valid
+ * // @scenario controller=user, two_factor=on, code=valid
  * // @effects double_submit_sends_single_verify_request
  */
 test('인증번호 단계 — 확인 버튼을 두 번 눌러도 확인 요청은 한 번만 나간다', async ({ page }) => {

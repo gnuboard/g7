@@ -6,7 +6,7 @@
  * installer.js 가 전역을 찾지 못하고 버튼·폼이 멈췄다. 이 파일이 대신한다.
  *
  *   1. `#installer-data` JSON 을 읽어 종전과 같은 이름의 전역(INSTALLER_BASE_URL·CURRENT_STEP·INSTALLER_CSRF·
- *      INSTALLER_OWNERSHIP_LOCKED·INSTALLER_LANG·INSTALLER_STATE_LOCALE·INSTALLER_BLOCKED_DB_ACCOUNTS)으로 옮긴다
+ *      INSTALLER_OWNERSHIP_LOCKED·INSTALLER_LANG·INSTALLER_STATE_LOCALE·INSTALLER_LOCALE·INSTALLER_BLOCKED_DB_ACCOUNTS)으로 옮긴다
  *   2. 다크 모드를 렌더 전에 적용한다(FOUC 방지)
  *   3. document 에 click·change·submit 위임 리스너 하나씩을 건다. `data-action="이름"` 요소의 이벤트를
  *      아래 **명시적 액션 맵**으로 부른다 — 맵에 없는 이름은 무시한다(임의 전역 함수 호출 통로를 만들지 않는다).
@@ -38,6 +38,8 @@
     window.INSTALLER_OWNERSHIP_LOCKED = data.ownership_locked === true;
     window.INSTALLER_LANG = data.lang || {};
     window.INSTALLER_STATE_LOCALE = data.state_locale === undefined ? null : data.state_locale;
+    // 화면 언어 — installer.js 가 이 값을 먼저 보고 없을 때만 localStorage 로 떨어진다. 빠지면 한 화면에 두 언어가 섞인다.
+    window.INSTALLER_LOCALE = data.locale === undefined ? null : data.locale;
     // DB 최고권한 계정 목록 — 클라이언트 검증은 즉시 피드백용이며, 실제 차단은 서버가 한다.
     window.INSTALLER_BLOCKED_DB_ACCOUNTS = data.blocked_db_accounts || [];
 
@@ -131,6 +133,7 @@
         goToSettingsWithConfirm: noArg('goToSettingsWithConfirm'),
         goBackToExtensionSelection: noArg('goBackToExtensionSelection'),
         retryInstallation: noArg('retryInstallation'),
+        skipFailedTaskAndContinue: noArg('skipFailedTaskAndContinue'),
         onStartInstallationClick: noArg('onStartInstallationClick'),
         toggleInstallationCard: noArg('toggleInstallationCard'),
         toggleTaskGroup: function (el, arg) { return call('toggleTaskGroup', [arg]); },

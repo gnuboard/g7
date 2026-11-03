@@ -8,6 +8,7 @@ use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\LocalizedValue;
 use App\Support\OutboundProxy;
+use App\Support\TrustedProxySetting;
 use App\Support\WorkerSettingsRefresher;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Config;
@@ -232,8 +233,12 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('app.name', $this->localizeSettingValue($generalSettings['site_name']));
         }
 
-        if (! empty($generalSettings['site_url'])) {
-            Config::set('app.url', $generalSettings['site_url']);
+        if (! empty($generalSettings['site_url']) && is_string($generalSettings['site_url'])) {
+            // 후행 슬래시·앞뒤 공백은 여기서 걷어낸다 — 관리자 저장 경로(SaveSettingsRequest)는
+            // 이미 정규화하지만 인스톨러는 그 경로를 우회해 원값을 저장한다(task-runner). 저장된
+            // 값이 모두 이 한 지점을 지나 app.url 이 되므로, 정규화를 여기 두면 저장 경로와
+            // 무관하게 app.url 이 후행 슬래시 없는 형태로 고정된다 (17차 G3 라운드 B-8).
+            Config::set('app.url', rtrim(trim($generalSettings['site_url']), '/'));
         }
 
         if (! empty($generalSettings['timezone'])) {
@@ -352,6 +357,22 @@ class SettingsServiceProvider extends ServiceProvider
         // SQL 쿼리 로그 설정
         if (isset($debugSettings['sql_query_log'])) {
             Config::set('g7.sql_query_log', (bool) $debugSettings['sql_query_log']);
+        }
+
+        // 신뢰 프록시 — 저장값이 null 이면 **주입하지 않는다**.
+        //
+        // null 은 "화면에서 한 번도 정한 적 없음" 이고, 그 설치의 권위는 여전히
+        // `config/trustedproxy.php` 의 `env('TRUSTED_PROXIES')` 다. 빈 배열([])과 구분해야
+        // 한다 — 빈 배열은 운영자가 「신뢰하지 않음」을 고른 명시적 선택이라 주입 대상이다.
+        //
+        // 이 구분이 없으면 `.env` 로 프록시를 설정해 둔 기존 설치가, 고급 탭의 **무관한**
+        // 항목(캐시 TTL 등)을 저장하는 순간 신뢰 설정을 잃는다. 오류도 로그도 없고,
+        // 방문자 IP 가 전부 프록시 주소로 바뀌는 것으로만 드러난다.
+        if (($debugSettings['trusted_proxies'] ?? null) !== null) {
+            Config::set(
+                'trustedproxy.proxies',
+                TrustedProxySetting::toConfigValue((array) $debugSettings['trusted_proxies'])
+            );
         }
 
         // 아웃바운드 HTTP 프록시 설정.

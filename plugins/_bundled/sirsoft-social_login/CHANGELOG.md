@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 #### 기본과 제공자
 
+- 사이트를 문서 루트 하위 폴더(예: `https://example.com/g7/`)에 설치해도 로그인/가입 버튼의 시작 주소가 설치 폴더 안을 가리키고, 본인 재확인의 복귀 경로는 설치 폴더 기준 화면 경로로 실립니다.
 - 소셜 로그인 플러그인 최초 릴리즈. 기본 언어는 한국어·영어이고 일본어는 번들 언어팩으로 제공한다. 코어 7.2.0 이상이 필요하다(`g7_version >=7.2.0`)
 - 카카오, 네이버, 구글, 페이스북, 일반 OIDC 제공자 연동. 다른 확장은 필터 훅 `sirsoft-social_login.provider.filter_registered` 로 새 제공자를 더할 수 있다(내장 제공자 덮어쓰기는 무시)
 - id_token 서명 검증(RS256 고정, JWKS `kid` 선택과 1회 재조회, 발급자·수신자·만료·nonce 검사)

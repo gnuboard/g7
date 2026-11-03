@@ -264,7 +264,7 @@ return [
         'update_autoload' => [
             'generating' => 'Generating the extension autoload file...',
             'generated' => 'Autoload file generated successfully.',
-            'hooks_cache_regenerated' => 'Static hook mapping cache regenerated.',
+            'hooks_cache_regenerated' => 'Static extension caches (hook mapping, scheduled command mapping) regenerated.',
             'failed' => 'An error occurred while generating the autoload file: :error',
         ],
         'vendor_bundle_action' => [

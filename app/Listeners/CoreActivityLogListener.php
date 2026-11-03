@@ -128,6 +128,11 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.privacy.manual_run_queued' => ['method' => 'handlePrivacyManualRunQueued', 'priority' => 20],
             'core.privacy.manual_run_finished' => ['method' => 'handlePrivacyManualRunFinished', 'priority' => 20],
 
+            // ─── Core update (#609 D23 — 실행·성공·실패) ───
+            'core.core_update.started' => ['method' => 'handleCoreUpdateStarted', 'priority' => 20],
+            'core.core_update.completed' => ['method' => 'handleCoreUpdateCompleted', 'priority' => 20],
+            'core.core_update.failed' => ['method' => 'handleCoreUpdateFailed', 'priority' => 20],
+
             // ─── Schedule ───
             'core.schedule.after_create' => ['method' => 'handleScheduleAfterCreate', 'priority' => 20],
             'core.schedule.after_update' => ['method' => 'handleScheduleAfterUpdate', 'priority' => 20],
@@ -1100,6 +1105,73 @@ class CoreActivityLogListener implements HookListenerInterface
         $this->logActivity('settings.update', [
             'description_key' => 'activity_log.description.settings_update',
             'properties' => ['key' => $key],
+        ]);
+    }
+
+    // ═══════════════════════════════════════════
+    // 코어 업데이트 핸들러 (#609 D23)
+    // ═══════════════════════════════════════════
+
+    /**
+     * 코어 업데이트 착수 로그 기록
+     *
+     * @param  string  $runId  실행 식별자
+     * @param  string  $fromVersion  현재 버전
+     * @param  string|null  $toVersion  대상 버전 (수동 ZIP 은 추출 후 판별되므로 null 가능)
+     * @param  array  $options  착수 선택 (번들 확장 · 검색 인덱스 · 레이아웃 전략 · 수동 ZIP)
+     * @return void 반환값 없음
+     */
+    public function handleCoreUpdateStarted(string $runId, string $fromVersion, ?string $toVersion, array $options = []): void
+    {
+        $this->logActivity('core_update.started', [
+            'description_key' => 'activity_log.description.core_update_started',
+            'description_params' => ['from' => $fromVersion, 'to' => $toVersion ?? '-'],
+            'properties' => ['run_id' => $runId, 'options' => $options],
+        ]);
+    }
+
+    /**
+     * 코어 업데이트 성공 로그 기록
+     *
+     * @param  string  $runId  실행 식별자
+     * @param  string  $fromVersion  이전 버전
+     * @param  string|null  $toVersion  적용된 버전
+     * @param  array  $bundledResult  번들 확장 일괄 업데이트 결과 (수행하지 않았으면 빈 배열)
+     * @return void 반환값 없음
+     */
+    public function handleCoreUpdateCompleted(string $runId, string $fromVersion, ?string $toVersion, array $bundledResult = []): void
+    {
+        $this->logActivity('core_update.completed', [
+            'description_key' => 'activity_log.description.core_update_completed',
+            'description_params' => ['from' => $fromVersion, 'to' => $toVersion ?? '-'],
+            'properties' => ['run_id' => $runId, 'bundled' => $bundledResult],
+        ]);
+    }
+
+    /**
+     * 코어 업데이트 실패 로그 기록
+     *
+     * 되돌리기 결과를 함께 남긴다 — 「실패했다」와 「사이트가 지금 어떤 상태인가」는
+     * 다른 사실이고, 운영자가 먼저 알아야 하는 것은 후자다 (D10).
+     *
+     * @param  string  $runId  실행 식별자
+     * @param  string  $fromVersion  이전 버전
+     * @param  string|null  $toVersion  적용하려던 버전
+     * @param  array  $error  실패 단계·사유·리포트 경로
+     * @param  array  $rollback  되돌리기 결과
+     * @return void 반환값 없음
+     */
+    public function handleCoreUpdateFailed(string $runId, string $fromVersion, ?string $toVersion, array $error = [], array $rollback = []): void
+    {
+        $this->logActivity('core_update.failed', [
+            'description_key' => 'activity_log.description.core_update_failed',
+            'description_params' => [
+                'from' => $fromVersion,
+                'to' => $toVersion ?? '-',
+                'step' => (string) ($error['step_label'] ?? $error['step'] ?? '-'),
+                'rollback' => ($rollback['restored'] ?? false) ? 'ok' : 'failed',
+            ],
+            'properties' => ['run_id' => $runId, 'error' => $error, 'rollback' => $rollback],
         ]);
     }
 

@@ -154,7 +154,7 @@
 - 모달 `auth-login-sso-modals`, `admin-login-sso-modals`: 쿼리 `sso_pending`(처음 로그인 약관 동의), `sso_link`(기존 계정 연결 확인), `sso_error`(오류 토스트)를 읽습니다. 완료 응답의 `handoff_code` 로 엔진 `loginHandoff` 를 바로 실행합니다(같은 화면에서 쿼리만 바꾸면 인계 교환이 다시 돌지 않을 수 있다). 화면 주인의 전역 로그인 상태를 쓰지 않고 `_local` 만 씁니다.
 - 회원 상세 탭 `admin-user-detail-sso-tab`(`admin_user_detail`, 탭 이름 「SSO」): 연결, 추가 속성, 역할 출처(매핑, 수동). 연결 추가와 해제는 직접 하지 않고 「회원 연결」 화면으로 보냅니다 — 그 화면의 권한과 관리자 대상 제한을 그대로 타게 하려는 것입니다.
 - 회원 목록 `admin-user-list-sso-filter`(확장점 `admin_user_list_filters`), `admin-user-list-sso-columns`(`admin_user_list` — 「부서」, 「직급」 열을 데이터 그리드 열과 열 선택기 양쪽에 넣는다). 필터의 IdP 목록은 `GET /api/plugins/sirsoft-sso/admin/accounts` 응답의 `idps` 로 받습니다 — 회원 연결 열람 권한만 있어도 필터를 쓰게 하려는 것입니다.
-- 마이페이지 `mypage-sso-accounts-card`(`mypage/profile`): 「연결된 회사 계정」 카드. [연결하기]는 `sirsoft-sso.startWithTicket` 으로 `POST me/links/start` 의 시작 주소로 이동하고, [연결 해제]는 비밀번호 없는 회원의 유일한 로그인 수단이거나 강제 대상이면 막힙니다.
+- 마이페이지 `mypage-sso-accounts-card`(`mypage/profile`): 「연결된 회사 계정」 카드. [연결하기]는 `sirsoft-sso.startWithTicket` 으로 `POST me/links/start` 의 시작 주소로 이동하고, [연결 해제]는 비밀번호 없는 회원의 유일한 로그인 수단이거나 회사 계정 로그인만 허용되는 회원이면 막힙니다.
 <!-- @intent END -->
 
 ## 미들웨어

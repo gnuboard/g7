@@ -76,12 +76,36 @@ final class InlineMediaPolicy
             return $response;
         }
 
-        $response->headers->set('Content-Disposition', self::attachmentDisposition(
-            $filename ?? self::filenameFromDisposition($response->headers->get('Content-Disposition'))
-        ));
+        // 저장소 계층(스토리지 어댑터)이 이미 attachment 로 선언했으면 그 선언을 그대로 둔다 — 파일 이름
+        // 정제 지점은 어댑터 하나다. 여기서 다시 만들면 따옴표가 든 이름의 ASCII 폴백이 어댑터와 다른 규칙
+        // (`"` → `_`)으로 바뀌어 같은 파일이 통로마다 다른 이름으로 저장된다. 이름을 새로 만드는 것은
+        // 인라인으로 나가던 위험 유형을 다운로드로 돌릴 때뿐이다.
+        $disposition = $response->headers->get('Content-Disposition');
+
+        if (! self::isAttachmentDisposition($disposition)) {
+            $response->headers->set('Content-Disposition', self::attachmentDisposition(
+                $filename ?? self::filenameFromDisposition($disposition)
+            ));
+        }
+
         $response->headers->set('Content-Security-Policy', self::NON_INLINE_CSP);
 
         return $response;
+    }
+
+    /**
+     * Content-Disposition 값이 이미 attachment 인지 판정합니다.
+     *
+     * @param  string|null  $disposition  Content-Disposition 헤더 값
+     * @return bool attachment 이면 true
+     */
+    private static function isAttachmentDisposition(?string $disposition): bool
+    {
+        if ($disposition === null || $disposition === '') {
+            return false;
+        }
+
+        return strtolower(trim(explode(';', $disposition, 2)[0])) === HeaderUtils::DISPOSITION_ATTACHMENT;
     }
 
     /**

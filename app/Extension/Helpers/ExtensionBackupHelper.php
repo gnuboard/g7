@@ -32,7 +32,11 @@ class ExtensionBackupHelper
             );
         }
 
-        $timestamp = date('Ymd_His');
+        // 형제 축(`CoreBackupHelper`)과 같은 규약을 쓴다 — 같은 초에 시작한 두 실행이
+        // 같은 디렉토리를 백업 대상으로 잡으면 뒤 실행이 앞 실행의 신 버전 디스크를
+        // 「업데이트 이전 스냅샷」 자리에 덮어쓴다. 확장 업데이트에는 코어와 달리
+        // 실행 잠금이 없어 그 충돌이 오히려 더 쉽다.
+        $timestamp = BackupDirectoryName::stamp();
         $backupRoot = storage_path('app/extension_backups');
         $backupTypeDir = storage_path("app/extension_backups/{$type}");
         $backupPath = storage_path("app/extension_backups/{$type}/{$identifier}_{$timestamp}");
@@ -63,6 +67,7 @@ class ExtensionBackupHelper
      * @param  string  $dest  대상 디렉토리
      * @param  string  $basePath  상대 경로 계산 기준
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      */
     private static function copyDirectoryWithProgress(
         string $source,
@@ -102,6 +107,7 @@ class ExtensionBackupHelper
      * @param  string  $identifier  확장 식별자
      * @param  string  $backupPath  백업 경로
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 백업 디렉토리가 없을 때
      *
@@ -125,6 +131,7 @@ class ExtensionBackupHelper
      * 백업 디렉토리를 삭제합니다.
      *
      * @param  string  $backupPath  백업 경로
+     * @return void 반환값 없음
      */
     public static function deleteBackup(string $backupPath): void
     {

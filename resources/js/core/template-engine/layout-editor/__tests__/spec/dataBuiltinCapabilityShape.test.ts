@@ -1,3 +1,6 @@
+// @scenario aspect=capability_attach
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 // e2e:allow-shape 게이트(데이터 표면 누락 0 잠금)만 추가한다.
 // 데이터 빌트인의 라이브 동작(추가/편집→저장→실사용자화면 렌더)은 8-b 가 작성한
 // tests/Playwright/specs/layout-editor/data-builtins.spec.ts + 시나리오 매니페스트

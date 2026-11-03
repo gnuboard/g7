@@ -103,6 +103,7 @@
   "refresh": "새로고침",
   "activate": "활성화",
   "skip": "건너뛰기",
+  "copy": "복사",
   "tag_input": {
     "remove": "{{label}} 지우기",
     "results": "결과 {{count}}개",

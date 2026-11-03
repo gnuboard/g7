@@ -65,3 +65,5 @@ test_files:
   - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpCallbackResolverTest.php
   - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Controllers/KcpCallbackControllerTest.php
   - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpVerifyStorageAtomicityTest.php
+  # 결과조회(fetchCertData) 복호화와 응답 코드 처리 단위 테스트 — 콜백 판정 파이프라인의 결과조회 단계
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Unit/Services/KcpCertClientTest.php

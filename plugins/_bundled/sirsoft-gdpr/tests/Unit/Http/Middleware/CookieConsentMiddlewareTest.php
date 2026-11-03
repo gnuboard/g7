@@ -30,8 +30,6 @@ use Tests\Concerns\LoginHandoffBinding;
  * 검증하던 시절에는 설정을 바꿔도 판정이 안 바뀌는 회귀를 잡을 수 없었다.
  *
  * @scenario scope=cookie, notation=wildcard, locked=locked_item, settings_state=empty, request=valid_item
- *
- * @effects middleware_passes_cookie_listed_in_operator_settings, middleware_removes_cookie_absent_from_settings, middleware_supports_wildcard_in_cookie_allowlist, middleware_locked_cookies_survive_empty_settings, middleware_locked_cookies_cannot_be_removed_via_settings, middleware_session_cookie_name_resolved_at_runtime
  */
 class CookieConsentMiddlewareTest extends PluginTestCase
 {

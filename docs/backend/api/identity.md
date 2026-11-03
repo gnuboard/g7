@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Identity 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -193,6 +193,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 본인인증 시도 이력(성공/실패/취소/정책위반)을 관리자 화면에서 필터·검색·정렬하여 페이지네이션 조회합니다. `auth:sanctum` + `core.admin.identity.logs.read` 관리자 권한이 필요합니다. `IdentityLogService::search` 로 프로바이더·목적·상태·채널·기간 등 다중 필터를 적용하며, 응답의 `abilities.can_purge` 로 파기 권한 보유 여부를 함께 내려 UI 버튼 노출을 제어합니다. 관리자 IDV 이력 대시보드에서 특정 사용자(`user_id`)나 대상 해시(`target_hash`)로 감사 추적할 때 사용합니다.
 
 
@@ -258,6 +260,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 지정한 보관주기(`older_than_days`, 기본 180일) 를 경과한 본인인증 이력을 일괄 삭제하고 삭제된 행 수를 반환합니다. `auth:sanctum` + `core.admin.identity.logs.purge` 관리자 권한이 필요합니다. `IdentityLogService::purge` 가 실제 삭제를 수행하며 되돌릴 수 없으므로, 개인정보 보관기간 정책 준수를 위해 오래된 인증 시도 로그를 정리할 때 사용합니다.
 
 
@@ -286,7 +290,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| scope | query | string | 아니오 | — | 조회 범위 한정 키 |
+| scope | query | string | 아니오 | — | 적용 시점 필터 (route / hook / custom, IdentityPolicyScope) |
 | purpose | query | string | 아니오 | max 64 | 인증 목적 필터 (해당 목적을 요구하는 정책만 조회) |
 | source_type | query | string | 아니오 | — | 정책 출처 필터 (core/module/plugin/admin — 선언형 vs 운영자 정책 구분, IdentityPolicySourceType) |
 | source_identifier | query | string | 아니오 | max 100 | 출처 식별자 |
@@ -316,11 +320,11 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | scope | string | `route` | 정책 적용 범위 (route: 라우트 패턴 / hook: Service 훅 / custom: 모듈 커스텀 키, IdentityPolicyScope) |
 | target | string | `api.admin.{modules,plugins}.uninstall` | 매칭 대상 (scope 에 따라 라우트명/URI 패턴, 훅 이름, 또는 custom key) |
 | purpose | string | `sensitive_action` | 이 정책이 요구하는 인증 목적 |
-| provider_id | null | `null` | provider 식별자 (연관 리소스 참조) |
+| provider_id | string | `nhnkcp` | provider 식별자 (연관 리소스 참조) |
 | grace_minutes | integer | `0` | 재인증 유예 시간(분) — 최근 N분 이내 동일 목적 인증 성공 시 재인증 생략 (0=매번 요구) |
 | enabled | boolean | `false` | 정책 사용 여부 (false 시 인증 미강제) |
-| priority | integer | `100` | 정책 우선순위 (같은 대상에 여러 정책 매칭 시 작을수록 우선) |
-| conditions | object | `{"changed_fields":["email","phone","mobile"]}` | 추가 매칭 조건 (역할/HTTP 메서드/파라미터 매칭 조건 JSON, 없으면 빈 배열) |
+| priority | integer | `100` | 정책 우선순위 (같은 대상에 활성 정책이 여럿이면 값이 큰 정책부터 검사) |
+| conditions | array | `[]` | 추가 매칭 조건 (역할/HTTP 메서드/파라미터 매칭 조건 JSON, 없으면 빈 배열) |
 | source_type | string | `core` | 정책 출처 (core/module/plugin: 선언형 / admin: 운영자 직접 등록, IdentityPolicySourceType) |
 | source_identifier | string | `core` | 출처 식별자 (선언형 정책의 소유 확장 identifier) |
 | applies_to | string | `admin` | 적용 대상 사용자 (self: 일반 사용자 / admin: 관리자 / both: 모두, IdentityPolicyAppliesTo) |
@@ -415,6 +419,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 본인인증 정책(어느 시점/위치에서 어떤 목적의 인증을 요구할지) 목록을 필터·검색하여 페이지네이션 조회합니다. `auth:sanctum` + `core.admin.identity.policies.read` 관리자 권한이 필요합니다. `IdentityPolicyService::search` 로 scope·purpose·source_type·enabled 등을 필터링하며, 응답의 `source_type` 으로 선언형(core/module/plugin) 정책과 운영자 정책(admin) 을 구분하고 `user_overrides` 로 운영자가 재정의한 필드를 표시합니다. 관리자 IDV 정책 DataGrid 를 구성할 때 사용합니다.
 
 
@@ -429,13 +435,13 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | key | body | string | 예 | max 120 | 정책 식별자 (고유, 예: core.profile.password_change) |
-| scope | body | string | 예 | — | 조회 범위 한정 키 |
+| scope | body | string | 예 | — | 적용 시점 (route: 경로 / hook: 서비스 훅 / custom: 확장이 직접 검사하는 키, IdentityPolicyScope) |
 | target | body | string | 예 | max 255 | 매칭 대상 (scope 에 따라 라우트명/URI 패턴, 훅 이름, 또는 custom key) |
 | purpose | body | string | 예 | max 64 | 이 정책이 요구하는 인증 목적 |
 | provider_id | body | string | 아니오 | max 64 | provider 식별자 |
 | grace_minutes | body | integer | 예 | min 0, max 43200 | 재인증 유예 시간(분) — 최근 N분 이내 동일 목적 인증 성공 시 재인증 생략 (0=매번 요구) |
 | enabled | body | boolean | 아니오 | — | 사용 여부 |
-| priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (작을수록 우선) |
+| priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (같은 대상에 활성 정책이 여럿이면 값이 큰 정책부터 검사, 같은 대상의 활성 정책과 같은 값이면 422) |
 | conditions | body | array | 아니오 | — | 추가 매칭 조건 (역할/HTTP 메서드/파라미터 매칭 조건 JSON) |
 | applies_to | body | string | 예 | — | 적용 대상 사용자 (self: 일반 사용자 / admin: 관리자 / both: 모두, IdentityPolicyAppliesTo) |
 | fail_mode | body | string | 예 | — | 실패 시 동작 (block: HTTP 428 차단 / log_only: 감사 로그만 남기고 통과, IdentityPolicyFailMode) |
@@ -484,7 +490,7 @@ _단건 응답: `data` 객체의 필드 (생성된 정책을 `PolicyResource` �
 | provider_id | null | `null` | 강제할 프로바이더 ID (미지정 시 null → 목적 기본 프로바이더 사용) |
 | grace_minutes | integer | `30` | 재인증 유예 시간(분) — 0=매번 요구 |
 | enabled | boolean | `true` | 정책 사용 여부 |
-| priority | integer | `100` | 정책 우선순위 (작을수록 우선) |
+| priority | integer | `100` | 정책 우선순위 (값이 클수록 먼저 검사) |
 | conditions | object | `{"changed_fields":["email"]}` | 추가 매칭 조건 JSON (미지정 시 null) |
 | source_type | string | `admin` | 정책 출처 — 이 엔드포인트로 생성한 정책은 항상 `admin` |
 | source_identifier | string | `null` | 출처 식별자 (요청에서 전달한 값, 미전달 시 null) |
@@ -541,6 +547,8 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
+
+
 **설명** 운영자가 새 본인인증 정책을 생성합니다(`source_type='admin'` 고정). `auth:sanctum` + `core.admin.identity.policies.update` 관리자 권한이 필요합니다. `IdentityPolicyService::createAdminPolicy` 가 처리하며 `key`·`scope`·`target`·`purpose`·`grace_minutes`·`applies_to`·`fail_mode` 등을 지정합니다. 확장은 `core.identity_policy.store_validation_rules` 필터 훅으로 검증을 확장할 수 있습니다. 특정 라우트/훅 지점에 코어가 선언하지 않은 인증 요구를 관리자가 직접 추가할 때 사용하며 성공 시 201 로 응답합니다.
 
 
@@ -596,6 +604,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 본인인증 정책을 삭제합니다. `auth:sanctum` + `core.admin.identity.policies.update` 관리자 권한이 필요합니다. `source_type='admin'` 인 운영자 정책만 삭제할 수 있고, 선언형 정책(core/module/plugin) 은 403 을 반환하므로 삭제 대신 비활성화(update 로 `enabled=false`) 로 대체해야 합니다. 확장은 `core.identity_policy.destroy_validation_rules` 필터 훅으로 검증을 확장할 수 있습니다. 운영자가 잘못 만든 정책을 제거할 때 사용합니다.
 
 
@@ -615,10 +625,10 @@ HTTP/1.1 200
 | provider_id | body | string | 아니오 | max 64 | provider 식별자 |
 | fail_mode | body | string | 아니오 | — | 실패 시 동작 (block: HTTP 428 차단 / log_only: 감사 로그만 남기고 통과, IdentityPolicyFailMode) |
 | key | body | string | 아니오 | max 120 | 정책 식별자 (admin 정책만 변경 가능, 선언형 정책은 확장 지점 식별자라 변경 차단) |
-| scope | body | string | 아니오 | — | 조회 범위 한정 키 |
+| scope | body | string | 아니오 | — | 적용 시점 (admin 정책만 변경 가능, 선언형 정책은 변경 차단, IdentityPolicyScope) |
 | target | body | string | 아니오 | max 255 | 매칭 대상 (admin 정책만 변경 가능, 선언형 정책은 변경 차단) |
 | purpose | body | string | 아니오 | max 64 | 이 정책이 요구하는 인증 목적 |
-| priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (작을수록 우선) |
+| priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (같은 대상에 활성 정책이 여럿이면 값이 큰 정책부터 검사, 같은 대상의 활성 정책과 같은 값이면 422) |
 | conditions | body | array | 아니오 | — | 추가 매칭 조건 (역할/HTTP 메서드/파라미터 매칭 조건 JSON) |
 | applies_to | body | string | 아니오 | — | 적용 대상 사용자 (self: 일반 사용자 / admin: 관리자 / both: 모두, IdentityPolicyAppliesTo) |
 
@@ -726,6 +736,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 본인인증 정책을 수정합니다. `auth:sanctum` + `core.admin.identity.policies.update` 관리자 권한이 필요합니다. `source_type='admin'` 정책은 모든 필드를 편집할 수 있으나, 선언형 정책(core/module/plugin) 은 `enabled`·`grace_minutes`·`provider_id`·`fail_mode`·`conditions`·`purpose`·`applies_to`·`priority` 화이트리스트("어떻게 인증할지") 만 허용되고 `key`/`scope`/`target`("어디서 인증할지") 은 확장 지점 식별자라 변경이 차단됩니다. 편집한 필드는 `user_overrides` 에 append 되어 시더 재실행 시 보존됩니다. 허용 필드가 하나도 없으면 422(nothing_to_update) 를 반환합니다. 확장은 `core.identity_policy.update_validation_rules` 필터 훅으로 검증을 확장할 수 있습니다.
 
 
@@ -829,6 +841,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | `field` 가 허용값 밖이거나 복원에 실패한 경우 (`선언 기본값 복원에 실패했습니다. 필드가 유효한지 확인하세요.`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 선언형 정책의 특정 필드에 대한 운영자 재정의(`user_overrides`) 를 해제하고 선언 기본값으로 즉시 복원합니다. `auth:sanctum` + `core.admin.identity.policies.update` 관리자 권한이 필요합니다. `field` 는 재정의 가능 필드(`enabled`, `grace_minutes`, `provider_id`, `fail_mode`, `conditions`, `purpose`, `applies_to`, `priority`) 중 하나여야 합니다. `source_type='admin'` 정책은 선언 기본값이 없어 403 을 반환하며 선언형 정책(core/module/plugin) 에만 의미가 있습니다. 관리자 편집 화면의 "↺ 기본값으로 되돌리기" 버튼이 호출하는 엔드포인트입니다.
 
@@ -977,6 +991,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명** 등록된 IDV 프로바이더 목록을 각 프로바이더의 설정 스키마(`settings_schema`) 와 함께 반환합니다. `auth:sanctum` + `core.admin.identity.providers.read` 관리자 권한이 필요합니다. 각 프로바이더의 `getSettingsSchema()` 결과를 `core.identity.settings_schema` 필터 훅으로 확장 가능하게 통과시키므로, 관리자 프로바이더 설정 카드(코드 길이·만료 시간 등)를 스키마 기반으로 반복 렌더링할 때 사용합니다. 설정 스키마가 없는 공개용 목록은 `GET /api/identity/providers` 를 사용합니다.
 
@@ -1162,6 +1177,8 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
+
+
 **설명** 본인인증 challenge(인증 시도) 를 시작합니다. `auth:sanctum` + `core.identity.request` 권한이 필요합니다. 로그인 사용자는 인증 대상이 자동으로 본인이 되며, 비로그인 게스트(Mode B 가입 흐름) 는 `target.email` 또는 `target.phone` 을 반드시 제공해야 하고 없으면 422(missing_target) 를 반환합니다. `provider_id` 미지정 시 목적에 매핑된 기본 프로바이더가 선택됩니다. `IdentityVerificationService::start` 가 IP·User-Agent 등 컨텍스트와 함께 challenge 를 생성하고 성공 시 201 로 challenge 리소스(render_hint 등 포함) 를 반환합니다. 확장은 `core.identity.request_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다.
 
 **발송 실패는 성공으로 포장하지 않습니다(#599 세션A).** challenge 생성과 코드 전달은 다른 일이라, 전달이 실패해도 challenge 행은 남습니다. 그대로 201 을 주면 화면이 「전송된 코드를 입력하세요」와 카운트다운을 띄워 사용자가 오지 않을 코드를 기다리게 됩니다. 그래서 생성 직후 `IdentityVerificationService::getStatus()`(공개 폴링과 같은 판정)로 상태를 확인하고, `failed` 이면 **502** 와 `identity.errors.challenge_dispatch_failed` 를 반환합니다. 요청 자체는 올바르고 권한도 있으므로 4xx 가 아니라 바깥 전달 경로의 실패를 뜻하는 5xx 를 씁니다.
@@ -1182,7 +1199,7 @@ HTTP/1.1 201
 **요청 예시**
 
 ```http
-GET /api/identity/challenges/006209fd-1b6c-40aa-a38f-9b907f1a4bca HTTP/1.1
+GET /api/identity/challenges/{challenge} HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
@@ -1239,6 +1256,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** challenge 의 공개 상태를 폴링 조회합니다(engine-v1.46.0+). `auth:sanctum` 인증이 필요합니다. Stripe Identity/토스인증 push/외부 redirect 콜백 대기처럼 verify 즉시 응답을 받지 못하는 비동기 검증 흐름에서 클라이언트가 상태(verified/failed/expired 등) 를 추적하기 위한 엔드포인트입니다. `IdentityVerificationService::getStatus` 가 공개 안전 항목만 노출하며(시도 횟수 상세·코드 본체·metadata 미노출), challenge 를 찾지 못하면 404 를 반환합니다.
 
 
@@ -1257,7 +1276,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/identity/challenges/006209fd-1b6c-40aa-a38f-9b907f1a4bca/cancel HTTP/1.1
+POST /api/identity/challenges/{challenge}/cancel HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
@@ -1380,7 +1399,7 @@ HTTP/1.1 200
 **요청 예시**
 
 ```http
-POST /api/identity/challenges/006209fd-1b6c-40aa-a38f-9b907f1a4bca/verify HTTP/1.1
+POST /api/identity/challenges/{challenge}/verify HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
@@ -1446,7 +1465,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| scope | query | string | 예 | max 32 | 조회 범위 한정 키 |
+| scope | query | string | 예 | max 32 | 적용 시점 (route / hook / custom) |
 | target | query | string | 예 | max 255 | 정책 매칭 대상 (scope 와 함께 해석 — 라우트명/URI 패턴, 훅 이름, 또는 custom key) |
 
 **요청 예시**
@@ -1514,6 +1533,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 필수 쿼리 `scope`/`target` 누락 또는 길이 초과 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 지정한 `scope`+`target` 조합에 매칭되는 본인인증 정책 요약을 반환합니다(프론트엔드 프리페치용). `auth:sanctum` 인증이 필요합니다. `IdentityPolicyService::resolve` 로 정책을 찾아 활성(`enabled`) 정책이 없으면 `data: null` 을, 있으면 UI 힌트에 필요한 최소 필드(`policy_key`, `scope`, `target`, `purpose`, `provider_id`, `grace_minutes`, `applies_to`, `fail_mode`) 만 반환하고 민감 필드는 노출하지 않습니다. 레이아웃 마운트 시 "이 페이지에서 IDV 가 요구될 수 있는 API" 를 미리 파악해 버튼 배지("확인 필요") 같은 UI 힌트를 표시할 때 사용합니다.
 
@@ -1602,6 +1623,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명** 등록된 IDV 프로바이더의 공개 메타데이터 목록을 반환합니다. 공개 엔드포인트로 인증이 필요하지 않으며, 비로그인 가입 흐름에서도 접근합니다. `IdentityVerificationManager::all()` 의 각 프로바이더를 `ProviderResource` 로 직렬화해 id·label·channels·render_hint·is_available 등만 노출하고, 관리자용과 달리 `settings_schema` 는 포함하지 않습니다. 인증 모달이 사용 가능한 프로바이더 선택지를 표시할 때 사용합니다.
 
@@ -1743,6 +1765,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명** 등록된 인증 목적(purpose) 목록을 반환합니다. 공개 엔드포인트로 인증이 필요하지 않습니다. `IdentityVerificationManager::getAllPurposes()` 로 코어 기본 5종(signup/password_reset/self_update/sensitive_action/login) + 활성 모듈/플러그인의 `getIdentityPurposes()` 선언 + `core.identity.purposes` 필터 훅(서드파티 동적 확장) 을 병합하며, 각 항목의 label/description 은 i18n 키·다국어 배열·평문 세 형태를 현재 로케일 문자열로 정규화해 내려줍니다. 각 목적의 기본 프로바이더·허용 채널·출처(source_type/source_identifier) 를 함께 반환하므로, 인증 UI 가 목적별 선택지와 문구를 구성할 때 사용합니다.
 

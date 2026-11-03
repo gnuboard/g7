@@ -1343,7 +1343,10 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 이 콜백은 비인증 브라우저 POST 이고 서명이 주문번호를 묶지 않는다. 승인 실패를 근거로 실패 처리하면
      * 남의 주문번호를 붙인 요청 하나로 타인의 결제대기 주문이 취소된다.
      *
-     * @effects auth_callback_redirects_to_fail_and_sends_net_cancel_on_authorize_failure
+     * @scenario context=authorize_card, threat=post_approve_failure, callback_state=domain_fails
+     *
+     * @effects auth_callback_redirects_to_fail_and_sends_net_cancel_on_authorize_failure,
+     *   post_approve_failure_triggers_send_net_cancel, net_cancel_sends_pg_cancel_api_call
      *
      * @return void 반환값 없음
      */

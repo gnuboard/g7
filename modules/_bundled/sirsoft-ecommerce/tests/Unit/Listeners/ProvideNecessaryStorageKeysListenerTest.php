@@ -15,10 +15,8 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * @scenario scope=localStorage, consent_plugin=installed
  *
- * @effects provider_subscribes_to_consent_plugin_filter_hook,
- *   provider_appends_own_keys_without_dropping_others,
- *   provider_keys_match_the_storage_writing_code,
- *   provider_does_not_reference_consent_plugin_classes
+ * 효과 요약(마커 아님 — 평문): 필터 훅 구독, 다른 키를 지우지 않고 덧붙이기, 저장 코드와 키 이름 일치,
+ *   동의 플러그인 클래스 미참조. 각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
  */
 class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
 {
@@ -30,6 +28,8 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
         'localStorage' => [
             'g7_cart_key',
             'g7_order_*',
+            'g7_preferred_currency',
+            'g7_preferred_shipping_country',
         ],
         'sessionStorage' => [
             'g7_guest_order_token',
@@ -43,6 +43,9 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
         'g7_cart_key' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         // 관리자 주문 목록 표시 열 — `g7_order_visible_columns_{관리자 uuid}` 로 저장한다(앞부분 매칭, 1.3.2)
         'g7_order_*' => 'resources/js/handlers/orderHandlers.ts',
+        // 헤더의 통화·배송 국가 선택기가 고른 값을 저장한다
+        'g7_preferred_currency' => 'resources/extensions/header-currency-selector-user.g7.html',
+        'g7_preferred_shipping_country' => 'resources/extensions/header-currency-selector-user.g7.html',
         'g7_guest_order_token' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         'g7_guest_order_number' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         'g7_guest_order_expires_at' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',

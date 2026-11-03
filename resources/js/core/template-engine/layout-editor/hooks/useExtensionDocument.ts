@@ -48,6 +48,7 @@ import { getCacheBustNonce, bumpCacheBustNonce } from '../utils/editorCacheBust'
 import { readConflictVersion } from '../utils/conflictVersion';
 import type { SaveResult } from './useLayoutDocument';
 import { suffixed } from '../../../support/assetUrl';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /**
  * 확장 편집 모드의 가상 path(`__extension__/{extensionId}`)에서 extensionId 를 추출한다.
@@ -493,7 +494,7 @@ export function useExtensionDocument(): UseExtensionDocumentResult {
       const token = readSanctumToken();
       const headers: Record<string, string> = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
-      const response = await fetch(url, { headers, credentials: 'same-origin' });
+      const response = await fetch(withBasePrefix(url), { headers, credentials: 'same-origin' });
       if (!response.ok) return null;
       const body = await response.json().catch(() => null);
       // 전체 raw 보존(components 외 data_sources/meta/modals 등 — G3 호스트 바인딩 샘플 해석).
@@ -516,7 +517,7 @@ export function useExtensionDocument(): UseExtensionDocumentResult {
       const url = `/api/admin/templates/${encodeURIComponent(
         templateIdentifier,
       )}/layout-extensions/${encodeURIComponent(extensionId)}?v=${cacheVersion}`;
-      const response = await fetch(url, {
+      const response = await fetch(withBasePrefix(url), {
         headers: buildAuthHeaders(),
         credentials: 'same-origin',
       });
@@ -745,7 +746,7 @@ export function useExtensionDocument(): UseExtensionDocumentResult {
 
     let response: Response;
     try {
-      response = await fetch(url, {
+      response = await fetch(withBasePrefix(url), {
         method: 'PUT',
         headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'same-origin',

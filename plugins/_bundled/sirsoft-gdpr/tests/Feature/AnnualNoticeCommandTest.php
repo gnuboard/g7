@@ -37,7 +37,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario flow=scheduled
  *
- * @effects notice_queued, channel_result_appended, duplicate_prevented, annual_notice_targets_match_the_dispatch_decision
+ * 효과 요약(마커 아님 — 평문): notice_queued, channel_result_appended, duplicate_prevented, annual_notice_targets_match_the_dispatch_decision
  */
 class AnnualNoticeCommandTest extends PluginTestCase
 {

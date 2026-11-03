@@ -17,8 +17,6 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  * - PUT /api/plugins/sirsoft-gdpr/admin/settings
  *
  * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=invalid_format
- *
- * @effects update_persists_allowlist_per_scope, update_normalizes_textarea_string_to_array, update_without_key_leaves_existing_value_untouched, update_rejects_invalid_item_format_with_scope_indexed_error_key, update_rejects_unknown_scope, update_ignores_locked_list_from_request, show_includes_default_catalog_previews
  */
 class GdprAdminSettingsControllerTest extends PluginTestCase
 {
@@ -1001,6 +999,37 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
         // 전송하지 않은 스코프는 빈 배열로 보충되어 화면이 항상 세 카드를 그린다.
         $this->assertSame([], $saved['sessionStorage']);
         $this->assertSame([], $saved['cookie']);
+    }
+
+    /**
+     * 잘못된 UTF-8 바이트가 섞인 줄바꿈 문자열도 줄이 조용히 사라지지 않는다.
+     *
+     * 줄 분리에 UTF-8 모드(`/\R/u`)를 쓰면 잘못된 바이트 하나에 `preg_split` 이 false 를 돌려주고, 그
+     * 스코프의 **멀쩡한 줄까지** 통째로 빈 목록으로 저장됐다(200 OK). blocked_domains 와 같은 명시
+     * 줄 종결자 분리로 맞추면 줄은 살아 있고, 잘못된 줄은 형식 검증이 그 인덱스로 422 를 낸다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=populated, request=invalid_format
+     *
+     * @effects update_normalizes_textarea_string_to_array
+     */
+    public function test_update_necessary_storage_allowlist_string_with_invalid_utf8_does_not_drop_lines(): void
+    {
+        $captured = $this->captureSave();
+
+        $user = $this->createPrivacyOperatorUser();
+
+        // JSON 은 잘못된 UTF-8 을 실을 수 없으므로 폼 전송으로 보낸다.
+        $this->actingAs($user)->put('/api/plugins/sirsoft-gdpr/admin/settings', [
+            'necessary_storage_allowlist' => [
+                'localStorage' => "g7_locale\ng7_\xFFbroken",
+            ],
+        ], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['necessary_storage_allowlist.localStorage.1']);
+
+        $this->assertArrayNotHasKey('necessary_storage_allowlist', $captured->value, '형식 위반인데 저장됐다');
     }
 
     /**

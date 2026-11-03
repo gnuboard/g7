@@ -38,6 +38,8 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
+_단건 응답: `data` 객체의 필드._
+
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | policy | object | — | 정책 값(아래 `policy.*`) |
@@ -102,7 +104,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.settings.view`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.settings.view`)이 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -190,7 +192,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.settings.update`)이 없는 경우, 또는 `errors.code` = `super_only` — 최고관리자가 아닌데 `enforce_site`, `enforce_roles`, `emergency_user_ids` 의 값을 바꿈(같은 값을 다시 보내는 것은 된다) |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.settings.update`)이 없는 경우, 또는 `errors.code` = `super_only` — 최고관리자가 아닌데 `enforce_site`, `enforce_roles`, `emergency_user_ids` 의 값을 바꿈(같은 값을 다시 보내는 것은 된다) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우, 또는 `errors.code` = `emergency_required`(저장 결과 비상 계정 0명 — 지운 회원 ID 는 빠진다), `site_enforce_requires_idp`(사용 중인 IdP 없이 사이트 전체 강제) |
 
 <!-- @generated:end -->
@@ -249,6 +251,8 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
+_단건 응답: `data` 객체의 필드._
+
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | password_users | integer | — | 바꾸면 새로 강제 대상이 되는, 비밀번호가 있는 회원 수(비상 계정 제외) |
@@ -273,7 +277,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`admin,sirsoft-sso.settings.view`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-sso.settings.view`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->

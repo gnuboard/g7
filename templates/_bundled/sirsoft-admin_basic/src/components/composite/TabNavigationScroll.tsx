@@ -7,6 +7,7 @@ import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import { scrollToSectionHandler } from '../../handlers/scrollToSectionHandler';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
@@ -503,7 +504,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
               ref={(el) => {
                 tabRefs.current[tabIndex] = el;
               }}
-              href={link.href}
+              href={sitePath(link.href)}
               role="tab"
               aria-selected={activeTab === tab.id}
               tabIndex={tabIndex === focusableIndex ? 0 : -1}

@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ValidationApi;
@@ -17,6 +19,8 @@ use ValidationApi;
  *  - escapeEnvValue 개행 라인 주입
  *  - PDO DSN 파라미터 주입
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerSecurityHardeningTest extends TestCase
 {
     private static bool $loaded = false;
@@ -25,6 +29,12 @@ class InstallerSecurityHardeningTest extends TestCase
 
     private static string $skipReason = '';
 
+    /**
+     * 클래스 시작 때 한 번 언어 스텁과 상수를 준비하고 설치기 검증 API, 상태 헬퍼, 태스크 러너 소스를 읽어 들인다.
+     * 상태 파일 상수가 시스템 임시 경로 밖으로 먼저 정의돼 있으면 운영 상태 파일을 지키려고 로드 없이 건너뛰기 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         if (self::$loaded) {
@@ -78,6 +88,11 @@ class InstallerSecurityHardeningTest extends TestCase
         self::$loaded = true;
     }
 
+    /**
+     * 준비 단계에서 건너뛰기 사유가 기록돼 있으면 각 테스트를 건너뛰게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -87,6 +102,14 @@ class InstallerSecurityHardeningTest extends TestCase
         }
     }
 
+    /**
+     * 검증 API 객체의 비공개 메서드를 리플렉션으로 불러 그 반환값을 돌려준다.
+     *
+     * @param  object  $obj  메서드를 가진 대상 객체
+     * @param  string  $method  부를 비공개 메서드 이름
+     * @param  array  $args  메서드에 넘길 인자 목록
+     * @return mixed 비공개 메서드의 반환값
+     */
     private function invokePrivate(object $obj, string $method, array $args)
     {
         $ref = new ReflectionClass($obj);
@@ -100,6 +123,8 @@ class InstallerSecurityHardeningTest extends TestCase
      * STATE_PATH 는 setUpBeforeClass 의 안전 가드로 시스템 temp 하위임이 보장된 경우에만
      * 이 지점에 도달하므로, 운영 storage/installer-state.json 은 절대 건드리지 않는다.
      * (과거 루트 state 를 무조건 @unlink 하던 코드는 실제 운영 설치 상태를 파괴할 수 있어 제거)
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -111,6 +136,9 @@ class InstallerSecurityHardeningTest extends TestCase
 
     /**
      * 테스트별 임시 state.json 작성/삭제 도우미.
+     *
+     * @param  array  $config  상태 파일의 config 칸에 넣을 설정 배열
+     * @return void 반환값 없음
      */
     private function writeState(array $config): void
     {
@@ -118,6 +146,11 @@ class InstallerSecurityHardeningTest extends TestCase
         @file_put_contents(STATE_PATH, json_encode($state));
     }
 
+    /**
+     * 테스트가 쓴 임시 상태 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     private function clearState(): void
     {
         @unlink(STATE_PATH);
@@ -127,6 +160,15 @@ class InstallerSecurityHardeningTest extends TestCase
     // Critical-1 — getComposerCommand 공백 분기 RCE 차단
     // ========================================================================
 
+    /**
+     * Composer 칸에 공백으로 셸 명령을 이어 붙인 값이 저장돼 있어도 명령 조립이 시스템 기본 composer 로 폴백하는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=shell_meta_space, expected_outcome=fall_back_to_default
+     *
+     * @effects getComposerCommand_returns_composer_for_shell_metachar_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_rejects_space_containing_input_falls_back_to_composer(): void
     {
         $this->writeState(['composer_binary' => 'sh -c "id > /tmp/g7_should_not_run"']);
@@ -137,6 +179,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 세미콜론, 앤드 연산, 명령 치환, 백틱, 개행이 든 Composer 값마다 기본 composer 로 폴백하는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=shell_meta_semicolon, expected_outcome=fall_back_to_default
+     *
+     * @effects getComposerCommand_returns_composer_for_shell_metachar_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_rejects_shell_metachars_falls_back_to_composer(): void
     {
         foreach ([
@@ -153,6 +204,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 메타문자 없는 단일 절대경로는 존재 확인 없이 셸 인자 이스케이프만 거쳐 그대로 쓰이는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects getComposerCommand_returns_escapeshellarg_quoted_path_for_valid_binary
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_passes_through_safe_absolute_path(): void
     {
         // open_basedir 같은 PHP 런타임 제약 환경의 false negative 를 피하기 위해
@@ -166,6 +226,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * Composer 칸이 비어 있으면 기본 composer 명령을 돌려주는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=empty, expected_outcome=fall_back_to_default
+     *
+     * @effects getComposerCommand_returns_composer_for_empty_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_empty_returns_default(): void
     {
         $this->writeState(['composer_binary' => '']);
@@ -174,6 +243,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 화면 표기용 명령 문자열에도 저장된 셸 페이로드가 드러나지 않고 composer 로 대체되는지 확인한다.
+     *
+     * @scenario vector=getComposerCommandForDisplay, payload_class=shell_meta_space, expected_outcome=fall_back_to_default
+     *
+     * @effects getComposerCommandForDisplay_does_not_leak_shell_payload
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_for_display_does_not_leak_shell_payload(): void
     {
         $this->writeState(['composer_binary' => 'rm -rf /']);
@@ -185,6 +263,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 실행 경로 판정이 공백, 셸 메타문자, 따옴표, 널 바이트, 제어 문자가 든 값을 모두 거부하는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=shell_meta_pipe, expected_outcome=fall_back_to_default
+     *
+     * @effects isInstallerExecutablePath_rejects_metachars
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_installer_executable_path_rejects_metachars(): void
     {
         // 백슬래시는 Windows 경로 구분자이므로 차단 대상 아님 (escapeshellarg 가 셸 인젝션 차단)
@@ -193,6 +280,15 @@ class InstallerSecurityHardeningTest extends TestCase
         }
     }
 
+    /**
+     * 백슬래시가 든 Windows 절대경로는 공백이나 메타문자가 없으면 실행 경로로 허용되는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects legitimate_paths_still_reach_exec
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_installer_executable_path_accepts_windows_paths(): void
     {
         // Windows 절대경로는 백슬래시 포함이지만 공백·메타문자 없으면 통과.
@@ -208,6 +304,15 @@ class InstallerSecurityHardeningTest extends TestCase
         }
     }
 
+    /**
+     * 공백이 든 Windows 경로는 토큰 분리 규칙과 충돌하므로 알려진 한계대로 거부되는지 고정한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=shell_meta_space, expected_outcome=fall_back_to_default
+     *
+     * @effects isInstallerExecutablePath_rejects_metachars
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_installer_executable_path_rejects_windows_path_with_space_known_limitation(): void
     {
         // 'C:\\Program Files\\...' 같은 공백 포함 Windows 경로는 본 회복 범위 외.
@@ -224,6 +329,12 @@ class InstallerSecurityHardeningTest extends TestCase
     /**
      * stat 가드가 제거되어 시놀로지 DSM 등 open_basedir 환경에서도
      * 정상 절대경로 입력이 통과해야 함. 실제 실행 가능 여부는 exec 결과로 판정.
+     *
+     * @scenario vector=getComposerCommand, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects legitimate_paths_still_reach_exec
+     *
+     * @return void 반환값 없음
      */
     public function test_is_installer_executable_path_accepts_safe_absolute_path_without_stat(): void
     {
@@ -237,6 +348,15 @@ class InstallerSecurityHardeningTest extends TestCase
     // Composer 공백 분리 입력 안전 복원 — 멀티 PHP 환경 호환성
     // ========================================================================
 
+    /**
+     * PHP 경로와 Composer 경로를 공백으로 나눈 두 토큰 입력이 각각 이스케이프된 뒤 공백으로 합쳐지는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects getComposerCommand_combines_php_and_phar_via_escapeshellarg
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_accepts_php_composer_space_separated_input(): void
     {
         // 시놀로지/cPanel/Plesk 멀티 PHP 환경의 운영 패턴
@@ -250,6 +370,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 두 토큰 입력의 첫 토큰에 명령 치환이 들어 있으면 기본 composer 로 폴백하는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=shell_meta_dollarparen, expected_outcome=fall_back_to_default
+     *
+     * @effects getComposerCommand_returns_composer_for_shell_metachar_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_rejects_space_separated_with_metachar_in_first_token(): void
     {
         // 첫 토큰에 메타문자 → 거부, composer 폴백
@@ -261,6 +390,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 두 토큰 입력의 둘째 토큰에 세미콜론이 들어 있으면 기본 composer 로 폴백하는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=shell_meta_semicolon, expected_outcome=fall_back_to_default
+     *
+     * @effects getComposerCommand_returns_composer_for_shell_metachar_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_rejects_space_separated_with_metachar_in_second_token(): void
     {
         // 두 번째 토큰에 메타문자 → 거부, composer 폴백
@@ -272,6 +410,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 세 토큰 이상이면 둘째 토큰에 남는 공백 때문에 거부되어 기본 composer 로 폴백하는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=shell_meta_space, expected_outcome=fall_back_to_default
+     *
+     * @effects getComposerCommand_returns_composer_for_shell_metachar_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_rejects_three_or_more_tokens(): void
     {
         // 3 토큰 이상은 두 번째 토큰에 공백이 남음 → 두 번째 토큰의 메타문자(공백) 로 거부
@@ -283,6 +430,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 정상 두 토큰 입력은 화면 표기에서 이스케이프 따옴표 없이 입력한 모양 그대로 보이는지 확인한다.
+     *
+     * @scenario vector=getComposerCommandForDisplay, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects getComposerCommandForDisplay_shows_pair_without_escaping
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_for_display_shows_human_friendly_space_separated_form(): void
     {
         $this->writeState(['composer_binary' => '/usr/local/bin/php83 /usr/local/bin/composer']);
@@ -294,6 +450,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
+    /**
+     * 두 토큰 중 하나에 백틱이 들어 있으면 화면 표기도 composer 로 대체되어 페이로드가 보이지 않는지 확인한다.
+     *
+     * @scenario vector=getComposerCommandForDisplay, payload_class=shell_meta_backtick, expected_outcome=fall_back_to_default
+     *
+     * @effects getComposerCommandForDisplay_does_not_leak_shell_payload
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_for_display_does_not_leak_shell_payload_in_space_separated(): void
     {
         // 두 토큰 중 하나라도 메타문자 포함이면 display 도 composer 폴백
@@ -310,6 +475,15 @@ class InstallerSecurityHardeningTest extends TestCase
     // validatePhpPath / validateComposerPath stat 가드 완화 (인스톨러 검증 API)
     // ========================================================================
 
+    /**
+     * 검증 API 의 PHP 경로 검사가 세미콜론, 명령 치환, 백틱, 파이프, 개행이 든 값을 무효로 판정하는지 확인한다.
+     *
+     * @scenario vector=validatePhpPath, payload_class=shell_meta_semicolon, expected_outcome=return_invalid_message
+     *
+     * @effects validatePhpPath_rejects_shell_metachars
+     *
+     * @return void 반환값 없음
+     */
     public function test_validate_php_path_rejects_shell_metachars(): void
     {
         $api = new ValidationApi;
@@ -325,6 +499,15 @@ class InstallerSecurityHardeningTest extends TestCase
         }
     }
 
+    /**
+     * 검증 API 의 PHP 경로 검사가 빈 값을 무효로 판정하는지 확인한다.
+     *
+     * @scenario vector=validatePhpPath, payload_class=empty, expected_outcome=return_invalid_message
+     *
+     * @effects validatePhpPath_rejects_empty_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_validate_php_path_rejects_empty(): void
     {
         $api = new ValidationApi;
@@ -332,6 +515,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->assertFalse($result['valid']);
     }
 
+    /**
+     * 메타문자 없는 존재하지 않는 절대경로가 존재 확인에서 걸리지 않고 실행 단계까지 가서 그 결과로 무효 판정되는지 확인한다.
+     *
+     * @scenario vector=validatePhpPath, payload_class=normal, expected_outcome=return_invalid_message
+     *
+     * @effects legitimate_paths_still_reach_exec
+     *
+     * @return void 반환값 없음
+     */
     public function test_validate_php_path_safe_path_reaches_exec_phase(): void
     {
         // 메타문자 없는 절대경로는 stat 가드 없이 exec 단계까지 도달.
@@ -344,6 +536,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->assertFalse($result['valid']);
     }
 
+    /**
+     * 검증 API 의 Composer 경로 검사가 셸 메타문자나 개행이 든 단일 값을 무효로 판정하는지 확인한다.
+     *
+     * @scenario vector=validateComposerPath, payload_class=shell_meta_semicolon, expected_outcome=return_invalid_message
+     *
+     * @effects validateComposerPath_rejects_shell_metachars
+     *
+     * @return void 반환값 없음
+     */
     public function test_validate_composer_path_rejects_shell_metachars(): void
     {
         $api = new ValidationApi;
@@ -358,6 +559,15 @@ class InstallerSecurityHardeningTest extends TestCase
         }
     }
 
+    /**
+     * 공백으로 나눈 두 토큰 입력에서 어느 토큰에든 메타문자나 여분 토큰이 있으면 무효로 판정하는지 확인한다.
+     *
+     * @scenario vector=validateComposerPath, payload_class=shell_meta_dollarparen, expected_outcome=return_invalid_message
+     *
+     * @effects validateComposerPath_rejects_shell_metachars
+     *
+     * @return void 반환값 없음
+     */
     public function test_validate_composer_path_rejects_space_separated_with_metachar(): void
     {
         // 공백 분리 입력의 토큰별 메타문자 검증
@@ -373,6 +583,15 @@ class InstallerSecurityHardeningTest extends TestCase
         }
     }
 
+    /**
+     * 토큰 분리 헬퍼가 PHP 경로와 Composer 경로 두 토큰을 이름 붙은 배열로 나누는지 확인한다.
+     *
+     * @scenario vector=validateComposerPath, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects splitPhpComposerTokens_splits_only_two_token_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_split_php_composer_tokens_helper_splits_into_two_tokens(): void
     {
         $api = new ValidationApi;
@@ -380,6 +599,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->assertSame(['php' => '/usr/local/bin/php83', 'composer' => '/usr/local/bin/composer'], $result);
     }
 
+    /**
+     * 토큰 분리 헬퍼가 토큰이 하나뿐인 입력에는 null 을 돌려주는지 확인한다.
+     *
+     * @scenario vector=validateComposerPath, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects splitPhpComposerTokens_splits_only_two_token_input
+     *
+     * @return void 반환값 없음
+     */
     public function test_split_php_composer_tokens_helper_returns_null_for_single_token(): void
     {
         $api = new ValidationApi;
@@ -387,6 +615,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->assertNull($result);
     }
 
+    /**
+     * 검증 API 의 경로 인자 판정이 유닉스 절대경로, 슬래시 Windows 경로, 백슬래시 Windows 경로를 허용하는지 확인한다.
+     *
+     * @scenario vector=validatePhpPath, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects legitimate_paths_still_reach_exec
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_installer_safe_path_arg_helper_accepts_safe_paths(): void
     {
         $api = new ValidationApi;
@@ -405,6 +642,15 @@ class InstallerSecurityHardeningTest extends TestCase
         }
     }
 
+    /**
+     * 검증 API 의 경로 인자 판정이 빈 값과 공백, 셸 메타문자, 따옴표, 제어 문자가 든 값을 거부하는지 확인한다.
+     *
+     * @scenario vector=validatePhpPath, payload_class=shell_meta_pipe, expected_outcome=return_invalid_message
+     *
+     * @effects isInstallerSafePathArg_rejects_metachars_and_empty
+     *
+     * @return void 반환값 없음
+     */
     public function test_is_installer_safe_path_arg_helper_rejects_metachars_and_empty(): void
     {
         $api = new ValidationApi;
@@ -420,6 +666,15 @@ class InstallerSecurityHardeningTest extends TestCase
     // 워커 정합 — 검증 통과한 입력이 워커에서도 silent fallback 없이 전달
     // ========================================================================
 
+    /**
+     * 검증을 통과한 단일 절대경로가 설치 워커에서도 조용히 기본값으로 바뀌지 않고 이스케이프된 채 쓰이는지 확인한다.
+     *
+     * @scenario vector=getComposerCommand, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects getComposerCommand_returns_escapeshellarg_quoted_path_for_valid_binary
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_composer_command_passes_through_single_absolute_path_without_silent_fallback(): void
     {
         // 검증 단계에서 통과한 단일 절대경로가 워커에서도 그대로 사용됨을 보장.
@@ -437,6 +692,15 @@ class InstallerSecurityHardeningTest extends TestCase
     // High-2 — checkCorePendingPath traversal 차단
     // ========================================================================
 
+    /**
+     * 코어 대기 경로 검사가 상위 디렉터리 세그먼트가 든 경로마다 실패와 같은 단일 오류 메시지를 돌려주는지 확인한다.
+     *
+     * @scenario vector=check_core_pending_path, payload_class=parent_traversal, expected_outcome=return_invalid_message
+     *
+     * @effects check_core_pending_path_rejects_double_dot_segment
+     *
+     * @return void 반환값 없음
+     */
     public function test_check_core_pending_path_rejects_parent_traversal(): void
     {
         $api = new ValidationApi;
@@ -456,6 +720,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $_GET = [];
     }
 
+    /**
+     * 코어 대기 경로 검사가 널 바이트가 든 경로를 실패로 돌려주는지 확인한다.
+     *
+     * @scenario vector=check_core_pending_path, payload_class=null_byte, expected_outcome=return_invalid_message
+     *
+     * @effects check_core_pending_path_rejects_null_byte
+     *
+     * @return void 반환값 없음
+     */
     public function test_check_core_pending_path_rejects_null_byte(): void
     {
         $api = new ValidationApi;
@@ -469,6 +742,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $_GET = [];
     }
 
+    /**
+     * 존재하지 않는 경로에도 같은 단일 오류 메시지를 돌려줘 존재 여부와 종류가 응답으로 새지 않는지 확인한다.
+     *
+     * @scenario vector=check_core_pending_path, payload_class=normal, expected_outcome=return_invalid_message
+     *
+     * @effects check_core_pending_path_returns_uniform_message_for_nonexistent
+     *
+     * @return void 반환값 없음
+     */
     public function test_check_core_pending_path_returns_uniform_message_for_nonexistent(): void
     {
         $api = new ValidationApi;
@@ -492,6 +774,15 @@ class InstallerSecurityHardeningTest extends TestCase
     // 만나면 예외를 던진다 — 지우면 운영자가 입력한 값과 저장된 값이 달라지는데 그 사실이
     // 화면에 나타나지 않기 때문이다. 하위호환 별칭 escapeEnvValue 도 같은 관문에 위임한다.
 
+    /**
+     * 환경 값 직렬화 별칭이 LF 개행이 든 값을 지우지 않고 예외로 거부하는지 확인한다.
+     *
+     * @scenario vector=escapeEnvValue, payload_class=newline_lf, expected_outcome=throw_invalid_argument
+     *
+     * @effects escapeEnvValue_rejects_lf_instead_of_stripping
+     *
+     * @return void 반환값 없음
+     */
     public function test_escape_env_value_rejects_newlines(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -499,6 +790,15 @@ class InstallerSecurityHardeningTest extends TestCase
         escapeEnvValue("secret\nINJECTED=true");
     }
 
+    /**
+     * 환경 값 직렬화 별칭이 CRLF 개행이 든 값을 예외로 거부하는지 확인한다.
+     *
+     * @scenario vector=escapeEnvValue, payload_class=newline_crlf, expected_outcome=throw_invalid_argument
+     *
+     * @effects escapeEnvValue_rejects_crlf_instead_of_stripping
+     *
+     * @return void 반환값 없음
+     */
     public function test_escape_env_value_rejects_crlf(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -506,6 +806,15 @@ class InstallerSecurityHardeningTest extends TestCase
         escapeEnvValue("a\r\nb");
     }
 
+    /**
+     * 특수문자가 섞인 정상 비밀번호가 바뀌지 않고 큰따옴표로만 감싸지는지 확인한다.
+     *
+     * @scenario vector=escapeEnvValue, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects escapeEnvValue_preserves_normal_password
+     *
+     * @return void 반환값 없음
+     */
     public function test_escape_env_value_preserves_normal_password(): void
     {
         $result = escapeEnvValue('p@ssw0rd!#$%');
@@ -513,6 +822,15 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->assertSame('"p@ssw0rd!#$%"', $result);
     }
 
+    /**
+     * 값 속 큰따옴표와 백슬래시가 각각 백슬래시로 이스케이프되는지 확인한다.
+     *
+     * @scenario vector=escapeEnvValue, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects escapeEnvValue_escapes_quotes_and_backslashes
+     *
+     * @return void 반환값 없음
+     */
     public function test_escape_env_value_escapes_quotes_and_backslashes(): void
     {
         $result = escapeEnvValue('a"b\\c');
@@ -524,6 +842,15 @@ class InstallerSecurityHardeningTest extends TestCase
     // Medium-2 — PDO DSN 파라미터 sanitize
     // ========================================================================
 
+    /**
+     * 호스트에 세미콜론으로 DSN 파라미터를 덧붙인 값이면 연결을 시도하지 않고 PDO 예외를 던지는지 확인한다.
+     *
+     * @scenario vector=getDatabaseConnection, payload_class=dsn_semicolon, expected_outcome=throw_pdo_exception
+     *
+     * @effects dsn_throws_for_semicolon_in_host
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_database_connection_rejects_semicolon_in_host(): void
     {
         $this->expectException(\PDOException::class);
@@ -537,6 +864,15 @@ class InstallerSecurityHardeningTest extends TestCase
         ], false);
     }
 
+    /**
+     * 데이터베이스 이름에 등호가 들어 있으면 PDO 예외를 던지는지 확인한다.
+     *
+     * @scenario vector=getDatabaseConnection, payload_class=dsn_equals, expected_outcome=throw_pdo_exception
+     *
+     * @effects dsn_throws_for_equals_in_database
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_database_connection_rejects_equals_in_database(): void
     {
         $this->expectException(\PDOException::class);
@@ -550,6 +886,15 @@ class InstallerSecurityHardeningTest extends TestCase
         ], false);
     }
 
+    /**
+     * 포트에 개행과 추가 파라미터가 들어 있으면 PDO 예외를 던지는지 확인한다.
+     *
+     * @scenario vector=getDatabaseConnection, payload_class=newline_lf, expected_outcome=throw_pdo_exception
+     *
+     * @effects dsn_throws_for_newline_in_port
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_database_connection_rejects_newline_in_port(): void
     {
         $this->expectException(\PDOException::class);
@@ -576,6 +921,8 @@ class InstallerSecurityHardeningTest extends TestCase
      * @scenario vector=getPhpBinary, payload_class=argument_injection_dash_r
      *
      * @effects getPhpBinary_falls_back_to_default_for_disallowed_shape
+     *
+     * @return void 반환값 없음
      */
     public function test_get_php_binary_falls_back_to_default_for_disallowed_shape(): void
     {
@@ -602,6 +949,8 @@ class InstallerSecurityHardeningTest extends TestCase
      * @scenario vector=getPhpBinary, payload_class=wrapper_script_name
      *
      * @effects getPhpBinary_passes_through_legitimate_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_get_php_binary_passes_through_legitimate_paths(): void
     {
@@ -625,6 +974,8 @@ class InstallerSecurityHardeningTest extends TestCase
      * @scenario vector=getComposerCommand, payload_class=interpreter_plus_script
      *
      * @effects getComposerCommand_rejects_interpreter_plus_arbitrary_script
+     *
+     * @return void 반환값 없음
      */
     public function test_get_composer_command_rejects_interpreter_plus_arbitrary_script(): void
     {
@@ -650,6 +1001,8 @@ class InstallerSecurityHardeningTest extends TestCase
      * @scenario vector=getComposerCommand, payload_class=wrapper_script_name
      *
      * @effects getComposerCommand_keeps_multi_php_pair_support
+     *
+     * @return void 반환값 없음
      */
     public function test_get_composer_command_keeps_multi_php_pair_support(): void
     {

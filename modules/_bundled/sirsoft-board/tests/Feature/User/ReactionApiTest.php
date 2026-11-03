@@ -16,8 +16,6 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 차단, 본인 글 차단, 비로그인 차단을 종단 검증한다 (이슈 #525 §10 테스트 범위).
  *
  * @scenario case=guest_react_blocked
- *
- * @effects guest_react_returns_401
  */
 class ReactionApiTest extends BoardTestCase
 {

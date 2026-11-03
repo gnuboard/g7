@@ -24,6 +24,7 @@
 
 import { useCallback, useState } from 'react';
 import { buildAuthHeaders } from '../utils/authToken';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /**
  * 버전 기록/복원 대상 — 레이아웃 본체 또는 확장 조각.
@@ -200,7 +201,7 @@ export function useLayoutVersions(
       setError(null);
       try {
         const url = `${buildVersionsBaseUrl(templateIdentifier, target)}?limit=${nextLimit}`;
-        const response = await fetch(url, {
+        const response = await fetch(withBasePrefix(url), {
           credentials: 'same-origin',
           headers: buildAuthHeaders(),
         });
@@ -252,7 +253,7 @@ export function useLayoutVersions(
       setRestoringId(versionId);
       try {
         const url = `${buildVersionsBaseUrl(templateIdentifier, target)}/${versionId}/restore`;
-        const response = await fetch(url, {
+        const response = await fetch(withBasePrefix(url), {
           method: 'POST',
           credentials: 'same-origin',
           headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -289,7 +290,7 @@ export function useLayoutVersions(
       if (!target) return { kind: 'not_found' };
       try {
         const url = `${buildVersionsBaseUrl(templateIdentifier, target)}/${version}`;
-        const response = await fetch(url, {
+        const response = await fetch(withBasePrefix(url), {
           credentials: 'same-origin',
           headers: buildAuthHeaders(),
         });

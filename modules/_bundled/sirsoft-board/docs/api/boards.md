@@ -49,7 +49,6 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 
 > **목록은 경량 표현이다.** 관리자 게시판 목록 화면이 쓰는 행 필드는 `id`/`name`/`slug`/`type`/`is_active`/`categories`/`abilities`/`posts_count` 뿐이다. 종전에는 행마다 매니저·스텝 역할에 속한 **모든 사용자(uuid·이름·이메일)** 까지 함께 직렬화하면서 행 수만큼 역할 조회가 추가로 나갔다. 역할/사용자 정보는 게시판 수정 화면(단건 조회 `GET .../admin/boards/{slug}`)이 공급한다.
 
-
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `12` | 기본 키 (내부 식별자) |
@@ -57,12 +56,13 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | slug | string | `apidoc-sample-board` | 게시판 슬러그 (URL/테이블명) |
 | description | string | `` | 게시판 설명 (현재 로케일로 해석된 문자열) |
 | posts_count | integer | `0` | 게시글 수 (집계) |
+| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
 | type | string | `basic` | 게시판 타입 (basic, gallery, card 등) |
 | is_active | boolean | `true` | 활성 여부 |
 | display_order | integer | `0` | 표시 순서 (작을수록 앞, 0 은 미지정 — 만든 순서로 뒤따름) |
 | categories | array | `[]` | 분류 목록 (배열) |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 게시판의 소유자인지 여부 |
-| abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
+| created_at | string | `2026-08-06 16:18:25` | 생성 일시 |
 
 **응답 예시**
 
@@ -143,6 +143,7 @@ HTTP/1.1 200
 | use_comment | body | boolean | 예 | — | 댓글 기능 사용 여부 |
 | use_reply | body | boolean | 예 | — | 게시글 답변(원글에 대한 답글) 기능 사용 여부 |
 | use_report | body | boolean | 예 | — | 게시글/댓글 신고 기능 사용 여부 |
+| use_scrap | body | boolean | 아니오 | — | 게시글 스크랩(북마크) 기능 사용 여부 |
 | use_reaction | body | boolean | 예 | — | 게시글 반응(추천/비추천) 기능 사용 여부 |
 | use_comment_reaction | body | boolean | 아니오 | `true` | 댓글 반응 사용 여부. `use_reaction` 의 하위 토글이라 상위가 꺼져 있으면 함께 꺼집니다. |
 | active_reaction_types | body | array | 아니오 | — | 이 게시판에서 켠 반응 유형 code 목록 (문자열 배열, 예: `["like","dislike"]`) |
@@ -163,6 +164,7 @@ HTTP/1.1 200
 | permissions | body | array | 아니오 | — | 게시판별 세부 권한 매트릭스 (권한 키별 mode/roles — 미지정 시 Service가 Manager/Step 역할을 주입) |
 | max_reply_depth | body | integer | 아니오 | min 1, max 10 | 답변글 최대 중첩 깊이 |
 | reply_delete_policy | body | string | 예 | `block`, `cascade` | 답글 달린 글의 삭제 정책 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). 미전송 시 검증 전 기본값 `cascade` 로 채워지며, 허용값 밖이면 422 |
+| secret_reply_visibility | body | string | 아니오 | `thread_path`, `descendants_only`, `per_post` | 비밀 답변 열람 범위 (thread_path 원글을 볼 수 있는 사람은 하위 답변을, 답변 작성자는 자기 답변의 원글까지 / descendants_only 하위만 / per_post 답변마다 따로). 생략하면 환경설정 기본값(`basic_defaults.secret_reply_visibility`, 그것도 없으면 `thread_path`)을 씁니다 |
 | max_comment_depth | body | integer | 아니오 | min 0, max 10 | 대댓글 최대 중첩 깊이 |
 | notify_admin_on_post | body | boolean | 예 | — | 게시글 등록 시 관리자에게 이메일 알림 발송 여부 |
 | notify_author | body | boolean | 예 | — | 댓글·대댓글·답변글·관리자 처리 발생 시 작성자에게 이메일 알림 발송 여부 |
@@ -365,7 +367,7 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.boards.create`)이 없는 경우 |
 | 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — 설정 기본값(기본 ACL)에 없는 역할을 `permissions` 로 더 얹거나, 새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 액터가 `board_manager_ids` 에 본인 말고 다른 회원을 넣거나 `board_step_ids` 를 지정한 경우(관리자 명단이 생성자 본인 한 명뿐이면 허용 — 새로 만드는 게시판의 관리자가 되는 것은 상승이 아니다). 게시판·역할·권한은 하나도 만들어지지 않는다 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 게시판 전용 테이블 생성 실패 등 생성 처리 중 예외 (`게시판 생성에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -388,6 +390,8 @@ HTTP/1.1 201
 | user_uuids | body | array\<string\> | 예 | min 1, max 100, 존재하는 회원 UUID | 지정하거나 뺄 회원 |
 | member_type | body | string | 예 | `manager`, `step` | 게시판 관리자 또는 스텝 |
 | mode | body | string | 예 | `add`, `remove` | 추가 또는 제거 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.board.bulk_members_validation_rules`).
 
 **요청 예시**
 
@@ -443,7 +447,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.boards.update`)이 없거나, 요청자가 가지지 않은 권한을 부여하게 되는 경우 (`exceptions.cannot_grant_unheld_permission`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 일괄 처리 중 예외 발생 (`sirsoft-board::messages.boards.bulk_members_failed`) |
 
 <!-- @generated:end -->
@@ -464,6 +468,8 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | board_ids | body | array\<integer\> | 예 | min 1, 중복 없음, **현재 전체 게시판 id 집합과 같아야 함**(활성·비활성 전부) | 새 표시 순서대로 나열한 게시판 id |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.board.reorder_validation_rules`).
 
 **요청 예시**
 
@@ -557,13 +563,14 @@ _단건 응답: `data` 객체의 필드._
 | use_reply | boolean | `true` | 게시글 답변 기능 사용 (댓글에 대한 답글 아님) |
 | max_reply_depth | integer | `5` | 답변글 최대 깊이 (1~10) |
 | reply_delete_policy | string | `cascade` | 답글 달린 글의 삭제 정책 기본값 (block: 답글이 살아 있으면 원글 삭제 차단, cascade: 원글 삭제 시 답글도 함께 소프트 삭제) |
+| secret_reply_visibility | string | `{MASKED}` | 비밀 답변 열람 범위 (thread_path 원글을 볼 수 있는 사람은 하위 답변을, 답변 작성자는 자기 답변의 원글까지 / descendants_only 하위만 / per_post 답변마다 따로). 생성 모드에서는 환경설정 기본값이 채워짐 |
 | max_comment_depth | integer | `10` | 대댓글 최대 깊이 (1~10) |
 | comment_order | string | `ASC` | 댓글 정렬 순서 (ASC: 오름차순, DESC: 내림차순) |
 | show_view_count | boolean | `true` | 조회수 노출 |
 | use_report | boolean | `false` | 게시글/댓글 신고 기능 사용 |
+| use_scrap | boolean | `true` | 게시글 스크랩(북마크) 기능 사용 여부 |
 | use_reaction | boolean | `true` | 게시글 반응(추천/비추천) 기능 사용 |
 | use_comment_reaction | boolean | `true` | 댓글 반응 사용. `use_reaction` 이 꺼져 있으면 값과 무관하게 댓글 반응은 동작하지 않음 |
-| active_reaction_types | array | `["like","dislike"]` | 이 게시판에서 켠 반응 유형 code 목록. 생성 모드에서는 환경설정 기본값(`basic_defaults.active_reaction_types`)이 채워짐 |
 | min_title_length | integer | `2` | 최소 제목 글자 수 |
 | max_title_length | integer | `200` | 최대 제목 글자 수 |
 | min_content_length | integer | `2` | 최소 게시글 글자 수 |
@@ -591,7 +598,9 @@ _단건 응답: `data` 객체의 필드._
 | categories | array | `[]` | 분류 목록 (배열) |
 | blocked_keywords | array | `[]` | 금지어 목록 (배열) |
 | allowed_extensions | array | `["jpg","jpeg","png","gif","webp","pdf","doc","docx","xls"…` | 허용 확장자 배열 |
+| active_reaction_types | array | `["like","dislike"]` | 이 게시판에서 켠 반응 유형 code 목록. 생성 모드에서는 환경설정 기본값(`basic_defaults.active_reaction_types`)이 채워짐 |
 | permissions | object | `{"admin_posts_read":{"_key":"admin_posts_read","name":"ad…` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
+| abilities | object | `{"can_create":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 | board_types | array | `[{"id":1,"slug":"basic","name":{"ko":"기본형","en":"Basic Li…` | 선택 가능한 게시판 타입 목록 (타입 선택 UI 렌더링용 — id/slug/name 등) |
 | _meta | object | `{"limits":{"per_page_min":5,"per_page_max":100,"min_title…` | 폼 입력 한계값 메타 (config('sirsoft-board.limits') — 페이지당 수·제목/본문/댓글 길이 등 min/max 범위) |
 
@@ -1134,6 +1143,7 @@ _단건 응답: `data` 객체의 필드._
 | name | string | `API 문서 샘플 게시판` | 게시판명 (다국어 JSON) |
 | slug | string | `apidoc-sample-board` | 게시판 슬러그 (URL/테이블명) |
 | is_active | boolean | `true` | active 여부 |
+| display_order | integer | `0` | 사용자 메뉴·게시판 목록 표시 순서 (작을수록 앞, 0 은 미지정 — 생성 순으로 뒤따름) |
 | type | string | `basic` | 게시판 타입 (basic, gallery, card 등) |
 | description | string | `` | 게시판 설명 (다국어 JSON) |
 | per_page | integer | `20` | 페이지당 게시글 수 (PC) |
@@ -1147,7 +1157,13 @@ _단건 응답: `data` 객체의 필드._
 | use_reply | boolean | `true` | 게시글 답변 기능 사용 (댓글에 대한 답글 아님) |
 | max_reply_depth | integer | `5` | 답변글 최대 깊이 (1~10) |
 | reply_delete_policy | string | `cascade` | 답글 달린 글의 삭제 정책 (block: 답글이 살아 있으면 원글 삭제 차단, cascade: 원글 삭제 시 답글도 함께 소프트 삭제) |
+| secret_reply_visibility | string | `{MASKED}` | 비밀 답변 열람 범위 (thread_path: 경로 규칙, descendants_only: 하위만, per_post: 답변마다 따로) |
 | use_report | boolean | `true` | 게시글/댓글 신고 기능 사용 |
+| use_scrap | boolean | `true` | 게시글 스크랩(북마크) 기능 사용 (1: 사용, 0: 미사용) |
+| use_reaction | boolean | `true` | 반응(추천/비추천) 사용 여부 |
+| use_comment_reaction | boolean | `true` | 댓글 반응 사용 여부 (use_reaction 하위 토글) |
+| active_reaction_types | array | `["like"]` | 활성화된 반응 유형 code 목록 JSON 배열 (예: ["like","dislike"]) |
+| reaction_type_options | array | `[{"id":1,"code":"like","name":"추천","icon":"fas fa-thumbs-…` | 이 게시판이 켠 반응 유형의 표시 정보 목록 (`id`, `code`, `name`(현재 로케일), `icon`, `icon_name`, `icon_url`). 반응을 껐거나 켠 유형이 없으면 빈 배열 |
 | comment_order | string | `ASC` | 댓글 정렬 순서 (ASC: 오름차순, DESC: 내림차순) |
 | max_comment_depth | integer | `10` | 대댓글 최대 깊이 (1~10) |
 | min_title_length | integer | `2` | 최소 제목 글자 수 |
@@ -1426,8 +1442,9 @@ HTTP/1.1 200
 | use_comment | body | boolean | 예 | — | 댓글 기능 사용 여부 |
 | use_reply | body | boolean | 예 | — | 게시글 답변(원글에 대한 답글) 기능 사용 여부 |
 | use_report | body | boolean | 예 | — | 게시글/댓글 신고 기능 사용 여부 |
+| use_scrap | body | boolean | 예 | — | 게시글 스크랩(북마크) 기능 사용 여부 (보낼 때는 값이 있어야 합니다) |
 | use_reaction | body | boolean | 예 | — | 게시글 반응(추천/비추천) 기능 사용 여부 |
-| use_comment_reaction | body | boolean | 아니오 | `true` | 댓글 반응 사용 여부. `use_reaction` 의 하위 토글이라 상위가 꺼져 있으면 함께 꺼집니다. |
+| use_comment_reaction | body | boolean | 예 | `true` | 댓글 반응 사용 여부. `use_reaction` 의 하위 토글이라 상위가 꺼져 있으면 함께 꺼집니다. |
 | active_reaction_types | body | array | 아니오 | — | 이 게시판에서 켠 반응 유형 code 목록 (문자열 배열, 예: `["like","dislike"]`) |
 | comment_order | body | string | 예 | `ASC`, `DESC` | 댓글 정렬 순서 (ASC 오름차순 / DESC 내림차순) |
 | new_display_hours | body | integer | 아니오 | min 0, max 720 | 신규(NEW) 표시를 유지할 기간 (시간 단위, 최대 720시간=30일). `0` 은 NEW 배지를 표시하지 않음 — 아카이브형 게시판이 쓰는 정상 값이며 시더가 실제로 넣는다 |
@@ -1446,6 +1463,7 @@ HTTP/1.1 200
 | permissions | body | array | 예 | — | 게시판별 세부 권한 매트릭스 (권한 키별 mode/roles — 각 권한을 all 또는 특정 역할에 부여) |
 | max_reply_depth | body | integer | 아니오 | min 1, max 10 | 답변글 최대 중첩 깊이 |
 | reply_delete_policy | body | string | 아니오 | `block`, `cascade` | 답글 달린 글의 삭제 정책 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). 미전송 시 기존값 유지, 허용값 밖이면 422 |
+| secret_reply_visibility | body | string | 아니오 | `thread_path`, `descendants_only`, `per_post` | 비밀 답변 열람 범위 (thread_path 원글을 볼 수 있는 사람은 하위 답변을, 답변 작성자는 자기 답변의 원글까지 / descendants_only 하위만 / per_post 답변마다 따로). 미전송 시 기존값 유지 |
 | max_comment_depth | body | integer | 아니오 | min 0, max 10 | 대댓글 최대 중첩 깊이 |
 | notify_admin_on_post | body | boolean | 예 | — | 게시글 등록 시 관리자에게 이메일 알림 발송 여부 |
 | notify_author | body | boolean | 예 | — | 댓글·대댓글·답변글·관리자 처리 발생 시 작성자에게 이메일 알림 발송 여부 |
@@ -1648,7 +1666,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.boards.update`)이 없는 경우 |
 | 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — `permissions` 로 역할이 바뀌는 게시판 권한을 요청자가 전체 범위로 갖지 않았거나, `board_manager_ids`·`board_step_ids` 명단이 바뀌는데 그 역할이 담은 게시판 권한을 요청자가 모두 갖지 않은 경우. 같은 요청의 다른 변경(이름·설정)도 저장되지 않는다. 역할·명단을 그대로 다시 보내는 저장은 검사하지 않는다 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 수정 처리 중 예외 (`게시판 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -1738,7 +1756,9 @@ HTTP/1.1 200
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| limit | query | integer | 아니오 | min 0 | 게시판마다 함께 실을 최신글 개수 (기본 0 은 최신글 미포함, 10 을 넘으면 10 으로 맞춥니다) |
 
 **요청 예시**
 
@@ -1860,7 +1880,10 @@ _에러 없음 (공개 조회 — 컨트롤러가 캐시된 조회 결과를 그
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| period | query | string | 아니오 | `today`, `week`, `month`, `year` | 집계 기간 (기본 `week`). `all` 은 `year` 로 처리하고, 그 밖의 값도 `year` 로 처리합니다 |
+| limit | query | integer | 아니오 | min 0 | 반환할 게시글 수 (기본 20, 50 을 넘으면 50 으로 맞춥니다) |
 
 **요청 예시**
 
@@ -1885,6 +1908,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | comment_count | integer | `2` | comment 개수 (집계) |
 | created_at | string | `2026-07-07 09:34:50` | 생성 일시 |
 | created_at_formatted | string | `07-10` | `created_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| is_new | boolean | `false` | new 여부 |
 
 **응답 예시**
 
@@ -1938,7 +1962,9 @@ _에러 없음 (공개 조회 — 컨트롤러가 캐시된 조회 결과를 그
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| limit | query | integer | 아니오 | min 0 | 반환할 게시판 수 (기본 4, 20 을 넘으면 20 으로 맞춥니다) |
 
 **요청 예시**
 
@@ -1998,7 +2024,9 @@ _에러 없음 (공개 조회 — 컨트롤러가 캐시된 조회 결과를 그
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| limit | query | integer | 아니오 | min 0 | 반환할 게시글 수 (기본 5, 20 을 넘으면 20 으로 맞춥니다) |
 
 **요청 예시**
 
@@ -2022,6 +2050,7 @@ Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생�
 | created_at_formatted | string | `방금 전` | `created_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | view_count | integer | `42` | view 개수 (집계) |
 | comment_count | integer | `0` | comment 개수 (집계) |
+| reaction_total | integer | `0` | 게시판이 켠 활성 반응 유형의 반응 수 합계. 게시판이 반응을 껐거나 켠 유형이 없으면 이 키가 실리지 않습니다 |
 | is_secret | boolean | `false` | secret 여부 |
 | is_new | boolean | `true` | new 여부 |
 
@@ -2533,7 +2562,7 @@ Cache-Control: public, max-age=86400
 
 **설명** 해시로 지정한 이미지 첨부파일을 인라인 미리보기로 제공합니다. 게시글 본문 내 이미지 표시용이라 비회원도 접근할 수 있으며(권한 체크 없음), 래스터 이미지(JPEG·PNG·GIF·WebP 등)가 아닌 파일(SVG 포함) 요청 시 400을 반환합니다(KVE-2026-2366). 응답에는 `X-Content-Type-Options: nosniff` 가 붙습니다. 응답에는 레이아웃 캐시 TTL(기본 24시간) 기반 캐싱 헤더가 포함되고, 삭제글·비밀글 첨부 등 차단 대상은 403을 반환합니다.
 
-브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 비밀글·삭제글의 열람 권한자에게 직렬화되는 상세 응답의 `preview_url` 에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 실리며, 이 엔드포인트는 유효한 서명을 열람 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 종전과 동일하게 403 으로 차단됩니다. 정상글의 `preview_url` 은 무서명 공개 경로입니다.
+브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 비밀글·삭제글의 열람 권한자에게 직렬화되는 상세 응답의 `preview_url` 에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 실리며, 이 엔드포인트는 유효한 서명을 열람 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 종전과 동일하게 403 으로 차단됩니다. 정상글의 `preview_url` 은 무서명 공개 경로입니다. 사이트를 하위 폴더(예: `/g7`)에 설치하면 이 서명 URL 은 설치 폴더 접두사를 실은 경로(`/g7/api/…`)로 내려간다 — 서명은 접두사를 뺀 경로에 걸리고 검증도 접두사를 뺀 요청 경로로 하므로, 그 주소 그대로 열면 서명이 유효하다.
 
 
 ### POST /api/modules/sirsoft-board/boards/{slug}/attachments
@@ -2631,7 +2660,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.attachments.upload`)이 없거나, 게시판의 파일 업로드 설정이 꺼진 경우 (`이 게시판에서는 파일 업로드가 비활성화되어 있습니다.`) |
 | 404 | Not Found | 게시판 슬러그에 해당하는 게시판이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 파일 저장 중 예외 (`파일 업로드에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -2694,7 +2723,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.attachments.upload`)이 없는 경우 |
 | 404 | Not Found | 게시판 슬러그에 해당하는 게시판이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 순서 갱신 실패 또는 처리 중 예외 (`첨부파일 순서 변경에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -2713,7 +2742,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -2755,18 +2784,94 @@ HTTP/1.1 200
 **설명** 첨부파일을 삭제합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, 서비스의 `canDelete` 로 현재 사용자가 해당 첨부의 소유자(작성자)인지 확인한 뒤 삭제합니다. 권한이 없으면 403을 반환합니다. 아직 글에 붙지 않은 임시 첨부(저장이 실패한 글쓰기 화면에 남은 첨부)도 그 게시판에서 올린 것이면 대상이며, 임시 첨부는 올린 사람만 다룰 수 있습니다(남의 임시 첨부는 403).
 
 
+### POST /api/modules/sirsoft-board/boards/{slug}/comments/{commentId}/react
+<!-- @generated:start:api.modules.sirsoft-board.boards.comments.react -->
+- **라우트명**: `api.modules.sirsoft-board.boards.comments.react`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ReactionController@reactToComment`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.{slug}.posts.read|sirsoft-board.{slug}.comments.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | URL 친화 식별자 (slug) |
+| commentId | path | integer | 예 | — | 대상 comment의 식별자 |
+| reaction_type_id | body | integer | 예 | 존재하는 활성 유형이면서 게시판이 켠(`active_reaction_types`) 유형 | 반응 유형 ID. 지금 내 반응과 같은 유형이면 해제, 다른 유형이면 전환합니다 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-board/boards/{slug}/comments/{commentId}/react HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "reaction_type_id": 1
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| action | string | `add` | 수행된 동작. `add`(새 반응), `change`(다른 유형으로 전환), `remove`(같은 유형 재요청으로 해제) |
+| my_reaction_type_id | integer | `1` | 처리 후 내 반응 유형 ID. 해제(`remove`)했으면 `null` |
+| reaction_counts | object | `{"1":18,"2":2}` | 처리 직후 대상의 유형별 반응 수. 키는 유형 ID 문자열이며, 한 번 집계에 나타난 유형은 0건이 되어도 키가 남습니다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "반응을 남겼습니다.",
+    "data": {
+        "action": "add",
+        "my_reaction_type_id": 1,
+        "reaction_counts": {
+            "1": 18,
+            "2": 2
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.read|sirsoft-board.{slug}.comments.read`)이 없는 경우 (둘 다 있어야 합니다) |
+| 403 | Forbidden | 댓글 또는 부모 글이 조회 권한 범위(「본인만」 또는 「소유역할」) 밖인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없거나 (`게시판을 찾을 수 없습니다: {slug}`), 댓글이 그 게시판 소속이 아니거나 없거나 (`댓글을 찾을 수 없습니다.`), 부모 글이 없는 경우 (`게시글을 찾을 수 없습니다.`) |
+| 422 | Unprocessable Entity | `reaction_type_id` 가 없거나 정수가 아니거나 게시판이 켜지 않은 유형인 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 반응 또는 댓글 반응이 꺼진 게시판 (`이 게시판은 반응 기능이 비활성화되어 있습니다.`), 삭제되었거나 블라인드된 댓글 (`삭제되었거나 숨김 처리된 대상에는 반응할 수 없습니다.`), 본인 댓글 (`본인 댓글에는 반응할 수 없습니다.`), 열람할 수 없는 비밀글의 댓글이나 비밀 댓글 (`열람 권한이 없는 비밀글에는 반응할 수 없습니다.`). `errors.code` 는 `reaction_not_allowed` |
+| 500 | Internal Server Error | 처리 실패 (`반응 처리에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명** 댓글에 반응을 남깁니다. 등록, 전환, 해제를 이 엔드포인트 하나가 처리하며 규칙과 응답 모양은 게시글 반응과 같습니다. 게시판이 `use_reaction` 과 `use_comment_reaction` 을 둘 다 켰을 때만 동작하고, 7.1.0 부터 그 게시판의 글 읽기 권한과 댓글 읽기 권한(`posts.read`, `comments.read`)이 모두 있어야 합니다. 삭제되었거나 블라인드된 댓글과 본인 댓글에는 반응할 수 없습니다. 비회원이 단 댓글(`user_id` 가 없음)은 본인 판정을 하지 않으므로 반응할 수 있습니다. 비밀글의 댓글은 글 본문을, 비밀 댓글은 그 댓글 본문을 열람할 수 있어야 하며, 판정은 댓글 목록과 같은 `SecretContentGate` 가 합니다. 쓸 수 있는 유형은 게시글 반응과 같은 게시판의 `active_reaction_types` 를 공유합니다. 카운트는 댓글 테이블(`board_comments`)의 `reaction_counts` 에 유형 ID 키로 다시 집계됩니다. 반응 기능 전반의 안내는 [reaction.md](reaction.md) 에 있습니다.
+
+
 ### POST /api/modules/sirsoft-board/boards/{slug}/comments/{commentId}/reports
 <!-- @generated:start:api.modules.sirsoft-board.boards.comments.reports.store -->
 - **라우트명**: `api.modules.sirsoft-board.boards.comments.reports.store`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ReportController@storeCommentReport`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.{slug}.posts.read|sirsoft-board.{slug}.comments.read`
 
 **요청 파라미터**
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| commentId | path | string | 예 | — | 대상 comment의 식별자 |
+| commentId | path | integer | 예 | — | 대상 comment의 식별자 |
 | reason_type | body | string | 예 | — | 신고 사유 유형 (ReportReasonType Enum 값 중 하나 — 스팸/욕설 등) |
 | reason_detail | body | string | 예 | min 1, max 1000 | 신고 사유 상세 설명 (1~1000자) |
 
@@ -2891,7 +2996,7 @@ HTTP/1.1 201
 | 403 | Forbidden | 댓글 조회 또는 부모 글 조회 권한 범위 밖 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | 게시판 슬러그에 해당하는 게시판이 없는 경우 |
 | 409 | Conflict | 동일 대상에 이미 신고한 이력이 있는 경우 (`이미 신고한 내역이 있습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 신고 접수 중 예외 (`신고 접수에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -2911,7 +3016,8 @@ HTTP/1.1 201
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| commentId | path | string | 예 | — | 대상 comment의 식별자 |
+| commentId | path | integer | 예 | — | 대상 comment의 식별자 |
+| password | body | string | 예 | — | 비회원 댓글 작성 시 입력한 비밀번호 |
 
 **요청 예시**
 
@@ -2981,6 +3087,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
+| search_field | query | string | 아니오 | `all`, `title_content`, `title`, `content`, `author` | 검색 대상. 목록 밖의 값은 422 없이 `title_content` 로 바꾸고, 보내지 않으면 `all` 입니다 |
 
 **요청 예시**
 
@@ -3133,6 +3240,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -3528,6 +3636,9 @@ HTTP/1.1 200
 | password | body | string | 아니오 | min 4 | 비회원 게시글 삭제 시 소유권 확인용 비밀번호. 형식(문자열, 4자 이상)은 `DestroyPostRequest` 가 검증하며, 배열 주입(`password[]=x`) 등 형식 위반은 422. 소유권 판정 자체는 컨트롤러(`canModifyPost`)가 수행 |
 | verification_token | body | string | 아니오 | max 255 | 비회원 게시글 삭제 시 소유권 확인용 검증 토큰 (비밀번호 검증 후 발급). 문자열 형식 위반 시 422 |
 | force_delete | body | boolean | 아니오 | — | 불리언 플래그 (형식 검증만 수행 — 불리언으로 해석 불가한 값은 422) |
+| password | query | string | 아니오 | min 4 | 위 본문 `password` 와 같은 값을 쿼리 문자열로 보낼 때의 자리. 서버는 본문과 쿼리를 합쳐 한 번에 검증합니다 |
+| verification_token | query | string | 아니오 | max 255 | 위 본문 `verification_token` 과 같은 값을 쿼리 문자열로 보낼 때의 자리. 자격증명이 주소에 남지 않도록 `X-Board-Post-Verify-Token` 헤더나 본문을 권장합니다 |
+| force_delete | query | boolean | 아니오 | — | 형식만 검증하며 이 엔드포인트는 값을 쓰지 않습니다 (언제나 소프트 삭제) |
 
 **요청 예시**
 
@@ -3626,7 +3737,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 상태 변경/삭제를 유발한 주체 (user 사용자 / admin 관리자 / report 신고 / system 시스템 / auto_hide 자동 블라인드 / cascade 연쇄 삭제 — TriggerType Enum) |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[]` | 블라인드/복원/삭제 등 운영 처리 이력 (admin.manage 권한 보유자에게만 노출, action/reason/admin_name/created_at — 비권한자는 빈 배열/null) |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 게시글이 속한 게시판 정보 (slug/name/type + 댓글·답변·신고·조회수 노출·깊이 등 렌더링에 필요한 설정과 신고 유형 목록) |
 | navigation | null | `null` | 이전/다음 글 정보 (상세 API에서는 기본 null — 별도 navigation 엔드포인트로 비동기 로딩) |
@@ -3845,6 +3956,10 @@ HTTP/1.1 200
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.user_post.update_validation_rules`).
 
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.user_post.update_validation_rules`).
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.user_post.update_validation_rules`).
+
 `attachment_ids` 는 **연결 대상**이며, 목록에서 뺀 기존 첨부를 삭제하지는 않습니다. 첨부 개수 상한은 이미 연결된 첨부까지 합산해 판정하므로 상한을 넘기면 `422`(`errors.code = attachment_limit_exceeded`)로 거부됩니다.
 
 **요청 예시**
@@ -3890,7 +4005,7 @@ _단건 응답: `data` 객체의 필드._
 | trigger_type | string | `user` | 동작을 유발한 방식/주체 구분 값 |
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
-| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
+| ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간) |
 | action_logs | array | `[]` | 게시글 블라인드/복원/삭제 등 운영 처리 이력 (action/reason/admin_name/created_at — admin.manage 권한 보유자에게만 노출, 비권한자는 null) |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 요약 정보 (slug/name/type/댓글·답변·신고 사용 여부·최대 깊이·신고 유형 목록 등 — board 관계 로드 시에만 채워지며 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 글 이동 정보 (별도 navigation 조회로 채워지며, 이 응답에는 기본적으로 미포함되어 null) |
@@ -4027,7 +4142,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write\|sirsoft-board.{slug}.manager`)이 없는 경우, 수정 권한(작성자·관리자·비회원 검증)이 없는 경우(`게시글 수정 권한이 없습니다.`), 공지 지정 권한 없이 공지 여부를 바꾸려는 경우(`게시글을 공지로 지정할 권한이 없습니다.`), 비밀글 기능이 꺼진 게시판에서 일반글을 비밀글로 바꾸려는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -4421,7 +4536,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
 
 **요청 예시**
 
@@ -4532,7 +4647,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
 | status | body | string | 아니오 | `published` | 댓글 상태. 요청으로 지정할 수 있는 값은 `published` 뿐이다 — `blinded`/`deleted` 는 422 (블라인드·복구는 관리자 전용 엔드포인트) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.comment.store_validation_rules`).
@@ -4647,10 +4762,12 @@ HTTP/1.1 201
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
-| commentId | path | string | 예 | — | 대상 comment의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+| commentId | path | integer | 예 | — | 대상 comment의 식별자 |
 | password | body | string | 아니오 | min 4, max 20 | 비회원 댓글 삭제 시 소유권 확인용 비밀번호. 형식(문자열, 4~20자)은 `DestroyCommentRequest` 가 검증하며, 배열 주입 등 형식 위반은 422. 소유권 판정 자체는 서비스(`canDelete`)가 수행 |
 | verification_token | body | string | 아니오 | max 255 | 비회원 댓글 삭제 시 비밀번호 재입력을 대체하는 임시 검증 토큰 (verify-password 로 발급, 1회 소비). 문자열 형식 위반(배열 주입 등)은 422 |
+| password | query | string | 아니오 | min 4, max 20 | 위 본문 `password` 와 같은 값을 쿼리 문자열로 보낼 때의 자리. 서버는 본문과 쿼리를 합쳐 한 번에 검증합니다 |
+| verification_token | query | string | 아니오 | max 255 | 위 본문 `verification_token` 과 같은 값을 쿼리 문자열로 보낼 때의 자리 (1회 소비) |
 
 **요청 예시**
 
@@ -4704,8 +4821,8 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
-| commentId | path | string | 예 | — | 대상 comment의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+| commentId | path | integer | 예 | — | 대상 comment의 식별자 |
 | content | body | string | 예 | 게시판 설정의 min/max 길이 | 수정할 댓글 본문 (금지 키워드 검사 포함) |
 | password | body | string | 조건부 | min 4, max 20 | 비회원 댓글 수정 시 소유권 확인용 비밀번호 (검증 토큰이 있으면 생략 가능) |
 | verification_token | body | string | 아니오 | max 255 | 비회원 댓글 수정 시 비밀번호 재입력을 대체하는 임시 검증 토큰 (verify-password 로 발급, 1회 소비) |
@@ -4806,7 +4923,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write\|sirsoft-board.{slug}.manager`)이 없거나, 게시판의 댓글 기능이 꺼진 경우, 또는 작성자 본인·게시판 관리자·비회원 댓글 비밀번호 확인 중 어느 조건도 만족하지 않는 경우 (`댓글 수정 권한이 없습니다.`) |
 | 404 | Not Found | 게시판 또는 댓글이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 수정 처리 중 예외 (`댓글 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4814,18 +4931,104 @@ HTTP/1.1 200
 **설명** 댓글을 수정합니다. `auth:sanctum` + `sirsoft-board.{slug}.comments.write` 또는 게시판 manager 권한이 필요하며, 게시판의 댓글 기능이 꺼져 있으면 403을 반환합니다. 서비스의 `canUpdate` 가 작성자 본인·게시판 관리자·비회원 댓글의 비밀번호 확인 여부를 판정하며, 검증용 `password` 는 저장에서 제외됩니다. 경로의 `{postId}`에 속한 댓글만 대상이 됩니다 — 다른 게시글의 댓글 ID를 지정하면 404를 반환하며 해당 댓글은 변경되지 않습니다. 요청 본문에서는 `content`·`is_secret`·`status`만 반영되며, `post_id`·`parent_id`·`depth` 등 그 밖의 필드를 함께 보내도 무시됩니다.
 
 
+### POST /api/modules/sirsoft-board/boards/{slug}/posts/{postId}/react
+<!-- @generated:start:api.modules.sirsoft-board.boards.posts.react -->
+- **라우트명**: `api.modules.sirsoft-board.boards.posts.react`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ReactionController@react`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.{slug}.posts.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | URL 친화 식별자 (slug) |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+| reaction_type_id | body | integer | 예 | 존재하는 활성 유형이면서 게시판이 켠(`active_reaction_types`) 유형 | 반응 유형 ID. 지금 내 반응과 같은 유형이면 해제, 다른 유형이면 전환합니다 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-board/boards/{slug}/posts/{postId}/react HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "reaction_type_id": 1
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| action | string | `add` | 수행된 동작. `add`(새 반응), `change`(다른 유형으로 전환), `remove`(같은 유형 재요청으로 해제) |
+| my_reaction_type_id | integer | `1` | 처리 후 내 반응 유형 ID. 해제(`remove`)했으면 `null` |
+| reaction_counts | object | `{"1":18,"2":2}` | 처리 직후 대상의 유형별 반응 수. 키는 유형 ID 문자열이며, 한 번 집계에 나타난 유형은 0건이 되어도 키가 남습니다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "반응을 남겼습니다.",
+    "data": {
+        "action": "add",
+        "my_reaction_type_id": 1,
+        "reaction_counts": {
+            "1": 18,
+            "2": 2
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.read`)이 없는 경우 |
+| 403 | Forbidden | 게시글 조회 권한 범위(「본인만」 또는 「소유역할」) 밖 글 (`auth.scope_denied`) |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없거나 (`게시판을 찾을 수 없습니다: {slug}`), 게시글이 그 게시판 소속이 아니거나 없는 경우 (`게시글을 찾을 수 없습니다.`) |
+| 422 | Unprocessable Entity | `reaction_type_id` 가 없거나 정수가 아니거나 게시판이 켜지 않은 유형인 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 반응 기능이 꺼진 게시판 (`이 게시판은 반응 기능이 비활성화되어 있습니다.`), 본인 글 (`본인 글에는 반응할 수 없습니다.`), 열람할 수 없는 비밀글 (`열람 권한이 없는 비밀글에는 반응할 수 없습니다.`). `errors.code` 는 `reaction_not_allowed` |
+| 500 | Internal Server Error | 처리 실패 (`반응 처리에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명** 게시글에 반응(추천/비추천 등)을 남깁니다. 기존 반응이 없으면 `add`, 다른 유형이면 `change`(이전 유형 -1, 새 유형 +1), 같은 유형을 다시 보내면 `remove`(반응 행 삭제)로 처리합니다. 대상 단위로 잠금을 잡은 트랜잭션 안에서 판단하고 카운트를 실제 반응 행 수로 다시 집계하므로, 연달아 보낸 요청의 도착 순서가 바뀌어도 카운트가 어긋나지 않습니다. 회원 전용(`auth:sanctum`)이고 7.1.0 부터 그 게시판의 글 읽기 권한(`sirsoft-board.{slug}.posts.read`)이 필요합니다. 반응 기능이 꺼진 게시판, 본인 글, 게시판이 켜지 않은 유형은 422 입니다. 비밀글은 본문을 열람할 수 있는 사람만 반응할 수 있으며, 판정은 댓글과 신고가 쓰는 `SecretContentGate` 와 같습니다. 반응 기능 전반의 안내는 [reaction.md](reaction.md) 에 있습니다.
+
+**동작**
+
+| 상황 | 결과 (`data.action`) | 카운트 변화 |
+| --- | --- | --- |
+| 기존 반응 없음 | `add` | 해당 유형 +1 |
+| 기존 반응이 다른 유형 | `change` | 이전 유형 -1, 신규 유형 +1 |
+| 기존 반응이 같은 유형 | `remove` | 해당 유형 -1 (반응 행 삭제) |
+
+글당 반응은 1개입니다. 반응은 로그인 회원만 남길 수 있고 본인 글에는 남길 수 없습니다. 비밀글은 그 글 본문을 볼 수 있는 사람만 반응할 수 있습니다. 작성자는 본인 글 금지로 막히고, 비밀번호를 확인한 사람(열람 토큰), 답변 경로 규칙으로 원글이 열린 사람, 비밀글 조회 권한자(역할 범위 적용), 게시판 관리자는 통과합니다. 본문이 가려진 사람은 422 입니다(1.2.1+).
+
+
 ### POST /api/modules/sirsoft-board/boards/{slug}/posts/{postId}/reports
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.reports.store -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.reports.store`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ReportController@storePostReport`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.{slug}.posts.read`
 
 **요청 파라미터**
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
-| postId | path | string | 예 | — | 대상 post의 식별자 |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
 | reason_type | body | string | 예 | — | 신고 사유 유형 (ReportReasonType Enum 값 중 하나 — 스팸/욕설 등) |
 | reason_detail | body | string | 예 | min 1, max 1000 | 신고 사유 상세 설명 (1~1000자) |
 
@@ -4950,7 +5153,7 @@ HTTP/1.1 201
 | 403 | Forbidden | 게시글 조회 권한 범위(「본인만」·「소유역할」) 밖 글 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | 게시판 슬러그에 해당하는 게시판이 없는 경우 |
 | 409 | Conflict | 동일 대상에 이미 신고한 이력이 있는 경우 (`이미 신고한 내역이 있습니다.`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 신고 접수 중 예외 (`신고 접수에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4958,4 +5161,68 @@ HTTP/1.1 201
 **설명** 특정 게시글을 신고합니다. 신고는 회원 전용이라 컨트롤러가 `AuthBaseController` 를 상속해 로그인 사용자만 호출할 수 있으며, 게시판의 신고 기능이 꺼져 있으면 403을 반환합니다. 본인 글 신고, 블라인드/삭제된 대상 신고는 차단되고, 이미 신고한 대상이면 409(중복)로 응답합니다. 신고 사유 유형(`reason_type`)과 상세(`reason_detail`)를 받아 신고를 접수하며 사용자 활동 로그를 남깁니다. 7.1.0 부터 그 게시판의 글 읽기 권한(`sirsoft-board.{slug}.posts.read`)이 없으면 403 입니다.
 
 **응답 본문** 신고 생성 응답에는 대상 본문(`content` · `content_preview`)이 실리지 않습니다(`null`). 대상 본문 미리보기는 관리자 신고 목록·상세에서만 제공합니다. 열람할 수 없는 비밀글은 신고 자체가 403 입니다.
+
+### POST /api/modules/sirsoft-board/boards/{slug}/posts/{postId}/scrap/toggle
+<!-- @generated:start:api.modules.sirsoft-board.boards.posts.scrap.toggle -->
+- **라우트명**: `api.modules.sirsoft-board.boards.posts.scrap.toggle`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\PostScrapController@toggle`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.{slug}.posts.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | URL 친화 식별자 (slug) |
+| postId | path | integer | 예 | — | 대상 post의 식별자 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-board/boards/{slug}/posts/{postId}/scrap/toggle HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| added | boolean | `true` | `true` 면 스크랩을 등록했고, `false` 면 기존 스크랩을 해제했습니다 |
+| scrap_count | integer | `13` | 토글 직후의 게시글 스크랩 수. 화면은 이 값으로 수치를 바로 고칩니다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "게시글을 스크랩했습니다.",
+    "data": {
+        "added": true,
+        "scrap_count": 13
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.read`)이 없는 경우 |
+| 403 | Forbidden | 게시판의 스크랩 기능(`use_scrap`)이 꺼진 경우 (`이 게시판은 스크랩 기능이 비활성화되어 있습니다.`) |
+| 403 | Forbidden | 게시글 조회 권한 범위(「본인만」 또는 「소유역할」) 밖 글 (`auth.scope_denied`) |
+| 404 | Not Found | 슬러그에 해당하는 게시판이 없거나, 게시글이 그 게시판 소속이 아니거나 없는 경우 (`게시글을 찾을 수 없습니다.`) |
+| 500 | Internal Server Error | 처리 실패 (`스크랩 처리에 실패했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명** 게시글 상세의 스크랩 버튼이 쓰는 토글입니다(찜 기능과 같은 토글 방식). 이미 스크랩한 글이면 해제하고 아니면 등록하며, `added` 로 결과를 구분해 상세 버튼의 「스크랩」과 「스크랩됨」 상태를 바꿉니다. 스크랩 레코드 변경과 `board_posts.scrap_count` 의 원자적 증감을 한 트랜잭션으로 묶고, 화면은 응답의 `scrap_count` 로 수치를 다시 조회하지 않고 바로 고칩니다. 요청 본문은 없습니다. 회원 전용(`auth:sanctum`)이고 7.1.0 부터 그 게시판의 글 읽기 권한(`sirsoft-board.{slug}.posts.read`)이 필요합니다. 게시판의 `use_scrap` 이 꺼져 있으면 403, `postId` 가 그 게시판 소속이 아니면 404 입니다(다른 게시판 글을 스크랩하는 교차 접근 차단). 본인 글도 스크랩할 수 있습니다(개인 북마크). 처리 전후로 `sirsoft-board.scrap.before_toggle`, `sirsoft-board.scrap.after_toggle` 훅이 발화합니다. 마이페이지 목록과 해제는 [scraps.md](scraps.md), 회원용 스크랩 안내는 [scrap.md](scrap.md) 에 있습니다.
+
 

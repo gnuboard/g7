@@ -141,6 +141,29 @@ effects:
   - status_command_consumes_service_report
   # #148 — 언어팩 설치 규칙(BCP 47)의 세 글자·문자 표기 로케일(fil·zh-Hant)도 lang 게시 대상이다
   - published_lang_covers_bcp47_pack_locales
+  # 아래는 테스트가 이미 재고 있으나 선언이 빠져 있던 이름이다 (원장 축소).
+  - cleanup_excludes_failed_deletions_from_count
+  - custom_asset_static_miss_falls_back_to_api
+  - dashboard_alert_suppressed_below_threshold
+  - dashboard_has_no_alert_when_publishing_is_healthy
+  - extension_copy_ownership_matches_sibling_helper
+  - extension_copy_still_produces_expected_tree
+  - failure_marker_key_is_shared_between_writer_and_reader
+  - lock_contention_skips_without_failure_marker
+  - lock_provider_failure_recorded_in_marker
+  - manifest_failure_cleans_final_directory
+  - prune_cleans_bundled_source_path
+  - prune_cleans_pending_source_path
+  - prune_is_noop_without_dist
+  - prune_scope_normalizes_path_separators
+  - publish_failure_alert_appends_to_existing
+  - publish_failure_alert_distinguishes_reason
+  - publish_failure_alert_falls_back_for_unknown_reason
+  - publish_failure_backoff_is_scoped_to_version
+  - publish_failure_listener_is_registered_on_hook
+  - published_tree_is_group_writable
+  - rename_failure_restores_previous_published_version
+  - vite_configs_declare_empty_outdir_false
   # #158 — 태그 계층 복구기가 셸 head 스크립트(public/assets/core/js/g7-shell-head.js)로 옮겨진 뒤에도
   # 자산 URL 모드 불변식·변환 규칙 동등성이 유지된다
   - asset_url_mode_switch_one_way

@@ -40,7 +40,8 @@ import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
-import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback } from '../support/navPolicy';
+import { basePrefix, stripBasePrefix, withBasePrefix } from '../support/assetUrl';
+import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback, isOffSiteNavTarget } from '../support/navPolicy';
 import { armLeaveGuardBypass, runWithLeaveGuardBypass } from '../routing/LeaveGuard';
 import {
   applyQueryValues,
@@ -3005,6 +3006,18 @@ export class ActionDispatcher {
         }
 
         case 'replaceUrl': {
+          // 이 표식이 덮는 것은 **벗기는 쪽** 축이다(`location.pathname` 을 읽으면
+          // `stripBasePrefix()` 를 거치라는 계약). 붙이는 쪽 수집기 여섯은 이 줄을
+          // 보지 않으므로 그쪽만 보면 「아무것도 덮지 않는 선무장 면제」로 읽히는데,
+          // 실제로 지우면 벗기는 쪽 게이트가 red 가 된다(10차 실측 — 그 판단으로
+          // 한 번 지웠다가 되돌렸다).
+          //
+          // 면제가 정당한 이유: 이 값은 라우트 대조에 쓰이지 않고 그대로
+          // `handleReplaceUrl` 로 넘어가며, 그 안쪽의
+          // `history.replaceState(…, withBasePrefix(finalPath))` 가 멱등이라
+          // 접두사를 품은 현재 주소를 되써도 이중 접두가 생기지 않는다.
+          //
+          // base-path:allow 현재 주소를 그대로 되쓰는 폴백이라 접두사를 벗기지 않는다
           const replaceUrlPath = resolvedParams.path || resolvedTarget || window.location.pathname;
           result = await this.handleReplaceUrl(replaceUrlPath, resolvedParams);
           break;
@@ -3463,13 +3476,17 @@ export class ActionDispatcher {
   /**
    * navigate 목적지가 지금 화면과 같은 경로(쿼리·해시만 다름)인지 판정합니다 (engine-v1.83.0).
    *
+   * 목적지는 앱 기준 경로(접두사 없음)이고 지금 주소는 브라우저 주소(하위 폴더 배치면 접두사 포함)라, 양쪽 접두사를
+   * 벗겨 대조한다. 벗기지 않으면 하위 폴더 배치에서 같은 경로의 쿼리만 바꾸는 이동도 다른 경로로 읽혀 대기 입력을
+   * 반영해 버리고, 다시 받은 데이터가 치던 입력을 덮는다.
+   *
    * @param target navigate 목적지(경로·쿼리·해시 또는 같은 출처 주소)
    * @return 같은 경로면 true
    */
   private isSamePathTarget(target: string): boolean {
     if (typeof window === 'undefined' || typeof target !== 'string' || target === '') return false;
     try {
-      return new URL(target, window.location.href).pathname === window.location.pathname;
+      return stripBasePrefix(new URL(target, window.location.href).pathname) === stripBasePrefix(window.location.pathname);
     } catch {
       return false;
     }
@@ -3492,7 +3509,19 @@ export class ActionDispatcher {
     // 같은 출처 전체 주소(`https://이 사이트/board/free/14` — 알림 이동 주소 등)는 경로로 바꿔 SPA 이동한다.
     // 종전에는 라우트 매칭이 전체 주소를 몰라 미매칭 폴백 → 같은 탭 sink 가 스킴을 거부해 첫 화면 `/` 로 갔다.
     // 다른 출처·실행 스킴은 바꾸지 않아 종전 판정(폴백 sink 의 거부)을 그대로 받는다 (engine-v1.80.1)
-    target = toSameOriginNavPath(target) ?? target;
+    // 전체 주소에서 꺼낸 경로는 브라우저 주소라 하위 폴더 배치면 마운트 접두사를 품는다 — 라우트 패턴(접두사 없음)과
+    // 맞도록 벗긴다. 벗기지 않으면 매칭이 늘 빗나가 SPA 이동 대신 미매칭 폴백의 전체 페이지 이동이 된다.
+    const sameOriginPath = toSameOriginNavPath(target);
+    if (sameOriginPath !== null) {
+      target = stripBasePrefix(sameOriginPath);
+    } else if (basePrefix() !== '' && !isOffSiteNavTarget(target)) {
+      // 루트 상대 경로가 마운트 접두사를 품었으면(`/g7/board/free/2849` — 링크 컴포넌트가 그린 href, 서버가 접두사를
+      // 붙여 준 주소) 전체 주소와 같이 벗긴다. 벗기지 않으면 접두사째 라우트에 대조해 미등록으로 읽고, 폴백 openWindow
+      // `_self` 로 문서 전체를 다시 불렀다(루트 설치는 같은 클릭이 SPA). 경계 없는 `/g7abc` 와 이미 벗겨진 경로는
+      // `stripBasePrefix` 가 그대로 두고, 히스토리에 실을 때는 Router 가 `withBasePrefix` 로 한 번 붙인다.
+      // 사이트 밖 판정(`//`·스킴)은 벗기기 전에 먼저 돈다 — 벗긴 결과가 `//host` 면 아래 같은 판정이 이동을 막는다 (engine-v1.87.0)
+      target = stripBasePrefix(target);
+    }
     // 다른 화면으로 가기 전에 대기 중인 디바운스 입력을 반영한다 — 이벤트 액션 경로는 이미 그렇게 하지만
     // `G7Core.dispatch(navigate)`(관리자 사이드바·링크 `navigateTo`)는 그대로 이탈 가드 판정에 들어가, 폼 변경이
     // 없는 화면(`leave_guard`)에서도 검색창·목록 스크롤 디바운스 대기만으로 확인 창이 떠 이동이 막혔다(engine-v1.82.0).
@@ -3568,6 +3597,12 @@ export class ActionDispatcher {
     // 명명 주의: `overlay_target` 같은 광범위 키를 피하고 `transition_overlay` 스키마와 1:1 매핑되는 명시적 이름 사용.
     // 미래 다른 overlay 시스템(modal/drawer/tooltip 등)은 각자 독립 키 이름 사용 권장.
     if (params.replace === true) {
+      // replace 는 폴백 판정을 건너뛰므로 사이트 밖 판정을 여기서도 먼저 한다 — 종전에는 `//host` 를
+      // replaceState 에 넘겨 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.87.0)
+      if (isOffSiteNavTarget(finalPath)) {
+        logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
+        return;
+      }
       const G7Core = (window as any).G7Core;
       if (G7Core?.updateQueryParams) {
         const transitionOverlayTarget = typeof (params as any).transition_overlay_target === 'string'
@@ -3613,6 +3648,13 @@ export class ActionDispatcher {
       }
       await this.dispatchAction({ ...fallbackAction, type: 'click' } as ActionDefinition, context);
       this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
+      return;
+    }
+
+    // 사이트 밖 목적지는 SPA 이동(`pushState`)으로 갈 수 없다 — 폴백을 끈(`fallback: false`) 이동이나 라우트가
+    // 아직 없는 부팅 단계도 여기서 멈춘다. 종전에는 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.87.0)
+    if (isOffSiteNavTarget(finalPath)) {
+      logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
       return;
     }
 
@@ -3686,7 +3728,10 @@ export class ActionDispatcher {
     }
 
     const pathname = finalPath.split('?')[0];
-    if (router.match(pathname)) {
+    // 사이트 밖 목적지(`//host`·백슬래시·제어 문자 변형·스킴)는 대조하지 않고 미등록으로 본다 — 라우터 대조는
+    // 연속 슬래시를 접어(engine-v1.84.0) `//evil/board/x` 를 `*/board/:slug` 에 맞춰 버리고, 그러면 폴백의
+    // 같은 출처 게이트를 건너뛰어 `pushState` 가 교차 출처 SecurityError 를 던졌다 (engine-v1.87.0)
+    if (!isOffSiteNavTarget(pathname) && router.match(pathname)) {
       // 현재 템플릿에 등록된 경로 — 정상 navigate
       return null;
     }
@@ -4016,6 +4061,10 @@ export class ActionDispatcher {
     const windowTarget = params.target === '_self' ? '_self' : '_blank';
     logger.log('handleOpenWindow:', { target, params, finalPath, windowTarget });
 
+    // 같은 출처 판정은 아래 분기마다 navPolicy 가 한다(같은 탭: `resolveSameTabNavPath`, 새 창: 실행 스킴·https 판정).
+    // 판정을 통과한 **사이트 경로**에만 마운트 접두사를 붙인다 — 레이아웃 JSON 의 `target`(`/board/free` 등)은
+    // 접두사가 없는 라우트 기준 경로라, 붙이지 않으면 하위 폴더 배치에서 사이트 밖으로 나가고 그쪽에 다른 사이트가
+    // 있으면 그 응답을 연다. `withBasePrefix()` 는 멱등이고 `/` 로 시작하지 않는 값(외부 주소·상대 경로)은 그대로 둔다.
     if (windowTarget === '_self') {
       // 같은 탭 이동은 same-origin 경로만 — navigate 미매칭 폴백도 이 자리로 온다.
       // 보안: `?redirect=javascript:…`·`//evil` 이 레이아웃을 거쳐 그대로 흘러드는 sink 다.
@@ -4029,7 +4078,8 @@ export class ActionDispatcher {
       if (params.bypassLeaveGuard === true) {
         armLeaveGuardBypass();
       }
-      window.location.assign(safePath);
+      // base-path:allow safePath 를 withBasePrefix() 로 감싸 넘긴다.
+      window.location.assign(withBasePrefix(safePath));
     } else {
       // 새 창은 정상 외부 링크가 있으므로 실행 스킴만 막는다(과차단 방지).
       if (isDangerousScheme(finalPath)) {
@@ -4039,7 +4089,8 @@ export class ActionDispatcher {
       }
       if (isSameOriginRequestUrl(finalPath)) {
         // 같은 출처 새 창도 이 창(opener)과 끊는다 — 템플릿의 새 탭 링크(`rel="noopener"`)와 같은 기준 (engine-v1.80.1)
-        window.open(finalPath, '_blank', 'noopener');
+        // base-path:allow 같은 출처 주소를 withBasePrefix() 로 감싸 넘긴다(절대 주소는 그대로 돌려준다).
+        window.open(withBasePrefix(finalPath), '_blank', 'noopener');
 
         return;
       }
@@ -4054,6 +4105,7 @@ export class ActionDispatcher {
       const opened = window.open('', '_blank');
       if (opened) {
         opened.opener = null;
+        // base-path:allow 여기까지 온 값은 다른 출처의 https 절대 주소다(같은 출처는 위에서 접두사를 붙여 열었다).
         opened.location.href = finalPath;
       }
     }
@@ -4103,10 +4155,12 @@ export class ActionDispatcher {
       armLeaveGuardBypass();
     }
 
+    // 판정을 통과한 값은 앱 기준 같은 출처 경로다 — 브라우저가 그대로 여는 주소라 마운트 접두사를 붙인다
+    // (형제 openWindow `_self` 와 같은 sink 규칙, 이미 붙은 값은 그대로 — 멱등).
     if (params.replace === true) {
-      window.location.replace(safeTarget);
+      window.location.replace(withBasePrefix(safeTarget));
     } else {
-      window.location.assign(safeTarget);
+      window.location.assign(withBasePrefix(safeTarget));
     }
   }
 
@@ -4181,10 +4235,15 @@ export class ActionDispatcher {
 
     logger.log('handleReplaceUrl:', { target, params, finalPath });
 
-    // URL만 변경 (데이터소스 refetch 없음, 컴포넌트 리마운트 없음)
+    // URL만 변경 (데이터소스 refetch 없음, 컴포넌트 리마운트 없음).
+    // 히스토리에 싣는 값은 브라우저가 보는 주소이므로 접두사를 붙인다 — 형제
+    // `Router.executeNavigation` 과 같은 규칙이다. 경로 별칭 기록도 브라우저 주소(`location.pathname`)와
+    // 대조되므로 접두사를 붙인 같은 값으로 남긴다.
+    const browserPath = withBasePrefix(finalPath);
     // 경로가 바뀌어도 같은 화면이다 — 디바운스 칸의 경로 가드가 다른 화면으로 보지 않게 기록한다 (engine-v1.81.2)
-    registerUrlOnlyPathChange(finalPath, (window as any).__templateApp);
-    window.history.replaceState(null, '', finalPath);
+    registerUrlOnlyPathChange(browserPath, (window as any).__templateApp);
+    // base-path:allow 바로 위에서 withBasePrefix() 로 만든 값이다.
+    window.history.replaceState(null, '', browserPath);
     // 주소만 바꾸고 다시 그리지 않으므로 `:mergeQuery` 링크에 알린다 (engine-v1.82.1)
     notifyLocationReplaced();
 
@@ -4224,7 +4283,7 @@ export class ActionDispatcher {
    */
   private async ensureCsrfToken(): Promise<void> {
     try {
-      await fetch('/sanctum/csrf-cookie', {
+      await fetch(withBasePrefix('/sanctum/csrf-cookie'), {
         credentials: 'include',
       });
     } catch (error) {
@@ -4466,6 +4525,15 @@ export class ActionDispatcher {
       }
     }
 
+    // 하위 폴더 배치(`https://host/g7/`)에서 사이트 밖으로 나가지 않도록 접두사를 거친다.
+    //
+    // 여기가 **런타임 주경로**다 — 레이아웃 JSON 의 `"target": "/api/…"` 가 그대로 실려
+    // 오고, 번들 레이아웃에만 387건이 있다. 생성기(`assetUrl.ts`)에만 규칙을 붙였을 때
+    // 이 경로는 사각으로 남아 있었고, 증상은 오류가 아니라 **버튼이 아무 반응도 하지
+    // 않는 것**이었다 (11차 G3 라운드). 헬퍼는 멱등이고 절대 URL·프로토콜 상대 URL·
+    // 상대 경로는 그대로 돌려주므로, 외부 주소를 target 으로 쓰는 흐름도 영향이 없다.
+    finalTarget = withBasePrefix(finalTarget);
+
     // 전역 헤더 추출 (패턴 매칭)
     // Stale Closure 방지: G7Core.state.getGlobal/getLocal()로 최신 상태 조회
     // (cartKey 재발급 등 중간에 상태가 변경된 경우에도 최신 값 사용)
@@ -4533,7 +4601,7 @@ export class ActionDispatcher {
     }
 
     try {
-      let response = await fetch(finalTarget, options);
+      let response = await fetch(withBasePrefix(finalTarget), options);
 
       // 응답 본문 파싱 (성공/실패 모두)
       let responseData: any;
@@ -4580,20 +4648,17 @@ export class ActionDispatcher {
 
       if (!response.ok) {
         const errorData = responseData || {};
+        // 서버 메시지가 없으면(빈 본문·errors 만 있는 422·JSON 아닌 응답) 다국어 안내를 쓴다 — 오류 문맥을 만들 때
+        // 번역된다. 종전 영어 문구(`API call failed: …`)는 한국어 화면에도 그대로 토스트로 떴다 (engine-v1.87.0)
+        const failureMessage = errorData.message || '$t:core.errors.api_request_failed';
 
         // API 응답 데이터를 포함한 에러 객체 생성
-        const apiError: any = new Error(
-          errorData.message || `API call failed: ${response.statusText}`
-        );
+        const apiError: any = new Error(failureMessage);
         apiError.response = errorData; // API 응답 전체를 포함
         apiError.status = response.status;
         apiError.statusText = response.statusText;
 
-        throw new ActionError(
-          errorData.message || `API call failed: ${response.statusText}`,
-          undefined,
-          apiError
-        );
+        throw new ActionError(failureMessage, undefined, apiError);
       }
 
       return responseData;
@@ -8326,65 +8391,6 @@ export class ActionDispatcher {
       skipCache: true,
       protectTranslationParams: protectTranslationParams && value.startsWith('$t:'),
     });
-  }
-
-  /**
-   * 객체 내의 모든 {{}} 표현식을 평가합니다.
-   *
-   * "..." 키는 JavaScript spread 연산자처럼 동작합니다.
-   * 예: { "...": "{{_local.form}}", "name": "new" } → { ...oldForm, name: "new" }
-   *
-   * @param obj 평가할 객체
-   * @param dataContext 데이터 컨텍스트
-   */
-  private evaluateExpressions(obj: Record<string, any>, dataContext?: any): Record<string, any> {
-    let result: Record<string, any> = {};
-
-    for (const [key, value] of Object.entries(obj)) {
-      if (key === '...') {
-        // "..." 키는 spread 연산자로 처리
-        // 값이 {{}} 표현식이면 평가하고, 객체면 병합
-        let spreadValue = value;
-        if (typeof value === 'string' && value.includes('{{')) {
-          spreadValue = this.evaluateExpression(value, dataContext);
-        }
-        // spreadValue가 객체인 경우에만 병합
-        if (spreadValue && typeof spreadValue === 'object' && !Array.isArray(spreadValue)) {
-          result = { ...result, ...spreadValue };
-        }
-        // spreadValue가 null, undefined, 또는 객체가 아닌 경우 무시
-      } else if (typeof value === 'string' && value.includes('{{')) {
-        // {{}} 표현식 평가
-        result[key] = this.evaluateExpression(value, dataContext);
-      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        // 중첩 객체 재귀 처리
-        result[key] = this.evaluateExpressions(value, dataContext);
-      } else {
-        result[key] = value;
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * 이미 resolve된 payload에서 남아있는 {{}} 표현식만 평가합니다.
-   * 배열, 객체 등 이미 평가된 값은 그대로 유지합니다.
-   */
-  private evaluateExpressionsIfNeeded(obj: Record<string, any>, dataContext?: any): Record<string, any> {
-    const result: Record<string, any> = {};
-
-    for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === 'string' && value.includes('{{')) {
-        // 문자열이고 {{}}를 포함하면 평가
-        result[key] = this.evaluateExpression(value, dataContext);
-      } else {
-        // 그 외는 그대로 유지 (배열, 객체, 기본값 등)
-        result[key] = value;
-      }
-    }
-
-    return result;
   }
 
   /**

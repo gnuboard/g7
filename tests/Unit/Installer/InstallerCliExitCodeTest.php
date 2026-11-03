@@ -134,6 +134,31 @@ class InstallerCliExitCodeTest extends TestCase
     }
 
     /**
+     * 4 — 설치 시작 계획이 `.env` 쓰기 불가로 거부되면 입력 오류(2)가 아니라 요구사항 미충족(4)이고, 고칠 명령을 함께 낸다.
+     *
+     * 설치 계획 확정(installer_begin_installation)이 쓰기 불가 `.env` 로는 시작하지 않는다 — 그대로 시작하면 작업이
+     * 다 끝나도 완료 표식을 남기지 못한다. 그 거부를 터미널이 입력 오류로 끝내면 자동화 도구가 원인을 잘못 가른다.
+     *
+     * @effects cli_exit_4_env_not_writable_at_start
+     *
+     * @return void 반환값 없음
+     */
+    public function test_exit_4_when_env_is_not_writable_at_start(): void
+    {
+        $run = $this->runCliCode(
+            '$plan = ["ok" => false, "status" => 400, "error_code" => "env_not_writable", "message" => lang("error_env_not_writable_start"), "env_required" => true, "env_not_writable" => true, "warning" => null];'
+            .'$code = g7_cli_execute(new G7CliOutput(true), $plan, null, null);'
+            .'echo "__RESULT__=".json_encode($code);'
+        );
+
+        $this->assertSame(4, $run['result'], $run['raw']);
+
+        $errors = array_column($this->eventsNamed($run['events'], 'error'), 'message');
+        $fix = array_values(array_filter($errors, static fn (string $m): bool => str_contains($m, '.env') && (str_starts_with($m, 'chmod 644 ') || str_starts_with($m, 'icacls '))));
+        $this->assertCount(1, $fix, '권한을 고칠 명령이 함께 나오지 않았다: '.implode(' | ', $errors));
+    }
+
+    /**
      * 5 — 다른 터미널 설치가 실행 중(cli.lock).
      *
      * @effects cli_exit_5_another_cli_running

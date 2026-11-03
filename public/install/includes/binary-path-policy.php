@@ -24,6 +24,38 @@
  * 프레임워크·설정에 의존하지 않는다 — 인스톨러 API(라이브러리 모드)와 설치 워커
  * (`task-runner.php`) 양쪽에서 단독으로 `require_once` 할 수 있어야 한다.
  */
+if (! function_exists('installer_binary_path_unquote')) {
+    /**
+     * 큰따옴표로 감싼 경로 토큰의 따옴표를 벗깁니다.
+     *
+     * Windows 의 기본 설치 위치(`C:\Program Files\PHP\php.exe`)는 공백을 포함해 형태 규칙의
+     * 공백 차단에 걸린다. 그러면 입력이 조용히 무시되고 `'php'` 로 되돌아가, 운영자는
+     * 자기가 넣은 경로가 왜 없는 셈이 되는지 알 수 없다.
+     *
+     * 그래서 **인용부호로 감싼 형태**를 받아 단일 토큰임을 명시하게 한다. 벗긴 뒤에도
+     * 셸 메타문자·제어문자 검사는 그대로 받으므로(공백만 허용) 인용이 검사를 우회하는
+     * 통로가 되지 않는다. 따옴표가 안쪽에 또 있으면 인용 구조가 모호해지므로 거부한다.
+     *
+     * @param  string  $token  원본 토큰
+     * @return array{token: string, quoted: bool}|null 해석 결과 (구조가 모호하면 null)
+     */
+    function installer_binary_path_unquote(string $token): array
+    {
+        if (strlen($token) >= 2 && $token[0] === '"' && substr($token, -1) === '"') {
+            $inner = substr($token, 1, -1);
+
+            // 안쪽에 따옴표가 또 있으면 어디까지가 한 토큰인지 정할 수 없다.
+            if (str_contains($inner, '"')) {
+                return ['token' => $token, 'quoted' => false];
+            }
+
+            return ['token' => $inner, 'quoted' => true];
+        }
+
+        return ['token' => $token, 'quoted' => false];
+    }
+}
+
 if (! function_exists('installer_binary_path_shape_ok')) {
     /**
      * 실행 경로 토큰이 허용 형태인지 판정합니다 (자리 공통 규칙).
@@ -37,32 +69,46 @@ if (! function_exists('installer_binary_path_shape_ok')) {
             return false;
         }
 
+        $parsed = installer_binary_path_unquote($token);
+        $value = $parsed['token'];
+
+        if ($value === '') {
+            return false;
+        }
+
         // 셸 메타문자·제어문자 차단. 백슬래시는 Windows 경로 구분자이므로 허용한다.
-        if (preg_match('/[\s;`$|<>"\'&\x00-\x1F]/', $token)) {
+        // 인용된 토큰은 **공백만** 추가로 허용한다 — 인용이 "여기까지가 한 토큰" 을
+        // 명시하므로 토큰 분리 모호성이 사라진다. 나머지 메타문자·제어문자는 그대로 차단하므로
+        // 인용이 검사를 우회하는 통로가 되지 않는다.
+        $meta = $parsed['quoted']
+            ? '/[;`$|<>"\'&\x00-\x1F]/'
+            : '/[\s;`$|<>"\'&\x00-\x1F]/';
+
+        if (preg_match($meta, $value)) {
             return false;
         }
 
         // 하이픈 선두는 실행 파일 경로가 아니라 옵션이다 — 이번 취약점을 닫는 핵심 규칙.
-        if ($token[0] === '-') {
+        if ($value[0] === '-') {
             return false;
         }
 
         // `#` 이후를 주석으로 흘려 `.phar` 접미사를 위장하는 트릭 차단.
-        if (str_contains($token, '#')) {
+        if (str_contains($value, '#')) {
             return false;
         }
 
         // `..` 세그먼트 차단 (CWD 상대 이동).
-        if (preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $token)) {
+        if (preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $value)) {
             return false;
         }
 
         // bare 명령(PATH 탐색)이 아니면 절대경로여야 한다.
-        if ($token === 'php' || $token === 'composer') {
+        if ($value === 'php' || $value === 'composer') {
             return true;
         }
 
-        return installer_binary_path_is_absolute($token);
+        return installer_binary_path_is_absolute($value);
     }
 }
 
@@ -118,7 +164,7 @@ if (! function_exists('installer_is_composer_binary_path')) {
             return false;
         }
 
-        $basename = basename(str_replace('\\', '/', $token));
+        $basename = basename(str_replace('\\', '/', installer_binary_path_unquote($token)['token']));
 
         return (bool) preg_match('/^composer[0-9]*(\.[0-9]+)*(\.phar|\.exe|\.bat|\.cmd)?$/i', $basename);
     }
@@ -132,12 +178,13 @@ if (! function_exists('installer_resolve_php_composer_pair')) {
      * Composer 를 실행하려는 운영 의도를 계속 지원한다. 자리별 규칙을 모두 만족할 때만
      * 해석에 성공한다.
      *
-     * 공백이 포함된 디렉토리(`C:\Program Files\...`)는 토큰 분리 휴리스틱과 충돌해
-     * 지원하지 않는다 — `#361` 이 known_limitation 으로 명시한 기존 한계이며 이번 정책이
-     * 새로 만드는 제약이 아니다.
+     * 공백이 포함된 디렉토리(`C:\Program Files\...`)는 **인용부호로 감싸** 전달한다 —
+     * `"C:\Program Files\PHP\php.exe" "C:\composer\composer.phar"`. 인용이 없으면 종전대로
+     * 공백을 토큰 경계로 본다(`#361` 이 명시한 기존 한계). Windows 기본 설치 위치가 공백을
+     * 포함하므로, 인용 입력을 받지 않으면 그 환경은 입력이 조용히 무시되는 상태로 남는다.
      *
-     * @param  string  $raw  공백으로 구분된 원본 입력
-     * @return array{php: string, composer: string}|null 해석 실패 시 null
+     * @param  string  $raw  공백으로 구분된 원본 입력 (각 토큰은 인용 가능)
+     * @return array{php: string, composer: string}|null 해석 실패 시 null (값은 따옴표를 벗긴 실제 경로)
      */
     function installer_resolve_php_composer_pair(string $raw): ?array
     {
@@ -147,9 +194,9 @@ if (! function_exists('installer_resolve_php_composer_pair')) {
             return null;
         }
 
-        $tokens = preg_split('/\s+/', $raw, 2);
+        $tokens = installer_binary_path_tokenize($raw);
 
-        if (! is_array($tokens) || count($tokens) !== 2) {
+        if ($tokens === null || count($tokens) !== 2) {
             return null;
         }
 
@@ -165,7 +212,63 @@ if (! function_exists('installer_resolve_php_composer_pair')) {
             return null;
         }
 
-        return ['php' => $php, 'composer' => $composer];
+        // 따옴표는 "여기까지가 한 토큰" 을 알리는 표기일 뿐이다 — 호출부는 실행 시
+        // escapeshellarg 로 다시 인용하므로 실제 경로를 돌려준다.
+        return [
+            'php' => installer_binary_path_unquote($php)['token'],
+            'composer' => installer_binary_path_unquote($composer)['token'],
+        ];
+    }
+}
+
+if (! function_exists('installer_binary_path_tokenize')) {
+    /**
+     * 입력을 공백 기준으로 토큰화하되 인용된 구간은 하나로 봅니다.
+     *
+     * @param  string  $raw  원본 입력
+     * @return array<int, string>|null 토큰 목록 (인용부호 포함 보존). 인용이 닫히지 않으면 null
+     */
+    function installer_binary_path_tokenize(string $raw): ?array
+    {
+        $raw = trim($raw);
+        $length = strlen($raw);
+        $tokens = [];
+        $index = 0;
+
+        while ($index < $length) {
+            while ($index < $length && $raw[$index] === ' ') {
+                $index++;
+            }
+
+            if ($index >= $length) {
+                break;
+            }
+
+            if ($raw[$index] === '"') {
+                $close = strpos($raw, '"', $index + 1);
+
+                if ($close === false) {
+                    return null;
+                }
+
+                $tokens[] = substr($raw, $index, $close - $index + 1);
+                $index = $close + 1;
+
+                // 인용 뒤에 공백 없이 다른 글자가 붙으면 경계가 모호하다 (`"a"b`).
+                if ($index < $length && $raw[$index] !== ' ') {
+                    return null;
+                }
+
+                continue;
+            }
+
+            $space = strpos($raw, ' ', $index);
+            $space = $space === false ? $length : $space;
+            $tokens[] = substr($raw, $index, $space - $index);
+            $index = $space;
+        }
+
+        return $tokens;
     }
 }
 

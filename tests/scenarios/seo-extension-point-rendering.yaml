@@ -143,3 +143,5 @@ test_files:
   - tests/Unit/Seo/SeoLayoutDataSourceDeclarationTest.php
   - tests/Unit/Upgrades/ClearSeoPageCacheAfterRendererParityFixTest.php
   - tests/Playwright/specs/seo-bot-rendering.spec.ts
+
+  - tests/Unit/Seo/SeoSwitchValueParityTest.php

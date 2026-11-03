@@ -80,6 +80,10 @@ return [
         'version_update' => '버전 업데이트',
         'version_restore' => '버전 복원',
         'reset' => '초기화',
+        // 코어 업데이트 — 실행·성공·실패를 각각 남긴다
+        'started' => '시작',
+        'completed' => '완료',
+        'failed' => '실패',
 
         // IP 접근 제한 (security.*) — 기존 세그먼트와 겹치지 않는 복합어로 둔다
         // (4단계 "마지막 세그먼트" 조회가 무관한 라벨을 붙이지 않게)
@@ -172,6 +176,11 @@ return [
         'menu_toggle_status' => '메뉴 상태 전환 (ID: :menu_id)',
         'menu_sync_roles' => '메뉴 역할 동기화 (ID: :menu_id)',
         'menu_get_by_extension' => '확장별 메뉴 조회 (:extension_type: :extension_identifier)',
+
+        // 코어 업데이트
+        'core_update_started' => '코어 업데이트 시작 (:from → :to)',
+        'core_update_completed' => '코어 업데이트 완료 (:from → :to)',
+        'core_update_failed' => '코어 업데이트 실패 (:from → :to) — 단계: :step / 되돌리기: :rollback',
 
         // 설정 관리
         'settings_index' => '설정 목록 조회',

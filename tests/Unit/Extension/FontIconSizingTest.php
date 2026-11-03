@@ -22,8 +22,7 @@ use Tests\TestCase;
  *
  * 소유 시나리오: `font-icon-sizing`
  *
- * @effects large_font_icon_declares_font_size
- * @effects box_style_asset_wraps_the_icon_not_the_icon_itself
+ * 효과 요약(마커 아님 — 평문): large_font_icon_declares_font_size, box_style_asset_wraps_the_icon_not_the_icon_itself
  */
 class FontIconSizingTest extends TestCase
 {

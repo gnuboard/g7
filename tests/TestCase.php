@@ -5,6 +5,7 @@ namespace Tests;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
@@ -188,14 +189,22 @@ abstract class TestCase extends BaseTestCase
      * 기본 모드를 전제한 테스트(자산 URL 생성·blade 렌더)가 그 환경에서만 무더기로 깨진다.
      * 실제로 이 환경에서 8건이 그렇게 실패했다.
      *
+     * 다른 모드를 검증해야 하는 테스트는 `AssetUrl::forceMode()` 로 자기 전제를 명시한다.
+     *
+     * `public/storage` 링크 가용 판정도 같은 계열이다. `StorageLinkHelper` 는 그 값을
+     * **프로세스 수명 static memo** 로 들고 있고 첫 호출에서 개발자 체크아웃의 실제
+     * `public/storage` 를 실측한다 — 링크가 있는 머신과 없는 머신에서 공개 디스크 URL 이
+     * `/storage/…` 와 `/api/system/public-storage/…` 로 갈린다. 즉 같은 코드가 머신에 따라
+     * 다른 결과를 낸다. 기본 전제는 「링크 있음」(표준 배치)으로 고정하고, 링크 부재 배치를
+     * 검증하는 테스트는 `StorageLinkHelper::forcePublicStorageLinkUsable(false)` 로 자기
+     * 전제를 명시한다.
+     *
      * `security.two_factor_auth` 도 같다. 켜 둔 사이트에서는 `/api/auth/login` 이 토큰이
      * 아니라 인증 요청(challenge)을 돌려주므로, 로그인 성공을 전제한 테스트가 그 환경에서만
      * 깨진다. 게다가 테스트 메일러로는 인증번호를 보낼 수 없어 503 이 되므로 실패 메시지가
-     * 원인을 가리키지도 않는다. 실제로 이 환경에서 3건이 그렇게 실패했다.
-     *
-     * 다른 모드를 검증해야 하는 테스트는 `AssetUrl::forceMode()` 로, 2단계 인증을 켜야 하는
-     * 테스트는 `config(['g7_settings.core.security.two_factor_auth' => true])` 로 자기 전제를
-     * 명시한다 (자식 `setUp()` 은 `parent::setUp()` 뒤에 실행되므로 그 지정이 이긴다).
+     * 원인을 가리키지도 않는다. 실제로 이 환경에서 3건이 그렇게 실패했다. 2단계 인증을 켜야
+     * 하는 테스트는 `config(['g7_settings.core.security.two_factor_auth' => true])` 로 자기
+     * 전제를 명시한다 (자식 `setUp()` 은 `parent::setUp()` 뒤에 실행되므로 그 지정이 이긴다).
      *
      * @return void 반환값 없음
      */
@@ -248,6 +257,10 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.activity_log_retention_days' => 365,
             'g7_settings.core.security.password_expiry_started_at' => null,
         ]);
+        StorageLinkHelper::forcePublicStorageLinkUsable(true);
+        // 마운트 접두사 강제값도 프로세스 수명 static 이다 — 앞 케이스가 `forceBasePrefix('/g7')`
+        // 를 남기면 뒤 케이스의 모든 주소가 `/g7/…` 로 나가 개별 통과 / 스위트 실패가 된다.
+        AssetUrl::forceBasePrefix(null);
     }
 
     /**

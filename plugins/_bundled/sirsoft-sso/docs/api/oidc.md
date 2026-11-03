@@ -29,7 +29,6 @@
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
-| logout_token | body | string | 예 | JWT | IdP 가 서명한 로그아웃 토큰(`application/x-www-form-urlencoded`) |
 
 **요청 예시**
 

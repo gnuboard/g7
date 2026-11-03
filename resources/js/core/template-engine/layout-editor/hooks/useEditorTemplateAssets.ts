@@ -31,7 +31,7 @@ import {
   type EditorAccessError,
 } from '../types/editorErrors';
 import { reseedPendingIntoEngine } from './pendingCustomTranslations';
-import { suffixed } from '../../../support/assetUrl';
+import { suffixed, withBasePrefix } from '../../../support/assetUrl';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
 
 export interface EditorTemplateAssetsState {
@@ -73,7 +73,7 @@ async function fetchEditorAssets(identifier: string): Promise<EditorAssetsManife
     headers.Authorization = `Bearer ${token}`;
   }
   const response = await fetch(
-    `/api/admin/templates/${encodeURIComponent(identifier)}/editor-assets`,
+    withBasePrefix(`/api/admin/templates/${encodeURIComponent(identifier)}/editor-assets`),
     { headers, credentials: 'same-origin' },
   );
   if (!response.ok) {
@@ -171,7 +171,7 @@ async function injectStylesheet(href: string): Promise<void> {
         typeof window !== 'undefined' ? window.localStorage?.getItem('auth_token') : null;
       const headers: Record<string, string> = { Accept: 'text/css' };
       if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(href, { headers, credentials: 'same-origin' });
+      const res = await fetch(withBasePrefix(href), { headers, credentials: 'same-origin' });
       if (res.ok) {
         const css = await res.text();
         const style = document.createElement('style');

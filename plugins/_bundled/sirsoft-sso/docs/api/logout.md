@@ -25,7 +25,7 @@
 
 **요청 파라미터**
 
-_요청 파라미터 없음._ IdP 가 붙여 보내는 쿼리(`state` 등)는 읽지 않는다.
+_요청 파라미터 없음._
 
 **요청 예시**
 
@@ -71,12 +71,11 @@ IdP 로그아웃을 마친 브라우저가 돌아오는 주소다. OIDC 는 `pos
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키(티켓의 IdP 와 같아야 한다) |
-| ticket | query | string | 예 | 영숫자 40자 | 코어 로그아웃 때 발급한 1회용 티켓(60초) |
 
 **요청 예시**
 
 ```http
-GET /plugins/sirsoft-sso/logout/{idp}?ticket={TICKET} HTTP/1.1
+GET /plugins/sirsoft-sso/logout/{idp} HTTP/1.1
 Host: api.example.com
 Accept: text/html
 ```

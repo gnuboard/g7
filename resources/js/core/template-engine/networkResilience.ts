@@ -258,6 +258,7 @@ export async function fetchWithRetry(
                 }, timeoutMs);
             }
 
+            // base-path:allow 범용 재시도 래퍼 — 주소는 호출부가 만들고 여기서는 통과시킨다.
             const response = await fetch(url, requestInit);
 
             // HTTP 응답이 왔다 = 재시도 대상 아님. 상태코드 판단은 호출부 몫.

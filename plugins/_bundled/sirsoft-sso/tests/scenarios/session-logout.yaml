@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
 feature: sso_session_logout
 description: |
   SSO 세션과 로그아웃 — 세션 행·토큰 연결·수명 상한(IdP·사이트 최소), local·rp·both, 1회용 로그아웃 티켓, back-channel(서명·jti), IdP 발 로그아웃 공용 종료.

@@ -211,7 +211,7 @@ class AdminTemplateAssetController extends AdminBaseController
 
         if ($cssPath === null) {
             // CSS 부재 — 빈 CSS 폴백(편집기 부팅이 실패하지 않도록 200).
-            return response('', 200)->header('Content-Type', 'text/css; charset=UTF-8');
+            return $this->inlineContentResponse('', 'text/css; charset=UTF-8');
         }
 
         // 코어 소유 키(`template.*`)는 CoreCacheDriver 직접 생성으로 다룬다 — `app(CacheInterface)`
@@ -220,12 +220,14 @@ class AdminTemplateAssetController extends AdminBaseController
         $cache = new CoreCacheDriver;
         $cacheVersion = ExtensionStaticCacheService::getExtensionCacheVersion();
         // 캐시 키 — 템플릿 + 확장 캐시 버전 + 파일 mtime(빌드 변경 즉시 무효화).
-        $mtime = (int) @filemtime($cssPath);
-        $cacheKey = "template.editor_css.{$identifier}.v{$cacheVersion}.m{$mtime}";
+        // mtime 을 읽지 못하면 키를 만들지 않고 캐시를 **거치지 않는다** (아래 헬퍼 참조).
+        $cacheKey = $this->editorCssCacheKey($identifier, $cacheVersion, $cssPath);
 
-        $cached = $cache->get($cacheKey);
-        if (is_string($cached)) {
-            return response($cached, 200)->header('Content-Type', 'text/css; charset=UTF-8');
+        if ($cacheKey !== null) {
+            $cached = $cache->get($cacheKey);
+            if (is_string($cached)) {
+                return $this->inlineContentResponse($cached, 'text/css; charset=UTF-8');
+            }
         }
 
         $css = (string) file_get_contents($cssPath);
@@ -247,9 +249,39 @@ class AdminTemplateAssetController extends AdminBaseController
         }
 
         // 변환 결과 캐시(실패해도 원본을 그대로 캐시 — 매요청 재가공 방지).
-        $cache->put($cacheKey, $css, 3600);
+        if ($cacheKey !== null) {
+            $cache->put($cacheKey, $css, 3600);
+        }
 
-        return response($css, 200)->header('Content-Type', 'text/css; charset=UTF-8');
+        // 세 응답 모두 코어 헬퍼를 지난다 — 파일 서빙 응답 계약(유형 선언 + `nosniff`)은 그
+        // 한 곳이 붙인다. 종전에는 `response()->header()` 로 직접 만들어 이 통로만 `nosniff`
+        // 가 빠져 있었다 (16차 G3 라운드 E-8).
+        return $this->inlineContentResponse($css, 'text/css; charset=UTF-8');
+    }
+
+    /**
+     * 편집기 CSS 변환 결과의 캐시 키를 만듭니다. mtime 을 읽지 못하면 `null` 입니다.
+     *
+     * 종전에는 `(int) @filemtime()` 이라 조회 실패(`false`)가 `m0` 으로 접혔다. 그러면
+     * 실패한 요청들이 **하나의 키**를 공유해, 어느 시점의 변환 결과든 그 키에 한 번
+     * 들어가면 빌드가 바뀌어도 1시간 동안 그대로 나간다 — mtime 을 키에 넣은 이유
+     * (빌드 변경 즉시 무효화)가 그 자리에서 사라진다. 오류도 로그도 없다. 조회 실패는
+     * 키를 만들지 않아 호출부가 캐시를 읽지도 쓰지도 않게 한다 (13차 G3 라운드).
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  int  $cacheVersion  확장 캐시 버전
+     * @param  string  $cssPath  CSS 파일 절대 경로
+     * @return string|null 캐시 키, mtime 조회 실패 시 null
+     */
+    protected function editorCssCacheKey(string $identifier, int $cacheVersion, string $cssPath): ?string
+    {
+        $mtime = @filemtime($cssPath);
+
+        if ($mtime === false) {
+            return null;
+        }
+
+        return "template.editor_css.{$identifier}.v{$cacheVersion}.m{$mtime}";
     }
 
     /**

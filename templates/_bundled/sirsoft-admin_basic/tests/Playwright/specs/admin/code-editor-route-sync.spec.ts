@@ -5,6 +5,8 @@
  * 쿼리로 레이아웃을 식별한다. 본 spec 은 템플릿 소유 레이아웃의 동작을 검증한다
  * (위지윅 chrome 측 동작은 코어 chrome-controls.spec.ts 가 커버).
  *
+ * 진입 축(마커 아님 — 평문): code_editor_entry=direct_route_query.
+ *
  * @scenario code_editor_entry=direct_route_query
  * @effects code_editor_restores_layout_from_route_query
  * @effects code_editor_clears_selection_left_over_from_another_template

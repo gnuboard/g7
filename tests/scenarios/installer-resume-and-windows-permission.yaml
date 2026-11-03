@@ -98,10 +98,18 @@ effects:
   # 부정 효과 (절대 발생 금지)
   - installer_never_skips_an_extension_whose_db_row_was_dropped
 
+  # 요구사항 단계 권한 재귀 스캔의 깊이 제한 (dev-g7#445 후속)
+  - directory_permission_scan_stops_at_max_depth
+  - directory_permission_scan_accepts_optional_depth_limit
+
+  # 609 docblock 정리 — db_seed 까지 끝난 DB 의 재시도는 완료 마커를 지우지 않는다 (G2 계약 변경)
+  - completed_db_stage_markers_are_preserved_on_retry
+
 test_files:
   - tests/Unit/Installer/InstallerReadonlyAttribClearsContentsTest.php
   - tests/Unit/Installer/ExistingDbActionGuardTest.php
   - tests/Unit/Installer/InstallerWindowsCommandsTest.php
+  - tests/Unit/Installer/DirectoryPermissionScanDepthTest.php
 
 manual_verification:
   - description: "재개 회귀 재현 — 확장이 db_cleanup 앞에 설치된 뒤 재시도"

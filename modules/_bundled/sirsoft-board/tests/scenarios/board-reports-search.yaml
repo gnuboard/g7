@@ -22,6 +22,10 @@ effects:
   - search_input_value_retained_after_navigation
   - reset_clears_search_keyword
   - mobile_search_propagates_to_url_query
+  # #609 docblock 정리 때 사후 등재 — 같은 화면 레이아웃 테스트가 함께 재는 좁은 화면 일괄 처리 드롭다운 계약
+  - mobile_bulk_dropdown_items_use_value_field
+  - mobile_bulk_dropdown_switch_cases_match_items
+  - mobile_bulk_dropdown_cases_are_sequences
 
 test_files:
   - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/namedActionsBoardReports.test.tsx

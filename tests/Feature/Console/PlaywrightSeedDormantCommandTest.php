@@ -21,9 +21,9 @@ use Tests\TestCase;
  * 틀린 것인지 구분되지 않는다. 그래서 명단을 만드는 쿼리(배치와 같은 조건식)로 직접 대조한다.
  * 기간을 기본값과 다르게 둔 사이트도 같은 결과여야 하므로 설정을 바꾼 경우도 함께 본다.
  *
- * @scenario target=privacy_dormant_accounts, row_age=beyond_retention
+ * 축 요약(마커 아님 — 평문): target=privacy_dormant_accounts, row_age=beyond_retention
  *
- * @effects measurement_seed_stages_land_in_their_target_lists
+ * 효과 요약(마커 아님 — 평문): measurement_seed_stages_land_in_their_target_lists
  */
 class PlaywrightSeedDormantCommandTest extends TestCase
 {
@@ -62,8 +62,6 @@ class PlaywrightSeedDormantCommandTest extends TestCase
     /**
      * 심은 계정은 자기 단계의 명단에만 잡히고 다른 네 명단에는 나타나지 않습니다.
      *
-     * @scenario target=privacy_dormant_accounts, row_age=beyond_retention
-     *
      * @effects measurement_seed_stages_land_in_their_target_lists
      *
      * @param  string  $seedStage  커맨드에 넘길 단계
@@ -89,8 +87,6 @@ class PlaywrightSeedDormantCommandTest extends TestCase
     /**
      * 기간을 기본값과 다르게 둔 사이트에서도 심은 계정이 그 단계 명단에 잡힙니다.
      *
-     * @scenario target=privacy_dormant_accounts, row_age=beyond_retention
-     *
      * @effects measurement_seed_stages_land_in_their_target_lists
      *
      * @param  string  $seedStage  커맨드에 넘길 단계
@@ -114,8 +110,6 @@ class PlaywrightSeedDormantCommandTest extends TestCase
     /**
      * 정리 옵션은 모든 단계에서 심은 계정을 남김없이 지웁니다.
      *
-     * @scenario target=privacy_dormant_accounts, row_age=beyond_retention
-     *
      * @effects measurement_seed_stages_land_in_their_target_lists
      *
      * @return void 반환값 없음
@@ -137,8 +131,6 @@ class PlaywrightSeedDormantCommandTest extends TestCase
      *
      * `withdrawn` 단계는 「지금 실행」이 이메일을 `withdrawn_{id}@removed.invalid` 로 바꾸라고 심는 계정이라,
      * 이메일 접두사만 보는 정리는 실측을 한 번 할 때마다 그만큼을 개발 DB 에 남겼다.
-     *
-     * @scenario target=privacy_dormant_accounts, row_age=beyond_retention
      *
      * @effects measurement_seed_stages_land_in_their_target_lists, purge_also_removes_seeds_anonymized_by_the_measured_action
      *

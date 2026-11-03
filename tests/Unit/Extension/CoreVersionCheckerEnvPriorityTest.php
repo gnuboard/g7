@@ -28,6 +28,11 @@ class CoreVersionCheckerEnvPriorityTest extends TestCase
     /** @var array<int, string> */
     private array $originalArgv = [];
 
+    /**
+     * APP_VERSION env, 업데이트 진행 플래그, argv 원래 값을 보관하고 기본 상태를 업데이트 트리 밖으로 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,6 +49,11 @@ class CoreVersionCheckerEnvPriorityTest extends TestCase
         $_SERVER['argv'] = ['artisan', 'inspire'];
     }
 
+    /**
+     * 보관해 둔 APP_VERSION env, 업데이트 진행 플래그, argv 를 원래 값으로 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         unset($_ENV['APP_VERSION'], $_SERVER['APP_VERSION']);
@@ -72,6 +82,8 @@ class CoreVersionCheckerEnvPriorityTest extends TestCase
      * 업데이트 트리 안에서는 env APP_VERSION 이 config 보다 우선한다.
      *
      * @effects getCoreVersion_prefers_env_APP_VERSION_only_inside_update_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_env_app_version_overrides_config(): void
@@ -91,6 +103,8 @@ class CoreVersionCheckerEnvPriorityTest extends TestCase
      * 업데이트 트리 안이어도 env 가 없으면 config 로 내려간다.
      *
      * @effects getCoreVersion_falls_back_to_config_when_env_absent_inside_update_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_falls_back_to_config_when_env_missing(): void
@@ -109,6 +123,12 @@ class CoreVersionCheckerEnvPriorityTest extends TestCase
 
     /**
      * spawn 자식 시나리오: 캐시된 config 는 fromVersion, env 는 toVersion → 확장이 살아남는다.
+     *
+     * @scenario memory_version_source=env_app_version, child_config_cache_state=cached_from_version
+     *
+     * @effects getCoreVersion_prefers_env_APP_VERSION_only_inside_update_tree, extension_required_core_version_is_validated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_spawn_scenario_cached_config_with_env_override(): void
@@ -133,6 +153,8 @@ class CoreVersionCheckerEnvPriorityTest extends TestCase
      * 사라진다 — 그 상태에서는 복구 UI 에도 도달할 수 없다.
      *
      * @effects getCoreVersion_ignores_env_APP_VERSION_outside_update_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_env_app_version_is_ignored_outside_update_tree(): void
@@ -157,6 +179,10 @@ class CoreVersionCheckerEnvPriorityTest extends TestCase
 
     /**
      * env 플래그가 전파되지 않아도 argv 가 업데이트 커맨드면 env 우선이 켜진다.
+     *
+     * @effects CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv, getCoreVersion_prefers_env_APP_VERSION_only_inside_update_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_argv_update_command_enables_env_priority(): void
@@ -178,6 +204,7 @@ class CoreVersionCheckerEnvPriorityTest extends TestCase
      * 업데이트 트리 플래그를 세 채널($_ENV/$_SERVER/putenv)에 세우거나 지웁니다.
      *
      * @param  bool  $enabled  true 면 플래그 설정, false 면 세 채널 모두 제거
+     * @return void 반환값 없음
      */
     private function setUpdateFlag(bool $enabled): void
     {

@@ -20,7 +20,7 @@
 ### GET /api/plugins/sirsoft-verification_kginicis/me/identity/inicis
 <!-- @generated:start:api.plugins.sirsoft-verification_kginicis.me.identity.inicis.show -->
 - **라우트명**: `api.plugins.sirsoft-verification_kginicis.me.identity.inicis.show`
-- **컨트롤러**: `\Plugins\Sirsoft\VerificationKginicis\Http\Controllers\MyInicisIdentityShowController@show`
+- **컨트롤러**: `Plugins\Sirsoft\VerificationKginicis\Http\Controllers\MyInicisIdentityShowController@show`
 - **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
@@ -151,7 +151,7 @@ HTTP/1.1 200
 `InicisCallbackResolver` 가 담당한다. 빈 규칙의 FormRequest 를 두는 이유는 "검증하지 않는다" 가
 누락이 아니라 결정임을 코드에 남기기 위해서다.
 
-**응답**: 항상 `302` — `/plugin/inicis/popup-bridge` 로 결과 query 를 붙여 redirect 한다.
+**응답**: 항상 `302` — `/plugin/inicis/popup-bridge` 로 결과 query 를 붙여 redirect 한다. redirect 목적지의 오리진·하위 폴더 접두사는 요청 주소가 아니라 상점 주소 설정(사이트 URL)을 따른다 — 외부 인증기관이 되던지는 요청은 프록시·TLS 종료 배치에서 요청 오리진이 실제 사이트와 다를 수 있다.
 
 ### GET /plugin/inicis/popup-bridge
 

@@ -8,6 +8,7 @@ use App\Enums\IdentityVerificationStatus;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
@@ -203,6 +204,46 @@ class KcpCallbackControllerTest extends PluginTestCase
      * 결과조회 응답을 가로챈다.
      *
      * KCP 테스트 결과조회 호출에 암호화된 신원 정보를 담은 정상 응답을 돌려준다.
+     *
+     * @return void 반환값 없음
+     */
+    /**
+     * 브리지 복귀 주소는 요청이 아니라 **설정된 사이트 주소**를 따른다 — 인증기관의 콜백은 사이트
+     * 바깥에서 도착하므로 `url()` 이 실은 요청 호스트는 앞단 프록시 배치에서 사이트 밖이다
+     * (16차 G3 라운드 B-5).
+     *
+     * @scenario outcome=success,lookup=by_reg_cert_key,missing_field=none
+     *
+     * @effects pg_return_and_notify_addresses_follow_the_configured_site_url
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bridge_redirect_follows_the_configured_site_url(): void
+    {
+        config(['app.url' => 'https://example.com/g7']);
+        $log = $this->createChallenge();
+        $this->fakeCertQuery();
+
+        try {
+            $response = $this->post('http://localhost'.self::CALLBACK_URL, [
+                'res_cd' => '0000',
+                'res_msg' => '정상처리',
+                'reg_cert_key' => self::REG_CERT_KEY,
+                'param_opt_1' => $log->id,
+            ]);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
+
+        $response->assertRedirect();
+        $this->assertStringStartsWith(
+            'https://example.com/g7'.self::BRIDGE_URL.'?',
+            (string) $response->headers->get('Location'),
+        );
+    }
+
+    /**
+     * KCP 테스트 인증 서버의 조회 응답을 정상 처리(0000)와 암호화된 본인 정보로 가짜 응답한다.
      *
      * @return void 반환값 없음
      */

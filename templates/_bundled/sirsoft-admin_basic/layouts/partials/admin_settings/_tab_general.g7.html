@@ -25,6 +25,7 @@
             </label>
             <input type="url" name="general.site_url" placeholder="https://example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_url'] === true}}" class="input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['general.site_url']}}" class="form-error">{{_local.errors?.['general.site_url']?.[0] ?? ''}}</span>
+            <p class="form-help text-gray-500 dark:text-gray-400">$t:admin.settings.general.site_url_help</p>
           </div>
         </div>
         <!-- 사용자 화면 URL — 외부 화면(Next.js 등)을 다른 주소에서 운영할 때만. 비밀번호 재설정·알림 메일 링크와
@@ -130,10 +131,12 @@
               </options>
             </select>
           </div>
-          <button data-ref="asset_url_mode_detect_button" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_computed.isReadOnly}}">
+          <!-- 감지는 브라우저가 두 번 왕복하는 조작이다. 아래 안내 문구가 'detecting' 을 이미 그리지만 그것은 필드 밑에 있어 누른 손이 보는 자리가 아니다 — 버튼 자신이 잠기고 돌지 않으면 운영자는 다시 누르고, 그때마다 탐침이 겹쳐 돈다. 플래그는 핸들러가 이미 소유한다(`detectAssetUrlModeHandler` 가 시작에 'detecting', 성공·실패·판정불가 모든 경로에서 다른 값으로 덮는다). -->
+          <button data-ref="asset_url_mode_detect_button" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_computed.isReadOnly || _local.asset_url_mode_detect_status === 'detecting'}}">
             <on event="onClick">
               <action handler="detectAssetUrlMode"/>
             </on>
+            <icon data-if="{{_local.asset_url_mode_detect_status === 'detecting'}}" name="spinner" class="spinner-sm"/>
             <span>$t:admin.settings.general.asset_url_mode_detect</span>
           </button>
         </div>

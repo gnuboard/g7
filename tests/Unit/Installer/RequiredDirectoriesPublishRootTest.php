@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -13,8 +15,15 @@ use PHPUnit\Framework\TestCase;
  * 않은 채 설치를 진행하고, 마지막 단계의 정적 게시가 `parent_not_writable` 로 실패한 뒤 대시보드에
  * 「초기 화면 파일 생성 실패」 알림이 뜬다 (7.0.10 신규 설치에서 실제 발생).
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class RequiredDirectoriesPublishRootTest extends TestCase
 {
+    /**
+     * 클래스 시작 때 기준 경로와 스크립트 경로를 정하고, 설치기 설정이 기대는 지원 클래스 둘과 설치기 설정 소스를 읽어 들인다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -38,6 +47,15 @@ class RequiredDirectoriesPublishRootTest extends TestCase
         require_once $projectRoot.'/public/install/includes/config.php';
     }
 
+    /**
+     * 설치기의 쓰기 권한 검사 목록에 정적 게시 루트의 상위 디렉터리 항목이 들어 있는지 확인한다.
+     *
+     * @scenario task=static_publish
+     *
+     * @effects installer_required_directories_include_static_publish_root
+     *
+     * @return void 반환값 없음
+     */
     public function test_required_directories_include_static_publish_root_parent(): void
     {
         $this->assertArrayHasKey(
@@ -47,6 +65,15 @@ class RequiredDirectoriesPublishRootTest extends TestCase
         );
     }
 
+    /**
+     * 정적 게시 루트의 상위 디렉터리가 저장소에 실제로 있어 권한 검사 대상이 사라지지 않는지 확인한다.
+     *
+     * @scenario task=static_publish
+     *
+     * @effects installer_required_directories_include_static_publish_root
+     *
+     * @return void 반환값 없음
+     */
     public function test_publish_root_parent_is_tracked_so_the_check_can_run(): void
     {
         $this->assertDirectoryExists(dirname(__DIR__, 3).'/public/build', 'public/build 가 저장소에 없으면 검사 대상 자체가 사라진다');

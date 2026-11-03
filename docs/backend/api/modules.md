@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Modules 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -357,6 +357,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Internal Server Error | 업데이트 확인 중 예외 발생 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 설치된 모든 모듈에 대해 GitHub·번들 소스를 조회하여 새 버전 배포 여부를 일괄 확인합니다. `core.modules.install` 권한이 필요합니다. 파라미터 없이 호출하며, 각 모듈의 업데이트 가능 여부와 감지된 최신 버전 정보를 반환합니다. 모듈 목록 화면 진입 시 업데이트 뱃지를 갱신하는 용도로 사용됩니다.
 
@@ -715,6 +717,8 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
+
+
 **설명** 업로드된 ZIP 파일에서 모듈을 설치합니다. `core.modules.install` 권한이 필요하며, 파일은 최대 50MB(51200KB)까지 허용됩니다. ZIP 압축 해제 후 module.json 검증을 거쳐 설치하며, 성공 시 201 상태로 설치된 모듈 정보를 반환합니다. 설치 전 manifest 만 미리 확인하려면 `manifest-preview` 를 먼저 호출하는 것이 안전합니다.
 
 
@@ -827,6 +831,8 @@ HTTP/1.1 201
 | 500 | Internal Server Error | 설치 처리 중 예외 발생 (`module.install_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** GitHub 저장소 URL 에서 모듈을 내려받아 설치합니다. `core.modules.install` 권한이 필요합니다. `github_url` 로 지정한 공개 저장소의 릴리스/소스를 받아 압축 해제·검증 후 설치하며, 성공 시 201 상태로 설치된 모듈 정보를 반환합니다.
 
@@ -975,6 +981,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 현재 설치된 모듈만 조회합니다(미설치 항목 제외). 이 엔드포인트는 세부 권한 미들웨어 없이 `auth:sanctum` 인증만 요구하므로, 다른 화면이 활성/설치된 모듈 목록을 참조할 때 사용하는 경량 조회 API 입니다. 페이지네이션 없이 설치된 항목 배열을 반환합니다.
 
 
@@ -1053,6 +1061,8 @@ _단건 응답: `data` 객체의 필드._
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님·50MB 초과), 또는 미리보기 처리 실패 (`module.preview_failed` — `error.error` 에 사유) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 업로드된 ZIP 파일의 module.json manifest 와 검증 결과만 추출합니다(실제 설치는 수행하지 않음). `core.modules.install` 권한이 필요하며 파일은 최대 50MB 까지 허용됩니다. 설치 모달에서 사용자가 파일 선택 직후 manifest 유효성과 검증 실패 사유를 미리 확인하는 용도이며, 검증 오류 시 422 로 사유를 반환합니다.
 
@@ -1164,6 +1174,8 @@ _단건 응답: `data` 는 갱신된 모듈의 `ModuleResource` 객체 (목록 �
 
 <!-- @generated:end -->
 
+
+
 **설명** 모듈의 레이아웃 파일을 파일에서 다시 읽어 DB 에 동기화합니다. `core.modules.activate` 권한이 필요합니다. 파일에서 변경된 레이아웃은 갱신되고 삭제된 레이아웃은 DB 에서도 제거되며, 갱신된 모듈 정보를 반환합니다. 모듈의 `_bundled` 레이아웃 JSON 을 수정한 뒤 재빌드 없이 반영할 때 사용합니다.
 
 
@@ -1230,6 +1242,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 500 | Internal Server Error | 제거 처리 중 예외 발생 (`module.uninstall_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 모듈을 시스템에서 제거합니다. `core.modules.uninstall` 권한이 필요합니다. 활성 디렉토리만 삭제하고 `_bundled` 원본은 보존합니다. `delete_data: true` 인 경우 모듈이 생성한 DB 데이터까지 함께 삭제하며, 기본값은 데이터 보존입니다. 삭제될 데이터 범위는 사전에 `uninstall-info` 로 확인할 수 있습니다.
 
@@ -1320,6 +1334,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 아직 설치되지 않은 모듈만 조회합니다(예: 번들로 제공되나 미설치 상태인 샘플 모듈). `core.modules.read` 권한이 필요합니다. 설치 가능한 모듈을 사용자에게 노출하는 화면에서 사용하며, 미설치 항목은 assets·latest_version 등 설치 후에만 채워지는 필드가 null 로 반환됩니다.
 
 
@@ -1378,6 +1394,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 모듈의 변경 내역(CHANGELOG)을 조회합니다. `core.modules.read` 권한이 필요합니다. `source` 로 조회 출처를(active: 활성 설치본, bundled: 번들 원본, github: 원격 저장소) 선택하고, `from_version`·`to_version` 으로 버전 구간을 좁힐 수 있습니다. 업데이트 전 사용자에게 변경 사항을 안내하는 데 사용됩니다.
 
@@ -1453,6 +1471,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 이 모듈에 의존하는 템플릿 목록을 조회합니다. `core.modules.read` 권한이 필요합니다. 응답으로 의존 템플릿 배열과 총 개수를 반환하며, 모듈 비활성화·제거 전 영향을 받는 템플릿을 사용자에게 미리 알리는 데 사용됩니다.
 
 
@@ -1511,6 +1531,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 모듈에 포함된 라이선스 파일의 원문 내용을 반환합니다. `core.modules.read` 권한이 필요합니다. `identifier` 는 소문자·숫자·하이픈·언더스코어 형식만 허용되며 형식에 맞지 않거나 라이선스 파일이 없으면 404 를 반환합니다. 라이선스 고지 화면에 전문을 표시하는 용도입니다.
 
@@ -1631,6 +1653,8 @@ _단건 응답: `data` 객체의 필드 (`ModuleResource::toDetailArray()` + 주
 | 500 | Internal Server Error | 조회 중 예외 발생 (`module.fetch_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 모듈의 상세 정보를 조회합니다. `core.modules.read` 권한이 필요합니다. 목록보다 자세한 `toDetailArray()` 형태를 반환하며, 이 모듈이 지원하는 번들 언어팩 정보가 함께 주입됩니다. 모듈을 찾을 수 없으면 404 를 반환합니다.
 
@@ -1832,6 +1856,8 @@ _단건 응답: `data` 객체의 필드 (`target` + `dependencies[]` + `language
 
 <!-- @generated:end -->
 
+
+
 **설명** 모듈 설치 시 함께 처리될 cascade 후보(의존 확장 + 동반 가능한 번들 언어팩) 트리를 반환합니다. `core.modules.install` 권한이 필요합니다. 설치 모달 오픈 시 호출되어 사용자가 함께 설치할 항목을 선택하도록 노출하며, ZIP 업로드 기반의 `manifest-preview` 와 달리 이미 알려진 식별자에 대한 GET 조회입니다.
 
 **항목별 권한(7.1.0)** `dependencies[]`·`language_packs[]` 의 각 항목에 `can_select`(불리언)가 실린다. 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지이며(판정은 설치 API 의 403 과 같다), false 면 `default_selected` 도 false 다.
@@ -1925,6 +1951,8 @@ _단건 응답: `data` 객체의 필드._
 | 500 | Internal Server Error | 삭제 정보 조회 중 예외 발생 (`module.uninstall_info_failed`) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 모듈 제거 시 삭제될 데이터 정보를 조회합니다. `core.modules.uninstall` 권한이 필요합니다. 제거 확인 모달에서 사용자에게 어떤 데이터가 사라지는지 미리 보여주는 용도이며, 모듈을 찾을 수 없으면 404 를 반환합니다.
 
@@ -2065,7 +2093,7 @@ _단건 응답: `data` 는 업데이트된 모듈의 `ModuleResource` 객체 (�
 **요청 예시**
 
 ```http
-GET /api/modules/assets/sirsoft-ecommerce?identifier=example-key&path=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+GET /api/modules/assets/{identifier}?path=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```
@@ -2097,10 +2125,12 @@ ETag: "9f2c…"
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
@@ -2152,6 +2182,7 @@ Cache-Control: public, max-age=31536000
 
 <!-- @generated:end -->
 
+
 **설명** 모듈의 개별 프론트엔드 에셋 파일(JS/CSS/이미지 등)을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않으며, 경로·확장자 보안 검증은 FormRequest 에서 완료됩니다. 모듈 미존재·파일 미존재·허용되지 않은 파일 유형은 각각 404/404/403 으로 응답하고, 정상 파일은 ETag 와 1년 캐시 헤더를 붙여 반환합니다. 소스맵 등 개별 에셋을 직접 참조할 때 사용되며, 통합 로딩은 `bundle.js`/`bundle.css` 를 사용합니다.
 
 
@@ -2175,7 +2206,9 @@ Accept: application/json
 
 **응답 필드** (`data` 내부)
 
-_이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 모듈 CSS 를 병합한 원본 텍스트를 `text/css` 로 서빙합니다 (`ETag` + 환경별 `Cache-Control`). 활성 global 모듈 에셋이 없으면 빈 본문의 200 응답._
+_이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 모듈 CSS 를 병합한 원본 텍스트를 `text/css` 로 서빙합니다 (`ETag` + 환경별 `Cache-Control`, `X-Content-Type-Options: nosniff`). 활성 global 모듈 에셋이 없으면 빈 본문의 200 응답._
+
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면 (부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다.
 
 **응답 예시**
 
@@ -2193,6 +2226,7 @@ Cache-Control: public, max-age=31536000
 _선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-Control: no-cache, private`) — 배포 중 `dist` 가 잠깐 비었거나 경로가 어긋난 상태입니다. 에셋을 선언한 활성 확장이 없거나, 선언한 산출물이 전부 존재하되 비어 있으면(스타일 규칙이 아직 없는 확장) 정상 빈 200 입니다._
 
 <!-- @generated:end -->
+
 
 **설명** 활성 모듈들의 프론트엔드 CSS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙하고, 비어 있으면 그 이유에 따라 갈립니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/css), 선언한 산출물이 소실·판독 불가면 503 입니다. 0바이트 CSS 는 스타일 규칙이 아직 없는 확장의 정당한 상태이므로 장애로 보지 않습니다. 페이지가 모듈 스타일을 요청 1건으로 로드하도록 합니다.
 
@@ -2219,6 +2253,8 @@ Accept: application/json
 
 _이 엔드포인트는 JSON 봉투를 반환하지 않습니다 — 활성 모듈 IIFE JS 를 병합한 원본 텍스트를 `text/javascript` 로 서빙합니다 (`ETag` + 환경별 `Cache-Control`). 활성 global 모듈 에셋이 없으면 빈 본문의 200 응답._
 
+> 병합 결과가 비었을 때의 판정은 **에셋을 읽을 수 있었는가**로 갈린다. 선언된 파일을 전부 읽었는데 그 내용이 비었으면 정상이므로 빈 200 이고, 선언된 파일을 하나라도 읽지 못했으면(부재·권한·손상) 503 이다. 「선언은 있는데 결과가 0」만으로 503 을 내면 0바이트 산출물 하나가 사이트 전 화면에 실패 알림을 띄운다. 세 갈래 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
+
 **응답 예시**
 
 ```http
@@ -2235,6 +2271,7 @@ Cache-Control: public, max-age=31536000
 _선언한 산출물이 소실·판독 불가일 때 **503**(빈 본문, `Cache-Control: no-cache, private`) — 배포 중 `dist` 가 잠깐 비었거나 경로가 어긋난 상태입니다. 에셋을 선언한 활성 확장이 없거나, 선언한 산출물이 전부 존재하되 비어 있으면(스타일 규칙이 아직 없는 확장) 정상 빈 200 입니다._
 
 <!-- @generated:end -->
+
 
 **설명** 활성 모듈들의 프론트엔드 IIFE JS 를 서버에서 하나로 병합한 번들을 서빙하는 공개 엔드포인트입니다. 인증이 필요하지 않습니다. 병합 결과가 있으면 ETag·환경별 Cache-Control 과 함께 서빙하고, 비어 있으면 그 이유에 따라 갈립니다 — 선언이 0 이거나 선언한 산출물이 전부 존재하되 비어 있으면 빈 200(text/javascript, 프론트는 빈 스크립트 로드로 무해), 선언한 산출물이 소실·판독 불가면 503 입니다. 프론트는 `G7Config.bundleUrls` 를 읽어 이 번들을 로드합니다.
 
@@ -2287,9 +2324,11 @@ ETag: "9f2c…"
 | --- | --- | --- |
 | 200 | OK (빈 본문) | 활성 확장이 없거나 병합할 에셋이 없는 경우 — 오류가 아니라 빈 번들이다 |
 
+<!-- @generated:end -->
+
 > 개별 확장의 병합이 실패하면 그 확장만 건너뛰고 나머지는 그대로 병합된다(실패 격리). 건너뛴 사실은 서버 로그(warning)에 남는다.
 
-<!-- @generated:end -->
+
 
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
@@ -2343,9 +2382,11 @@ ETag: "9f2c…"
 | --- | --- | --- |
 | 200 | OK (빈 본문) | 활성 확장이 없거나 병합할 에셋이 없는 경우 — 오류가 아니라 빈 번들이다 |
 
+<!-- @generated:end -->
+
 > 개별 확장의 병합이 실패하면 그 확장만 건너뛰고 나머지는 그대로 병합된다(실패 격리). 건너뛴 사실은 서버 로그(warning)에 남는다.
 
-<!-- @generated:end -->
+
 
 **설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
 
@@ -2365,7 +2406,7 @@ ETag: "9f2c…"
 **요청 예시**
 
 ```http
-GET /api/modules/sirsoft-ecommerce/components HTTP/1.1
+GET /api/modules/{identifier}/components HTTP/1.1
 Host: api.example.com
 Accept: application/json
 ```

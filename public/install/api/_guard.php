@@ -34,7 +34,14 @@ if (! function_exists('installer_env_completed_flag')) {
      * .env 의 INSTALLER_COMPLETED 가 참인지 한 줄 단위로 읽어 판정한다.
      *
      * parse_ini_file 을 쓰지 않는다 — .env 는 INI 가 아니어서, 배포 템플릿의 `#` 주석에 괄호 같은
-     * 문자가 있으면 파일 전체 파싱이 실패하고 판정이 "미완료" 로 떨어져 가드가 열린 채 남는다.
+     * 문자가 있으면 파일 전체 파싱이 실패한다. 파서가 성공해도 `;` 뒤를 주석으로 잘라
+     * `.env` 로더와 다른 값을 읽는다. 같은 키가 여러 줄이면 마지막 줄을 쓴다 — `.env` 로더도
+     * 뒤에 온 값을 쓴다. 주석 줄(`# INSTALLER_…`)과 접미 키(`OLD_INSTALLER_COMPLETED`)는 줄머리
+     * 앵커에 걸리지 않는다.
+     *
+     * 같은 규칙을 쓰는 곳: installer-state.php 의 isInstallationCompleted()(이 함수를 부른다),
+     * 압축 풀기 부트스트랩(g7-setup.php)과 public/index.php(둘 다 이 파일을 읽을 수 없는 시점에
+     * 돌아 사본을 갖는다).
      *
      * @param  string  $envFile  .env 절대 경로
      * @return bool 완료 플래그가 참(true·1·yes, 따옴표·대소문자 무관)이면 true
@@ -50,11 +57,11 @@ if (! function_exists('installer_env_completed_flag')) {
             return false;
         }
 
-        if (! preg_match('/^[ \t]*INSTALLER_COMPLETED[ \t]*=(.*)$/m', $content, $matches)) {
+        if (preg_match_all('/^[ 	]*INSTALLER_COMPLETED[ 	]*=(.*)$/m', $content, $matches) < 1) {
             return false;
         }
 
-        $flag = strtolower(trim(trim($matches[1]), "\"'"));
+        $flag = strtolower(trim(trim((string) end($matches[1])), "\"'"));
 
         return in_array($flag, ['true', '1', 'yes'], true);
     }
@@ -74,6 +81,38 @@ if (! function_exists('installer_is_completed')) {
     }
 }
 
+if (! function_exists('installer_guard_completed_message')) {
+    /**
+     * 완료 가드가 운영자에게 보낼 문구를 돌려준다.
+     *
+     * 사실 관계 (13차 G3 W1-12): API 진입점 12곳 전부가 이 가드를 `$translations` 를 싣기
+     * **전에** 부른다. 그래서 이 함수가 실제로 돌려주는 값은 언제나 **영문 폴백**이고, 아래
+     * 번역 분기는 현재 어느 진입점에서도 도달하지 않는다. 화면이 그 사유를 운영자 언어로
+     * 보여 주는 통로는 문구가 아니라 응답의 `message_key`(`installer_disabled_completed`)다 —
+     * `installer.js` 가 그 키를 `INSTALLER_LANG` 으로 번역해 그린다. 이 폴백 문구가 그대로
+     * 보이는 경우는 브라우저 주소창으로 API 를 **직접 연** 때뿐이다.
+     *
+     * 번역 분기를 남겨 두는 이유는 판정 술어의 역사다. 종전 술어 `function_exists('lang')` 은
+     * 언제나 참이라(진입점이 `functions.php` 를 가드보다 먼저 싣는다) `lang()` 이 미설정
+     * `$translations` 앞에서 **원시 키**를 돌려줬다 — 폴백을 둔 목적이 뒤집혔다. 그래서
+     * 판정 대상을 「번역이 실렸는가」로 바꿨다(12차 G3 E-1). 번역이 실린 뒤에 부르는 진입점이
+     * 생기면 그때 이 분기가 산다 — 그 전까지는 「번역이 실렸으면 번역문」이 아니라
+     * 「지금은 영문 폴백뿐」이 이 함수의 실제 계약이다.
+     *
+     * @return string 영문 폴백 (번역이 실린 뒤 불리는 경로가 생기면 그때는 번역문)
+     */
+    function installer_guard_completed_message(): string
+    {
+        global $translations;
+
+        if (function_exists('lang') && isset($translations) && is_array($translations) && $translations !== []) {
+            return lang('installer_disabled_completed');
+        }
+
+        return 'Installer is disabled because installation has been completed.';
+    }
+}
+
 if (! function_exists('installer_guard_or_410')) {
     function installer_guard_or_410(): void
     {
@@ -90,7 +129,9 @@ if (! function_exists('installer_guard_or_410')) {
 
         echo json_encode([
             'success' => false,
-            'message' => 'Installer is disabled because installation has been completed.',
+            // 운영자 화면에 도달할 수 있는 문구다 — 판정은 단일 지점이 소유한다.
+            'message' => installer_guard_completed_message(),
+            'message_key' => 'installer_disabled_completed',
         ], JSON_UNESCAPED_UNICODE);
 
         exit;
@@ -126,7 +167,9 @@ if (! function_exists('installer_finalize_window_open')) {
             return false;
         }
 
-        if (installer_env_completed_flag($basePath.'/.env')) {
+        // `.env` 완료 플래그 단독 판정은 installer_finalize_is_completed() 가 소유한다
+        // (손으로 편집해 파서가 깨진 .env 도 줄 앵커 폴백으로 읽는다 — 22차 N-3).
+        if (installer_finalize_is_completed()) {
             return false;
         }
 
@@ -193,16 +236,129 @@ if (! function_exists('installer_finalize_is_completed')) {
     }
 }
 
+if (! function_exists('installer_installation_finished_without_env_flag')) {
+    /**
+     * 설치는 끝났는데 `.env` 완료 표식만 없는 상태인가 (13차 보안#8).
+     *
+     * `installer_finalize_is_completed()` 는 `.env` 의 `INSTALLER_COMPLETED` **단독**으로
+     * 판정하는데, 그 값을 쓰는 곳은 finalize 하나뿐이다. `.env` 쓰기가 권한 문제로 실패하면
+     * DB·관리자 계정이 완비된 **운영 사이트**에서 인스톨러 엔드포인트가 영구히 열린 채 남는다.
+     * §16.8 #10 은 「토큰이 필요해 위험이 낮다」로 존치했으나, 그 토큰이 무세션 GET 한 번으로
+     * 유출된다는 것이 이번 라운드에서 확인됐으므로(보안#3) 그 근거가 성립하지 않는다.
+     *
+     * 그래서 세 번째 신호를 둔다: 락 파일(`g7_installed`) **과** 상태 파일의 완료 마커
+     * (`completed_tasks ∋ complete_flag`)가 **둘 다** 참이면 설치는 실제로 끝난 것이다.
+     * 하나만으로는 판정하지 않는다 — 락 파일은 마지막 태스크가 먼저 만들고, 상태 파일은
+     * finalize 가 지우므로 각각 단독으로는 정상 진행 창과 구분되지 않는다.
+     *
+     * @return bool 설치가 끝났는데 `.env` 표식만 없으면 true
+     */
+    function installer_installation_finished_without_env_flag(): bool
+    {
+        if (installer_finalize_is_completed()) {
+            // `.env` 표식이 이미 있으면 일반 가드가 담당한다 — 이 신호의 대상이 아니다.
+            return false;
+        }
+
+        $basePath = installer_resolve_base_path();
+
+        if (! is_file($basePath.'/storage/app/g7_installed')) {
+            return false;
+        }
+
+        // 경로 SSoT 는 installer-state.php 의 STATE_PATH 다 — 이 가드가 그보다 먼저 로드될 수
+        // 있어 상수가 없을 때만 같은 규칙으로 역산한다 (session.php 와 같은 규율).
+        $statePath = defined('STATE_PATH') ? (string) STATE_PATH : $basePath.'/storage/installer-state.json';
+
+        if (! is_file($statePath) || ! is_readable($statePath)) {
+            return false;
+        }
+
+        $decoded = json_decode((string) @file_get_contents($statePath), true);
+
+        if (! is_array($decoded)) {
+            return false;
+        }
+
+        return in_array('complete_flag', (array) ($decoded['completed_tasks'] ?? []), true);
+    }
+}
+
+if (! function_exists('installer_guard_post_complete_or_410')) {
+    /**
+     * 설치가 끝난 뒤에도 열려 있는 파괴적 엔드포인트를 닫는다 (13차 보안#8).
+     *
+     * `.env` 표식이 없어 `installer_guard_finalize_or_410()` 이 통과시키는 창에서도, 설치가
+     * 실제로 끝났다면(위 세 번째 신호) 재시작·중단·초기화·워커 진입은 성립하지 않는다.
+     *
+     * `finalize-env.php` 는 이 가드를 쓰지 않는다 — 그 엔드포인트가 바로 표식을 박는 복구
+     * 경로다. `state-management.php?action=get` 도 대상이 아니다: 마지막 태스크가 락 파일을
+     * 만든 직후에도 폴링이 `completed` 를 한 번 읽어야 완료 화면으로 전환되고 그 화면이
+     * finalize 를 부른다 — 여기서 막으면 정상 설치가 완료 화면에 도달하지 못한다.
+     *
+     * 같은 이유로 `run-task.php` 와 `index.php` 도 대상이 아니다. 이 신호는 **「finalize 가
+     * 실패했다」와 「finalize 가 아직 안 왔다」를 구분하지 못한다** — 실측하면 `complete_flag`
+     * 태스크가 락 파일을 만들고 완료 마커를 남긴 그 순간부터 참이 되는데, 정상 설치는 그
+     * 뒤에 아직 두 가지가 남아 있다:
+     *
+     *  - 태스크 목록의 마지막은 `complete_flag` 가 아니라 `config_cache` 다
+     *    (`cache_clear → complete_flag → config_cache`). 단계별 실행에서 그 마지막 태스크를
+     *    나르는 것이 `run-task.php` 다 — 여기에 이 가드를 걸면 **모든 정상 stepwise 설치가
+     *    마지막 태스크에서 410 으로 끝난다**.
+     *  - 그 창에서 새로고침하면 `index.php` 가 완료 화면을 복원하고, 그 화면이 finalize 를
+     *    다시 부른다 — `.env` 쓰기가 한 번 실패했을 때 브라우저에서 되살릴 수 있는 유일한
+     *    경로다. 여기를 막으면 평문 DB 비밀번호를 담은 `runtime.php` 가 그대로 남는다.
+     *
+     * 두 엔드포인트의 진입 조건은 `installer_guard_finalize_or_410()` + 발급 토큰이 담당한다.
+     * 토큰은 이제 설치를 시작한 세션에만 실리므로(13차 보안#3) 「토큰이 유출되니 이 가드로
+     * 대신 막자」는 근거도 성립하지 않는다.
+     */
+    function installer_guard_post_complete_or_410(): void
+    {
+        if (! installer_installation_finished_without_env_flag()) {
+            return;
+        }
+
+        if (! headers_sent()) {
+            http_response_code(410);
+            header('Content-Type: application/json; charset=utf-8');
+            header('X-Installer: disabled');
+            header('Cache-Control: no-store');
+        }
+
+        echo json_encode([
+            'success' => false,
+            'message' => installer_guard_completed_message(),
+            'message_key' => 'installer_disabled_completed',
+        ], JSON_UNESCAPED_UNICODE);
+
+        exit;
+    }
+}
+
 if (! function_exists('installer_guard_finalize_or_410')) {
     /**
-     * finalize-env.php 전용 진입 가드.
+     * 락 파일이 이미 만들어진 뒤에도 진행해야 하는 엔드포인트용 진입 가드.
      *
      * 차단 조건: `.env` 의 `INSTALLER_COMPLETED=true` 단독. `g7_installed` 락 파일
-     * 존재는 차단 사유가 아니다 — complete_flag task 가 락 파일을 먼저 만든 직후
-     * 본 엔드포인트가 호출되어 `.env` 머지를 수행해야 하기 때문이다.
+     * 존재는 차단 사유가 아니다 — complete_flag task 가 락 파일을 먼저 만든 직후에도
+     * `.env` 머지(finalize-env)와 남은 태스크(run-task 의 config_cache)가 돌아야 한다.
      *
-     * RCE 공격 표면이 없는 finalize 전용으로 한정 — 일반 인스톨러 엔드포인트는
-     * 계속 `installer_guard_or_410()` 을 사용한다.
+     * 소비자 5곳: `finalize-env.php` · `state-management.php` · `run-task.php` +
+     * **복구 진입점 2곳** `install-process.php`(재시작·[다시 시도]) · `install-worker.php`(SSE
+     * 재연결). 세 번째 복구 진입점인 `index.php`(새로고침)는 같은 창을 더 좁게 여는
+     * `installer_guard_index_or_410()`(GET + 소유 세션 + state completed 일 때만 Step 5)을 쓴다.
+     * 앞의 셋만 완화하면 그 창에서 무언가 어긋났을 때 운영자가 실패 화면에서 나갈 수 없다 —
+     * 재시도·재연결·새로고침이 전부 410 이고, 정작 설치는 끝나지 않은 상태(`.env` 미머지)로
+     * 남는다. 인스톨러 흐름의 완료 표식은 `.env` 의 `INSTALLER_COMPLETED` 이며 이 가드가 보는
+     * 것이 정확히 그것이다.
+     * 이 중 `run-task.php` 는 Artisan 커맨드를 실행하는 **인스톨러에서 공격 표면이 가장
+     * 큰 엔드포인트**다 — 이 가드만으로 지키지 않고 발급 토큰(`X-Installer-Token`,
+     * runtime.php 0600 전용)을 함께 요구한다. 이 가드의 통과 폭을 넓히면 그 엔드포인트의
+     * 진입 조건도 함께 넓어지므로, 조건을 바꿀 때는 다섯 소비자와 index.php 가드를 모두 보고 판단한다.
+     *
+     * 락 파일 생성 전에 끝나는 일반 인스톨러 엔드포인트는 계속 `installer_guard_or_410()`
+     * 을 쓴다.
      */
     function installer_guard_finalize_or_410(): void
     {
@@ -219,7 +375,8 @@ if (! function_exists('installer_guard_finalize_or_410')) {
 
         echo json_encode([
             'success' => false,
-            'message' => 'Finalize already completed.',
+            'message' => installer_guard_completed_message(),
+            'message_key' => 'installer_disabled_completed',
         ], JSON_UNESCAPED_UNICODE);
 
         exit;

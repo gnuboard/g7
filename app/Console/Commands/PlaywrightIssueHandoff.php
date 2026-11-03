@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Services\Auth\LoginHandoffService;
 use Illuminate\Console\Command;
@@ -21,11 +22,11 @@ use Illuminate\Console\Command;
  */
 class PlaywrightIssueHandoff extends Command
 {
+    use LocalizesDescription;
+
     protected $signature = 'playwright:issue-handoff
         {email : 인계할 회원 이메일 (playwright:issue-token 이 만든 시험 계정)}
         {--guard=user : 로그인 경로 (user | admin)}';
-
-    protected $description = 'Playwright E2E 용 브라우저 묶음 로그인 인계 코드 발급 (CLI + G7_PLAYWRIGHT_BYPASS 가드)';
 
     /**
      * 가드를 통과하면 묶음 인계 코드를 발급해 `{code, cookie: {name, value, path}}` JSON 을 출력합니다.

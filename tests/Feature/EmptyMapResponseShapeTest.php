@@ -74,8 +74,20 @@ class EmptyMapResponseShapeTest extends TestCase
                 'appConfig' => [],
             ])->render();
 
+            // G7Config 는 비실행 JSON 데이터 블록(`<script type="application/json" id="g7-config">`)으로 심긴다(strict CSP).
+            $this->assertMatchesRegularExpression(
+                '#<script type="application/json" id="g7-config">(.*?)</script>#s',
+                $html,
+                "{$shell}: g7-config 데이터 블록"
+            );
+            preg_match('#<script type="application/json" id="g7-config">(.*?)</script>#s', $html, $match);
+            $json = $match[1];
+            $this->assertIsArray(json_decode($json, true), "{$shell}: g7-config 가 JSON 으로 해석된다");
+
+            // decode 하면 `{}` 와 `[]` 가 둘 다 빈 배열이 되므로, 직렬화 원문에서 객체 모양을 본다
             foreach (['settings', 'plugins', 'modules', 'appConfig'] as $key) {
-                $this->assertMatchesRegularExpression('/\b'.$key.': \{\},/', $html, "{$shell}: {$key}");
+                $this->assertStringContainsString('"'.$key.'":{}', $json, "{$shell}: {$key}");
+                $this->assertStringNotContainsString('"'.$key.'":[]', $json, "{$shell}: {$key}");
             }
         }
     }

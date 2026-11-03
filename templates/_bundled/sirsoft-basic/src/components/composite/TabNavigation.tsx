@@ -8,6 +8,7 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
 
 export interface Tab {
@@ -232,7 +233,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             return (
               <a
                 key={tab.id}
-                href={link.href}
+                href={sitePath(link.href)}
                 role="tab"
                 aria-selected={tab.id === activeTabId}
                 onClick={(event) => handleLinkClick(event, () => handleTabClick(tab))}

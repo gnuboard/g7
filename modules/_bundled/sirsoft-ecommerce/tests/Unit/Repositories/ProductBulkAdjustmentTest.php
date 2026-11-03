@@ -16,19 +16,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 그 과정에서 SET 절에 값이 실리는 경로가 깨지면 조용히 엉뚱한 값이 기록된다.
  * "몇 행이 영향받았는가" 만 보면 통과하므로, **결과값 자체**를 단언한다.
  *
- * @scenario case=product_bulk_adjustment
- *
- * @effects bulk_price_increase_applies_exact_amount,
- *          bulk_price_percent_applies_exact_ratio,
- *          bulk_price_floors_at_zero,
- *          bulk_stock_increase_applies_exact_amount,
- *          bulk_stock_floors_at_zero,
- *          bulk_adjustment_touches_only_selected_rows
+ * @scenario query_shape=flat
  */
 class ProductBulkAdjustmentTest extends ModuleTestCase
 {
     private ProductRepositoryInterface $repository;
 
+    /**
+     * 컨테이너에서 상품 저장소 구현을 꺼내 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -60,6 +58,8 @@ class ProductBulkAdjustmentTest extends ModuleTestCase
      * 정액 증액이 지정한 금액만큼 정확히 오르는지 확인
      *
      * @effects bulk_price_increase_applies_exact_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_price_increase_applies_exact_amount(): void
     {
@@ -80,6 +80,8 @@ class ProductBulkAdjustmentTest extends ModuleTestCase
      * 정액 감액이 지정한 금액만큼 정확히 내리는지 확인
      *
      * @effects bulk_price_increase_applies_exact_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_price_decrease_applies_exact_amount(): void
     {
@@ -97,6 +99,8 @@ class ProductBulkAdjustmentTest extends ModuleTestCase
      * 정률 증감이 지정한 비율만큼 정확히 반영되는지 확인
      *
      * @effects bulk_price_percent_applies_exact_ratio
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_price_percent_applies_exact_ratio(): void
     {
@@ -117,6 +121,8 @@ class ProductBulkAdjustmentTest extends ModuleTestCase
      * 감액 결과가 음수가 되지 않고 0 에서 멈추는지 확인
      *
      * @effects bulk_price_floors_at_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_price_decrease_floors_at_zero(): void
     {
@@ -134,6 +140,8 @@ class ProductBulkAdjustmentTest extends ModuleTestCase
      * 재고 증감이 지정한 수량만큼 정확히 반영되는지 확인
      *
      * @effects bulk_stock_increase_applies_exact_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_stock_increase_and_decrease_apply_exact_amount(): void
     {
@@ -160,6 +168,8 @@ class ProductBulkAdjustmentTest extends ModuleTestCase
      * 재고 감소 결과가 음수가 되지 않고 0 에서 멈추는지 확인
      *
      * @effects bulk_stock_floors_at_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_stock_decrease_floors_at_zero(): void
     {
@@ -179,6 +189,8 @@ class ProductBulkAdjustmentTest extends ModuleTestCase
      * WHERE 바인딩이 SET 절로 밀리면 대상 선택 자체가 어긋난다.
      *
      * @effects bulk_adjustment_touches_only_selected_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_adjustment_touches_only_selected_rows(): void
     {
@@ -203,6 +215,8 @@ class ProductBulkAdjustmentTest extends ModuleTestCase
      * 'set' 경로가 종전대로 동작하는지 확인 (회귀 방지)
      *
      * @effects bulk_price_increase_applies_exact_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_set_replaces_value(): void
     {

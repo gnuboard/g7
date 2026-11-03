@@ -1,0 +1,30 @@
+feature: 상품 이미지 서비스 (업로드, 삭제, 임시 연결, 정렬, 복사, 대표 지정)
+
+description: |
+  상품 이미지는 StorageInterface 의 images 카테고리에 products/{상품코드}/ 경로로 저장하고 저장소 행으로 메타를
+  남긴다. 신규 상품 폼은 임시 키(products/temp/{tempKey}/)로 먼저 올린 뒤 저장 시점에 상품 경로로 옮겨 연결한다.
+  업로드는 before_upload, filter_upload_file, after_upload 훅을 발행한다.
+
+  임시 이미지 연결은 파일을 읽지 못하면 그 행을 건드리지 않고 건너뛰어야 한다. 행만 최종 경로로 갱신하면
+  끝의 임시 디렉토리 정리가 임시본을 지워 이미지가 영구 유실된다(오류도 로그도 없음).
+
+  업로드 개수 상한(20장)은 mp12-product-image-limit.yaml 이 소유한다. 이 매니페스트는 그 밖의 서비스 동작을 맡는다.
+
+axes:
+  operation: [upload, delete, link_temp, reorder, copy, set_thumbnail]
+
+effects:
+  - product_upload_stores_under_product_code_path      # 상품 ID 업로드가 products/{상품코드}/ 에 저장되고 작성자, 정렬 순서로 행 생성
+  - product_upload_with_temp_key_creates_unlinked_image # 임시 키 업로드는 products/temp/{tempKey}/ 에 저장되고 product_id 없는 행 생성
+  - product_upload_fires_before_filter_after_hooks     # before_upload, filter_upload_file, after_upload 발행
+  - product_delete_removes_storage_file_and_record     # 저장 파일과 행을 함께 지움
+  - link_temp_images_moves_files_to_product_path       # 임시 파일을 상품 경로로 옮기고 행을 갱신한 뒤 임시 디렉토리 정리
+  - link_temp_images_skips_unreadable_file             # 읽지 못한 임시 파일은 행을 그대로 두고 연결 수에서 뺌
+  - product_reorder_delegates_order_map_to_repository  # 이미지 ID 와 순서 맵을 저장소에 그대로 전달
+  - copy_from_source_copies_file_and_creates_record    # 원본 해시의 파일을 대상 상품 경로로 복사하고 메타를 옮긴 행 생성
+  - copy_from_source_returns_null_when_source_missing  # 원본 해시가 없으면 null
+  - copy_from_source_returns_null_when_file_missing    # 원본 파일을 읽지 못하면 null
+  - set_thumbnail_moves_flag_to_selected_image         # 기존 대표를 해제하고 지정한 이미지를 대표로 설정
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductImageServiceTest.php

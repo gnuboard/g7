@@ -11,6 +11,7 @@ use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use App\Support\PhpExtensionProbe;
 use Closure;
 use Composer\Autoload\ClassLoader;
@@ -28,6 +29,17 @@ use Symfony\Component\Process\Process;
  */
 class ExtensionManager
 {
+    /**
+     * Windows 에서 시스템 TEMP 를 쓸 수 없을 때 composer 에 넘기는 임시 디렉토리
+     * (`storage/` 기준 상대 경로).
+     *
+     * 이 디렉토리는 composer 가 채우고 아무도 비우지 않는다 — 정리 커맨드의 형제 대상군
+     * (`storage/app/temp`)과 경로가 달라 그 스캔의 모집단 밖이었다. 회수는
+     * `StorageLeftoverPruneService` 의 `storage_temp` 대상군이 맡고, 두 곳이 같은 값을
+     * 보도록 여기를 SSoT 로 둔다 (11차 G3 라운드 E11-9).
+     */
+    public const COMPOSER_FALLBACK_TEMP_DIR = 'temp';
+
     protected string $modulesPath;
 
     protected string $pluginsPath;
@@ -123,7 +135,7 @@ class ExtensionManager
             $pluginManager = app(PluginManager::class);
             $pluginManager->loadPlugins();
 
-            $hookCache->generate($moduleManager, $pluginManager);
+            $this->regenerateExtensionStaticCaches($moduleManager, $pluginManager);
         } catch (\Throwable $e) {
             // 훅 캐시 생성 실패는 치명적이지 않다 — 부팅 시 스캔 폴백이 안전망.
             Log::warning('훅 매핑 캐시 재생성 실패 (스캔 폴백으로 동작)', [
@@ -131,6 +143,29 @@ class ExtensionManager
             ]);
             LifecycleWarnings::current()->add('hook_cache', 'hooks.php', $e->getMessage());
         }
+    }
+
+    /**
+     * 확장 수명주기에 묶인 정적 캐시를 전부 재생성합니다.
+     *
+     * **어떤 정적 캐시가 있는지 아는 지점은 여기 하나다.** 재생성을 부르는 곳은 둘이고
+     * (이 클래스의 `regenerateHookCache()` 와 `extension:update-autoload` 커맨드), 각자
+     * 캐시 목록을 들고 있으면 새 캐시가 추가될 때 한쪽만 갱신된다 — 실제로 예약 커맨드
+     * 매핑을 도입할 때 그 상태가 됐고, 커맨드 경로로 돈 사이트에서만 매핑이 비었다.
+     *
+     * 예외를 삼키지 않는다 — 호출부마다 실패를 다르게 다루기 때문이다(이 클래스는 경고 후
+     * 폴백, 커맨드는 실패 종료).
+     *
+     * @param  ModuleManager  $moduleManager  로드된 모듈 매니저
+     * @param  PluginManager  $pluginManager  로드된 플러그인 매니저
+     * @return void 반환값 없음
+     */
+    public function regenerateExtensionStaticCaches(
+        ModuleManager $moduleManager,
+        PluginManager $pluginManager,
+    ): void {
+        app(HookCacheManager::class)->generate($moduleManager, $pluginManager);
+        app(ScheduleCommandCacheManager::class)->generate($moduleManager, $pluginManager);
     }
 
     /**
@@ -897,6 +932,126 @@ PHP;
     }
 
     /**
+     * 디렉토리 안의 파일을 이름 순으로 나열합니다 (`glob` 비사용).
+     *
+     * `glob` 은 일부 하드닝 프로필의 `disable_functions` 목록에 들어간다. 막힌 호스팅에서
+     * PHP 8 은 그 함수를 함수 테이블에서 제거하므로 호출이 `Error`(치명)가 되고, `@` 도
+     * `?:` 도 그것을 잡지 못한다 — 확장 업그레이드 스텝 발견·레이아웃 확장 로딩이 그
+     * 자리에서 죽는다. 이 안이 대상으로 삼는 제약 호스팅이 정확히 그 조합이라 그 경로들은
+     * `scandir` 로 나열한다. (`glob` 이 **항상** 막힌다는 뜻은 아니다 — 전역 가드 대상이
+     * 아니라는 정적 검사 쪽 판정은 그대로이고, 여기서는 그 판정과 무관하게 값싼 회피를
+     * 택했을 뿐이다.)
+     *
+     * 나열 규칙을 한 곳에 두는 이유: 종전에는 같은 루프가 네 벌이었고 그중 하나만
+     * `scandir` 로 옮겨져 있었다 — 옮긴 쪽이 읽히기 **전에** 옮기지 않은 쪽이 죽으므로
+     * 그 회피는 도달조차 하지 못했다 (11차 G3 라운드).
+     *
+     * `.` 로 시작하는 항목은 배제한다. `glob('*.php')` 가 걸러 주던 에디터 잔해·AppleDouble
+     * (`._Foo.php`)이 `require_once` 대상이 되면 정렬상 가장 먼저 로드된다.
+     *
+     * @param  string  $directory  나열할 디렉토리 절대 경로
+     * @param  string  $suffix  파일명 끝 (예: `.php`, `.json`)
+     * @param  string  $prefix  파일명 시작 (빈 문자열이면 조건 없음)
+     * @return array<int, string> 이름 오름차순 절대 경로 목록
+     */
+    public static function listDirectoryFiles(string $directory, string $suffix, string $prefix = ''): array
+    {
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        // `scandir` 은 하드닝 프로필의 표준 차단 목록에 있고, PHP 8 은 차단 함수를 함수
+        // 테이블에서 지우므로 그 호출은 `Error`(치명)다. 이 두 나열기는 **웹 요청 안에서**
+        // 도는 소비처(잔여물 정리 예약 작업 6대상군 · 확장 스캔)가 부르는 공용 지점이라,
+        // 여기가 무가드면 그 소비처들이 자기 가드를 갖춰도 이 자리에서 함께 죽는다 —
+        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다
+        // (23차 G3 라운드 D23-6). 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
+        // 그 판정은 형제 가드(`StorageLeftoverPruneService`)와 같은 방향이다.
+        if (! ExecutionEnvironment::hasFunction('scandir')) {
+            return [];
+        }
+
+        $files = [];
+
+        foreach (scandir($directory) ?: [] as $entry) {
+            if (str_starts_with($entry, '.')) {
+                continue;
+            }
+
+            if ($prefix !== '' && ! str_starts_with($entry, $prefix)) {
+                continue;
+            }
+
+            if (! str_ends_with($entry, $suffix)) {
+                continue;
+            }
+
+            $candidate = $directory.DIRECTORY_SEPARATOR.$entry;
+
+            if (is_file($candidate)) {
+                $files[] = $candidate;
+            }
+        }
+
+        sort($files);
+
+        return $files;
+    }
+
+    /**
+     * 디렉토리 하위의 **디렉토리** 이름을 오름차순으로 나열합니다.
+     *
+     * 형제 `listDirectoryFiles()` 의 디렉토리 판본이다 — `glob('*', GLOB_ONLYDIR)` 를
+     * 쓰던 자리를 같은 이유로 대체한다. 나열 수단을 한 곳에 두면, 그 회피가 필요한
+     * 호스팅에서 「옮긴 지점보다 **먼저** 실행되는 옮기지 않은 지점」이 생기지 않는다.
+     *
+     * `.` 로 시작하는 항목은 배제한다(`.` `..` 및 에디터·VCS 잔해).
+     *
+     * @param  string  $directory  나열할 디렉토리 절대 경로
+     * @param  string  $prefix  디렉토리명 시작 (빈 문자열이면 조건 없음)
+     * @return array<int, string> 이름 오름차순 절대 경로 목록
+     */
+    public static function listDirectories(string $directory, string $prefix = ''): array
+    {
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        // `scandir` 은 하드닝 프로필의 표준 차단 목록에 있고, PHP 8 은 차단 함수를 함수
+        // 테이블에서 지우므로 그 호출은 `Error`(치명)다. 이 두 나열기는 **웹 요청 안에서**
+        // 도는 소비처(잔여물 정리 예약 작업 6대상군 · 확장 스캔)가 부르는 공용 지점이라,
+        // 여기가 무가드면 그 소비처들이 자기 가드를 갖춰도 이 자리에서 함께 죽는다 —
+        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다
+        // (23차 G3 라운드 D23-6). 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
+        // 그 판정은 형제 가드(`StorageLeftoverPruneService`)와 같은 방향이다.
+        if (! ExecutionEnvironment::hasFunction('scandir')) {
+            return [];
+        }
+
+        $directories = [];
+
+        foreach (scandir($directory) ?: [] as $entry) {
+            if (str_starts_with($entry, '.')) {
+                continue;
+            }
+
+            if ($prefix !== '' && ! str_starts_with($entry, $prefix)) {
+                continue;
+            }
+
+            $candidate = $directory.DIRECTORY_SEPARATOR.$entry;
+
+            if (is_dir($candidate)) {
+                $directories[] = $candidate;
+            }
+        }
+
+        sort($directories);
+
+        return $directories;
+    }
+
+    /**
      * 디렉토리명(vendor-name)을 네임스페이스(Vendor\Name)로 변환합니다.
      *
      * 하이픈('-')은 네임스페이스 구분자('\')로, 언더스코어('_')는 PascalCase 단어 경계로 처리됩니다.
@@ -1438,9 +1593,13 @@ PHP;
 
         // 인스톨러(install-worker.php)와 동일한 환경변수 구성
         // 웹 서버 환경에서는 COMPOSER_HOME, TEMP 등이 없거나 쓰기 불가능할 수 있음
+        // `getenv` 도 호스팅이 막는 목록에 흔히 들어간다. 여기까지 왔다면 스폰은 가능한
+        // 환경이지만 두 함수의 차단 여부는 독립이므로(목록은 함수 단위다) 따로 판정한다 —
+        // 막힌 채로 부르면 이 요청이 `Error` 로 끝나고, 그 자리는 확장 설치의 마지막 단계다.
         $env = [];
+        $canReadEnv = ExecutionEnvironment::hasFunction('getenv');
         foreach (['PATH', 'SystemRoot', 'TEMP', 'TMP', 'APPDATA', 'LOCALAPPDATA', 'USERPROFILE'] as $key) {
-            $value = getenv($key);
+            $value = $canReadEnv ? getenv($key) : ($_SERVER[$key] ?? $_ENV[$key] ?? false);
             if ($value !== false) {
                 $env[$key] = $value;
             }
@@ -1462,7 +1621,7 @@ PHP;
         // Windows: TEMP 디렉토리가 없거나 쓰기 불가능하면 storage/temp 사용
         if (PHP_OS_FAMILY === 'Windows') {
             if (! isset($env['TEMP']) || ! is_dir($env['TEMP']) || ! is_writable($env['TEMP'])) {
-                $tempDir = storage_path('temp');
+                $tempDir = storage_path(self::COMPOSER_FALLBACK_TEMP_DIR);
                 if (! is_dir($tempDir)) {
                     @mkdir($tempDir, 0755, true);
                 }
@@ -1519,15 +1678,23 @@ PHP;
             }
         }
 
-        // 2. PATH에서 composer 검색
-        $whichCommand = PHP_OS_FAMILY === 'Windows' ? ['where', 'composer'] : ['which', 'composer'];
-        $process = new Process($whichCommand);
-        $process->run();
+        // 2. PATH에서 composer 검색.
+        //
+        // 탐색 자체가 서브프로세스를 띄우므로 스폰 가용성을 먼저 판정한다. Symfony Process 는
+        // `proc_open` 부재 시 `LogicException` 을 던지고, 그것은 `RuntimeException` 이 아니라
+        // 호출부(runComposerInstallAt)의 catch 를 **통과해 나간다** — 그러면 확장 설치가
+        // 「의존성을 못 깔았다」가 아니라 정체불명의 예외로 중단된다. 판정은
+        // ExecutionEnvironment 가 SSoT (function_exists + disable_functions 를 함께 본다).
+        if ($this->canSpawnProcess()) {
+            $whichCommand = PHP_OS_FAMILY === 'Windows' ? ['where', 'composer'] : ['which', 'composer'];
+            $process = new Process($whichCommand);
+            $process->run();
 
-        if ($process->isSuccessful()) {
-            $path = trim(explode("\n", trim($process->getOutput()))[0]);
-            if (! empty($path)) {
-                return $path;
+            if ($process->isSuccessful()) {
+                $path = trim(explode("\n", trim($process->getOutput()))[0]);
+                if (! empty($path)) {
+                    return $path;
+                }
             }
         }
 
@@ -1538,6 +1705,33 @@ PHP;
         }
 
         throw new \RuntimeException(__('exceptions.vendor.composer_binary_not_found'));
+    }
+
+    /**
+     * 이 환경에서 서브프로세스를 띄울 수 있는지 판정합니다.
+     *
+     * 테스트가 「스폰 불가 호스팅」을 재현하기 위한 이음매다 — `disable_functions` 는
+     * PHP_INI_SYSTEM 이라 런타임에 바꿀 수 없으므로, 그 환경을 단위 테스트로 잠그려면
+     * 판정을 덮어쓸 수 있는 지점이 필요하다.
+     *
+     * @return bool 서브프로세스 스폰 가능 여부
+     */
+    protected function canSpawnProcess(): bool
+    {
+        return ExecutionEnvironment::hasFunction('proc_open');
+    }
+
+    /**
+     * 이 환경에서 셸 명령을 실행할 수 있는지 판정합니다.
+     *
+     * `exec` 와 `proc_open` 은 `disable_functions` 에서 **별개 항목**이므로 따로 판정한다 —
+     * 한쪽만 막은 호스팅에서 다른 쪽 판정을 재사용하면 그 자리가 다시 치명 지점이 된다.
+     *
+     * @return bool 셸 명령 실행 가능 여부
+     */
+    protected function canRunShellCommand(): bool
+    {
+        return ExecutionEnvironment::hasFunction('exec');
     }
 
     /**

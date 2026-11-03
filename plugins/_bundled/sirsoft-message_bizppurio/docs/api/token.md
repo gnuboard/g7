@@ -19,6 +19,7 @@
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/token/check
 <!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.token.check -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.token.check`
+- **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\TokenCheckController@check`
 - **인증/권한**: `auth:sanctum` + `admin` + `permission:sirsoft-message_bizppurio.messaging.manage`
 
 **요청 파라미터**

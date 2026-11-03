@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 시나리오 매니페스트: `tests/scenarios/admin-dashboard-commerce.yaml`
  *
- * @effects upgrade_recalculates_past_net_sales_stats
+ * 효과 요약(마커 아님 — 평문): upgrade_recalculates_past_net_sales_stats. 각 테스트 메서드 docblock 에 마킹한다.
  */
 class RecalculateEcommerceStatsNetSalesTest extends ModuleTestCase
 {

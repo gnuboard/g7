@@ -70,11 +70,14 @@ vi.mock('../routing/Router', () => ({
         });
         this.match = vi.fn((path: string) => ({ route: { path, layout: 'home', meta: {} }, params: {} }));
         this.navigateToCurrentPath = vi.fn(async () => {
-            // 실제 라우터처럼 끝·연속 슬래시 주소를 정규형으로 바꾼 뒤 그 경로로 routeChange 를 낸다 (engine-v1.84.0)
+            // 실제 라우터처럼 끝·연속 슬래시 주소를 정규형으로 바꾼 뒤, 마운트 접두사를 벗긴 앱 기준 경로로 routeChange 를
+            // 낸다 (engine-v1.84.0, 하위 폴더 배치는 주소창에 접두사가 남고 route.path 에는 없다)
             const raw = window.location.pathname;
             const path = raw.replace(/\/{2,}/g, '/').replace(/(.)\/$/, '$1');
             if (path !== raw) window.history.replaceState(window.history.state, '', path + window.location.search);
-            await Promise.all((routerBus.handlers.get('routeChange') ?? []).map((handler) => handler({ path, layout: 'home', meta: {}, params: {}, query: {} })));
+            const base = String((window as any).G7Config?.basePath ?? '');
+            const routePath = base !== '' && (path === base || path.startsWith(base + '/')) ? (path.slice(base.length) || '/') : path;
+            await Promise.all((routerBus.handlers.get('routeChange') ?? []).map((handler) => handler({ path: routePath, layout: 'home', meta: {}, params: {}, query: {} })));
         });
         this.getRoutes = vi.fn().mockReturnValue([]);
     }),
@@ -206,6 +209,31 @@ describe('TemplateApp 방문자 통계 가드', () => {
 
             expect(window.location.pathname).toBe('/board/free');
             expect(collectCalls()).toBe(1);
+        } finally {
+            window.history.replaceState(null, '', before);
+        }
+    });
+
+    // 하위 폴더 배치(`/g7`)에서 첫 화면 경로는 마운트 접두사를 벗기고 정규화한 값이어야 라우터의 첫 route.path 와
+    // 맞는다 — 어느 한쪽만 하면 첫 routeChange 를 거르지 못해 첫 화면 비콘이 2건이 된다(3차 병합 M1)
+    // @scenario visitor=guest, source=beacon, visit_state=new
+    // @effects first_screen_sends_exactly_one_pageview
+    it('하위 폴더의 끝 슬래시·연속 슬래시 주소로 첫 진입해도 비콘은 한 번만 보낸다', async () => {
+        const before = window.location.pathname;
+        (window as any).G7Config = { ...(window as any).G7Config, basePath: '/g7' };
+        try {
+            for (const entry of ['/g7/board/free/', '/g7//board/free']) {
+                (globalThis.fetch as any).mockClear();
+                window.history.replaceState(null, '', entry);
+                const app = new TemplateApp(makeConfig('user'));
+                await app.init();
+                await vi.waitFor(() => expect(collectCalls()).toBeGreaterThan(0));
+                await new Promise((resolve) => setTimeout(resolve, 0));
+
+                expect(window.location.pathname, entry).toBe('/g7/board/free');
+                expect(collectCalls(), entry).toBe(1);
+                routerBus.handlers.clear();
+            }
         } finally {
             window.history.replaceState(null, '', before);
         }

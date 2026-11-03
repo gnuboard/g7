@@ -355,51 +355,81 @@
                                     "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로\n     창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고\n     이력 창이 그것을 `$parent` 로 읽는다.",
+                                            "comment": "변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로\n     창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고\n     이력 창이 그것을 `$parent` 로 읽는다.\n     같은 [변경사항 보기]가 정보 탭·업데이트 탭·이 결과 창 셋에 있어 세 자리 모두 같은 진행 표시를 건다(하나만 표시가 없으면\n     운영자가 그 자리에서만 다시 누른다). 이 창은 포털이라 `target: 'local'` 은 창 자신의 _local 이고, 진행 플래그도\n     부모의 같은 이름과 섞이지 않는다.",
                                             "type": "click",
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/core-update/changelog",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "GET",
-                                                "query": {
-                                                    "from_version": "{{$parent._local.coreUpdateInfo?.current_version ?? ''}}",
-                                                    "to_version": "{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"
-                                                }
-                                            },
-                                            "onSuccess": [
+                                            "handler": "sequence",
+                                            "actions": [
                                                 {
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
-                                                        "coreChangelog": "{{result.data.changelog ?? []}}"
+                                                        "loadingChangelog": true
                                                     }
                                                 },
                                                 {
-                                                    "handler": "openModal",
-                                                    "target": "core_changelog_modal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
+                                                    "handler": "apiCall",
+                                                    "target": "/api/admin/core-update/changelog",
+                                                    "auth_required": true,
                                                     "params": {
-                                                        "target": "local",
-                                                        "coreChangelog": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "core_changelog_modal"
+                                                        "method": "GET",
+                                                        "query": {
+                                                            "from_version": "{{$parent._local.coreUpdateInfo?.current_version ?? ''}}",
+                                                            "to_version": "{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "loadingChangelog": false,
+                                                                "coreChangelog": "{{result.data.changelog ?? []}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "core_changelog_modal"
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "loadingChangelog": false,
+                                                                "coreChangelog": []
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "core_changelog_modal"
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                        "className": "px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors",
+                                        "disabled": "{{_local.loadingChangelog}}"
                                     },
-                                    "text": "$t:admin.settings.info.view_changelog"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_local.loadingChangelog}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.info.view_changelog"
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
