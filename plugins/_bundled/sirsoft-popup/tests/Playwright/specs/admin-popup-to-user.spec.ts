@@ -744,6 +744,10 @@ test.describe('관리자 화면', () => {
 
     await authenticatePage(page, managerToken);
     await page.goto(`${ADMIN_LIST}?status=active`);
+    // 요약은 처음 8개만 보인다 — 사이트에 노출 중 팝업이 많아 새 팝업이 뒤에 있으면 「더 보기」로 펼친 뒤 찾는다
+    await expect(page.locator('#popup_summary_items')).toBeVisible();
+    const more = page.locator('#popup_summary_items').getByRole('button', { name: /개 더 보기/ });
+    if (await more.isVisible()) await more.click();
     const link = page.locator('[aria-labelledby="popup_summary_heading"]').getByRole('link', { name: new RegExp(`「${title}」 수정`) });
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('title', title);
