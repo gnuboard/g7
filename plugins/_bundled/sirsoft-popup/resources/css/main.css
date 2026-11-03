@@ -544,6 +544,21 @@
   background: #111827;
 }
 
+/* 실제 크기 — 틀을 기기 크기 그대로 두고(줄이지 않음) 넘치는 부분은 감싼 칸이 스크롤한다. 휴대폰 틀의 260px 상한도 풀어 390px 그대로 */
+.g7pp-frame-scroll {
+  max-width: 100%;
+  max-height: 75vh;
+  overflow: auto;
+}
+
+.g7pp-frame--actual {
+  margin: 0 auto;
+}
+
+.g7pp-frame--mobile.g7pp-frame--actual {
+  max-width: none;
+}
+
 .g7pp-frame__screen {
   position: absolute;
   left: 0;

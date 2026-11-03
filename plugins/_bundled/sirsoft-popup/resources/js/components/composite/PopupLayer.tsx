@@ -984,9 +984,11 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     dialogStyle['--g7pp-move-y' as string] = `${shift.y}px`;
   }
 
+  // 「보지 않기」는 그때 보이던 팝업 전부를 기록한다 — 여러 장이면 문구에 그 범위(「모두」)를 밝힌다
+  const dismissScope = count > 1 ? '_all' : '';
   const dismissLabel = config.dismiss_mode === 'days'
-    ? t('sirsoft-popup.layer.dismiss_days', { days: config.dismiss_days })
-    : t('sirsoft-popup.layer.dismiss_today');
+    ? t(`sirsoft-popup.layer.dismiss_days${dismissScope}`, { days: config.dismiss_days })
+    : t(`sirsoft-popup.layer.dismiss_today${dismissScope}`);
   const counter = t('sirsoft-popup.layer.counter', { n: current + 1, total: count });
 
   const withPause = config.autoplay && !reducedMotion;

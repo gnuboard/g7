@@ -183,6 +183,13 @@
                 $t:sirsoft-popup.admin.preview.mobile
               </button>
             </div>
+            <button type="button" data-ref="preview_actual_button" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600">
+              <on type="click">
+                <!-- 줄인 틀로는 글자 크기를 판단하기 어려워, 지금 입력 값·기기를 배율 1 미리보기 큰 창으로 연다(저장 전 값) -->
+                <open-modal target="popup_actual_preview_modal"/>
+              </on>
+              $t:sirsoft-popup.admin.preview.actual_size
+            </button>
           </div>
           <sirsoft-popup.popup-preview data-type="composite" data-ref="settings_preview" settings="{{({ ...(_local.form ?? {}), pc_left: Number(_local.form?.pc_left ?? 80), pc_top: Number(_local.form?.pc_top ?? 120), pc_width: Number(_local.form?.pc_width ?? 480), pc_height: Number(_local.form?.pc_height ?? 520), dismiss_days: Number(_local.form?.dismiss_days ?? 7) })}}" device="{{_local.previewDevice}}"/>
         </section>
@@ -218,4 +225,11 @@
       </div>
     </div>
   </slot>
+  <modal>
+    <!-- 실제 크기 미리보기 — 모달이 열릴 때의 입력 값(부모 _local 스냅숏)을 배율 1 로 그린다. 창보다 크면 미리보기 칸이 스크롤한다 -->
+    <modal data-type="composite" data-ref="popup_actual_preview_modal" title="$t:sirsoft-popup.admin.preview.actual_title" width="min(1340px, 96vw)">
+      <p class="g7pp-form-hint gpp:mb-3">$t:sirsoft-popup.admin.preview.actual_hint|width={{$parent._local.previewDevice === 'mobile' ? 390 : 1280}}|height={{$parent._local.previewDevice === 'mobile' ? 780 : 800}}</p>
+      <sirsoft-popup.popup-preview data-type="composite" data-ref="actual_preview" :actualSize="true" settings="{{$parent._local.form}}" device="{{$parent._local.previewDevice}}"/>
+    </modal>
+  </modal>
 </layout>

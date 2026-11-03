@@ -15,7 +15,9 @@
       "delete_confirm": "削除確認",
       "bulk_delete_confirm": "一括削除確認",
       "copy_confirm": "コピー確認",
-      "reorder_open": "順序変更ウィンドウ"
+      "reorder_open": "順序変更ウィンドウ",
+      "actual_preview_pc": "実際のサイズ — PC",
+      "actual_preview_mobile": "実際のサイズ — 携帯電話"
     }
   },
   "plugin_read_only": "このプラグイン設定を編集する権限がないため、読み取り専用として表示されます。",
@@ -32,7 +34,9 @@
     "dismiss_days": "{{days}}日間表示しない",
     "close": "閉じる",
     "scroll_region": "ポップアップ本文",
-    "link": "ポップアップリンクを開く"
+    "link": "ポップアップリンクを開く",
+    "dismiss_today_all": "すべて本日は表示しない",
+    "dismiss_days_all": "すべて{{days}}日間表示しない"
   },
   "admin": {
     "title": "ポップアップ管理",
@@ -87,7 +91,9 @@
       "dim_on": "背景を暗くする",
       "dim_off": "背景のまま",
       "change_settings": "環境設定で変更›",
-      "edit_item": "{{n}}番「{{title}}」編集"
+      "edit_item": "{{n}}番「{{title}}」編集",
+      "show_more": "{{count}}件さらに表示",
+      "show_less": "折りたたむ"
     },
     "list": {
       "status_filter": "ステータス",
@@ -155,7 +161,11 @@
       "locale": "言語",
       "mobile_falls_back": "モバイルイメージがないためPCイメージで表示されます。",
       "based_on": "環境設定基準: {{summary}}",
-      "settings_link": "表示方式は環境設定で変更します ›"
+      "settings_link": "表示方式は環境設定で変更します ›",
+      "actual_size": "実際のサイズで表示",
+      "actual_title": "実際のサイズプレビュー",
+      "actual_hint": "{{width}}×{{height}}の画面基準での実際のサイズです。ウィンドウが小さい場合はスクロールして表示してください。",
+      "empty_image": "PC画像をアップロードするとここにプレビューが表示されます。"
     },
     "conflict": {
       "message": "別の管理者が先に編集しました。入力した内容はそのままです。最新版と比較した後、もう一度保存してください。",
@@ -317,6 +327,10 @@
         },
         "contrast": "テキストと背景のコントラスト約 {{ratio}}:1",
         "contrast_low": "— {{min}}:1 未満のため読みにくい可能性があります。テキスト色または背景色·濃度を変更してください。"
+      },
+      "save_blocked": {
+        "no_image": "PC 画像をアップロードすることで保存できます。",
+        "uploading": "画像のアップロードが完了したら保存できます。"
       }
     }
   },

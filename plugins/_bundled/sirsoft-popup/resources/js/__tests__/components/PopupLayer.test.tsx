@@ -467,11 +467,22 @@ describe('PopupLayer', () => {
     const { container, getByText } = show([htmlPopup(1), htmlPopup(2), htmlPopup(3)], { dismiss_mode: 'today' });
     fireEvent.click(container.querySelector('[aria-label="2번째 팝업 보기"]') as HTMLElement);
 
-    fireEvent.click(getByText('오늘 하루 보지 않기'));
+    fireEvent.click(getByText('모두 오늘 하루 보지 않기'));
 
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     const value = JSON.parse(decodeURIComponent(document.cookie.split('; ').find((c) => c.startsWith(`${DISMISS_COOKIE}=`))!.slice(DISMISS_COOKIE.length + 1)));
     expect(Object.keys(value).sort()).toEqual(['1', '2', '3']);
+  });
+
+  // @scenario surface=dismiss_label_names_scope_when_many
+  it('여러 장이 보일 때 「보지 않기」 문구는 묶음 전체에 적용됨을 밝히고, 한 장이면 그대로다', () => {
+    const many = show([htmlPopup(1), htmlPopup(2)], { dismiss_mode: 'days', dismiss_days: 3 });
+    expect(many.getByRole('button', { name: '모두 3일간 보지 않기' })).not.toBeNull();
+    cleanup();
+
+    const one = show([htmlPopup(1)], { dismiss_mode: 'today' });
+    expect(one.getByRole('button', { name: '오늘 하루 보지 않기' })).not.toBeNull();
+    expect(one.queryByText(/^모두/)).toBeNull();
   });
 
   // @scenario surface=new_popup_shows_after_dismiss

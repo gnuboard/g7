@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup, fireEvent } from '@testing-library/react';
+import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { PopupPreview } from '../../components/composite/PopupPreview';
 import { installCore, setViewportMobile } from './core';
 
@@ -117,6 +117,84 @@ describe('PopupPreview', () => {
     const path = await import('node:path');
     const css = fs.readFileSync(path.resolve(__dirname, '../../../css/main.css'), 'utf8');
     expect(css.match(/\.g7pp-root--preview \.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '').toContain('calc(var(--g7pp-frame-h, 800px) - 116px)');
+  });
+
+  // @scenario surface=preview_follows_editor_body_written_without_render
+  it('편집기가 화면을 다시 그리지 않고 쓴 본문도 다른 칸을 건드리지 않고 바로 미리보기에 보인다', () => {
+    // CKEditor 5 는 타이핑마다 setLocal({ render: false }) 로 `_local.form.body_html` 만 바꾼다 — props 는 그대로이고 상태 구독만 알림을 받는다
+    let global: Record<string, any> = { _local: { form: { content_type: 'html', body_html: { ko: '<p>Notice three</p>' } } } };
+    const listeners = new Set<(state: Record<string, any>) => void>();
+    const unsubscribe = vi.fn();
+    installCore({
+      state: {
+        getLocal: () => global._local,
+        subscribe: (listener: (state: Record<string, any>) => void) => {
+          listeners.add(listener);
+
+          return () => { unsubscribe(); listeners.delete(listener); };
+        },
+      },
+    });
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
+    const form = { content_type: 'html' as const, body_html: { ko: '<p>Notice three</p>' } };
+    const write = (body: Record<string, string>) => act(() => {
+      global = { ...global, _local: { ...global._local, form: { ...global._local.form, body_html: body } } };
+      listeners.forEach((listener) => listener(global));
+    });
+
+    const { container, rerender, unmount } = render(<PopupPreview device="pc" locale="ko" defaultLocale="ko" form={form} />);
+    const body = () => container.querySelector('.g7pp-html')?.textContent;
+    expect(body()).toBe('Notice three');
+
+    write({ ko: '<p>Notice four</p>' });
+    expect(body()).toBe('Notice four');
+    write({ ko: '<p>Notice five</p>' });
+    expect(body()).toBe('Notice five');
+
+    // 본문과 무관한 상태 변경은 본문을 되돌리지 않는다
+    act(() => listeners.forEach((listener) => listener(global)));
+    expect(body()).toBe('Notice five');
+
+    // 다른 칸이 화면을 다시 그리면 그때의 props 가 정본이다
+    rerender(<PopupPreview device="pc" locale="ko" defaultLocale="ko" form={{ ...form, body_html: { ko: '<p>Notice six</p>' } }} />);
+    expect(body()).toBe('Notice six');
+
+    unmount();
+    expect(unsubscribe).toHaveBeenCalled();
+  });
+
+  // @scenario surface=preview_actual_size_frame
+  it('실제 크기로 보면 틀을 줄이지 않고(배율 1) 기기 크기 그대로 두며, 넘치는 부분은 감싼 칸이 스크롤한다', () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
+    for (const [device, width, height] of [['pc', 1280, 800], ['mobile', 390, 780]] as const) {
+      const { container, unmount } = render(<PopupPreview device={device} actualSize />);
+      const frame = container.querySelector(`[data-preview-device="${device}"]`) as HTMLElement;
+      expect(frame.parentElement?.className).toBe('g7pp-frame-scroll');
+      expect(frame.className).toContain('g7pp-frame--actual');
+      expect(frame.style.width).toBe(`${width}px`);
+      expect(frame.style.height).toBe(`${height}px`);
+      expect((frame.querySelector('.g7pp-frame__screen') as HTMLElement).style.transform).toBe('scale(1)');
+      unmount();
+    }
+
+    // 기본(줄인 틀)은 감싼 칸이 없다
+    const { container } = render(<PopupPreview device="pc" />);
+    expect(container.querySelector('.g7pp-frame-scroll')).toBeNull();
+    expect(container.querySelector('.g7pp-frame--actual')).toBeNull();
+  });
+
+  // @scenario surface=preview_coerces_numeric_settings_from_form
+  it('표시 방식 입력칸의 문자열 숫자를 수로 바꾸고, 비었거나 숫자가 아니면 기본값을 쓴다(환경설정 입력 값을 그대로 넘겨도 된다)', () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
+    const { container } = render(<PopupPreview device="pc" settings={{ pc_position: 'coords', pc_left: '40' as any, pc_top: '' as any, pc_width: '600' as any, pc_height: 'x' as any }} />);
+    const dialog = container.querySelector('.g7pp-dialog') as HTMLElement;
+
+    expect(dialog.style.left).toContain('min(40px');
+    expect(dialog.style.left).toContain('600px');
+    // 빈 칸은 기본값(120) — 0 으로 읽지 않는다. 숫자가 아니면 기본 높이(520)
+    expect(dialog.style.top).toContain('min(120px');
+    expect(dialog.style.top).toContain('- 520px');
+    expect(dialog.style.width).toBe('600px');
   });
 
   /** @effects preview_sample_slides */

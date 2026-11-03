@@ -73,6 +73,7 @@
   <computed name="pcWidth">{{display_settings?.data?.settings?.pc_width ?? 480}}</computed>
   <computed name="pcHeight">{{display_settings?.data?.settings?.pc_height ?? 520}}</computed>
   <computed name="isImage">{{(_local.form?.content_type ?? 'image') === 'image'}}</computed>
+  <computed name="saveBlockedReason">{{_local.isSaving || (_local.form?.content_type ?? 'image') !== 'image' ? '' : (_local.pcUploadBlocked || _local.mobileUploadBlocked ? 'uploading' : (!_local.form?.images?.pc ? 'no_image' : ''))}}</computed>
   <computed name="pcSizeMismatch">{{!!_local.form?.images?.pc?.width &amp;&amp; !!_local.form?.images?.pc?.height &amp;&amp; Math.abs(_local.form.images.pc.width * (display_settings?.data?.settings?.pc_height ?? 520) - _local.form.images.pc.height * (display_settings?.data?.settings?.pc_width ?? 480)) &gt; 0.02 * _local.form.images.pc.height * (display_settings?.data?.settings?.pc_width ?? 480)}}</computed>
   <computed name="mobileRatio">{{(display_settings?.data?.settings?.mobile_style ?? 'sheet') === 'center' ? '4:5' : '1:1'}}</computed>
   <computed name="mobileExample">{{(display_settings?.data?.settings?.mobile_style ?? 'sheet') === 'center' ? '800×1000' : '800×800'}}</computed>
@@ -151,6 +152,13 @@
                 $t:sirsoft-popup.admin.preview.mobile
               </button>
             </div>
+            <button type="button" data-ref="preview_actual_button" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600">
+              <on type="click">
+                <!-- 줄인 틀로는 글자 크기를 판단하기 어려워, 지금 입력 값·기기를 배율 1 미리보기 큰 창으로 연다(저장 전 값) -->
+                <open-modal target="popup_actual_preview_modal"/>
+              </on>
+              $t:sirsoft-popup.admin.preview.actual_size
+            </button>
           </div>
           <label data-if="{{(display_settings?.data?.editor?.locales ?? []).length &gt; 1}}" class="gpp:flex gpp:items-center gpp:gap-2 gpp:text-xs gpp:text-gray-600 gpp:dark:text-gray-300 gpp:mb-2" htmlFor="popup_preview_locale">
             <span>$t:sirsoft-popup.admin.preview.locale</span>
@@ -162,6 +170,7 @@
             </select>
           </label>
           <sirsoft-popup.popup-preview data-type="composite" data-ref="form_preview" form="{{_local.form}}" settings="{{display_settings?.data?.settings ?? null}}" device="{{_local.previewDevice}}" locale="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}" defaultLocale="{{display_settings?.data?.editor?.default_locale ?? $locale}}"/>
+          <p data-ref="preview_empty_hint" data-if="{{_computed.isImage &amp;&amp; !_local.form?.images?.pc}}" class="g7pp-form-hint gpp:mt-2">$t:sirsoft-popup.admin.preview.empty_image</p>
           <p data-if="{{_local.previewDevice === 'mobile' &amp;&amp; _computed.isImage &amp;&amp; !!_local.form?.images?.pc &amp;&amp; !_local.form?.images?.mobile}}" class="g7pp-form-hint gpp:mt-2">$t:sirsoft-popup.admin.preview.mobile_falls_back</p>
           <p data-if="{{!!display_settings?.data?.settings}}" class="g7pp-form-hint gpp:mt-2">$t:sirsoft-popup.admin.preview.based_on|summary={{_local.previewDevice === 'mobile' ? $t('sirsoft-popup.settings.mobile_style.' + display_settings.data.settings.mobile_style) : $t('sirsoft-popup.settings.pc_position.' + display_settings.data.settings.pc_position) + ' · ' + display_settings.data.settings.pc_width + '×' + display_settings.data.settings.pc_height}}</p>
           <a data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline">
@@ -181,9 +190,9 @@
                   <span>$t:sirsoft-popup.admin.form.title</span>
                   <span class="g7pp-text-required">*</span>
                 </label>
-                <input type="text" id="popup_title" name="title" :maxLength="100" class="g7pp-input gpp:w-full" placeholder="$t:sirsoft-popup.admin.form.title_placeholder"/>
-                <p data-if="{{_local.errors?.title}}" class="g7pp-form-error">{{_local.errors?.title?.[0] ?? ''}}</p>
-                <p data-if="{{!_local.errors?.title}}" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.title_hint</p>
+                <input type="text" id="popup_title" name="title" :maxLength="100" class="g7pp-input gpp:w-full" placeholder="$t:sirsoft-popup.admin.form.title_placeholder" aria-required="true" aria-invalid="{{_local.errors?.title ? 'true' : 'false'}}" aria-describedby="{{_local.errors?.title ? 'popup_title_error' : 'popup_title_hint'}}"/>
+                <p id="popup_title_error" data-if="{{_local.errors?.title}}" class="g7pp-form-error">{{_local.errors?.title?.[0] ?? ''}}</p>
+                <p id="popup_title_hint" data-if="{{!_local.errors?.title}}" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.title_hint</p>
               </div>
               <div data-ref="field_is_active">
                 <toggle data-type="composite" label="$t:sirsoft-popup.admin.form.is_active" name="is_active"/>
@@ -298,9 +307,9 @@
                   <span>$t:sirsoft-popup.admin.form.link_url</span>
                   <span class="gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400">$t:sirsoft-popup.admin.form.link_url_optional</span>
                 </label>
-                <input type="text" id="popup_link_url" name="link_url" :maxLength="2048" placeholder="/event/autumn" class="g7pp-input gpp:w-full gpp:min-w-[200px]"/>
-                <p data-if="{{_local.errors?.link_url}}" class="g7pp-form-error">{{_local.errors?.link_url?.[0] ?? ''}}</p>
-                <p data-if="{{!_local.errors?.link_url}}" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.link_url_hint</p>
+                <input type="text" id="popup_link_url" name="link_url" :maxLength="2048" placeholder="/event/autumn" class="g7pp-input gpp:w-full gpp:min-w-[200px]" aria-invalid="{{_local.errors?.link_url ? 'true' : 'false'}}" aria-describedby="{{_local.errors?.link_url ? 'popup_link_url_error' : 'popup_link_url_hint'}}"/>
+                <p id="popup_link_url_error" data-if="{{_local.errors?.link_url}}" class="g7pp-form-error">{{_local.errors?.link_url?.[0] ?? ''}}</p>
+                <p id="popup_link_url_hint" data-if="{{!_local.errors?.link_url}}" class="g7pp-form-hint">$t:sirsoft-popup.admin.form.link_url_hint</p>
                 <div class="gpp:mt-2">
                   <toggle data-type="composite" label="$t:sirsoft-popup.admin.form.link_new_window" name="link_new_window"/>
                 </div>
@@ -479,36 +488,46 @@
               </on>
               <span>$t:sirsoft-popup.admin.form.cancel</span>
             </a>
-            <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (_computed.isImage &amp;&amp; (_local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc))}}" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-1.5">
-              <on type="click">
-                <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다.
-                  직접 작성형은 이미지·alt·링크를 보내도 서버가 빼고, 이미지형으로 저장하면 본문을 비운다 -->
-                <sequence>
-                  <set-state target="local" :isSaving="true" :errors="null"/>
-                  <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-popup/admin/popups/' + route.id : '/api/plugins/sirsoft-popup/admin/popups'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ title: _local.form?.title ?? '', is_active: _local.form?.is_active !== false, content_type: _local.form?.content_type ?? 'image', display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, page_scope: _local.form?.page_scope ?? 'all', routes: _local.form?.routes ?? [], audience: _local.form?.audience ?? 'all', device: _local.form?.device ?? 'all', image_alt: _local.form?.image_alt ?? [], link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, body_html: _local.form?.body_html ?? [], overlays: _local.form?.overlays ?? null, revision: route.id ? _local.form?.revision : undefined, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null })}}">
-                    <success>
-                      <set-state target="local" :isSaving="false" :hasChanges="false"/>
-                      <toast type="{{response?.data?.sanitized ? 'warning' : 'success'}}" message="{{response?.data?.sanitized ? $t('sirsoft-popup.admin.form.saved_sanitized') : response.message}}"/>
-                      <navigate :bypassLeaveGuard="true" path="/admin/plugins/sirsoft-popup/popups" :mergeQuery="true">
-                        <query/>
-                      </navigate>
-                    </success>
-                    <fail>
-                      <!-- 422 는 칸별 사유와 요약, 409 는 입력을 보존한 충돌 안내를 보인다. 모든 실패는 알림을 띄운다 -->
-                      <set-state target="local" :isSaving="false" errors="{{error.errors ?? null}}" conflict="{{error.status === 409}}"/>
-                      <toast type="error" message="{{error.message}}"/>
-                      <scroll-into-view if="{{!!error.errors}}" selector="#popup_form_errors" behavior="smooth" block="start" :waitForElement="true" :timeout="1000"/>
-                    </fail>
-                  </api-call>
-                </sequence>
-              </on>
-              <icon data-if="{{_local.isSaving}}" name="spinner" class="g7pp-spinner-sm"/>
-              <span data-if="{{!_local.isSaving}}">$t:sirsoft-popup.admin.form.save</span>
-              <span data-if="{{_local.isSaving}}">$t:sirsoft-popup.admin.form.saving</span>
-            </button>
+            <div class="gpp:flex gpp:flex-wrap gpp:items-center gpp:justify-end gpp:gap-3">
+              <p id="popup_save_blocked_reason" data-if="{{_computed.saveBlockedReason !== ''}}" class="gpp:text-xs gpp:text-gray-600 gpp:dark:text-gray-300">{{$t('sirsoft-popup.admin.form.save_blocked.' + _computed.saveBlockedReason)}}</p>
+              <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || (_computed.isImage &amp;&amp; (_local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc))}}" aria-describedby="{{_computed.saveBlockedReason !== '' ? 'popup_save_blocked_reason' : undefined}}" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-1.5">
+                <on type="click">
+                  <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다.
+                    직접 작성형은 이미지·alt·링크를 보내도 서버가 빼고, 이미지형으로 저장하면 본문을 비운다 -->
+                  <sequence>
+                    <set-state target="local" :isSaving="true" :errors="null"/>
+                    <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-popup/admin/popups/' + route.id : '/api/plugins/sirsoft-popup/admin/popups'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ title: _local.form?.title ?? '', is_active: _local.form?.is_active !== false, content_type: _local.form?.content_type ?? 'image', display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, page_scope: _local.form?.page_scope ?? 'all', routes: _local.form?.routes ?? [], audience: _local.form?.audience ?? 'all', device: _local.form?.device ?? 'all', image_alt: _local.form?.image_alt ?? [], link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, body_html: _local.form?.body_html ?? [], overlays: _local.form?.overlays ?? null, revision: route.id ? _local.form?.revision : undefined, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null })}}">
+                      <success>
+                        <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                        <toast type="{{response?.data?.sanitized ? 'warning' : 'success'}}" message="{{response?.data?.sanitized ? $t('sirsoft-popup.admin.form.saved_sanitized') : response.message}}"/>
+                        <navigate :bypassLeaveGuard="true" path="/admin/plugins/sirsoft-popup/popups" :mergeQuery="true">
+                          <query/>
+                        </navigate>
+                      </success>
+                      <fail>
+                        <!-- 422 는 칸별 사유와 요약, 409 는 입력을 보존한 충돌 안내를 보인다. 모든 실패는 알림을 띄운다 -->
+                        <set-state target="local" :isSaving="false" errors="{{error.errors ?? null}}" conflict="{{error.status === 409}}"/>
+                        <toast type="error" message="{{error.message}}"/>
+                        <scroll-into-view if="{{!!error.errors}}" selector="#popup_form_errors" behavior="smooth" block="start" :waitForElement="true" :timeout="1000"/>
+                      </fail>
+                    </api-call>
+                  </sequence>
+                </on>
+                <icon data-if="{{_local.isSaving}}" name="spinner" class="g7pp-spinner-sm"/>
+                <span data-if="{{!_local.isSaving}}">$t:sirsoft-popup.admin.form.save</span>
+                <span data-if="{{_local.isSaving}}">$t:sirsoft-popup.admin.form.saving</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </slot>
+  <modal>
+    <!-- 실제 크기 미리보기 — 모달이 열릴 때의 입력 값(부모 _local 스냅숏)을 배율 1 로 그린다. 창보다 크면 미리보기 칸이 스크롤한다 -->
+    <modal data-type="composite" data-ref="popup_actual_preview_modal" title="$t:sirsoft-popup.admin.preview.actual_title" width="min(1340px, 96vw)">
+      <p class="g7pp-form-hint gpp:mb-3">$t:sirsoft-popup.admin.preview.actual_hint|width={{$parent._local.previewDevice === 'mobile' ? 390 : 1280}}|height={{$parent._local.previewDevice === 'mobile' ? 780 : 800}}</p>
+      <sirsoft-popup.popup-preview data-type="composite" data-ref="actual_preview" :actualSize="true" form="{{$parent._local.form}}" locale="{{$parent._local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}" defaultLocale="{{display_settings?.data?.editor?.default_locale ?? $locale}}" settings="{{display_settings?.data?.settings ?? null}}" device="{{$parent._local.previewDevice}}"/>
+    </modal>
+  </modal>
 </layout>

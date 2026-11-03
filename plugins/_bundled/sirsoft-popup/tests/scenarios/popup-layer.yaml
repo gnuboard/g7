@@ -15,6 +15,7 @@ description: |
   놓이며 열릴 때 덮여 있으면 비켜 뜬다. 그 사이가 창보다 좁으면 본문 높이를 줄여 창 전체(하단 바 포함)가 보이게 하고, 그래도 크면 하단 바가 먼저 보인다.
   옮긴 자리는 기억하지 않는다(경로·목록·배치가 바뀌면 원래 자리). 모바일 하단 시트는 손잡이 막대가 없고 하단 바를 끌어도 아무것도 하지 않는다(단추로만 닫음).
   관리자 미리보기는 하단 바를 끌어도 옮기지 않는다.
+  미리보기 본문은 화면을 다시 그리지 않고 폼 상태에 쓰는 편집기(CKEditor 5 — setLocal render:false)의 입력도 다른 칸을 건드리지 않고 바로 따라간다.
   넘김 컨트롤(2026-10-29 변경): 점·「n / N」·일시정지는 별도 띠 없이 본문 아래쪽 가운데에 겹친 반투명 어두운 캡슐에 있다(덮는 링크보다 위 층,
   눌러도 장 끌기·링크 이동이 없다). 지금 장 점은 길쭉한 알약, 나머지는 작은 원이고 누르는 영역은 44px 이상이다. 한 줄에 들어가는 개수
   (PC 8·휴대폰 5, 좁은 창은 그 폭만큼)를 넘으면 점 대신 숫자. 일시정지는 캡슐 오른쪽 끝. 이전·다음은 PC·휴대폰 모두 본문 양옆 오버레이.
@@ -26,6 +27,7 @@ axes:
     - filters_by_route_on_path_change
     - filters_by_device_on_viewport_change
     - filters_dismissed_ids_until_expiry
+    - dismiss_label_names_scope_when_many
     - shows_expired_dismissed_ids_again
     - keeps_server_order
     - single_popup_hides_carousel_controls
@@ -74,6 +76,9 @@ axes:
     - html_body_purified_on_render
     - html_body_scroll_region_only_when_overflowing
     - preview_renders_same_markup_with_links_inert
+    - preview_follows_editor_body_written_without_render
+    - preview_actual_size_frame
+    - preview_coerces_numeric_settings_from_form
     - drag_mouse_moves_to_next_and_previous
     - drag_touch_moves_to_next
     - drag_below_threshold_springs_back

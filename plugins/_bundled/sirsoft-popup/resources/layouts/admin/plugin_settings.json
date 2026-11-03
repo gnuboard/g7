@@ -889,6 +889,24 @@
                                                         "text": "$t:sirsoft-popup.admin.preview.mobile"
                                                     }
                                                 ]
+                                            },
+                                            {
+                                                "id": "preview_actual_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "줄인 틀로는 글자 크기를 판단하기 어려워, 지금 입력 값·기기를 배율 1 미리보기 큰 창으로 연다(저장 전 값)",
+                                                        "type": "click",
+                                                        "handler": "openModal",
+                                                        "target": "popup_actual_preview_modal"
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600"
+                                                },
+                                                "text": "$t:sirsoft-popup.admin.preview.actual_size"
                                             }
                                         ]
                                     },
@@ -1030,5 +1048,37 @@
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "comment": "실제 크기 미리보기 — 모달이 열릴 때의 입력 값(부모 _local 스냅숏)을 배율 1 로 그린다. 창보다 크면 미리보기 칸이 스크롤한다",
+            "id": "popup_actual_preview_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-popup.admin.preview.actual_title",
+                "width": "min(1340px, 96vw)"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "g7pp-form-hint gpp:mb-3"
+                    },
+                    "text": "$t:sirsoft-popup.admin.preview.actual_hint|width={{$parent._local.previewDevice === 'mobile' ? 390 : 1280}}|height={{$parent._local.previewDevice === 'mobile' ? 780 : 800}}"
+                },
+                {
+                    "id": "actual_preview",
+                    "type": "composite",
+                    "name": "sirsoft-popup.PopupPreview",
+                    "props": {
+                        "actualSize": true,
+                        "settings": "{{$parent._local.form}}",
+                        "device": "{{$parent._local.previewDevice}}"
+                    }
+                }
+            ]
+        }
+    ]
 }

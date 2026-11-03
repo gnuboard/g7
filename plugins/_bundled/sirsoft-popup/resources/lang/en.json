@@ -15,7 +15,9 @@
             "delete_confirm": "Delete confirmation",
             "bulk_delete_confirm": "Bulk delete confirmation",
             "copy_confirm": "Copy confirmation",
-            "reorder_open": "Reorder dialog"
+            "reorder_open": "Reorder dialog",
+            "actual_preview_pc": "Actual size — PC",
+            "actual_preview_mobile": "Actual size — Mobile"
         }
     },
     "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only.",
@@ -30,6 +32,8 @@
         "play": "Resume auto-advance",
         "dismiss_today": "Don't show today",
         "dismiss_days": "Don't show for {{days}} days",
+        "dismiss_today_all": "Don't show any today",
+        "dismiss_days_all": "Don't show any for {{days}} days",
         "close": "Close",
         "link": "Open popup link",
         "scroll_region": "Popup content"
@@ -81,6 +85,8 @@
             "title": "{{count}} showing now",
             "order_hint": "Shown in the carousel in this order",
             "edit_item": "Edit #{{n}} \"{{title}}\"",
+            "show_more": "Show {{count}} more",
+            "show_less": "Show less",
             "empty": "No popups are showing right now.",
             "pc": "PC {{position}} · {{width}}×{{height}}",
             "mobile": "Mobile {{style}}",
@@ -147,6 +153,10 @@
             "move_down": "Move \"{{name}}\" down"
         },
         "preview": {
+            "actual_size": "View actual size",
+            "actual_title": "Actual-size preview",
+            "actual_hint": "Actual size on a {{width}}×{{height}} screen. Scroll if the window is smaller.",
+            "empty_image": "Upload a PC image to see the preview here.",
             "title": "Preview",
             "region": "Popup preview",
             "device_label": "Preview device",
@@ -278,6 +288,10 @@
             "cancel": "Cancel",
             "save": "Save",
             "saving": "Saving",
+            "save_blocked": {
+                "no_image": "Upload a PC image to save.",
+                "uploading": "You can save once the image upload finishes."
+            },
             "conflict_merge": {
                 "title": "Compare the latest version with my changes",
                 "hint": "Items changed by another administrator default to the latest value and items you changed default to yours. Choose items both of you changed, apply, then review and save again.",

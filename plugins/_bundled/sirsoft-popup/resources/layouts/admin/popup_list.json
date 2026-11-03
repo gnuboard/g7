@@ -90,7 +90,8 @@
             "search": "",
             "status": "",
             "device": ""
-        }
+        },
+        "summaryExpanded": false
     },
     "initGlobal": {
         "bulkSelectedIds": [],
@@ -352,11 +353,13 @@
                                 "text": "$t:sirsoft-popup.admin.summary.empty"
                             },
                             {
+                                "comment": "많으면 처음 8개만 — 휴대폰에서 검색·목록이 화면 아래로 밀려나지 않게. 번호는 전체 순서 그대로다",
                                 "id": "summary_items",
                                 "type": "basic",
                                 "name": "Ol",
                                 "if": "{{(summary?.data?.data ?? []).length > 0}}",
                                 "props": {
+                                    "id": "popup_summary_items",
                                     "className": "gpp:flex gpp:flex-wrap gpp:items-start gpp:gap-3 gpp:flex-1"
                                 },
                                 "children": [
@@ -364,7 +367,7 @@
                                         "type": "basic",
                                         "name": "Li",
                                         "iteration": {
-                                            "source": "summary?.data?.data ?? []",
+                                            "source": "(summary?.data?.data ?? []).slice(0, _local.summaryExpanded === true ? undefined : 8)",
                                             "item_var": "item",
                                             "index_var": "idx"
                                         },
@@ -469,6 +472,52 @@
                                                             "className": "gpp:sr-only"
                                                         },
                                                         "text": "{{item.title}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Li",
+                                        "if": "{{(summary?.data?.data ?? []).length > 8}}",
+                                        "props": {
+                                            "className": "gpp:self-center"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "summary_toggle",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "나머지 노출 중 팝업을 펼치거나 다시 처음 8개로 접는다",
+                                                        "type": "click",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "summaryExpanded": "{{_local.summaryExpanded !== true}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "aria-expanded": "{{_local.summaryExpanded === true}}",
+                                                    "aria-controls": "popup_summary_items",
+                                                    "className": "gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.summaryExpanded !== true}}",
+                                                        "text": "$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 8}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.summaryExpanded === true}}",
+                                                        "text": "$t:sirsoft-popup.admin.summary.show_less"
                                                     }
                                                 ]
                                             }

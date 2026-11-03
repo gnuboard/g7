@@ -242,4 +242,59 @@ describe('팝업 등록·수정 화면', () => {
       expect(pick(en, key), `en ${key}`).toBeTruthy();
     }
   });
+  // @scenario surface=form_save_lock_reason_and_field_error_links
+  it('저장이 잠기면 단추 옆에 이유를 보이고 단추가 그 문구를 가리키며, 필수·오류 상태를 입력칸에 잇는다', () => {
+    const reason = (local: Record<string, unknown>) => evalComputed('saveBlockedReason', { _local: local });
+    expect(reason({ form: { content_type: 'image' } })).toBe('no_image');
+    expect(reason({ form: { content_type: 'image', images: { pc: { id: 1 } } }, pcUploadBlocked: true })).toBe('uploading');
+    expect(reason({ form: { content_type: 'image', images: { pc: { id: 1 } } } })).toBe('');
+    expect(reason({ form: { content_type: 'html' } })).toBe('');
+    // 저장 중에는 단추가 「저장 중」을 보이므로 이유를 따로 띄우지 않는다
+    expect(reason({ form: { content_type: 'image' }, isSaving: true })).toBe('');
+
+    const save = findById(form, 'footer_save_button')!;
+    expect(save.props['aria-describedby']).toBe("{{_computed.saveBlockedReason !== '' ? 'popup_save_blocked_reason' : undefined}}");
+    const note = collect(form, (n) => n.props?.id === 'popup_save_blocked_reason')[0];
+    expect(note.if).toBe("{{_computed.saveBlockedReason !== ''}}");
+    expect(json(note)).toContain("sirsoft-popup.admin.form.save_blocked.' + _computed.saveBlockedReason");
+    for (const key of ['no_image', 'uploading']) {
+      expect(pick(ko, `admin.form.save_blocked.${key}`), `ko ${key}`).toBeTruthy();
+      expect(pick(en, `admin.form.save_blocked.${key}`), `en ${key}`).toBeTruthy();
+    }
+
+    const input = (htmlId: string) => collect(form, (n) => n.props?.id === htmlId)[0];
+    const title = input('popup_title');
+    expect(title.props['aria-required']).toBe('true');
+    expect(title.props['aria-invalid']).toBe("{{_local.errors?.title ? 'true' : 'false'}}");
+    expect(title.props['aria-describedby']).toBe("{{_local.errors?.title ? 'popup_title_error' : 'popup_title_hint'}}");
+    expect(input('popup_title_error').if).toBe('{{_local.errors?.title}}');
+    expect(input('popup_title_hint').if).toBe('{{!_local.errors?.title}}');
+    const link = input('popup_link_url');
+    expect(link.props['aria-invalid']).toBe("{{_local.errors?.link_url ? 'true' : 'false'}}");
+    expect(link.props['aria-describedby']).toBe("{{_local.errors?.link_url ? 'popup_link_url_error' : 'popup_link_url_hint'}}");
+    expect(input('popup_link_url_error')).toBeTruthy();
+    expect(input('popup_link_url_hint')).toBeTruthy();
+  });
+  // @scenario surface=form_preview_actual_size_modal
+  it('미리보기 「실제 크기로 보기」는 지금 입력 값·기기를 배율 1 미리보기 큰 창으로 열고, 이미지가 없으면 다음 할 일을 안내한다', () => {
+    const button = findById(form, 'preview_actual_button')!;
+    expect(button.name).toBe('Button');
+    expect(button.props.type).toBe('button');
+    expect(actionsOf(button, 'openModal')[0].target).toBe('popup_actual_preview_modal');
+    const modal = (doc.modals ?? []).find((m: any) => m.id === 'popup_actual_preview_modal');
+    expect(modal.name).toBe('Modal');
+    const preview = findById(modal, 'actual_preview')!;
+    expect(preview.name).toBe('sirsoft-popup.PopupPreview');
+    expect(preview.props.actualSize).toBe(true);
+    expect(preview.props.form).toBe('{{$parent._local.form}}');
+    expect(preview.props.device).toBe('{{$parent._local.previewDevice}}');
+    expect(json(modal)).toContain('admin.preview.actual_hint');
+
+    const empty = findById(form, 'preview_empty_hint')!;
+    expect(empty.if).toBe('{{_computed.isImage && !_local.form?.images?.pc}}');
+    for (const key of ['admin.preview.actual_size', 'admin.preview.actual_title', 'admin.preview.actual_hint', 'admin.preview.empty_image']) {
+      expect(pick(ko, key), `ko ${key}`).toBeTruthy();
+      expect(pick(en, key), `en ${key}`).toBeTruthy();
+    }
+  });
 });

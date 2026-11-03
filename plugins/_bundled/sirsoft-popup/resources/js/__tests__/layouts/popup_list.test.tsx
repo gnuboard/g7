@@ -41,6 +41,34 @@ describe('팝업 관리 목록 화면', () => {
     expect(json(findById(list, 'summary_card'))).toContain('admin.summary.title|count=');
   });
 
+  // @scenario surface=list_summary_shows_first_items_and_expands
+  it('「지금 노출 중」은 처음 8개만 보이고 나머지는 「더 보기」로 펼치며, 펼침 상태를 단추에 알린다', () => {
+    const each = findById(list, 'summary_items')!.children[0].iteration.source as string;
+    const visible = (count: number, expanded: boolean) => new Function('summary', '_local', `return (${each.replace(/^\{\{|\}\}$/g, '')});`)(
+      { data: { data: Array.from({ length: count }, (_, i) => ({ id: i + 1 })) } },
+      { summaryExpanded: expanded },
+    ).length;
+    expect(visible(26, false)).toBe(8);
+    expect(visible(26, true)).toBe(26);
+    expect(visible(5, false)).toBe(5);
+
+    const toggle = findById(list, 'summary_toggle')!;
+    expect(toggle.name).toBe('Button');
+    expect(toggle.props.type).toBe('button');
+    // 단추를 담은 항목이 8개를 넘을 때만 그려진다(빈 항목을 남기지 않게 항목 쪽에 조건을 둔다)
+    const holder = collect(findById(list, 'summary_items')!, (n) => (n.children ?? []).includes(toggle))[0];
+    expect(holder.if).toBe('{{(summary?.data?.data ?? []).length > 8}}');
+    expect(toggle.props['aria-expanded']).toBe('{{_local.summaryExpanded === true}}');
+    expect(toggle.props['aria-controls']).toBe('popup_summary_items');
+    expect(findById(list, 'summary_items')!.props.id).toBe('popup_summary_items');
+    expect(json(actionsOf(toggle, 'setState'))).toContain('summaryExpanded');
+    for (const key of ['admin.summary.show_more', 'admin.summary.show_less']) {
+      expect(pick(ko, key), `ko ${key}`).toBeTruthy();
+      expect(pick(en, key), `en ${key}`).toBeTruthy();
+    }
+    expect(pick(ko, 'admin.summary.show_more')).toContain('{{count}}');
+  });
+
   // @scenario surface=list_summary_item_opens_edit
   it('「지금 노출 중」 항목을 누르면 그 팝업 수정 화면으로 가고(보던 목록 조건 유지), 조회 전용이면 링크가 없다', () => {
     // 반복 안이라 고정 id 를 두지 않는다 — 요약 목록 안의 수정 링크로 찾는다

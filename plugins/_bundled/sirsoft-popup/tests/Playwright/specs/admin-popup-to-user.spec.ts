@@ -586,6 +586,92 @@ test.describe('관리자 화면', () => {
     expect(await previewBodyHeight()).toBeGreaterThan(20);
   });
 
+  // @scenario flow=admin_preview_follows_editor_typing, viewport=desktop
+  // @effects test_data_cleaned_up
+  test('직접 작성형 본문을 편집기에 입력하면 다른 칸을 건드리지 않아도 미리보기가 바로 따라온다', async ({ page, request, managerToken, created }) => {
+    const id = await createHtmlPopup(request, managerToken, { body_html: { ko: '<p>Notice one</p>' } });
+    created.push(id);
+    const previewBody = page.locator('.g7pp-root--preview .g7pp-html').first();
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}/${id}/edit`);
+    await expect(previewBody).toHaveText('Notice one');
+    // CKEditor 5 는 본문을 화면 다시 그리기 없이 상태에만 쓴다 — 그 경로가 이 흐름의 대상이다
+    const editable = page.locator('#ckeditor5-body_html .ck-editor__editable').first();
+    await expect(editable).toBeVisible();
+
+    for (const word of ['two', 'three']) {
+      await editable.click();
+      await page.keyboard.press('ControlOrMeta+a');
+      await page.keyboard.type(`Notice ${word}`);
+      await expect(previewBody).toHaveText(`Notice ${word}`, { timeout: 3000 });
+    }
+  });
+
+  // @scenario flow=admin_summary_expands_beyond_first_items, viewport=mobile
+  // @effects test_data_cleaned_up
+  test('「지금 노출 중」이 8개를 넘으면 처음 8개만 보이고 「더 보기」로 펼치고 접는다 (mobile)', async ({ page, request, managerToken, created }) => {
+    // 사이트의 다른 노출 중 팝업 수와 무관하게 8개를 넘도록 9건을 만든다
+    for (let i = 0; i < 9; i += 1) created.push(await createHtmlPopup(request, managerToken));
+    await page.setViewportSize(VIEWPORTS.mobile);
+
+    await authenticatePage(page, managerToken);
+    await page.goto(ADMIN_LIST);
+    const items = page.locator('#popup_summary_items > li:has(.g7pp-summary-link, [title])');
+    await expect(items).toHaveCount(8);
+    const toggle = page.locator('#popup_summary_items').getByRole('button', { name: /개 더 보기/ });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    // 검색칸이 요약에 밀려 첫 화면에서 사라지지 않는다(26개를 다 펼치던 때는 1,610px 아래)
+    expect((await page.locator('#popup_filter_search').boundingBox())?.y ?? Infinity).toBeLessThan(1200);
+
+    await toggle.click();
+    await expect(page.locator('#popup_summary_items').getByRole('button', { name: '접기' })).toHaveAttribute('aria-expanded', 'true');
+    expect(await items.count()).toBeGreaterThanOrEqual(9);
+    await page.locator('#popup_summary_items').getByRole('button', { name: '접기' }).click();
+    await expect(items).toHaveCount(8);
+  });
+
+  // @scenario flow=admin_save_lock_reason_shown, viewport=desktop
+  test('이미지형 등록에서 이미지가 없으면 저장 단추 옆에 이유가 보이고 단추가 그 문구를 가리킨다', async ({ page, managerToken }) => {
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}/create`);
+    const save = page.locator('button', { hasText: '저장' }).last();
+    await expect(save).toBeDisabled();
+    const reason = page.locator('#popup_save_blocked_reason');
+    await expect(reason).toHaveText('PC 이미지를 올려야 저장할 수 있습니다.');
+    await expect(save).toHaveAttribute('aria-describedby', 'popup_save_blocked_reason');
+    await expect(page.locator('#popup_title')).toHaveAttribute('aria-required', 'true');
+    await expect(page.locator('#popup_title')).toHaveAttribute('aria-describedby', 'popup_title_hint');
+  });
+
+  // @scenario flow=admin_preview_actual_size, viewport=desktop
+  // @effects test_data_cleaned_up
+  test('미리보기 「실제 크기로 보기」는 큰 창에 줄이지 않은 크기로 그리고(팝업 폭 = 설정 폭), 표시 방식 화면에서도 같다', async ({ page, request, managerToken, created }) => {
+    const id = await createImagePopup(request, managerToken);
+    created.push(id);
+    const display = (await (await request.get(`${API}/admin/display-settings`, { headers: auth(managerToken) })).json()).data.settings;
+    const dialogWidth = async (): Promise<number> => (await page.locator('.g7pp-frame--actual .g7pp-dialog').first().boundingBox())?.width ?? 0;
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}/${id}/edit`);
+    await expect(page.locator('.g7pp-root--preview .g7pp-media__img').first()).toBeVisible();
+    // 줄인 틀의 팝업은 설정 폭보다 훨씬 작다
+    expect((await page.locator('#popup_form_preview .g7pp-dialog').boundingBox())?.width ?? 0).toBeLessThan(display.pc_width / 2);
+    await page.getByRole('button', { name: '실제 크기로 보기' }).click();
+    const frame = page.locator('.g7pp-frame-scroll .g7pp-frame--actual');
+    await expect(frame).toBeVisible();
+    await expect(page.getByText('1280×800 화면 기준 실제 크기입니다.')).toBeVisible();
+    // 코어 위치는 화면 폭보다 넓은 1280 틀이 창 안에서 스크롤한다 — 팝업 자체는 설정 폭 그대로
+    expect(Math.abs((await dialogWidth()) - Math.min(display.pc_width, 1280 - 32))).toBeLessThanOrEqual(2);
+    await expect(frame.locator('.g7pp-media__img').first()).toBeVisible();
+
+    await page.goto('/admin/plugins/sirsoft-popup/settings');
+    await expect(page.locator('.g7pp-root--preview .g7pp-sample').first()).toBeVisible();
+    await page.getByRole('button', { name: '실제 크기로 보기' }).click();
+    await expect(page.locator('.g7pp-frame--actual .g7pp-sample').first()).toBeVisible();
+    expect(Math.abs((await dialogWidth()) - Math.min(display.pc_width, 1280 - 32))).toBeLessThanOrEqual(2);
+  });
+
   // @scenario flow=admin_summary_item_opens_edit, viewport=desktop
   // @effects test_data_cleaned_up
   test('「지금 노출 중」 항목을 누르면 그 팝업 수정 화면으로 가고 보던 목록 조건이 이어진다', async ({ page, request, managerToken, created }) => {

@@ -192,6 +192,11 @@
                         "type": "string",
                         "required": false,
                         "description": "사이트 기본 언어 — 탭 언어 값이 비면 이 언어로"
+                    },
+                    "actualSize": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "실제 크기 — 틀을 줄이지 않고 기기 크기 그대로 그린다(넘치면 감싼 칸이 스크롤). 글자 크기를 판단하는 큰 창용"
                     }
                 }
             }

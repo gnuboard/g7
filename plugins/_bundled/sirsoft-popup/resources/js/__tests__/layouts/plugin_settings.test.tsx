@@ -75,4 +75,15 @@ describe('팝업 환경설정 화면', () => {
       expect(pick(en, key), `en ${key}`).toBeTruthy();
     }
   });
+  // @scenario surface=settings_preview_actual_size_modal
+  it('표시 방식 미리보기도 「실제 크기로 보기」로 지금 입력한 설정을 배율 1 큰 창에 띄운다', () => {
+    const button = findById(settings, 'preview_actual_button')!;
+    expect(actionsOf(button, 'openModal')[0].target).toBe('popup_actual_preview_modal');
+    const modal = ((settings as any).modals ?? []).find((m: any) => m.id === 'popup_actual_preview_modal');
+    const preview = findById(modal, 'actual_preview')!;
+    expect(preview.props.actualSize).toBe(true);
+    expect(preview.props.device).toBe('{{$parent._local.previewDevice}}');
+    // 입력 중인 값을 그대로 넘긴다 — 문자열 숫자·빈 칸은 미리보기 컴포넌트가 수·기본값으로 맞춘다
+    expect(preview.props.settings).toBe('{{$parent._local.form}}');
+  });
 });

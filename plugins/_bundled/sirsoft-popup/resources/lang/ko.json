@@ -15,7 +15,9 @@
             "delete_confirm": "삭제 확인",
             "bulk_delete_confirm": "일괄 삭제 확인",
             "copy_confirm": "복사 확인",
-            "reorder_open": "순서 변경 창"
+            "reorder_open": "순서 변경 창",
+            "actual_preview_pc": "실제 크기 — PC",
+            "actual_preview_mobile": "실제 크기 — 휴대폰"
         }
     },
     "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다.",
@@ -30,6 +32,8 @@
         "play": "자동 넘김 재생",
         "dismiss_today": "오늘 하루 보지 않기",
         "dismiss_days": "{{days}}일간 보지 않기",
+        "dismiss_today_all": "모두 오늘 하루 보지 않기",
+        "dismiss_days_all": "모두 {{days}}일간 보지 않기",
         "close": "닫기",
         "link": "팝업 링크 열기",
         "scroll_region": "팝업 본문"
@@ -81,6 +85,8 @@
             "title": "지금 노출 중 {{count}}개",
             "order_hint": "이 순서대로 캐러셀에 표시",
             "edit_item": "{{n}}번 「{{title}}」 수정",
+            "show_more": "{{count}}개 더 보기",
+            "show_less": "접기",
             "empty": "지금 노출 중인 팝업이 없습니다.",
             "pc": "PC {{position}} · {{width}}×{{height}}",
             "mobile": "모바일 {{style}}",
@@ -147,6 +153,10 @@
             "move_down": "「{{name}}」 아래로"
         },
         "preview": {
+            "actual_size": "실제 크기로 보기",
+            "actual_title": "실제 크기 미리보기",
+            "actual_hint": "{{width}}×{{height}} 화면 기준 실제 크기입니다. 창이 작으면 스크롤해서 보세요.",
+            "empty_image": "PC 이미지를 올리면 여기에 미리보기가 보입니다.",
             "title": "미리보기",
             "region": "팝업 미리보기",
             "device_label": "미리보기 기기",
@@ -278,6 +288,10 @@
             "cancel": "취소",
             "save": "저장",
             "saving": "저장 중",
+            "save_blocked": {
+                "no_image": "PC 이미지를 올려야 저장할 수 있습니다.",
+                "uploading": "이미지 올리기가 끝나면 저장할 수 있습니다."
+            },
             "conflict_merge": {
                 "title": "최신본과 내 변경 비교",
                 "hint": "다른 운영자가 바꾼 항목은 최신 값을, 내가 바꾼 항목은 내 값을 미리 골라 두었습니다. 둘 다 바꾼 항목은 직접 고른 뒤 적용하고, 내용을 확인해 다시 저장하세요.",

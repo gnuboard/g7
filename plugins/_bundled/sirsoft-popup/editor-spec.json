@@ -543,6 +543,34 @@
                         }
                     }
                 ]
+            },
+            {
+                "comment": "실제 크기 미리보기 창(등록·수정·표시 방식 화면 공통) — 안내 문구의 화면 크기는 창을 연 화면의 미리보기 기기(_local.previewDevice)로 정해진다.",
+                "scope": {
+                    "kind": "modal",
+                    "match": "popup_actual_preview_modal"
+                },
+                "items": [
+                    {
+                        "id": "actual_preview_pc",
+                        "label": "$t:sirsoft-popup.editor.state.actual_preview_pc",
+                        "default": true,
+                        "initialState": {
+                            "local": {
+                                "previewDevice": "pc"
+                            }
+                        }
+                    },
+                    {
+                        "id": "actual_preview_mobile",
+                        "label": "$t:sirsoft-popup.editor.state.actual_preview_mobile",
+                        "initialState": {
+                            "local": {
+                                "previewDevice": "mobile"
+                            }
+                        }
+                    }
+                ]
             }
         ]
     }

@@ -10,6 +10,7 @@ axes:
     - list_header_links_and_abilities
     - list_summary_card_order_and_device_tags
     - list_summary_card_settings_lines
+    - list_summary_shows_first_items_and_expands
     - list_empty_message_hidden_while_loading
     - list_pagination_shown
     - list_summary_item_opens_edit
@@ -50,6 +51,9 @@ axes:
     - form_image_and_body_changes_mark_dirty
     - row_menu_toggles_active
     - form_preview_sticky_and_alt_placeholder
+    - form_save_lock_reason_and_field_error_links
+    - form_preview_actual_size_modal
+    - settings_preview_actual_size_modal
     - overlay_fragment_targets_user_global_overlay
     - overlay_fragment_hidden_when_empty
     - overlay_fragment_passes_route_path
