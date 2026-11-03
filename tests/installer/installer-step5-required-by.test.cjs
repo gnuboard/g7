@@ -184,7 +184,7 @@ test('여러 확장이 요구하면 이름을 쉼표로 잇고, 이름이 없으
 });
 
 /**
- * 화면은 확장 작업을 실행 순서대로 한 묶음(extensions)에 담는다(PO 2026-11-02) — 그룹 id 가 더는 카테고리가 아니라
+ * 화면은 확장 작업을 실행 순서대로 한 묶음(extensions)에 담는다 — 그룹 id 가 더는 카테고리가 아니라
  * 배지는 항목의 kind 로 찾아야 하고, 행 순서는 서버 목록 순서 그대로다.
  *
  * @effects installer_step5_required_by_badge_on_pulled_install_row

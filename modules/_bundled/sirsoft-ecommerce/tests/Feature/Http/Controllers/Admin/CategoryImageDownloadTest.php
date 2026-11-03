@@ -66,6 +66,7 @@ class CategoryImageDownloadTest extends ModuleTestCase
      * getByHash 호출로 이 테스트가 실패한다.
      *
      * @scenario operation=admin_download
+     *
      * @effects admin_download_delegates_to_streaming_file_info
      *
      * @return void 반환값 없음
@@ -117,6 +118,7 @@ class CategoryImageDownloadTest extends ModuleTestCase
      * 이미지가 없으면 404 를 반환한다 (기존 동작 회귀 유지).
      *
      * @scenario operation=admin_download
+     *
      * @effects admin_download_missing_image_returns_404
      *
      * @return void 반환값 없음

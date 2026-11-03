@@ -381,6 +381,7 @@ effects:
   - stepwise_command_output_is_written_in_one_batch
   - stepwise_reports_progress_while_a_task_takes_long
   - installation_log_rotates_before_it_grows_unbounded
+  - installation_log_partial_write_is_reported_as_failure   # 진행 기록이 일부만 쓰이면(디스크 가득) 실패로 보고한다
   # D4 현장 발견 — 상태 파일 원자 교체가 짧은 핸들 경합(Windows)에서 조용히 유실되던 자리.
   - installer_state_replace_survives_transient_handle_contention
   # D6 — 중단이 태스크 경계를 기다리는 이유를 화면이 말한다(대기 자체는 13차 안전 설계).
@@ -393,7 +394,7 @@ effects:
   # 가장 흔한 원인(디스크 풀)에서는 이 한 줄이 파손을 만났다는 유일한 근거가 된다.
   - installer_corrupt_state_copy_failure_is_recorded
   # D9 — 차단 환경에서도 나열 기반 가드가 살아 있다(사본 상한·정리 스윕), 그리고 무가드
-  # 호출 대장이 「손으로 비운 목록」이 아니라 룰에서 도출된 것임을 검사가 증명한다.
+  # 호출 대장이 「손으로 비운 목록」이 아니라 부팅 경로의 가드 선언에서 도출된 것임을 검사가 증명한다.
   - installer_listing_guards_survive_blocked_glob
   - installer_unguarded_call_ledger_is_derived_not_hand_emptied
   - installer_admin_seeder_creates_no_account_without_credentials   # 어느 통로에도 관리자 값이 없으면 시더가 계정을 만들지 않는다
@@ -488,6 +489,8 @@ test_files:
   - resources/js/installer/__tests__/installer-progress-log-render.test.ts
   - tests/Unit/Installer/InstallerProgressLogBatchingTest.php
   - tests/Unit/Installer/InstallerProgressLogRotationTest.php
+  # 진행 기록이 일부만 쓰인 경우(디스크 가득)를 실패로 본다.
+  - tests/Unit/Installer/InstallerProgressLogPartialWriteTest.php
   # 상태 저장의 원자 교체 — 재시도로 없앨 수 있는 실패와 없는 실패를 가른다 (D4).
   - tests/Unit/Installer/InstallerStateAtomicReplaceTest.php
   # 점유 해제의 성공 여부와 남은 시간 (D7) — 서버 절반.

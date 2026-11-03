@@ -28,10 +28,10 @@
 - 코어 명령 9개(`auth:handoff-issue`, `core:deploy-ledger-seed`, `custom:check`, `custom:example`, `custom:vendor-bundle`, `custom:vendor-verify`, `g7:schedule-run`, `playwright:issue-handoff`, `queue:prune-records`)의 설명(`commands.descriptions.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트의 `php artisan list`·`--help` 에서 영어 원문 설명이 보입니다.
 - 관리자 화면 코어 업데이트 진행 기록의 공식 번들 배치 판정과 배치 기록 복원 안내(`settings.core_update.web.log_bundled_placement`, `log_bundled_record_restored`)의 일본어 번역을 추가했습니다.
 - 코어 업데이트 명령이 공개 파일 사본과 루트 진입 보호 파일 확인 목록 앞에 내는 머리말(`settings.core_update.console.docroot_exposure_header`, `root_files_header`)의 일본어 번역을 추가했습니다.
+- 서버가 안내 문구 없이 요청을 거절했을 때 화면에 띄우는 기본 안내(`core.errors.api_request_failed`)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 자리에 일본어가 아닌 문구가 보입니다.
 - 관리자 화면 코어 업데이트 착수 요청의 검증 오류 문구에 쓰는 항목 이름(`settings.core_update.web.attributes.*` 4건)의 일본어 번역을 추가했습니다.
-- 신뢰 프록시 사전 검사 안내와 PHP 실행 파일 확인 문구의 일본어 번역을 번역 빌더 산출물로 교체했습니다 (`settings.trusted_proxy_probe_*`, `settings.php_probe_ok_web_version_differs`, `validation.settings.trusted_prox*` 등 10건). 용어가 패키지 글로서리를 따릅니다.
 - PHP 실행 파일 확인 결과에서 서버 명령과 사이트가 서로 다른 PHP 계열로 도는 경우를 알리는 문구의 일본어 번역을 추가했습니다 (`settings.php_probe_ok_web_version_differs`).
-- 신뢰 프록시(리버스 프록시) 설정을 화면에서 고를 때의 사전 검사 결과 안내 문구 일본어 번역을 추가했습니다 (`settings.trusted_proxy_probe_*` 3건).
+- 신뢰 프록시(리버스 프록시) 설정을 화면에서 고를 때의 사전 검사 결과 안내 문구와 신뢰 프록시 목록 검증 문구의 일본어 번역을 추가했습니다 (`settings.trusted_proxy_probe_*` 3건, `validation.settings.trusted_prox*`). 용어는 패키지 글로서리를 따릅니다.
 - 실행 모드(자동 판단·항상 CLI 사용·항상 CLI 없이) 라벨과 외부 프로세스 실행 불가 안내의 일본어 번역을 추가했습니다 (`settings.execution_mode.*`, `exceptions.execution.*`).
 - 예약 작업을 주소 호출로 실행하는 웹 크론의 안내 문구 일본어 번역을 추가했습니다 (`schedule.cron.*` 12건) — 호출 번호 불일치·허용 주소 밖·최소 간격 미도달·실행 요약을 포함합니다.
 - 예약 작업이 며칠째 실행되지 않았을 때의 대시보드 경고와 조치 안내 문구의 일본어 번역을 추가했습니다 (`schedule.alerts.*` 3건). 조치 문구는 서버 환경에 따라 갈립니다.
@@ -54,7 +54,6 @@
 ### Changed
 
 - 스케줄 관리의 검증 문구·항목 이름을 화면 용어에 맞췄습니다 — 「識別子」「タスク名」「制限時間」「有効状態」「最近の実行結果」, 작업 유형 표기 「Artisan」「Shell」「URL」「Job」, 복제 → 「コピー」.
-- 아웃바운드 프록시 항목의 주석 구분을 정리했습니다(문구 변경 없음).
 - 루트 보호 규칙 파일 쓰기 실패 안내를 「임시 파일은 대상 파일의 디렉토리에 만들며, 심볼릭 링크면 링크 대상의 권한」으로 원인 범위를 넓힌 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_write_failed`).
 - 코어 업데이트가 루트 보호 파일의 관리 블록 마커를 찾지 못했을 때의 안내를 「마커를 찾지 못했다(지워졌거나 형태가 바뀌었다)」로 정정한 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_preserved`).
 - 코어 업데이트의 압축 해제 실패 안내에서 명령줄 옵션 언급을 걷어낸 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.all_extract_methods_failed`) — 이 안내는 관리자 화면에도 그대로 나가므로 명령줄을 쓸 수 없는 호스팅에서는 따를 수 없는 지시였습니다.

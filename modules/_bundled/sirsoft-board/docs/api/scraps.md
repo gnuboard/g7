@@ -331,7 +331,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | member.uuid | string(uuid) | `a2be5dfd-…` | 스크랩한 회원 |
 | member.name | string | `스크랩회원A` | 회원 이름 (탈퇴면 익명) |
 | member.email | string\|null | `e2e-scrap-a@example.test` | 관리자 응답에만 실립니다 |
-| member | object | `{"uuid":"a2edf080-d821-4faf-96e9-6ac094fde724","name":"qa…` | 스크랩한 회원 `{uuid,name,email,is_withdrawn}`. 탈퇴 회원 이름은 익명 표기입니다 |
+| member | object | `{"uuid":"a2edf080-d821-4faf-96e9-6ac094fde724","name":"us…` | 스크랩한 회원 `{uuid,name,email,is_withdrawn}`. 탈퇴 회원 이름은 익명 표기입니다 |
 | board | object\|null | `null` | 게시판. 지워졌으면 `null` |
 | board.slug / name | string | `e2e-scrap-notice` / `공지사항(E2E)` | 게시판 식별자와 이름 |
 | board.is_active | boolean | `true` | 게시판 활성 여부 |
@@ -363,16 +363,16 @@ HTTP/1.1 200
             {
                 "id": 718,
                 "post_id": 3224,
-                "board_id": 1004,
+                "board_id": 2,
                 "member": {
                     "uuid": "a2edf080-d821-4faf-96e9-6ac094fde724",
-                    "name": "qa736_pc_m1",
-                    "email": "qa736_pc_m1@example.com",
+                    "name": "user",
+                    "email": "user@example.com",
                     "is_withdrawn": false
                 },
                 "board": {
-                    "slug": "qa736-pc-main",
-                    "name": "qa736 PC 검색",
+                    "slug": "free",
+                    "name": "자유게시판",
                     "is_active": true,
                     "use_scrap": true
                 },
@@ -380,7 +380,7 @@ HTTP/1.1 200
                 "post_status": "published",
                 "post_status_label": "게시됨",
                 "is_deleted": false,
-                "author_name": "qa736_pc_m1",
+                "author_name": "user",
                 "scrapped_at": "10-08",
                 "created_at": "2026-10-08 11:57:39",
                 "abilities": {
@@ -390,16 +390,16 @@ HTTP/1.1 200
             {
                 "id": 717,
                 "post_id": 3223,
-                "board_id": 1004,
+                "board_id": 2,
                 "member": {
                     "uuid": "a2edf080-d821-4faf-96e9-6ac094fde724",
-                    "name": "qa736_pc_m1",
-                    "email": "qa736_pc_m1@example.com",
+                    "name": "user",
+                    "email": "user@example.com",
                     "is_withdrawn": false
                 },
                 "board": {
-                    "slug": "qa736-pc-main",
-                    "name": "qa736 PC 검색",
+                    "slug": "free",
+                    "name": "자유게시판",
                     "is_active": true,
                     "use_scrap": true
                 },
@@ -407,7 +407,7 @@ HTTP/1.1 200
                 "post_status": "published",
                 "post_status_label": "게시됨",
                 "is_deleted": false,
-                "author_name": "qa736_pc_m1",
+                "author_name": "user",
                 "scrapped_at": "10-08",
                 "created_at": "2026-10-08 11:57:39",
                 "abilities": {
@@ -430,179 +430,14 @@ HTTP/1.1 200
         },
         "boards": [
             {
-                "id": 1022,
-                "slug": "qa720-s5-a",
-                "name": "QA720 S5 게시판 & | = $& {{x}}"
-            },
-            {
                 "id": 1008,
                 "slug": "product-inquiry",
                 "name": "상품 문의"
             },
             {
-                "id": 1006,
-                "slug": "qa736-pi-main",
-                "name": "qa736 PI 메인"
-            },
-            {
-                "id": 1005,
-                "slug": "qa736-pg-a",
-                "name": "qa736 PG 가"
-            },
-            {
-                "id": 1004,
-                "slug": "qa736-pc-main",
-                "name": "qa736 PC 검색"
-            },
-            {
-                "id": 997,
-                "slug": "qa736-pb-member",
-                "name": "qa736 PB 회원전용"
-            },
-            {
-                "id": 996,
-                "slug": "qa736-pb-main",
-                "name": "qa736 PB 메인"
-            },
-            {
-                "id": 984,
-                "slug": "qa736-rf-main",
-                "name": "qa736 RF 첨부"
-            },
-            {
-                "id": 974,
-                "slug": "qa736-k4-noti",
-                "name": "qa736 K4 알림"
-            },
-            {
-                "id": 972,
-                "slug": "qa736-k4-guest",
-                "name": "qa736 K4 비회원"
-            },
-            {
-                "id": 971,
-                "slug": "qa736-k4-member",
-                "name": "qa736 K4 회원전용"
-            },
-            {
-                "id": 970,
-                "slug": "qa736-k4-secreq",
-                "name": "qa736 K4 비밀글필수"
-            },
-            {
-                "id": 969,
-                "slug": "qa736-k4-nosecret",
-                "name": "qa736 K4 비밀글없음"
-            },
-            {
-                "id": 968,
-                "slug": "qa736-k4-main",
-                "name": "qa736 K4 메인"
-            },
-            {
-                "id": 967,
-                "slug": "qa736-k3t-nofile",
-                "name": "qa736 K3T 파일없음2"
-            },
-            {
-                "id": 966,
-                "slug": "qa736-k3t-main",
-                "name": "qa736 K3T 메인"
-            },
-            {
-                "id": 965,
-                "slug": "qa736-k3r-nofile",
-                "name": "qa736 K3R 파일없음2"
-            },
-            {
-                "id": 964,
-                "slug": "qa736-k3r-main",
-                "name": "qa736 K3R 메인"
-            },
-            {
-                "id": 963,
-                "slug": "qa736-k3-nofile",
-                "name": "qa736 K3 파일없음2"
-            },
-            {
-                "id": 962,
-                "slug": "qa736-k3-main",
-                "name": "qa736 K3 메인"
-            },
-            {
-                "id": 960,
-                "slug": "qa736-k2-noscrap",
-                "name": "qa736 K2 스크랩끔예정"
-            },
-            {
-                "id": 959,
-                "slug": "qa736-k2-on",
-                "name": "qa736 K2 스크랩신고"
-            },
-            {
-                "id": 956,
-                "slug": "qa736-k1-off",
-                "name": "qa736 K1 반응끔"
-            },
-            {
-                "id": 955,
-                "slug": "qa736-k1-postonly",
-                "name": "qa736 K1 글만반응"
-            },
-            {
-                "id": 954,
-                "slug": "qa736-k1-on",
-                "name": "qa736 K1 반응켬"
-            },
-            {
-                "id": 868,
-                "slug": "repleak-1789624175716-noacc",
-                "name": "무접근신고"
-            },
-            {
-                "id": 867,
-                "slug": "repleak-1789624175716",
-                "name": "신고유출테스트"
-            },
-            {
-                "id": 866,
-                "slug": "formsec-1789624116697",
-                "name": "폼비밀노출"
-            },
-            {
-                "id": 865,
-                "slug": "sectest-1789624059256",
-                "name": "비밀댓글테스트"
-            },
-            {
-                "id": 864,
-                "slug": "mo-1789623990067",
-                "name": "회원전용게시판"
-            },
-            {
-                "id": 8,
-                "slug": "archive",
-                "name": "아카이브"
-            },
-            {
-                "id": 7,
-                "slug": "inquiry",
-                "name": "1:1 문의"
-            },
-            {
-                "id": 6,
-                "slug": "members",
-                "name": "회원전용"
-            },
-            {
                 "id": 5,
                 "slug": "qna",
                 "name": "Q&A"
-            },
-            {
-                "id": 4,
-                "slug": "event",
-                "name": "이벤트"
             },
             {
                 "id": 3,
@@ -618,7 +453,8 @@ HTTP/1.1 200
                 "id": 1,
                 "slug": "notice",
                 "name": "공지사항"
-            }
+            },
+            "... (총 38건 중 5건 표시)"
         ],
         "abilities": {
             "can_view": true,

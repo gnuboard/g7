@@ -16,15 +16,16 @@
  *    "왜 이 모드인가" 를 설명하는 유일한 통로다.
  * 4. **탭 조건이 성립한다.** 다른 탭에서 이 트리가 렌더되면 화면이 겹친다.
  *
- * @scenario web-cron-runner
+ * @scenario vector=browser_reveal, actor_permission=settings_read, actor_permission=settings_update
  * @axes vector=browser_reveal, actor_permission=settings_read, actor_permission=settings_update
  * @effects cron_url_is_masked_until_revealed, execution_reason_is_shown_on_screen
  */
 
 import React from 'react';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { ActionDispatcher } from '@core/template-engine/ActionDispatcher';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -283,6 +284,83 @@ describe('환경설정 시스템 탭 (W5)', () => {
         await active.render();
 
         expect(screen.getByTestId('cron_last_run_empty')).toBeInTheDocument();
+    });
+});
+
+/**
+ * [복사] 의 결과 분기 (D8).
+ *
+ * 복사는 주소를 받아 온 **뒤**(`apiCall` 성공 블록 안)에서 일어나, 누른 순간의 사용자 동작 허가가 끝났을 수 있다.
+ * 그러면 `navigator.clipboard` 도 폴백 `execCommand('copy')` 도 실패하고 핸들러는 false 를 돌려준다. 화면이 그 값을
+ * 보지 않고 성공 토스트를 띄우면 운영자는 빈 클립보드를 호스팅 크론 칸에 붙여넣는다.
+ *
+ * 굽기 산출 JSON 의 클릭 액션을 엔진(`ActionDispatcher`)에 그대로 넣고, 핸들러 결과만 바꿔 토스트를 본다.
+ */
+describe('[복사] 결과 분기 (D8)', () => {
+    const URL_RESPONSE = { success: true, data: { url: 'https://example.test/api/system/cron/run?token=abc' } };
+
+    let dispatcher: ActionDispatcher;
+    let global: Record<string, any>;
+    let copied: string[];
+
+    beforeEach(() => {
+        global = {};
+        copied = [];
+        dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+        dispatcher.setGlobalStateUpdater((updates: any) => {
+            global = { ...global, ...updates };
+        });
+        (window as any).G7Core = { ...(window as any).G7Core, state: { get: () => global } };
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'Content-Type': 'application/json' }),
+            json: async () => URL_RESPONSE,
+            text: async () => JSON.stringify(URL_RESPONSE),
+        })));
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    /** 복사 버튼의 클릭 액션을 핸들러 결과 `outcome` 으로 실행하고 쌓인 토스트를 돌려준다. */
+    async function clickCopy(outcome: boolean): Promise<Array<{ type: string; message: string }>> {
+        dispatcher.registerHandler('copyToClipboard', async (action: any) => {
+            copied.push(action?.params?.text);
+
+            return outcome;
+        });
+
+        const button = findById(loadPartial(PARTIAL_PATH), 'cron_url_copy_button');
+        expect(button, 'cron_url_copy_button 이 레이아웃에 없습니다.').not.toBeNull();
+
+        const local: Record<string, any> = {};
+        await dispatcher.dispatchAction(button.actions[0], {
+            data: { _local: local, _global: global },
+            state: local,
+            setState: (updates: any) => Object.assign(local, updates),
+        } as any);
+
+        return (global.toasts ?? []).map((t: any) => ({ type: t.type, message: String(t.message) }));
+    }
+
+    // @scenario vector=browser_reveal, token=valid
+    // @effects cron_url_copy_reports_clipboard_failure
+    it('복사에 실패하면 성공 토스트 대신 실패 토스트를 띄운다', async () => {
+        const toasts = await clickCopy(false);
+
+        expect(copied, '받아 온 주소로 복사를 시도해야 한다').toEqual([URL_RESPONSE.data.url]);
+        expect(toasts.filter((t) => t.type === 'success'), '복사하지 못했는데 성공을 알린다').toEqual([]);
+        expect(toasts.some((t) => t.type === 'error')).toBe(true);
+    });
+
+    // @scenario vector=browser_reveal, token=valid
+    // @effects cron_url_copy_reports_clipboard_failure
+    it('복사에 성공하면 성공 토스트만 띄운다', async () => {
+        const toasts = await clickCopy(true);
+
+        expect(toasts).toEqual([{ type: 'success', message: '$t:admin.settings.system.cron_url_copied' }]);
     });
 });
 

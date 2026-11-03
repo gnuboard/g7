@@ -78,14 +78,14 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | target_id | integer | `717` | 대상 식별자 |
 | post_id | integer | `571` | 이동 대상 글 ID (댓글 반응도 부모 글로 갑니다) |
 | comment_id | integer | `717` | 댓글 반응일 때의 댓글 ID |
-| title | string | `[검수-게시판] 비회원 비밀글 T2 (수정됨 T3)` | 글 제목 (댓글 반응도 부모 글 제목) |
-| excerpt | string | `비회원 댓글 GUEST-COMMENT-T3-1` | 댓글 본문 발췌 80자. 삭제된 댓글이면 null |
+| title | string | `비회원 비밀글` | 글 제목 (댓글 반응도 부모 글 제목) |
+| excerpt | string | `비회원 댓글` | 댓글 본문 발췌 80자. 삭제된 댓글이면 null |
 | board | object | `{"slug":"free","name":"자유게시판","is_active":true,"use_react…` | `{slug,name,is_active,use_reaction,use_comment_reaction}`. 게시판 삭제 시 null |
 | board_slug | string | `free` | 게시판 슬러그 (`board.slug` 와 같은 값). 게시판이 삭제됐으면 null |
 | board_name | string | `자유게시판` | 게시판 이름의 현재 로케일 문자열 (`board.name` 과 같은 값). 게시판이 삭제됐으면 null |
 | board_deleted | boolean | `false` | 게시판 소실 여부 |
 | reaction_type | object | `{"id":1,"code":"like","name":"추천","icon_name":"fa-thumbs-…` | `{id,code,name,icon_name,icon_url}` |
-| author_name | string | `검수댓글게스트` | 대상 작성자. 탈퇴 회원이면 익명 표기 |
+| author_name | string | `댓글 작성자` | 대상 작성자. 탈퇴 회원이면 익명 표기 |
 | target_deleted | boolean | `false` | 대상 소실 또는 미게시 여부 |
 | reaction_enabled | boolean | `true` | 지금도 반응이 열려 있는 상태인지 (링크와 버튼 노출 판정) |
 | reacted_at | string | `2026-09-16 13:59:50` | 반응 시각 — 모듈 표시 설정(`display.date_display_format`)을 따르므로 「2시간 전」 같은 상대 표기일 수 있습니다 |
@@ -110,8 +110,8 @@ HTTP/1.1 200
                 "target_id": 717,
                 "post_id": 571,
                 "comment_id": 717,
-                "title": "[검수-게시판] 비회원 비밀글 T2 (수정됨 T3)",
-                "excerpt": "비회원 댓글 GUEST-COMMENT-T3-1",
+                "title": "비회원 비밀글",
+                "excerpt": "비회원 댓글",
                 "board": {
                     "slug": "free",
                     "name": "자유게시판",
@@ -129,7 +129,7 @@ HTTP/1.1 200
                     "icon_name": "fa-thumbs-up",
                     "icon_url": null
                 },
-                "author_name": "검수댓글게스트",
+                "author_name": "댓글 작성자",
                 "target_deleted": false,
                 "reaction_enabled": true,
                 "reacted_at": "2026-09-16 13:59:50"
@@ -140,7 +140,7 @@ HTTP/1.1 200
                 "target_id": 571,
                 "post_id": 571,
                 "comment_id": null,
-                "title": "[검수-게시판] 비회원 비밀글 T2 (수정됨 T3)",
+                "title": "비회원 비밀글",
                 "excerpt": null,
                 "board": {
                     "slug": "free",
@@ -159,7 +159,7 @@ HTTP/1.1 200
                     "icon_name": "fa-thumbs-up",
                     "icon_url": null
                 },
-                "author_name": "검수게스트",
+                "author_name": "비회원 작성자",
                 "target_deleted": false,
                 "reaction_enabled": true,
                 "reacted_at": "2026-09-16 13:59:45"
@@ -438,14 +438,14 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | target_id | integer | `3227` | target 식별자 (연관 리소스 참조) |
 | post_id | integer | `3227` | post 식별자 (연관 리소스 참조) |
 | comment_id | integer | `1109` | comment 식별자 (연관 리소스 참조) |
-| member | object | `{"uuid":"41866241-871d-497d-9d18-44a1748f8c98","name":"qa…` | `{uuid,name,email,is_withdrawn}`. 이메일은 관리자 응답에만, 탈퇴 회원 이름은 익명화 |
-| board | object | `{"id":1005,"slug":"qa736-pg-a","name":"qa736 PG 가","is_ac…` | 게시판 `{id,slug,name,is_active,use_reaction,use_comment_reaction}`. 게시판이 삭제됐으면 null |
-| target_title | string | `qa736 PG 관리자 글` | 글 제목 (댓글 반응도 부모 글 제목). 삭제된 대상의 제목도 냅니다 |
-| target_excerpt | string | `qa736 K1 off 댓글` | 댓글 반응일 때 댓글 본문 발췌 (태그 제거, 80자). 게시글 반응이거나 삭제된 댓글이면 null |
+| member | object | `{"uuid":"41866241-871d-497d-9d18-44a1748f8c98","name":"ad…` | `{uuid,name,email,is_withdrawn}`. 이메일은 관리자 응답에만, 탈퇴 회원 이름은 익명화 |
+| board | object | `{"id":1,"slug":"notice","name":"공지사항","is_active":true,"use_r…` | 게시판 `{id,slug,name,is_active,use_reaction,use_comment_reaction}`. 게시판이 삭제됐으면 null |
+| target_title | string | `관리자 공지 글` | 글 제목 (댓글 반응도 부모 글 제목). 삭제된 대상의 제목도 냅니다 |
+| target_excerpt | string | `댓글 내용` | 댓글 반응일 때 댓글 본문 발췌 (태그 제거, 80자). 게시글 반응이거나 삭제된 댓글이면 null |
 | target_status | string | `published` | 대상 상태 (`published`, `blinded`, `deleted`). 대상이 사라졌으면 `deleted` |
 | target_status_label | string | `게시됨` | `target_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | is_target_deleted | boolean | `false` | 대상 소실 여부 |
-| author_name | string | `qa736_pg_admin` | 대상(글 또는 댓글) 작성자 이름. 탈퇴 회원이면 익명 표기, 비회원 글이면 입력한 작성자명 |
+| author_name | string | `admin` | 대상(글 또는 댓글) 작성자 이름. 탈퇴 회원이면 익명 표기, 비회원 글이면 입력한 작성자명 |
 | reaction_type | object | `{"id":1,"code":"like","name":"추천","icon_name":"fa-thumbs-…` | 반응 유형 `{id,code,name,icon_name,icon_url,is_active}`. 비활성 유형도 그대로 실리며 `is_active` 로 구분합니다 |
 | abilities | object | `{"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -509,29 +509,29 @@ HTTP/1.1 200
         ],
         "boards": [
             {
-                "id": 1022,
-                "slug": "qa720-s5-a",
-                "name": "QA720 S5 게시판 & | = $& {{x}}"
-            },
-            {
                 "id": 1008,
                 "slug": "product-inquiry",
                 "name": "상품 문의"
             },
             {
-                "id": 1006,
-                "slug": "qa736-pi-main",
-                "name": "qa736 PI 메인"
+                "id": 5,
+                "slug": "qna",
+                "name": "Q&A"
             },
             {
-                "id": 1005,
-                "slug": "qa736-pg-a",
-                "name": "qa736 PG 가"
+                "id": 3,
+                "slug": "gallery",
+                "name": "갤러리"
             },
             {
-                "id": 1004,
-                "slug": "qa736-pc-main",
-                "name": "qa736 PC 검색"
+                "id": 2,
+                "slug": "free",
+                "name": "자유게시판"
+            },
+            {
+                "id": 1,
+                "slug": "notice",
+                "name": "공지사항"
             },
             "... (총 38건 중 5건 표시)"
         ],

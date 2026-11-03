@@ -5,6 +5,7 @@ namespace Tests\Unit\Listeners;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Execution\CommandRunnerResolver;
 use App\Execution\ExecutionMode;
+use App\Extension\HookManager;
 use App\Listeners\ScheduleHealthAlertListener;
 use App\Scheduling\ArtisanCommandExtractor;
 use App\Scheduling\ScheduleRunner;
@@ -13,6 +14,7 @@ use App\Scheduling\ScheduleRunSummary;
 use App\Scheduling\WebCronPolicy;
 use App\Scheduling\WebCronTokenStore;
 use App\Services\SystemExecutionService;
+use App\Support\ScreenUrl;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
@@ -173,6 +175,37 @@ class ScheduleHealthAlertListenerTest extends TestCase
         $alert = $this->listener(ExecutionMode::Inprocess)->addScheduleAlert([])[0];
 
         $this->assertSame('/admin/settings?tab=system', $alert['action_path']);
+    }
+
+    /**
+     * 조치 경로는 화면 주소 필터(`ScreenUrl`)를 거친다 — 개발자가 관리자 화면 주소를 바꾸면 그 주소로 간다.
+     *
+     * 형제 경고(통계 보존일 경고)는 같은 필터를 거치는데 이 자리만 리터럴이었다. 그러면 관리자 화면 주소를
+     * 바꾼 사이트에서 이 링크만 옛 주소로 남는다.
+     *
+     * @effects alert_carries_the_settings_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_alert_settings_path_goes_through_the_screen_url_filter(): void
+    {
+        $this->recordExecutionAt(CarbonImmutable::now()->subDays(5));
+
+        $seen = [];
+        HookManager::addFilter(ScreenUrl::FILTER, function (string $path, string $key, array $params, string $scope) use (&$seen) {
+            $seen[] = [$key, $scope];
+
+            return $key === 'admin.settings.system' ? '/console/system' : $path;
+        });
+
+        try {
+            $alert = $this->listener(ExecutionMode::Inprocess)->addScheduleAlert([])[0];
+        } finally {
+            HookManager::clearFilter(ScreenUrl::FILTER);
+        }
+
+        $this->assertContains(['admin.settings.system', ScreenUrl::SCOPE_ADMIN], $seen);
+        $this->assertSame('/console/system', $alert['action_path']);
     }
 
     /**

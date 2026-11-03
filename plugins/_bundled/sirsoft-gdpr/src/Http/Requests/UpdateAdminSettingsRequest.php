@@ -369,7 +369,10 @@ class UpdateAdminSettingsRequest extends FormRequest
         $normalized = [];
         foreach ($input as $scope => $value) {
             if (is_string($value)) {
-                $normalized[$scope] = collect(preg_split('/\R/u', $value))
+                // blocked_domains 와 같은 명시 줄 종결자로 나눈다. `/\R/u` 는 잘못된 UTF-8 바이트가 하나라도
+                // 있으면 false 를 돌려주고, 그러면 이 스코프의 멀쩡한 줄까지 조용히 빈 목록이 된다.
+                // 남은 잘못된 줄은 아래 형식 검증이 그 인덱스로 거른다.
+                $normalized[$scope] = collect(preg_split('~\r\n|\r|\n~', $value))
                     ->map(fn ($line) => is_string($line) ? trim($line) : '')
                     ->filter(fn ($line) => $line !== '')
                     ->values()

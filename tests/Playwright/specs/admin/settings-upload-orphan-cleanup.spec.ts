@@ -28,7 +28,7 @@ async function gotoUploadTab(page: import('@playwright/test').Page): Promise<voi
 }
 
 // (tab=upload, permitted=yes — 미선언 축은 평문으로)
-// @scenario attachment-orphan-cleanup
+// @scenario source_owner=core
 // @effects core_settings_orphan_keys_declared
 test('#115 - 업로드 탭에 "고아 첨부 정리" 카드가 번역문과 함께 마운트된다', async ({ page }) => {
   const consoleErrors: string[] = [];
@@ -57,7 +57,7 @@ test('#115 - 업로드 탭에 "고아 첨부 정리" 카드가 번역문과 함�
 });
 
 // (tab=upload, permitted=yes — 미선언 축은 평문으로)
-// @scenario attachment-orphan-cleanup
+// @scenario source_owner=core
 // @effects core_settings_orphan_toggle_default_off
 test('#115 - 자동 정리 토글은 기본 꺼짐으로 렌더된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -73,7 +73,7 @@ test('#115 - 자동 정리 토글은 기본 꺼짐으로 렌더된다', async ({
 });
 
 // (tab=upload, permitted=yes, value=invalid — 미선언 축은 평문으로)
-// @scenario attachment-orphan-cleanup
+// @scenario source_owner=core
 // @effects core_settings_orphan_keys_declared
 test('#115 - 보존기간 0 은 항목명이 드러난 안내와 함께 거절된다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');

@@ -16,7 +16,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * plugin.php 가 선언하는 권한/알림 정의/설정 스키마 구조와
  * 관리자 메뉴 미생성(⚑ 결정 3) 을 검증한다.
  *
- * @scenario dispatch-history-webhook
+ * @scenario credential_state=empty
  */
 class InstallationTest extends PluginTestCase
 {
@@ -77,6 +77,7 @@ class InstallationTest extends PluginTestCase
      * 설정 스키마가 password, api_key, sender_key 를 sensitive 로 표시하고, 일반 필드와 기본값 true 인 is_test_mode 불리언을 함께 선언하는지 확인한다.
      *
      * @scenario field_kind=credential
+     *
      * @effects settings_schema_marks_credentials_sensitive, settings_defaults_load_with_test_mode_on
      *
      * @return void 반환값 없음
@@ -105,6 +106,7 @@ class InstallationTest extends PluginTestCase
      * config/settings/defaults.json 의 frontend_schema 가 모든 필드를 expose false 로 두고 크리덴셜 세 필드를 sensitive 로 표시하는지 확인한다.
      *
      * @scenario field_kind=credential
+     *
      * @effects defaults_json_frontend_schema_exposes_no_fields
      *
      * @return void 반환값 없음

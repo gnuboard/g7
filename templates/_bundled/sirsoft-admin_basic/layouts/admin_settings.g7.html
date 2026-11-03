@@ -99,8 +99,15 @@
   </data-source>
   <!-- 코어 업데이트 진행 기록 — 업데이트 탭에서만, 코어 업데이트 권한이 없다고 확정되지 않은 동안 받는다.
        진행 중인 실행(run)·단계 목록·직접 올린 ZIP 목록·사용자가 고친 레이아웃 수·사전 점검 결과를 서버가 돌려준다.
-       진행 중에는 업데이트 핸들러가 같은 모양을 _global.coreUpdateStatus 에 실어 이 응답보다 앞세운다(아래 계산값 coreUpdate*). -->
+       진행 중에는 업데이트 핸들러가 같은 모양을 _global.coreUpdateStatus 에 실어 이 응답보다 앞세운다(아래 계산값 coreUpdate*).
+       권한 응답이 오기 전(`settingsAbilities` 가 비어 있는 동안)에는 이 소스도 불리므로, 권한 없는 관리자가 주소로 업데이트 탭에 들어오면 403 이 난다 —
+       위 언어팩 소스처럼 조용히 넘긴다(fallback 이 빈 기록을 싣고, 탭 항목과 본문은 `can_core_update` 가 참일 때만 보인다). -->
   <data-source id="core_update_status" label_key="$t:editor.data_source.core_update_status" type="api" endpoint="/api/admin/core-update/status" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'update' &amp;&amp; (_global.settingsAbilities?.can_core_update !== false)}}" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
     <fallback>
       <field name="data">
         <field name="run" :value="null"/>

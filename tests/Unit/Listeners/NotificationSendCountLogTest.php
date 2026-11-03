@@ -2,7 +2,13 @@
 
 namespace Tests\Unit\Listeners;
 
+use App\Contracts\Repositories\NotificationDeliveryRepositoryInterface;
+use App\Extension\HookManager;
 use App\Listeners\NotificationHookListener;
+use App\Models\NotificationDefinition;
+use App\Services\NotificationDeliveryGuard;
+use ReflectionMethod;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -104,5 +110,66 @@ class NotificationSendCountLogTest extends TestCase
 
         // 집계 배열이 참조로 넘어가야 수신자 메서드의 증가가 완료 줄에 닿는다 — 값 전달이면 언제나 0 이다.
         $this->assertStringContainsString('array &$tally', $source, '집계 배열이 참조로 넘어가지 않는다 — 완료 줄이 언제나 0 을 보고한다.');
+    }
+
+    /**
+     * 발송 뒤 단계가 던져도 같은 수신자를 보낸 수와 실패 수에 함께 세지 않는다 (실행 경로).
+     *
+     * 종전에는 `notify()` 직후 보낸 수를 먼저 더했다. 그 뒤의 선점 갱신이나 발송 후 훅이 던지면
+     * catch 가 실패 수를 또 더해, 한 수신자가 양쪽에 잡혀 완료 줄의 합이 대상 인원을 넘었다.
+     *
+     * @effects notification_send_counters_are_incremented
+     *
+     * @return void 반환값 없음
+     */
+    public function test_a_throw_after_notify_is_counted_once_as_failed(): void
+    {
+        $listener = app(NotificationHookListener::class);
+        $guard = new NotificationDeliveryGuard($this->createMock(NotificationDeliveryRepositoryInterface::class));
+        $definition = new NotificationDefinition([
+            'type' => 'g7test_send_count',
+            'hook_prefix' => 'core',
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
+        ]);
+
+        // 모델이 아닌 수신자 — 수신자 키가 없어 중복 방지(선점 저장소)를 거치지 않는다.
+        $notifiable = new class
+        {
+            public ?int $id = null;
+
+            public string $name = 'g7test';
+
+            /** @var array<int, object> */
+            public array $received = [];
+
+            /**
+             * 알림을 받아 둡니다.
+             *
+             * @param  object  $notification  알림
+             * @return void 반환값 없음
+             */
+            public function notify(object $notification): void
+            {
+                $this->received[] = $notification;
+            }
+        };
+
+        $throwing = static function (): void {
+            throw new RuntimeException('g7test after_send failure');
+        };
+        HookManager::addAction('core.notification.after_send', $throwing, 1);
+
+        $tally = ['sent' => 0, 'failed' => 0];
+        $args = [$guard, $definition, 'mail', $notifiable, [], [], [], 'g7test-event', &$tally];
+
+        try {
+            (new ReflectionMethod($listener, 'sendToRecipient'))->invokeArgs($listener, $args);
+        } finally {
+            HookManager::removeAction('core.notification.after_send', $throwing);
+        }
+
+        $this->assertCount(1, $notifiable->received, '발송 자체는 이뤄져야 한다');
+        $this->assertSame(['sent' => 0, 'failed' => 1], $tally, '같은 수신자가 보낸 수와 실패 수에 함께 잡혔다');
     }
 }

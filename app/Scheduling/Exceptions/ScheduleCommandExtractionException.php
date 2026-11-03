@@ -18,7 +18,7 @@ class ScheduleCommandExtractionException extends RuntimeException
 {
     /**
      * @param  string  $rawCommand  되뽑기에 실패한 원본 커맨드 문자열
-     * @param  string  $reason  실패 사유 (번역 키가 아닌 진단 원문)
+     * @param  string  $reason  번역된 실패 사유 ([지금 실행]·웹 크론 응답의 reason 으로 나간다)
      */
     public function __construct(
         public readonly string $rawCommand,

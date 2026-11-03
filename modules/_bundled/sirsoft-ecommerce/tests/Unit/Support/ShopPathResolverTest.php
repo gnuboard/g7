@@ -21,7 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
  * 결제 플러그인 4종의 리다이렉트 주소도 이 해석기를 SSoT 로 삼는다
  * (plugins/_bundled/sirsoft-tosspayments/tests/scenarios/payment-redirect-shop-route-path.yaml).
  *
- * @scenario payment_redirect_follows_shop_route_path
+ * @scenario route_setting=custom
  */
 class ShopPathResolverTest extends ModuleTestCase
 {
@@ -32,7 +32,6 @@ class ShopPathResolverTest extends ModuleTestCase
      * `g7_settings.modules.*` 배열을 직접 주입해 파일 I/O 없이 축을 만든다.
      *
      * @param  array<string, mixed>  $basicInfo  basic_info 설정 값
-     *
      * @return void 반환값 없음
      */
     private function setBasicInfo(array $basicInfo): void
@@ -93,6 +92,7 @@ class ShopPathResolverTest extends ModuleTestCase
      * 상점 주소가 빈 문자열이면 기본값 /shop 으로 폴백하는지 확인한다.
      *
      * @scenario route_setting=empty_value
+     *
      * @effects resolver_falls_back_when_route_path_is_blank
      *
      * @return void 반환값 없음
@@ -110,6 +110,7 @@ class ShopPathResolverTest extends ModuleTestCase
      * 앞뒤 슬래시가 붙은 상점 주소와 하위 경로가 슬래시 한 겹으로 정규화되는지 확인한다.
      *
      * @scenario route_setting=slashed_value
+     *
      * @effects resolver_normalizes_duplicate_slashes
      *
      * @return void 반환값 없음
@@ -128,6 +129,7 @@ class ShopPathResolverTest extends ModuleTestCase
      * no_route 가 false 로 명시돼 있으면 운영자가 정한 주소를 그대로 쓰는지 확인한다.
      *
      * @scenario route_setting=custom
+     *
      * @effects resolver_keeps_route_when_no_route_is_false
      *
      * @return void 반환값 없음

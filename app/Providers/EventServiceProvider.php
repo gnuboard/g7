@@ -4,7 +4,10 @@ namespace App\Providers;
 
 use App\Extension\HookContextCapture;
 use App\Listeners\Queue\RecordQueueJobLog;
+use App\Listeners\Scheduling\RecordServerCronEventRun;
 use App\Services\Queue\QueueWorkerRegistry;
+use Illuminate\Console\Events\ScheduledTaskFailed;
+use Illuminate\Console\Events\ScheduledTaskFinished;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -50,6 +53,9 @@ class EventServiceProvider extends ServiceProvider
      * 작업 처리 기록(queue_job_logs)은 시작·완료·최종 실패 세 이벤트로 남긴다(RecordQueueJobLog).
      * 잡을 집을 때마다 요청 문맥(인증 사용자·요청·로케일)을 워커 기본 상태로 되돌린다(HookContextCapture::resetForQueueJob).
      *
+     * 서버 크론(`schedule:run`)이 돌린 예약 작업은 웹 러너와 같은 실행 기록에 남긴다(RecordServerCronEventRun) —
+     * 그래야 서버 크론과 웹 러너를 함께 쓰는 사이트에서 웹 러너의 소급 창이 같은 작업을 다시 돌리지 않는다.
+     *
      * @return void 반환값 없음
      */
     public function boot(): void
@@ -76,6 +82,9 @@ class EventServiceProvider extends ServiceProvider
         Event::listen(JobProcessing::class, [RecordQueueJobLog::class, 'handleProcessing']);
         Event::listen(JobProcessed::class, [RecordQueueJobLog::class, 'handleProcessed']);
         Event::listen(JobFailed::class, [RecordQueueJobLog::class, 'handleFailed']);
+
+        Event::listen(ScheduledTaskFinished::class, [RecordServerCronEventRun::class, 'handleFinished']);
+        Event::listen(ScheduledTaskFailed::class, [RecordServerCronEventRun::class, 'handleFailed']);
     }
 
     /**

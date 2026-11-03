@@ -85,6 +85,22 @@ class CommandRunnerResolver
     }
 
     /**
+     * 운영자가 고정한 실행 모드를 반환합니다 (미고정이면 Auto).
+     *
+     * 저장 설정 해석의 단일 원천이다 — 화면 응답(`SystemExecutionService::configuredMode`)도
+     * 이 값을 쓴다. 해석기가 서비스를 참조하면 서비스가 해석기를 주입받는 구조와 순환이
+     * 생기므로 원천을 이쪽에 둔다.
+     *
+     * @return ExecutionMode 저장된 모드
+     */
+    public function configuredMode(): ExecutionMode
+    {
+        return ExecutionMode::fromStringOrAuto(
+            (string) g7_core_settings('system.execution_mode', 'auto'),
+        );
+    }
+
+    /**
      * 모드 판정과 그 근거를 함께 돌려줍니다 (resolveMode/resolve 공용).
      *
      * `report` 는 판정이 환경 감지로 내려졌을 때만 채워진다 — 명시·설정 고정 시 null.
@@ -100,9 +116,7 @@ class CommandRunnerResolver
         }
 
         // 2. 운영자 저장 설정 (기본값 auto — 명시 고정한 경우에만 감지를 건너뛴다)
-        $configured = ExecutionMode::fromStringOrAuto(
-            (string) g7_core_settings('system.execution_mode', 'auto'),
-        );
+        $configured = $this->configuredMode();
         if ($configured !== ExecutionMode::Auto) {
             return ['mode' => $configured, 'report' => null];
         }

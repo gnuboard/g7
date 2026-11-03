@@ -1,4 +1,4 @@
-// @scenario board-identity-policy-source-filter
+// @scenario element=source_type_filter
 // (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
 
 // e2e:allow 관리자 설정 전용 partial(출처필터 제거·목적박스 유지)은 레이아웃 렌더 테스트로 검증, develop 출시 동작 머지 복구라 신규 E2E 불요

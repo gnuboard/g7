@@ -1,6 +1,6 @@
 <?php
 
-// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 화면 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재 (#609)
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 화면 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
 
 return [
     // Settings related messages
@@ -224,7 +224,7 @@ return [
         'apply_mode_prune' => 'File apply: full overwrite plus cleanup of removed files was performed (--prune).',
         'apply_mode_fallback' => 'File apply: no backup available, so incremental apply was skipped and a full overwrite was performed. To preserve custom files, keep the backup enabled on future updates.',
 
-        // Root entry / protection file notices (D25)
+        // Root entry / protection file notices
         'root_index_replaced' => 'The root entry file (:path) was not the core version and has been replaced with the core shim — a copy of the previous contents was saved to :copy. If this site kept its own index.php at the project root, recover it from that copy (the update backup is deleted on success).',
         'root_index_replaced_not_preserved' => 'The root entry file (:path) was not the core version and has been replaced with the core shim — the previous contents could NOT be copied aside (writing to storage/app/core-update failed). If this site kept its own index.php at the project root, those contents cannot be recovered.',
         'root_index_unreadable' => 'The root entry file (:path) could not be read, so it was replaced without confirming whether it was the core version — and because it could not be read, no copy was kept. Any custom contents cannot be recovered.',
@@ -265,7 +265,7 @@ return [
         'rollback_root_protection_missing' => 'After the rollback the root entry and protection files are missing (:paths). This is normal if the document root is public/ or the restored version never had them. If the document root is the project root, configuration files are now exposed on the web - restore those files or point the document root at public/ immediately.',
         'rollback_docroot_residue' => 'The rollback restored public file copies inside the document root (:paths) — those copies are served over the web as-is. Review them, then move them outside the document root or delete them.',
 
-        // -- Web stepwise execution (W6 - #609 G6) ---------------------
+        // -- Web stepwise execution ---------------------
         //
         // The `log_*` lines are what the operator opens with [View log]. They record
         // **how far the run got**, not merely what it did.
@@ -303,12 +303,12 @@ return [
             'still_running' => 'The update is still in progress. You can clear the record once it finishes.',
             'missing_pending_path' => 'The downloaded update files could not be located. Please start over.',
 
-            // Preflight (D26)
+            // Preflight
             'preflight_failed' => 'Preflight checks found problems, so the update was not started: :reasons',
             'preflight_not_writable' => 'The following paths are not writable: :paths - a web update requires the web server account to be able to write to them. In your FTP client, set the permissions to 755 for folders and 644 for files, or 707/606 if that still does not grant write access. If you have SSH access, you can run `php artisan core:update` instead.',
             'preflight_low_disk' => 'Not enough free disk space (:free free, roughly :required required). The backup and the new version coexist for part of the run, so several times the current size is needed.',
 
-            // Manual ZIP source (D18)
+            // Manual ZIP source
             'version_from_zip' => '(determined after extraction)',
             'zip_file_invalid' => 'Only a ZIP file name may be given (no path, ending in `.zip`).',
 
@@ -321,7 +321,7 @@ return [
             ],
             'zip_not_newer' => 'The version in the selected ZIP (:to) is not newer than the current version (:from). Web updates do not support forced re-application.',
 
-            // Failure and rollback (D10)
+            // Failure and rollback
             'upgrade_steps_failed' => 'Upgrade steps failed: :output',
             'handoff_exhausted' => 'The upgrade steps repeatedly requested a fresh process, so the run was stopped (last completed point :after / reason :reason).',
             'bundled_partial_failure' => ':failed bundled extensions or language packs were not updated. The core itself was applied successfully; you can retry the failed ones individually from the extension management screens.',
@@ -394,7 +394,7 @@ return [
         'extract_fallback' => ':method failed: :error — Trying next method.',
         // Shared by the CLI and the web screen — it must not name an action only one of them can
         // perform (such as a command-line option). An operator on CLI-less hosting is already using
-        // the screen's "update from an uploaded ZIP" path and cannot follow such advice (G8).
+        // the screen's "update from an uploaded ZIP" path and cannot follow such advice.
         'all_extract_methods_failed' => 'The archive could not be extracted. Check that the file uploaded completely, then try again.',
         'release_not_found' => 'Could not find the core :version release on GitHub — the version tag does not exist yet or GitHub could not be reached. Download the release ZIP yourself and apply it with "Update from a ZIP you uploaded".',
         'extension_release_not_found' => 'Could not find release :version in GitHub repository :repository — the version tag does not exist yet or GitHub could not be reached.',
@@ -584,7 +584,9 @@ return [
     | Trusted Proxy Diagnostic (#124)
     |--------------------------------------------------------------------------
     |
-    | The value is edited in .env only — the screen shows a read-only diagnostic.
+    | The value is edited on the same card in Settings > Advanced — no-CLI installs
+    | have no way to edit .env, so the diagnostic alone would not finish the fix.
+    | .env takes precedence only when locked with G7_ENV_PRIORITY.
     |
     */
 

@@ -36,6 +36,7 @@ class ImageUrlBasePrefixTest extends PluginTestCase
      * 디스크 URL 이 없어 서빙 라우트로 폴백할 때 그 주소 앞에 마운트 접두사가 붙는지 확인한다.
      *
      * @scenario base_path=subpath, url_kind=ckeditor5_image_fallback
+     *
      * @effects ckeditor5_image_fallback_urls_carry_the_mount_prefix
      *
      * @return void 반환값 없음
@@ -60,6 +61,7 @@ class ImageUrlBasePrefixTest extends PluginTestCase
      * 접두사가 없는 배치에서는 종전 문자열 그대로다 (회귀 0).
      *
      * @scenario base_path=root, url_kind=ckeditor5_image_fallback
+     *
      * @effects ckeditor5_image_fallback_urls_carry_the_mount_prefix
      *
      * @return void 반환값 없음

@@ -21,7 +21,7 @@ use Tests\Concerns\CountsQueries;
  * 게시판 설정에 따라 수가 달라지므로 총 쿼리 수를 고정하지 않는다 — 고정하면 정상적인
  * 기능 추가마다 깨져 결국 숫자만 올리는 테스트가 된다.
  *
- * @scenario post_detail_duplicate_read
+ * @scenario layer=service
  */
 class PostDetailQueryCountRegressionTest extends BoardTestCase
 {

@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Board\Tests\Unit;
 
 use App\Support\AssetUrl;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -105,54 +107,78 @@ class AttachmentPreviewUrlTest extends ModuleTestCase
     }
 
     /**
-     * 서명 분기는 접두사를 **품지 않는다** — 그리고 그 사실이 계약이다.
+     * 서명 분기도 마운트 접두사를 갖고, 그 주소로 들어온 요청의 서명이 유효하다.
      *
-     * 8차 라운드의 하위 검증이 「접두사를 붙여도 서명은 성립한다(검증이 `path()` 를 쓰는데
-     * 그 값은 base URL 을 제외하므로)」며 형제와 같이 접두사를 붙일 것을 제안했다.
-     * **실측이 그 주장을 기각한다** — 이 저장소에서 재현 가능한 모든 형태에서 접두사가
-     * 실린 요청은 서명이 깨진다:
+     * 종전에는 「접두사를 실은 요청은 서명이 깨진다」는 측정을 근거로 접두사 없는 형태를 고정했다.
+     * 그 측정은 base URL 이 빈 요청(`Request::create('/g7/api/…')`)으로 잰 것이라 하위 폴더 설치의
+     * 실제 요청과 다르다. 하위 폴더 설치에서는 진입점의 위임 정규화(`public/index.php`)가 `SCRIPT_NAME`
+     * 을 `/g7/index.php` 로 맞추므로 요청의 base URL 이 `/g7` 이고, Laravel 은 두 쪽 모두에서 base 를
+     * 뺀다. 생성(`RouteUrlGenerator::to()`, absolute=false)은 상대 URL 에서 base 를 벗긴 값에 서명하고,
+     * 검증(`UrlGenerator::hasCorrectSignature()`, absolute=false)은 `'/'.$request->path()` 로 다시
+     * 조립하는데 `Request::path()` 는 base 를 뺀 path info 다. 그래서 접두사는 서명된 값 **밖**에서
+     * 붙이고, 붙여도 서명은 성립한다. 붙이지 않으면 `<img src>` 가 사이트 밖(`/api/…`)을 가리킨다.
      *
-     *   signed   = /api/modules/…/preview?expires=…&signature=…
-     *   plain    path=api/modules/…/preview      valid=true
-     *   prefixed path=g7/api/modules/…/preview   valid=false
-     *
-     * 접두사가 벗겨지는지는 Laravel 의 base URL 판정에 달렸고, 그것은 웹서버가 넘기는
-     * `SCRIPT_NAME`·`PATH_INFO` 가 정한다 — **이 저장소에서는 재현할 수 없는 축**이다.
-     * 그래서 고치지 않고 측정 순서를 남긴다: 하위 폴더로 마운트한 P0 환경에서 ①
-     * 비밀글 첨부의 서명 썸네일이 200 인가 ② 그때 `Request::path()` 가 접두사를 품는가.
-     * ②가 거짓이면 그때 형제와 같이 접두사를 붙인다.
-     *
-     * 그때까지 이 검사는 **현행 계약을 고정한다** — 서명 분기의 산출물에는 접두사가 없다.
-     * 무서명 분기(형제)는 접두사를 갖는다는 것을 위 검사가 함께 잠근다.
+     * 이 시험은 그 두 사실을 하위 폴더 요청 형태(SCRIPT_NAME `/g7/index.php`)로 함께 잰다.
      *
      * @scenario base_path=subpath, url_kind=board_attachment
      *
-     * @effects board_attachment_urls_carry_the_mount_prefix
+     * @effects signed_attachment_urls_carry_the_mount_prefix_and_verify
      *
      * @return void 반환값 없음
      */
     #[Test]
-    public function signed_preview_url_stays_free_of_the_mount_prefix(): void
+    public function signed_preview_url_carries_the_mount_prefix_and_still_verifies(): void
     {
-        AssetUrl::forceBasePrefix('/g7');
+        $original = app('request');
+        $this->bindMountedRequest('/g7/board/notice/1');
 
-        $attachment = new Attachment;
-        $attachment->hash = 'abc123def456';
-        $attachment->mime_type = 'image/png';
-        $attachment->board_id = 0;
+        try {
+            $attachment = new Attachment;
+            $attachment->hash = 'abc123def456';
+            $attachment->mime_type = 'image/png';
+            $attachment->board_id = 0;
 
-        $signed = $attachment->previewUrlForSlug('notice', signed: true);
+            $signed = $attachment->previewUrlForSlug('notice', signed: true);
 
-        $this->assertStringStartsWith(
-            '/api/modules/sirsoft-board/',
-            $signed,
-            '서명 URL 이 접두사를 품었다 — 실측상 그 형태는 서명 검증에 실패한다. '
-            .'바꾸려면 먼저 하위 폴더 마운트에서 Request::path() 가 접두사를 벗는지 재야 한다.'
-        );
+            $this->assertStringStartsWith('/g7/api/modules/sirsoft-board/boards/notice/attachment/abc123def456/preview?', $signed);
+            $this->assertStringContainsString('signature=', $signed);
 
-        $this->assertStringContainsString('signature=', $signed);
+            // 그 주소 그대로 들어온 요청(base `/g7`)의 서명이 유효해야 한다.
+            $this->assertTrue(URL::hasValidSignature($this->mountedRequest($signed), false));
 
-        // 형제(무서명)는 반대다 — 두 계약을 한자리에서 함께 고정한다.
-        $this->assertStringStartsWith('/g7/api/', $attachment->previewUrlForSlug('notice'));
+            // 무서명 형제와 같은 앞부분을 갖는다.
+            $this->assertStringStartsWith('/g7/api/', $attachment->previewUrlForSlug('notice'));
+        } finally {
+            app()->instance('request', $original);
+            URL::setRequest($original);
+        }
+    }
+
+    /**
+     * 하위 폴더(`/g7`) 설치의 웹 요청을 만든다 — 진입점 위임 정규화 뒤의 `SCRIPT_NAME` 과 같은 형태다.
+     *
+     * @param  string  $uri  브라우저 주소 (`/g7/…`)
+     * @return Request 요청
+     */
+    private function mountedRequest(string $uri): Request
+    {
+        return Request::create('http://localhost'.$uri, 'GET', [], [], [], [
+            'SCRIPT_FILENAME' => base_path('public/index.php'),
+            'SCRIPT_NAME' => '/g7/index.php',
+            'PHP_SELF' => '/g7/index.php',
+        ]);
+    }
+
+    /**
+     * 하위 폴더 요청을 현재 요청으로 묶는다 — URL 생성기와 `AssetUrl::basePrefix()` 가 함께 이 값을 본다.
+     *
+     * @param  string  $uri  브라우저 주소 (`/g7/…`)
+     * @return void 반환값 없음
+     */
+    private function bindMountedRequest(string $uri): void
+    {
+        $request = $this->mountedRequest($uri);
+        app()->instance('request', $request);
+        URL::setRequest($request);
     }
 }

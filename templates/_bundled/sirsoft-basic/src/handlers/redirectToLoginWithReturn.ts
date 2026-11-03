@@ -19,7 +19,8 @@ import { routePath } from '../support/apiUrl';
  * 이 된다(`stripBasePrefix` 는 접두사 뒤 나머지를 그대로 돌려준다). 그 값이 로그인 뒤
  * 사이트 밖으로 나가지 않는 이유는 이 핸들러가 아니라 **코어의 이동 게이트**에 있다:
  * 브라우저가 그대로 여는 주소는 `ActionDispatcher.handleOpenWindow` 가 넘기기 전에
- * `isSameOriginSitePath()` 로 판정하고, 아니면 이동하지 않는다.
+ * `navPolicy.resolveSameTabNavPath()` 로 판정하고(같은 출처 경로가 아니면 `/`), SPA 이동은
+ * `handleNavigate` 가 `//`·스킴 목적지를 거부한다.
  *
  * 「라우트 패턴이 `^\/` 라 매치되지 않아 안전하다」는 종전 서술은 **사실과 반대였다.**
  * 미등록 라우트는 `routeNotFound` 가 아니라 fallback(`openWindow` → `location.assign`)

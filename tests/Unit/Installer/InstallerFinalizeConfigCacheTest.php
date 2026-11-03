@@ -31,7 +31,7 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
  *
  * 함수 단위로는 확인되지 않는 계약이다 — 삭제가 `.env` 쓰기와의 순서를 지켜야 하고, 삭제 실패가 흐름을
  * 끊지 않아야 한다. 그래서 이 검사는 두 경로로 finalize 흐름을 임시 설치 루트에서 실제로 태운다:
- * 웹 엔드포인트 전체(`stubs/finalize_env_probe.php`)와, 웹·터미널 공유 함수 `installer_finalize_env()`
+ * 웹 엔드포인트 전체(`tests/Unit/Installer/stubs/finalize_env_probe.php`)와, 웹·터미널 공유 함수 `installer_finalize_env()`
  * (설정 캐시 다시 만들기를 기록 함수로 바꿔 끼운다).
  *
  * 커버 축: config_cache_state present·absent·undeletable / finalize_outcome cache_cleared·cache_kept_with_log

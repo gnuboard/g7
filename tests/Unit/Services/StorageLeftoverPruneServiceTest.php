@@ -1628,7 +1628,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 잠금 파일 이름 규칙이 생산자·finalize·프루너 세 곳에서 **같은 상수**다.
      *
      * finalize 본문(상태 파일과 그 잠금 파일 정리)은 웹·터미널 설치가 함께 쓰는
-     * `includes/env-finalize.php` 에 있고, 웹 엔드포인트 `api/finalize-env.php` 는 그것을 싣는다.
+     * `public/install/includes/env-finalize.php` 에 있고, 웹 엔드포인트 `public/install/api/finalize-env.php` 는 그것을 싣는다.
      * 그래서 상수 사용은 공유 본문에서, 위임 사실은 엔드포인트에서 본다.
      *
      * @effects prune_name_rules_come_from_producer_constants

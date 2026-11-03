@@ -132,6 +132,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 상대 서명 URL(`temporarySignedRoute(..., absolute: false)`)을 그대로 응답에 싣기 | `AssetUrl::sitePath(URL::temporarySignedRoute(..., absolute: false))` | 상대 URL 생성은 요청의 마운트 접두사를 벗기므로 하위 폴더 설치에서 사이트 밖을 가리킨다. 서명은 접두사를 뺀 경로에 걸리고 검증(`hasValidSignature(absolute: false)`)도 접두사를 뺀 `Request::path()` 로 하므로, 서명된 값 밖에서 붙인 접두사는 서명을 깨지 않는다 |
 | 입금된 가상계좌 환불을 일반 경로(`/v2/pg/refund`)로, 계좌번호를 평문으로 보낸다 | `/v2/pg/refund/vacct`·`/v2/pg/partialRefund/vacct` + `refundAcctNum` AES-128-CBC·base64(현금영수증 `issueNumber` 와 같은 암호화) | KG이니시스 취소 매뉴얼의 가상계좌 환불 규격이다 — 어기면 환불이 거절되고 계좌번호가 평문으로 나간다 |
 | PG 콜백의 `authUrl`/`P_REQ_URL`/`netCancelUrl`을 화이트리스트 없이 그대로 호출 | KG 이니시스 허용 URL 목록과 대조 후에만 호출 | 콜백 파라미터를 신뢰하면 공격자가 임의 URL로 서버발 요청을 유도할 수 있다(SSRF) |
 | 동일 거래번호 콜백을 매번 재처리 | 콜백 재처리 방지 검사를 거친 뒤 처리 | 재처리를 막지 않으면 같은 결제가 중복 완료 처리되거나 중복 환불될 수 있다 |

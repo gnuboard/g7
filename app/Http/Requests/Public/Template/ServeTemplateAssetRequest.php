@@ -6,7 +6,6 @@ use App\Http\Requests\Concerns\ResolvesDualModeFilePath;
 use App\Rules\AllowedTemplateFileType;
 use App\Rules\SafeTemplatePath;
 use App\Support\CustomAssets;
-use App\Support\Routing\DualExtensionRoute;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ServeTemplateAssetRequest extends FormRequest

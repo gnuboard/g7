@@ -12,7 +12,10 @@ description: |
     2. `when()`/`skip()` 은 **소급 실행에서도 실행 시점에** 평가한다 — 확장의
        `enabled_config` 가 OFF 인데 웹 크론에서만 되살아나면 안 된다 (R16).
     3. 중복 방지는 이벤트가 가진 mutex 를 그대로 쓴다 — 서버 크론과 웹 크론이 함께
-       걸린 환경에서 두 진입점이 같은 자물쇠를 본다 (R18).
+       걸린 환경에서 두 진입점이 같은 자물쇠를 본다 (R18). 자물쇠는 동시 실행만 막으므로,
+       서버 크론(`schedule:run`)이 돌린 작업도 같은 실행 기록에 남겨 웹 러너의 소급 창이
+       그 작업을 다시 돌리지 않게 한다 — 모든 예약이 멱등이라는 전제에 기대지 않는다.
+       최소 호출 간격도 판정과 기록을 한 잠금 안에서 해, 동시 호출 둘이 함께 통과하지 않는다.
     4. 실행 창 소급 판정(D17): 호출 주기가 성겨 고정 시각을 지나쳐도 그 사이에 due 였던
        작업을 **1회씩** 따라잡는다. 최소 호출 간격에 걸려 건너뛴 호출은 작업을 잃지
        않는다 — 점검 시각이 전진하지 않아 다음 창이 그 구간을 덮는다.
@@ -58,6 +61,8 @@ exclusions:
   - { event_kind: non_artisan, catch_up: beyond_cap, reason: "되뽑기 실패는 due 판정 이후 단계라 창 밖 이벤트에는 도달하지 않는다" }
 
 effects:
+  # 공개 설정 노출 — 실행 방식·크론 허용 IP·신뢰 프록시는 비로그인 응답에 싣지 않는다
+  - system_and_proxy_settings_stay_out_of_public_frontend_config
   # 되뽑기 (A-5 ㉢)
   - every_registered_shell_event_is_recoverable
   - shell_event_command_is_recovered
@@ -131,6 +136,8 @@ effects:
   - min_interval_bounds_come_from_the_limits_table
   # 진입점 둘 · 본체 하나
   - cli_entry_point_runs_the_same_runner
+  - server_cron_run_is_not_repeated_by_the_web_runner     # schedule:run 이 돌린 작업을 웹 러너의 소급 창이 다시 돌리지 않는다
+  - concurrent_call_does_not_pass_the_interval_check_twice  # 간격 판정 잠금을 다른 호출이 쥔 동안의 호출은 실행 없이 min_interval
   - both_entry_points_share_the_run_record
   - web_entry_point_records_the_same_state
   - cli_exit_code_reflects_failures
@@ -191,6 +198,10 @@ effects:
   - dashboard_alert_color_follows_severity_not_name        # 대시보드 경고 색이 경고 이름 열거가 아니라 alert.type 심각도로 갈린다
   - system_tab_inputs_disable_when_read_only               # 실행 방식 라디오가 읽기 전용 판정으로 비활성화된다
   - cron_url_field_is_excluded_from_form_binding           # 호출 주소 입력란은 name 이 없고 폼 자동 바인딩에서 빠진다
+  - cron_url_copy_reports_clipboard_failure                # 클립보드에 넣지 못하면 성공이 아니라 실패 토스트를 띄운다
+  # 실행 이력 표 마이그레이션 재실행 가드 — 접두사가 있는 DB 에서도 이미 있는 인덱스·외래키를 본다
+  - schedule_history_migration_guard_sees_prefixed_index
+  - schedule_history_migration_guard_sees_schedule_foreign_key
 
 pending_effects:
   # 아직 재는 테스트가 없는 효과 — 지우지 않고 원장으로 보존한다.
@@ -241,6 +252,8 @@ test_files:
   - tests/Unit/Listeners/NotificationSendCountLogTest.php
   - tests/Unit/Scheduling/WebCronTokenStoreTest.php
   - tests/Unit/Scheduling/ScheduleRunStateTest.php
+  - tests/Feature/Settings/SystemSettingsPublicExposureTest.php
+  - tests/Feature/Database/AllowCodeSchedulesInScheduleHistoriesMigrationTest.php
   - tests/Feature/Extension/ExtensionScheduleCommandResolutionTest.php
   - tests/Unit/Installer/InstallerQueueConnectionSyncTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-system-tab.test.tsx

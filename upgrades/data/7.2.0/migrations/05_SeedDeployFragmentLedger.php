@@ -27,7 +27,10 @@ use Throwable;
  * V-1 안전(경로 C 규율): 기존 클래스의 **신규 메서드**(`CoreUpdateService::seedDeployFragmentLedger()`)를
  * 부르지 않고 네이티브 파일시스템 함수로 같은 일을 로컬에서 한다. 원장 이름·사이드카 접미사는 아래
  * 상수에 리터럴로 두고, 서비스 상수와의 일치와 두 구현의 결과 일치는 계약 테스트
- * (`tests/Unit/Upgrades/SeedDeployFragmentLedgerTest`)가 대조한다.
+ * (`tests/Unit/Upgrades/SeedDeployFragmentLedgerTest`)가 대조한다. 예외는 원장 쓰기 실패 통보 한 곳으로,
+ * 7.2.0 에서 생긴 `StorageLinkHelper::recordDocrootExposureWarning()` 을 부른다 — 옛 헬퍼가 메모리에 있는
+ * in-process 실행에서는 그 메서드가 없으므로 `method_exists()` 로 확인한 뒤에만 부르고, 없으면
+ * 로그 경고만 남긴다.
  */
 class SeedDeployFragmentLedger implements DataMigration
 {
@@ -121,17 +124,34 @@ class SeedDeployFragmentLedger implements DataMigration
             // `lastRootFileWarnings[]` 에 실어 콘솔·화면까지 보내는 것과 갈려 있었다. 같은
             // 결함이 어느 통로로 도느냐에 따라 보이거나 보이지 않는다 (23차 G3 라운드 D23-13).
             //
-            // 형제 스텝(`01_MovePublicStorageBrokenBackupsOutOfDocroot`)과 같은 통로를 쓴다 —
+            // 형제 스텝(`04_MovePublicStorageBrokenBackupsOutOfDocroot`)과 같은 통로를 쓴다 —
             // `ExecuteUpgradeStepsCommand` 가 스텝 종료 시 이 버퍼를 비워 운영자에게 낸다.
-            StorageLinkHelper::recordDocrootExposureWarning((string) __(
-                'settings.core_update.deploy_fragment_ledger_write_failed',
-                ['ledger' => $ledgerPath]
-            ));
+            // 그 메서드는 7.2.0 에서 생겼다 — 옛 헬퍼가 메모리에 있으면 부르지 않는다(위 로그
+            // 경고가 이미 같은 사실을 남겼다).
+            if ($this->storageLinkHelperHas('recordDocrootExposureWarning')) {
+                StorageLinkHelper::recordDocrootExposureWarning((string) __(
+                    'settings.core_update.deploy_fragment_ledger_write_failed',
+                    ['ledger' => $ledgerPath]
+                ));
+            }
 
             return;
         }
 
         $context->logger->info(sprintf('[core:7.2.0] deploy 조각 해시 원장 씨앗 완료 (%d건): %s', count($added), implode(', ', $added)));
+    }
+
+    /**
+     * 메모리에 올라온 `StorageLinkHelper` 가 주어진 정적 메서드를 갖는지 판정합니다.
+     *
+     * 테스트가 옛 헬퍼 상태(메서드 부재)를 재현할 수 있도록 판정을 한 지점에 모은다.
+     *
+     * @param  string  $method  메서드 이름
+     * @return bool 있으면 true
+     */
+    protected function storageLinkHelperHas(string $method): bool
+    {
+        return method_exists(StorageLinkHelper::class, $method);
     }
 
     /**

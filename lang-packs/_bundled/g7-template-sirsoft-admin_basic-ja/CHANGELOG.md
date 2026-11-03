@@ -25,22 +25,21 @@
 - 이메일로 인증번호를 받을 수 없는 비밀번호 없는 관리자가 회사 계정 등 다른 수단으로 본인 확인을 시작하는 버튼과 안내의 일본어 번역을 추가했습니다(앱 키 재생성 창 `admin.settings.modals.reauth_start`·`reauth_notice_other`·`reauth_code_sent_generic`, 자기 정보 수정 `admin.users.form.password_policy.` 같은 세 키).
 - 관리자 로그인 화면의 회사 계정 이메일 판정 안내와 비상 계정 로그인(`?local=1`) 안내 일본어 번역을 추가했습니다(`auth.login.external.discovered_notice`·`auth.login.external.discovered_notice_company`·`auth.login.external.local_notice`).
 - 예약 작업 편집 창의 제한 시간 자리 표시 「デフォルト」와, 비워 둘 때 작업 유형과 실행 방식별 실제 기본값 안내 5종(`admin.schedules.form.timeout_placeholder`, `admin.schedules.form.timeout_default.*`)의 일본어 번역을 추가했습니다.
-- 신뢰 프록시 편집 화면 문구의 일본어 번역을 다시 다듬었습니다 (`settings.advanced.trusted_proxy_*` 20건). 용어가 패키지 글로서리를 따릅니다.
-- 환경설정 > 고급의 신뢰 프록시 편집 화면 문구 일본어 번역을 추가했습니다 (`settings.advanced.trusted_proxy_*` 19건) — 신뢰 범위 3모드·주소 목록 입력·위조 경고·저장 전 검사 결과를 포함합니다.
-- 신뢰 프록시 설명에서 「값은 .env 로만 변경할 수 있습니다」 문장을 걷어냈습니다. 화면에서 저장할 수 있게 되어 더 이상 사실이 아닙니다.
+- 환경설정 > 고급의 신뢰 프록시 편집 화면 문구 일본어 번역을 추가했습니다 (`settings.advanced.trusted_proxy_*` 19건) — 신뢰 범위 3모드·주소 목록 입력·위조 경고·저장 전 검사 결과를 포함하며, 용어는 패키지 글로서리를 따릅니다.
 - 환경설정 > 정보 탭에서 메모리·디스크 사용량을 측정할 수 없을 때 표시되는 「측정 불가」 문구의 일본어 번역을 추가했습니다 (`settings.info.not_measurable`).
 - 환경설정 「시스템」 탭의 일본어 번역을 추가했습니다 (`settings.system.*` 46건) — 실행 방식 판정·재감지, 예약 작업 호출 주소·허용 주소·최소 간격·방문 트리거 폴백·마지막 실행 표시를 포함합니다.
 - 호출 번호 재발급 확인 모달의 일본어 번역을 추가했습니다 (`modal_label.admin_settings.cron_token_rotate_modal`).
 - 탭 이름과 복사 버튼, 실행 방식·예약 작업 상태 데이터소스 라벨의 일본어 번역을 추가했습니다 (`settings.tabs.system`, `common.copy`, `editor.data_source.system_status`).
 - 환경설정 > 일반 탭 사이트 URL 안내 문구의 일본어 번역을 추가했습니다 (`settings.general.site_url_help`).
 - 예약 작업 실행 이력 목록과 실행 기록 저장 실패 안내의 일본어 번역을 추가했습니다 (`settings.system.cron_history*`, `cron_state_persist_failed` 5건).
-- 환경설정 「업데이트」 탭의 일본어 번역을 추가했습니다 (`settings.core_update.*` 52건) — 버전 표시, 함께 처리할 항목, 레이아웃 처리 방식, 진행률·기록, 실패와 되돌리기 결과, 사전 조건 진단·확인 실패 안내·조치 방법 보기, 고급 접기의 수동 ZIP·명령어 안내를 포함합니다.
+- 환경설정 「업데이트」 탭의 일본어 번역을 추가했습니다 (`settings.core_update.*` 48건) — 버전 표시, 함께 처리할 항목, 레이아웃 처리 방식, 진행률·기록, 실패와 되돌리기 결과, 사전 조건 진단·확인 실패 안내·조치 방법 보기, 고급 접기의 수동 ZIP·명령어 안내를 포함합니다.
 - 탭 이름과 업데이트 상태 데이터소스 라벨의 일본어 번역을 추가했습니다 (`settings.tabs.update`, `editor.data_source.core_update_status`).
 - 되돌리기 실패 시의 수동 복구 안내 일본어 문구를 FTP 기준 절차로 다시 썼습니다 (`settings.core_update.rollback_manual`). 명령어 절차는 SSH 를 쓸 수 있는 경우로 조건을 달아 병기합니다.
 - [조치 방법 보기] 안내 모달의 일본어 제목·머리말을 「コマンドでアップデート (SSH がある場合)」로 다시 썼습니다 (`settings.info.update_guide_title`, `update_guide_warning`). 종전 문구는 명령줄이 유일한 수단이라고 단정해, 관리자 화면 업데이트가 실패한 운영자가 그 창에서 길이 끊겼습니다.
 
 ### Changed
 
+- 신뢰 프록시 설명에서 「값은 .env 로만 변경할 수 있습니다」 문장을 걷어냈습니다. 화면에서 저장할 수 있게 되어 더 이상 사실이 아닙니다.
 - 스케줄 검색 대상 「名称」과 편집 창 「識別名」의 번역을 바뀐 원문에 맞췄습니다.
 - 스케줄·큐 화면의 용어를 바뀐 원문에 맞췄습니다(タスク名·識別子·コマンド·制限時間·未実行·有効/無効·コピー·一括適用·選択削除·キュージョブ·「~日時」 등). 환경설정의 비밀번호 만료·활동 로그·GeoIP·탈퇴 회원 파기·고아 첨부·처리 기록, 방문자 통계 리포트 안내에서 고정 실행 시각을 뺐습니다.
 - 환경설정 SEO 탭의 타이틀 접미사·메타 키워드 자리표시자 번역이 두 번 선언돼 있던 것을 하나로 정리했습니다. 화면에 보이는 값(「グヌボード7」)은 그대로입니다.

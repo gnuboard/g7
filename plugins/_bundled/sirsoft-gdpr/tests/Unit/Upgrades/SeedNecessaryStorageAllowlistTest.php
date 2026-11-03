@@ -24,7 +24,6 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *   - 잠금 항목을 시드하지 않는다 (담기면 API 로 지울 수 있게 된다)
  *
  * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=empty, request=key_absent
- *
  */
 class SeedNecessaryStorageAllowlistTest extends PluginTestCase
 {

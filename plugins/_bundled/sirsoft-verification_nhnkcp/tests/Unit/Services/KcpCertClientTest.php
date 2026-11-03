@@ -156,7 +156,7 @@ class KcpCertClientTest extends PluginTestCase
     /**
      * (cert_query=success — 미선언 축은 평문으로)
      *
-     * @scenario challenge-issue
+     * @scenario outcome=success
      *
      * @effects success_issues_verification_token_and_marks_log_verified
      *
@@ -208,7 +208,7 @@ class KcpCertClientTest extends PluginTestCase
     /**
      * (cert_query=success, identifier_case=lowercase — 미선언 축은 평문으로)
      *
-     * @scenario challenge-issue
+     * @scenario outcome=success
      *
      * @effects success_issues_verification_token_and_marks_log_verified
      *
@@ -240,7 +240,7 @@ class KcpCertClientTest extends PluginTestCase
     /**
      * (cert_query=res_cd_error — 미선언 축은 평문으로)
      *
-     * @scenario challenge-issue
+     * @scenario outcome=provider_error
      *
      * @effects provider_error_marks_log_failed_with_res_cd
      *
@@ -264,7 +264,7 @@ class KcpCertClientTest extends PluginTestCase
     /**
      * (cert_query=decrypt_failure — 미선언 축은 평문으로)
      *
-     * @scenario challenge-issue
+     * @scenario outcome=decrypt_failure
      *
      * @effects decrypt_failure_returns_decrypt_failed
      *
@@ -296,7 +296,7 @@ class KcpCertClientTest extends PluginTestCase
      *
      * (cert_query=success, identifier_case=url_encoded — 미선언 축은 평문으로)
      *
-     * @scenario challenge-issue
+     * @scenario outcome=success
      *
      * @effects identifier_recovered_from_url_encoded_key
      *
@@ -336,7 +336,7 @@ class KcpCertClientTest extends PluginTestCase
      *
      * (cert_query=success, identifier_case=uppercase — 미선언 축은 평문으로)
      *
-     * @scenario challenge-issue
+     * @scenario outcome=success
      *
      * @effects identifier_recovered_from_url_encoded_key
      *

@@ -234,6 +234,7 @@ class ZipBootstrapFlowTest extends TestCase
         $this->assertFileDoesNotExist($site.'/g7-9.9.9.zip');
         $this->assertFileDoesNotExist($site.'/g7-setup-token.txt');
         $this->assertFileDoesNotExist($site.'/g7-setup-state.json');
+        $this->assertFileDoesNotExist($site.'/g7-setup-state.lock');
     }
 
     /**
@@ -572,5 +573,184 @@ class ZipBootstrapFlowTest extends TestCase
         $render = $this->call($site, []);
         $this->assertStringContainsString('No archive', $render['raw']);
         $this->assertFileDoesNotExist($site.'/g7-setup-token.txt');
+    }
+
+    /**
+     * 첫 인증에 성공하면 상태 파일에서 확인 번호의 해시가 지워지고, 옛 번호로는 다시 인증되지 않는지 확인한다.
+     *
+     * 6자리 번호의 해시는 소금이 없으면 10^6 번 대입으로 되돌릴 수 있어 사실상 평문이다. 상태 파일은
+     * 문서 루트에 있으므로 남겨 두면 번호 파일을 지운 의미가 사라진다.
+     *
+     * @scenario archive=g7_payload, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_forgets_number_hash_after_first_auth
+     *
+     * @return void 반환값 없음
+     */
+    public function test_첫_인증_뒤_상태_파일에_번호_해시가_남지_않는다(): void
+    {
+        $site = $this->makeSite();
+        $this->makePayloadZip($site.'/g7-9.9.9.zip', 450);
+        $token = $this->issueToken($site);
+
+        $this->assertNotSame('', (string) ($this->readState($site)['token_hash'] ?? ''), '전제: 발급 직후에는 해시가 있다');
+
+        $first = $this->call($site, ['action' => 'extract', 'token' => $token]);
+        $this->assertTrue($first['json']['ok'] ?? false, $first['raw']);
+        $this->assertFalse($first['json']['finished'], '첫 요청에서 끝나면 상태 파일이 지워져 이 축을 잴 수 없다');
+
+        $this->assertSame('', (string) ($this->readState($site)['token_hash'] ?? 'missing'), '첫 인증 뒤에도 상태 파일에 번호 해시가 남았다');
+
+        $replay = $this->call($site, ['action' => 'extract', 'token' => $token]);
+        $this->assertFalse($replay['json']['ok'] ?? true, '첫 인증에 쓴 번호가 다시 통했다: '.$replay['raw']);
+    }
+
+    /**
+     * 오입력 판정이 상태 파일 잠금 안에서 읽고 쓰는지 확인한다 — 다른 요청이 잠금을 쥔 동안 기다렸다가, 그 요청이 남긴 시도 횟수 위에 더한다.
+     *
+     * 잠금이 없으면 병렬 요청이 모두 같은 시도 횟수를 읽고 같은 값을 써서, 오입력 상한과 지수 지연이
+     * 요청 수만큼 무력해진다.
+     *
+     * @scenario archive=g7_payload, token=invalid, entry=fresh
+     *
+     * @effects zip_bootstrap_serializes_attempt_judgment_under_state_lock
+     *
+     * @return void 반환값 없음
+     */
+    public function test_오입력_판정은_상태_잠금을_기다린_뒤_누적된다(): void
+    {
+        $site = $this->makeSite();
+        $this->makePayloadZip($site.'/g7-9.9.9.zip');
+        $this->issueToken($site);
+
+        $lock = fopen($site.'/g7-setup-state.lock', 'c');
+        $this->assertNotFalse($lock);
+        $this->assertTrue(flock($lock, LOCK_EX), '테스트가 상태 잠금을 쥐지 못했다');
+
+        $command = [
+            PHP_BINARY,
+            __DIR__.'/stubs/zip_bootstrap_probe.php',
+            $site.'/g7-setup.php',
+            base64_encode((string) json_encode(['action' => 'extract', 'token' => '000001'])),
+        ];
+        $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $this->assertIsResource($process);
+
+        try {
+            usleep(1500000);
+            $this->assertTrue(proc_get_status($process)['running'], '상태 잠금을 쥐고 있는데 오입력 판정이 기다리지 않고 끝났다');
+
+            // 잠금을 쥔 동안 다른 요청이 오입력 3회를 기록한 것과 같은 상태를 만든다.
+            $state = $this->readState($site);
+            $state['attempts'] = 3;
+            $state['locked_until'] = 0;
+            file_put_contents($site.'/g7-setup-state.json', json_encode($state));
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+
+        $raw = (string) stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
+
+        $json = json_decode($raw, true);
+        $this->assertSame('invalid_token', $json['code'] ?? null, $raw);
+        $this->assertSame(4, (int) ($this->readState($site)['attempts'] ?? 0), '잠금이 풀린 뒤 읽은 시도 횟수 위에 더해야 한다');
+    }
+
+    /**
+     * 운영자가 미리 둔 루트 `.htaccess` 가 있으면 G7 블록만 들이고 그 밖의 원래 내용은 지우지 않는지 확인한다.
+     *
+     * 코어 업데이터(`RootHtaccessUpdater`)와 같은 규칙이다 — 블록 밖은 운영자 영역이다.
+     *
+     * @scenario archive=g7_payload, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_preserves_operator_root_file_outside_g7_block
+     *
+     * @return void 반환값 없음
+     */
+    public function test_운영자의_루트_htaccess_는_블록_밖_내용이_보존된다(): void
+    {
+        $site = $this->makeSite();
+        $operator = "# 호스팅 기본 설정\nAddHandler application/x-httpd-php83 .php\n";
+        file_put_contents($site.'/.htaccess', $operator);
+        $this->makePayloadZip($site.'/g7-9.9.9.zip');
+        $token = $this->issueToken($site);
+
+        $result = $this->call($site, ['action' => 'extract', 'token' => $token]);
+        $this->assertTrue($result['json']['finished'] ?? false, $result['raw']);
+
+        $merged = (string) file_get_contents($site.'/.htaccess');
+        $this->assertStringContainsString("# BEGIN G7\n# END G7\n", $merged, '배포본의 G7 블록이 들어오지 않았다');
+        $this->assertStringContainsString('AddHandler application/x-httpd-php83 .php', $merged, '운영자의 원래 규칙이 사라졌다');
+    }
+
+    /**
+     * 운영자 `web.config` 에 G7 블록이 있으면 블록만 새 판본으로 바뀌고 블록 밖 요소는 그대로 남는지 확인한다.
+     *
+     * @scenario archive=g7_payload, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_preserves_operator_root_file_outside_g7_block
+     *
+     * @return void 반환값 없음
+     */
+    public function test_운영자의_web_config_는_G7_블록만_교체된다(): void
+    {
+        $site = $this->makeSite();
+        file_put_contents($site.'/web.config', "<?xml version=\"1.0\"?>\n<configuration>\n<!-- BEGIN G7 -->\n  <system.webServer><old/></system.webServer>\n<!-- END G7 -->\n  <system.web><customErrors mode=\"Off\" /></system.web>\n</configuration>\n");
+        $this->makePayloadZip($site.'/g7-9.9.9.zip');
+        $this->addZipEntry($site.'/g7-9.9.9.zip', 'g7-9.9.9/web.config', "<?xml version=\"1.0\"?>\n<configuration>\n<!-- BEGIN G7 -->\n  <system.webServer><new/></system.webServer>\n<!-- END G7 -->\n</configuration>\n");
+        $token = $this->issueToken($site);
+
+        $result = $this->call($site, ['action' => 'extract', 'token' => $token]);
+        $this->assertTrue($result['json']['finished'] ?? false, $result['raw']);
+
+        $merged = (string) file_get_contents($site.'/web.config');
+        $this->assertStringContainsString('<new/>', $merged, '배포본의 G7 블록으로 바뀌지 않았다');
+        $this->assertStringNotContainsString('<old/>', $merged, '옛 G7 블록이 남았다');
+        $this->assertStringContainsString('<customErrors mode="Off" />', $merged, '블록 밖 운영자 요소가 사라졌다');
+    }
+
+    /**
+     * G7 블록이 없는 운영자 `web.config` 는 합칠 자리가 없으므로 덮어쓰지 않고, 아무것도 풀기 전에 이유를 알리며 멈추는지 확인한다.
+     *
+     * @scenario archive=g7_payload, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_refuses_unmergeable_operator_root_file
+     *
+     * @return void 반환값 없음
+     */
+    public function test_블록_없는_운영자_web_config_는_덮지_않고_멈춘다(): void
+    {
+        $site = $this->makeSite();
+        $operator = "<?xml version=\"1.0\"?>\n<configuration>\n  <system.webServer><defaultDocument enabled=\"true\" /></system.webServer>\n</configuration>\n";
+        file_put_contents($site.'/web.config', $operator);
+        $this->makePayloadZip($site.'/g7-9.9.9.zip');
+        $this->addZipEntry($site.'/g7-9.9.9.zip', 'g7-9.9.9/web.config', "<?xml version=\"1.0\"?>\n<configuration>\n<!-- BEGIN G7 -->\n  <system.webServer><new/></system.webServer>\n<!-- END G7 -->\n</configuration>\n");
+        $token = $this->issueToken($site);
+
+        $result = $this->call($site, ['action' => 'extract', 'token' => $token]);
+        $this->assertFalse($result['json']['ok'] ?? true, $result['raw']);
+        $this->assertSame('root_file_conflict', $result['json']['code'] ?? null, $result['raw']);
+        $this->assertSame($operator, (string) file_get_contents($site.'/web.config'), '운영자 web.config 가 바뀌었다');
+        $this->assertFileDoesNotExist($site.'/artisan', '합칠 수 없는 파일이 있는데 해제를 시작했다');
+    }
+
+    /**
+     * 이미 만든 ZIP 에 엔트리 하나를 더한다.
+     *
+     * @param  string  $zipPath  대상 ZIP 경로
+     * @param  string  $name  ZIP 안의 엔트리 이름
+     * @param  string  $content  엔트리 내용
+     * @return void 반환값 없음
+     */
+    private function addZipEntry(string $zipPath, string $name, string $content): void
+    {
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($zipPath) === true);
+        $zip->addFromString($name, $content);
+        $zip->close();
     }
 }

@@ -9,7 +9,7 @@
  * 크리덴셜(password/api_key/sender_key)은 type=password 로 마스킹, 저장은
  * 자동바인딩(_local.form) → 코어 /api/admin/plugins/{id}/settings PUT.
  *
- * @scenario plugin-settings
+ * @scenario field_kind=credential
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest';

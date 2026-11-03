@@ -7,13 +7,13 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 무CLI 축 두 매니페스트의 마커 정합을 이 공정 범위에서 직접 고정한다 (10차 #G5).
+ * 무CLI 축 두 매니페스트의 마커 정합을 이 테스트에서 직접 고정한다.
  *
  * ## 왜 별도 테스트인가
  *
  * 두 매니페스트는 머리에 `audit:allow test-scenario-coverage` 를 달고 있다. 사유는 정당하다 —
  * `disable_functions` 는 INI 값이라 PHPUnit·Playwright 런타임에서 재현할 수 없어, 조합 커버리지는
- * P0 격리 환경의 브라우저 실측이 담당한다(계획서 §8).
+ * 함수가 막힌 격리 환경의 브라우저 실측이 담당한다.
  *
  * 그런데 그 면제는 **조합 커버리지**만이 아니라 「선언한 파일이 실제로 마킹을 갖는가」 검사까지
  * 함께 끈다(정적 검사 룰이 두 면제를 묶어 두었고, 그 결합은 저장소 전체 234개 매니페스트가
@@ -161,13 +161,43 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
     {
         // meta:allow raw-source-read — 시나리오 표식(scenario·effects 태그)은 독블록 안에 있어 원문이 필요하다
         $source = (string) file_get_contents(self::root().'/'.$relative);
-        preg_match_all('/@effects\s+(.+)$/m', $source, $matches);
+
+        return $this->effectsFromSource($source);
+    }
+
+    /**
+     * 테스트 소스 원문에서 `@effects` 항목을 뽑습니다.
+     *
+     * 시나리오 검사기의 마커 파서와 같은 규칙이다. 독블록은 블록마다 첫 `@effects` 태그와 그에
+     * 이어지는 `*` 줄만 읽고, 줄 주석은 `// @scenario` 뒤 500자 안의 첫 `// @effects` 만 읽는다.
+     * 쉼표로 나눈 조각 중 슬러그(영문자로 시작, 영숫자·`_`·`-`)가 아닌 것은 버린다.
+     *
+     * @param  string  $source  테스트 소스 원문
+     * @return array<int, string> 효과 이름 (중복 제거)
+     */
+    private function effectsFromSource(string $source): array
+    {
+        $lists = [];
+
+        preg_match_all('#/\*\*(.*?)\*/#s', $source, $blocks);
+        foreach ($blocks[1] as $body) {
+            if (preg_match('/@effects\s+([^\n*]+(?:\n\s*\*\s*[^\n@*]+)*)/', $body, $m) === 1) {
+                $lists[] = (string) preg_replace('/\n\s*\*\s*/', ' ', $m[1]);
+            }
+        }
+
+        preg_match_all('#//\s*@scenario\s+[^\n]+#', $source, $lineMarks, PREG_OFFSET_CAPTURE);
+        foreach ($lineMarks[0] as [, $offset]) {
+            if (preg_match('#//\s*@effects\s+([^\n]+)#', substr($source, $offset, 500), $m) === 1) {
+                $lists[] = $m[1];
+            }
+        }
 
         $effects = [];
-        foreach ($matches[1] as $line) {
-            foreach (explode(',', $line) as $token) {
-                $token = trim($token, " \t*/\r\n");
-                if ($token !== '') {
+        foreach ($lists as $list) {
+            foreach (explode(',', $list) as $token) {
+                $token = trim($token);
+                if (preg_match('/^[A-Za-z][A-Za-z0-9_-]*$/', $token) === 1) {
                     $effects[] = $token;
                 }
             }
@@ -210,6 +240,47 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
             $this->assertNotEmpty($this->declaredTestFiles($manifest), $manifest.' 의 test_files 를 읽지 못했다 — 파서 규칙이 어긋났다');
             $this->assertNotEmpty($this->declaredEffects($manifest), $manifest.' 의 effects 를 읽지 못했다');
         }
+    }
+
+    /**
+     * 마커 추출이 시나리오 검사기의 파서와 같은 규칙으로 효과를 읽는지 확인한다.
+     *
+     * 검사기는 독블록마다 첫 `@effects` 태그와 그에 이어지는 줄만 읽고, 슬러그가 아닌 조각은 버린다.
+     * 줄 주석은 `// @scenario` 뒤에 오는 `// @effects` 만 읽는다. 이 테스트가 더 많이 세면
+     * 검사기가 미마킹으로 보는 효과를 이 테스트는 마킹됐다고 판정한다.
+     *
+     * @scenario manifest_direction=parser_reads_blocks
+     *
+     * @effects no_cli_manifest_parser_reads_declared_blocks
+     *
+     * @return void 반환값 없음
+     */
+    public function test_marker_extraction_follows_the_scenario_parser(): void
+    {
+        // 태그를 `%` 로 적고 실행 시 `@` 로 바꾼다 — 원문에 태그를 그대로 두면 검사기가 이 파일의
+        // 문자열 리터럴을 진짜 마커로 읽어, 어느 매니페스트에도 없는 효과가 이 파일에 생긴다.
+        $source = str_replace('%', '@', implode("\n", [
+            '/**',
+            ' * %effects first_effect, second_effect,',
+            ' *   continued_effect',
+            ' *',
+            ' * %effects ignored_second_tag',
+            ' */',
+            '/**',
+            ' * 설명문 안의 %effects 언급은 효과가 아니다.',
+            ' */',
+            '// %effects orphan_line_effect',
+            '// %scenario actor=admin',
+            '// %effects line_effect',
+        ]));
+
+        $effects = $this->effectsFromSource($source);
+        sort($effects);
+
+        $this->assertSame(
+            ['continued_effect', 'first_effect', 'line_effect', 'second_effect'],
+            $effects
+        );
     }
 
     /**

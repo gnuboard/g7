@@ -31,7 +31,7 @@ class WebCronRunRequest extends FormRequest
     public const MAX_TOKEN_LENGTH = 512;
 
     /**
-     * Determine if the user is authorized to make this request.
+     * 요청 권한을 판정합니다.
      *
      * @return bool 이 엔드포인트는 토큰으로 인증하며 그 판정은 컨트롤러가 수행하므로 항상 true
      */
@@ -41,19 +41,20 @@ class WebCronRunRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * 검증 규칙을 반환합니다.
      *
      * 번호에는 **어떤 형식 규칙도 걸지 않는다.** 이 면의 계약은 「인증 실패만 401/403」
      * 이라 형식 위반이 검증 오류(422)로 나가면 그 계약이 깨진다 — 외부 크론 서비스는
      * 401 과 422 를 다르게 다루고, 무엇보다 「번호가 틀렸다」는 사실이 두 가지 다른
-     * 응답으로 갈린다. 길이 상한은 검증이 아니라 `presentedToken()` 이 흡수한다.
+     * 응답으로 갈린다. 길이 상한과 형태(배열로 실린 `?token[]=…` 등)는 검증이 아니라
+     * `presentedToken()` 이 흡수한다 — 문자열이 아니면 없는 것으로 다뤄 401 로 수렴한다.
      *
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, string>> 필드별 검증 규칙
      */
     public function rules(): array
     {
         $rules = [
-            'token' => ['nullable', 'string'],
+            'token' => ['nullable'],
         ];
 
         // 확장이 이 호출에 자기 파라미터를 더할 수 있게 둔다 — 외부 크론 서비스가

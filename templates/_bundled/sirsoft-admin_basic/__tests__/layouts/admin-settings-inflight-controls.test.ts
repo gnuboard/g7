@@ -21,7 +21,7 @@
  * `asset_url_mode_detect_status`)은 3 의 대상이 아니다 — 되돌리는 코드가 레이아웃이
  * 아니라 그 핸들러 안에 있고, 거기는 그 핸들러의 단위 테스트가 잰다.
  *
- * @scenario web-cron-runner
+ * @scenario caller=panel
  * @axes caller=panel
  * @effects in_flight_controls_are_blocked_until_the_call_returns
  */

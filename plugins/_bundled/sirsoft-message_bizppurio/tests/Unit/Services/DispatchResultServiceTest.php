@@ -14,7 +14,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * ResultCodeResolver 재사용으로 상태·`사유 (코드)`·잔액부족·대체발송을 파생하고, 매칭되지 않는
  * 로그 id 는 맵에서 빠지는지(빈 셀) 확인한다. 전화번호 등 민감정보는 결과에 포함하지 않는다.
  *
- * @scenario dispatch-result-injection
+ * @scenario link_outcome=linked
  */
 class DispatchResultServiceTest extends PluginTestCase
 {
@@ -61,6 +61,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * 성공 발송 결과가 로그 id 키 아래 상태, 결과코드, 잔액부족 아님으로 담기고 수신번호는 빠지는지 확인한다.
      *
      * @scenario channel=sms, result_category=success, link_outcome=linked
+     *
      * @effects success_result_derives_status_and_reason_code_label, result_map_excludes_recipient_phone_masking_not_needed
      *
      * @return void 반환값 없음
@@ -83,6 +84,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * 알림톡 잔액부족 코드(7436) 결과에 is_low_balance 가 참으로 담기는지 확인한다.
      *
      * @scenario channel=alimtalk, result_category=balance_low, link_outcome=linked
+     *
      * @effects balance_low_result_flags_is_low_balance_true
      *
      * @return void 반환값 없음
@@ -100,6 +102,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * dispatch 의 대체발송 상태가 결과의 fallback_status 로 그대로 실리는지 확인한다.
      *
      * @scenario fallback=present, link_outcome=linked
+     *
      * @effects fallback_status_surfaced_in_result
      *
      * @return void 반환값 없음
@@ -117,6 +120,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * 결과코드가 아직 없는 발송중 이력은 result_label 이 null 이고 status_label 은 채워지는지 확인한다.
      *
      * @scenario link_outcome=linked
+     *
      * @effects missing_result_code_yields_null_result_label_with_status_label
      *
      * @return void 반환값 없음
@@ -135,6 +139,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * 발송 당시 검수 모드 스냅샷(is_test_mode true)이 결과에 실리는지 확인한다.
      *
      * @scenario link_outcome=linked
+     *
      * @effects inspection_mode_snapshot_included_in_result
      *
      * @return void 반환값 없음
@@ -152,6 +157,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * 검수 모드 스냅샷이 없던 과거 이력은 결과의 is_test_mode 가 null 인지 확인한다.
      *
      * @scenario link_outcome=linked
+     *
      * @effects legacy_dispatch_without_inspection_snapshot_yields_null
      *
      * @return void 반환값 없음
@@ -169,6 +175,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * 연결된 dispatch 가 없는 로그 id 는 결과 맵에서 빠지는지 확인한다.
      *
      * @scenario link_outcome=unmatched
+     *
      * @effects unmatched_log_id_excluded_from_result_map
      *
      * @return void 반환값 없음
@@ -187,6 +194,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * recentResults 가 연결된 최근 이력을 로그 id 키 맵으로 돌려주고 성공과 잔액부족을 구분하는지 확인한다.
      *
      * @scenario link_outcome=linked
+     *
      * @effects recent_results_returns_linked_results_keyed_by_log_id
      *
      * @return void 반환값 없음
@@ -208,6 +216,7 @@ class DispatchResultServiceTest extends PluginTestCase
      * 화면이 채널별로 구분해 실제 발송 내용을 보여줄 수 있도록 결과에 담아야 한다.
      *
      * @scenario link_outcome=linked
+     *
      * @effects sent_content_included_in_result
      *
      * @return void 반환값 없음

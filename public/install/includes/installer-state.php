@@ -918,30 +918,11 @@ function isInstallationCompleted(): bool
     // 화면만 미완료로 읽어 운영 사이트에 설치 화면이 재개방되고(API 는 전부 410 이라 운영자는
     // 「설치가 초기화됐다」는 거짓 신호를 본다), 주석 처리된 줄(`# INSTALLER_COMPLETED=true`)
     // 이나 접미 키(`OLD_INSTALLER_COMPLETED=true`)면 화면만 완료로 읽어 재설치가 막힌다.
-    $envPath = BASE_PATH.'/.env';
-    if (file_exists($envPath)) {
-        $env = @parse_ini_file($envPath, false, INI_SCANNER_RAW);
-        if (is_array($env)) {
-            $flag = strtolower(trim((string) ($env['INSTALLER_COMPLETED'] ?? '')));
-            // parse_ini_file 은 따옴표가 보존된 raw 모드이므로 양 끝 따옴표 제거 (_guard 와 동일)
-            $flag = trim($flag, "\"'");
-            if (in_array($flag, ['true', '1', 'yes'], true)) {
-                return true;
-            }
-        } else {
-            // 파싱 실패는 fail-open 으로 새면 안 된다 (22차 N-3) — 운영자가 손으로 편집한
-            // `.env`(따옴표 불일치·섹션 괄호)는 escapeEnvValue 규율 밖이다. 줄 앵커 폴백으로
-            // 2차 판정한다 — 주석 줄(`# INSTALLER_…`)은 `^\s*I` 앵커에 걸리지 않는다.
-            // _guard.php 의 installer_env_completed_flag_fallback() 과 동일 규칙 (그쪽은
-            // 독립 실행 파일이라 이 파일에 의존할 수 없어 사본을 갖는다).
-            $raw = (string) @file_get_contents($envPath);
-            if (preg_match('/^\s*INSTALLER_COMPLETED\s*=\s*["\']?(?:true|1|yes)\b["\']?\s*$/mi', $raw) === 1) {
-                return true;
-            }
-        }
-    }
+    // 판정 함수는 _guard.php 가 소유한다 — 함수 정의만 담은 파일이라 여기서 읽어도 부작용이 없다.
+    // `.env` 는 INI 파서로 읽지 않는다(배포 템플릿의 괄호 주석이 파싱을 깨뜨린다).
+    require_once dirname(__DIR__).'/api/_guard.php';
 
-    return false;
+    return installer_env_completed_flag(BASE_PATH.'/.env');
 }
 
 if (! function_exists('installerConfigSaveStatusPatch')) {
@@ -2349,6 +2330,10 @@ function installerNormalizeLogMessage(string $message, bool $isWindows): string
  * **최선 노력이다** — 회전에 실패해도 설치를 멈추지 않는다. 로그는 설치의 목적이 아니고,
  * 여기서 예외를 올리면 쓰기 한 번 실패가 설치 전체를 끝낸다.
  *
+ * 호출은 진행 기록 잠금 **안에서** 한다(`installerOpenProgressLogForAppend()`). 잠금 밖에서
+ * 크기를 재고 이름을 옮기면, 두 요청이 같은 파일을 함께 상한 초과로 보고 차례로 옮겨 앞
+ * 요청이 만든 회전본(과 그 사이에 쓰인 줄)을 뒤 요청이 지운다.
+ *
  * @param  string  $logFile  진행 기록 경로
  * @return bool 실제로 회전했으면 true
  */
@@ -2398,7 +2383,9 @@ function installerRotateProgressLogIfLarge(string $logFile): bool
     $microtime = microtime(true);
     $stamp = date('Y-m-d H:i:s', (int) $microtime).'.'.sprintf('%03d', (int) (($microtime - floor($microtime)) * 1000));
     $noticeLine = "\xEF\xBB\xBF[{$stamp}] {$notice}\n";
-    $written = @file_put_contents($logFile, $noticeLine);
+    // 덧붙여 쓴다 — 이름을 옮긴 직후 다른 요청이 새 파일에 먼저 한 줄을 썼을 수 있다(그 요청은
+    // 새 파일을 잠그므로 이 요청이 쥔 옛 파일 잠금과 겹치지 않는다). 덮어쓰면 그 줄이 사라진다.
+    $written = @file_put_contents($logFile, $noticeLine, FILE_APPEND);
     if ($written !== strlen($noticeLine) && installerHasFunction('error_log')) {
         // 안내 한 줄을 다 쓰지 못해도 회전은 이미 끝났다 — 새 파일은 다음 기록이 이어 쓰므로 실패로 돌리지 않는다.
         // 옛 기록을 옮긴 곳을 알리는 줄이 잘렸다는 사실만 서버 로그에 남긴다(운영자가 옛 기록을 찾을 단서).
@@ -2406,6 +2393,74 @@ function installerRotateProgressLogIfLarge(string $logFile): bool
     }
 
     return true;
+}
+
+/**
+ * 진행 기록 핸들이 지금 그 경로의 파일을 가리키는가.
+ *
+ * 잠금을 기다리는 동안 다른 요청이 회전했으면 이 핸들은 회전본(`.1`)을 가리킨다. 그대로 쓰면
+ * 새 줄이 회전본에 붙는다. 파일 번호를 알 수 없는 환경(둘 다 0)에서는 같은 파일로 본다.
+ *
+ * @param  resource  $handle  열린 진행 기록 핸들
+ * @param  string  $logFile  진행 기록 경로
+ * @return bool 같은 파일이면 true
+ */
+function installerProgressLogHandleIsCurrent($handle, string $logFile): bool
+{
+    clearstatcache(true, $logFile);
+    $opened = @fstat($handle);
+    $current = @stat($logFile);
+
+    if (! is_array($opened) || ! is_array($current)) {
+        return false;
+    }
+
+    return (int) $opened['ino'] === (int) $current['ino'];
+}
+
+/**
+ * 진행 기록을 덧붙이기로 열고 배타 잠금을 쥔다 — 상한 회전도 이 잠금 안에서 한다.
+ *
+ * 잠금을 쥔 뒤 ① 다른 요청이 그 사이 회전했으면 새 파일을 다시 열고 ② 상한을 넘겼으면 이
+ * 요청이 회전한 뒤 새 파일을 다시 연다. 잠금을 지원하지 않는 환경(NFS 등)에서는 잠금 없이
+ * 종전처럼 진행한다 — 피해는 줄이 섞이는 가독성 한정이라 설치를 막지 않는다.
+ *
+ * @param  string  $logFile  진행 기록 경로
+ * @return array{handle: resource|null, locked: bool} 열린 핸들(열지 못했으면 null)과 잠금 여부
+ */
+function installerOpenProgressLogForAppend(string $logFile): array
+{
+    static $lockWarned = false;
+
+    for ($attempt = 0; $attempt < 3; $attempt++) {
+        $handle = @fopen($logFile, 'a');
+        if ($handle === false) {
+            return ['handle' => null, 'locked' => false];
+        }
+
+        // 잠금 획득 실패를 기록한다. NFS·일부 공유 호스팅처럼 flock 이 지원되지 않는
+        // 환경에서는 동시 요청의 줄이 섞여도 흔적이 0 이다. 프로세스당 한 번만 남긴다.
+        $locked = flock($handle, LOCK_EX);
+        if (! $locked && ! $lockWarned) {
+            $lockWarned = true;
+            installerErrorLog('[installer] progress log flock unavailable — concurrent writes may interleave');
+        }
+
+        $isLast = $attempt === 2;
+        $stale = $locked && ! installerProgressLogHandleIsCurrent($handle, $logFile);
+        $rotated = ! $stale && installerRotateProgressLogIfLarge($logFile);
+
+        if ($isLast || (! $stale && ! $rotated)) {
+            return ['handle' => $handle, 'locked' => $locked];
+        }
+
+        if ($locked) {
+            flock($handle, LOCK_UN);
+        }
+        fclose($handle);
+    }
+
+    return ['handle' => null, 'locked' => false];
 }
 
 function addLogBatch(array $messages): bool
@@ -2449,44 +2504,45 @@ function addLogBatch(array $messages): bool
         $entries .= "[{$timestamp}] {$message}\n";
     }
 
-    installerRotateProgressLogIfLarge($logFile);
-
-    clearstatcache(true, $logFile);
-    $isNewFile = ! file_exists($logFile) || filesize($logFile) === 0;
-    if ($isNewFile) {
-        $entries = "\xEF\xBB\xBF".$entries;
-    }
-
-    $handle = @fopen($logFile, 'a');
-    if ($handle === false) {
+    // 열기·잠금·상한 회전은 한 함수가 소유한다 — 회전이 잠금 밖에 있으면 두 요청이 같은 파일을
+    // 차례로 옮겨 앞 요청의 회전본을 지운다. 잠금 지원이 없는 환경의 경고도 그쪽이 남긴다.
+    $opened = installerOpenProgressLogForAppend($logFile);
+    $handle = $opened['handle'];
+    if ($handle === null) {
         $msg = "[addLogBatch] Failed to open log file: {$logFile}";
         installerErrorLog($msg);
         addLog($msg); // 재귀 가드가 차단
 
         return false;
     }
-    // 잠금 획득 실패를 기록한다 (19차 F8). 17차 #C9 는 **상태 파일** 배타 구간만 다뤘고
-    // 진행 기록 채널은 무음이었다 — NFS·일부 공유 호스팅처럼 flock 이 지원되지 않는
-    // 환경에서는 동시 요청의 줄이 섞여도 흔적이 0 이다(피해는 가독성 한정이라 진행은
-    // 막지 않는다). 프로세스당 한 번만 남겨 로그가 그 자체로 시끄러워지지 않게 한다.
-    if (! flock($handle, LOCK_EX)) {
-        static $lockWarned = false;
-        if (! $lockWarned) {
-            $lockWarned = true;
-            installerErrorLog('[installer] progress log flock unavailable — concurrent writes may interleave');
-        }
-    } else {
+    if ($opened['locked']) {
         // 쥔 잠금을 기록한다 — 이 구간이 fatal 로 끊기면 shutdown 단계가 풀 수 있다
         // (installerReleaseInterruptedLocks). 풀지 않으면 shutdown 의 진행 기록이 자기 잠금을 기다린다.
         installerTrackHeldLock('log', $handle);
     }
+
+    // 새 파일 판정은 잠금 안에서 한다 — 잠금 밖에서 재면 다른 요청이 먼저 쓴 뒤의 판정이 된다.
+    $stat = @fstat($handle);
+    if (! is_array($stat) || (int) $stat['size'] === 0) {
+        $entries = "\xEF\xBB\xBF".$entries;
+    }
+
     $result = fwrite($handle, $entries);
     fflush($handle);
     installerUntrackHeldLock('log');
-    flock($handle, LOCK_UN);
+    if ($opened['locked']) {
+        flock($handle, LOCK_UN);
+    }
     fclose($handle);
 
-    return $result !== false;
+    // 일부만 쓰인 것(디스크 가득)도 실패다 — 업그레이드 스텝의 기록 쓰기와 같은 규칙이다.
+    if ($result !== strlen($entries)) {
+        installerErrorLog("[addLogBatch] Failed to write log file completely: {$logFile}");
+
+        return false;
+    }
+
+    return true;
 }
 
 function addLog(string $message): bool
@@ -2564,45 +2620,28 @@ function _addLogInternal(string $message): bool
     $timestamp = date('Y-m-d H:i:s', (int) $microtime).'.'.$ms;
     $logEntry = "[{$timestamp}] {$message}\n";
 
-    // 상한을 넘겼으면 먼저 회전한다 (D2 L11) — 형제(addLogBatch)와 같은 지점이어야
-    // 한쪽 통로로만 쓰는 모드에서 파일이 조용히 자라지 않는다.
-    installerRotateProgressLogIfLarge($logFile);
-
-    // 파일 캐시 초기화 (최신 상태 확인)
-    clearstatcache(true, $logFile);
-
-    // 파일이 없거나 빈 파일이면 UTF-8 BOM 추가 (Windows 텍스트 편집기 호환성)
-    $isNewFile = ! file_exists($logFile) || filesize($logFile) === 0;
-    if ($isNewFile) {
-        $utf8Bom = "\xEF\xBB\xBF";
-        $logEntry = $utf8Bom.$logEntry;
-    }
-
-    // 파일 핸들 열기 (append 모드)
-    $handle = @fopen($logFile, 'a');
-    if ($handle === false) {
+    // 열기·배타 잠금·상한 회전(D2 L11)은 형제(addLogBatch)와 같은 함수가 소유한다 — 같은 지점이어야
+    // 한쪽 통로로만 쓰는 모드에서 파일이 조용히 자라지 않고, 회전이 잠금 안에 있어야 두 요청이 같은
+    // 파일을 차례로 옮겨 앞 요청의 회전본을 지우지 않는다. 잠금 지원이 없는 환경의 경고도 그쪽이 남긴다.
+    $opened = installerOpenProgressLogForAppend($logFile);
+    $handle = $opened['handle'];
+    if ($handle === null) {
         $msg = "[addLog] Failed to open log file: {$logFile}";
         installerErrorLog($msg);
         addLog($msg); // 재귀 가드가 차단
 
         return false;
     }
-
-    // 배타적 잠금
-    // 잠금 획득 실패를 기록한다 (19차 F8). 17차 #C9 는 **상태 파일** 배타 구간만 다뤘고
-    // 진행 기록 채널은 무음이었다 — NFS·일부 공유 호스팅처럼 flock 이 지원되지 않는
-    // 환경에서는 동시 요청의 줄이 섞여도 흔적이 0 이다(피해는 가독성 한정이라 진행은
-    // 막지 않는다). 프로세스당 한 번만 남겨 로그가 그 자체로 시끄러워지지 않게 한다.
-    if (! flock($handle, LOCK_EX)) {
-        static $lockWarned = false;
-        if (! $lockWarned) {
-            $lockWarned = true;
-            installerErrorLog('[installer] progress log flock unavailable — concurrent writes may interleave');
-        }
-    } else {
+    if ($opened['locked']) {
         // 쥔 잠금을 기록한다 — 이 구간이 fatal 로 끊기면 shutdown 단계가 풀 수 있다
         // (installerReleaseInterruptedLocks). 풀지 않으면 shutdown 의 진행 기록이 자기 잠금을 기다린다.
         installerTrackHeldLock('log', $handle);
+    }
+
+    // 파일이 비어 있으면 UTF-8 BOM 추가 (Windows 텍스트 편집기 호환성) — 판정은 잠금 안에서 한다.
+    $stat = @fstat($handle);
+    if (! is_array($stat) || (int) $stat['size'] === 0) {
+        $logEntry = "\xEF\xBB\xBF".$logEntry;
     }
 
     // 쓰기
@@ -2613,13 +2652,16 @@ function _addLogInternal(string $message): bool
 
     // 잠금 해제 및 닫기
     installerUntrackHeldLock('log');
-    flock($handle, LOCK_UN);
+    if ($opened['locked']) {
+        flock($handle, LOCK_UN);
+    }
     fclose($handle);
 
     // Windows 파일 캐시 초기화 (최신 데이터 읽기 보장)
     clearstatcache(true, $logFile);
 
-    if ($result === false) {
+    // 일부만 쓰인 것(디스크 가득)도 실패다 — 업그레이드 스텝의 기록 쓰기와 같은 규칙이다.
+    if ($result !== strlen($logEntry)) {
         $msg = "[addLog] Failed to write log file: {$logFile}";
         installerErrorLog($msg);
         addLog($msg); // 재귀 가드가 차단

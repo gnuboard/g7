@@ -20,7 +20,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * @since 1.0.0
  *
- * @scenario plugin-settings
+ * @scenario connection_check_result=valid_credentials
  */
 class TokenCheckEndpointTest extends PluginTestCase
 {
@@ -127,6 +127,7 @@ class TokenCheckEndpointTest extends PluginTestCase
      * 저장된 자격증명으로 토큰 발급이 성공하면 연결 확인 API 가 200 과 success true 를 돌려주는지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=on, connection_check_result=valid_credentials
+     *
      * @effects token_check_endpoint_returns_200_on_valid_credentials
      *
      * @return void 반환값 없음
@@ -150,6 +151,7 @@ class TokenCheckEndpointTest extends PluginTestCase
      * 연결 확인이 성공하면 플러그인 캐시의 토큰이 새로 발급된 값으로 바뀌는지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=on, connection_check_result=valid_credentials
+     *
      * @effects token_check_success_refreshes_cached_token
      *
      * @return void 반환값 없음
@@ -179,6 +181,7 @@ class TokenCheckEndpointTest extends PluginTestCase
      * 토큰 요청이 연결 예외로 끊기면 연결 확인 API 가 500 이 아니라 422 를 돌려주는지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=on
+     *
      * @effects token_check_connection_failure_returns_422_not_500
      *
      * @return void 반환값 없음
@@ -199,6 +202,7 @@ class TokenCheckEndpointTest extends PluginTestCase
      * 비즈뿌리오가 실패 코드와 사유를 주면 422 의 errors 에 result_code 와 원문 사유가 담기고 message 에는 원문이 없는지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=on, connection_check_result=invalid_credentials
+     *
      * @effects token_check_endpoint_returns_422_with_bizppurio_reason_and_result_code_on_failure
      *
      * @return void 반환값 없음
@@ -226,6 +230,7 @@ class TokenCheckEndpointTest extends PluginTestCase
      * 아이디와 비밀번호가 비어 있으면 연결 확인 API 가 422 를 돌려주는지 확인한다.
      *
      * @scenario credential_state=empty, test_mode=on, connection_check_result=invalid_credentials
+     *
      * @effects token_check_returns_422_when_credentials_missing
      *
      * @return void 반환값 없음

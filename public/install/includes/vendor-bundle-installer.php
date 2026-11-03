@@ -1,7 +1,7 @@
 <?php
 
-use App\Support\ExecutionEnvironment;
 use App\Support\ComposerInstallInfo;
+use App\Support\ExecutionEnvironment;
 
 require_once __DIR__.'/safe-archive-extractor.php';
 

@@ -125,7 +125,6 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 행 disk 를 제공하던 플러그인이 비활성화되어 config 에서 사라진 상태를 만듭니다.
      *
      * @param  string  $disk  사라지게 할 디스크명
-     *
      * @return void 반환값 없음
      */
     private function vanishDisk(string $disk): void

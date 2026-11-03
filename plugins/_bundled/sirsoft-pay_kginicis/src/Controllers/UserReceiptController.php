@@ -8,6 +8,7 @@ use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\PluginSettingsService;
+use App\Support\AssetUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -212,9 +213,12 @@ class UserReceiptController extends PublicBaseController
      * 사이트 화면 로그인은 API 토큰이라 [구매결정] 이 여는 새 창에는 로그인 정보가 실리지 않는다 — 토큰으로 본인을
      * 확인한 이 응답이 회원 번호를 담은 10분짜리 서명 주소를 주고, 구매결정 창은 그 서명을 본인 확인으로 받는다.
      *
+     * 상대 서명 주소는 마운트 접두사를 벗긴 경로에 서명되고 검증도 같은 경로로 하므로, 접두사는 서명된
+     * 값 밖에 붙인다 — 붙이지 않으면 하위 폴더 설치에서 새 창이 사이트 밖을 연다.
+     *
      * @param  string  $orderNumber  주문번호
      * @param  bool  $isEscrow  에스크로 결제 여부
-     * @return string|null 상대 서명 주소(비회원·에스크로 아님이면 null)
+     * @return string|null 마운트 접두사를 실은 상대 서명 주소(비회원·에스크로 아님이면 null)
      */
     private function escrowConfirmUrl(string $orderNumber, bool $isEscrow): ?string
     {
@@ -222,12 +226,12 @@ class UserReceiptController extends PublicBaseController
             return null;
         }
 
-        return URL::temporarySignedRoute(
+        return AssetUrl::sitePath(URL::temporarySignedRoute(
             'web.plugins.sirsoft-pay_kginicis.payment.escrow-confirm.show',
             now()->addMinutes(10),
             ['orderNumber' => $orderNumber, 'uid' => Auth::id()],
             absolute: false,
-        );
+        ));
     }
 
     /**

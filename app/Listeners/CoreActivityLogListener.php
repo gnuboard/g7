@@ -128,12 +128,12 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.privacy.manual_run_queued' => ['method' => 'handlePrivacyManualRunQueued', 'priority' => 20],
             'core.privacy.manual_run_finished' => ['method' => 'handlePrivacyManualRunFinished', 'priority' => 20],
 
-            // ─── Schedule ───
             // ─── Core update (#609 D23 — 실행·성공·실패) ───
             'core.core_update.started' => ['method' => 'handleCoreUpdateStarted', 'priority' => 20],
             'core.core_update.completed' => ['method' => 'handleCoreUpdateCompleted', 'priority' => 20],
             'core.core_update.failed' => ['method' => 'handleCoreUpdateFailed', 'priority' => 20],
 
+            // ─── Schedule ───
             'core.schedule.after_create' => ['method' => 'handleScheduleAfterCreate', 'priority' => 20],
             'core.schedule.after_update' => ['method' => 'handleScheduleAfterUpdate', 'priority' => 20],
             'core.schedule.after_delete' => ['method' => 'handleScheduleAfterDelete', 'priority' => 20],

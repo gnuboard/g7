@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 응답은 200 이고 형태도 정상이라 기능 테스트로는 드러나지 않는다. 어느 경로를 타는지
  * 자체를 단언해야 회귀가 잡힌다.
  *
- * @scenario search_cursor_page_propagation
+ * @scenario navigation=offset_page_number, position=middle, surface=module_search
  */
 class ProductSearchCursorDeepLinkTest extends ModuleTestCase
 {

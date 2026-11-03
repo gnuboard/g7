@@ -73,7 +73,7 @@
 ```
 
 이 요약 블록은 §4 본문과 같은 규칙을 말한다 — 「probe 실패 = inprocess」로 줄여 적으면
-자동 탐색 경로(D35)가 통째로 빠져, 여기만 읽고 분기를 짜는 후속 작업이 실제 판정과
+자동 탐색 경로가 통째로 빠져, 여기만 읽고 분기를 짜는 후속 작업이 실제 판정과
 어긋난 코드를 만든다.
 
 불확실할 때 subprocess 로 두는 이유는 기본값 불변이다 — 이 기능이 들어가기 전과 같은 환경에서는 같은 경로를 타야 한다. inprocess 는 "스폰이 불가능하다" 가 확인된 환경에서만 고른다.
@@ -97,7 +97,7 @@ if ($result->exitCode !== 0) {
 
 판정이 환경 감지로 내려진 subprocess 면 `resolve()` 가 감지가 확인한 PHP 바이너리(자동 탐색 폴백이 찾은 경로 포함)를 `SubprocessCommandRunner` 생성자에 넘긴다 — PATH 의 `php` 는 실행 불가하고 비표준 경로에만 PHP 가 있는 호스팅에서 판정과 실행이 같은 바이너리를 본다. 명시·설정으로 고정된 subprocess 는 설정값 `process.php_binary` 를 그대로 쓴다.
 
-### 4.0 소비처 — 예약 작업 러너 (P5)
+### 4.0 소비처 — 예약 작업 러너
 
 예약 작업 러너(`App\Scheduling\ScheduleRunner`)는 이 계약의 소비처이면서 **모드 판정에 기대지 않는** 유일한 지점이다. 웹 크론의 존재 이유가 "CLI 스폰 불가" 이므로 그 경로는 언제나 in-process 여야 한다 — 해석기에 모드를 명시해 그 사실을 코드에 남긴다.
 
@@ -108,6 +108,10 @@ $this->runners->resolve(ExecutionMode::Inprocess)->run($command, $parameters);
 러너가 넘기는 파라미터는 shell 형태 스케줄 이벤트에서 되뽑은 것이다. 프레임워크는 `Schedule::command()` 를 `"{php} {artisan} 커맨드 --옵션=값"` 문자열로 조립해 두는데, 그 문자열을 스폰할 수 없는 환경에서는 접두사를 걷어 내고 커맨드명 + 파라미터로 되돌려야 한다 (`ArtisanCommandExtractor`). 되뽑기가 만드는 파라미터 표기는 위 §4 의 `Artisan::call()` 규약과 같으므로, 두 러너 어느 쪽에 넘겨도 같은 의미로 실행된다.
 
 되뽑기는 프레임워크 내부 표현에 의존하므로 **실패를 조용히 건너뛰지 않는다** — 건너뛰면 그 예약이 오류 없이 사라진다. 등록된 전 이벤트가 되뽑기에 성공하는지를 계약 테스트가 고정하고, Laravel 업그레이드로 표현이 바뀌면 그 테스트가 먼저 red 가 된다.
+
+서버 크론(`schedule:run`)과 웹 러너를 함께 쓰는 실행 방식(`auto`·`both`)에서 두 경로는 **같은 실행 기록**을 쓴다. 웹 러너의 소급 창은 이벤트별 마지막 실행 시각을 하한으로 삼는데, 서버 크론이 그 시각을 남기지 않으면 크론이 이미 돌린 작업을 창이 「놓친 것」으로 보고 다시 돌린다 — 이벤트 자물쇠(R18)는 **동시** 실행만 막으므로 이 순차 중복을 막지 못하고, 정리 배치가 아닌 작업(정기 리포트 발송·마일리지 적립 등)은 두 번 돌면 결과가 달라진다. 그래서 `schedule:run` 이 내는 작업 완료·실패 이벤트(`ScheduledTaskFinished`·`ScheduledTaskFailed`)로 같은 기록을 남긴다(`App\Listeners\Scheduling\RecordServerCronEventRun`). 웹 러너 자신은 이 이벤트를 내지 않고 직접 기록한다.
+
+웹 크론 주소와 방문 트리거의 최소 호출 간격은 판정과 호출 기록을 **한 캐시 잠금 안에서** 한다(`WebCronPolicy::claimInvocation()`). 따로 두면 같은 순간에 도착한 두 호출이 둘 다 통과한다. 잠금을 얻지 못한 호출은 간격 미도달로 답한다. 잠금은 `Cache::lock` 이라 프로세스·셸 함수를 쓰지 않는다(§5.1 의 차단 함수 축과 무관).
 
 예약 작업의 호출 규약·응답 형태·소급 실행은 [api/system.md](api/system.md) 의 `GET /api/system/cron/run` 항목이 소유한다.
 
@@ -127,11 +131,11 @@ $run = installerRunArtisan('module:install', ['sirsoft-board', '--vendor-mode' =
 
 실행 모드는 `public/install/includes/execution-mode.php` 가 정한다 — Step 3 선택 `execution_mode`(auto|subprocess|inprocess, 기본 auto) > 감지(`ExecutionEnvironment::detect`). 설치 시작(`install-process.php`) 시 한 번 판정해 `state.execution_mode_resolved` 에 박고 그 설치 동안 바꾸지 않는다. inprocess 가 유효하면 Vendor 설치 방식은 bundled 로 고정되고 진행 모드는 **stepwise** (요청 1개 = 태스크 1개, `public/install/api/run-task.php`)로 강제된다 — 한 요청 안에서 `Artisan::call` 을 연속 호출하면 직전 설치가 바꾼 오토로드·서비스 프로바이더가 반영되지 않은 컨테이너로 다음 태스크가 돈다.
 
-subprocess 전략의 PHP 바이너리는 **운영자 명시(Step 3 `php_binary`) > 설치 시작 시 자동 탐색된 경로(`state.php_binary_resolved`, D35) > `php`** 순이다. 자동 감지는 PATH 의 `php` 가 없거나 버전 미달이면 공통 경로를 탐색해 다른 바이너리를 고르는데, 그 경로를 실행이 쓰지 않으면 판정(subprocess 가능)과 실행(`php` 스폰 실패)이 어긋난다 — 코어 러너(`CommandRunnerResolver`)와 인스톨러(`getPhpBinary()`)가 같은 우선순위를 쓴다.
+subprocess 전략의 PHP 바이너리는 **운영자 명시(Step 3 `php_binary`) > 설치 시작 시 자동 탐색된 경로(`state.php_binary_resolved`) > `php`** 순이다. 자동 감지는 PATH 의 `php` 가 없거나 버전 미달이면 공통 경로를 탐색해 다른 바이너리를 고르는데, 그 경로를 실행이 쓰지 않으면 판정(subprocess 가능)과 실행(`php` 스폰 실패)이 어긋난다 — 코어 러너(`CommandRunnerResolver`)와 인스톨러(`getPhpBinary()`)가 같은 우선순위를 쓴다.
 
 best-effort 태스크(번들 언어팩 설치·`config:cache`)의 실패는 `state.best_effort_failed_tasks` 에 기록되어 **지나간 태스크**로 셈한다 — completed 에만 의존하면 단계별 실행이 같은 태스크를 영원히 다시 뽑아 설치가 끝나지 않는다(`config_cache` 는 목록 최후미라 finalize 자체가 일어나지 않는다). 재시도(`install-process.php`)는 이 목록을 비워 다시 시도하고, 화면은 경고 표시로 지나간다.
 
-단계별 실행의 워커 lock 은 파일 잠금(`flock`) 안에서 판정·점유해 새로고침 직후의 두 요청이 같은 태스크를 겹쳐 돌리지 못하게 하고, 태스크 도중 점유자가 바뀐 요청은 `InstallerWorkerLockLostException` 으로 물러나 `busy` 응답을 낸다(빈 본문으로 끊기면 브라우저가 네트워크 실패로 오분류한다). stale 기준은 180초 — P0 실측 최대 태스크(vendor 추출 ≈15s)의 10배를 넘는 여유다.
+단계별 실행의 워커 lock 은 파일 잠금(`flock`) 안에서 판정·점유해 새로고침 직후의 두 요청이 같은 태스크를 겹쳐 돌리지 못하게 하고, 태스크 도중 점유자가 바뀐 요청은 `InstallerWorkerLockLostException` 으로 물러나 `busy` 응답을 낸다(빈 본문으로 끊기면 브라우저가 네트워크 실패로 오분류한다). stale 기준은 180초 — 무CLI 실측 최대 태스크(vendor 추출 ≈15s)의 10배를 넘는 여유다.
 
 인스톨러 태스크 함수·롤백(`rollback-functions.php`)은 전부 `installerRunArtisan()` 을 경유한다. 단위 테스트는 `$GLOBALS['g7_installer_artisan_executor_override']` seam 으로 스폰 없이 태스크 흐름(순서·재개·롤백·ENV 주입·모드 전파)을 검증한다.
 
@@ -139,7 +143,7 @@ best-effort 태스크(번들 언어팩 설치·`config:cache`)의 실패는 `sta
 
 러너를 거치지 않는 블로킹 구간도 워커 lock 에 「살아 있음」을 알려야 한다. 번들 추출(`extractVendorBundle`)은 설치에서 가장 오래 걸리는 태스크인데 한 번의 `extractTo` 안에는 emit 이 없어 heartbeat 가 멈춘다 — SSE·폴링 워커는 lock 에 15초만 선언하므로 그 사이 새로고침한 요청이 살아 있는 워커를 stale 로 보고 탈취해 **두 요청이 같은 `vendor/` 를 동시에 옮기고 푼다.** 그래서 추출은 항목을 묶음으로 나눠 풀고 묶음마다 진행 콜백을 부른다(호출부가 `heartbeat` 이벤트를 낸다 — 화면 변화 없이 점유만 갱신된다).
 
-상태를 바꾸는 요청은 전부 같은 인증을 거친다. 단계별 실행은 세션이 아니라 발급 토큰으로 진행하므로(R8), `state-management.php` 의 건너뛰기·**중단·초기화** 세 액션이 한 게이트(`requireStepwiseTokenOrReject()`)를 공유한다 — 건너뛰기 하나에만 걸어 두면 그보다 파괴적인 중단(진행 중 태스크 롤백)과 초기화(완료 기록 전소거)가 무인증으로 남는다.
+상태를 바꾸는 요청은 전부 같은 인증을 거친다. 단계별 실행은 세션이 아니라 발급 토큰으로 진행하므로, `state-management.php` 의 건너뛰기·**중단·초기화** 세 액션이 한 게이트(`requireStepwiseTokenOrReject()`)를 공유한다 — 건너뛰기 하나에만 걸어 두면 그보다 파괴적인 중단(진행 중 태스크 롤백)과 초기화(완료 기록 전소거)가 무인증으로 남는다.
 
 진행 모드는 양쪽 입구가 서로를 거부한다 — `run-task.php` 는 stepwise 가 아닌 설치를, `install-worker.php`(SSE) 는 stepwise 로 확정된 설치를 409 로 돌려보낸다. 한쪽만 막으면 stepwise 설치에서 스트리밍 워커를 직접 열어 전 태스크를 한 요청 안에서 in-process 로 돌리는 우회로가 남는다.
 
@@ -176,7 +180,7 @@ best-effort 태스크(번들 언어팩 설치·`config:cache`)의 실패는 `sta
 
 실행 모드가 관여하는 지점(`vendor_mode`·`execution_mode` 를 읽는 파일)은 손으로 열거하지 않고 `InstallerExecutionModeTouchpointCoverageTest` 가 소스 스캔으로 도출한다 — 새 지점이 보정 함수(`installerCoerceVendorModeForExecution`·`vendorModeFromState`·`installerNormalizeExecutionMode` 계열)를 거치지 않으면 red 가 된다. Step 3 의 "bundled 를 골랐는데 Step 5 가 composer 를 검사해 설치가 멈춘" 과거 사고가 그 형태였다.
 
-### 4.2 소비처 — 코어 업데이트 웹 오케스트레이터 (P6)
+### 4.2 소비처 — 코어 업데이트 웹 오케스트레이터
 
 관리자 화면의 코어 업데이트(`App\CoreUpdate\CoreUpdateOrchestrator`)는 해석기를 주입받아
 업그레이드 스텝·번들 확장 단계를 러너로 돌린다. 모드 자체는 해석기의 판정을 그대로 따르지만,
@@ -212,7 +216,7 @@ stale 메모리 가드는 `config('app.version')` 이 목표 버전보다 낮으
 
 직접 스폰·`schema:dump` 산출물·`function_exists` 직접 판정은 정적 검사가 차단한다. 허용값 표 공유는 의미 판정이라 코드 리뷰에서 확인한다.
 
-아직 SSoT 로 옮기지 못한 `function_exists` 직접 판정은 `// audit:allow execution-function-availability-via-ssot <사유>` 표식을 남긴다 — 표식이 곧 이관 목록이다(§6 과 같은 규약). 코어 업데이트 CLI·인스톨러의 이관은 끝났고, 남은 표식 둘은 **원리상 이관할 수 없는 자리**다: 판정 SSoT 를 `require` 하지 않는 인스톨러 파일과, 그 SSoT 로드 자체가 실패했을 때의 최후 폴백이다. 그 두 줄을 지우면 SSoT 가 없는 환경에서 인스톨러가 첫 화면부터 뜨지 않는다.
+아직 SSoT 로 옮기지 못한 `function_exists` 직접 판정은 그 자리에 사유를 주석으로 남긴다 — 그 주석이 곧 이관 목록이다(§6 과 같은 규약). 코어 업데이트 CLI·인스톨러의 이관은 끝났고, 남은 두 자리는 **원리상 이관할 수 없는 자리**다: 판정 SSoT 를 `require` 하지 않는 인스톨러 파일과, 그 SSoT 로드 자체가 실패했을 때의 최후 폴백이다. 그 두 줄을 지우면 SSoT 가 없는 환경에서 인스톨러가 첫 화면부터 뜨지 않는다.
 
 ### 5.1 차단 함수는 호출부마다 가드가 필요하다
 
@@ -262,18 +266,18 @@ php -d disable_functions=exec -r 'var_dump(function_exists("exec")); @exec("echo
 
 ## 6. 면제 표식
 
-러너로 아직 옮기지 못한 기존 스폰 지점은 그 호출 근처에 표식을 남긴다.
+러너로 아직 옮기지 못한 기존 스폰 지점은 그 호출 바로 위에 옮기지 못한 사유를 주석으로 남긴다.
 
 ```php
-// audit:allow web-artisan-spawn-requires-runner 현행 subprocess 경로 — 후속 공정에서 러너로 이관
+// 현행 subprocess 경로 — 후속 공정에서 러너로 이관
 $process = proc_open($commandLine, $descriptors, $pipes, BASE_PATH, $env);
 ```
 
-표식은 면제이자 **이관 대상 목록**이다 — 이관이 끝나면 표식을 지운다. 표식 없이 남은 직접 스폰은 정적 검사에서 오류로 멈춘다.
+그 주석은 면제이자 **이관 대상 목록**이다 — 이관이 끝나면 주석을 지운다. 사유 없이 남은 직접 스폰은 정적 검사에서 오류로 멈춘다.
 
 ## 7. 두 러너의 등가 계약
 
-같은 커맨드·같은 파라미터에 대해 두 러너는 **성공/실패 판정이 일치한다**. `tests/Feature/Execution/CommandRunnerEquivalenceTest.php` 가 존재하는 커맨드(`list`)에 대해서는 양쪽 모두 종료 코드 0 을, 존재하지 않는 커맨드에 대해서는 양쪽 모두 실패를 고정한다. 다만 실패의 **표현 방식까지 같지는 않다** — in-process 는 미존재 커맨드에서 `CommandNotFoundException` 을 던질 수 있고 subprocess 는 비-0 종료 코드로 끝난다. 그래서 계약은 "같은 종료 코드" 가 아니라 "실패를 성공으로 뭉개는 러너가 없다" 이다. 인스톨러 태스크 목록 단위(DB 상태·생성 파일 포함)의 대조는 `disable_functions` 가 INI 값이라 PHPUnit 안에서 inprocess 환경을 재현할 수 없어, 무CLI 격리 환경(P0 프로필)에서 같은 태스크 목록으로 설치를 완주하는 브라우저 실측이 담당한다 — 단위 수준에서는 태스크 함수가 두 전략에 같은 `(command, parameters)` 를 넘기는 것을 `InstallerStepwiseRunnerTest` 가 고정한다.
+같은 커맨드·같은 파라미터에 대해 두 러너는 **성공/실패 판정이 일치한다**. `tests/Feature/Execution/CommandRunnerEquivalenceTest.php` 가 존재하는 커맨드(`list`)에 대해서는 양쪽 모두 종료 코드 0 을, 존재하지 않는 커맨드에 대해서는 양쪽 모두 실패를 고정한다. 다만 실패의 **표현 방식까지 같지는 않다** — in-process 는 미존재 커맨드에서 `CommandNotFoundException` 을 던질 수 있고 subprocess 는 비-0 종료 코드로 끝난다. 그래서 계약은 "같은 종료 코드" 가 아니라 "실패를 성공으로 뭉개는 러너가 없다" 이다. 인스톨러 태스크 목록 단위(DB 상태·생성 파일 포함)의 대조는 `disable_functions` 가 INI 값이라 PHPUnit 안에서 inprocess 환경을 재현할 수 없어, 무CLI 격리 환경에서 같은 태스크 목록으로 설치를 완주하는 브라우저 실측이 담당한다 — 단위 수준에서는 태스크 함수가 두 전략에 같은 `(command, parameters)` 를 넘기는 것을 `InstallerStepwiseRunnerTest` 가 고정한다.
 
 등가를 깨는 흔한 원인:
 
@@ -285,11 +289,11 @@ $process = proc_open($commandLine, $descriptors, $pipes, BASE_PATH, $env);
 
 | 키 | 기본값 | 허용값 | 비고 |
 |---|---|---|---|
-| `system.execution_mode` | `auto` | `auto` / `subprocess` / `inprocess` | `config/settings/defaults.json` `system` 카테고리. 관리자 「시스템」 탭(P5)이 노출·저장한다 |
+| `system.execution_mode` | `auto` | `auto` / `subprocess` / `inprocess` | `config/settings/defaults.json` `system` 카테고리. 관리자 「시스템」 탭이 노출·저장한다 |
 | `system.cron_mode` | `auto` | `auto` / `web` / `cron` / `both` | 예약 작업 실행 방식. `cron` 이면 주소 호출이 인증을 통과해도 실행하지 않는다 |
 | `system.cron_allowed_ips` | `''` | IP·CIDR 목록 (줄바꿈/쉼표) | 비우면 제한 없음. 형태 규칙은 `SettingShapeRules` 가 두 저장 경로에 공유한다 |
 | `system.cron_min_interval` | `5` | 0 ~ `core.settings_limits.system_cron_min_interval_max` | 분. 0 이면 제한 없음 |
-| `system.cron_visit_fallback` | `false` | boolean | 방문 트리거 폴백 (D5 — 기본 꺼짐) |
+| `system.cron_visit_fallback` | `false` | boolean | 방문 트리거 폴백 (기본 꺼짐) |
 
 **호출 번호(토큰)는 이 카탈로그에 없다.** 인증 없이 예약 작업을 실행할 수 있는 자격증명이라, 설정 조회 응답에 실리면 "읽기만" 가능한 계정이 실행 권한을 얻는다. 보관은 전용 파일(`App\Scheduling\WebCronTokenStore`), 노출은 권한을 확인하는 전용 API 한 곳뿐이다.
 
@@ -308,21 +312,21 @@ CPU·메모리·디스크 사용률을 OS 명령(`wmic`·PowerShell·`nproc`·`f
 | 파일 | 고정하는 것 |
 |---|---|
 | `tests/Unit/Support/ExecutionEnvironmentTest.php` | 판정 분기(함수 차단·probe 실패·불확실 폴백), 함수 집합 불변 |
-| `tests/Unit/Execution/CommandRunnerResolverTest.php` (`test_detected_php_binary_*`) | 감지된 바이너리가 subprocess 러너에 도달 (D35) |
+| `tests/Unit/Execution/CommandRunnerResolverTest.php` (`test_detected_php_binary_*`) | 감지된 바이너리가 subprocess 러너에 도달 |
 | `tests/Unit/Execution/ExecutionModeTest.php` | 열거·안전 변환 |
 | `tests/Unit/Support/PhpBinaryResolverTest.php` | 후보 탐색·shape 정책·`--version` 파싱 · **SAPI 판정과 CLI 우선 정렬**(FPM/CGI 바이너리를 실행용으로 승격하지 않는다) |
 | `tests/Unit/Execution/CommandRunnerResolverTest.php` | 결정 순서(명시 > 설정 > 감지), 기본값 `auto` 불변 |
 | `tests/Feature/Execution/CommandRunnerEquivalenceTest.php` | 두 러너 종료 상태 등가 · 주입 바이너리 경로가 스폰에 도달 |
 | `tests/Unit/Installer/InstallerExecutionModeHelperTest.php` | 인스톨러 판정(명시 > 감지) · inprocess → bundled 고정 · 설치 시작 확정값 우선 · 단계별 실행 토큰 판정 · 두 진행 입구의 거부 규칙 대칭 |
-| `tests/Unit/Installer/InstallerStep3ExecutionModeTest.php` | Step 3 저장 시점 — 허용 어휘 밖 값은 `auto` 로, inprocess 선택 시 Vendor 방식 bundled 고정 (D33 · A-4) |
+| `tests/Unit/Installer/InstallerStep3ExecutionModeTest.php` | Step 3 저장 시점 — 허용 어휘 밖 값은 `auto` 로, inprocess 선택 시 Vendor 방식 bundled 고정 |
 | `tests/Unit/Installer/InstallerUngatedHelperContractTest.php` | 실행 모드 어휘가 코어 Enum 에서 온다 · 러너 전략이 확정 상태를 따르고 기본값은 subprocess · exec 가용 시 실제 스폰 경로 |
 | `tests/Unit/Installer/InstallerArtisanExecutorTest.php` | 인스톨러 러너 — 서브프로세스 인자 조립 형태 · 전략 분기 · vendor 부재 시 명확한 실패 |
 | `tests/Unit/Installer/InstallerStepwiseRunnerTest.php` | 단계별 실행 — 첫 미완료 태스크만 실행 · 관리자 ENV 같은 요청 주입 · DB 실패 롤백 후 마커 제거 · **실패 후 재시도가 같은 태스크를 재실행** · **요청 반복으로 목록 전수 완주** · 건너뛰기 · `--vendor-mode` 전파. 메서드마다 새 프로세스(temp `BASE_PATH` 상수 충돌 회피) |
-| `tests/Unit/Installer/InstallerExecutionModeTouchpointCoverageTest.php` | 실행 모드 관여 지점 전수 — `vendor_mode`·`execution_mode` 를 읽는 인스톨러 파일을 스캔해 보정 함수 경유를 강제 (R9) |
+| `tests/Unit/Installer/InstallerExecutionModeTouchpointCoverageTest.php` | 실행 모드 관여 지점 전수 — `vendor_mode`·`execution_mode` 를 읽는 인스톨러 파일을 스캔해 보정 함수 경유를 강제 |
 | `tests/Unit/Installer/InstallerEndpointGuardCoverageTest.php` | 인스톨러 API 전 엔드포인트 가드 경유 · 토큰 보관처 |
 | `tests/Unit/Installer/InstallerWorkerLockRecoveryTest.php` | 롤백 디스패치가 확장 태스크의 합성 키(`module_install:foo`)를 해석 · 점유자 선언 시간 예산은 stale 판정의 하한 · 재시작·초기화가 죽은 워커의 점유를 비워 재점유를 허용 · 태스크 본문 도중의 lock 손실이 태스크 실패로 변환되지 않음 |
-| `tests/Unit/Installer/InstallerIncludeOrderTest.php` | 엔드포인트 require 순서·필수 헬퍼 로드 (R4) |
-| `tests/Unit/Installer/InstallerRuntimeHelperTest.php` | `runtime.php` 읽기·쓰기와 비밀 보존 (R3) |
+| `tests/Unit/Installer/InstallerIncludeOrderTest.php` | 엔드포인트 require 순서·필수 헬퍼 로드 |
+| `tests/Unit/Installer/InstallerRuntimeHelperTest.php` | `runtime.php` 읽기·쓰기와 비밀 보존 |
 | `tests/Unit/Installer/InstallerRollbackDispatchTest.php` | 롤백 디스패치·수동 복구 안내가 태스크 목록 전수를 덮는다 |
 | `tests/Unit/Installer/InstallerSkipDependencyCascadeTest.php` | 건너뛰기가 의존 확장까지 함께 지나간다 |
 | `tests/Unit/Installer/InstallerVendorBundleGuardTest.php` | composer 가용 판정의 출처 · 번들 백업 전부-아니면-전무 · **추출 중 진행 알림(묶음 분할)** |
@@ -330,7 +334,7 @@ CPU·메모리·디스크 사용률을 OS 명령(`wmic`·PowerShell·`nproc`·`f
 | `tests/Unit/Installer/InstallerMonitorContractTest.php` | 진행 모니터 구조 계약 (정지 감지·취소 확인·아이콘 텍스트 대체) |
 | `tests/Unit/Installer/InstallerStateSchemaTest.php` | 상태 스키마 · 조회 응답 실패 필드 집합 · **단계별 실행 상태 요약** |
 | `tests/Unit/Installer/InstallerTaskDisplayNameTest.php` | 태스크 표시 이름(합성 키 포함) |
-| `tests/Unit/Installer/InstallerTestIsolationCoverageTest.php` | temp `BASE_PATH` 격리 선언 전수 (R7) |
+| `tests/Unit/Installer/InstallerTestIsolationCoverageTest.php` | temp `BASE_PATH` 격리 선언 전수 |
 | `tests/Unit/Installer/InstallerStyleClassCoverageTest.php` | 마크업 클래스의 CSS 규칙 존재 · **상태 문구의 토큰 층** |
 | `tests/Unit/Installer/InstallerLanguageParityTest.php` | 인스톨러 다국어 — ko/en 키·자리표시자 정합, 중괄호 표기 금지, 리터럴 키 참조, **지원 언어 상수 ↔ lang 파일 대조**, **PHP 채널의 점 경로 키 금지**, **치환은 `lang(key, replace)` 한 지점** |
 | `tests/Unit/Installer/InstallerScenarioMarkerCoverageTest.php` | 무CLI 두 매니페스트의 마커 양방향 정합 |
@@ -342,8 +346,8 @@ CPU·메모리·디스크 사용률을 OS 명령(`wmic`·PowerShell·`nproc`·`f
 | `tests/Unit/Http/Requests/Settings/EnumeratedSettingValuesTest.php` | 허용값 표 ↔ Enum/상수 ↔ 카탈로그 기본값 정합 |
 | `tests/Feature/Api/Admin/SettingsControllerTest.php` (`test_update_*_execution_mode`) | 단건 저장 경로의 허용값 게이트 |
 | `tests/Unit/Scheduling/ArtisanCommandExtractorTest.php` | shell 이벤트 되뽑기 — 옵션·플래그·배열 옵션·위치 인자·인용부호, 비-Artisan 이벤트는 예외로 드러남 |
-| `tests/Feature/Scheduling/ScheduleRunnerContractTest.php` | 등록된 전 이벤트 되뽑기 성공(실패 0) · 대상은 등록에서 도출(R17) · 식별 키 안정성·무충돌 |
-| `tests/Feature/Scheduling/ScheduleRunnerCatchUpTest.php` | 실행 창 소급(D17) · 중복 0 · 최소 간격 스킵 후 무유실 · 창 상한 · 조건부 등록(R16) · 상한 이월과 재개 |
+| `tests/Feature/Scheduling/ScheduleRunnerContractTest.php` | 등록된 전 이벤트 되뽑기 성공(실패 0) · 대상은 등록에서 도출 · 식별 키 안정성·무충돌 |
+| `tests/Feature/Scheduling/ScheduleRunnerCatchUpTest.php` | 실행 창 소급 · 중복 0 · 최소 간격 스킵 후 무유실 · 창 상한 · 조건부 등록 · 상한 이월과 재개 |
 | `tests/Feature/Scheduling/ScheduleRunEntryPointParityTest.php` | 진입점 둘(웹·CLI)이 같은 본체·같은 기록을 쓴다 · CLI 종료 코드가 실패를 반영 |
 | `tests/Unit/CoreUpdate/CoreUpdateStepContractTest.php` | 웹 단계 순서 불변식 — 파일 적용과 업그레이드 스텝이 **다른 요청**이라는 격리(스폰이 막힌 호스팅에서 요청 경계가 `proc_open` 스폰을 대신한다) |
 | `tests/Unit/CoreUpdate/CoreUpdatePipelineParityTest.php` | CLI 와 웹이 같은 서비스를 같은 순서로 부른다 — 한쪽에만 단계가 늘어난 상태를 차단 |

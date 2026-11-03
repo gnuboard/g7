@@ -131,16 +131,20 @@ class ProductReviewImage extends Model
      * 경로는 API 서빙뿐이고, 직접 URL 가용 여부로 분기하면 저장 모드에 따라
      * 관리자 화면 동작이 갈린다.
      *
-     * @return string 한시 서명 다운로드 URL (상대경로)
+     * 상대 서명 URL 은 요청의 base URL(마운트 접두사)을 벗긴 경로에 서명되고 검증도 base 를 뺀
+     * 경로로 다시 조립하므로, 접두사는 서명된 값 밖에 붙인다 — 붙이지 않으면 하위 폴더 설치에서
+     * 사이트 밖을 가리킨다.
+     *
+     * @return string 한시 서명 다운로드 URL (마운트 접두사를 실은 루트 상대 경로)
      */
     public function signedDownloadUrl(): string
     {
-        return URL::temporarySignedRoute(
+        return AssetUrl::sitePath(URL::temporarySignedRoute(
             'api.modules.sirsoft-ecommerce.review-image.download',
             now()->addMinutes(self::SIGNED_DOWNLOAD_TTL_MINUTES),
             ['hash' => $this->hash],
             absolute: false
-        );
+        ));
     }
 
     /**

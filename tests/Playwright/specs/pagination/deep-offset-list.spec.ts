@@ -15,7 +15,7 @@
  * 데이터 의존 스킵: 목록이 한 페이지 분량이면 페이지네이션 컨트롤이 없으므로 (2)를 건너뛴다.
  * 스킵 사유는 실행 로그에 남는다 — 조용한 통과가 아니다.
  *
- * @scenario deep_offset_list_browser
+ * @scenario page_position=middle
  *
  * @effects pages_do_not_overlap_or_drop_rows, simple_mode_reports_last_page_without_next
  */
@@ -184,7 +184,7 @@ async function countNoticeRows(page: Page): Promise<number> {
 
 test.describe('목록 페이지네이션 (지연 조인)', () => {
   for (const screen of LIST_SCREENS) {
-    // @scenario deep_offset_list_browser
+    // @scenario page_position=middle
     // @effects pages_do_not_overlap_or_drop_rows
     test(`${screen.name} — 목록이 렌더되고 페이지 에러가 없다`, async ({ page }) => {
       const errors = collectPageErrors(page);
@@ -214,7 +214,7 @@ test.describe('목록 페이지네이션 (지연 조인)', () => {
     // 지연 조인은 inner 가 키 컬럼만 읽으므로, 공지 병합이 outer 로 옮겨가지 않았다면
     // 2페이지 이후에도 공지가 다시 붙거나 1페이지에서 사라진다.
     if (screen.name === '게시판 게시글 목록') {
-      // @scenario deep_offset_list_browser
+      // @scenario page_position=first
       // @effects notices_appear_only_on_first_page
       test(`${screen.name} — 공지가 1페이지에만 노출된다`, async ({ page }) => {
         const target = await resolveScreen(page, screen);
@@ -268,7 +268,7 @@ test.describe('목록 페이지네이션 (지연 조인)', () => {
       });
     }
 
-    // @scenario deep_offset_list_browser
+    // @scenario page_position=last, total_source=simple_no_count
     // @effects simple_mode_reports_last_page_without_next
     test(`${screen.name} — 마지막 페이지에서 "다음" 이 비활성이다`, async ({ page }) => {
       const target = await resolveScreen(page, screen);

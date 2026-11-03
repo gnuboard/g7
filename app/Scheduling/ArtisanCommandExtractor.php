@@ -59,7 +59,7 @@ class ArtisanCommandExtractor
         if ($line === null) {
             throw new ScheduleCommandExtractionException(
                 $rawCommand,
-                'Artisan 실행 문자열이 아닙니다 (php/artisan 접두사 없음).',
+                __('exceptions.schedule_extraction.not_artisan'),
             );
         }
 
@@ -69,7 +69,7 @@ class ArtisanCommandExtractor
         if (! is_string($name) || $name === '') {
             throw new ScheduleCommandExtractionException(
                 $rawCommand,
-                '커맨드명을 찾지 못했습니다.',
+                __('exceptions.schedule_extraction.command_name_missing'),
             );
         }
 

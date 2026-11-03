@@ -55,9 +55,13 @@ return new class extends Migration
 
         // 코드 예약에는 대응하는 `schedules` 행이 없다 — FK 를 유지한 채 NULL 을 허용한다.
         // 컬럼을 nullable 로 바꾸려면 FK 를 먼저 떼었다가 다시 붙여야 한다.
-        Schema::table('schedule_histories', function (Blueprint $table) {
-            $table->dropForeign(['schedule_id']);
-        });
+        // FK 떼기·다시 붙이기에도 존재 가드를 둔다 — 떼기 뒤에 끊긴 실행을 다시 돌리면 가드 없는
+        // dropForeign 은 없는 제약을 지우려다 죽고, 붙이기까지 끝난 뒤의 재실행은 중복 제약으로 죽는다.
+        if ($this->scheduleForeignKeyExists()) {
+            Schema::table('schedule_histories', function (Blueprint $table) {
+                $table->dropForeign(['schedule_id']);
+            });
+        }
 
         Schema::table('schedule_histories', function (Blueprint $table) {
             // audit:allow migration-idempotency-guard 컬럼 추가가 아니라 기존 컬럼의 change() 다 — hasColumn 가드는 성립하지 않고(언제나 참), 같은 값으로의 재실행은 무해하다.
@@ -65,9 +69,14 @@ return new class extends Migration
                 ->comment('스케줄 ID (source=code 면 NULL)')->change();
         });
 
-        Schema::table('schedule_histories', function (Blueprint $table) {
-            $table->foreign('schedule_id')->references('id')->on('schedules')->cascadeOnDelete();
-        });
+        if (! $this->scheduleForeignKeyExists()) {
+            Schema::table('schedule_histories', function (Blueprint $table) {
+                // constrained() 를 쓰지 않는 이유: constrained() 는 컬럼을 새로 정의할 때만 붙는다.
+                // 여기서는 위 change() 로 바꾼 기존 컬럼에 떼어 둔 FK 를 다시 붙이는 자리라
+                // 컬럼 정의 없이 제약만 거는 foreign() 문법을 쓴다.
+                $table->foreign('schedule_id')->references('id')->on('schedules')->cascadeOnDelete();
+            });
+        }
     }
 
     /**
@@ -81,10 +90,23 @@ return new class extends Migration
      */
     private function indexExists(string $name): bool
     {
-        $table = DB::getTablePrefix().'schedule_histories';
+        // 표 이름에 접두사를 직접 붙이지 않는다 — Schema 빌더가 연결의 접두사를 스스로 붙이므로,
+        // 여기서 한 번 더 붙이면 없는 표를 조회해 판정이 언제나 거짓이 된다.
+        return Schema::hasIndex('schedule_histories', $name);
+    }
 
-        return collect(Schema::getIndexes($table))
-            ->contains(fn (array $index): bool => ($index['name'] ?? null) === $name);
+    /**
+     * `schedule_id` 에 외래키가 걸려 있는지 판정합니다.
+     *
+     * FK 떼기·다시 붙이기의 재실행 안전성을 위해서다 — 제약 이름이 아니라 대상 컬럼으로
+     * 찾으므로 접두사·자동 이름 규칙에 기대지 않는다.
+     *
+     * @return bool 걸려 있으면 true
+     */
+    private function scheduleForeignKeyExists(): bool
+    {
+        return collect(Schema::getForeignKeys('schedule_histories'))
+            ->contains(fn (array $foreignKey): bool => ($foreignKey['columns'] ?? []) === ['schedule_id']);
     }
 
     /**
@@ -111,16 +133,23 @@ return new class extends Migration
             }
         });
 
-        Schema::table('schedule_histories', function (Blueprint $table) {
-            $table->dropForeign(['schedule_id']);
-        });
+        if ($this->scheduleForeignKeyExists()) {
+            Schema::table('schedule_histories', function (Blueprint $table) {
+                $table->dropForeign(['schedule_id']);
+            });
+        }
 
         Schema::table('schedule_histories', function (Blueprint $table) {
+            // 주석(comment)을 다시 주지 않는다 — 원 생성 마이그레이션(2026_04_01_000026)의 schedule_id 는
+            // 주석이 없었으므로, 주석 없이 되돌리는 것이 원상 복구다.
             $table->foreignId('schedule_id')->nullable(false)->change();
         });
 
-        Schema::table('schedule_histories', function (Blueprint $table) {
-            $table->foreign('schedule_id')->references('id')->on('schedules')->cascadeOnDelete();
-        });
+        if (! $this->scheduleForeignKeyExists()) {
+            Schema::table('schedule_histories', function (Blueprint $table) {
+                // up() 과 같은 이유로 constrained() 가 아니라 foreign() 으로 다시 붙인다.
+                $table->foreign('schedule_id')->references('id')->on('schedules')->cascadeOnDelete();
+            });
+        }
     }
 };

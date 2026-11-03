@@ -3,6 +3,7 @@
 namespace Tests\Feature\Settings;
 
 use App\Http\Requests\Settings\SaveSettingsRequest;
+use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Providers\SettingsServiceProvider;
 use App\Repositories\JsonConfigRepository;
 use App\Rules\ValidTrustedProxyAddress;
@@ -10,7 +11,9 @@ use App\Services\SettingsService;
 use App\Services\TrustedProxyProbe;
 use App\Support\EnvPriority;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Validator;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -328,6 +331,37 @@ class TrustedProxySettingsTest extends TestCase
             $passed = false;
         });
         $this->assertTrue($passed, 'CIDR 은 통과해야 한다');
+    }
+
+    /**
+     * 단건 저장(`PUT /api/admin/settings/debug.trusted_proxies`)도 벌크 저장과 같은 주소 검증을 거칩니다.
+     *
+     * 벌크(`advanced.trusted_proxies.*`)에만 주소 검증이 있으면 단건 경로가 우회로가 되어,
+     * 판정기가 조용히 매칭에 실패하는 값이 저장된다. 콤마 문자열은 항목 검증(`value.*`)을
+     * 건너뛰므로 벌크와 같이 배열만 받는다.
+     *
+     * @scenario proxies_setting=single_ip_mismatch
+     *
+     * @effects invalid_proxy_address_is_rejected_on_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_단건_저장도_잘못된_주소를_거부한다(): void
+    {
+        config(['env-priority.enabled' => false]);
+
+        $errorsFor = function (mixed $value): array {
+            $request = UpdateSettingRequest::create('/api/admin/settings/debug.trusted_proxies', 'PUT', ['value' => $value]);
+            $route = (new Route('PUT', 'api/admin/settings/{key}', []))->bind($request);
+            $request->setRouteResolver(fn () => $route);
+
+            return Validator::make($request->all(), $request->rules())->errors()->toArray();
+        };
+
+        $this->assertArrayHasKey('value.1', $errorsFor(['10.0.0.1', 'proxy.example.com']), '호스트명 항목은 거부되어야 한다');
+        $this->assertArrayHasKey('value', $errorsFor('proxy.example.com'), '배열이 아닌 값은 거부되어야 한다');
+        $this->assertSame([], $errorsFor(['10.0.0.1', '10.0.0.0/24']), 'IP·CIDR 목록은 통과해야 한다');
+        $this->assertSame([], $errorsFor([]), '빈 목록(신뢰하지 않음)은 통과해야 한다');
     }
 
     /**

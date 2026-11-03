@@ -249,7 +249,7 @@ class CoreUpdateService
     /**
      * 실행 잠금을 놓습니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function releaseRunLock(): void
     {
@@ -344,7 +344,7 @@ class CoreUpdateService
      * @param  class-string<AbstractRootMarkerFileUpdater>  $updater  그 파일의 갱신기
      * @param  string  $result  `$updater::apply()` 반환값
      * @param  string  $destinationPath  대상 파일 경로
-     * @return void
+     * @return void 반환값 없음
      */
     protected function recordRootMarkerFileResult(string $updater, string $result, string $destinationPath): void
     {
@@ -380,7 +380,7 @@ class CoreUpdateService
      * @param  string  $target  정규화된 대상 이름 (`index.php` 등)
      * @param  string  $source  소스 파일
      * @param  string  $destination  대상 파일
-     * @return void
+     * @return void 반환값 없음
      */
     protected function copyRootFileOrWarn(string $target, string $source, string $destination): void
     {
@@ -439,7 +439,7 @@ class CoreUpdateService
      * 않는 위치로 사본해 두고, 문구가 그 경로를 싣는다(백업 전체 보존으로 넓히지 않는다).
      *
      * @param  string  $destinationPath  대상 파일 경로
-     * @return void
+     * @return void 반환값 없음
      */
     protected function recordRootIndexReplacement(string $destinationPath): void
     {
@@ -1552,7 +1552,7 @@ class CoreUpdateService
      * @param  string  $destinationDir  설치본의 `deploy/` 절대 경로
      * @param  array<string, bool>|null  $applyList  증분 모드의 적용 목록(`deploy/` 접두사를 벗긴 상대 경로). null 이면 전체
      * @param  \Closure|null  $onProgress  진행 콜백
-     * @return void
+     * @return void 반환값 없음
      */
     protected function applyDeployFragments(string $sourceDir, string $destinationDir, ?array $applyList, ?\Closure $onProgress): void
     {
@@ -1634,7 +1634,7 @@ class CoreUpdateService
      * @param  string  $distPath  `.dist` 경로
      * @param  string  $distNewPath  `.dist.new` 경로
      * @param  string  $newContents  새 판본 내용
-     * @return void
+     * @return void 반환값 없음
      */
     protected function placeDeployFragmentSidecar(string $destinationPath, string $distPath, string $distNewPath, string $newContents): void
     {
@@ -1842,7 +1842,7 @@ class CoreUpdateService
      * 다음 업데이트가 **판정할 수 없음**(보존 + 안내) 쪽으로 떨어지게 둔다.
      *
      * @param  string  $projectRoot  프로젝트 루트
-     * @return void
+     * @return void 반환값 없음
      */
     protected function removeDeployFragmentSidecars(string $projectRoot): void
     {
@@ -2866,7 +2866,7 @@ class CoreUpdateService
      * 옛 버전으로 동작한다.
      *
      * @param  string  $version  새 버전
-     * @return void
+     * @return void 반환값 없음
      */
     private function syncVersionIntoProcessEnvironment(string $version): void
     {

@@ -41,7 +41,7 @@ import { normalizeForOriginCheck } from './assetUrl';
  */
 export function normalizeScriptSrcForOriginCheck(src: string): string {
     // 규칙 본체는 `support/assetUrl` 가 소유한다 — 같은 정규화를 쓰는 런타임 소비처가
-    // 둘(이 스크립트 src 판정 · 브라우저 이동 판정 `isSameOriginSitePath`)이라, 사본을
+    // 둘(이 스크립트 src 판정 · 브라우저 이동 판정 `navPolicy.sanitizeNavPath`)이라, 사본을
     // 두면 한쪽만 강화됐을 때 다른 쪽이 조용한 우회로가 된다. 이 모듈은 「스크립트 주입
     // 허용 판정」의 SSoT 로 남고, 그 판정이 쓰는 「URL 정규화」 프리미티브만 위임한다.
     // @since engine-v1.86.0 (본체 이관)

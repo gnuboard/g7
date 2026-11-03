@@ -1,6 +1,6 @@
 <?php
 
-// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축(#609)의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
+// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
 
 return [
     /*
@@ -1379,7 +1379,7 @@ return [
         'timezone' => '시간대',
         'language' => '언어',
         'default_language' => '기본 언어',
-        // 실행 방식·예약 작업 필드 (관리자 '시스템' 탭 — #609)
+        // 실행 방식·예약 작업 필드 (관리자 '시스템' 탭)
         'system.execution_mode' => '실행 방식',
         'system.cron_mode' => '예약 작업 실행 방식',
         'system.cron_allowed_ips' => '예약 작업 허용 주소',

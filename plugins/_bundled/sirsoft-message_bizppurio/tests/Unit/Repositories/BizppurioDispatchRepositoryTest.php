@@ -9,7 +9,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 /**
  * BizppurioDispatchRepository — 생성·refkey 조회·갱신·필터 페이지네이션 검증.
  *
- * @scenario dispatch-history-webhook
+ * @scenario channel=sms
  */
 class BizppurioDispatchRepositoryTest extends PluginTestCase
 {
@@ -63,6 +63,7 @@ class BizppurioDispatchRepositoryTest extends PluginTestCase
      * update 가 상태와 결과코드를 DB 에 반영하는지 확인한다.
      *
      * @scenario result_category=success
+     *
      * @effects repository_update_persists_status_and_result_code
      *
      * @return void 반환값 없음
@@ -119,6 +120,7 @@ class BizppurioDispatchRepositoryTest extends PluginTestCase
      * linkNotificationLog 가 refkey 로 찾은 이력에 코어 로그 id 를 기록하고 참을 돌려주는지 확인한다.
      *
      * @scenario link_outcome=linked
+     *
      * @effects link_notification_log_by_refkey_sets_log_id
      *
      * @return void 반환값 없음
@@ -136,6 +138,7 @@ class BizppurioDispatchRepositoryTest extends PluginTestCase
      * 없는 refkey 로 linkNotificationLog 를 부르면 거짓을 돌려주는지 확인한다.
      *
      * @scenario link_outcome=unmatched
+     *
      * @effects link_missing_refkey_returns_false
      *
      * @return void 반환값 없음
@@ -149,6 +152,7 @@ class BizppurioDispatchRepositoryTest extends PluginTestCase
      * 로그 id 배열 조회가 연결된 이력만 로그 id 키 맵으로 돌려주고 없는 id 는 빼는지 확인한다.
      *
      * @scenario link_outcome=linked
+     *
      * @effects find_by_log_ids_returns_keyed_map_excluding_unmatched
      *
      * @return void 반환값 없음
@@ -183,6 +187,7 @@ class BizppurioDispatchRepositoryTest extends PluginTestCase
      * recentLinkedKeyed 가 로그에 연결되지 않은 이력을 빼고 로그 id 를 키로 묶는지 확인한다.
      *
      * @scenario link_outcome=linked
+     *
      * @effects recent_linked_keyed_excludes_unlinked_and_keys_by_log_id
      *
      * @return void 반환값 없음

@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\PrivilegedDatabaseAccounts;
+
 /**
  * 그누보드7 인스톨러 - 데이터베이스 연결·권한·기존 테이블 검사 (웹·터미널 공유)
  *
@@ -10,7 +12,6 @@
  * 의존: config.php(MAX_DB_PREFIX_LENGTH) · functions.php(getDatabaseConnection·checkDatabasePrivileges·checkExistingTables·
  * installerDbServerVersionNotice).
  */
-
 if (! function_exists('installer_classify_db_connection_failure')) {
     /**
      * DB 연결 실패를 조치가 갈리는 만큼만 분류한다 (13차 보안#6).
@@ -100,7 +101,7 @@ if (! function_exists('installer_test_database')) {
             }
 
             // 최고권한 계정은 연결 시도 전에 막는다 — 판정 SSoT 는 PrivilegedDatabaseAccounts.
-            if (\App\Support\PrivilegedDatabaseAccounts::isBlocked($username)) {
+            if (PrivilegedDatabaseAccounts::isBlocked($username)) {
                 throw new Exception(lang('error_db_username_privileged', ['username' => $username]));
             }
 

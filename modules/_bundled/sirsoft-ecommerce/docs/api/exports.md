@@ -12,7 +12,7 @@
 3. 권한: exports.create/read/download/delete + 그 유형의 원본 조회 권한(주문=orders.read …) + 개인정보 필드는 exports.personal_data. 이미 만든 작업의 개인정보(파일 받기·다시 요청·받은 사람 IP)는 exports.personal_data 의 범위도 본다
 4. 범위: 코어 표준 권한 범위(`owner_key = requested_by`) — 역할 관리에서 조회·다운로드·삭제마다 본인만/소유 역할/전체를 고른다(기본: 관리자 전체, 이커머스 관리자 본인만). 다시 요청은 조회 범위를 따른다. 범위 밖 작업은 403(`{export}` 경로는 코어 `auth.scope_denied`, 다시 요청·일회용 주소는 `scope_denied`)
 5. 내려받기(GET {export}/download)는 파일 바이트를 준다(JSON 아님) — 다운로드 이력·횟수·활동 로그가 남는다
-6. 화면은 일회용 주소를 쓴다: POST {export}/download-link 로 60초·1회용 주소를 받고 브라우저가 GET exports/file/{token} 을 직접 연다(파일을 메모리에 올리지 않음)
+6. 화면은 일회용 주소를 쓴다: POST {export}/download-link 로 60초·1회용 주소를 받고 브라우저가 GET exports/file/{token} 을 직접 연다(파일을 메모리에 올리지 않음). 주소는 사이트 마운트 접두사를 이미 붙여서 준다(하위 폴더 설치 `/g7` 이면 `/g7/api/…`) — 화면 핸들러가 `<a href>` 에 그대로 넣기 때문이다
 ```
 
 ---

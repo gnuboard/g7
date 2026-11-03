@@ -142,6 +142,12 @@ class UpdateSettingRequest extends FormRequest
             $rules['value'][] = $rule;
         }
 
+        // 값이 목록인 키는 각 항목도 벌크 저장과 같은 규칙으로 본다.
+        $itemRules = $this->shapeItemRules();
+        if ($itemRules !== []) {
+            $rules['value.*'] = $itemRules;
+        }
+
         // 서버가 기록하는 키는 이 경로로 쓰지 못한다 — 만료 시작일을 과거로 돌리면 켜자마자 전원이
         // 만료되고, 미래로 밀면 만료가 무력화된다. 기본값이 null 이라 형태 검사도 걸리지 않는 키다.
         // `prohibited` 는 null 을 통과시키는데, 시작일을 null 로 비우면 판독부가 "지금" 으로 다시 채워
@@ -242,7 +248,7 @@ class UpdateSettingRequest extends FormRequest
     /**
      * 저장 대상 키의 전용 형태 규칙을 반환합니다.
      *
-     * @return list<ValidationRule> 규칙 목록 (없으면 빈 배열)
+     * @return list<ValidationRule|string> 규칙 목록 (없으면 빈 배열)
      */
     private function shapeRules(): array
     {
@@ -253,6 +259,22 @@ class UpdateSettingRequest extends FormRequest
         }
 
         return SettingShapeRules::rulesFor($key);
+    }
+
+    /**
+     * 저장 대상 키의 항목별 형태 규칙을 반환합니다 (값이 목록인 키).
+     *
+     * @return list<ValidationRule|string> 항목 규칙 목록 (없으면 빈 배열)
+     */
+    private function shapeItemRules(): array
+    {
+        $key = $this->route('key');
+
+        if (! is_string($key) || $key === '') {
+            return [];
+        }
+
+        return SettingShapeRules::itemRulesFor($key);
     }
 
     /**

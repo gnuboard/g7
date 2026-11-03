@@ -17,7 +17,6 @@
  * 설정 캐시 헬퍼, execution-mode.php 를 싣는다) · installer-state.php(STATE_PATH·INSTALLER_STATE_LOCK_SUFFIX) ·
  * installer-ownership.php. binary-path-policy.php 는 있으면 쓴다(없으면 PHP 경로는 php).
  */
-
 if (! function_exists('installer_finalize_rebuild_config_cache')) {
     /**
      * 확정한 .env 로 설정 캐시를 새 artisan 프로세스로 다시 만든다 — 만들지 못하면 캐시를 지운다.

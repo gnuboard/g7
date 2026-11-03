@@ -1,4 +1,4 @@
-// @scenario board-reports-search
+// @scenario field=all
 // (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
 
 /**

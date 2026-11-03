@@ -27,7 +27,7 @@ use ValidationApi;
  *  - 요구사항 화면의 CLI 버전 비교도 같은 probe 를 쓰고 SAPI 를 응답에 남긴다
  *
  * 감지·CLI 버전 판정 본문은 웹(check-configuration.php)과 터미널 설치가 함께 쓰는
- * `includes/requirements.php` 의 공유 함수(`installer_detect_php_binaries`,
+ * `public/install/includes/requirements.php` 의 공유 함수(`installer_detect_php_binaries`,
  * `installer_requirement_php_cli_version`)로 옮겨졌다. 그래서 그 두 계약은 공유 함수를
  * 직접 부르거나 그 본문을 읽어 고정한다.
  *

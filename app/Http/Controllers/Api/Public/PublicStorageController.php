@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Public;
 
+use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Public\ServePublicStorageFileRequest;
 use App\Services\PublicStorageService;
@@ -28,6 +29,24 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class PublicStorageController extends PublicBaseController
 {
+    /**
+     * 내려받기로 돌리는 유형 — 브라우저가 문서로 열어 스크립트를 실행할 수 있는 유형.
+     *
+     * 이 통로가 내주는 `storage/app/public` 은 업로드물이 놓이는 자리다(회원 아바타는 public 디스크에
+     * 쓰이고, public 디스크를 고른 확장의 업로드도 여기 놓인다). 그래서 업로드 파일 응답 규정
+     * (`InlineMediaPolicy::harden()`)의 대상이다. 다만 이 통로는 링크가 되는 서버의 정적 서빙을
+     * 대신하는 자리라 텍스트·문서·미디어·글꼴·스타일은 inline 이 기존 계약이다 — 보정은 앱 오리진에서
+     * 문서로 열려 스크립트가 도는 유형으로 좁힌다. XML 은 XHTML 이름공간 요소의 스크립트를 실행한다.
+     *
+     * @var list<string>
+     */
+    private const ACTIVE_DOCUMENT_MIME_TYPES = [
+        'text/html',
+        'application/xhtml+xml',
+        'image/svg+xml',
+        'application/xml',
+    ];
+
     /**
      * @param  PublicStorageService  $publicStorageService  공개 스토리지 경로 해석 서비스
      */
@@ -84,6 +103,16 @@ class PublicStorageController extends PublicBaseController
         // 파일 이름 선언은 `fileResponse()` 가 한다 — 네 통로(공개 스토리지 · template ·
         // module · plugin)가 공유하는 자리다. 6차에 이 통로에만 사본으로 들어가 있었고
         // 형제 셋은 빠져 있었다(7차 G3 라운드 C2). 사유는 그 자리 주석에 있다.
+        //
+        // 실행 가능한 문서 유형은 내려받기 + 격리 CSP 로 돌린다(이름은 위 선언을 그대로 쓴다).
+        // 종전에는 업로드된 `.html`·`.svg` 가 앱 오리진에서 inline 으로 열려 그 안의 스크립트가
+        // 사이트 권한으로 돌았다.
+        $baseMime = strtolower(trim(explode(';', (string) $result['mimeType'], 2)[0]));
+
+        if (in_array($baseMime, self::ACTIVE_DOCUMENT_MIME_TYPES, true)) {
+            return InlineMediaPolicy::harden($response, $result['mimeType']);
+        }
+
         return $response;
     }
 }

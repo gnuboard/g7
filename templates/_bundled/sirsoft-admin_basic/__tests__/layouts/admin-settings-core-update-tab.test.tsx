@@ -348,6 +348,42 @@ describe('환경설정 업데이트 탭 — W6 상태 분리·진단·이어받�
     expect(JSON.stringify(trigger.actions)).toContain('coreUpdateAdvancedOpen');
     expect(String(content.if)).toContain('coreUpdateAdvancedOpen');
   });
+
+  // @scenario actor=with_permission, source=manual_zip, run_state=idle
+  // @effects manual_zip_lives_behind_advanced
+  it('고급 접기 머리는 키보드로도 펼치는 버튼 요소다 (펼침 상태를 알린다)', () => {
+    const trigger = collect(updateTab, (obj) => obj.id === 'core_update_advanced_trigger')[0];
+
+    expect(trigger).toBeDefined();
+
+    // `div role="button"` 에 click 만 걸면 Tab 으로 닿아도 Enter·Space 가 아무 일도 하지 않는다.
+    // 버튼 요소는 브라우저가 Enter·Space 를 click 으로 바꿔 주므로 키 처리를 따로 두지 않는다.
+    const props = trigger.props as Json;
+    expect(trigger.name).toBe('Button');
+    expect(props.type).toBe('button');
+    expect(props.role, '버튼 요소에 role 을 덧씌우지 않는다').toBeUndefined();
+    expect(String(props['aria-expanded'])).toContain('coreUpdateAdvancedOpen');
+    expect(props['aria-controls']).toBe('core_update_advanced_content');
+  });
+});
+
+describe('환경설정 업데이트 탭 — 진행 기록 소스의 권한 응답', () => {
+  // @scenario actor=without_permission, run_state=idle
+  // @effects update_tab_is_hidden_without_permission
+  it('권한 응답이 오기 전에 불린 진행 기록 소스의 403 은 조용히 넘긴다 (형제 소스와 같은 처리)', () => {
+    const sources = (settings as Json).data_sources as Json[];
+    const status = sources.find((ds) => ds.id === 'core_update_status');
+
+    expect(status, 'core_update_status 소스가 없다').toBeDefined();
+    // 소스 조건은 `can_core_update !== false` 라 권한 응답이 비어 있는 동안에도 불린다 — 권한 없는 관리자가
+    // 주소로 업데이트 탭에 들어오면 403 이 나고, 처리가 없으면 시스템 기본 처리가 오류 토스트를 띄운다.
+    expect(String(status!.if)).toContain('can_core_update !== false');
+    expect((status!.errorHandling as Json | undefined)?.['403']).toEqual({ handler: 'suppress' });
+
+    // 비교 기준: 같은 화면의 언어팩 소스가 같은 이유로 같은 처리를 갖는다.
+    const languagePacks = sources.find((ds) => ds.id === 'language_packs');
+    expect((languagePacks!.errorHandling as Json)['403']).toEqual({ handler: 'suppress' });
+  });
 });
 
 describe('환경설정 업데이트 탭 — 다국어', () => {

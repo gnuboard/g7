@@ -13,7 +13,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 /**
  * BizppurioTokenService — 토큰 발급·캐시 재사용·재발급 검증.
  *
- * @scenario plugin-settings
+ * @scenario credential_state=filled
  */
 class BizppurioTokenServiceTest extends PluginTestCase
 {
@@ -76,6 +76,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * 처음 발급한 토큰을 두 번째 getToken 이 캐시에서 꺼내 HTTP 호출이 한 번뿐인지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=on
+     *
      * @effects token_service_reuses_cached_token_with_single_http_call
      *
      * @return void 반환값 없음
@@ -102,6 +103,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * refreshToken 이 캐시를 지우고 새 토큰을 다시 발급해 HTTP 호출이 두 번 나가는지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=on
+     *
      * @effects token_refresh_forgets_cache_and_reissues
      *
      * @return void 반환값 없음
@@ -131,6 +133,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * 검수 모드가 켜져 있으면 토큰 요청이 dev-api.bizppurio.com 으로 나가는지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=on
+     *
      * @effects test_mode_off_selects_live_domain_test_mode_on_selects_dev_domain
      *
      * @return void 반환값 없음
@@ -155,6 +158,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * 검수 모드가 꺼져 있으면 토큰 요청이 dev 가 아닌 api.bizppurio.com 으로 나가는지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=off
+     *
      * @effects test_mode_off_selects_live_domain_test_mode_on_selects_dev_domain
      *
      * @return void 반환값 없음
@@ -180,6 +184,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * 아이디와 비밀번호가 비어 있으면 getToken 이 BizppurioApiException 을 던지는지 확인한다.
      *
      * @scenario credential_state=empty
+     *
      * @effects token_issue_throws_when_credentials_missing
      *
      * @return void 반환값 없음
@@ -200,6 +205,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * 토큰 발급 응답이 500 이면 getToken 이 BizppurioApiException 을 던지는지 확인한다.
      *
      * @scenario credential_state=filled, test_mode=on
+     *
      * @effects token_issue_throws_on_http_failure
      *
      * @return void 반환값 없음
@@ -222,6 +228,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * verifyCredentials 가 캐시에 옛 토큰이 있어도 바로 재발급하고 새 토큰으로 캐시를 덮어쓰는지 확인한다.
      *
      * @scenario credential_state=filled, connection_check_result=valid_credentials
+     *
      * @effects verify_credentials_bypasses_cache_and_stores_fresh_token
      *
      * @return void 반환값 없음
@@ -247,6 +254,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * verifyCredentials 가 발급 실패 시 예외를 던지고 기존 캐시 토큰은 그대로 두는지 확인한다.
      *
      * @scenario credential_state=filled, connection_check_result=invalid_credentials
+     *
      * @effects verify_credentials_failure_propagates_and_keeps_cached_token
      *
      * @return void 반환값 없음
@@ -274,6 +282,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * 비즈뿌리오가 실패 사유와 코드를 주면 예외 메시지에 그 사유가, getResultCode 에 그 코드가 담기는지 확인한다.
      *
      * @scenario credential_state=filled, connection_check_result=invalid_credentials
+     *
      * @effects token_issue_failure_message_includes_bizppurio_reason_and_code
      *
      * @return void 반환값 없음
@@ -303,6 +312,7 @@ class BizppurioTokenServiceTest extends PluginTestCase
      * 실패 응답에 사유가 없으면 예외 메시지가 token_issue_failed 번역 문구이고 결과코드는 null 인지 확인한다.
      *
      * @scenario credential_state=filled, connection_check_result=invalid_credentials
+     *
      * @effects token_issue_failure_without_reason_falls_back_to_fixed_message
      *
      * @return void 반환값 없음

@@ -7,6 +7,7 @@ use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Exceptions\IdentityVerificationRequiredException;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
@@ -29,7 +30,6 @@ use App\Support\TrustedProxySetting;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -1543,7 +1543,7 @@ class SettingsService
      * @param  array{password?: string|null, verification_token?: string|null}  $credentials  재확인 입력
      * @return array 결과 (success, app_key 또는 error·status)
      *
-     * @throws \App\Exceptions\IdentityVerificationRequiredException 비밀번호 없는 관리자가 비밀번호로 확인하려 할 때 (428)
+     * @throws IdentityVerificationRequiredException 비밀번호 없는 관리자가 비밀번호로 확인하려 할 때 (428)
      */
     public function regenerateAppKey(array $credentials): array
     {

@@ -192,3 +192,4 @@ test-results/
 /g7-setup-token.txt
 /g7-setup-state.json
 /g7-setup-state.json.tmp
+/g7-setup-state.lock

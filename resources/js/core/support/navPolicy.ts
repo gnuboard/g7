@@ -91,6 +91,28 @@ export function sanitizeNavPath(target: unknown): string | null {
 }
 
 /**
+ * SPA 이동 목적지가 사이트 밖을 가리키는지 판정합니다.
+ *
+ * {@link sanitizeNavPath} 와 같은 정규화(탭·개행 제거, 백슬래시 → 슬래시, 선행 슬래시 접기)를 거친 값이
+ * `//`(프로토콜 상대)로 시작하거나 스킴을 가지면 사이트 밖이다. 경로 중간의 연속 슬래시(`/board//free`)와
+ * 상대 경로는 사이트 밖으로 보지 않는다 — 앞은 사이트 안 경로이고, 뒤는 같은 탭 sink 의 판정이 맡는다.
+ * 같은 출처 전체 주소는 호출부(`handleNavigate`)가 먼저 경로로 바꾼다.
+ *
+ * @param path navigate 목적지(경로·쿼리)
+ * @returns 사이트 밖 목적지면 true
+ * @since engine-v1.87.0
+ */
+export function isOffSiteNavTarget(path: unknown): boolean {
+    if (typeof path !== 'string') {
+        return false;
+    }
+
+    const normalized = normalizeScriptSrcForOriginCheck(path.trim());
+
+    return normalized.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(normalized);
+}
+
+/**
  * 같은 출처의 전체 주소(`http(s)://이 사이트/…`)를 「경로?쿼리#해시」로 바꿉니다.
  *
  * 판정은 브라우저 URL 파서(`new URL`)의 origin 비교라 사용자 정보(`https://site@evil/`)·다른 스킴·다른 포트·

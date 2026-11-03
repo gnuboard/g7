@@ -52,6 +52,17 @@ const G7_SETUP_STATE_FILE = 'g7-setup-state.json';
 const G7_SETUP_GUARD_FILE = '.htaccess';
 
 /**
+ * 상태 파일 잠금 파일 — 오입력 판정의 읽기·쓰기를 한 요청씩 줄 세운다.
+ *
+ * 상태 파일 자신은 잠글 수 없다. 원자적 교체(임시 파일 + rename)로 쓰기 때문에 잠근 뒤에
+ * 경로가 다른 파일을 가리키게 되고, 뒤에 온 요청은 새 파일을 잠가 앞 요청과 겹친다.
+ */
+const G7_SETUP_LOCK_FILE = 'g7-setup-state.lock';
+
+/** 임시 보호 규칙(`.htaccess`)의 첫 줄 — 배포본이 대체해도 되는 이 파일 자신의 판본인지 가른다 */
+const G7_SETUP_GUARD_HEADER = '# G7 압축 풀기 임시 보호 규칙';
+
+/**
  * 배포본이 담고 있는 이 파일의 정식 이름.
  *
  * 운영자가 이 파일을 다른 이름으로 올렸을 수 있으므로 `basename(__FILE__)` 과 별도로 둔다 —
@@ -164,7 +175,9 @@ function g7setup_base_url(): string
  *
  * 판정 규칙은 `public/install/api/_guard.php::installer_is_completed()` 와 같다 —
  * ① `storage/app/g7_installed` 락 파일 ② `.env` 의 `INSTALLER_COMPLETED=true|1|yes`.
- * `parse_ini_file` 이 깨져도 fail-open 하지 않고 줄 앵커 정규식으로 2차 판정한다.
+ * `.env` 는 INI 파서로 읽지 않는다 — 배포 템플릿의 괄호 주석이 파싱을 깨뜨린다. 줄 단위
+ * 정규식으로 그 키의 마지막 줄을 읽는다(같은 키가 여러 번이면 `.env` 로더도 마지막 값을 쓴다).
+ * `_guard.php::installer_env_completed_flag()` 의 사본이다.
  *
  * @return bool 완료된 사이트면 true
  */
@@ -181,17 +194,14 @@ function g7setup_installation_completed(): bool
         return false;
     }
 
-    $env = @parse_ini_file($envFile, false, INI_SCANNER_RAW);
-    if (is_array($env)) {
-        $flag = strtolower(trim((string) ($env['INSTALLER_COMPLETED'] ?? '')));
-        $flag = trim($flag, "\"'");
-
-        return in_array($flag, ['true', '1', 'yes'], true);
+    $raw = @file_get_contents($envFile);
+    if (! is_string($raw) || preg_match_all('/^[ \t]*INSTALLER_COMPLETED[ \t]*=(.*)$/m', $raw, $matches) < 1) {
+        return false;
     }
 
-    $raw = (string) @file_get_contents($envFile);
+    $flag = strtolower(trim(trim((string) end($matches[1])), "\"'"));
 
-    return preg_match('/^\s*INSTALLER_COMPLETED\s*=\s*["\']?(?:true|1|yes)\b["\']?\s*$/mi', $raw) === 1;
+    return in_array($flag, ['true', '1', 'yes'], true);
 }
 
 /**
@@ -311,6 +321,51 @@ function g7setup_state_read(): array
 }
 
 /**
+ * 상태 잠금을 쥔다 — 읽기·판정·쓰기를 한 요청씩 하게 한다.
+ *
+ * 잠금이 없으면 병렬 요청이 모두 같은 시도 횟수를 읽고 같은 값을 써서, 오입력 상한과 지수
+ * 지연이 요청 수만큼 무력해진다. `flock` 이 막혔거나 잠금 파일을 열 수 없는 호스팅에서는
+ * 잠그지 않고 진행한다(그 환경의 종전 동작). 차단 함수 가드는 이 파일의 다른 호출과 같다.
+ *
+ * @return resource|null 잠금 핸들. 잠그지 못했으면 null
+ */
+function g7setup_state_lock()
+{
+    if (! g7setup_has_function('flock')) {
+        return null;
+    }
+
+    $handle = @fopen(g7setup_base_dir().'/'.G7_SETUP_LOCK_FILE, 'c');
+    if ($handle === false) {
+        return null;
+    }
+
+    if (! @flock($handle, LOCK_EX)) {
+        @fclose($handle);
+
+        return null;
+    }
+
+    return $handle;
+}
+
+/**
+ * 상태 잠금을 푼다.
+ *
+ * @param  resource|null  $handle  `g7setup_state_lock()` 이 돌려준 핸들
+ * @return void 반환값 없음
+ */
+function g7setup_state_unlock($handle): void
+{
+    if (! is_resource($handle)) {
+        return;
+    }
+
+    @flock($handle, LOCK_UN);
+    @fclose($handle);
+}
+
+/**
  * 상태를 원자적으로 쓴다 (임시 파일 + rename).
  *
  * 부분 쓰기 상태 파일은 다음 요청에서 진행 인덱스를 0 으로 되돌려 처음부터 다시 풀게
@@ -361,6 +416,8 @@ function g7setup_token_path(): string
  * 6자리 확인 번호를 새로 만들어 파일에 쓰고, 상태에 해시를 남긴다.
  *
  * 번호 자체는 상태 파일에 두지 않는다 — 상태 파일이 읽히면 번호도 함께 새기 때문이다.
+ * 해시도 첫 인증 성공과 함께 지운다(`g7setup_authenticate()`). 6자리의 해시는 10^6 번
+ * 대입으로 되돌릴 수 있어 사실상 평문이다.
  *
  * 진행 중인 세션(`session_hash`)은 **건드리지 않는다.** 번호 재발급은 무인증 경로에서도
  * 일어날 수 있어(오입력 상한 도달), 여기서 세션을 끊으면 원격 대입 시도만으로 운영자의
@@ -411,8 +468,8 @@ function g7setup_guard_file_ensure(): bool
         return true;
     }
 
-    $rules = <<<'HTACCESS'
-# G7 압축 풀기 임시 보호 규칙 — 압축 해제가 끝나면 배포본의 루트 .htaccess 가 대체한다.
+    $header = G7_SETUP_GUARD_HEADER.' — 압축 해제가 끝나면 배포본의 루트 .htaccess 가 대체한다.';
+    $rules = $header."\n".<<<'HTACCESS'
 <FilesMatch "^g7-setup-(token\.txt|state\.json)$">
     <IfModule mod_access_compat.c>
         Order allow,deny
@@ -546,6 +603,7 @@ function g7setup_is_self_managed(string $target): bool
         G7_SETUP_TOKEN_FILE,
         G7_SETUP_STATE_FILE,
         G7_SETUP_STATE_FILE.'.tmp',
+        G7_SETUP_LOCK_FILE,
     ], true);
 }
 
@@ -615,6 +673,257 @@ function g7setup_plan_is_g7_payload(array $plan): bool
     return true;
 }
 
+// ── 루트 마커 파일 (.htaccess · web.config) ────────────────────────────────
+
+/**
+ * 코어 관리 블록을 갖는 루트 파일이면 그 마커를 돌려준다.
+ *
+ * @param  string  $target  대상 상대 경로
+ * @return array{0: string, 1: string, 2: bool}|null [BEGIN 마커, END 마커, 선행 공백 허용]. 대상이 아니면 null
+ */
+function g7setup_root_marker_pair(string $target): ?array
+{
+    if ($target === '.htaccess') {
+        return ['# BEGIN G7', '# END G7', false];
+    }
+
+    if ($target === 'web.config') {
+        return ['<!-- BEGIN G7 -->', '<!-- END G7 -->', true];
+    }
+
+    return null;
+}
+
+/**
+ * 마커 줄의 시작 오프셋을 찾는다 — 코어 `AbstractRootMarkerFileUpdater::markerLineStart()` 와 같은 규칙.
+ *
+ * 줄머리(BOM 뒤 포함, web.config 는 공백·탭 들여쓰기 허용)에 있고 뒤가 줄 끝이어야 마커다.
+ *
+ * @param  string  $content  파일 내용
+ * @param  string  $marker  마커 문자열
+ * @param  bool  $allowIndent  선행 공백 허용 여부
+ * @param  int  $offset  검색 시작 오프셋
+ * @return int|null 마커 줄 시작 오프셋. 없으면 null
+ */
+function g7setup_marker_line_start(string $content, string $marker, bool $allowIndent, int $offset = 0): ?int
+{
+    $bomLength = str_starts_with($content, "\xEF\xBB\xBF") ? 3 : 0;
+    $length = strlen($content);
+    $pos = $offset;
+
+    while (($pos = strpos($content, $marker, $pos)) !== false) {
+        $lineStart = $pos;
+        if ($allowIndent) {
+            while ($lineStart > 0 && ($content[$lineStart - 1] === ' ' || $content[$lineStart - 1] === "\t")) {
+                $lineStart--;
+            }
+        }
+        $atLineStart = $lineStart === 0 || $lineStart === $bomLength
+            || $content[$lineStart - 1] === "\n" || $content[$lineStart - 1] === "\r";
+
+        $after = $pos + strlen($marker);
+        $after += strspn($content, " \t", $after);
+        $terminated = $after >= $length || $content[$after] === "\n" || $content[$after] === "\r";
+
+        if ($atLineStart && $terminated) {
+            return $pos;
+        }
+
+        $pos += strlen($marker);
+    }
+
+    return null;
+}
+
+/**
+ * 마커 블록의 [시작, 끝) 범위 — END 줄의 줄바꿈까지 블록에 넣는다(업데이터와 같다).
+ *
+ * @param  string  $content  파일 내용
+ * @param  array{0: string, 1: string, 2: bool}  $pair  마커 쌍
+ * @return array{0: int, 1: int}|null 블록 범위. 블록이 서지 않으면 null
+ */
+function g7setup_marker_block_range(string $content, array $pair): ?array
+{
+    $begin = g7setup_marker_line_start($content, $pair[0], $pair[2]);
+    if ($begin === null) {
+        return null;
+    }
+
+    $endLine = g7setup_marker_line_start($content, $pair[1], $pair[2], $begin);
+    if ($endLine === null) {
+        return null;
+    }
+
+    $end = $endLine + strcspn($content, "\r\n", $endLine);
+    if (substr($content, $end, 2) === "\r\n") {
+        $end += 2;
+    } elseif ($end < strlen($content)) {
+        $end += 1;
+    }
+
+    return [$begin, $end];
+}
+
+/**
+ * 마커 줄이 몇 번 나오는지 센다 (BEGIN·END 중 큰 쪽).
+ *
+ * @param  string  $content  파일 내용
+ * @param  array{0: string, 1: string, 2: bool}  $pair  마커 쌍
+ * @return int 마커 줄 수
+ */
+function g7setup_marker_count(string $content, array $pair): int
+{
+    $counts = [];
+    foreach ([$pair[0], $pair[1]] as $marker) {
+        $count = 0;
+        $offset = 0;
+        while (($pos = g7setup_marker_line_start($content, $marker, $pair[2], $offset)) !== null) {
+            $count++;
+            $offset = $pos + strlen($marker);
+        }
+        $counts[] = $count;
+    }
+
+    return max($counts);
+}
+
+/**
+ * 운영자가 이미 둔 루트 마커 파일과 배포본을 합친 내용을 만든다.
+ *
+ * 코어 업데이터(`AbstractRootMarkerFileUpdater`)와 같은 규칙이다 — 이 파일은 Laravel 부팅
+ * 전에 돌아 그 클래스를 쓸 수 없어 같은 알고리즘을 안에 둔다. 블록 밖은 운영자 영역이라
+ * 그대로 두고, 배포본의 G7 블록만 들인다.
+ *  · 대상에 블록이 한 벌 → 그 블록만 교체한다(줄바꿈은 대상 파일의 것을 따른다).
+ *  · 대상에 마커가 없다 → `.htaccess` 는 줄 단위라 블록을 맨 앞에 두고 원래 내용을 뒤에
+ *    잇는다. `web.config` 는 XML 이라 끼울 자리를 추측할 수 없다(요소 중복은 IIS 가 500 으로
+ *    거부한다) — 합치지 않는다.
+ *  · 마커가 두 벌 이상이거나 한쪽만 남았다 → 어느 쪽이 맞는지 모르므로 합치지 않는다.
+ *
+ * @param  string  $target  대상 상대 경로 (`.htaccess` · `web.config`)
+ * @param  string  $existing  디스크에 있는 운영자 파일 내용
+ * @param  string  $release  배포본 파일 내용
+ * @return string|null 합친 내용. 안전하게 합칠 수 없으면 null
+ */
+function g7setup_merge_root_marker_file(string $target, string $existing, string $release): ?string
+{
+    $pair = g7setup_root_marker_pair($target);
+    if ($pair === null) {
+        return null;
+    }
+
+    $releaseRange = g7setup_marker_block_range($release, $pair);
+    if ($releaseRange === null) {
+        return null;
+    }
+    $block = str_replace(["\r\n", "\r"], "\n", substr($release, $releaseRange[0], $releaseRange[1] - $releaseRange[0]));
+    if (substr($block, -1) !== "\n") {
+        $block .= "\n";
+    }
+
+    $count = g7setup_marker_count($existing, $pair);
+    $range = g7setup_marker_block_range($existing, $pair);
+
+    if ($count === 0 && $target === '.htaccess') {
+        // 블록을 맨 앞에 둔다. BOM 은 파일 첫머리에 남긴다.
+        $bom = str_starts_with($existing, "\xEF\xBB\xBF") ? "\xEF\xBB\xBF" : '';
+        $before = $bom;
+        $after = substr($existing, strlen($bom));
+    } elseif ($count === 1 && $range !== null) {
+        $before = substr($existing, 0, $range[0]);
+        $after = substr($existing, $range[1]);
+    } else {
+        return null;
+    }
+
+    // 줄바꿈은 대상 파일(블록 밖)의 것을 따른다 — 한 파일 안에서 줄바꿈이 갈리지 않게 한다.
+    $outside = $before.$after;
+    $crlf = substr_count($outside, "\r\n");
+    if ($crlf > substr_count($outside, "\n") - $crlf) {
+        $block = str_replace("\n", "\r\n", $block);
+    }
+
+    $merged = $before.$block.$after;
+
+    // web.config 는 합친 결과가 XML 로 읽혀야 한다 — IIS 는 파싱에 실패하면 사이트 전체를 500 으로
+    // 만든다. 판정 함수가 막힌 환경에서는 업데이터와 같이 통과시킨다.
+    if ($target === 'web.config'
+        && g7setup_has_function('simplexml_load_string') && g7setup_has_function('libxml_use_internal_errors')) {
+        $previous = libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($merged);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if ($xml === false) {
+            return null;
+        }
+    }
+
+    return $merged;
+}
+
+/**
+ * 루트 마커 파일을 어떻게 쓸지 정한다.
+ *
+ * 디스크에 그 파일이 없거나, 있는 것이 이 파일이 둔 임시 보호 규칙이면 배포본을 그대로
+ * 쓴다(`copy`). 운영자 파일이면 합친다(`merge`) — 합칠 수 없으면 `conflict` 다.
+ *
+ * @param  ZipArchive  $zip  열린 아카이브
+ * @param  int  $index  엔트리 인덱스
+ * @param  string  $target  대상 상대 경로
+ * @param  string  $baseDir  대상 디렉토리 절대 경로
+ * @return array{mode: string, content: string} mode 는 copy·merge·conflict
+ */
+function g7setup_root_marker_resolution(ZipArchive $zip, int $index, string $target, string $baseDir): array
+{
+    $full = $baseDir.'/'.$target;
+
+    if (g7setup_root_marker_pair($target) === null || ! is_file($full) || is_link($full)) {
+        return ['mode' => 'copy', 'content' => ''];
+    }
+
+    $existing = @file_get_contents($full);
+    if (! is_string($existing)) {
+        return ['mode' => 'conflict', 'content' => ''];
+    }
+
+    $body = str_starts_with($existing, "\xEF\xBB\xBF") ? substr($existing, 3) : $existing;
+    if ($target === G7_SETUP_GUARD_FILE && str_starts_with($body, G7_SETUP_GUARD_HEADER)) {
+        return ['mode' => 'copy', 'content' => ''];
+    }
+
+    $release = $zip->getFromIndex($index);
+    if (! is_string($release)) {
+        return ['mode' => 'conflict', 'content' => ''];
+    }
+
+    $merged = g7setup_merge_root_marker_file($target, $existing, $release);
+
+    return $merged === null
+        ? ['mode' => 'conflict', 'content' => '']
+        : ['mode' => 'merge', 'content' => $merged];
+}
+
+/**
+ * 해제 계획 중 합칠 수 없는 운영자 루트 파일을 찾는다 — 아무것도 쓰기 전에 멈추기 위해서다.
+ *
+ * 루트 파일은 맨 마지막에 쓰이므로, 그 자리에서 멈추면 `.htaccess` 가 이미 놓여 이 파일 자신이
+ * 브라우저에서 사라진 뒤일 수 있다. 그래서 해제를 시작하기 전에 판정한다.
+ *
+ * @param  ZipArchive  $zip  열린 아카이브
+ * @param  array<int, array{0: int, 1: string}>  $plan  해제 계획
+ * @param  string  $baseDir  대상 디렉토리 절대 경로
+ * @return string|null 합칠 수 없는 파일 이름. 없으면 null
+ */
+function g7setup_root_marker_conflict(ZipArchive $zip, array $plan, string $baseDir): ?string
+{
+    foreach ($plan as [$zipIndex, $target]) {
+        if (g7setup_root_marker_resolution($zip, $zipIndex, $target, $baseDir)['mode'] === 'conflict') {
+            return $target;
+        }
+    }
+
+    return null;
+}
+
 // ── 해제 ────────────────────────────────────────────────────────────────────
 
 /**
@@ -662,6 +971,18 @@ function g7setup_write_entry(ZipArchive $zip, int $index, string $target, string
         @unlink($full);
     }
 
+    // 운영자가 미리 둔 루트 `.htaccess`·`web.config` 는 통째로 덮지 않는다 — G7 블록만 들이고
+    // 블록 밖은 보존한다(코어 업데이터와 같은 규칙). 합칠 수 없는 경우는 해제 시작 전에 걸렀다.
+    $rootMarker = g7setup_root_marker_resolution($zip, $index, $target, $baseDir);
+    if ($rootMarker['mode'] === 'conflict') {
+        return $target;
+    }
+    if ($rootMarker['mode'] === 'merge') {
+        $content = $rootMarker['content'];
+
+        return @file_put_contents($full, $content, LOCK_EX) === strlen($content) ? null : $target;
+    }
+
     $source = $zip->getStream((string) $zip->getNameIndex($index));
     if ($source === false) {
         return $target;
@@ -707,7 +1028,7 @@ function g7setup_cleanup(string $zipName): array
     $baseDir = g7setup_base_dir();
     $leftover = [];
 
-    $targets = [G7_SETUP_STATE_FILE, G7_SETUP_TOKEN_FILE];
+    $targets = [G7_SETUP_STATE_FILE, G7_SETUP_TOKEN_FILE, G7_SETUP_LOCK_FILE];
     if ($zipName !== '') {
         $targets[] = $zipName;
     }
@@ -768,6 +1089,7 @@ function g7setup_dictionary(): array
             'zip_open_failed' => '압축 파일을 열지 못했습니다. 업로드가 완전히 끝났는지 확인해주세요.',
             'unsafe_entry' => '압축 파일 안에 안전하지 않은 경로가 있어 중단했습니다: :entry',
             'write_failed' => '파일을 쓰지 못했습니다: :entry',
+            'root_file_conflict' => '이 폴더에 이미 :file 파일이 있는데 G7 설정 블록(BEGIN G7 ~ END G7)이 없거나 여러 벌이라 내용을 합칠 수 없습니다. 기존 파일은 그대로 두었습니다. 그 파일을 다른 이름으로 옮기거나 정리한 뒤 다시 시도해주세요.',
             'incomplete_payload' => '압축을 풀었지만 필수 파일이 보이지 않습니다. 압축 파일을 다시 올려주세요.',
             'done_title' => '압축 풀기가 끝났습니다.',
             'done_next' => '설치 마법사로 이동',
@@ -802,6 +1124,7 @@ function g7setup_dictionary(): array
             'zip_open_failed' => 'Could not open the archive. Make sure the upload completed.',
             'unsafe_entry' => 'Stopped because the archive contains an unsafe path: :entry',
             'write_failed' => 'Could not write a file: :entry',
+            'root_file_conflict' => ':file already exists in this folder, but its G7 block (BEGIN G7 to END G7) is missing or duplicated, so the contents cannot be merged. The existing file was left untouched. Rename or tidy it, then try again.',
             'incomplete_payload' => 'Extraction finished but required files are missing. Please upload the archive again.',
             'done_title' => 'Extraction finished.',
             'done_next' => 'Go to the installer',
@@ -910,6 +1233,9 @@ function g7setup_authenticate(array &$state): array
         $state['attempts'] = 0;
         $state['locked_until'] = 0;
         // 번호 파일은 첫 인증 성공과 함께 사라진다 — 정적 서빙으로 새어 나갈 창을 닫는다.
+        // 상태 파일의 해시도 함께 지운다. 소금 없는 6자리 해시는 평문과 같고, 남겨 두면 그 번호가
+        // 계속 유효하다. 세션을 잃으면 재발급 경로가 새 번호와 새 해시를 세운다.
+        $state['token_hash'] = '';
         @unlink(g7setup_token_path());
 
         return ['ok' => true, 'session' => $newSession, 'error' => null];
@@ -993,9 +1319,13 @@ function g7setup_handle_extract(): void
         g7setup_json(['ok' => false, 'code' => 'zip_missing_extension', 'message' => g7setup_lang('zip_missing_extension')], 500);
     }
 
+    // 판정은 상태 잠금 안에서 읽고 쓴다 — 병렬 요청이 같은 시도 횟수를 읽고 덮어쓰면 오입력
+    // 상한과 지수 지연을 우회한다. 잠금은 응답(`exit`) 전에 푼다.
+    $lock = g7setup_state_lock();
     $state = g7setup_state_read();
     $auth = g7setup_authenticate($state);
     g7setup_state_write($state);
+    g7setup_state_unlock($lock);
 
     if (! $auth['ok']) {
         $error = $auth['error'] ?? ['code' => 'invalid_token', 'message' => g7setup_lang('invalid_token', ['remaining' => 0])];
@@ -1054,6 +1384,17 @@ function g7setup_handle_extract(): void
     if (! g7setup_plan_is_g7_payload($plan)) {
         $zip->close();
         g7setup_json(['ok' => false, 'code' => 'not_a_g7_payload', 'message' => g7setup_lang('not_a_g7_payload')], 400);
+    }
+
+    // 합칠 수 없는 운영자 루트 파일이 있으면 아무것도 쓰기 전에 멈춘다 — 그 파일을 덮지 않는다.
+    $conflict = g7setup_root_marker_conflict($zip, $plan, $baseDir);
+    if ($conflict !== null) {
+        $zip->close();
+        g7setup_json([
+            'ok' => false,
+            'code' => 'root_file_conflict',
+            'message' => g7setup_lang('root_file_conflict', ['file' => $conflict]),
+        ], 409);
     }
 
     $state['strip_prefix'] = $prefix;

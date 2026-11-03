@@ -10,7 +10,6 @@
  * 대상: 설치 요구사항의 쓰기 디렉터리(REQUIRED_DIRECTORIES, 존재하는 것만, 하위 전체) → 계정:그룹,
  *       .env → 소유자 유지·그룹만 웹서버 그룹·0640, 남은 runtime.php → 계정 소유·0600.
  */
-
 if (! function_exists('g7_cli_is_root')) {
     /**
      * 유효 사용자가 root 인지 (Windows 는 항상 false).

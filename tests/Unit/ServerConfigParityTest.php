@@ -528,8 +528,11 @@ class ServerConfigParityTest extends TestCase
      *   · Apache·nginx — 캡처가 `/` 로 시작할 수 있어 **가드가 필요**하다.
      *   · IIS — 캡처가 `public/` 뒤에서 시작해 구조적으로 성립하지 않는다. 그 판정을
      *     **주석으로 선언**하는 것이 이 서버의 의무다(없으면 「빠뜨린 것」과 구분되지 않는다).
-     *   · Caddy — 성립하지만 이 저장소가 실측하지 않기로 확정한 서버다(제품 결정 2026-08-27).
-     *     **알려진 한계로 선언**하고 운영자가 잴 항목을 남기는 것이 의무다.
+     *   · Caddy — 성립한다(`redir @g7_public /{re.g7public.1}` 가 `/public//evil.example/p` 에서
+     *     `//evil.example/p` 를 낸다). 종전에는 실측하지 않는 서버(제품 결정 2026-08-27)라는
+     *     이유로 알려진 한계 선언만 요구했는데, 그 선언은 열린 리다이렉트를 열린 채 두었다.
+     *     형제 둘과 같은 가드(`@g7_public` matcher 블록의 `not path_regexp ^/public//`)를
+     *     **주석 밖 규칙**에서 요구한다. 실측하지 않는 결정은 그대로다 — 이 검사는 정적 대조다.
      *
      * 그래서 넷 다 「가드 또는 선언」을 요구한다. 어느 쪽도 없으면 그 서버는 이 축을 한
      * 번도 판정하지 않은 것이다.
@@ -553,7 +556,9 @@ class ServerConfigParityTest extends TestCase
             // 갈리고, 쿼리에 URL 이 실린 정상 요청이 이 서버에서만 404 가 된다
             // (10차 G3 라운드 D10-1).
             self::NGINX_FRAGMENT => '#if\s*\(\s*\$request_uri\s*~\s*"\^\[\^\?\]\*//"\s*\)#',
-            self::CADDY_FRAGMENT => '~알려진 한계[^\n]*빈 세그먼트~u',
+            // Caddy 는 정본 주소 matcher 블록 **안**에 빈 세그먼트 제외 조건이 있어야 한다 —
+            // 다른 matcher 에 있으면 redir 의 발동 조건을 좁히지 못한다. 주석 밖 본문에서 잰다.
+            self::CADDY_FRAGMENT => '~@g7_public\s*\{[^{}]*^not\s+path_regexp\s+\^/public//\s*$[^{}]*\}~m',
             // IIS 는 「성립하지 않는다」 단정을 근거로 삼지 않는다 — 그 단정이 실측
             // 결과 **거짓**이었고(슬래시 두 겹부터 캡처가 `//` 로 시작한다), 게이트가
             // 그 문장을 판정 완료로 인정하고 있었다. 근거를 **확인 목록 항목**으로
@@ -565,9 +570,13 @@ class ServerConfigParityTest extends TestCase
         $measured = 0;
 
         foreach ($evidence as $file => $pattern) {
+            $haystack = $file === self::CADDY_FRAGMENT
+                ? $this->directiveBody($file)
+                : (string) file_get_contents(base_path($file));
+
             $this->assertMatchesRegularExpression(
                 $pattern,
-                (string) file_get_contents(base_path($file)),
+                $haystack,
                 $file.' 가 빈 세그먼트 축을 판정하지 않는다 — 가드를 두거나, 그 서버에서 '
                 .'성립하지 않는 근거(또는 알려진 한계)를 선언해야 한다. 선언이 없으면 '
                 .'「막았다」와 「빠뜨렸다」가 구분되지 않는다'

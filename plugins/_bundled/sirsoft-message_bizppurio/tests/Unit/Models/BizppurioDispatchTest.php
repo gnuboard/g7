@@ -11,7 +11,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 /**
  * BizppurioDispatch 모델 — 캐스트·마스킹 접근자·회원 관계 검증.
  *
- * @scenario dispatch-history-webhook
+ * @scenario recipient_kind=member
  */
 class BizppurioDispatchTest extends PluginTestCase
 {
@@ -19,6 +19,7 @@ class BizppurioDispatchTest extends PluginTestCase
      * enum 캐스트가 적용된다.
      *
      * @scenario channel=lms
+     *
      * @effects dispatch_model_casts_channel_and_status_to_enums
      *
      * @return void 반환값 없음
@@ -68,6 +69,7 @@ class BizppurioDispatchTest extends PluginTestCase
      * to_user_id 로 회원 관계를 로드한다.
      *
      * @scenario channel=sms, recipient_kind=member
+     *
      * @effects dispatch_user_relation_loads_member_by_to_user_id
      *
      * @return void 반환값 없음

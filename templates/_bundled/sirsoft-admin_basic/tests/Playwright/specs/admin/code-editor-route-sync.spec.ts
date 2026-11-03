@@ -7,7 +7,7 @@
  *
  * 진입 축(마커 아님 — 평문): code_editor_entry=direct_route_query.
  *
- * @scenario layout-editor-chrome-controls
+ * @scenario code_editor_entry=direct_route_query
  * @effects code_editor_restores_layout_from_route_query
  * @effects code_editor_clears_selection_left_over_from_another_template
  */

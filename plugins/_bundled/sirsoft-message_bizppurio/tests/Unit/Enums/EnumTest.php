@@ -11,7 +11,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 /**
  * 발송 관련 Enum 4종 검증.
  *
- * @scenario plugin-settings
+ * @scenario field_kind=plain
  */
 class EnumTest extends PluginTestCase
 {

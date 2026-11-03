@@ -215,6 +215,10 @@ return [
         'mixed_debounce_flushed' => ':name の :event に debounce を指定したアクションとすぐ実行するアクションが混在しています — すぐ実行するアクションが動くたびに待機中の debounce アクションも即時実行され、入力のたびに実行されます。待たせるには、このイベントのアクションをすべて debounce に揃えてください。',
         'entry_only_key_ignored' => ':key は画面で直接操作するアクションにのみ適用されます。この位置(イベント受信・失敗処理・初期アクション・内側のアクション)の :handler アクションでは無視されます。',
     ],
+    'schedule_extraction' => [
+        'not_artisan' => 'Artisan の実行文字列ではありません(php/artisan の接頭辞がありません)。',
+        'command_name_missing' => 'コマンド名が見つかりませんでした。',
+    ],
     'storage' => [
         'unsafe_path' => '許可されていない保存パスです。',
         'destructive_on_root' => 'ストレージの最上位パスはこの方法では削除できません。',

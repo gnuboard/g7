@@ -336,6 +336,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 상대 서명 URL(`temporarySignedRoute(..., absolute: false)`)을 그대로 응답에 싣기 | `AssetUrl::sitePath(URL::temporarySignedRoute(..., absolute: false))` | 상대 URL 생성은 요청의 마운트 접두사를 벗기므로 하위 폴더 설치에서 사이트 밖을 가리킨다. 서명은 접두사를 뺀 경로에 걸리고 검증(`hasValidSignature(absolute: false)`)도 접두사를 뺀 `Request::path()` 로 하므로, 서명된 값 밖에서 붙인 접두사는 서명을 깨지 않는다 |
 | 화면·서비스마다 금액을 다시 계산 (`합계 = 단가 × 수량` 재구현) | `OrderCalculationService::calculate()` 결과만 사용 | 계산이 여섯 지점에 흩어지면 화면 금액과 결제 금액이 갈라지고, 그 어긋남은 결제 완료 검증에서 `PaymentAmountMismatchException` 으로 뒤늦게 나타난다 |
 | 마일리지 잔액을 `ecommerce_mileage_balances` 에서 읽어 차감 가능 여부 판정 | 원장(`ecommerce_mileage_transactions`) `FOR UPDATE` 재검증 | 캐시는 단방향 파생물이라 동시 요청에서 뒤처질 수 있다 — 캐시를 근거로 차감하면 잔액이 음수가 된다 |
 | 마일리지 잔액 캐시를 서비스에서 직접 증감 | 원장에 기록한 뒤 같은 트랜잭션 마지막에 캐시 재계산 | 두 곳을 각각 갱신하면 원장 합계와 캐시가 어긋나고, 정합 교정 스케줄(`reconcile-mileage-balance`)이 매번 되돌린다 |

@@ -8,6 +8,7 @@ use App\Enums\ScheduleTriggerType;
 use App\Execution\CommandRunnerResolver;
 use App\Execution\ExecutionMode;
 use App\Scheduling\Exceptions\ScheduleCommandExtractionException;
+use App\Support\ExecutionEnvironment;
 use Carbon\CarbonImmutable;
 use Cron\CronExpression;
 use Illuminate\Console\Scheduling\CallbackEvent;
@@ -36,7 +37,9 @@ use Illuminate\Support\Facades\Log;
  * - **조건은 실행 시점에 평가한다** (R16). when()/skip() 은 소급 실행에서도
  *   그때 그 자리에서 판정한다 — 확장의 enabled_config 가 OFF 면 돌지 않는다.
  * - **중복 방지는 이벤트가 가진 mutex 를 그대로 쓴다** (R18). 서버 크론과 웹 크론이
- *   동시에 걸린 환경에서 두 진입점이 같은 자물쇠를 본다.
+ *   동시에 걸린 환경에서 두 진입점이 같은 자물쇠를 본다. 자물쇠는 **동시** 실행만 막는다 —
+ *   서버 크론이 먼저 돌린 이벤트를 뒤이은 웹 호출의 소급 창이 다시 잡지 않는 것은, 서버 크론
+ *   경로도 이벤트별 실행 시각을 같은 기록에 남기기 때문이다(`RecordServerCronEventRun`).
  *
  * 실행 창 소급 판정(D17)의 근거는 ScheduleRunState 가 보관한다.
  *
@@ -250,13 +253,48 @@ class ScheduleRunner
     }
 
     /**
+     * 등록된 이벤트 객체의 식별 키를 찾습니다 (서버 크론 경로의 실행 기록용).
+     *
+     * 키는 `registeredEvents()` 가 매기는 것과 같아야 한다 — 같은 표현식·대상이 두 번 등록되면
+     * 순번이 붙으므로, 키를 다시 계산하지 않고 등록 목록에서 **같은 객체**를 찾는다.
+     *
+     * @param  Event  $event  스케줄 이벤트
+     * @param  Application  $app  애플리케이션
+     * @return string|null 식별 키 (이 스케줄에 등록된 이벤트가 아니면 null)
+     */
+    public function eventKeyFor(Event $event, Application $app): ?string
+    {
+        foreach ($this->registeredEvents($app) as $key => $candidate) {
+            if ($candidate === $event) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * 한 번의 호출에 허용되는 실행 시간(초).
+     *
+     * PHP 실행 제한(`max_execution_time`)이 설정값보다 짧으면 그 8할로 자른다 — 상한에
+     * 닿기 전에 PHP 가 요청을 죽이면 요약도 이월 기록도 남지 않는다. 8할은 형제
+     * `SubprocessCommandRunner::readTimeoutSeconds()` 와 같은 여유다. 제한이 없으면(0 —
+     * CLI 기본값) 설정값 그대로다.
      *
      * @return int 초
      */
     public function maxRuntimeSeconds(): int
     {
-        return max(1, (int) config('core.cron.max_runtime_seconds', 50));
+        $configured = max(1, (int) config('core.cron.max_runtime_seconds', 50));
+
+        // `ini_get` 도 차단 대상이다 — 못 읽으면 「무제한」과 같이 다룬다(형제 러너와 같은 전제).
+        $limit = ExecutionEnvironment::hasFunction('ini_get') ? (int) ini_get('max_execution_time') : 0;
+
+        if ($limit <= 0) {
+            return $configured;
+        }
+
+        return max(1, min($configured, (int) floor($limit * 0.8)));
     }
 
     /**
@@ -310,8 +348,10 @@ class ScheduleRunner
     /**
      * 이벤트가 소급 창 안에서 실행 대상인지 판정합니다.
      *
-     * 창 안에서 여러 번 due 였던 주기 이벤트도 **1회만** 대상이 된다 — 정리 배치는
-     * 멱등이라 횟수 보전이 무의미하고, 반복은 실행 상한만 소모한다.
+     * 창 안에서 여러 번 due 였던 주기 이벤트도 **1회만** 대상이 된다 — 같은 진입점이 놓친
+     * 회차를 횟수대로 보전하지 않는다는 뜻이고, 반복은 실행 상한만 소모한다. 이미 실행된
+     * 회차는 진입점과 무관하게 다시 돌지 않는다 — 서버 크론(`schedule:run`)이 돌린 이벤트도
+     * 같은 실행 기록(`lastRunAt`)에 남아 이 판정의 하한이 된다.
      *
      * 판정 결과가 **세 갈래**인 것이 중요하다: 대상이다 / 대상이 아니다 / **주기를
      * 해석할 수 없다**. 셋째를 둘째에 합치면 잘못된 표현식을 등록한 예약이 요약에서

@@ -15,7 +15,7 @@
  *
  * @vitest-environment jsdom
  *
- * @scenario dispatch-result-injection
+ * @scenario e2e_view_action=view_result_cell
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

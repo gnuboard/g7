@@ -647,36 +647,6 @@ export function normalizeForOriginCheck(value: string): string {
 }
 
 /**
- * 값이 **같은 오리진의 경로**인지 판정한다 — 브라우저가 그대로 여는 주소용.
- *
- * 브라우저에 그대로 넘기는 주소(`location.assign` · `window.open` · 히스토리 API)는
- * 라우터를 거치지 않으므로, 넘기기 전에 이 판정을 통과해야 한다. 통과 조건은
- * 「정규화 후 `/` 로 시작하고, protocol-relative(`//`)도 scheme 도 아닐 것」이다.
- *
- * 앞뒤 공백은 판정 전에 걷어낸다 — `withBasePrefix()` 가 같은 자리에서 같은 이유로
- * trim 하므로(`' /images/a.png'`), 두 함수가 보는 값이 갈리면 안 된다.
- *
- * @since engine-v1.86.0
- * @param value 판정할 주소 문자열
- * @returns 같은 오리진의 경로면 true
- */
-export function isSameOriginSitePath(value: unknown): boolean {
-    if (typeof value !== 'string') {
-        return false;
-    }
-
-    const normalized = normalizeForOriginCheck(value.trim());
-
-    if (!normalized.startsWith('/') || normalized.startsWith('//')) {
-        return false;
-    }
-
-    // `/` 로 시작하면 scheme 이 있을 수 없지만, 정규화가 바뀌어도 판정이 무너지지
-    // 않도록 명시한다 (형제 `isAllowedScriptSrc` 와 같은 3분기 구조).
-    return !/^[a-z][a-z0-9+.\-]*:/i.test(normalized);
-}
-
-/**
  * 사이트 마운트 접두사를 벗겨 **라우트 기준 경로**로 되돌린다.
  *
  * `withBasePrefix()` 의 역함수다. 브라우저가 알려 주는 주소(`location.pathname`)는

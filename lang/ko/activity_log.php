@@ -80,7 +80,7 @@ return [
         'version_update' => '버전 업데이트',
         'version_restore' => '버전 복원',
         'reset' => '초기화',
-        // 코어 업데이트 (#609 D23) — 실행·성공·실패를 각각 남긴다
+        // 코어 업데이트 — 실행·성공·실패를 각각 남긴다
         'started' => '시작',
         'completed' => '완료',
         'failed' => '실패',
@@ -177,7 +177,7 @@ return [
         'menu_sync_roles' => '메뉴 역할 동기화 (ID: :menu_id)',
         'menu_get_by_extension' => '확장별 메뉴 조회 (:extension_type: :extension_identifier)',
 
-        // 코어 업데이트 (#609 D23)
+        // 코어 업데이트
         'core_update_started' => '코어 업데이트 시작 (:from → :to)',
         'core_update_completed' => '코어 업데이트 완료 (:from → :to)',
         'core_update_failed' => '코어 업데이트 실패 (:from → :to) — 단계: :step / 되돌리기: :rollback',

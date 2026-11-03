@@ -134,7 +134,7 @@ axes:
   # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹, 제품 결정).
   # 이 매니페스트가 선언한 테스트 파일들의 @scenario 가 이미 쓰고 있던 축 이름 전수이며,
   # 값은 실제 마킹에서 도출했다. pairwise + :cross-product 면제라 조합 전개에는 영향이 없다.
-  url_kind: [board_attachment, ecommerce_image_fallback, ckeditor5_image_fallback]  # 마운트 접두사를 실어야 하는 폴백 URL 의 종류
+  url_kind: [board_attachment, ecommerce_image_fallback, ckeditor5_image_fallback, ecommerce_signed_image, page_attachment]  # 마운트 접두사를 실어야 하는 URL 의 종류 (한시 서명 URL 포함)
   hosting_restriction: [disabled_glob]                              # 호스팅이 차단한 함수 축 (glob)
   extension_discovery: [upgrade_steps]                              # glob 없이 살아남아야 하는 파일 열거 지점
   entry_file: [root_index, public_htaccess]                         # 루트 진입 파일 2종
@@ -233,6 +233,11 @@ effects:
   - board_attachment_urls_carry_the_mount_prefix
   - ecommerce_image_fallback_urls_carry_the_mount_prefix
   - ckeditor5_image_fallback_urls_carry_the_mount_prefix
+  # 상대 한시 서명 URL(`temporarySignedRoute(..., absolute: false)`)은 base 를 벗긴 경로에 서명되고 검증도
+  # base 를 뺀 `Request::path()` 로 하므로, 접두사는 서명된 값 밖에서 붙인다 — 붙여도 서명이 유효하다
+  - signed_attachment_urls_carry_the_mount_prefix_and_verify
+  # 공개 스토리지 대체 서빙은 업로드물 통로다 — 실행 가능한 문서(html·xhtml·svg·xml)는 내려받기 + nosniff
+  - public_storage_active_documents_are_downloaded_not_rendered
   - run_lock_degradation_reaches_the_operator_not_only_the_log
   - version_check_failure_message_has_no_unfilled_placeholder
   # 루트 진입점 2종 (B-2 · D25)
@@ -639,6 +644,7 @@ test_files:
   - modules/_bundled/sirsoft-board/tests/Unit/AttachmentPreviewUrlTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/ImageUrlBasePrefixTest.php
   - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/ImageUrlBasePrefixTest.php
+  - modules/_bundled/sirsoft-page/tests/Unit/Models/PageAttachmentUrlBasePrefixTest.php
   # 12차 — 하위 폴더 마운트의 화면 이동(양방향)·확장 모집단·상한 신원 축.
   # 종단(실제 `/g7/` 마운트에서 화면이 열리는지)은 P0 격리 환경 실측 몫이다 — 이 축도
   # 위 `audit:allow` 가 적은 것과 같은 이유로 jsdom·PHPUnit 런타임 밖이다.

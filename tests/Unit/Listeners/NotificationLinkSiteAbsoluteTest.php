@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Listeners;
 
+use App\Listeners\Analytics\AnalyticsNotificationDataListener;
 use App\Listeners\CoreNotificationDataListener;
 use App\Listeners\SeoNotificationDataListener;
 use App\Models\User;
@@ -108,5 +109,21 @@ class NotificationLinkSiteAbsoluteTest extends TestCase
 
         $this->assertSame('https://example.com/g7/admin/settings?tab=seo', $done['data']['action_url']);
         $this->assertSame('https://example.com/g7/admin/settings?tab=seo', $failed['data']['action_url']);
+    }
+
+    /**
+     * 통계 알림(집계 실패)의 site_url 이 형제와 같이 후행 슬래시 없는 사이트 주소인지 확인한다.
+     *
+     * @scenario base_path=subpath, navigation_direction=navigation
+     *
+     * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
+     */
+    public function test_analytics_listener_site_url_follows_the_configured_site_url_without_trailing_slash(): void
+    {
+        $out = (new AnalyticsNotificationDataListener)->extractData($this->default(), 'analytics_archive_failed', [['run_type' => 'day']]);
+
+        $this->assertSame('https://example.com/g7', $out['data']['site_url']);
     }
 }

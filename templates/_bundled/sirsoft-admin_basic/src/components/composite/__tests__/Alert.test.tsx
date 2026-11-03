@@ -112,7 +112,7 @@ describe('Alert 컴포넌트', () => {
   describe('type별 렌더링 - error', () => {
     // @scenario component=alert
     // @effects alert_contract_with_decorative_icon
-    // @scenario layout-semantic-asset-mapping-408-alert-info
+    // @scenario asset_class=alert-error
     // @effects test_admin_basic_alert_composite_passes_with_unified_alert_error_style
     it('error 타입은 빨간색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="error" message="에러 메시지" />);

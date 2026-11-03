@@ -242,7 +242,7 @@ class InstallerRetryLifecycleTest extends TestCase
     }
 
     /**
-     * 22차 N-3 대칭: API 게이트(_guard)의 세 판정도 같은 폴백을 공유한다 (소스 계약 —
+     * API 게이트(_guard)의 완료 판정 두 곳이 같은 줄 단위 판정 하나를 공유한다 (소스 계약 —
      * _guard 는 자기 경로 역산을 쓰므로 temp 기반 행위 재현이 위험하다).
      *
      * @scenario endpoint_guard=finalize_allowed
@@ -257,9 +257,10 @@ class InstallerRetryLifecycleTest extends TestCase
 
         $this->assertSame(
             2,
-            substr_count($guard, 'installer_env_completed_flag_fallback($envFile)'),
-            '_guard 의 완료 판정 2곳(installer_is_completed·installer_finalize_is_completed)이 파싱 실패 폴백을 공유해야 한다 (22차 N-3)'
+            preg_match_all('/return installer_env_completed_flag\(/', $guard),
+            '_guard 의 완료 판정 2곳(installer_is_completed·installer_finalize_is_completed)이 같은 줄 단위 판정 하나를 공유해야 한다'
         );
+        $this->assertStringNotContainsString('parse_ini_file', $guard, '.env 는 INI 파서로 읽지 않는다 — 템플릿 주석이 파싱을 깨고, 성공해도 .env 로더와 다른 값을 읽는다');
     }
 
     /**

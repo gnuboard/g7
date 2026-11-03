@@ -419,9 +419,9 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
             // 「알려진 무가드 지점 없음」의 근거가 그 목록을 손으로 비운 것 자체였고, 실제로
             // 7차 G3 라운드에서 `symlink` 두 지점이 그 선언 밖에 있었다 (D-13·D-3).
             //
-            // 대신 **도출**을 단언한다: 이 파일의 전수 검사 목록(BLOCKED_FUNCTIONS)이 정적 룰이
-            // 가드를 요구하는 이름 전부를 담고 있는가. 룰에 이름이 하나 늘면 이 검사가 red 가
-            // 되어 사람이 옮긴다 — 손으로 비운 목록에는 없던 강제다.
+            // 대신 **도출**을 단언한다: 부팅 경로가 스스로 차단 가능하다고 선언한 이름을 이 파일의
+            // 전수 검사 목록(BLOCKED_FUNCTIONS)이 전부 담고 있는가. 부팅 경로에 새 가드가 생기면
+            // 이 검사가 red 가 되어 사람이 옮긴다 — 손으로 비운 목록에는 없던 강제다.
             $this->assertPendingLedgerIsDerivedNotHandEmptied();
 
             return;
@@ -442,123 +442,44 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 대기 목록이 **비어 있다는 사실**이 도출된 것인지 확인합니다.
      *
      * 「알려진 무가드 지점 없음」은 손으로 비울 수 있는 선언이라, 그 자체로는 근거가 되지
-     * 않는다. 정적 룰(`hosting-blocked-function-requires-guard`)이 가드를 요구하는 이름 중
-     * **부팅 경로가 실제로 부르는 것**을 도출해, 이 파일의 전수 검사 목록이 그것을 전부
-     * 담고 있는지 본다. 룰에 이름이 늘거나 부팅 경로에 새 호출이 생기면 red 가 된다
-     * (7차 G3 라운드 D-13).
+     * 않는다. 부팅 경로가 `installerHasFunction('…')` 으로 **스스로 차단 가능하다고 선언한
+     * 이름**을 소스에서 도출해, 이 파일의 전수 검사 목록이 그것을 전부 담고 있는지 본다.
+     * 부팅 경로에 새 가드가 생기면 그 이름이 자동으로 모집단에 들어와 red 가 된다.
      *
      * @return void 반환값 없음
      */
     private function assertPendingLedgerIsDerivedNotHandEmptied(): void
     {
-        $required = $this->guardedFunctionNamesFromRule();
-
-        $this->assertGreaterThan(
-            20,
-            count($required),
-            '정적 룰에서 가드 대상 함수명을 도출하지 못했다 — 도출이 비면 아래 비교가 공허하다'
-        );
-
-        $bootSource = '';
+        $declared = [];
         $root = dirname(__DIR__, 3);
         foreach (self::BOOT_PATH_FILES as $relative) {
-            $bootSource .= $this->sourceWithoutComments($root.'/'.$relative);
-        }
+            // 인자가 문자열 리터럴이라 주석만 지운다 — 주석 속 판정문은 가드 선언이 아니다.
+            $source = $this->sourceWithoutComments($root.'/'.$relative);
 
-        $missing = [];
-        foreach ($required as $function) {
-            // 부팅 경로가 실제로 부르는 이름만 본다 — 룰 전체를 요구하면 인스톨러가 쓰지도
-            // 않는 함수의 프로브를 강요하게 되어 검사가 목적을 잃는다.
-            if (preg_match('/(?<![\w$>])'.preg_quote($function, '/').'\s*\(/', $bootSource) !== 1) {
-                continue;
-            }
-            if (in_array($function, self::BLOCKED_FUNCTIONS, true)) {
-                continue;
-            }
-
-            $missing[] = $function;
-        }
-
-        $this->assertSame(
-            [],
-            $missing,
-            '정적 룰이 가드를 요구하고 부팅 경로가 실제로 부르는데 이 전수 검사 목록에 없는 함수: '
-            .implode(', ', $missing).' — 「알려진 무가드 지점 없음」 선언이 그만큼 사실이 아니다'
-        );
-    }
-
-    /**
-     * 정적 룰 파일에서 가드 대상 함수명을 도출합니다.
-     *
-     * 룰은 JS 라 PHP 에서 실행할 수 없다. 배열 리터럴의 따옴표 문자열을 뽑는다 — 이름이
-     * 늘면 그대로 따라오고, 룰 파일이 사라지면 도출이 비어 위 하한 단언이 red 가 된다.
-     *
-     * @return array<int, string> 함수명 목록
-     */
-    private function guardedFunctionNamesFromRule(): array
-    {
-        $path = dirname(__DIR__, 3).'/.claude/scripts/audit/rules/hosting-blocked-function-requires-guard.cjs';
-
-        if (! is_file($path)) {
-            return [];
-        }
-
-        // 이 자리의 룰 파일은 **공통 원본으로 위임하는 shim** 일 수 있다. 그 판본에는
-        // `GUARDED_FUNCTIONS` 상수가 없으므로 도출이 언제나 0 이 되고, 아래 비교가 공허해져
-        // 이 검사가 red 로 굳는다 — 하네스 진입점이 생성물로 바뀐 뒤 실제로 그랬다.
-        //
-        // 두 번째 경로를 적어 두는 대신 **위임을 따라간다.** 진입점이 가리키는 곳을 읽으므로
-        // 원본이 어디로 옮겨져도 이 검사가 따라가고, 테스트가 하네스 배치를 알 필요도 없다.
-        for ($hop = 0; $hop < 3; $hop++) {
-            // 위임 판정도 주석을 지운 뒤에 한다 — 주석에 적힌 위임 경로를 따라가지 않게 한다.
-            $raw = $this->sourceWithoutComments($path, false);
-
-            // shim 은 작다(1 KB 미만). 룰 원본은 수십 KB 라 크기로 가른다 — 원본 안의
-            // `require('node:fs')` 같은 호출을 위임으로 오인하지 않기 위한 구분이다.
-            if (strlen($raw) > 4096) {
-                break;
-            }
-
-            if (! preg_match('/require(?:\.resolve)?\(\s*"([^"]+)"\s*\)/', $raw, $m)) {
-                break;
-            }
-
-            $target = realpath(dirname($path).'/'.$m[1]);
-
-            if ($target === false || ! is_file($target)) {
-                break;
-            }
-
-            $path = $target;
-        }
-
-        // 룰은 JS 다 — 주석 속 `'name'` 이 목록에 섞이지 않도록 JS 규칙으로 주석을 지운다.
-        $source = $this->sourceWithoutComments($path, false);
-        $names = [];
-
-        foreach (['GUARDED_FUNCTIONS', 'INSTALLER_SCOPED_FUNCTIONS'] as $constant) {
-            $start = strpos($source, 'const '.$constant.' = [');
-            if ($start === false) {
-                continue;
-            }
-
-            $end = strpos($source, '];', $start);
-            if ($end === false) {
-                continue;
-            }
-
-            $body = substr($source, $start, $end - $start);
-            if (preg_match_all("/'([a-z0-9_]+)'/i", $body, $m)) {
-                foreach ($m[1] as $name) {
-                    $names[strtolower($name)] = true;
+            if (preg_match_all("/\binstallerHasFunction\(\s*'([a-z0-9_]+)'/i", $source, $matches)) {
+                foreach ($matches[1] as $function) {
+                    $declared[strtolower($function)] = true;
                 }
             }
         }
 
-        $names = array_keys($names);
-        sort($names);
+        $declared = array_keys($declared);
+        sort($declared);
 
-        return $names;
+        $this->assertNotSame(
+            [],
+            $declared,
+            '부팅 경로에서 installerHasFunction 가드 선언을 하나도 찾지 못했다 — 도출이 비면 아래 비교가 공허하다'
+        );
+
+        $missing = array_values(array_diff($declared, self::BLOCKED_FUNCTIONS));
+
+        $this->assertSame(
+            [],
+            $missing,
+            '부팅 경로가 차단 가능하다고 선언했는데 이 전수 검사 목록에 없는 함수: '
+            .implode(', ', $missing).' — 「알려진 무가드 지점 없음」 선언이 그만큼 사실이 아니다'
+        );
     }
 
     /**

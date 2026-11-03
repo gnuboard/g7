@@ -7,6 +7,9 @@ use App\Extension\UpgradeContext;
 use App\Services\CoreUpdateService;
 use App\Upgrades\Data\V7_2_0\Migrations\SeedDeployFragmentLedger;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Psr\Log\AbstractLogger;
+use Stringable;
 use Tests\TestCase;
 
 /**
@@ -236,6 +239,75 @@ class SeedDeployFragmentLedgerTest extends TestCase
             $warnings,
             '원장 쓰기가 실패했는데 운영자 통로가 비었다 — 무CLI 동선의 운영자는 로그 파일을 '
                 .'열 수단이 없어 원장 손실을 영영 모른다'
+        );
+    }
+
+    /**
+     * 옛 헬퍼(통보 메서드 부재)가 메모리에 있어도 원장 쓰기 실패가 치명 종료로 번지지 않는다.
+     *
+     * 통보 버퍼 메서드 `recordDocrootExposureWarning()` 은 7.2.0 에서 생겼다. 7.1.3 이하 부모
+     * 프로세스가 in-process 로 이 스텝을 돌리면 그 메서드가 없으므로, 스텝은 부르지 않고 로그
+     * 경고만 남겨야 한다.
+     *
+     * @scenario deploy_fragment_ledger=absent, deploy_fragment_state=unmodified, process_shape=in_process_stale_helper
+     *
+     * @effects deploy_fragment_ledger_write_failure_reaches_the_operator
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stale_helper_without_buffer_method_falls_back_to_logger(): void
+    {
+        $nginx = $this->sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx'.DIRECTORY_SEPARATOR.'g7-layout2.conf';
+        File::put($nginx, "# nginx\n");
+
+        $ledgerDir = storage_path('app'.DIRECTORY_SEPARATOR.'core-update');
+        File::ensureDirectoryExists(dirname($ledgerDir));
+        File::put($ledgerDir, 'not a directory');
+
+        StorageLinkHelper::takeDocrootExposureWarnings();
+
+        $logger = new class extends AbstractLogger
+        {
+            /** @var array<int, array{level: string, message: string}> */
+            public array $records = [];
+
+            /**
+             * 기록을 모읍니다.
+             *
+             * @param  mixed  $level  로그 등급
+             * @param  string|Stringable  $message  메시지
+             * @param  array<string, mixed>  $context  문맥
+             * @return void 반환값 없음
+             */
+            public function log($level, string|Stringable $message, array $context = []): void
+            {
+                $this->records[] = ['level' => (string) $level, 'message' => (string) $message];
+            }
+        };
+        Log::shouldReceive('channel')->with('upgrade')->andReturn($logger);
+
+        $step = new class extends SeedDeployFragmentLedger
+        {
+            /**
+             * 옛 헬퍼를 흉내 낸다 — 7.2.0 신설 메서드가 없다.
+             *
+             * @param  string  $method  메서드 이름
+             * @return bool 언제나 false
+             */
+            protected function storageLinkHelperHas(string $method): bool
+            {
+                return false;
+            }
+        };
+
+        $step->run(new UpgradeContext('7.1.3', '7.2.0', '7.2.0'));
+
+        $this->assertSame([], StorageLinkHelper::takeDocrootExposureWarnings(), '부재로 판정한 메서드를 불렀다');
+        $warnings = array_filter($logger->records, fn (array $record): bool => $record['level'] === 'warning');
+        $this->assertStringContainsString(
+            'deploy 조각 해시 원장을 쓰지 못했습니다',
+            implode("\n", array_column($warnings, 'message')),
+            '옛 헬퍼 상태에서 원장 쓰기 실패가 로그 경고로도 남지 않았다'
         );
     }
 }

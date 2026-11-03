@@ -857,7 +857,7 @@ if (/^\/shop\/orders\/([^/]+)\/complete$/.test(routePath(window.location.pathnam
 
 서버가 만드는 **절대** 주소(알림·메일 링크 · 결제·본인인증의 복귀·통보 주소 · 사이트맵 · 봇 화면)는 브라우저 축이 아니라 서버 축이다 — 사이트 주소 기준의 `App\Support\SiteUrl`(회원이 여는 사용자 화면 주소는 `ScreenUrl`)이 그 단일 지점이고, `url()` 이나 `config('app.url').'/…'` 로 조립하지 않는다. 하위 폴더 설치에서 이미 접두사가 붙은 경로를 넘겨도 `SiteUrl` 은 접두사를 다시 붙이지 않으며, `AssetUrl::siteAbsolute()` 는 그 위임(호환)이다 (상세: [routing.md "절대 URL 은 사이트 주소로 만든다"](../backend/routing.md#절대-url-은-사이트-주소로-만든다) · ["마운트 접두사"](../backend/routing.md#마운트-접두사--라우트는-언제나-접두사-없이-등록된다)).
 
-`routePath()`/`stripBasePrefix()` 의 결과가 `/` 하나로 시작한다는 보장은 없다 — `/g7//evil.com` 을 벗기면 `//evil.com` 이다(접두사 뒤 나머지를 그대로 돌려준다). 그 값을 라우터(`navigate`)에 넘기면 어떤 라우트 패턴에도 매치되지 않아 `routeNotFound` 로 막히지만, `location.href` 대입처럼 라우터를 거치지 않는 통로에 넘기면 그 방어가 없다. 벗긴 값은 대조에만 쓰고 이동 주소로 재사용하지 않는다.
+`routePath()`/`stripBasePrefix()` 의 결과가 `/` 하나로 시작한다는 보장은 없다 — `/g7//evil.com` 을 벗기면 `//evil.com` 이다(접두사 뒤 나머지를 그대로 돌려준다). 그 값을 `navigate` 에 넘기면 사이트 밖 목적지로 판정돼 이동하지 않지만(engine-v1.87.0), `location.href` 대입처럼 라우터를 거치지 않는 통로에 넘기면 그 방어가 없다. 벗긴 값은 대조에만 쓰고 이동 주소로 재사용하지 않는다.
 
 경계 판정의 기대표(입력 24종 × 붙이기/벗기기 + 접두사 정규화 변종)는 `tests/Fixtures/AssetUrl/base-prefix-boundary.json` 하나이며 서버 `AssetUrlTest` 와 프론트 `assetUrl.test.ts` 가 같은 파일을 읽는다. 규칙을 바꾸면 양쪽 구현과 그 표를 함께 바꾼다.
 

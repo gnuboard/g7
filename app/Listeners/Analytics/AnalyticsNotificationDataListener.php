@@ -5,6 +5,7 @@ namespace App\Listeners\Analytics;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 
 /**
  * 방문자 통계 알림 데이터 필터 리스너
@@ -204,7 +205,8 @@ class AnalyticsNotificationDataListener implements HookListenerInterface
             'data' => array_merge([
                 'app_name' => (string) config('app.name'),
                 'name' => '{recipient_name}',
-                'site_url' => (string) config('app.url'),
+                // 형제 알림과 같은 사이트 주소(끝 슬래시 정규화) — `APP_URL` 원문을 싣지 않는다.
+                'site_url' => SiteUrl::base(),
             ], $data),
             'context' => [],
         ];

@@ -155,7 +155,6 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 플러그인 설정을 mock합니다.
      *
      * @param  array  $overrides  기본 설정을 덮어쓸 값
-     *
      * @return void 반환값 없음
      */
     private function mockPluginSettings(array $overrides = []): void
@@ -181,7 +180,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 기본값이 `/shop/...` 리터럴이던 시절에는 주소를 바꾼 상점의 구매자가 결제를 마치고
      * 존재하지 않는 페이지로 떨어졌다. 리다이렉트라 예외도 404 로그도 남지 않는다.
      *
-     * @scenario payment_redirect_follows_shop_route_path
+     * @scenario route_setting=custom, redirect_kind=success
      *
      * @effects payment_redirect_follows_route_path
      *
@@ -221,6 +220,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 결제 성공 시 주문 완료 페이지로 리다이렉트하는지 확인
      *
      * @scenario endpoint=success_redirect, caller=pg_server_confirmed, order_owner=self, order_state=payable_pending
+     *
      * @effects success_completes_the_order_only_after_server_confirm
      *
      * @return void 반환값 없음
@@ -264,6 +264,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 존재하지 않는 주문번호로 요청 시 체크아웃으로 리다이렉트
      *
      * @scenario endpoint=success_redirect, caller=pg_server_confirmed, order_owner=self, order_state=not_found
+     *
      * @effects success_redirects_to_checkout_on_order_not_found
      *
      * @return void 반환값 없음
@@ -286,6 +287,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * TossPayments Confirm API 실패 시 체크아웃으로 리다이렉트
      *
      * @scenario endpoint=success_redirect, caller=pg_server_confirmed, order_owner=self, order_state=payable_pending
+     *
      * @effects success_redirects_to_checkout_on_confirm_api_failure
      *
      * @return void 반환값 없음
@@ -321,6 +323,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * PG 금액 불일치 시 체크아웃으로 리다이렉트
      *
      * @scenario endpoint=success_redirect, caller=pg_server_confirmed, order_owner=self, order_state=payable_pending
+     *
      * @effects success_redirects_to_checkout_on_amount_mismatch
      *
      * @return void 반환값 없음
@@ -354,6 +357,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 결제 실패 시 체크아웃으로 리다이렉트하는지 확인
      *
      * @scenario endpoint=fail_redirect, caller=unauthenticated_browser, order_owner=self, order_state=payable_pending
+     *
      * @effects fail_redirect_still_carries_error_params_to_the_checkout_screen
      *
      * @return void 반환값 없음
@@ -384,6 +388,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 결제완료 후 취소는 서명 검증된 웹훅이 담당한다.
      *
      * @scenario endpoint=fail_redirect, caller=unauthenticated_browser, order_owner=self, order_state=payable_pending
+     *
      * @effects fail_redirect_does_not_mutate_the_order
      *
      * @return void 반환값 없음
@@ -411,6 +416,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 제3자가 링크 하나로 타인의 결제대기 주문을 취소할 수 없다 (KVE-2026-2018 형제 회귀).
      *
      * @scenario endpoint=fail_redirect, caller=unauthenticated_browser, order_owner=another_user, order_state=payable_pending
+     *
      * @effects unauthenticated_fail_link_cannot_cancel_another_users_order
      *
      * @return void 반환값 없음
@@ -441,6 +447,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 결제 실패 시 orderId 없이도 에러 없이 처리되는지 확인
      *
      * @scenario endpoint=fail_redirect, caller=unauthenticated_browser, order_owner=self, order_state=not_found
+     *
      * @effects fail_redirect_handles_missing_order_id_without_error
      *
      * @return void 반환값 없음
@@ -462,6 +469,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 커스텀 성공 URL 설정 시 해당 URL로 리다이렉트하는지 확인
      *
      * @scenario redirect_kind=success, stored_value=operator_custom
+     *
      * @effects operator_supplied_redirect_url_is_preserved
      *
      * @return void 반환값 없음
@@ -495,6 +503,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 커스텀 실패 URL 설정 시 해당 URL로 리다이렉트하는지 확인
      *
      * @scenario endpoint=fail_redirect, caller=unauthenticated_browser, order_owner=self, order_state=payable_pending
+     *
      * @effects fail_redirect_honors_custom_fail_url_and_existing_query_params
      *
      * @return void 반환값 없음
@@ -522,6 +531,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 커스텀 실패 URL 설정 시 성공 콜백 내 오류에서도 해당 URL로 리다이렉트하는지 확인
      *
      * @scenario redirect_kind=fail, stored_value=operator_custom
+     *
      * @effects operator_supplied_redirect_url_is_preserved, success_redirects_to_checkout_on_order_not_found
      *
      * @return void 반환값 없음
@@ -548,6 +558,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 전체 URL + 기존 쿼리 파라미터가 있는 실패 URL에서 & 구분자로 연결되는지 확인
      *
      * @scenario endpoint=fail_redirect, caller=unauthenticated_browser, order_owner=self, order_state=payable_pending
+     *
      * @effects fail_redirect_honors_custom_fail_url_and_existing_query_params
      *
      * @return void 반환값 없음
@@ -577,6 +588,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 성공 콜백에 필수 파라미터 누락 시 실패 페이지로 리다이렉트하는지 확인
      *
      * @scenario endpoint=success_redirect, caller=pg_server_confirmed, order_owner=self, order_state=not_found
+     *
      * @effects success_rejects_invalid_callback_params
      *
      * @return void 반환값 없음
@@ -599,6 +611,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 성공 콜백에 금액이 0 이하일 때 실패 페이지로 리다이렉트하는지 확인
      *
      * @scenario endpoint=success_redirect, caller=pg_server_confirmed, order_owner=self, order_state=not_found
+     *
      * @effects success_rejects_invalid_callback_params
      *
      * @return void 반환값 없음
@@ -621,6 +634,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 성공 콜백에 파라미터가 모두 없으면 실패 페이지로 리다이렉트하는지 확인
      *
      * @scenario endpoint=success_redirect, caller=pg_server_confirmed, order_owner=self, order_state=not_found
+     *
      * @effects success_rejects_invalid_callback_params
      *
      * @return void 반환값 없음
@@ -641,6 +655,7 @@ class PaymentCallbackControllerTest extends PluginTestCase
      * 모바일 User-Agent로 요청 시 payment_device가 mobile인지 확인
      *
      * @scenario endpoint=success_redirect, caller=pg_server_confirmed, order_owner=self, order_state=payable_pending
+     *
      * @effects success_records_mobile_payment_device
      *
      * @return void 반환값 없음

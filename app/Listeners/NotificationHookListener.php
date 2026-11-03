@@ -468,12 +468,6 @@ class NotificationHookListener implements HookListenerInterface
 
             $notifiable->notify($notification);
 
-            if ($report->statusFor($channel) === DeliveryReport::FAILED) {
-                $tally['failed']++;
-            } else {
-                $tally['sent']++;
-            }
-
             if ($recipientKey !== null) {
                 match ($report->statusFor($channel)) {
                     // 보내지 못했다 — 선점을 풀어 재시도가 다시 보내게 한다(누락 방지 우선).
@@ -486,6 +480,14 @@ class NotificationHookListener implements HookListenerInterface
             // 실제로 나간 값(수신자별 치환 결과)을 넘긴다 — 원본 $data 를 넘기면
             // 로그 연결 리스너가 수신자가 받은 것과 다른 값을 본다.
             HookManager::doAction('core.notification.after_send', $notifiable, $definition, $notifiableData);
+
+            // 집계는 try 의 마지막에서 한다 — 앞에서 세면 그 뒤(선점 갱신·발송 후 훅)가 던질 때 아래
+            // catch 가 실패를 한 번 더 세어, 같은 수신자가 보낸 수와 실패 수 양쪽에 잡힌다.
+            if ($report->statusFor($channel) === DeliveryReport::FAILED) {
+                $tally['failed']++;
+            } else {
+                $tally['sent']++;
+            }
         } catch (\Throwable $e) {
             if ($recipientKey !== null) {
                 $guard->release($eventId, $definition->type, $channel, $recipientKey);

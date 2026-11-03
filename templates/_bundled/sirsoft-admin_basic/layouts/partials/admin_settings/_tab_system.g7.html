@@ -101,8 +101,19 @@
                   <api-call :auth_required="true" target="/api/admin/settings/system/cron-token" method="GET">
                     <success>
                       <set-state target="local" :cronUrlCopying="false"/>
-                      <action handler="copyToClipboard" text="{{result.data.url}}"/>
-                      <toast type="success" message="$t:admin.settings.system.cron_url_copied"/>
+                      <!-- 복사는 응답을 받은 뒤에 일어나 누른 순간의 사용자 동작 허가가 끝났을 수 있다. 핸들러가 복사하지 못하면 false 를 돌려주므로 그 값을 보고 성공·실패 토스트를 가른다 — 늘 성공 토스트를 띄우면 운영자가 빈 클립보드를 붙여넣는다. -->
+                      <action handler="copyToClipboard" text="{{result.data.url}}">
+                        <success>
+                          <conditions>
+                            <when if="{{result === true}}">
+                              <toast type="success" message="$t:admin.settings.system.cron_url_copied"/>
+                            </when>
+                            <else>
+                              <toast type="error" message="$t:admin.templates.layout_edit.copy_failed"/>
+                            </else>
+                          </conditions>
+                        </success>
+                      </action>
                     </success>
                     <fail>
                       <set-state target="local" :cronUrlCopying="false"/>
@@ -145,8 +156,8 @@
           <div class="flex flex-wrap gap-3 items-center justify-between">
             <div class="flex-1 min-w-0">
               <span class="text-label-subtle">$t:admin.settings.system.cron_last_run</span>
-              <!-- 서버는 ISO 8601(`2026-09-12T21:52:21+09:00`)을 준다. 화면에는 사이트 시간대의 날짜·시각만 남긴다 — `T` 와 오프셋이 그대로 보이면 운영자가 읽을 수 없는 문자열이 된다. -->
-              <p data-ref="cron_last_run_value" data-if="{{_local.cronLastRun ?? system_status?.data?.cron?.last_run}}" class="text-heading">{{(function () { const r = _local.cronLastRun ?? system_status?.data?.cron?.last_run; return String(r?.finished_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + (r?.duration_ms ?? 0) + 'ms · ' + (r?.executed ?? 0) + ' / ' + (r?.failed ?? 0); })()}}</p>
+              <!-- 서버는 ISO 8601(`2026-09-12T21:52:21+09:00`)을 준다. 화면에서는 `T` 를 빈칸으로 바꾸고 앞 19자(날짜와 시각)만 남겨 오프셋을 떼어 낸다 — 시간대 변환은 하지 않으므로 서버가 준 시각 그대로다. `T` 와 오프셋이 그대로 보이면 운영자가 읽을 수 없는 문자열이 된다. -->
+              <p data-ref="cron_last_run_value" data-if="{{_local.cronLastRun ?? system_status?.data?.cron?.last_run}}" class="text-heading">{{(function () { const r = _local.cronLastRun ?? system_status?.data?.cron?.last_run; return String(r?.finished_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.schedules.queue.duration_ms', { ms: r?.duration_ms ?? 0 }) + ' · ' + (r?.executed ?? 0) + ' / ' + (r?.failed ?? 0); })()}}</p>
               <p data-ref="cron_last_run_empty" data-if="{{!(_local.cronLastRun ?? system_status?.data?.cron?.last_run)}}" class="text-secondary text-xs">$t:admin.settings.system.cron_last_run_none</p>
               <p data-ref="cron_last_run_legend" class="form-hint">$t:admin.settings.system.cron_last_run_legend</p>
               <!-- 상태 파일을 쓰지 못하면 점검 시각이 남지 않아 다음 호출의 소급 창이 상한까지 열리고 창 안의 예약이 매번 전부 다시 실행된다. 오류가 아니라 부하로만 나타나므로 여기서 사유를 알린다. -->
@@ -182,7 +193,7 @@
                     <p class="text-xs text-gray-900 dark:text-gray-100 truncate">{{entry.name ?? ''}}</p>
                     <p data-if="{{entry.error_output}}" class="text-xs text-red-600 dark:text-red-400 truncate">{{entry.error_output ?? ''}}</p>
                   </div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + (entry.duration ?? 0) + 's'}}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.settings.system.cron_history_duration', { seconds: entry.duration ?? 0 })}}</span>
                   <span class="{{entry.status === 'failed' ? 'text-xs text-red-600 dark:text-red-400 whitespace-nowrap' : 'text-xs text-green-600 dark:text-green-400 whitespace-nowrap'}}">{{entry.status === 'failed' ? '$t:admin.settings.system.cron_history_failed' : '$t:admin.settings.system.cron_history_success'}}</span>
                 </div>
               </div>

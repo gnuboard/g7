@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Execution\CommandRunnerResolver;
-use App\Execution\ExecutionMode;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\SystemExecutionService;
 use Illuminate\Http\JsonResponse;
@@ -66,9 +65,7 @@ class SystemExecutionController extends AdminBaseController
             return $this->success('settings.execution.detect_success', [
                 'detection' => $this->service->detectionReport(),
                 'effective_mode' => $this->resolver->resolveMode()->value,
-                'configured_mode' => ExecutionMode::fromStringOrAuto(
-                    (string) g7_core_settings('system.execution_mode', 'auto'),
-                )->value,
+                'configured_mode' => $this->service->configuredMode()->value,
             ]);
         } catch (\Throwable $e) {
             return $this->error('settings.execution.detect_failed', 500, $e->getMessage());

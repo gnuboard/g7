@@ -176,7 +176,7 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 54개 | `modules/_bundled/sirsoft-page/tests` |
+| PHPUnit | 55개 | `modules/_bundled/sirsoft-page/tests` |
 | Vitest | 18개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 46개 | `tests/scenarios` |

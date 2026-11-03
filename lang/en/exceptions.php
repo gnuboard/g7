@@ -269,6 +269,12 @@ return [
         'spawn_failed' => 'Failed to start the command execution process: :command',
     ],
 
+    // 스케줄 이벤트에서 Artisan 커맨드 되뽑기 실패
+    'schedule_extraction' => [
+        'not_artisan' => 'Not an Artisan command string (no php/artisan prefix).',
+        'command_name_missing' => 'Could not find the command name.',
+    ],
+
     // 스토리지 드라이버 경로 가드 예외
     'storage' => [
         'unsafe_path' => 'The storage path is not allowed.',

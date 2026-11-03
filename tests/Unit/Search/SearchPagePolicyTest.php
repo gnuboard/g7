@@ -11,7 +11,7 @@ use Tests\TestCase;
  * 이 판정을 도메인마다 각자 구현하면 규칙이 검색 모듈 수만큼 갈라진다.
  * 코어가 규칙을 소유한다는 것을 여기서 고정한다.
  *
- * @scenario search_cursor_policy
+ * @scenario navigation=keyset_cursor
  */
 class SearchPagePolicyTest extends TestCase
 {

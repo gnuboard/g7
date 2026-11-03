@@ -30,7 +30,6 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
      * 플러그인 설정 서비스를 목으로 바꿔 get 이 주어진 설정을 돌려주게 한다.
      *
      * @param  array<string, mixed>  $settings  get 이 돌려줄 플러그인 설정
-     *
      * @return void 반환값 없음
      */
     private function mockSettings(array $settings): void
@@ -44,6 +43,7 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
      * 주문서 모드가 꺼져 있으면 카드 토글이 켜져 있어도 클라이언트 설정의 결제수단 목록이 비는지 확인한다.
      *
      * @scenario order_sheet_mode=false
+     *
      * @effects client_config_exposes_no_methods_when_order_sheet_off
      *
      * @return void 반환값 없음
@@ -99,6 +99,7 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
      * 가상계좌 유효시간, 현금영수증 유형, 에스크로 설정이 클라이언트 설정에 그대로 실리는지 확인한다.
      *
      * @scenario payment_method=toss_virtual_account, use_escrow=buyer_choice
+     *
      * @effects client_config_exposes_vbank_and_escrow_settings
      *
      * @return void 반환값 없음

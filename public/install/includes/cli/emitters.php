@@ -13,7 +13,6 @@
  * 두 송출기 모두 log 이벤트를 installation.log 에 남기고(웹과 같음), 워커 잠금 심장박동을 갱신한다.
  * 중단 신호(Ctrl+C·SIGTERM)는 `isConnectionAborted()` 로 알려 기존 중단·롤백 경로를 탄다.
  */
-
 if (! class_exists('CliEmitterBase')) {
     /**
      * CLI 송출기 공통 — 심장박동·중단 신호·log 기록.

@@ -14,10 +14,12 @@
  *    다시 누른다 — 번호 재발급이 두 번 돌면 방금 등록한 주소가 그 자리에서 다시 무효가 된다.
  *    레이아웃 JSON 구조 검사는 `disabled` 표현식이 있다는 것까지만 알고, 그것이 실제로
  *    눌리지 않게 만드는지는 브라우저에서만 확정된다.
+ * 5. **[복사] 가 실패하면 실패를 알린다.** 복사는 주소를 받아 온 뒤에 일어나 누른 순간의 사용자 동작
+ *    허가가 끝났을 수 있다. 그때 성공 토스트가 뜨면 운영자는 빈 클립보드를 붙여넣는다.
  *
- * @scenario web-cron-runner
+ * @scenario caller=panel, token=valid
  * @axes caller=panel, token=valid
- * @effects cron_url_is_masked_until_revealed, cron_url_is_fetched_on_demand, run_now_executes_the_runner, in_flight_controls_are_blocked_until_the_call_returns
+ * @effects cron_url_is_masked_until_revealed, cron_url_is_fetched_on_demand, run_now_executes_the_runner, in_flight_controls_are_blocked_until_the_call_returns, cron_url_copy_reports_clipboard_failure
  */
 import { test, expect } from '@playwright/test';
 // 루트 Playwright 트리의 spec 은 루트 픽스처를 쓴다. `admin-template-auth` 는 템플릿
@@ -156,5 +158,44 @@ test.describe('@sirsoft-admin_basic 환경설정 시스템 탭', () => {
       /\/api\/system\/cron\/run\?token=/,
       { timeout: 15_000 }
     );
+  });
+
+  // @scenario caller=panel, token=valid
+  // @effects cron_url_copy_reports_clipboard_failure
+  test('[복사] 가 클립보드에 넣지 못하면 성공 대신 실패를 알린다', async ({ page }) => {
+    // 브라우저가 복사를 거부하는 상황(사용자 동작 허가 만료·권한 거부)을 두 경로 모두에서 재현한다 —
+    // 클립보드 API 는 거절하고, 폴백 execCommand('copy') 는 false 를 돌려준다.
+    await page.addInitScript(() => {
+      if (navigator.clipboard) {
+        Object.defineProperty(navigator.clipboard, 'writeText', {
+          configurable: true,
+          value: () => Promise.reject(new DOMException('Document is not focused.', 'NotAllowedError')),
+        });
+      }
+      const original = document.execCommand.bind(document);
+      document.execCommand = ((command: string, ...rest: any[]) =>
+        command === 'copy' ? false : original(command, ...rest)) as typeof document.execCommand;
+    });
+
+    const token = issueToken('core.settings.read', 'core.settings.update');
+    await authenticatePage(page, token);
+
+    await page.goto('/admin/settings?tab=system');
+    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+
+    const copy = page.locator('#cron_url_copy_button');
+    await expect(copy).toBeEnabled({ timeout: 10_000 });
+
+    const tokenResponse = page.waitForResponse(
+      (res) => res.url().includes('/api/admin/settings/system/cron-token') && res.request().method() === 'GET',
+      { timeout: 30_000 }
+    );
+    await copy.click();
+    expect((await tokenResponse).status()).toBe(200);
+
+    await expect(page.getByRole('alert').filter({ hasText: '클립보드 복사에 실패했습니다.' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('alert').filter({ hasText: '호출 주소를 복사했습니다.' })).toHaveCount(0);
+    // 주소칸은 가린 상태 그대로다 — 복사 실패가 주소를 드러내는 쪽으로 새지 않는다.
+    await expect(page.locator('#cron_url_value')).not.toHaveValue(/token=/);
   });
 });

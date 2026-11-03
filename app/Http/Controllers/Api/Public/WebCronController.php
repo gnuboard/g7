@@ -78,7 +78,10 @@ class WebCronController extends PublicBaseController
         }
 
         $now = CarbonImmutable::now();
-        $throttle = $this->throttleRemaining($now);
+
+        // 판정과 호출 기록은 한 잠금 안에서 한다 — 동시에 도착한 두 호출이 함께 통과하지 않게.
+        // 통과(0)면 호출 시각은 이미 기록됐다.
+        $throttle = $this->policy->claimInvocation($this->state, $now);
 
         if ($throttle > 0) {
             // 최소 간격 미만 호출은 **실행 없이 정상 응답**한다. 이 스킵은 작업을
@@ -89,8 +92,6 @@ class WebCronController extends PublicBaseController
                 'retry_after_seconds' => $throttle,
             ]);
         }
-
-        $this->state->recordInvocation($now);
 
         // 인증을 통과한 호출은 **언제나 200** 이다 (A-5). 러너 안에서 터진 예외를 그대로
         // 흘려보내면 500 이 나가는데, 이 주소를 부르는 쪽은 외부 크론 서비스라 비-200 을
@@ -120,31 +121,5 @@ class WebCronController extends PublicBaseController
             ['ran' => true],
             $summary->toArray(),
         ));
-    }
-
-    /**
-     * 최소 호출 간격까지 남은 시간(초)을 계산합니다.
-     *
-     * @param  CarbonImmutable  $now  기준 시각
-     * @return int 남은 초 (0 이면 실행 가능)
-     */
-    private function throttleRemaining(CarbonImmutable $now): int
-    {
-        $interval = $this->policy->minIntervalMinutes();
-
-        if ($interval <= 0) {
-            return 0;
-        }
-
-        $lastInvoked = $this->state->lastInvokedAt();
-
-        if ($lastInvoked === null) {
-            return 0;
-        }
-
-        $elapsed = $lastInvoked->diffInSeconds($now, absolute: false);
-        $remaining = ($interval * 60) - (int) $elapsed;
-
-        return max(0, $remaining);
     }
 }

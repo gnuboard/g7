@@ -15,7 +15,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 /**
  * SendMessageJob — 성공/일시오류 재시도/영구실패 판정 + 이력 갱신 검증(Phase 4).
  *
- * @scenario dispatch-history-webhook
+ * @scenario process=queue_worker
  */
 class SendMessageJobTest extends PluginTestCase
 {

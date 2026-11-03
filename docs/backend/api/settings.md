@@ -2821,4 +2821,6 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 `.env` 가 값을 정하는 키(`env-priority` 가 켜져 있고 그 키의 환경변수가 명시된 경우 — 예: `MAIL_HOST` → `mail.host`)는 값과 관계없이 422 입니다(`validation.setting.value.env_locked`, 7.1.4). 탭 일괄 저장은 그런 키를 조용히 버리지만, 단건 저장은 그 키 하나를 지목한 요청이라 거부합니다. 터미널의 `php artisan settings:set` 도 같은 키를 같은 사유로 거부합니다.
 
+값의 형태가 정해진 키는 탭 일괄 저장과 **같은 표**(`SettingShapeRules`)로 검증합니다. `system.cron_allowed_ips` 는 IP·CIDR 목록 문자열이어야 하고, `debug.trusted_proxies` 는 50개 이하의 배열이며 각 항목이 60자 이하의 IP 또는 CIDR 이어야 합니다(콤마 문자열은 422). 한쪽 경로에만 형태 검증이 있으면 다른 쪽이 우회로가 됩니다.
+
 

@@ -182,7 +182,7 @@ Accept: application/json
 
 | 이름 | 타입 | 예시값 | 설명 |
 | --- | --- | --- | --- |
-| ran | boolean | `true` | 이번 호출이 실제로 러너를 돌렸는지. 최소 간격 미도달이거나 실행 방식이 서버 크론 전용이면 `false` |
+| ran | boolean | `true` | 이번 호출이 실제로 러너를 돌렸는지. 최소 간격 미도달이거나 실행 방식이 서버 크론 전용이면 `false`. 최소 간격 판정과 호출 기록은 한 잠금 안에서 하므로, 같은 순간에 도착한 두 호출 중 하나만 `true` 다(다른 하나는 `min_interval`) |
 | reason | string | `min_interval` | `ran=false` 일 때의 사유 — `min_interval` / `web_call_disabled` |
 | retry_after_seconds | integer | `240` | 최소 간격까지 남은 초 (`reason=min_interval` 일 때만) |
 | mode | string | `cron` | 저장된 예약 작업 실행 방식 (`reason=web_call_disabled` 일 때만) |
@@ -272,7 +272,7 @@ HTTP/1.1 200
 
 최소 호출 간격(`system.cron_min_interval`)은 **호출 횟수 제한이지 실행 누락 사유가 아니다.** 간격 미만 호출을 건너뛰어도 점검 시각이 전진하지 않으므로, 다음 유효 호출의 소급 창이 그 사이 시각을 그대로 덮는다.
 
-**실행 시간 상한** — 한 번의 호출은 `core.cron.max_runtime_seconds`(기본 50초) 안에서만 예약을 처리하고, 남은 예약은 다음 호출로 넘긴다(`truncated=true`). 이때 점검 시각을 전진시키지 않으므로 잔여 예약이 창 밖으로 밀려나지 않는다.
+**실행 시간 상한** — 한 번의 호출은 `core.cron.max_runtime_seconds`(기본 50초) 안에서만 예약을 처리하고(PHP `max_execution_time` 이 더 짧으면 그 8할 — 웹 기본 30초면 24초), 남은 예약은 다음 호출로 넘긴다(`truncated=true`). 이때 점검 시각을 전진시키지 않으므로 잔여 예약이 창 밖으로 밀려나지 않는다.
 
 **중복 실행** — 서버 크론과 주소 호출이 함께 걸린 환경에서도 두 진입점이 프레임워크의 같은 mutex 를 공유하므로 같은 예약이 겹쳐 돌지 않는다.
 
@@ -387,6 +387,7 @@ Host: api.example.com
 | Content-Encoding | — (압축 없음) | 이 통로는 gzip 압축에서 **명시적으로 제외**된다. 압축 경로는 파일을 통째로 메모리에 읽는데, 여기는 인증도 요청 상한도 없어 그 적재가 동시 요청 수만큼 곱해진다. 압축은 웹서버·CDN 의 몫이며, 링크가 되는 서버에서 같은 파일을 내주는 정적 서빙도 애플리케이션 메모리를 쓰지 않는다 |
 | Vary | `Accept-Encoding` (압축 대상 유형에 한함) | 이 헤더는 압축 **여부**가 아니라 응답 **유형**을 보고 붙는다 — `text/*`·`application/json` 등을 이 통로로 내줄 때는 압축하지 않아도 붙으며, 이미지처럼 압축 대상이 아닌 유형에는 붙지 않는다 |
 | X-Content-Type-Options | `nosniff` | 200·304 모두. 업로드된 SVG·HTML 형태 파일을 브라우저가 선언 유형과 다르게 해석하지 못하게 한다 — 정적 서빙 설정이 붙이는 것과 같은 헤더이며, 코어 파일 서빙 헬퍼가 모든 서빙 통로에 붙인다 |
+| Content-Disposition | `inline; filename=a.png` · `attachment; filename=page.html` | 브라우저가 문서로 열어 스크립트를 실행할 수 있는 유형(`text/html`·`application/xhtml+xml`·`image/svg+xml`·`application/xml`)은 `attachment`(내려받기)이고 `Content-Security-Policy` 격리 정책이 함께 붙는다(`InlineMediaPolicy::harden()`). 이 통로는 업로드물(회원 아바타·public 디스크를 고른 확장의 업로드)을 내주므로, 그 파일이 앱 오리진에서 페이지로 열리지 않게 한다. 그 밖의 유형은 `inline` 이다 |
 
 **응답 예시**
 

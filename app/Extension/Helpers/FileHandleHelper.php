@@ -738,6 +738,12 @@ PSFOOTER;
 
         $pipes = [];
 
+        // 공유 호스팅은 proc_open 을 disable_functions 로 막는 일이 흔하다 — `@` 는 그 경우의
+        // Fatal 을 막지 못하므로 먼저 판정하고, 아래 스폰 실패와 같은 결과로 돌려준다.
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
+            return $returnStderr ? [[], -1, ''] : [[], -1];
+        }
+
         $process = @proc_open($command, $descriptors, $pipes, null, null, [
             'bypass_shell' => false,
             'create_new_console' => false,

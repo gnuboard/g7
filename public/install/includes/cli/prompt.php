@@ -1,12 +1,13 @@
 <?php
 
+use App\Console\Helpers\ConsoleConfirm;
+
 /**
  * 그누보드7 터미널 설치 - 대화형 입력
  *
  * 표준 입력이 터미널(TTY)이고 `--no-interaction` 이 없을 때만 묻는다(판정: `stream_isatty(STDIN)` —
  * artisan 확인 프롬프트와 같은 기준). 비밀번호는 화면·스크롤백에 남지 않게 숨김 입력으로만 받는다.
  */
-
 if (! function_exists('g7_cli_stdin_is_tty')) {
     /**
      * 표준 입력이 터미널인지.
@@ -70,7 +71,7 @@ if (! function_exists('g7_cli_confirm')) {
         // 이 헬퍼는 Laravel·vendor 없이 동작하므로 vendor 가 없는 설치 전에도 쓸 수 있다.
         require_once dirname(__DIR__, 4).'/app/Console/Helpers/ConsoleConfirm.php';
 
-        return \App\Console\Helpers\ConsoleConfirm::ask(
+        return ConsoleConfirm::ask(
             '  '.$question,
             $default,
             null,

@@ -21,7 +21,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 네임스페이스의 CoreCacheDriver 로 별개 저장 공간이므로 검증에 사용할 수 없다).
  * 따라서 이 테스트도 동일한 PluginCacheDriver 를 직접 생성해 관찰한다.
  *
- * @scenario plugin-settings
+ * @scenario credential_state=filled
  */
 class InvalidateTokenOnSettingsSaveListenerTest extends PluginTestCase
 {

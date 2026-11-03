@@ -11,7 +11,6 @@
  * `--delete-settings` 를 주지 않으면 기존 APP_KEY 를 이어 쓴다 — 남긴 확장 설정의 암호화 값이 새 키로는
  * 읽히지 않아 암호문이 그대로 쓰이는 일을 막기 위해서다.
  */
-
 if (! function_exists('g7_cli_remove_tree')) {
     /**
      * 경로를 지운다 — 디렉터리는 하위 전체.

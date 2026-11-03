@@ -98,6 +98,7 @@ effects:
   - download_records_history
   - download_streams_via_one_time_link
   - download_link_rechecks_permission
+  - download_link_carries_the_mount_prefix      # 하위 폴더 설치에서 일회용 주소가 마운트 접두사를 품는다
   - download_requires_full_source_scope_for_others
   - own_file_needs_scope_at_least_as_broad_as_when_generated
   - download_history_ip_needs_personal_permission

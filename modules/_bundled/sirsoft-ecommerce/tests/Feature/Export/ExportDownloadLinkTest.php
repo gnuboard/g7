@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Export;
 use App\Enums\ScopeType;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Bus;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
@@ -94,6 +95,31 @@ class ExportDownloadLinkTest extends ExportTestCase
         $this->assertSame(1, ActivityLog::where('action', 'export.download')->count());
 
         $this->get($url)->assertStatus(410);
+    }
+
+    /**
+     * 하위 폴더 설치(`/g7`)에서는 일회용 주소가 마운트 접두사를 품는다 — 화면 핸들러가 이 값을 `<a href>` 에 그대로 넣는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario action=download
+     *
+     * @effects download_link_carries_the_mount_prefix
+     */
+    public function test_one_time_link_carries_the_mount_prefix_in_a_subfolder_install(): void
+    {
+        $export = $this->completedExport();
+        AssetUrl::forceBasePrefix('/g7');
+
+        try {
+            $url = $this->actingAs($this->admin)->postJson($this->exportsUrl("/{$export->id}/download-link"))
+                ->assertOk()
+                ->json('data.url');
+
+            $this->assertMatchesRegularExpression('#^/g7/api/modules/sirsoft-ecommerce/exports/file/[A-Za-z0-9]{64}$#', $url);
+        } finally {
+            AssetUrl::forceBasePrefix(null);
+        }
     }
 
     /**

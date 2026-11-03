@@ -4,6 +4,7 @@ namespace Tests\Unit\Scheduling;
 
 use App\Rules\ValidIpAllowList;
 use App\Scheduling\WebCronPolicy;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
@@ -160,6 +161,30 @@ class WebCronPolicyTest extends TestCase
 
         Config::set('g7_settings.core.system.cron_min_interval', -5);
         $this->assertSame(0, $this->policy->minIntervalMinutes());
+    }
+
+    /**
+     * 최소 간격 판정은 웹 크론·방문 트리거가 같은 식을 쓰고, 방문 트리거만 1분 하한을 둔다.
+     *
+     * 두 진입점이 각자 계산하던 판정을 정책 한 곳으로 모았다 — 하한이 빠지면 간격 0 설정에서
+     * 방문마다 러너가 돈다.
+     *
+     * @effects min_interval_resolution_order_and_clamp
+     *
+     * @return void 반환값 없음
+     */
+    public function test_throttle_remaining_seconds_is_shared_by_both_entry_points(): void
+    {
+        $now = CarbonImmutable::parse('2026-11-03 12:00:00');
+
+        Config::set('g7_settings.core.system.cron_min_interval', 5);
+        $this->assertSame(0, $this->policy->throttleRemainingSeconds(null, $now), '기록이 없으면 바로 실행');
+        $this->assertSame(180, $this->policy->throttleRemainingSeconds($now->subMinutes(2), $now));
+        $this->assertSame(0, $this->policy->throttleRemainingSeconds($now->subMinutes(5), $now));
+
+        Config::set('g7_settings.core.system.cron_min_interval', 0);
+        $this->assertSame(0, $this->policy->throttleRemainingSeconds($now->subSeconds(10), $now), '웹 크론은 제한 없음');
+        $this->assertSame(50, $this->policy->throttleRemainingSeconds($now->subSeconds(10), $now, floorMinutes: 1), '방문 트리거는 1분 하한');
     }
 
     /**

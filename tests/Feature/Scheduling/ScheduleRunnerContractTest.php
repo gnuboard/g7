@@ -6,6 +6,7 @@ use App\Scheduling\ArtisanCommandExtractor;
 use App\Scheduling\ScheduleRunner;
 use Illuminate\Console\Scheduling\CallbackEvent;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SkipsWhenExtensionTablesAreMissing;
 use Tests\TestCase;
@@ -59,7 +60,7 @@ class ScheduleRunnerContractTest extends TestCase
      */
     private function registerProbeShellEvent(): void
     {
-        $this->app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        $this->app->make(Kernel::class)->bootstrap();
 
         app(Schedule::class)->command('inspire')->daily();
     }

@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernelContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -333,6 +334,26 @@ class WebCronEndpointTest extends TestCase
     }
 
     /**
+     * 배열로 실린 번호(`?token[]=x`)도 **401** 이다 (검증 오류 422 가 아니다).
+     *
+     * 번호에는 형식 규칙을 걸지 않는다는 요청 클래스의 계약과 같은 이유다 — 형태가 틀린
+     * 번호도 「번호가 맞지 않는다」로 수렴해야 응답이 한 가지로 남는다.
+     *
+     * @scenario caller=external, token=invalid, token_channel=query
+     *
+     * @effects oversized_token_is_unauthorized_not_unprocessable
+     *
+     * @return void 반환값 없음
+     */
+    public function test_array_token_is_rejected_as_unauthorized(): void
+    {
+        $token = app(WebCronTokenStore::class)->rotate();
+
+        $this->getJson(self::ENDPOINT.'?token[]='.$token)
+            ->assertStatus(401);
+    }
+
+    /**
      * 러너가 터져도 인증을 통과한 호출은 **200** 이다.
      *
      * 500 이 나가면 외부 크론 서비스가 「사이트 장애」로 읽고 알림을 쏟아, 운영자는
@@ -524,5 +545,43 @@ class WebCronEndpointTest extends TestCase
     private function setSetting(string $key, mixed $value): void
     {
         Config::set("g7_settings.core.system.{$key}", $value);
+    }
+
+    /**
+     * 다른 호출이 간격 판정 잠금을 쥔 동안 들어온 호출은 실행하지 않고 간격 미도달로 답한다.
+     *
+     * 판정(`throttleRemainingSeconds`)과 기록(`recordInvocation`)이 따로 놓여 있으면, 같은 순간에
+     * 도착한 두 호출이 둘 다 「직전 호출 없음」을 읽고 함께 러너를 돌린다. 판정과 기록은 한 잠금
+     * 안에서 하고, 잠금을 얻지 못한 호출은 앞 호출이 곧 기록할 것이므로 간격 미도달로 본다.
+     *
+     * @scenario caller=external, token=valid, min_interval=within
+     *
+     * @effects concurrent_call_does_not_pass_the_interval_check_twice
+     *
+     * @return void 반환값 없음
+     */
+    public function test_call_while_another_holds_the_interval_lock_does_not_run(): void
+    {
+        $token = app(WebCronTokenStore::class)->rotate();
+        $this->setSetting('cron_min_interval', 5);
+
+        $lock = Cache::lock(WebCronPolicy::INVOCATION_LOCK_KEY, WebCronPolicy::INVOCATION_LOCK_SECONDS);
+        $this->assertTrue($lock->get(), '시험 준비 — 잠금을 먼저 쥐어야 한다');
+
+        try {
+            $this->getJson(self::ENDPOINT.'?token='.$token)
+                ->assertOk()
+                ->assertJsonPath('data.ran', false)
+                ->assertJsonPath('data.reason', 'min_interval');
+
+            $state = app(ScheduleRunState::class);
+            $state->refresh();
+            $this->assertNull($state->lastInvokedAt(), '잠금 밖에서 판정을 통과해 호출을 기록했다');
+        } finally {
+            $lock->release();
+        }
+
+        // 잠금이 풀리면 정상으로 돈다 — 「영원히 막는」 구현이 초록이 되지 않게.
+        $this->getJson(self::ENDPOINT.'?token='.$token)->assertJsonPath('data.ran', true);
     }
 }

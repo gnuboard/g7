@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ExecutionEnvironment;
 use App\Support\ProcessOutputEncoding;
 
 /**
@@ -28,7 +29,7 @@ if (! class_exists(ProcessOutputEncoding::class, false)) {
 
 // 그 클래스가 mb_* 가용성을 판정할 때 쓰는 SSoT. 함께 로드해야 인스톨러에서도
 // `disable_functions` 까지 보고 판정한다 (없으면 function_exists 폴백으로 내려간다).
-if (! class_exists(\App\Support\ExecutionEnvironment::class, false)) {
+if (! class_exists(ExecutionEnvironment::class, false)) {
     $executionEnvironmentPath = dirname(__DIR__, 3).'/app/Support/ExecutionEnvironment.php';
     if (is_file($executionEnvironmentPath)) {
         require_once $executionEnvironmentPath;

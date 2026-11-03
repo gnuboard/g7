@@ -18,8 +18,8 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
  */
 class RequirementsExtensionListSsotTest extends TestCase
 {
-    use ScansPhpSourceFunctions;
     use RunsInstallerSubprocess;
+    use ScansPhpSourceFunctions;
 
     /**
      * 임시 앱 루트를 만듭니다.

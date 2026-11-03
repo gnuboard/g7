@@ -111,6 +111,7 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
      * 이산형인 수량 구간은 max + 1 시작값이 정상이므로 업그레이드가 그 형태를 그대로 두는지 확인한다.
      *
      * @scenario charge_policy=range_quantity, boundary=at_max
+     *
      * @effects continuous_tier_min_normalized
      *
      * @return void 반환값 없음
@@ -194,6 +195,7 @@ class ShippingTierAndOrderTotalsBackfillTest extends ModuleTestCase
      * 이미 총 무게와 총 부피가 기록된 주문은 옵션 소계와 달라도 백필이 덮어쓰지 않는지 확인한다.
      *
      * @scenario unit_source=g
+     *
      * @effects order_totals_backfilled
      *
      * @return void 반환값 없음

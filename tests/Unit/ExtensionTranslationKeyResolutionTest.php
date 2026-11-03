@@ -16,7 +16,7 @@ use Tests\TestCase;
  * **코어 lang 그룹일 때만** 해석된다. 호출 지점을 손으로 열거하면 새 확장·새 호출이 같은
  * 함정을 다시 밟으므로, 저장소를 훑어 모든 호출을 검사한다.
  *
- * @scenario extension_translation_key_resolution
+ * @scenario surface=module_search
  */
 class ExtensionTranslationKeyResolutionTest extends TestCase
 {

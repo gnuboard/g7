@@ -15,7 +15,7 @@ use Modules\Sirsoft\Page\Tests\ModuleTestCase;
  *
  * 응답은 200 이고 형태도 정상이라 기능 테스트로는 드러나지 않는다.
  *
- * @scenario search_cursor_page_propagation
+ * @scenario navigation=offset_page_number, position=middle, surface=module_search
  */
 class PageSearchCursorDeepLinkTest extends ModuleTestCase
 {

@@ -80,7 +80,7 @@ return [
         'version_update' => 'Version Updated',
         'version_restore' => 'Version Restored',
         'reset' => 'Reset',
-        // Core update (#609 D23)
+        // Core update
         'started' => 'Started',
         'completed' => 'Completed',
         'failed' => 'Failed',
@@ -175,7 +175,7 @@ return [
         'menu_sync_roles' => 'Menu roles synchronized (ID: :menu_id)',
         'menu_get_by_extension' => 'Menus by extension viewed (:extension_type: :extension_identifier)',
 
-        // Core update (#609 D23)
+        // Core update
         'core_update_started' => 'Core update started (:from -> :to)',
         'core_update_completed' => 'Core update completed (:from -> :to)',
         'core_update_failed' => 'Core update failed (:from -> :to) - step: :step / rollback: :rollback',

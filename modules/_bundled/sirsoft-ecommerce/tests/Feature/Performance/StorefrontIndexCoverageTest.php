@@ -42,6 +42,7 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 전시 조건 + 정렬을 덮는 색인이 존재하는지 확인
      *
      * @scenario measure=index_coverage
+     *
      * @effects display_sort_index_exists
      *
      * @return void 반환값 없음
@@ -59,6 +60,7 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 판매 집계용 커버링 색인이 존재하는지 확인
      *
      * @scenario measure=index_coverage
+     *
      * @effects sales_aggregate_index_exists
      *
      * @return void 반환값 없음
@@ -81,6 +83,7 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 컬럼 순서가 어긋나면 색인은 존재해도 정렬에 쓰이지 않는다.
      *
      * @scenario measure=index_coverage
+     *
      * @effects product_list_uses_display_sort_index
      *
      * @return void 반환값 없음
@@ -111,6 +114,7 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 등록일 정렬 목록이 실제로 이 색인을 고르는지 EXPLAIN 으로 확인
      *
      * @scenario measure=index_coverage
+     *
      * @effects product_list_uses_display_sort_index
      *
      * @return void 반환값 없음
@@ -133,6 +137,7 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 판매가 정렬 목록이 실제로 이 색인을 고르는지 EXPLAIN 으로 확인
      *
      * @scenario measure=index_coverage
+     *
      * @effects product_list_uses_price_sort_index
      *
      * @return void 반환값 없음
@@ -158,6 +163,7 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 않고 색인만으로 끝나야 한다.
      *
      * @scenario measure=index_coverage
+     *
      * @effects sales_aggregate_uses_covering_index
      *
      * @return void 반환값 없음
@@ -184,7 +190,6 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      *
      * @param  Builder  $query  판정 대상 쿼리
      * @param  string  $indexName  선택되어야 하는 색인명
-     *
      * @return void 반환값 없음
      */
     private function assertQueryPlanUsesIndex($query, string $indexName): void
@@ -276,7 +281,6 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * @param  string  $table  테이블명 (프리픽스 제외)
      * @param  string  $indexName  색인명
      * @param  array<int, string>  $expected  기대 컬럼 순서
-     *
      * @return void 반환값 없음
      */
     private function assertIndexColumns(string $table, string $indexName, array $expected): void

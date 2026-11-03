@@ -383,7 +383,7 @@
                 "sql_query_log": { "type": "boolean", "sensitive": false, "expose": false },
                 "outbound_proxy": { "type": "string", "sensitive": true },
                 "outbound_proxy_bypass": { "type": "array", "sensitive": false, "expose": false },
-                "trusted_proxies": { "type": "array", "sensitive": false }
+                "trusted_proxies": { "type": "array", "sensitive": false, "expose": false }
             }
         },
         "core_update": {
@@ -531,8 +531,8 @@
             "_comment": "보유기간·휴면 정책은 공개 화면이 참조하지 않는다 — 노출하면 어떤 회원이 언제 휴면·파기 대상이 되는지 밖에서 역산할 수 있다. 휴면 해제 안내는 로그인 응답이 직접 알려준다"
         },
         "system": {
-            "expose": true,
-            "_comment": "실행 방식(웹 요청 안의 커맨드 실행) + 예약 작업(웹 크론) — 관리자 환경설정 '시스템' 탭(W5)이 소비한다. 호출 번호(토큰)는 이 카탈로그에 두지 않는다 (D20) — 인증 없는 실행 자격증명이라 설정 조회 응답에 실리면 '읽기만' 가능한 계정이 실행 권한을 얻는다. 보관은 WebCronTokenStore, 조회는 권한을 확인하는 전용 API 한 곳뿐이다",
+            "expose": false,
+            "_comment": "실행 방식(웹 요청 안의 커맨드 실행) + 예약 작업(웹 크론) — 관리자 환경설정 '시스템' 탭이 관리자 설정 API 로 소비한다. 공개 설정(비로그인 방문자에게도 나가는 프론트엔드 설정)에는 싣지 않는다 — 크론 허용 IP·실행 방식은 공개 화면이 참조하지 않고, 밖에 알려지면 웹 크론 입구를 겨냥할 단서가 된다. 호출 번호(토큰)는 이 카탈로그에 두지 않는다 (D20) — 인증 없는 실행 자격증명이라 설정 조회 응답에 실리면 '읽기만' 가능한 계정이 실행 권한을 얻는다. 보관은 WebCronTokenStore, 조회는 권한을 확인하는 전용 API 한 곳뿐이다",
             "fields": {
                 "execution_mode": { "type": "string", "sensitive": false },
                 "cron_mode": { "type": "string", "sensitive": false },

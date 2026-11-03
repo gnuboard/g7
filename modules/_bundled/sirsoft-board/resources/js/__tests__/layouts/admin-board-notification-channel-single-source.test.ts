@@ -24,7 +24,7 @@
  * 그 채널을 서버에 넘겨야 한다.
  *
  * 대상(마커 아님 — 평문): board_notification_definition · admin_settings · consumer_screen.
- * @scenario board-notification-definition-channel-contract
+ * @scenario channel=mail
  * @effects board_notification_channel_reads_single_source, board_notification_list_requests_template_channel, board_notification_reset_button_uses_server_aggregate
  */
 

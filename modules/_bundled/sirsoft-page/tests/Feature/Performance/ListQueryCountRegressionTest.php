@@ -12,7 +12,7 @@ use Tests\Concerns\CountsQueries;
  *
  * 행 수를 늘려도 쿼리 수가 늘지 않는지 단언한다 — 그것이 N+1 의 정의다.
  *
- * @scenario list_query_count
+ * @scenario consumer=list_page
  */
 class ListQueryCountRegressionTest extends ModuleTestCase
 {
@@ -23,7 +23,6 @@ class ListQueryCountRegressionTest extends ModuleTestCase
      *
      * @param  int  $count  생성할 수
      * @param  string  $prefix  슬러그 접두
-     *
      * @return void 반환값 없음
      */
     private function seedPages(int $count, string $prefix): void

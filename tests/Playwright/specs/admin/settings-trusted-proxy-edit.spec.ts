@@ -18,7 +18,7 @@
  * `X-Forwarded-*` 를 붙일 수 없다(금지 헤더). 그 축은
  * `tests/Feature/Settings/TrustedProxySettingsTest.php` 가 소유한다.
  *
- * @scenario trusted-proxy
+ * @scenario proxies_setting=unset, forwarded_proto=absent
  * @axes proxies_setting=unset, forwarded_proto=absent
  * @effects mode_choice_writes_the_saved_list, the_spoof_warning_shows_only_when_trust_is_opened, probe_reports_resolution_without_saving
  */

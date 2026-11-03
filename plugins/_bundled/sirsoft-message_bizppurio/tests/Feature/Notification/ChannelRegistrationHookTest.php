@@ -17,7 +17,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 발화하는 훅을 통해 sms/alimtalk 채널이 노출되고 readiness 가 해석되는지 관찰한다.
  * (Hook/Event 도메인 규정: 실제 훅 체인으로 관찰 가능한 상태 변화 검증)
  *
- * @scenario sms-channel-dispatch
+ * @scenario readiness_state=ready
  */
 class ChannelRegistrationHookTest extends PluginTestCase
 {

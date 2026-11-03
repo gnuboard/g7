@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
+use App\Support\AssetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 
@@ -11,7 +12,9 @@ use Illuminate\Support\Facades\URL;
  *
  * `download_url` 은 한시 서명 URL 이다 — 첨부 서빙은 신청자 본인·운영자만 통과하는 게이트 뒤에 있고,
  * 화면의 `<img>` 는 인증 헤더(Bearer / 비회원 토큰)를 실을 수 없으므로 응답을 받을 자격이 곧
- * 열람 자격이라는 위임으로 서명을 발급한다. 직접(CDN) URL 은 노출하지 않는다.
+ * 열람 자격이라는 위임으로 서명을 발급한다. 직접(CDN) URL 은 노출하지 않는다. 상대 서명 URL 은
+ * 마운트 접두사를 벗긴 경로에 서명되고 검증도 같은 경로로 하므로, 접두사는 서명된 값 밖에 붙인다
+ * (붙이지 않으면 하위 폴더 설치에서 사이트 밖을 가리킨다).
  *
  * ## 공용 업로더 별칭은 **서버가** 더한다
  *
@@ -58,12 +61,12 @@ class ClaimImageResource extends BaseApiResource
             'uploader_type' => $this->uploader_type?->value,
             'uploader_type_label' => $this->uploader_type?->isDisplayable() ? $this->uploader_type->label() : null,
             'uploader_name' => $this->whenLoaded('creator', fn () => $this->creator?->name),
-            'download_url' => URL::temporarySignedRoute(
+            'download_url' => AssetUrl::sitePath(URL::temporarySignedRoute(
                 'api.modules.sirsoft-ecommerce.claim-image.download',
                 now()->addMinutes(self::SIGNED_DOWNLOAD_TTL_MINUTES),
                 ['hash' => $this->hash],
                 absolute: false
-            ),
+            )),
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
         ];
     }

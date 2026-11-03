@@ -804,4 +804,44 @@ class PublicStorageServeTest extends TestCase
         $this->get('/api/system/public-storage/g7-test-public-storage/sample.txt')
             ->assertStatus(403);
     }
+
+    /**
+     * 실행 가능한 문서 유형(html·xhtml·svg·xml)은 내려받기 + nosniff 로 나가고, 래스터 이미지와 그 밖의 유형은 inline 그대로인지 확인한다.
+     *
+     * 이 통로가 내주는 `storage/app/public` 은 업로드물이 놓이는 자리다 — 회원 아바타(`User::avatar`
+     * 가 public 디스크에 쓴다)와 public 디스크를 고른 확장의 업로드가 그렇다. 그래서 규정
+     * (`InlineMediaPolicy::harden()`)의 대상이고, 종전에는 운영자·회원이 올린 `.html`·`.svg` 가
+     * 앱 오리진에서 `text/html`·`image/svg+xml` inline 으로 열려 그 안의 스크립트가 사이트 권한으로 돌았다.
+     * 보정은 실행 가능한 문서 유형으로 좁힌다 — 이 통로는 링크가 되는 서버의 정적 서빙을 대신하는
+     * 자리라 텍스트·문서·미디어는 inline 이 기존 계약이다(`test_file_name_is_declared_in_both_url_forms`).
+     *
+     * @scenario url_form=path_segment, target=regular_file
+     *
+     * @effects public_storage_active_documents_are_downloaded_not_rendered
+     *
+     * @return void 반환값 없음
+     */
+    public function test_active_documents_are_downloaded_and_raster_images_stay_inline(): void
+    {
+        file_put_contents($this->fixtureDir.'/page.html', '<script>alert(document.domain)</script>');
+        file_put_contents($this->fixtureDir.'/page.xhtml', '<html xmlns="http://www.w3.org/1999/xhtml"><script>alert(1)</script></html>');
+        file_put_contents($this->fixtureDir.'/icon.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+        file_put_contents($this->fixtureDir.'/feed.xml', '<x:html xmlns:x="http://www.w3.org/1999/xhtml"><x:script>alert(1)</x:script></x:html>');
+        file_put_contents($this->fixtureDir.'/pixel.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='));
+
+        foreach (['page.html', 'page.xhtml', 'icon.svg', 'feed.xml'] as $name) {
+            $response = $this->get('/api/system/public-storage/g7-test-public-storage/'.$name);
+
+            $response->assertOk();
+            $response->assertHeader('X-Content-Type-Options', 'nosniff');
+            $disposition = (string) $response->headers->get('Content-Disposition');
+            $this->assertStringStartsWith('attachment', $disposition, "{$name}: 실행 가능한 문서가 앱 오리진에서 inline 으로 열린다");
+            $this->assertStringContainsString($name, $disposition, "{$name}: 내려받기 이름이 실제 파일 이름이어야 한다");
+        }
+
+        $png = $this->get('/api/system/public-storage/g7-test-public-storage/pixel.png');
+        $png->assertOk();
+        $png->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertStringStartsWith('inline', (string) $png->headers->get('Content-Disposition'), '래스터 이미지는 화면에 그려야 한다');
+    }
 }

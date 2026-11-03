@@ -25,7 +25,7 @@ use PHPUnit\Framework\TestCase;
  * 쿼리 오류도 내지 않고 **응답에서 관계 필드만 사라진다**. HTTP 테스트가 그 필드를 단언하지
  * 않으면 전부 초록으로 통과한다(실제로 스케줄 실행 이력의 `triggered_by` 가 이렇게 유실됐다).
  *
- * @scenario deferred_join_call_site_contract
+ * @scenario relations=eager_load
  */
 class DeferredJoinCallSiteContractTest extends TestCase
 {

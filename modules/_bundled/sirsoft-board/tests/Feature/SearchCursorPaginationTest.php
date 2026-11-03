@@ -20,7 +20,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 이미 고정하고 있고, FULLTEXT 매칭 건수는 InnoDB 전문검색 캐시 상태에 좌우되어
  * 이 계층에서 단언할 대상이 아니다.
  *
- * @scenario search_cursor_pagination
+ * @scenario navigation=keyset_cursor, surface=module_search
  */
 class SearchCursorPaginationTest extends BoardTestCase
 {
@@ -42,7 +42,6 @@ class SearchCursorPaginationTest extends BoardTestCase
      * 검색 대상 게시글을 만듭니다.
      *
      * @param  int  $count  생성할 수
-     *
      * @return void 반환값 없음
      */
     private function seedPosts(int $count): void

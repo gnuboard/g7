@@ -15,9 +15,8 @@ use Throwable;
  * `g7_modules` · `g7_plugins` 가 없으면 **부팅 자체가 죽는다** — 테스트 메서드 안이 아니라
  * `setUp()` 의 `createApplication()` 에서 `QueryException` 이 난다.
  *
- * 그런데 이 저장소의 리허설 DB 는 계획서가 P0 설치 리허설용으로 지정한 것과 **같은 스키마**라
- * (인계 메모: "PHPUnit 과 리허설을 동시에 돌리지 말 것"), 리허설이 `-Fresh` 로
- * 스키마를 비운 직후에 테스트를 돌리면 그 축이 통째로 붉어진다. 실패 메시지는
+ * 테스트 DB 가 아직 마이그레이션되지 않았거나, 같은 스키마를 쓰는 다른 작업(설치 마법사의 새 설치
+ * 등)이 표를 비운 직후에 테스트를 돌리면 그 축이 통째로 붉어진다. 실패 메시지는
  * "Table 'g7_modules' doesn't exist" 라 **코드 결함처럼 보이고**, 진짜 회귀와 구분되지 않는다.
  *
  * 그래서 준비되지 않은 DB 에서는 실패가 아니라 **명시적 건너뜀**으로 표시한다 — 초록을 위조하는
@@ -63,7 +62,7 @@ trait SkipsWhenExtensionTablesAreMissing
 
         $this->markTestSkipped(
             '테스트 DB 에 확장 테이블이 없어 앱 부팅이 불가하다 (없는 표: '.implode(', ', $missing).'). '
-            .'설치 리허설이 스키마를 비운 뒤일 수 있다 — `php artisan migrate --env=testing` 후 다시 실행할 것. '
+            .'테스트 DB 가 마이그레이션되지 않았거나 다른 작업이 표를 비운 뒤일 수 있다 — `php artisan migrate --env=testing` 후 다시 실행할 것. '
             .'이 축의 수치는 마이그레이션된 DB 를 전제한다.'
         );
     }

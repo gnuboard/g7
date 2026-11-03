@@ -40,8 +40,8 @@ import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
-import { basePrefix, normalizeForOriginCheck, stripBasePrefix, withBasePrefix } from '../support/assetUrl';
-import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback } from '../support/navPolicy';
+import { basePrefix, stripBasePrefix, withBasePrefix } from '../support/assetUrl';
+import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback, isOffSiteNavTarget } from '../support/navPolicy';
 import { armLeaveGuardBypass, runWithLeaveGuardBypass } from '../routing/LeaveGuard';
 import {
   applyQueryValues,
@@ -3514,7 +3514,7 @@ export class ActionDispatcher {
     const sameOriginPath = toSameOriginNavPath(target);
     if (sameOriginPath !== null) {
       target = stripBasePrefix(sameOriginPath);
-    } else if (basePrefix() !== '' && !this.isOffSiteNavTarget(target)) {
+    } else if (basePrefix() !== '' && !isOffSiteNavTarget(target)) {
       // 루트 상대 경로가 마운트 접두사를 품었으면(`/g7/board/free/2849` — 링크 컴포넌트가 그린 href, 서버가 접두사를
       // 붙여 준 주소) 전체 주소와 같이 벗긴다. 벗기지 않으면 접두사째 라우트에 대조해 미등록으로 읽고, 폴백 openWindow
       // `_self` 로 문서 전체를 다시 불렀다(루트 설치는 같은 클릭이 SPA). 경계 없는 `/g7abc` 와 이미 벗겨진 경로는
@@ -3597,6 +3597,12 @@ export class ActionDispatcher {
     // 명명 주의: `overlay_target` 같은 광범위 키를 피하고 `transition_overlay` 스키마와 1:1 매핑되는 명시적 이름 사용.
     // 미래 다른 overlay 시스템(modal/drawer/tooltip 등)은 각자 독립 키 이름 사용 권장.
     if (params.replace === true) {
+      // replace 는 폴백 판정을 건너뛰므로 사이트 밖 판정을 여기서도 먼저 한다 — 종전에는 `//host` 를
+      // replaceState 에 넘겨 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.87.0)
+      if (isOffSiteNavTarget(finalPath)) {
+        logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
+        return;
+      }
       const G7Core = (window as any).G7Core;
       if (G7Core?.updateQueryParams) {
         const transitionOverlayTarget = typeof (params as any).transition_overlay_target === 'string'
@@ -3647,7 +3653,7 @@ export class ActionDispatcher {
 
     // 사이트 밖 목적지는 SPA 이동(`pushState`)으로 갈 수 없다 — 폴백을 끈(`fallback: false`) 이동이나 라우트가
     // 아직 없는 부팅 단계도 여기서 멈춘다. 종전에는 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.87.0)
-    if (this.isOffSiteNavTarget(finalPath)) {
+    if (isOffSiteNavTarget(finalPath)) {
       logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
       return;
     }
@@ -3675,22 +3681,6 @@ export class ActionDispatcher {
 
     // 이동 후 스크롤 위치 적용 (기본: 상단)
     this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
-  }
-
-  /**
-   * navigate 목적지가 사이트 밖을 가리키는지 판정합니다 (engine-v1.87.0).
-   *
-   * 브라우저 URL 파서와 같은 정규화(`normalizeForOriginCheck` — 탭·개행 제거, 백슬래시 → 슬래시, 선행 슬래시 접기)를
-   * 거친 값이 `//`(프로토콜 상대) 로 시작하거나 스킴을 가지면 사이트 밖이다. 경로 중간의 연속 슬래시(`/board//free`)와
-   * 상대 경로는 여기서 거르지 않는다 — 앞은 사이트 안 경로이고, 뒤는 종전 판정(폴백 sink)이 맡는다.
-   *
-   * @param path navigate 목적지(경로·쿼리)
-   * @returns 사이트 밖 목적지면 true
-   */
-  private isOffSiteNavTarget(path: string): boolean {
-    if (typeof path !== 'string') return false;
-    const normalized = normalizeForOriginCheck(path.trim());
-    return normalized.startsWith('//') || /^[a-z][a-z0-9+.\-]*:/i.test(normalized);
   }
 
   /**
@@ -3741,7 +3731,7 @@ export class ActionDispatcher {
     // 사이트 밖 목적지(`//host`·백슬래시·제어 문자 변형·스킴)는 대조하지 않고 미등록으로 본다 — 라우터 대조는
     // 연속 슬래시를 접어(engine-v1.84.0) `//evil/board/x` 를 `*/board/:slug` 에 맞춰 버리고, 그러면 폴백의
     // 같은 출처 게이트를 건너뛰어 `pushState` 가 교차 출처 SecurityError 를 던졌다 (engine-v1.87.0)
-    if (!this.isOffSiteNavTarget(pathname) && router.match(pathname)) {
+    if (!isOffSiteNavTarget(pathname) && router.match(pathname)) {
       // 현재 템플릿에 등록된 경로 — 정상 navigate
       return null;
     }
@@ -4658,20 +4648,17 @@ export class ActionDispatcher {
 
       if (!response.ok) {
         const errorData = responseData || {};
+        // 서버 메시지가 없으면(빈 본문·errors 만 있는 422·JSON 아닌 응답) 다국어 안내를 쓴다 — 오류 문맥을 만들 때
+        // 번역된다. 종전 영어 문구(`API call failed: …`)는 한국어 화면에도 그대로 토스트로 떴다 (engine-v1.87.0)
+        const failureMessage = errorData.message || '$t:core.errors.api_request_failed';
 
         // API 응답 데이터를 포함한 에러 객체 생성
-        const apiError: any = new Error(
-          errorData.message || `API call failed: ${response.statusText}`
-        );
+        const apiError: any = new Error(failureMessage);
         apiError.response = errorData; // API 응답 전체를 포함
         apiError.status = response.status;
         apiError.statusText = response.statusText;
 
-        throw new ActionError(
-          errorData.message || `API call failed: ${response.statusText}`,
-          undefined,
-          apiError
-        );
+        throw new ActionError(failureMessage, undefined, apiError);
       }
 
       return responseData;
@@ -8404,65 +8391,6 @@ export class ActionDispatcher {
       skipCache: true,
       protectTranslationParams: protectTranslationParams && value.startsWith('$t:'),
     });
-  }
-
-  /**
-   * 객체 내의 모든 {{}} 표현식을 평가합니다.
-   *
-   * "..." 키는 JavaScript spread 연산자처럼 동작합니다.
-   * 예: { "...": "{{_local.form}}", "name": "new" } → { ...oldForm, name: "new" }
-   *
-   * @param obj 평가할 객체
-   * @param dataContext 데이터 컨텍스트
-   */
-  private evaluateExpressions(obj: Record<string, any>, dataContext?: any): Record<string, any> {
-    let result: Record<string, any> = {};
-
-    for (const [key, value] of Object.entries(obj)) {
-      if (key === '...') {
-        // "..." 키는 spread 연산자로 처리
-        // 값이 {{}} 표현식이면 평가하고, 객체면 병합
-        let spreadValue = value;
-        if (typeof value === 'string' && value.includes('{{')) {
-          spreadValue = this.evaluateExpression(value, dataContext);
-        }
-        // spreadValue가 객체인 경우에만 병합
-        if (spreadValue && typeof spreadValue === 'object' && !Array.isArray(spreadValue)) {
-          result = { ...result, ...spreadValue };
-        }
-        // spreadValue가 null, undefined, 또는 객체가 아닌 경우 무시
-      } else if (typeof value === 'string' && value.includes('{{')) {
-        // {{}} 표현식 평가
-        result[key] = this.evaluateExpression(value, dataContext);
-      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        // 중첩 객체 재귀 처리
-        result[key] = this.evaluateExpressions(value, dataContext);
-      } else {
-        result[key] = value;
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * 이미 resolve된 payload에서 남아있는 {{}} 표현식만 평가합니다.
-   * 배열, 객체 등 이미 평가된 값은 그대로 유지합니다.
-   */
-  private evaluateExpressionsIfNeeded(obj: Record<string, any>, dataContext?: any): Record<string, any> {
-    const result: Record<string, any> = {};
-
-    for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === 'string' && value.includes('{{')) {
-        // 문자열이고 {{}}를 포함하면 평가
-        result[key] = this.evaluateExpression(value, dataContext);
-      } else {
-        // 그 외는 그대로 유지 (배열, 객체, 기본값 등)
-        result[key] = value;
-      }
-    }
-
-    return result;
   }
 
   /**

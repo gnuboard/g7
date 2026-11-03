@@ -179,7 +179,7 @@
                     </success>
                     <fail>
                       <set-state target="local" :outboundProxyTesting="false" :outboundProxyTest="null" outboundProxyTestMessage="{{error.message}}"/>
-                      <toast type="error" message="{{error.message}}"/>
+                      <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
                     </fail>
                     <body outbound_proxy="{{_local.form?.advanced?.outbound_proxy}}" outbound_proxy_bypass="{{_local.form?.advanced?.outbound_proxy_bypass ?? []}}"/>
                   </api-call>
@@ -429,7 +429,7 @@
                   </success>
                   <fail>
                     <set-state target="local" :trustedProxyProbing="false" :trustedProxyProbe="null" :trustedProxyProbeMessage="null"/>
-                    <toast type="error" message="{{error.message}}"/>
+                    <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
                   </fail>
                   <body trusted_proxies="{{(_local.form?.advanced?.trusted_proxies ?? [])}}"/>
                 </api-call>

@@ -240,7 +240,6 @@ class RequirementsVendorDevPackagesTest extends TestCase
      * 임시 BASE_PATH 아래에 vendor 픽스처를 만듭니다.
      *
      * @param  array<string, mixed>  $installedJson  installed.json 내용
-     *
      * @return void 반환값 없음
      */
     private function writeVendor(array $installedJson): void

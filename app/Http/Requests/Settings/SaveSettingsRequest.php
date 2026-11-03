@@ -14,7 +14,6 @@ use App\Models\Attachment;
 use App\Rules\CspSourceHost;
 use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
-use App\Rules\ValidTrustedProxyAddress;
 use App\Search\Engines\DatabaseFulltextEngine;
 use App\Services\DriverRegistryService;
 use App\Services\Queue\QueueWorkerRegistry;
@@ -754,8 +753,9 @@ class SaveSettingsRequest extends FormRequest
             'advanced.outbound_proxy_bypass.*' => ['string', 'max:255'],
 
             // 신뢰 프록시 (advanced 탭) — 태그 배열. 빈 배열은 「신뢰하지 않음」이라 정상값이다.
-            'advanced.trusted_proxies' => ['nullable', 'array', 'max:50'],
-            'advanced.trusted_proxies.*' => ['string', 'max:60', new ValidTrustedProxyAddress],
+            // 형태는 단건 저장(PUT settings/{key}, 저장 키 `debug.trusted_proxies`)과 한 표를 쓴다
+            'advanced.trusted_proxies' => ['nullable', ...SettingShapeRules::rulesFor('debug.trusted_proxies')],
+            'advanced.trusted_proxies.*' => SettingShapeRules::itemRulesFor('debug.trusted_proxies'),
 
             // 코어 업데이트 설정 (advanced 탭)
             'advanced.core_update_github_url' => ['nullable', 'url', 'max:500'],

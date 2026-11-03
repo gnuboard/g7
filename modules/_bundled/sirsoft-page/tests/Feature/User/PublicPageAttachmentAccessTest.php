@@ -45,7 +45,6 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * Service 를 모킹해 게이트 통과 시 200 을 반환하도록 만든다.
      *
      * @param  PageAttachment  $attachment  getByHash 가 반환할 첨부
-     *
      * @return void 반환값 없음
      */
     private function mockServicePassThrough(PageAttachment $attachment): void

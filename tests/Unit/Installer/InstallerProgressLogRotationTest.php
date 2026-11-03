@@ -147,6 +147,7 @@ class InstallerProgressLogRotationTest extends TestCase
             '표본이 상한을 넘지 못했다 — 이 테스트가 재는 상태가 만들어지지 않았다'
         );
     }
+
     /**
      * 상한을 넘긴 파일에 한 줄을 더 쓰면 이전 내용이 회전본으로 그대로 옮겨지고, 새 파일은 작아지며 방금 쓴 줄을 담는지 확인한다.
      *
@@ -228,6 +229,7 @@ class InstallerProgressLogRotationTest extends TestCase
         // 회전 안내 1줄 + 방금 쓴 2줄
         $this->assertSame(3, $afterCount);
     }
+
     /**
      * 이미 회전본이 있을 때 다시 회전하면 옛 회전본을 덮고 두 번째 세대 파일을 만들지 않는지 확인한다.
      *
@@ -255,6 +257,7 @@ class InstallerProgressLogRotationTest extends TestCase
         );
         $this->assertFileDoesNotExist($log.'.2', '세대가 늘어났다');
     }
+
     /**
      * 상한 아래의 짧은 기록에서는 회전본이 생기지 않는지 확인한다.
      *
@@ -273,6 +276,7 @@ class InstallerProgressLogRotationTest extends TestCase
         $this->assertFileExists($log);
         $this->assertFileDoesNotExist($rotated, '상한 아래에서 회전하면 정상 설치의 기록이 매번 쪼개진다');
     }
+
     /**
      * 없는 파일에 회전을 시도하면 오류 없이 거짓을 돌려주고 파일도 만들지 않는지 확인한다.
      *

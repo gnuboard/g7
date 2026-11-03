@@ -125,7 +125,7 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
     {
         $config = $this->subject()->parse([
             'DB_PREFIX=g7_ # 접두사',
-            'DB_WRITE_DATABASE=g7_testing   # 리허설 DB',
+            'DB_WRITE_DATABASE=g7_testing   # 테스트 DB',
         ]);
 
         $this->assertSame('g7_', $config['DB_PREFIX']);
@@ -171,7 +171,7 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
     /**
      * 부팅이 읽는 표 목록을 고정한다.
      *
-     * 이 목록이 비면 가드가 **한 번도 건너뛰지 않게** 되어(fail-open) 리허설 직후의
+     * 이 목록이 비면 가드가 **한 번도 건너뛰지 않게** 되어(fail-open) 확장 표가 비워진 직후의
      * 부팅 실패가 다시 진짜 회귀처럼 보인다. 늘어나면 반대로 과잉 건너뜀이 된다.
      *
      * @effects skip_guard_required_tables_are_fixed
@@ -188,7 +188,7 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
      *
      * 트레이트 자신의 계약은 8차 #22 가 잠갔지만, 그것을 **누가 어떻게 부르는가**는 아무도
      * 보지 않았다. 배선 한 줄이 빠지거나 순서가 뒤집히면 정상 DB 에서는 초록이라 드러나지
-     * 않고, 리허설 직후에만 「Table 'g7_modules' doesn't exist」가 진짜 회귀와 섞여 나타난다.
+     * 않고, 확장 표가 비워진 직후에만 「Table 'g7_modules' doesn't exist」가 진짜 회귀와 섞여 나타난다.
      * 판정은 앱 부팅 **전**에 해야 한다 — 부팅이 바로 그 실패 지점이기 때문이다.
      *
      * @effects skip_guard_runs_before_the_app_boots

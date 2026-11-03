@@ -380,6 +380,8 @@ test.describe('레이아웃 표현식 평가 샌드박스', () => {
   // @scenario target_kind=offsite, sink=same_tab
   // @effects nav_sink_rejects_offsite_target
   test('navigate 로 흘러든 //외부 경로는 오프사이트로 나가지 않는다 (open-redirect 차단)', async ({ page, baseURL }) => {
+    // 경로 4개마다 로그인 화면을 새로 열고 부팅을 기다린다 — 기본 30초에 붙어 있어(단독 28.5초) 서버 부하가 있으면 넘친다
+    test.slow();
     const site = new URL(baseURL!).origin;
     // 같은 사이트 전체 주소라도 경로가 `//다른호스트`(백슬래시 변형 포함)면 바깥 주소다
     for (const path of ['//example.com/', 'https://example.com/', `${site}//example.com/x`, `${site}/\\example.com/x`]) {
@@ -390,6 +392,37 @@ test.describe('레이아웃 표현식 평가 샌드박스', () => {
 
       expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
     }
+  });
+
+  // replace 이동은 폴백 판정을 건너뛰고 주소만 바꾸는 갈래라, 사이트 밖 판정이 없으면 `history.replaceState('//host')` 가
+  // 교차 출처 SecurityError 를 던진다 (engine-v1.87.0 — 사이트 밖 판정은 support/navPolicy `isOffSiteNavTarget`)
+  // @scenario target_kind=offsite, sink=same_tab
+  // @effects nav_sink_rejects_offsite_target
+  test('replace 이동으로 흘러든 사이트 밖 주소는 주소창을 바꾸지 않고 오류도 남기지 않는다', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(String(error)));
+    const startUrl = page.url();
+
+    for (const path of ['//example.com/x', 'https://example.com/x']) {
+      const replaced = await page.evaluate(async (p) => {
+        const calls: string[] = [];
+        const original = window.history.replaceState.bind(window.history);
+        window.history.replaceState = (state: unknown, title: string, url?: string | URL | null) => {
+          calls.push(String(url));
+          return original(state, title, url);
+        };
+        try {
+          await (window as any).G7Core.dispatch({ handler: 'navigate', params: { path: p, query: { page: 2 }, replace: true } });
+        } finally {
+          window.history.replaceState = original;
+        }
+        return calls;
+      }, path);
+
+      expect(replaced, `${path} 로 주소창을 바꾸려 했다`).toEqual([]);
+      expect(page.url()).toBe(startUrl);
+    }
+    expect(errors, '처리되지 않은 오류(SecurityError 등)가 남았다').toEqual([]);
   });
 
   // @scenario target_kind=offsite, sink=same_tab

@@ -185,6 +185,14 @@ try {
 
     $expected = (string) (readInstallerRuntime()['installer']['stepwise_token'] ?? '');
 
+    // 설치 계획 검증(installer_plan_verify)을 따로 하지 않는 이유 — 형제 install-worker.php 는
+    // 진입 시 그 검증으로 막는데, 그 워커는 세션도 토큰도 받지 않아 「소유 게이트를 통과한 계획인가」를
+    // 서명으로만 확인할 수 있기 때문이다. 이 입구의 토큰은 install-process.php 가 소유 게이트
+    // (installer_require_owner) 통과 뒤, 계획 서명과 **같은 설치 계획 확정 호출**에서 새로 발급해
+    // runtime.php(0600)에만 둔다. 시작할 때마다 바뀌므로 토큰을 제시했다는 것이 곧 이번 회전의 계획을
+    // 소유자가 확정했다는 증거다. 또 그 검증은 running 만 허용해, complete_flag 뒤 completed 상태에서
+    // 이어지는 config_cache 재개(installerStepwiseEndpointRejection 이 허용한다)를 막는다.
+
     // 거부 사유를 나눈다 (11차 #A10) — 「보관본이 없다」는 새로고침으로 복구되지 않는데
     // 종전에는 「토큰이 틀렸다」와 같은 문구·같은 안내(새로고침)를 냈다.
     $tokenRejection = installerStepwiseTokenRejection($presented, $expected);

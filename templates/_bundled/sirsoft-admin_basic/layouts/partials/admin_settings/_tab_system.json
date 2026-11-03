@@ -492,16 +492,34 @@
                                                                             }
                                                                         },
                                                                         {
+                                                                            "comment": "복사는 응답을 받은 뒤에 일어나 누른 순간의 사용자 동작 허가가 끝났을 수 있다. 핸들러가 복사하지 못하면 false 를 돌려주므로 그 값을 보고 성공·실패 토스트를 가른다 — 늘 성공 토스트를 띄우면 운영자가 빈 클립보드를 붙여넣는다.",
                                                                             "handler": "copyToClipboard",
                                                                             "params": {
                                                                                 "text": "{{result.data.url}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "success",
-                                                                                "message": "$t:admin.settings.system.cron_url_copied"
+                                                                            },
+                                                                            "onSuccess": {
+                                                                                "handler": "conditions",
+                                                                                "conditions": [
+                                                                                    {
+                                                                                        "if": "{{result === true}}",
+                                                                                        "then": {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "success",
+                                                                                                "message": "$t:admin.settings.system.cron_url_copied"
+                                                                                            }
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "then": {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "$t:admin.templates.layout_edit.copy_failed"
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                ]
                                                                             }
                                                                         }
                                                                     ],
@@ -726,7 +744,7 @@
                                                     "text": "$t:admin.settings.system.cron_last_run"
                                                 },
                                                 {
-                                                    "comment": "서버는 ISO 8601(`2026-09-12T21:52:21+09:00`)을 준다. 화면에는 사이트 시간대의 날짜·시각만 남긴다 — `T` 와 오프셋이 그대로 보이면 운영자가 읽을 수 없는 문자열이 된다.",
+                                                    "comment": "서버는 ISO 8601(`2026-09-12T21:52:21+09:00`)을 준다. 화면에서는 `T` 를 빈칸으로 바꾸고 앞 19자(날짜와 시각)만 남겨 오프셋을 떼어 낸다 — 시간대 변환은 하지 않으므로 서버가 준 시각 그대로다. `T` 와 오프셋이 그대로 보이면 운영자가 읽을 수 없는 문자열이 된다.",
                                                     "id": "cron_last_run_value",
                                                     "type": "basic",
                                                     "name": "P",
@@ -734,7 +752,7 @@
                                                     "props": {
                                                         "className": "text-heading"
                                                     },
-                                                    "text": "{{(function () { const r = _local.cronLastRun ?? system_status?.data?.cron?.last_run; return String(r?.finished_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + (r?.duration_ms ?? 0) + 'ms · ' + (r?.executed ?? 0) + ' / ' + (r?.failed ?? 0); })()}}"
+                                                    "text": "{{(function () { const r = _local.cronLastRun ?? system_status?.data?.cron?.last_run; return String(r?.finished_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.schedules.queue.duration_ms', { ms: r?.duration_ms ?? 0 }) + ' · ' + (r?.executed ?? 0) + ' / ' + (r?.failed ?? 0); })()}}"
                                                 },
                                                 {
                                                     "id": "cron_last_run_empty",
@@ -940,7 +958,7 @@
                                                                     "props": {
                                                                         "className": "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
                                                                     },
-                                                                    "text": "{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + (entry.duration ?? 0) + 's'}}"
+                                                                    "text": "{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.settings.system.cron_history_duration', { seconds: entry.duration ?? 0 })}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",

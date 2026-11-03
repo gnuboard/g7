@@ -83,6 +83,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 상품 ID 로 올린 이미지가 images 카테고리의 products/{상품코드}/ 경로에 저장되고 작성자와 정렬 순서로 행이 만들어지는지 확인한다.
      *
      * @scenario operation=upload
+     *
      * @effects product_upload_stores_under_product_code_path
      *
      * @return void 반환값 없음
@@ -166,6 +167,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 임시 키로 올린 이미지가 products/temp/{tempKey}/ 에 저장되고 상품 없이 임시 키 행이 만들어지는지 확인한다.
      *
      * @scenario operation=upload
+     *
      * @effects product_upload_with_temp_key_creates_unlinked_image
      *
      * @return void 반환값 없음
@@ -231,6 +233,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 상품에 이미 20장이 있으면 업로드가 상한 도메인 예외를 던지는지 확인한다.
      *
      * @scenario entry=single_upload_api, count=20, path=edit_product_id
+     *
      * @effects backend_upload_throws_at_limit
      *
      * @return void 반환값 없음
@@ -262,6 +265,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 임시 키에 이미 20장이 있으면 업로드가 상한 도메인 예외를 던지는지 확인한다.
      *
      * @scenario entry=single_upload_api, count=20, path=new_temp_key
+     *
      * @effects backend_upload_throws_at_limit
      *
      * @return void 반환값 없음
@@ -293,6 +297,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 업로드가 before_upload, filter_upload_file, after_upload 훅을 모두 발행하는지 확인한다.
      *
      * @scenario operation=upload
+     *
      * @effects product_upload_fires_before_filter_after_hooks
      *
      * @return void 반환값 없음
@@ -346,6 +351,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 이미지를 지우면 저장소 파일과 이미지 행이 함께 삭제되는지 확인한다.
      *
      * @scenario operation=delete
+     *
      * @effects product_delete_removes_storage_file_and_record
      *
      * @return void 반환값 없음
@@ -378,6 +384,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 임시 이미지를 상품에 연결하면 파일이 상품 경로로 옮겨지고 행이 상품 ID 와 새 경로로 갱신된 뒤 임시 디렉토리가 정리되는지 확인한다.
      *
      * @scenario operation=link_temp
+     *
      * @effects link_temp_images_moves_files_to_product_path
      *
      * @return void 반환값 없음
@@ -461,6 +468,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 형제 둘(게시판·페이지)은 11차에 같은 자리를 고쳤다 (12차 G3 라운드 D4).
      *
      * @scenario operation=link_temp
+     *
      * @effects link_temp_images_skips_unreadable_file
      *
      * @return void 반환값 없음
@@ -520,6 +528,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 이미지 ID 와 순서 맵을 저장소 reorder 에 그대로 넘기는지 확인한다.
      *
      * @scenario operation=reorder
+     *
      * @effects product_reorder_delegates_order_map_to_repository
      *
      * @return void 반환값 없음
@@ -547,6 +556,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 원본 해시의 이미지 파일을 대상 상품 경로로 복사하고 메타와 대표 여부, 정렬 순서를 실은 새 행을 만드는지 확인한다.
      *
      * @scenario operation=copy
+     *
      * @effects copy_from_source_copies_file_and_creates_record
      *
      * @return void 반환값 없음
@@ -638,6 +648,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 원본 해시에 해당하는 이미지가 없으면 복사가 null 을 돌려주는지 확인한다.
      *
      * @scenario operation=copy
+     *
      * @effects copy_from_source_returns_null_when_source_missing
      *
      * @return void 반환값 없음
@@ -663,6 +674,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 원본 행은 있지만 파일을 읽지 못하면 복사가 null 을 돌려주는지 확인한다.
      *
      * @scenario operation=copy
+     *
      * @effects copy_from_source_returns_null_when_file_missing
      *
      * @return void 반환값 없음
@@ -700,6 +712,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 대표 이미지를 지정하면 기존 대표의 플래그를 끄고 지정한 이미지의 플래그를 켜는지 확인한다.
      *
      * @scenario operation=set_thumbnail
+     *
      * @effects set_thumbnail_moves_flag_to_selected_image
      *
      * @return void 반환값 없음

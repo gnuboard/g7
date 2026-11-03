@@ -260,7 +260,7 @@
 | `sirsoft-ecommerce.export.products.fields` | filter | 상품내역 내보내기 필드 추가 | `src/Exports/Types/ProductExportType.php:158` |
 | `sirsoft-ecommerce.export.registered_formats` | filter | 파일 형식 추가 (예: XLSX 플러그인) | `src/Exports/ExportFormatRegistry.php:38` |
 | `sirsoft-ecommerce.export.registered_types` | filter | 내보내기 유형 추가 | `src/Exports/ExportTypeRegistry.php:44` |
-| `sirsoft-ecommerce.export.request_denied` | action | 내보내기 요청 거부 | `src/Http/Controllers/Admin/ExportController.php:109` 외 1곳 |
+| `sirsoft-ecommerce.export.request_denied` | action | 내보내기 요청 거부 | `src/Http/Controllers/Admin/ExportController.php:110` 외 1곳 |
 | `sirsoft-ecommerce.export.request_validation_rules` | filter | 내보내기 요청·예상 건수 검증 규칙 | `src/Http/Requests/Admin/StoreExportRequest.php:145` |
 | `sirsoft-ecommerce.export.retry_validation_rules` | filter | 다시 요청 검증 규칙 | `src/Http/Requests/Admin/RetryExportRequest.php:38` |
 | `sirsoft-ecommerce.export.show_validation_rules` | filter | 작업 상세 검증 규칙 | `src/Http/Requests/Admin/ShowExportRequest.php:33` |

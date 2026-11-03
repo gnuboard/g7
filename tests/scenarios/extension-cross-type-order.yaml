@@ -56,7 +56,7 @@ effects:
   - installer_step5_precheck_failure_shows_back_to_step4
   - installer_step5_other_failure_keeps_retry_primary
   - installer_step5_failure_title_has_no_raw_task_key
-  # 설치 마법사 — Step 5 진행 목록이 실행 순서(종류를 넘는 의존 순서) 그대로 그려진다(PO 2026-11-02)
+  # 설치 마법사 — Step 5 진행 목록이 실행 순서(종류를 넘는 의존 순서) 그대로 그려진다
   - installer_view_task_list_follows_execution_order
   # 설치 마법사 — Step 5 실패 화면 되돌아가기 확인 창·상태 초기화 로그(DB 를 건드리기 전 실패에는 DB 수동 정리 안내 없음)
   - installer_step5_back_to_extensions_confirm_has_no_db_notice

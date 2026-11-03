@@ -1,4 +1,4 @@
-// @scenario layout-editor-data-builtins
+// @scenario aspect=capability_attach
 // (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
 
 // e2e:allow-shape 게이트(데이터 표면 누락 0 잠금)만 추가한다.

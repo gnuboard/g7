@@ -919,9 +919,9 @@ php artisan core:check-updates
 
 | 메서드 | 경로 | 권한 | 설명 |
 |--------|------|------|------|
-| POST | `/api/admin/core-update/check` | `core.settings.update` | 코어 업데이트 확인 (422 시 check_failed) |
+| POST | `/api/admin/core-update/check` | `core.settings.read` | 코어 업데이트 확인 (422 시 check_failed) |
 | GET | `/api/admin/core-update/changelog` | `core.settings.read` | 코어 변경 로그 조회 (from_version, to_version) |
-| GET | `/api/admin/core-update/status` | `core.system.update` | 웹 실행 상태 (W6 4상태의 근거) |
+| GET | `/api/admin/core-update/status` | `core.system.update` | 웹 실행 상태 (업데이트 화면이 그리는 상태의 근거) |
 | POST | `/api/admin/core-update/start` | `core.system.update` | 실행 등록 (단계는 수행하지 않음) |
 | POST | `/api/admin/core-update/advance` | `core.system.update` | 다음 단계 **하나**를 수행 |
 | POST | `/api/admin/core-update/dismiss` | `core.system.update` | 끝난 실행의 기록 정리 |
@@ -1215,6 +1215,10 @@ SSH 를 쓸 수 없는 호스팅을 위해 관리자 화면(환경설정 > 업�
 실행·성공·실패는 훅(`core.core_update.started` · `.completed` · `.failed`)으로 발행되고
 `CoreActivityLogListener` 가 활동 로그에 남깁니다. 실패 로그에는 되돌리기 결과가 함께
 실립니다 — 「실패했다」와 「사이트가 지금 어떤 상태인가」는 다른 사실입니다.
+
+이 세 훅은 **웹 업데이트 경로(`CoreUpdateOrchestrator`)에서만 발행됩니다.** SSH/CLI 의
+`php artisan core:update` 는 발행하지 않으므로, 이 훅을 구독하는 확장은 CLI 업데이트를
+관측하지 못합니다 — 활동 로그에도 CLI 실행은 남지 않습니다.
 
 ### 수동 ZIP 소스
 

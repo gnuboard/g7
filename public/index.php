@@ -10,10 +10,21 @@ $installedFlagPath = $g7AppRoot.'/storage/app/g7_installed';
 $envPath = $g7AppRoot.'/.env';
 
 // 설치 확인: g7_installed 파일 또는 .env의 INSTALLER_COMPLETED
-$isInstalled = file_exists($installedFlagPath) || (
-    file_exists($envPath) &&
-    preg_match('/^INSTALLER_COMPLETED=true$/m', file_get_contents($envPath))
-);
+//
+// `.env` 판정은 인스톨러 가드(`public/install/api/_guard.php::installer_env_completed_flag()`)와
+// 같은 규칙의 사본이다 — 이 파일은 그 함수를 읽기 전에 돈다. 값은 true·1·yes(따옴표·대소문자
+// 무관), 등호 주변 공백과 CRLF 를 허용하고, 같은 키가 여러 줄이면 마지막 줄을 쓴다. 규칙이
+// 갈리면 인스톨러는 완료로 보고 막는데 여기서는 미설치로 보고 설치 화면으로 보낸다.
+// region:install-flag — 계약 테스트가 이 구간을 그대로 평가한다(InstallerCompletionEnvFlagTest).
+$isInstalled = file_exists($installedFlagPath);
+if (! $isInstalled && is_file($envPath)) {
+    $g7EnvRaw = @file_get_contents($envPath);
+    if (is_string($g7EnvRaw) && preg_match_all('/^[ \t]*INSTALLER_COMPLETED[ \t]*=(.*)$/m', $g7EnvRaw, $g7EnvFlag) > 0) {
+        $isInstalled = in_array(strtolower(trim(trim((string) end($g7EnvFlag[1])), "\"'")), ['true', '1', 'yes'], true);
+    }
+    unset($g7EnvRaw, $g7EnvFlag);
+}
+// endregion:install-flag
 
 // 배포 레이아웃 ②(문서 루트 = 프로젝트 루트)의 위임 흔적을 진입 시점에 지운다.
 //

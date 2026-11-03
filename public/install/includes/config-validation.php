@@ -1,5 +1,8 @@
 <?php
 
+use App\Support\ExecutionEnvironment;
+use App\Support\PrivilegedDatabaseAccounts;
+
 /**
  * 그누보드7 인스톨러 - Step 3 설정 검증 (웹·터미널 공유)
  *
@@ -76,7 +79,7 @@ if (! function_exists('installer_validate_db_username')) {
             return;
         }
 
-        if (\App\Support\PrivilegedDatabaseAccounts::isBlocked($username)) {
+        if (PrivilegedDatabaseAccounts::isBlocked($username)) {
             $errors[$field] = lang('error_db_username_privileged', ['username' => $username]);
         }
     }
@@ -186,7 +189,7 @@ if (! function_exists('installer_validate_config')) {
         if (! isset($errors['php_binary']) && $phpBinary !== 'php') {
             installerEnsureExecutionEnvironmentLoaded();
 
-            $probe = \App\Support\ExecutionEnvironment::probePhpBinary($phpBinary);
+            $probe = ExecutionEnvironment::probePhpBinary($phpBinary);
             $probedSapi = $probe['sapi'] ?? null;
 
             if (($probe['status'] ?? '') === 'valid' && is_string($probedSapi) && $probedSapi !== 'cli') {

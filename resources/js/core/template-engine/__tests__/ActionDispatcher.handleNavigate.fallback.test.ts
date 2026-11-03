@@ -388,6 +388,39 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
       expect(mockLocationAssign).not.toHaveBeenCalled();
     });
 
+    // replace 갈래는 폴백 판정을 건너뛰고 `updateQueryParams`(history.replaceState)로 바로 간다 — 사이트 밖
+    // 판정이 그 뒤에만 있으면 `//host` 를 replaceState 에 넘겨 교차 출처 SecurityError 가 남았다 (engine-v1.87.0)
+    // @scenario route=replace_only, fallback=default
+    // @effects offsite_target_refused_without_fallback
+    it('replace: true 여도 사이트 밖 목적지는 주소를 바꾸지 않는다', async () => {
+      const updateQueryParams = vi.fn().mockResolvedValue(undefined);
+      (window as any).G7Core = { updateQueryParams };
+
+      try {
+        for (const path of ['//evil.example/board/free', 'https://evil.example/board/free']) {
+          await dispatcher.dispatchAction({
+            type: 'click',
+            handler: 'navigate',
+            params: { path, query: { page: 2 }, replace: true },
+          });
+        }
+
+        expect(updateQueryParams).not.toHaveBeenCalled();
+        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(mockLocationAssign).not.toHaveBeenCalled();
+
+        // 사이트 안 목적지의 replace 는 종전대로 쿼리만 바꾼다 (과차단 없음)
+        await dispatcher.dispatchAction({
+          type: 'click',
+          handler: 'navigate',
+          params: { path: '/board/free', query: { page: 2 }, replace: true },
+        });
+        expect(updateQueryParams).toHaveBeenCalledWith('/board/free?page=2', undefined);
+      } finally {
+        delete (window as any).G7Core;
+      }
+    });
+
     const inSite: ReadonlyArray<readonly [string, string]> = [
       ['정규 경로', '/board/free'],
       ['언어 접두 경로', '/ko/board/free'],

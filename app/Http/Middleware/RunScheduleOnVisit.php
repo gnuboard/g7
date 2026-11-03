@@ -68,7 +68,13 @@ class RunScheduleOnVisit
 
             $now = CarbonImmutable::now();
 
-            $this->state->recordInvocation($now);
+            // 판정과 호출 기록은 한 잠금 안에서 한다 — 동시에 끝난 방문 여럿이 함께 러너를 돌지 않게.
+            // 간격 제한이 없어도 방문 트리거는 최소 1분을 둔다 — 그러지 않으면 방문 하나마다
+            // 러너가 돌아 트래픽이 곧 부하가 된다.
+            if ($this->policy->claimInvocation($this->state, $now, floorMinutes: 1) > 0) {
+                return;
+            }
+
             $this->runner->run($now);
         } catch (\Throwable $e) {
             // 방문자의 요청은 이미 끝났다 — 여기서 터진 예외가 다른 요청에 영향을
@@ -78,7 +84,7 @@ class RunScheduleOnVisit
     }
 
     /**
-     * 이 요청이 방문 트리거 실행 대상인지 판정합니다.
+     * 이 요청이 방문 트리거 실행 대상인지 판정합니다 (최소 간격은 `terminate()` 가 잠금 안에서 본다).
      *
      * @param  Request  $request  요청
      * @return bool 실행 여부
@@ -90,22 +96,6 @@ class RunScheduleOnVisit
         }
 
         // 웹 크론 주소 자신의 요청에서는 돌지 않는다 — 그 경로는 이미 러너를 부른다.
-        if ($request->routeIs('api.public.system.cron.run')) {
-            return false;
-        }
-
-        $interval = $this->policy->minIntervalMinutes();
-
-        if ($interval <= 0) {
-            // 간격 제한이 없어도 방문 트리거는 최소 1분을 둔다 — 그러지 않으면
-            // 방문 하나마다 러너가 돌아 트래픽이 곧 부하가 된다.
-            $interval = 1;
-        }
-
-        $this->state->refresh();
-        $lastInvoked = $this->state->lastInvokedAt();
-
-        return $lastInvoked === null
-            || $lastInvoked->addMinutes($interval)->isPast();
+        return ! $request->routeIs('api.public.system.cron.run');
     }
 }

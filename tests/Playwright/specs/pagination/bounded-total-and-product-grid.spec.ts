@@ -6,7 +6,7 @@
  * 에러도 없어 API 테스트로는 드러나지 않는다. 브라우저에서만 드러나는 성질이라
  * 여기서 잡는다.
  *
- * @scenario bounded_total_and_product_grid_pager
+ * @scenario total_relation=at_least
  *
  * @effects search_pager_survives_null_last_page,
  *          search_count_marks_inexact_total,
@@ -53,7 +53,7 @@ async function acceptCookieConsent(page: Page): Promise<void> {
 const SHOP_LIST_PATH = '/shop/products';
 
 test.describe('총 건수 상한과 페이지 이동', () => {
-  // @scenario search_response_carries_accuracy_meta
+  // @scenario total_relation=at_least, surface=module_search
   // @effects search_count_marks_inexact_total
   test('검색 응답이 총 건수 정확도를 함께 싣는다', async ({ page }) => {
     const responsePromise = page.waitForResponse(
@@ -80,7 +80,7 @@ test.describe('총 건수 상한과 페이지 이동', () => {
     await expect(page.locator('body')).toContainText(suffix, { timeout: 15_000 });
   });
 
-  // @scenario search_pager_survives_null_last_page
+  // @scenario total_relation=at_least, navigation=offset_page_number
   // @effects search_pager_survives_null_last_page
   test('마지막 페이지를 모르는 목록에서도 페이저가 사라지지 않는다', async ({ page }) => {
     const errors: string[] = [];
@@ -122,7 +122,7 @@ test.describe('총 건수 상한과 페이지 이동', () => {
 });
 
 test.describe('상품 그리드 페이저', () => {
-  // @scenario product_grid_pager_uses_has_more_pages
+  // @scenario surface=product_grid
   // @effects product_grid_pager_uses_has_more_pages
   test('상품 그리드 페이저가 마지막 페이지를 몰라도 접히지 않는다', async ({ page }) => {
     await page.route('**/api/modules/sirsoft-ecommerce/products?**', async (route) => {

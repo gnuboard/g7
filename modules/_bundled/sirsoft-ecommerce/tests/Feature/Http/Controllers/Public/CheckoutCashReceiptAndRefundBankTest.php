@@ -179,6 +179,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * 현금영수증을 신청하지 않은 무통장 주문은 결제행의 신청 플래그가 꺼지고 용도와 식별번호가 비는지 확인한다.
      *
      * @scenario surface=checkout, payment_method=dbank
+     *
      * @effects checkout_cash_receipt_request_persisted
      *
      * @return void 반환값 없음
@@ -251,6 +252,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * 지출증빙 용도에 휴대폰번호를 식별번호로 쓰면 주문이 생성되고 용도가 지출증빙으로 저장되는지 확인한다.
      *
      * @scenario surface=checkout, payment_method=dbank, receipt_type=expense, identifier_type=phone
+     *
      * @effects checkout_expense_with_phone_allowed
      *
      * @return void 반환값 없음
@@ -272,6 +274,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * 지출증빙 용도에 자진발급 지정번호를 넣으면 소득공제 전용 오류 문구로 422 가 나는지 확인한다.
      *
      * @scenario surface=checkout, payment_method=dbank, receipt_type=expense, identifier_type=self_issue
+     *
      * @effects checkout_expense_with_self_issue_rejected_422
      *
      * @return void 반환값 없음
@@ -292,6 +295,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * 체크섬이 맞지 않는 사업자등록번호로 지출증빙을 신청하면 422 가 나고 주문 부산물이 남지 않는지 확인한다.
      *
      * @scenario surface=checkout, payment_method=dbank, receipt_type=expense, identifier_type=business
+     *
      * @effects checkout_business_number_checksum_rejected_422, checkout_no_order_artifact_on_validation_failure
      *
      * @return void 반환값 없음
@@ -312,6 +316,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * 신청 플래그만 보내고 용도, 발급수단, 식별번호를 빼면 세 필드 오류로 422 가 나는지 확인한다.
      *
      * @scenario surface=checkout, payment_method=dbank
+     *
      * @effects checkout_requested_without_subkeys_rejected_422
      *
      * @return void 반환값 없음
@@ -419,6 +424,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * 환불계좌를 입력하지 않아도 주문이 생성되고 결제행의 환불계좌 필드가 비어 있는지 확인한다.
      *
      * @scenario surface=checkout, payment_method=dbank, refund_bank_input=empty
+     *
      * @effects checkout_refund_bank_empty_allowed
      *
      * @return void 반환값 없음
@@ -473,6 +479,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * @param  string  $paymentMethod  환불계좌를 쓰지 않는 결제수단
      *
      * @scenario surface=checkout, payment_method=card, refund_bank_input=complete
+     *
      * @effects refund_bank_not_stored_for_non_bank_methods
      *
      * @return void 반환값 없음
@@ -541,6 +548,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * @param  array<int, string>  $expectedErrors  기대하는 검증 오류 키
      *
      * @scenario surface=checkout, payment_method=dbank, refund_bank_input=partial_account_only
+     *
      * @effects checkout_refund_bank_partial_input_rejected_422
      *
      * @return void 반환값 없음

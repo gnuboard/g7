@@ -66,10 +66,15 @@ effects:
   - zip_bootstrap_locks_and_reissues_after_attempt_limit
   - zip_bootstrap_lock_does_not_stall_authenticated_session
   - zip_bootstrap_reissues_number_after_browser_session_loss
+  - zip_bootstrap_forgets_number_hash_after_first_auth
+  - zip_bootstrap_serializes_attempt_judgment_under_state_lock
   # 압축 내용 판정
   - zip_bootstrap_rejects_path_traversal_entries
   - zip_bootstrap_rejects_non_g7_archive
   - zip_bootstrap_issues_no_number_without_archive
+  # 운영자 루트 파일 (.htaccess · web.config)
+  - zip_bootstrap_preserves_operator_root_file_outside_g7_block
+  - zip_bootstrap_refuses_unmergeable_operator_root_file
   # 진입 가드
   - zip_bootstrap_refuses_on_completed_site
   - zip_bootstrap_refuses_when_env_completion_flag_set

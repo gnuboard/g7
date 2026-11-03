@@ -268,6 +268,12 @@ return [
         'spawn_failed' => '커맨드 실행 프로세스를 시작하지 못했습니다: :command',
     ],
 
+    // 스케줄 이벤트에서 Artisan 커맨드 되뽑기 실패
+    'schedule_extraction' => [
+        'not_artisan' => 'Artisan 실행 문자열이 아닙니다 (php/artisan 접두사 없음).',
+        'command_name_missing' => '커맨드명을 찾지 못했습니다.',
+    ],
+
     // 스토리지 드라이버 경로 가드 예외
     'storage' => [
         'unsafe_path' => '허용되지 않는 저장 경로입니다.',

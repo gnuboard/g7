@@ -7,8 +7,8 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\ModuleManager;
 use App\Services\NotificationRecipientCapability;
-use App\Support\AssetUrl;
 use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 use BackedEnum;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -561,7 +561,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'post_title' => $post->title ?? '',
                 'post_author' => $post->author_name ?? $post->user?->name ?? '',
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => AssetUrl::siteRoot(),
+                'site_url' => SiteUrl::base(),
             ],
             'context' => [
                 'trigger_user_id' => $post->user_id,
@@ -691,7 +691,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'target_type' => __('sirsoft-board::notification.report_action.target_types.'.$targetType),
                 'reason_type' => __('sirsoft-board::notification.report_received_admin.reason_types.'.$reasonType),
                 'report_url' => ScreenUrl::absolute('board.admin.reports', '/admin/boards/reports', [], ScreenUrl::SCOPE_ADMIN),
-                'site_url' => AssetUrl::siteRoot(),
+                'site_url' => SiteUrl::base(),
             ],
             'context' => [
                 'trigger_user_id' => $report->reporter_id ?? null,

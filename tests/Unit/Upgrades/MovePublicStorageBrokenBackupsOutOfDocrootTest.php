@@ -5,6 +5,10 @@ namespace Tests\Unit\Upgrades;
 use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\UpgradeContext;
 use App\Upgrades\Data\V7_2_0\Migrations\MovePublicStorageBrokenBackupsOutOfDocroot;
+use Illuminate\Support\Facades\Log;
+use Psr\Log\AbstractLogger;
+use ReflectionClass;
+use Stringable;
 use Tests\TestCase;
 
 /**
@@ -402,6 +406,95 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
             '이름 형식이 다른 항목을 옮겼다 — 운영자가 손으로 둔 디렉토리가 말없이 사라진다'
         );
         $this->assertFileDoesNotExist($this->storageAppPath.'/public-storage-broken-memo/note.txt');
+    }
+
+    /**
+     * 스텝의 비공개 이름 규칙 상수가 `StorageLinkHelper` 상수와 같은 값이다.
+     *
+     * V-1 안전 때문에 스텝은 헬퍼 상수(7.2.0 신설)를 읽지 않고 같은 값을 자기 상수로 들고 있다.
+     * 두 값이 갈리면 스텝과 정리 주체의 모집단이 조용히 갈리므로 값 자체를 대조한다.
+     *
+     * @scenario upgrade_step=move_broken_backups, process_shape=in_process_stale_helper
+     *
+     * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
+     */
+    public function test_step_literals_match_the_helper_constants(): void
+    {
+        $step = new ReflectionClass(MovePublicStorageBrokenBackupsOutOfDocroot::class);
+
+        $this->assertSame(StorageLinkHelper::DOCROOT_BROKEN_PREFIX, $step->getConstant('DOCROOT_BROKEN_PREFIX'));
+        $this->assertSame(StorageLinkHelper::PUBLIC_STORAGE_BROKEN_PREFIX, $step->getConstant('PUBLIC_STORAGE_BROKEN_PREFIX'));
+        $this->assertSame(StorageLinkHelper::BROKEN_STAMP, $step->getConstant('BROKEN_STAMP'));
+    }
+
+    /**
+     * 옛 헬퍼(통보 메서드 부재)가 메모리에 있어도 치명 종료하지 않고 로그 경고로 대신한다.
+     *
+     * 7.1.3 이하 부모 프로세스가 in-process 로 이 스텝을 돌리면 `recordDocrootExposureWarning()`·
+     * `warnOnAccumulatedBackups()` 가 없다. 스텝은 그 둘을 부르지 않고, 옮기지 못한 경로와 옮긴
+     * 규모를 `$context->logger` 경고로 남겨야 한다.
+     *
+     * @scenario upgrade_step=move_broken_backups, process_shape=in_process_stale_helper, move_outcome=skipped
+     *
+     * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stale_helper_without_buffer_methods_falls_back_to_logger(): void
+    {
+        $plainFile = $this->publicPath.DIRECTORY_SEPARATOR.'storage.broken.20260808080808';
+        file_put_contents($plainFile, 'not a directory');
+        $this->created[] = $plainFile;
+        $residue = $this->makeResidue('storage.broken.20260909090909', 'zeta.txt');
+        $this->created[] = $this->storageAppPath.'/public-storage-broken-20260909090909';
+
+        $logger = new class extends AbstractLogger
+        {
+            /** @var array<int, array{level: string, message: string}> */
+            public array $records = [];
+
+            /**
+             * 기록을 모읍니다.
+             *
+             * @param  mixed  $level  로그 등급
+             * @param  string|Stringable  $message  메시지
+             * @param  array<string, mixed>  $context  문맥
+             * @return void 반환값 없음
+             */
+            public function log($level, string|Stringable $message, array $context = []): void
+            {
+                $this->records[] = ['level' => (string) $level, 'message' => (string) $message];
+            }
+        };
+        Log::shouldReceive('channel')->with('upgrade')->andReturn($logger);
+
+        $step = new class extends MovePublicStorageBrokenBackupsOutOfDocroot
+        {
+            /**
+             * 옛 헬퍼를 흉내 낸다 — 7.2.0 신설 메서드가 없다.
+             *
+             * @param  string  $method  메서드 이름
+             * @return bool 언제나 false
+             */
+            protected function storageLinkHelperHas(string $method): bool
+            {
+                return false;
+            }
+        };
+
+        $step->run(new UpgradeContext(fromVersion: '7.1.3', toVersion: '7.2.0', currentStep: '7.2.0'));
+
+        $this->assertDirectoryDoesNotExist($residue, '옛 헬퍼 상태에서도 이동 자체는 이뤄져야 한다');
+        $this->assertSame([], StorageLinkHelper::takeDocrootExposureWarnings(), '부재로 판정한 메서드를 불렀다');
+
+        $warnings = implode("\n", array_column(array_filter(
+            $logger->records,
+            fn (array $record): bool => $record['level'] === 'warning'
+        ), 'message'));
+        $this->assertStringContainsString(basename($plainFile), $warnings, '옮기지 못한 경로가 로그 경고로도 남지 않았다');
+        $this->assertStringContainsString('1건', $warnings, '옮긴 규모 통보가 로그 경고로 대신 남지 않았다');
     }
 
     /**

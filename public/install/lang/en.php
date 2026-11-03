@@ -967,7 +967,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
 
     // Shell-free procedure for creating a missing required file (`.env`). Unlike the sibling
     // branches (permission / ownership) this case previously offered a shell copy command only,
-    // which cannot be run on hosting without a shell (measured in G8).
+    // which cannot be run on hosting without a shell.
     'required_files_guide_ftp_step_connect' => 'Connect over FTP and open the folder where Gnuboard7 was uploaded.',
     'required_files_guide_ftp_step_download' => 'Download :source to your computer.',
     'required_files_guide_ftp_step_rename' => 'Rename the downloaded file to :target.',
@@ -1010,7 +1010,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'asset_url_mode_checking' => 'Checking…',
     'asset_url_mode_unknown' => 'Unknown',
 
-    // Web exposure check (B-4 · D3 · D21)
+    // Web exposure check
     'web_exposure' => 'Web Exposure Check',
     'web_exposure_checking' => 'Checking…',
     'web_exposure_safe' => 'Protected',
@@ -1198,7 +1198,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'log_ownership_reclaimed' => '[Ownership] Installation ownership was reclaimed with the recovery token.',
     'log_ownership_reclaim_failed' => '[Ownership] Reclaim rejected: recovery token mismatch.',
 
-    // Execution mode (Step 3 selector · D33 · W2) — what is saved is a "choice", default auto
+    // Execution mode (Step 3 selector) — what is saved is a "choice", default auto
     'execution_mode_card_title' => 'Execution Method',
     'execution_mode_card_description' => 'Choose how installation commands (creating the database, installing extensions, etc.) are run. You can change this later in the admin settings.',
     'execution_mode_auto_title' => 'Auto',
@@ -1248,27 +1248,27 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'error_stepwise_request_failed' => 'The server is not responding to step requests. Press [Retry] in a moment to continue from the interrupted step. If it keeps happening, check storage/logs/installation.log.',
     'error_polling_request_failed' => 'The server is not responding to installation status requests. Wait a moment and reload the page to continue. If this keeps happening, check storage/logs/installation.log.',
     'error_stepwise_token_invalid' => 'The step-by-step token is invalid. Refresh the installer page and start again.',
-    // "No stored token" and "wrong token" need different actions — refreshing does not fix the former (round 11 #A10)
+    // "No stored token" and "wrong token" need different actions — refreshing does not fix the former
     'error_stepwise_token_missing' => 'The server no longer holds the information needed to resume this installation. Please start the installation over.',
-    // Finalize endpoint guard (round 11 #A1)
+    // Finalize endpoint guard
     'error_finalize_method_not_allowed' => 'The installation cannot be finalized through this kind of request.',
     'error_finalize_not_completed' => 'The installation has not finished yet, so it cannot be finalized.',
-    // The installation lock is still within its budget (round 11 #A2 / #A4, wording replaced by D7)
+    // The installation lock is still within its budget
     //
     // The old wording asserted "already running in another window", which is only true while the
     // holder is alive. A fatal exit (disk full, OOM, signal) cannot record the release, so a dead
     // holder keeps the lock. In the field (2026-09-12) that budget was 600s, so the screen pointed
     // at a window that no longer existed for ten minutes and the only way out was "Start over".
     'error_installation_lock_held' => 'A previous run is still marked as in progress. If another window is installing, it continues there. If that window was closed or stopped by an error, this will resume automatically in :seconds seconds.',
-    // Countdown while waiting (D7) — actually counts down the ":seconds" the notice promised
+    // Countdown while waiting — actually counts down the ":seconds" the notice promised
     'installation_lock_wait_countdown' => 'Resuming automatically in :seconds seconds.',
-    // The wait is over and the screen picks it up again (D7)
+    // The wait is over and the screen picks it up again
     'installation_lock_wait_resuming' => 'Resuming…',
-    // Response could not be built (round 11 #A9) — an empty body makes the screen report a network error instead
+    // Response could not be built — an empty body makes the screen report a network error instead
     'error_response_encoding_failed' => 'The server could not build a response. Please refresh the installer page.',
-    // The task finished but its completion record could not be saved (round 11 #A5)
+    // The task finished but its completion record could not be saved
     'error_task_marker_not_persisted' => 'Could not save the completion record for :task. Check free disk space and write permission on the storage folder.',
-    // Abort reasons — the server already distinguishes these; the aborted screen now translates them (round 11 #A12)
+    // Abort reasons — the server already distinguishes these; the aborted screen now translates them
     'abort_reason_user' => 'You stopped the installation.',
     'abort_reason_connection_lost' => 'The connection to the installer page was lost, so the installation stopped.',
     'abort_reason_label' => 'Reason',
@@ -1294,31 +1294,31 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
 
     // Progress-mode mismatch — an installation fixed to step-by-step never uses the streaming worker (R1)
     'error_sse_mode_mismatch' => 'This installation is running step by step and cannot continue in streaming mode.',
-    // Entry precondition for the streaming worker (13th round, security #5) — same rule as its sibling entry (run-task)
+    // Entry precondition for the streaming worker — same rule as its sibling entry (run-task)
     'error_sse_not_running' => 'No installation is in progress. (current status: :status)',
 
-    // Origin check for state-changing requests (13th round, security #4)
+    // Origin check for state-changing requests
     'error_cross_origin_request' => 'Requests sent from another site are not accepted. Please try again from the installer screen.',
 
-    // Call limit for unauthenticated probe requests (13th round, security #6 and #7)
+    // Call limit for unauthenticated probe requests
     'error_probe_rate_limited' => 'Too many check requests. Please try again in a moment.',
 
-    // Database connection failure reasons (classified only as far as the remedy differs — 13th round, security #6)
+    // Database connection failure reasons (classified only as far as the remedy differs)
     'error_db_failure_credentials' => 'the username or password is incorrect',
     'error_db_failure_unknown_database' => 'no database with that name was found',
     'error_db_failure_unreachable' => 'the database server could not be reached (check the address, port and firewall)',
     'error_db_failure_denied' => 'this account has no access to that database',
     'error_db_failure_generic' => 'the connection failed (see the installation log for details)',
 
-    // Runtime budget check (recommendation — never blocks the installation, 13th round, environment #8)
+    // Runtime budget check (recommendation — never blocks the installation)
     'php_limits' => 'PHP runtime budget',
     'php_limits_unknown' => 'The PHP runtime budget (memory and time) could not be determined.',
     'php_limits_detail' => 'Memory limit :memory / execution time limit :time s (:recommended or more recommended)',
 
-    // Configuration difference between the web PHP and the CLI PHP (13th round, environment #7)
+    // Configuration difference between the web PHP and the CLI PHP
     'php_cli_extensions_missing' => 'The CLI PHP is missing these extensions: :extensions — it is using a different php.ini than the web server.',
 
-    // The path the operator typed is not a CLI binary (13th round, security #7)
+    // The path the operator typed is not a CLI binary
     'error_php_binary_not_cli_rejected' => ':path is a :sapi binary, not the CLI one. It cannot run the installation tasks, so please point to a CLI binary.',
 
     // Bundled dependency archive integrity check (vendor-bundle.zip)

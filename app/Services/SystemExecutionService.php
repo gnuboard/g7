@@ -116,13 +116,13 @@ class SystemExecutionService
     /**
      * 운영자가 고정한 실행 모드를 반환합니다 (미고정이면 Auto).
      *
+     * 해석은 모드 판정과 같은 원천(`CommandRunnerResolver::configuredMode`)에 맡긴다.
+     *
      * @return ExecutionMode 저장된 모드
      */
     public function configuredMode(): ExecutionMode
     {
-        return ExecutionMode::fromStringOrAuto(
-            (string) g7_core_settings('system.execution_mode', 'auto'),
-        );
+        return $this->resolver->configuredMode();
     }
 
     /**

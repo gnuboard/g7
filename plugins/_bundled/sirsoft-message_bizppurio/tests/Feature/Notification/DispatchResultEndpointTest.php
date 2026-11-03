@@ -16,7 +16,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 비즈뿌리오 결과(상태·사유·잔액부족·대체발송)를 한 번에 조회한다. 조회는 messaging.view 권한을
  * 요구하고, 매칭되지 않는 로그 id 는 결과 맵에서 빠진다(빈 셀).
  *
- * @scenario dispatch-result-injection
+ * @scenario link_outcome=linked
  */
 class DispatchResultEndpointTest extends PluginTestCase
 {
@@ -141,6 +141,7 @@ class DispatchResultEndpointTest extends PluginTestCase
      * 최근 결과 조회 API 가 파라미터 없이도 연결된 로그 id 를 키로 한 결과 맵(상태와 결과코드)을 돌려주는지 확인한다.
      *
      * @scenario channel=sms, result_category=success, link_outcome=linked
+     *
      * @effects recent_lookup_returns_result_map_without_params
      *
      * @return void 반환값 없음
@@ -213,6 +214,7 @@ class DispatchResultEndpointTest extends PluginTestCase
      * 연결된 성공 발송의 결과가 로그 id 키 아래 상태 success, 결과코드 4100, 잔액부족 아님으로 담기는지 확인한다.
      *
      * @scenario channel=sms, result_category=success, link_outcome=linked
+     *
      * @effects lookup_returns_results_keyed_by_log_id
      *
      * @return void 반환값 없음
@@ -235,6 +237,7 @@ class DispatchResultEndpointTest extends PluginTestCase
      * 음영지역 실패(4400) 결과가 상태 failed 와 코드가 들어간 사유 라벨로 반환되는지 확인한다.
      *
      * @scenario channel=sms, result_category=failure, link_outcome=linked
+     *
      * @effects lookup_failure_result_includes_reason_code_label
      *
      * @return void 반환값 없음
@@ -257,6 +260,7 @@ class DispatchResultEndpointTest extends PluginTestCase
      * 알림톡 잔액부족 코드(7436) 결과에 is_low_balance 가 참으로 담기는지 확인한다.
      *
      * @scenario channel=alimtalk, result_category=balance_low, link_outcome=linked
+     *
      * @effects balance_low_result_flags_is_low_balance_true
      *
      * @return void 반환값 없음
@@ -277,6 +281,7 @@ class DispatchResultEndpointTest extends PluginTestCase
      * dispatch 가 연결되지 않은 메일 로그 id 는 결과 맵에서 빠지고 연결된 로그만 남는지 확인한다.
      *
      * @scenario link_outcome=unmatched
+     *
      * @effects unmatched_log_id_excluded_from_result_map
      *
      * @return void 반환값 없음

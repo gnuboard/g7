@@ -18,7 +18,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 하나라도 inner/outer 한쪽에만 적용되면 화면에서는 "이미 지운 글의 댓글이 보인다" 또는
  * "마지막 페이지가 비어 있다" 로만 드러난다. 그 성질들을 고정한다.
  *
- * @scenario user_comment_list_deferred_join
+ * @scenario total_source=injected_cache, soft_delete=default_excluded
  */
 class CommentListDeferredJoinTest extends BoardTestCase
 {

@@ -1014,10 +1014,10 @@
             },
             "children": [
                 {
-                    "comment": "접기 카드 머리 — 운영자가 아직 펼치거나 접지 않았으면(값 없음) 올려 둔 ZIP 이 있을 때 펼친 것으로 본다. 누르면 지금 보이는 상태의 반대를 지역 상태에 적고, 그 뒤로는 운영자 선택을 따른다.",
+                    "comment": "접기 카드 머리 — 운영자가 아직 펼치거나 접지 않았으면(값 없음) 올려 둔 ZIP 이 있을 때 펼친 것으로 본다. 누르면 지금 보이는 상태의 반대를 지역 상태에 적고, 그 뒤로는 운영자 선택을 따른다. 버튼 요소라 키보드(Enter·Space)로도 펼치고 접힌다.",
                     "id": "core_update_advanced_trigger",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -1029,9 +1029,8 @@
                         }
                     ],
                     "props": {
-                        "className": "card-header",
-                        "role": "button",
-                        "tabIndex": 0,
+                        "type": "button",
+                        "className": "card-header w-full text-left",
                         "aria-expanded": "{{(_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true}}",
                         "aria-controls": "core_update_advanced_content"
                     },

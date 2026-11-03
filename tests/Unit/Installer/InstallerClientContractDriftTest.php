@@ -302,9 +302,9 @@ class InstallerClientContractDriftTest extends TestCase
     /**
      * 요구사항 응답에 실리는 항목과 그 값을 만드는 판정 함수의 대응을 읽는다.
      *
-     * 판정 본문은 웹 Step 2 와 터미널 설치가 함께 쓰는 공유 함수(`includes/requirements.php` 의
+     * 판정 본문은 웹 Step 2 와 터미널 설치가 함께 쓰는 공유 함수(`public/install/includes/requirements.php` 의
      * `installer_collect_requirements()`)가 소유하고, 웹 전용 항목(web_exposure)만 웹 껍데기
-     * (`api/check-configuration.php` 의 checkRequirements)가 그 결과에 덧붙인다. 두 출처를 모두
+     * (`public/install/api/check-configuration.php` 의 checkRequirements)가 그 결과에 덧붙인다. 두 출처를 모두
      * 읽어야 응답 전체가 모집단이 된다 — 한쪽만 읽으면 다른 쪽에 새 항목이 생겨도 이 검사가 모른다.
      *
      * @return list<array{0: string, 1: string, 2: string}> [항목 키, 판정 함수 또는 메서드 이름, 그 본문을 찾을 주석 제거 소스]

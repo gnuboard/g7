@@ -15,7 +15,7 @@ use Tests\TestCase;
  * `counts_are_exact` 와 동형으로 **일괄 조립**하는 계약을 고정한다 — 모듈별 복사에
  * 맡기면 빠지는 카테고리가 생긴다.
  *
- * @scenario search_failure_flags
+ * @scenario scope=all_tab, failure=single
  */
 class PublicSearchControllerFailureFlagTest extends TestCase
 {

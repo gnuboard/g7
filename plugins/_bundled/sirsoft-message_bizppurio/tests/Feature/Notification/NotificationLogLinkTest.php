@@ -19,7 +19,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * 매칭은 복합키가 아니라 DispatchLinkContext 의 발송 사이클 refkey 직접 표식(A안)이다.
  *
- * @scenario dispatch-result-injection
+ * @scenario link_outcome=linked
  */
 class NotificationLogLinkTest extends PluginTestCase
 {
@@ -77,6 +77,7 @@ class NotificationLogLinkTest extends PluginTestCase
      * 발송 사이클 refkey 를 남긴 뒤 코어 logSent 를 부르면 after_log_sent 훅으로 dispatch 에 그 로그 id 가 기록되는지 확인한다.
      *
      * @scenario channel=sms, link_outcome=linked
+     *
      * @effects sent_log_links_dispatch_via_refkey_in_same_cycle
      *
      * @return void 반환값 없음
@@ -106,6 +107,7 @@ class NotificationLogLinkTest extends PluginTestCase
      * 알림톡 발송 사이클에서 코어 logFailed 를 부르면 after_log_failed 훅으로도 dispatch 에 로그 id 가 기록되는지 확인한다.
      *
      * @scenario channel=alimtalk, result_category=failure, link_outcome=linked
+     *
      * @effects failed_log_links_dispatch_via_refkey_in_same_cycle
      *
      * @return void 반환값 없음
@@ -133,6 +135,7 @@ class NotificationLogLinkTest extends PluginTestCase
      * refkey 를 남기지 않은 메일 발송 로그는 어떤 dispatch 에도 연결되지 않는지 확인한다.
      *
      * @scenario link_outcome=unmatched
+     *
      * @effects non_bizppurio_log_leaves_dispatch_unlinked
      *
      * @return void 반환값 없음
@@ -159,6 +162,7 @@ class NotificationLogLinkTest extends PluginTestCase
      * refkey 는 첫 로그에 연결된 뒤 비워져, 같은 사이클의 다음 로그(다른 채널)는 연결되지 않는지 확인한다.
      *
      * @scenario channel=sms, link_outcome=linked
+     *
      * @effects refkey_consumed_once_prevents_cross_cycle_mismatch
      *
      * @return void 반환값 없음

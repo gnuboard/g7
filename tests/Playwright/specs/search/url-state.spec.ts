@@ -12,7 +12,7 @@
  * 잡히지 않는다. 레이아웃 계약 단위 검사는
  * `templates/_bundled/sirsoft-basic/__tests__/layouts/search-url-state-contract.test.ts` 가 맡는다.
  *
- * @scenario search_state_round_trips_through_url
+ * @scenario surface=module_search
  *
  * @effects search_state_persists_in_url,
  *          search_state_survives_reload,
@@ -82,7 +82,7 @@ async function queryParams(page: Page): Promise<Record<string, string>> {
 }
 
 test.describe('통합검색 화면 상태의 주소 승계', () => {
-  // @scenario search_state_persists_in_url
+  // @scenario surface=module_search
   // @effects search_state_persists_in_url
   test('탭을 바꾸면 주소에 남고 검색어는 유지된다', async ({ page }) => {
     await gotoAndSettle(page, SEARCH_PATH);
@@ -106,7 +106,7 @@ test.describe('통합검색 화면 상태의 주소 승계', () => {
     expect(params.cursor, '탭 전환인데 이전 커서가 남았다').toBeUndefined();
   });
 
-  // @scenario search_state_survives_reload
+  // @scenario surface=module_search
   // @effects search_state_survives_reload
   test('새로고침해도 보고 있던 탭이 유지된다', async ({ page }) => {
     await gotoAndSettle(page, SEARCH_PATH + '&type=posts');
@@ -135,7 +135,7 @@ test.describe('통합검색 화면 상태의 주소 승계', () => {
     expect(await requestPromise, '새로고침 후 검색 요청이 주소의 탭을 반영하지 않았다').not.toBeNull();
   });
 
-  // @scenario search_state_restores_on_back
+  // @scenario surface=module_search
   // @effects search_state_restores_on_back
   test('뒤로가기가 직전에 보던 탭으로 되돌아간다', async ({ page }) => {
     await gotoAndSettle(page, SEARCH_PATH);
@@ -160,7 +160,7 @@ test.describe('통합검색 화면 상태의 주소 승계', () => {
     expect(params.type, '뒤로가기 후에도 바뀐 탭이 그대로다').toBeUndefined();
   });
 
-  // @scenario search_new_keyword_resets_state
+  // @scenario surface=module_search
   // @effects search_new_keyword_resets_state
   test('검색어를 새로 실행하면 이전 조건이 따라오지 않는다', async ({ page }) => {
     await gotoAndSettle(page, SEARCH_PATH + '&type=posts&sort=latest&page=2');

@@ -219,20 +219,22 @@ class Attachment extends Model
     public function previewUrlForSlug(string $slug, bool $signed = false): string
     {
         if ($signed) {
-            return URL::temporarySignedRoute(
+            // 상대 서명 URL 은 요청의 base URL(마운트 접두사)을 벗긴 경로에 서명된다
+            // (`RouteUrlGenerator::to()`). 검증도 base 를 뺀 `'/'.$request->path()` 로 다시
+            // 조립하므로(`UrlGenerator::hasCorrectSignature()`), 접두사는 서명된 값 **밖**에
+            // 붙인다 — 붙여도 서명은 성립하고, 붙이지 않으면 하위 폴더 설치에서 사이트 밖을 가리킨다.
+            return AssetUrl::sitePath(URL::temporarySignedRoute(
                 'api.modules.sirsoft-board.boards.attachment.preview',
                 now()->addMinutes(self::SIGNED_PREVIEW_TTL_MINUTES),
                 ['slug' => $slug, 'hash' => $this->hash],
                 absolute: false
-            );
+            ));
         }
 
         // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
         // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
         //
-        // 접두사 사유는 위 `getDownloadUrlAttribute` 와 같다. 서명 분기(위)는 여기서
-        // 건드리지 않는다 — 그 값은 Laravel 이 서명한 경로이고 검증 쪽이 같은 값을
-        // 재조립하므로, 접두사를 이 자리에서 덧붙이면 서명이 어긋난다.
+        // 접두사 사유는 위 `getDownloadUrlAttribute` 와 같다.
         return AssetUrl::basePrefix().'/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$this->hash.'/preview';
     }
 

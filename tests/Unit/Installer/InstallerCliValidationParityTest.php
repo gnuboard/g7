@@ -17,8 +17,8 @@ use Tests\Unit\Installer\Concerns\RunsInstallerCli;
  */
 class InstallerCliValidationParityTest extends TestCase
 {
-    use ScansPhpSourceFunctions;
     use RunsInstallerCli;
+    use ScansPhpSourceFunctions;
 
     /** 정상 값 묶음 */
     private const VALID = [

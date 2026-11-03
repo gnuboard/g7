@@ -13,6 +13,7 @@ use Illuminate\Console\Scheduling\CallbackEvent;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernelContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -310,6 +311,42 @@ class ScheduleRunnerCatchUpTest extends TestCase
     }
 
     /**
+     * 실행 상한은 PHP 실행 제한보다 넉넉히 작게 잘린다.
+     *
+     * 웹 요청의 `max_execution_time`(기본 30초)이 설정값(기본 50초)보다 짧으면, 상한에
+     * 닿기 전에 PHP 가 요청을 죽여 요약도 이월 기록도 남지 않는다. 형제
+     * `SubprocessCommandRunner` 와 같은 8할을 쓰고, 제한이 없으면(0) 설정값 그대로다.
+     *
+     * `max_execution_time` 은 바꾸는 즉시 타이머가 걸리므로 곧바로 원복한다.
+     *
+     * @scenario runtime_budget=exceeded
+     *
+     * @effects runner_limits_come_from_config
+     *
+     * @return void 반환값 없음
+     */
+    public function test_runtime_budget_stays_below_the_php_execution_limit(): void
+    {
+        config(['core.cron.max_runtime_seconds' => 50]);
+        $runner = $this->runner($this->state());
+        $original = ini_get('max_execution_time');
+
+        try {
+            ini_set('max_execution_time', '30');
+            $capped = $runner->maxRuntimeSeconds();
+
+            ini_set('max_execution_time', '0');
+            $unlimited = $runner->maxRuntimeSeconds();
+        } finally {
+            ini_set('max_execution_time', (string) $original);
+        }
+
+        $this->assertLessThan(30, $capped, 'PHP 실행 제한(30초)보다 작아야 한다');
+        $this->assertSame(24, $capped, '형제 러너와 같은 8할');
+        $this->assertSame(50, $unlimited, '제한이 없으면 설정값 그대로');
+    }
+
+    /**
      * 실패한 작업은 요약에 실패로 집계되고 다른 작업의 실행을 막지 않는다.
      *
      * @scenario catch_up=missed_window, event_kind=callback_event, runtime_budget=within
@@ -335,6 +372,45 @@ class ScheduleRunnerCatchUpTest extends TestCase
         $this->assertSame(['boom', 'after'], $this->executed);
         $this->assertSame(1, $summary->failed);
         $this->assertSame(1, $summary->executed);
+    }
+
+    /**
+     * 서버 크론(`schedule:run`)이 이미 돌린 이벤트를 같은 소급 창에서 웹 러너가 다시 돌리지 않는다.
+     *
+     * 실행 방식 `auto`·`both` 는 서버 크론과 웹 러너를 함께 쓴다. 종전에는 서버 크론이 이벤트별 실행
+     * 시각을 남기지 않아, 그 뒤에 온 웹 호출의 소급 창(직전 점검 이후)이 04:00 작업을 「놓친 것」으로
+     * 보고 한 번 더 돌렸다. 이벤트 자물쇠(R18)는 **동시** 실행만 막으므로 순차 중복은 막지 못한다.
+     *
+     * @scenario caller=external, cron_mode=both, catch_up=missed_window, event_kind=callback_event
+     *
+     * @effects server_cron_run_is_not_repeated_by_the_web_runner
+     *
+     * @return void 반환값 없음
+     */
+    public function test_event_run_by_the_server_cron_is_not_repeated_by_the_web_runner(): void
+    {
+        $this->registerCallbackSchedule('daily-gc', '0 4 * * *');
+
+        $state = $this->state();
+        $state->recordRun($this->summaryAt('2026-08-31 03:50:00'), advanceCheckpoint: true);
+        $this->app->instance(ScheduleRunState::class, $state);
+
+        // 04:00 — 서버 크론이 그 분의 due 이벤트를 돌린다.
+        Carbon::setTestNow('2026-08-31 04:00:05');
+
+        try {
+            $this->artisan('schedule:run')->assertExitCode(0);
+        } finally {
+            Carbon::setTestNow();
+        }
+
+        $this->assertSame(['daily-gc'], $this->executed, '시험 준비 — 서버 크론이 04:00 작업을 돌려야 한다');
+
+        // 09:00 — 웹 호출. 04:00 은 서버 크론이 이미 처리했다.
+        $state->refresh();
+        $this->runner($state)->run(CarbonImmutable::parse('2026-08-31 09:00:00'));
+
+        $this->assertSame(['daily-gc'], $this->executed, '서버 크론이 돌린 작업을 웹 러너가 소급으로 다시 돌렸다');
     }
 
     /**

@@ -10,7 +10,6 @@
  * 설치 계획 서명(installer_plan_signature)·DROP 직전 재검증(installer_plan_verify)은 owner_hash 를 그대로 쓰므로
  * 웹과 같은 검증을 통과한다.
  */
-
 if (! defined('G7_CLI_HEARTBEAT_ACTIVE_SECONDS')) {
     // 웹 워커가 이 시간 안에 심장박동했으면 활동 중으로 보고 넘겨받지 않는다 (acquireWorkerLock 판정과 같은 15초)
     define('G7_CLI_HEARTBEAT_ACTIVE_SECONDS', 15);

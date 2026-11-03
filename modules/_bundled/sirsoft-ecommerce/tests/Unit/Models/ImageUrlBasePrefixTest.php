@@ -4,7 +4,11 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Models;
 
 use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
+use Modules\Sirsoft\Ecommerce\Http\Resources\ClaimImageResource;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
+use Modules\Sirsoft\Ecommerce\Models\ClaimImage;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -59,6 +63,7 @@ class ImageUrlBasePrefixTest extends ModuleTestCase
      * @param  string  $expected  기대하는 폴백 다운로드 주소
      *
      * @scenario base_path=subpath, url_kind=ecommerce_image_fallback
+     *
      * @effects ecommerce_image_fallback_urls_carry_the_mount_prefix
      *
      * @return void 반환값 없음
@@ -83,6 +88,7 @@ class ImageUrlBasePrefixTest extends ModuleTestCase
      * 접두사가 없는 배치에서는 종전 문자열 그대로다 (회귀 0).
      *
      * @scenario base_path=root, url_kind=ecommerce_image_fallback
+     *
      * @effects ecommerce_image_fallback_urls_carry_the_mount_prefix
      *
      * @return void 반환값 없음
@@ -101,5 +107,65 @@ class ImageUrlBasePrefixTest extends ModuleTestCase
             '/api/modules/sirsoft-ecommerce/product-image/h1',
             $image->download_url
         );
+    }
+
+    /**
+     * 숨김 리뷰 이미지와 클레임 첨부의 한시 서명 주소도 마운트 접두사를 갖고, 그 주소로 들어온 요청의 서명이 유효하다.
+     *
+     * 상대 서명 URL(`temporarySignedRoute(..., absolute: false)`)은 요청의 base URL 을 벗긴 경로에
+     * 서명된다(`RouteUrlGenerator::to()`). 검증(`hasValidSignature(absolute: false)`)도 base 를 뺀
+     * `Request::path()` 로 다시 조립하므로, 접두사는 서명된 값 밖에서 붙여야 하고 붙여도 서명은 성립한다.
+     * 붙이지 않으면 관리자 화면의 `<img src>` 가 하위 폴더 설치에서 사이트 밖(`/api/…`)을 가리킨다.
+     *
+     * @scenario base_path=subpath, url_kind=ecommerce_signed_image
+     *
+     * @effects signed_attachment_urls_carry_the_mount_prefix_and_verify
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function signed_image_urls_carry_the_mount_prefix_and_still_verify(): void
+    {
+        $original = app('request');
+        $mounted = $this->mountedRequest('/g7/admin/ecommerce/reviews');
+        app()->instance('request', $mounted);
+        URL::setRequest($mounted);
+
+        try {
+            $review = new ProductReviewImage;
+            $review->hash = 'h1';
+
+            $claim = new ClaimImage;
+            $claim->hash = 'c1';
+
+            $urls = [
+                'review' => [$review->signedDownloadUrl(), '/g7/api/modules/sirsoft-ecommerce/review-image/h1?'],
+                'claim' => [(new ClaimImageResource($claim))->toArray($mounted)['download_url'], '/g7/api/modules/sirsoft-ecommerce/claim-image/c1?'],
+            ];
+
+            foreach ($urls as $kind => [$signed, $expectedHead]) {
+                $this->assertStringStartsWith($expectedHead, $signed, $kind);
+                $this->assertStringContainsString('signature=', $signed, $kind);
+                $this->assertTrue(URL::hasValidSignature($this->mountedRequest($signed), false), $kind.' 서명이 접두사 요청에서 유효해야 한다');
+            }
+        } finally {
+            app()->instance('request', $original);
+            URL::setRequest($original);
+        }
+    }
+
+    /**
+     * 하위 폴더(`/g7`) 설치의 웹 요청을 만든다 — 진입점 위임 정규화 뒤의 `SCRIPT_NAME` 과 같은 형태다.
+     *
+     * @param  string  $uri  브라우저 주소 (`/g7/…`)
+     * @return Request 요청
+     */
+    private function mountedRequest(string $uri): Request
+    {
+        return Request::create('http://localhost'.$uri, 'GET', [], [], [], [
+            'SCRIPT_FILENAME' => base_path('public/index.php'),
+            'SCRIPT_NAME' => '/g7/index.php',
+            'PHP_SELF' => '/g7/index.php',
+        ]);
     }
 }

@@ -109,7 +109,7 @@ async function gotoUploads(page: import('@playwright/test').Page): Promise<void>
 }
 
 // (trigger=admin_ui, permitted=yes — 미선언 축은 평문으로)
-// @scenario ckeditor5-unused-image-cleanup
+// @scenario disk_state=default_local
 // @effects admin_index_lists_uploads, admin_ui_reference_badge
 test('#115 - 업로드 관리 화면이 목록·필터·안내와 함께 렌더된다', async ({ page, uploadsManageToken }) => {
   const consoleErrors: string[] = [];
@@ -134,7 +134,7 @@ test('#115 - 업로드 관리 화면이 목록·필터·안내와 함께 렌더�
 });
 
 // (trigger=admin_ui, filter=unreferenced — 미선언 축은 평문으로)
-// @scenario ckeditor5-unused-image-cleanup
+// @scenario disk_state=default_local
 // @effects admin_index_unreferenced_filter, admin_ui_merge_query
 test('#115 - 참조 상태 필터가 URL 에 실리고 페이지 이동에도 보존된다', async ({ page, uploadsManageToken }) => {
   await authenticatePage(page, uploadsManageToken);
@@ -157,7 +157,7 @@ test('#115 - 참조 상태 필터가 URL 에 실리고 페이지 이동에도 �
 });
 
 // (trigger=admin_ui, permitted=read_only — 미선언 축은 평문으로)
-// @scenario ckeditor5-unused-image-cleanup
+// @scenario disk_state=default_local
 // @effects admin_destroy_requires_delete_permission
 test('#115 - 삭제 권한이 없으면 삭제 API 가 403 으로 막힌다', async ({ page, uploadsReadOnlyToken }) => {
   await authenticatePage(page, uploadsReadOnlyToken);
@@ -177,7 +177,7 @@ test('#115 - 삭제 권한이 없으면 삭제 API 가 403 으로 막힌다', as
 });
 
 // (trigger=admin_ui, response=matrix — 미선언 축은 평문으로)
-// @scenario ckeditor5-unused-image-cleanup
+// @scenario disk_state=default_local
 // @effects admin_bulk_delete_rejects_empty, admin_destroy_not_found
 test('#115 - 응답 매트릭스: 빈 선택 422 / 없는 대상 404', async ({ page, uploadsManageToken }) => {
   await authenticatePage(page, uploadsManageToken);
@@ -196,7 +196,7 @@ test('#115 - 응답 매트릭스: 빈 선택 422 / 없는 대상 404', async ({ 
 });
 
 // (trigger=admin_ui_single, permitted=yes — 미선언 축은 평문으로)
-// @scenario ckeditor5-unused-image-cleanup
+// @scenario disk_state=default_local
 // @effects admin_destroy_removes_file_and_record
 test('#115 - 올린 이미지가 단건 삭제로 목록에서 사라진다', async ({ page, uploadsManageToken }) => {
   await authenticatePage(page, uploadsManageToken);
@@ -215,7 +215,7 @@ test('#115 - 올린 이미지가 단건 삭제로 목록에서 사라진다', as
 });
 
 // (trigger=admin_ui_bulk, permitted=yes — 미선언 축은 평문으로)
-// @scenario ckeditor5-unused-image-cleanup
+// @scenario disk_state=default_local
 // @effects admin_bulk_delete_removes_selected
 test('#115 - 선택한 이미지들이 일괄 삭제로 함께 사라진다', async ({ page, uploadsManageToken }) => {
   await authenticatePage(page, uploadsManageToken);
@@ -235,7 +235,7 @@ test('#115 - 선택한 이미지들이 일괄 삭제로 함께 사라진다', as
 });
 
 // (trigger=settings_screen, toggle=default — 미선언 축은 평문으로)
-// @scenario ckeditor5-unused-image-cleanup
+// @scenario disk_state=default_local
 // @effects settings_cleanup_retention_round_trip
 test('#115 - 보존기간을 저장하면 다시 조회해도 유지된다', async ({ page, uploadsManageToken }) => {
   await authenticatePage(page, uploadsManageToken);
@@ -270,7 +270,7 @@ test('#115 - 보존기간을 저장하면 다시 조회해도 유지된다', asy
 });
 
 // (trigger=settings_screen, toggle=default — 미선언 축은 평문으로)
-// @scenario ckeditor5-unused-image-cleanup
+// @scenario disk_state=default_local
 // @effects settings_cleanup_toggle_default_off
 test('#115 - 플러그인 설정에 미사용 이미지 정리 섹션이 노출된다', async ({ page, uploadsManageToken }) => {
   await authenticatePage(page, uploadsManageToken);

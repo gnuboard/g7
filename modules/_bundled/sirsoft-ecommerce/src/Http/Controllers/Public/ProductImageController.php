@@ -1,6 +1,6 @@
 <?php
 
-// audit:allow api-doc-coverage 609 후속 — 메서드 PHPDoc(목적 설명, @param, @return)만 더했다. 라우트, 요청, 응답 모양은 그대로라 API 문서에 반영할 표면이 없다.
+// audit:allow api-doc-coverage 609 후속 — download 응답 판정을 코어 파일 서빙 단일 지점으로 옮겨 조건부 요청 304 와 ETag, Last-Modified, Cache-Control 헤더가 더해졌다(라우트, 요청은 그대로). 그 캐시 계약과 304 는 docs/api/product-image.md 가 이미 다룬다.
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Public;
 

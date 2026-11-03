@@ -967,7 +967,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'permission_guide_ftp_note_windows' => '※ Windows 서버는 숫자 권한 값을 쓰지 않습니다. FTP 프로그램에 권한 항목이 없다면 호스팅 제어판의 파일 관리자에서 같은 설정을 찾을 수 있습니다.',
 
     // 필수 파일 생성 무쉘 판본 — `.env` 가 아예 없을 때. 형제 분기(권한·소유자)와 달리 종전에는
-    // 쉘 복사 명령만 있었고, 그 명령은 쉘을 못 쓰는 호스팅에서 실행할 방법이 없었다 (G8 실측).
+    // 쉘 복사 명령만 있었고, 그 명령은 쉘을 못 쓰는 호스팅에서 실행할 방법이 없었다.
     'required_files_guide_ftp_step_connect' => 'FTP 로 접속해 그누보드7을 올린 폴더를 엽니다.',
     'required_files_guide_ftp_step_download' => ':source 파일을 내 컴퓨터로 내려받습니다.',
     'required_files_guide_ftp_step_rename' => '내려받은 파일의 이름을 :target 으로 바꿉니다.',
@@ -1010,7 +1010,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'asset_url_mode_checking' => '확인 중…',
     'asset_url_mode_unknown' => '확인 불가',
 
-    // 웹 노출 점검 (B-4 · D3 · D21)
+    // 웹 노출 점검
     'web_exposure' => '웹 노출 점검',
     'web_exposure_checking' => '확인 중…',
     'web_exposure_safe' => '보호 확인됨',
@@ -1214,7 +1214,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'log_ownership_reclaimed' => '[소유권] 복구 토큰으로 설치 소유권을 되찾았습니다.',
     'log_ownership_reclaim_failed' => '[소유권] 복구 토큰 불일치로 소유권 되찾기를 거부했습니다.',
 
-    // 실행 모드 (Step 3 선택란 · D33 · W2) — 저장되는 것은 "선택", 기본 auto
+    // 실행 모드 (Step 3 선택란) — 저장되는 것은 "선택", 기본 auto
     'execution_mode_card_title' => '실행 방식',
     'execution_mode_card_description' => '설치 중 명령(데이터베이스 생성·확장 설치 등)을 어떤 방식으로 실행할지 선택합니다. 설치 후에도 관리자 환경설정에서 바꿀 수 있습니다.',
     'execution_mode_auto_title' => '자동',
@@ -1267,12 +1267,12 @@ ini_set(\'zlib.output_compression\', \'off\');
     'error_stepwise_request_failed' => '서버가 단계 실행 요청에 응답하지 않습니다. 잠시 후 [재시도] 를 누르면 중단된 단계부터 이어집니다. 문제가 반복되면 storage/logs/installation.log 를 확인해주세요.',
     'error_polling_request_failed' => '서버가 설치 상태 조회에 응답하지 않습니다. 잠시 후 페이지를 새로고침해 이어서 진행해 주세요. 문제가 반복되면 storage/logs/installation.log 를 확인해주세요.',
     'error_stepwise_token_invalid' => '단계별 실행 토큰이 유효하지 않습니다. 설치 화면을 새로고침한 뒤 다시 시작해주세요.',
-    // 「보관본이 없다」와 「제시한 값이 틀렸다」는 조치가 다르다 — 전자는 새로고침으로 복구되지 않는다 (11차 #A10)
+    // 「보관본이 없다」와 「제시한 값이 틀렸다」는 조치가 다르다 — 전자는 새로고침으로 복구되지 않는다
     'error_stepwise_token_missing' => '이 설치를 이어받을 확인 정보가 서버에 남아 있지 않습니다. 설치를 처음부터 다시 시작해주세요.',
-    // 설치 마무리 엔드포인트 가드 (11차 #A1)
+    // 설치 마무리 엔드포인트 가드
     'error_finalize_method_not_allowed' => '설치 마무리는 이 방식으로 호출할 수 없습니다.',
     'error_finalize_not_completed' => '아직 설치가 끝나지 않아 마무리할 수 없습니다.',
-    // 설치 점유가 아직 유효 시간 안에 있다 (11차 #A2·#A4 · 문구 교체 D7)
+    // 설치 점유가 아직 유효 시간 안에 있다
     //
     // 종전 문구는 「다른 창에서 설치가 이미 진행 중입니다. 그 창에서 이어서 진행해주세요.」였다.
     // 그 단정은 **점유자가 살아 있을 때만** 참인데, 치명 종료(디스크 풀·OOM·시그널)는 해제
@@ -1280,15 +1280,15 @@ ini_set(\'zlib.output_compression\', \'off\');
     // 존재하지 않는 창을 10분 동안 가리켰고, 운영자에게 남은 선택은 [처음부터 다시]뿐이었다.
     // 아는 것(아직 예산 안이다 · 언제 풀린다)만 말하고, 두 경우의 할 일을 모두 적는다.
     'error_installation_lock_held' => '이전 실행이 아직 끝나지 않은 것으로 표시됩니다. 다른 창에서 설치 중이라면 그 창에서 이어집니다. 그 창을 닫았거나 오류로 멈춘 경우에는 :seconds초 뒤 자동으로 이어서 진행됩니다.',
-    // 대기 중 카운트다운 (D7) — 위 안내가 약속한 「:seconds초 뒤」를 실제로 세어 보여 준다
+    // 대기 중 카운트다운 — 위 안내가 약속한 「:seconds초 뒤」를 실제로 세어 보여 준다
     'installation_lock_wait_countdown' => ':seconds초 뒤 자동으로 이어서 진행합니다.',
-    // 대기가 끝나 스스로 이어갈 때 (D7)
+    // 대기가 끝나 스스로 이어갈 때
     'installation_lock_wait_resuming' => '이어서 진행합니다…',
-    // 응답을 만들지 못했을 때 (11차 #A9) — 빈 본문을 내보내면 화면이 통신 오류로 잘못 보고한다
+    // 응답을 만들지 못했을 때 — 빈 본문을 내보내면 화면이 통신 오류로 잘못 보고한다
     'error_response_encoding_failed' => '서버 응답을 만들지 못했습니다. 설치 화면을 새로고침해주세요.',
-    // 작업은 끝났는데 완료 기록이 저장되지 않았을 때 (11차 #A5)
+    // 작업은 끝났는데 완료 기록이 저장되지 않았을 때
     'error_task_marker_not_persisted' => ':task 의 완료 기록을 저장하지 못했습니다. 디스크 여유 공간과 storage 폴더 쓰기 권한을 확인해주세요.',
-    // 중단 사유 — 서버가 구분해 기록한 값을 중단 화면이 그대로 번역해 보여 준다 (11차 #A12)
+    // 중단 사유 — 서버가 구분해 기록한 값을 중단 화면이 그대로 번역해 보여 준다
     'abort_reason_user' => '설치를 직접 중단하셨습니다.',
     'abort_reason_connection_lost' => '설치 화면과의 연결이 끊겨 중단되었습니다.',
     'abort_reason_label' => '중단 사유',
@@ -1312,36 +1312,36 @@ ini_set(\'zlib.output_compression\', \'off\');
     // 실패 화면의 「처음부터 다시」 — 설치 상태를 비우고 설정 입력(3단계)으로 돌아간다.
     // 라벨이 「되돌리기」였을 때는 이미 만들어진 테이블·설치된 확장까지 되돌린다고 읽혔는데
     // 실제 동작은 화면만 되돌리고 DB 는 그대로 둔다(state_reset_db_notice 가 그 사실을 말한다).
-    // 영어 판(Start over)과 뜻을 맞춘다 — 라벨이 없는 기능을 약속하면 안 된다 (11차 #B11).
+    // 영어 판(Start over)과 뜻을 맞춘다 — 라벨이 없는 기능을 약속하면 안 된다.
     'failure_go_back' => '처음부터 다시',
 
     // 진행 방식 불일치 — 단계별 실행으로 확정된 설치는 스트리밍 워커를 쓰지 않는다 (R1)
     'error_sse_mode_mismatch' => '이 설치는 단계별 실행으로 진행 중이라 실시간 스트리밍 방식으로는 이어갈 수 없습니다.',
-    // 스트리밍 워커의 진입 전제 (13차 보안#5) — 형제 입구(run-task)와 같은 규칙
+    // 스트리밍 워커의 진입 전제 — 형제 입구(run-task)와 같은 규칙
     'error_sse_not_running' => '진행 중인 설치가 없습니다. (현재 상태: :status)',
 
-    // 상태 변경 요청의 출처 확인 (13차 보안#4)
+    // 상태 변경 요청의 출처 확인
     'error_cross_origin_request' => '다른 사이트에서 보낸 요청은 처리하지 않습니다. 설치 화면에서 다시 시도해주세요.',
 
-    // 무인증 확인 요청의 호출 횟수 상한 (13차 보안#6·보안#7)
+    // 무인증 확인 요청의 호출 횟수 상한
     'error_probe_rate_limited' => '확인 요청이 너무 잦습니다. 잠시 후 다시 시도해주세요.',
 
-    // 데이터베이스 연결 실패 사유 (원문 대신 조치가 갈리는 만큼만 분류 — 13차 보안#6)
+    // 데이터베이스 연결 실패 사유 (원문 대신 조치가 갈리는 만큼만 분류)
     'error_db_failure_credentials' => '사용자명 또는 비밀번호가 올바르지 않습니다',
     'error_db_failure_unknown_database' => '해당 이름의 데이터베이스를 찾을 수 없습니다',
     'error_db_failure_unreachable' => '데이터베이스 서버에 연결할 수 없습니다 (주소·포트·방화벽을 확인해주세요)',
     'error_db_failure_denied' => '이 계정에는 해당 데이터베이스 접근 권한이 없습니다',
     'error_db_failure_generic' => '연결에 실패했습니다 (자세한 내용은 설치 로그를 확인해주세요)',
 
-    // 실행 예산 확인 (권장 사항 — 설치를 차단하지 않는다, 13차 환경#8)
+    // 실행 예산 확인 (권장 사항 — 설치를 차단하지 않는다)
     'php_limits' => 'PHP 실행 예산',
     'php_limits_unknown' => 'PHP 실행 예산(메모리·시간)을 확인할 수 없습니다.',
     'php_limits_detail' => '메모리 상한 :memory / 실행 시간 상한 :time초 (권장 메모리 :recommended 이상)',
 
-    // 웹 PHP 와 CLI PHP 의 설정 차이 (13차 환경#7)
+    // 웹 PHP 와 CLI PHP 의 설정 차이
     'php_cli_extensions_missing' => 'CLI PHP 에 다음 확장이 없습니다: :extensions — 웹과 다른 php.ini 를 쓰고 있습니다.',
 
-    // 운영자가 직접 지정한 실행 경로가 CLI 가 아님 (13차 보안#7)
+    // 운영자가 직접 지정한 실행 경로가 CLI 가 아님
     'error_php_binary_not_cli_rejected' => ':path 은(는) CLI 가 아니라 :sapi 용 실행 파일입니다. 설치 작업을 실행할 수 없으므로 CLI 경로를 지정해주세요.',
 
     // 동봉 의존성 묶음 무결성 검증 (vendor-bundle.zip)

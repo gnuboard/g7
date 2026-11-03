@@ -57,6 +57,7 @@ class ProductOptionResourceDimensionsTest extends ModuleTestCase
      * 무게와 부피가 null 이면 0 으로 바꾸지 않고 null 로 내보내 미입력과 0 을 구분하는지 확인한다.
      *
      * @scenario unit_source=g
+     *
      * @effects product_option_dimensions_round_trip
      *
      * @return void 반환값 없음

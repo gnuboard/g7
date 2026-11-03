@@ -29,21 +29,41 @@ if (! function_exists('installer_resolve_base_path')) {
     }
 }
 
-if (! function_exists('installer_env_completed_flag_fallback')) {
+if (! function_exists('installer_env_completed_flag')) {
     /**
-     * parse_ini_file 실패 시의 2차 판정 (22차 N-3).
+     * .env 의 INSTALLER_COMPLETED 가 참인지 한 줄 단위로 읽어 판정한다.
      *
-     * 운영자가 손으로 편집한 `.env`(따옴표 불일치·섹션 괄호)는 파서를 깨뜨릴 수 있는데,
-     * 그때 fail-open 으로 새면 완료된 사이트에서 가드가 열린다 — finalize 계열은 락 파일
-     * 폴백조차 없어 run-task(Artisan 실행)가 열리는 통로가 된다. 줄 앵커라 주석 줄
-     * (`# INSTALLER_…`)은 걸리지 않는다. installer-state.php 의 isInstallationCompleted()
-     * 가 같은 규칙의 사본을 갖는다(이 파일은 독립 실행이라 상호 의존 불가).
+     * parse_ini_file 을 쓰지 않는다 — .env 는 INI 가 아니어서, 배포 템플릿의 `#` 주석에 괄호 같은
+     * 문자가 있으면 파일 전체 파싱이 실패한다. 파서가 성공해도 `;` 뒤를 주석으로 잘라
+     * `.env` 로더와 다른 값을 읽는다. 같은 키가 여러 줄이면 마지막 줄을 쓴다 — `.env` 로더도
+     * 뒤에 온 값을 쓴다. 주석 줄(`# INSTALLER_…`)과 접미 키(`OLD_INSTALLER_COMPLETED`)는 줄머리
+     * 앵커에 걸리지 않는다.
+     *
+     * 같은 규칙을 쓰는 곳: installer-state.php 의 isInstallationCompleted()(이 함수를 부른다),
+     * 압축 풀기 부트스트랩(g7-setup.php)과 public/index.php(둘 다 이 파일을 읽을 수 없는 시점에
+     * 돌아 사본을 갖는다).
+     *
+     * @param  string  $envFile  .env 절대 경로
+     * @return bool 완료 플래그가 참(true·1·yes, 따옴표·대소문자 무관)이면 true
      */
-    function installer_env_completed_flag_fallback(string $envFile): bool
+    function installer_env_completed_flag(string $envFile): bool
     {
-        $raw = (string) @file_get_contents($envFile);
+        if (! is_file($envFile)) {
+            return false;
+        }
 
-        return preg_match('/^\s*INSTALLER_COMPLETED\s*=\s*["\']?(?:true|1|yes)\b["\']?\s*$/mi', $raw) === 1;
+        $content = @file_get_contents($envFile);
+        if (! is_string($content)) {
+            return false;
+        }
+
+        if (preg_match_all('/^[ 	]*INSTALLER_COMPLETED[ 	]*=(.*)$/m', $content, $matches) < 1) {
+            return false;
+        }
+
+        $flag = strtolower(trim(trim((string) end($matches[1])), "\"'"));
+
+        return in_array($flag, ['true', '1', 'yes'], true);
     }
 }
 
@@ -57,22 +77,7 @@ if (! function_exists('installer_is_completed')) {
             return true;
         }
 
-        $envFile = $basePath.'/.env';
-        if (is_file($envFile)) {
-            $env = @parse_ini_file($envFile, false, INI_SCANNER_RAW);
-            if (is_array($env)) {
-                $flag = strtolower(trim((string) ($env['INSTALLER_COMPLETED'] ?? '')));
-                // parse_ini_file 은 따옴표가 보존된 raw 모드이므로 양 끝 따옴표 제거
-                $flag = trim($flag, "\"'");
-                if (in_array($flag, ['true', '1', 'yes'], true)) {
-                    return true;
-                }
-            } elseif (installer_env_completed_flag_fallback($envFile)) {
-                return true;
-            }
-        }
-
-        return false;
+        return installer_env_completed_flag($basePath.'/.env');
     }
 }
 
@@ -227,24 +232,7 @@ if (! function_exists('installer_finalize_is_completed')) {
      */
     function installer_finalize_is_completed(): bool
     {
-        $basePath = installer_resolve_base_path();
-        $envFile = $basePath.'/.env';
-
-        if (! is_file($envFile)) {
-            return false;
-        }
-
-        $env = @parse_ini_file($envFile, false, INI_SCANNER_RAW);
-        if (! is_array($env)) {
-            // 파싱 실패 fail-open 금지 (22차 N-3) — 이 함수는 락 파일 폴백이 설계상 없어
-            // (docblock), 여기가 열리면 완료된 사이트의 run-task·finalize 가드가 통째로 열린다.
-            return installer_env_completed_flag_fallback($envFile);
-        }
-
-        $flag = strtolower(trim((string) ($env['INSTALLER_COMPLETED'] ?? '')));
-        $flag = trim($flag, "\"'");
-
-        return in_array($flag, ['true', '1', 'yes'], true);
+        return installer_env_completed_flag(installer_resolve_base_path().'/.env');
     }
 }
 

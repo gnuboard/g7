@@ -430,7 +430,12 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
                 continue;
             }
 
-            putenv($key.'='.$stringValue);
+            // putenv 는 공유 호스팅 disable_functions 에 자주 오른다 — 막혔으면 건너뛰고 $_ENV·$_SERVER
+            // 만 채운다(Laravel env() 는 그 둘도 읽는다). 이 스텝은 7.0.0-beta.6 부모 프로세스에서도
+            // 돌 수 있어 그 판에 없는 ExecutionEnvironment 를 쓰지 않고 function_exists 로 판정한다.
+            if (function_exists('putenv')) {
+                putenv($key.'='.$stringValue);
+            }
             $_ENV[$key] = $stringValue;
             $_SERVER[$key] = $stringValue;
         }

@@ -1053,7 +1053,7 @@
                                                                     "handler": "toast",
                                                                     "params": {
                                                                         "type": "error",
-                                                                        "message": "{{error.message}}"
+                                                                        "message": "{{error.message ?? '$t:common.error_occurred'}}"
                                                                     }
                                                                 }
                                                             ]
@@ -2394,7 +2394,7 @@
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "{{error.message}}"
+                                                                "message": "{{error.message ?? '$t:common.error_occurred'}}"
                                                             }
                                                         }
                                                     ]

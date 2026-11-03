@@ -15,7 +15,6 @@
  * installer-ownership.php. 명령 출력 임시 로그 청소(installerCleanupCommandOutputFiles)는 task-runner.php 가
  * 실려 있을 때만 부른다.
  */
-
 if (! function_exists('installer_begin_installation')) {
     /**
      * 설치 시작 계획을 확정하고 state 를 running 으로 저장한다.

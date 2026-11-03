@@ -7,6 +7,7 @@ use App\Execution\CommandRunnerResolver;
 use App\Execution\ExecutionMode;
 use App\Helpers\TimezoneHelper;
 use App\Services\SystemExecutionService;
+use App\Support\ScreenUrl;
 
 /**
  * 예약 작업 미실행 경고 (D19 · D30).
@@ -20,7 +21,7 @@ use App\Services\SystemExecutionService;
  * 사각에 남는다. 모드에 따라 갈리는 것은 **조치 안내 문구**뿐이다 —
  * 무CLI 는 호출 주소 연결을, 서버 크론 환경은 crontab 점검을 안내한다.
  *
- * @since 7.1.0
+ * @since 7.2.0
  */
 class ScheduleHealthAlertListener implements HookListenerInterface
 {
@@ -89,7 +90,10 @@ class ScheduleHealthAlertListener implements HookListenerInterface
                         : (int) $lastExecuted->diffInDays(now()),
                 ]),
                 'message' => $this->guidance(),
-                'action_path' => '/admin/settings?tab=system',
+                // 화면 주소 필터를 거친다 — 개발자가 관리자 화면 주소를 바꾼 사이트에서 이 링크만
+                // 옛 주소로 남지 않게 한다(형제 통계 보존일 경고와 같은 방식). 화면이 href 로 바로
+                // 그리는 값이라 절대 주소가 아니라 경로로 싣는다.
+                'action_path' => ScreenUrl::path('admin.settings.system', '/admin/settings?tab=system', [], ScreenUrl::SCOPE_ADMIN),
                 // 링크에 붙일 문구도 함께 싣는다 — 화면이 라벨을 스스로 지어내면
                 // 경고를 하나 더 만들 때 그 자리가 다시 빈다.
                 'action_label' => __('schedule.alerts.not_running_action'),

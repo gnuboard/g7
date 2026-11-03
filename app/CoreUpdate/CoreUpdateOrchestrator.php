@@ -320,7 +320,7 @@ class CoreUpdateOrchestrator
      * 한 단계를 수행하고, 실패하면 되돌리기 대기 상태로 전이합니다 (D10).
      *
      * @param  CoreUpdateStep  $step  수행할 단계
-     * @return void
+     * @return void 반환값 없음
      */
     private function runStepGuarded(CoreUpdateStep $step): void
     {
@@ -369,7 +369,7 @@ class CoreUpdateOrchestrator
      * 단계별 실제 작업.
      *
      * @param  CoreUpdateStep  $step  수행할 단계
-     * @return void
+     * @return void 반환값 없음
      */
     private function runStep(CoreUpdateStep $step): void
     {
@@ -392,7 +392,7 @@ class CoreUpdateOrchestrator
     /**
      * 사전 진단 — 쓰기 가능성·여유 공간·요구사항 (D26).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepPreflight(): void
     {
@@ -420,7 +420,7 @@ class CoreUpdateOrchestrator
     /**
      * 유지보수 모드 활성화 (웹은 필수 — D27).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepMaintenance(): void
     {
@@ -437,7 +437,7 @@ class CoreUpdateOrchestrator
     /**
      * 새 버전 내려받기 또는 운영자 ZIP 추출 (㉯ — D18).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepDownload(): void
     {
@@ -552,7 +552,7 @@ class CoreUpdateOrchestrator
     /**
      * 백업 생성 + 소유권 스냅샷 (웹은 백업 필수 — D27, D10 의 전제).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepBackup(): void
     {
@@ -586,7 +586,7 @@ class CoreUpdateOrchestrator
     /**
      * `_pending` 의 vendor 구성 — 무CLI 는 번들 모드로 자동 판정된다 (A-4 와 같은 규율).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepVendor(): void
     {
@@ -615,7 +615,7 @@ class CoreUpdateOrchestrator
     /**
      * 신규 파일 manifest + 3-way 증분 적용 목록 산출 (웹은 증분 고정 — D27).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepPlan(): void
     {
@@ -691,7 +691,7 @@ class CoreUpdateOrchestrator
     /**
      * 코어 파일 적용 — 이 요청 이후의 단계는 신버전 코드로 부팅된 요청에서 돈다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepApply(): void
     {
@@ -734,7 +734,7 @@ class CoreUpdateOrchestrator
     /**
      * vendor 디렉토리 복사 (_pending → 운영).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepVendorCopy(): void
     {
@@ -757,7 +757,7 @@ class CoreUpdateOrchestrator
     /**
      * 마이그레이션 + 코어 config 재로드·권한/메뉴 재동기.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepMigrate(): void
     {
@@ -773,7 +773,7 @@ class CoreUpdateOrchestrator
     /**
      * 업그레이드 스텝 — **파일 적용과 다른 요청**에서만 실행한다 (순서 불변식).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepUpgradeSteps(): void
     {
@@ -815,7 +815,7 @@ class CoreUpdateOrchestrator
     /**
      * 번들 확장·언어팩 일괄 업데이트 (운영자 선택 — D28 · D29).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepBundled(): void
     {
@@ -874,7 +874,7 @@ class CoreUpdateOrchestrator
     /**
      * 마무리 — 버전 기록·캐시·소유권 복원·링크 복구·정리·유지보수 해제.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function stepFinalize(): void
     {
@@ -928,7 +928,7 @@ class CoreUpdateOrchestrator
      *
      * @param  array<string, mixed>  $handoff  `[HANDOFF]` 페이로드
      * @param  string  $toVersion  대상 버전
-     * @return void
+     * @return void 반환값 없음
      */
     private function continueAfterHandoff(array $handoff, string $toVersion): void
     {
@@ -963,7 +963,7 @@ class CoreUpdateOrchestrator
      *
      * @param  CoreUpdateStep  $step  실패한 단계
      * @param  \Throwable  $e  실패 사유
-     * @return void
+     * @return void 반환값 없음
      */
     private function enterRollback(CoreUpdateStep $step, \Throwable $e): void
     {
@@ -1009,7 +1009,7 @@ class CoreUpdateOrchestrator
     /**
      * 되돌리기를 수행합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function runRollbackGuarded(): void
     {
@@ -1031,7 +1031,7 @@ class CoreUpdateOrchestrator
     /**
      * 백업본으로 되돌립니다 (D10 — 운영자 조작 없이).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function performRollback(): void
     {
@@ -1148,7 +1148,7 @@ class CoreUpdateOrchestrator
     /**
      * 모든 단계를 마친 실행을 완료로 표시합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function finishSuccessfully(): void
     {
@@ -1172,7 +1172,7 @@ class CoreUpdateOrchestrator
     /**
      * 유지보수 모드를 켜 두었으면 해제합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function disableMaintenanceIfEnabled(): void
     {
@@ -1248,7 +1248,7 @@ class CoreUpdateOrchestrator
      * 한쪽에만 두면 되돌린 사이트가 쓰기 권한을 잃은 채 남고, 그 상태는 오류가 아니라
      * 「되돌렸는데 사이트가 안 뜬다」로만 드러난다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function restoreOwnershipSnapshot(): void
     {
@@ -1296,7 +1296,7 @@ class CoreUpdateOrchestrator
      * `putenv` 는 쓰지 않는다 — 그 값은 프로세스 수명에 남아 같은 워커의 **다음 요청**까지
      * 모드를 바꾼다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function forceSpawnFailureFallback(): void
     {
@@ -1434,7 +1434,7 @@ class CoreUpdateOrchestrator
      * 파일 교체 직후의 구버전 프로세스에서 커맨드를 돌리면 사라진 클래스를 로드한다.
      * 여기서는 **파일만 지워** 다음 요청이 디스크에서 새로 부팅하게 한다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function dropCompiledCaches(): void
     {

@@ -174,6 +174,7 @@ class EcommerceSettingsCashReceiptTest extends ModuleTestCase
      * 등록된 프로바이더가 없어도 설정 조회 응답에 발급 프로바이더 후보 목록 키가 있는지 확인한다. 관리자 UI 가 그 길이로 분기한다.
      *
      * @scenario surface=admin_settings, provider_state=not_configured
+     *
      * @effects settings_available_providers_exposed
      *
      * @return void 반환값 없음

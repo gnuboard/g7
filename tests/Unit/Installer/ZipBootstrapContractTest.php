@@ -545,6 +545,10 @@ class ZipBootstrapContractTest extends TestCase
             'env 표식 없음' => [['.env' => "APP_NAME=G7\n"], false],
             'env 파서 파손 + 표식' => [['.env' => "APP_NAME=\"broken\nINSTALLER_COMPLETED=true\n"], true],
             'env 파서 파손 + 표식 없음' => [['.env' => "APP_NAME=\"broken\n"], false],
+            'env 괄호 주석 + 표식 1' => [['.env' => "# 주석 (괄호)\nINSTALLER_COMPLETED=1\n"], true],
+            'env CRLF' => [['.env' => "APP_NAME=G7\r\nINSTALLER_COMPLETED=true\r\n"], true],
+            'env 세미콜론 꼬리는 값의 일부' => [['.env' => "INSTALLER_COMPLETED=true ; memo\n"], false],
+            'env 같은 키는 마지막 줄' => [['.env' => "INSTALLER_COMPLETED=true\nINSTALLER_COMPLETED=false\n"], false],
         ];
     }
 

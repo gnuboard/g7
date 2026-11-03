@@ -1,0 +1,24 @@
+feature: apiCall 실패 응답에 서버 메시지가 없으면 오류 문맥(`{{error.message}}`)과 기본 토스트가 현재 언어의 안내(`core.errors.api_request_failed`)를 받는다 (engine-v1.87.0, 7.2.0)
+
+description: |
+  종전에는 응답 본문에 `message` 가 없으면 `API call failed: ${statusText}` 영어 문구가 오류 문맥에 그대로 실려 한국어 화면에도 영어 토스트가
+  떴다(2025-11 엔진 첫 구현부터). HTTP/2 응답은 statusText 가 비어 `API call failed: ` 로 끝났다. 이제 `$t:core.errors.api_request_failed` 를
+  쓰고 executeAction 이 오류 문맥을 만들 때 번역한다(응답이 없는 실패의 `core.errors.network_request_failed` 와 같은 경로). 축 case 는 「본문에
+  message 가 없는 모양 × 오류 처리 경로」 가운데 다른 분기를 타는 것과 대조군(서버 message, 진단 정보 보존)이다. 번역 엔진은 실물에 ko 사전만
+  주입하고, 오류 문맥은 onError·errorHandling[코드] 의 실제 처리기로 받는다.
+
+axes:
+  case: [empty_body_500, errors_only_422, empty_status_text, non_json_502, empty_message_string, error_handling_code, server_message_kept, error_status_preserved]
+
+effects:
+  - api_call_failure_message_localized  # 서버 메시지가 없으면 오류 문맥 문구가 현재 언어이고 영어 원문·`$t:` 키가 보이지 않는다
+  - server_message_kept                 # 서버가 message 를 주면 그 문구를 그대로 쓴다
+  - error_status_preserved              # 오류 객체에 상태 코드와 statusText 가 남는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.apiCallFailureMessage.test.ts
+
+validation:
+  browser_check: 관리자 저장 요청을 목 422(errors 만)·500(빈 본문)·502(HTML)로 응답시켜 토스트 문구가 ko·en 현재 언어인지, 수정 전 번들로 치환하면 영어 문구가 뜨는지(fail-first), 서버 message 대조군. 사용자 템플릿 apiCall 1종
+  note: |
+    fail-first: 수정 전 ActionDispatcher 로 6 failed / 8(대조군 server_message_kept·error_status_preserved 2건은 종전에도 통과).

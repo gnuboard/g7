@@ -39,10 +39,10 @@ use Illuminate\Validation\ValidationException;
 
 class TemplateService
 {
-    use ResolvesExtensionAssetType;
     // 편집기 표면의 레이아웃/조각 읽기는 소스 SSoT 규약에 위임한다 (S19 ⑦ · R16).
     // 사본을 두면 `.g7.html` 을 못 보고, 그 결과가 "마크업 전용 레이아웃이 트리에서 사라짐" 이었다.
     use CollectsFragmentSources;
+    use ResolvesExtensionAssetType;
     use ResolvesLanguageFragments;
     use SecuresExtensionAssetPath;
 

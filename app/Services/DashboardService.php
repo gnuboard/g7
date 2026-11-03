@@ -486,6 +486,7 @@ class DashboardService
         // PHP 8 에서 차단 함수 호출은 `Error`(= Throwable)이므로 그 catch 가 실제로 잡는다.
         // audit 이관 원장이 이 자리를 「조치 불필요」로 판정한 근거가 그것이다.
         $totalRaw = @disk_total_space($path);
+        // audit:allow hosting-blocked-function-requires-guard 호출부 safeProbe/safeSystemProbe 가 Throwable 을 잡아 「측정 불가」로 접는다 — 룰은 호출부 try/catch 를 보지 못한다
         $freeRaw = @disk_free_space($path);
         $total = is_numeric($totalRaw) ? (float) $totalRaw : 0;
         $free = is_numeric($freeRaw) ? (float) $freeRaw : 0;

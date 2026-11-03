@@ -10,7 +10,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 /**
  * ResultCodeResolver — 결과코드 분류·사유·라벨 검증 (계획서 D11).
  *
- * @scenario dispatch-history-webhook
+ * @scenario result_category=failure
  */
 class ResultCodeResolverTest extends PluginTestCase
 {
@@ -32,6 +32,7 @@ class ResultCodeResolverTest extends PluginTestCase
      * 성공 코드(발송 1000 / SMS 4100 / LMS 6600 / 알림톡 7000 / 카카오 200)는 Success.
      *
      * @scenario result_category=success
+     *
      * @effects success_codes_categorized_as_success
      *
      * @return void 반환값 없음
@@ -48,6 +49,7 @@ class ResultCodeResolverTest extends PluginTestCase
      * 잔액부족(9070 문자 / 7436 알림톡 / 9071 후불 한도초과)은 BalanceLow + isBalanceLow true.
      *
      * @scenario result_category=balance_low
+     *
      * @effects balance_low_codes_9070_7436_categorized_as_balance_low
      *
      * @return void 반환값 없음
@@ -65,6 +67,7 @@ class ResultCodeResolverTest extends PluginTestCase
      * 후불 한도초과(9071) 는 사유 문구가 lang 에 정의되어 코드만 노출되지 않는다.
      *
      * @scenario result_category=balance_low
+     *
      * @effects postpaid_limit_code_9071_has_reason
      *
      * @return void 반환값 없음
@@ -97,6 +100,7 @@ class ResultCodeResolverTest extends PluginTestCase
      * 번들에 5002 키가 누락되어 label('5002') 가 사유 없이 코드만 반환하던 결함.
      *
      * @scenario result_category=retry
+     *
      * @effects retryable_codes_all_have_reason
      *
      * @return void 반환값 없음
@@ -116,6 +120,7 @@ class ResultCodeResolverTest extends PluginTestCase
      * 7305(성공 불확실)는 이미 발송됐을 수 있어 중복발송 위험이 있으므로 재시도 대상에서 제외한다.
      *
      * @scenario result_category=retry
+     *
      * @effects retryable_codes_categorized_as_retry
      *
      * @return void 반환값 없음
@@ -131,6 +136,7 @@ class ResultCodeResolverTest extends PluginTestCase
      * 7305(성공 불확실)는 중복발송 위험으로 재시도 대상이 아니다(영구실패로 분류).
      *
      * @scenario result_category=failure
+     *
      * @effects success_uncertain_7305_not_retryable
      *
      * @return void 반환값 없음
@@ -144,6 +150,7 @@ class ResultCodeResolverTest extends PluginTestCase
      * 위 분류에 없는 코드는 영구 실패.
      *
      * @scenario result_category=failure
+     *
      * @effects unknown_codes_categorized_as_permanent_failure
      *
      * @return void 반환값 없음

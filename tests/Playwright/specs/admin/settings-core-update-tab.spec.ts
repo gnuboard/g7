@@ -15,7 +15,7 @@
  * 실제 코어 교체는 여기서 돌리지 않는다 — 그것은 P0(무CLI) 프로필의 실측 몫이고
  * (§9 S13), 이 spec 은 그 실측이 시작되는 지점까지의 화면 계약을 고정한다.
  *
- * @scenario core-update-web
+ * @scenario actor=with_permission, run_state=idle
  * @axes actor=with_permission, run_state=idle
  * @effects update_tab_is_hidden_without_permission, start_sends_only_safe_options, manual_zip_lives_behind_advanced, the_start_controls_appear_only_when_there_is_something_to_apply, update_tab_buttons_carry_the_button_base_class
  */
@@ -41,9 +41,34 @@ test.describe('@sirsoft-admin_basic 환경설정 업데이트 탭', () => {
     await page.goto('/admin/settings?tab=general');
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
+    // 부재 단언은 렌더 전에도 참이다 — 설정 화면이 그려졌음을 먼저 확인한다.
+    await expect(page.locator('#tab_content_general')).toBeVisible({ timeout: 10_000 });
+
     // 탭 버튼이 비활성으로 남는 것이 아니라 **없어야** 한다.
     await expect(page.getByRole('button', { name: '업데이트', exact: true })).toHaveCount(0);
     await expect(page.locator('#tab_content_update')).toHaveCount(0);
+  });
+
+  // @scenario actor=without_permission, run_state=idle
+  // @effects update_tab_is_hidden_without_permission
+  test('신규 권한이 없는 관리자가 주소로 업데이트 탭에 들어와도 권한 오류 토스트가 뜨지 않는다', async ({ page }) => {
+    // 진행 기록 소스는 권한 응답이 오기 전(`settingsAbilities` 가 비어 있는 동안)에도 불려 403 을 받는다.
+    // 형제 소스(언어팩)처럼 그 403 을 조용히 넘기지 않으면 시스템 기본 처리가 권한 오류 토스트를 띄운다.
+    const token = issueScopedToken('core.settings.read', 'core.settings.update');
+    await authenticatePage(page, token);
+
+    const statusResponses: number[] = [];
+    page.on('response', (response) => {
+      if (response.url().includes('/api/admin/core-update/status')) statusResponses.push(response.status());
+    });
+
+    await page.goto('/admin/settings?tab=update');
+    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+
+    await expect(page.locator('#tab_content_update')).toHaveCount(0);
+    // 소스가 아예 불리지 않았다면 이 단언은 공허하다 — 불렸으면 403 이어야 하고, 그때도 토스트는 없어야 한다.
+    for (const status of statusResponses) expect(status).toBe(403);
+    await expect(page.getByRole('alert').filter({ hasText: /권한|permission/i })).toHaveCount(0);
   });
 
   // @scenario actor=with_permission, run_state=idle
@@ -82,6 +107,8 @@ test.describe('@sirsoft-admin_basic 환경설정 업데이트 탭', () => {
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
     // 올릴 것이 없으면 착수 컨트롤은 화면에 없다 (W6 ①) — 확인을 거쳐야 ② 가 열린다.
+    // 부재 단언은 렌더 전에도 참이다 — ① 상태가 그려졌음을 먼저 확인한다.
+    await expect(page.locator('#core_update_check_button')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#core_update_start_button')).toHaveCount(0);
 
     await page.locator('#core_update_check_button').click();
@@ -136,6 +163,32 @@ test.describe('@sirsoft-admin_basic 환경설정 업데이트 탭', () => {
     await trigger.click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true', { timeout: 10_000 });
     await expect(manualZip).toBeVisible({ timeout: 10_000 });
+  });
+
+  // @scenario actor=with_permission, run_state=idle
+  // @effects manual_zip_lives_behind_advanced
+  test('고급 접기 머리는 키보드(Enter·Space)로도 펼치고 접힌다', async ({ page }) => {
+    // 종전 머리는 `div role="button"` 에 click 만 걸려 Tab 으로 닿아도 Enter·Space 가 아무 일도 하지 않았다.
+    // 버튼 요소면 브라우저가 두 키를 click 으로 바꿔 준다 — 그 변환은 브라우저에서만 확인된다.
+    const token = issueToken('core.settings.read', 'core.system.update');
+    await authenticatePage(page, token);
+
+    await page.goto('/admin/settings?tab=update');
+    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+
+    const trigger = page.locator('#core_update_advanced_trigger');
+    await expect(trigger).toBeVisible({ timeout: 20_000 });
+    expect(await trigger.evaluate((el) => el.tagName), '접기 머리가 버튼 요소가 아니다').toBe('BUTTON');
+
+    const before = await trigger.getAttribute('aria-expanded');
+    const after = before === 'true' ? 'false' : 'true';
+
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(trigger).toHaveAttribute('aria-expanded', after, { timeout: 10_000 });
+
+    await page.keyboard.press('Space');
+    await expect(trigger).toHaveAttribute('aria-expanded', String(before), { timeout: 10_000 });
   });
 
   // @scenario actor=with_permission, run_state=idle

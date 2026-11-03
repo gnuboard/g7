@@ -462,7 +462,7 @@ class ExistingDbActionGuardTest extends TestCase
      */
     public function test_every_task_id_in_runner_is_classified(): void
     {
-        $source = $this->sourceWithoutComments(dirname(__DIR__, 3) . '/public/install/includes/task-runner.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
         preg_match_all("/'id' => '([a-z_]+)'/", $source, $matches);
         $taskIds = array_unique($matches[1]);
 

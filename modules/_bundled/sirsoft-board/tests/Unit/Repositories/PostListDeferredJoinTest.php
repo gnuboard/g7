@@ -20,7 +20,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 읽는" 2단계 조회다. 이 화면은 공지 병합·답글 트리·다음 페이지 판정이 얽혀 있어, 조회 방식
  * 변경이 조용히 깨지면 화면에서 빈 값이나 누락으로만 드러난다. 그 성질들을 고정한다.
  *
- * @scenario post_list_deferred_join
+ * @scenario columns=pruned, relations=eager_load
  */
 class PostListDeferredJoinTest extends BoardTestCase
 {
@@ -356,7 +356,6 @@ class PostListDeferredJoinTest extends BoardTestCase
      * @param  string  $identifier  권한 식별자
      * @param  string  $scopeType  스코프 유형 (self/role)
      * @param  array  $scopeMeta  config 의 scope 정의 (resource_route_key / owner_key)
-     *
      * @return void 반환값 없음
      */
     private function grantScopedPermission(User $user, string $identifier, string $scopeType, array $scopeMeta): void

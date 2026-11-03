@@ -25,13 +25,26 @@ use Throwable;
  * (링크가 깨진 창에 업로드된 것). 옮기지 못하면 경로를 경고로 남겨 운영자에게 넘긴다.
  *
  * idempotent: 대상이 없으면 no-op 이고, 이미 옮긴 것은 이름이 달라 다시 잡히지 않는다.
- * V-1 안전: 네이티브 파일시스템 함수와 `$context->logger`, 그리고 코어 헬퍼
- * `StorageLinkHelper::recordDocrootExposureWarning()` 만 사용한다 (경로 C 규율). 그 헬퍼는
- * 형제 스텝(`RecoverPublicStorageSymlink`)이 이미 같은 방식으로 부르는 지점이고, 정적
- * 버퍼에 문자열 하나를 담을 뿐이라 신규 Service/Repository 의존을 만들지 않는다.
+ * V-1 안전(경로 C 규율): 네이티브 파일시스템 함수와 `$context->logger` 를 쓴다. 이름 규칙(접두사·
+ * 시각 형식)은 `StorageLinkHelper` 상수를 읽지 않고 아래 비공개 상수로 옮겨 두었다 — 그 상수들과
+ * 경고 통로 메서드(`recordDocrootExposureWarning()`·`warnOnAccumulatedBackups()`)는 7.2.0 에서
+ * 처음 생겼으므로 7.1.3 이하 부모 프로세스가 옛 `StorageLinkHelper` 를 메모리에 둔 채 이 스텝을
+ * in-process 로 돌리면 상수·메서드 부재로 치명 종료한다. 그래서 두 메서드는 `method_exists()` 로
+ * 확인한 뒤에만 부르고, 없으면 같은 사실을 `$context->logger` 경고로 남긴다. 형제 스텝
+ * `RecoverPublicStorageSymlink`(7.0.0-beta.5)는 그 판에 이미 있던 `ensurePublicStorageLink()` 만
+ * 부르므로 이 자리와 사정이 다르다. 상수 값이 헬퍼와 같은지는 테스트가 대조한다.
  */
 class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
 {
+    /** 웹 트리 안 손상 백업 접두사 — `StorageLinkHelper::DOCROOT_BROKEN_PREFIX` 와 같은 값. */
+    private const DOCROOT_BROKEN_PREFIX = 'storage.broken.';
+
+    /** 웹 트리 밖 손상 백업 접두사 — `StorageLinkHelper::PUBLIC_STORAGE_BROKEN_PREFIX` 와 같은 값. */
+    private const PUBLIC_STORAGE_BROKEN_PREFIX = 'public-storage-broken-';
+
+    /** 손상 백업 이름의 시각 + 충돌 회피 접미사 형식 — `StorageLinkHelper::BROKEN_STAMP` 와 같은 값. */
+    private const BROKEN_STAMP = '\d{14}(?:-[0-9a-f]+)*';
+
     /**
      * 마이그레이션 식별자를 반환합니다.
      *
@@ -79,7 +92,7 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
             );
 
             foreach ($exposed as $path) {
-                StorageLinkHelper::recordDocrootExposureWarning((string) __(
+                $this->recordExposureWarning($context, (string) __(
                     'settings.core_update.storage_link_backup_inside_docroot',
                     ['path' => $path]
                 ));
@@ -142,7 +155,7 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
         // 운영자는 모른다. 버퍼는 이 스텝을 도는 커맨드가 비운다(자식 프로세스이면
         // 라인 프로토콜로 부모에게 넘어간다).
         foreach (array_merge($failed, $this->skipped) as $exposed) {
-            StorageLinkHelper::recordDocrootExposureWarning((string) __(
+            $this->recordExposureWarning($context, (string) __(
                 'settings.core_update.storage_link_backup_inside_docroot',
                 ['path' => $exposed]
             ));
@@ -159,8 +172,64 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
         // 임계도 판정 규칙도 형제와 같은 것을 써야 두 경로의 안내가 갈리지 않는다
         // (10차 G3 라운드 F10-3).
         if ($moved > 0) {
-            StorageLinkHelper::warnOnAccumulatedBackups($context->logger);
+            if ($this->storageLinkHelperHas('warnOnAccumulatedBackups')) {
+                StorageLinkHelper::warnOnAccumulatedBackups($context->logger);
+            } else {
+                // 옛 헬퍼가 메모리에 있는 in-process 실행 — 누적 판정 메서드가 없다. 규모 통보를
+                // 빠뜨리지 않도록 이번에 옮긴 개수와 위치를 로그 경고로 남긴다.
+                $context->logger->warning(
+                    "[core:7.2.0] 손상 백업 {$moved}건을 {$destinationDir} 로 옮겼습니다 — 내용을 확인한 뒤 정리하세요 "
+                    .'(코어는 데이터 손실을 피하려 자동 삭제하지 않습니다)'
+                );
+            }
         }
+    }
+
+    /**
+     * 문서 루트 노출 통보를 운영자 통로에 싣습니다.
+     *
+     * 통보 버퍼 메서드는 7.2.0 에서 생겼다. 옛 `StorageLinkHelper` 가 메모리에 있는 in-process
+     * 실행에서는 그 메서드가 없으므로 같은 문구를 로그 경고로 남긴다(치명 종료 대신).
+     *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
+     * @param  string  $warning  운영자 안내 문구
+     * @return void 반환값 없음
+     */
+    private function recordExposureWarning(UpgradeContext $context, string $warning): void
+    {
+        if ($this->storageLinkHelperHas('recordDocrootExposureWarning')) {
+            StorageLinkHelper::recordDocrootExposureWarning($warning);
+
+            return;
+        }
+
+        $context->logger->warning('[core:7.2.0] '.$warning);
+    }
+
+    /**
+     * 메모리에 올라온 `StorageLinkHelper` 가 주어진 정적 메서드를 갖는지 판정합니다.
+     *
+     * 테스트가 옛 헬퍼 상태(메서드 부재)를 재현할 수 있도록 판정을 한 지점에 모은다.
+     *
+     * @param  string  $method  메서드 이름
+     * @return bool 있으면 true
+     */
+    protected function storageLinkHelperHas(string $method): bool
+    {
+        return method_exists(StorageLinkHelper::class, $method);
+    }
+
+    /**
+     * 웹 트리 안 손상 백업 이름을 판정하는 정규식을 돌려줍니다.
+     *
+     * `StorageLinkHelper::docrootBrokenNamePattern()` 과 같은 규칙을 스텝 안 상수로 만든다
+     * (그 메서드는 7.2.0 에서 생겨 옛 헬퍼에는 없다).
+     *
+     * @return string `preg_match` 에 그대로 넘길 수 있는 완성 패턴
+     */
+    private static function docrootBrokenNamePattern(): string
+    {
+        return '/^'.preg_quote(self::DOCROOT_BROKEN_PREFIX, '/').self::BROKEN_STAMP.'$/';
     }
 
     /**
@@ -198,7 +267,7 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
                 continue;
             }
 
-            if (! str_starts_with($entry, StorageLinkHelper::DOCROOT_BROKEN_PREFIX)) {
+            if (! str_starts_with($entry, self::DOCROOT_BROKEN_PREFIX)) {
                 continue;
             }
 
@@ -209,11 +278,13 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
             // 둔 `storage.broken.메모` 같은 디렉토리까지 말없이 옮겼다. 형제 정리 주체는
             // 같은 상황에서 이름 패턴 통과분만 모집단에 넣고 그 사유를 적어 두었다
             // (10차 G3 라운드 F10-12).
-            // 이름 형식 판정은 **생산자 상수**에서 도출한다 (`StorageLinkHelper`). 종전에는
+            // 이름 형식 판정은 **생산자 상수와 같은 값**으로 한다 (`StorageLinkHelper`). 종전에는
             // 여기와 정리 주체가 각자 리터럴을 들고 있었고, 접미사 그룹을 하나만 받아
             // 아래 `uniqueDestination()` 이 만든 이름(접미사 두 겹)이 정리 모집단 밖으로
             // 나갔다 — 공개 파일 전량 사본이 영원히 남는 형태다 (11차 G3 라운드 E11-3).
-            if (preg_match(StorageLinkHelper::docrootBrokenNamePattern(), $entry) !== 1) {
+            // V-1 안전 때문에 헬퍼 상수를 직접 읽지 않고 이 클래스의 비공개 상수로 옮겨 두었으며,
+            // 값 일치는 테스트가 대조한다.
+            if (preg_match(self::docrootBrokenNamePattern(), $entry) !== 1) {
                 $this->skipped[] = $publicPath.DIRECTORY_SEPARATOR.$entry;
 
                 continue;
@@ -251,8 +322,8 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
     {
         // 7.2.0 이후 코어가 쓰는 이름 규칙과 같은 접두사로 맞춘다 — 한 자리에 모여야
         // 운영자가 무엇을 봐야 하는지 알 수 있다.
-        $suffix = substr($sourceName, strlen(StorageLinkHelper::DOCROOT_BROKEN_PREFIX));
-        $base = $destinationDir.DIRECTORY_SEPARATOR.StorageLinkHelper::PUBLIC_STORAGE_BROKEN_PREFIX.$suffix;
+        $suffix = substr($sourceName, strlen(self::DOCROOT_BROKEN_PREFIX));
+        $base = $destinationDir.DIRECTORY_SEPARATOR.self::PUBLIC_STORAGE_BROKEN_PREFIX.$suffix;
 
         if (! file_exists($base)) {
             return $base;

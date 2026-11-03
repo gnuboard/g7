@@ -272,6 +272,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * 관리자 주문상세 응답의 결제 항목에 주문 시 입력한 환불계좌 4키가 그대로 실리는지 확인한다.
      *
      * @scenario surface=admin_order, payment_method=vbank, payment_status=paid
+     *
      * @effects payment_resource_exposes_refund_bank_fields
      *
      * @return void 반환값 없음
@@ -301,6 +302,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * 입금완료 가상계좌 주문을 계좌 없이 취소하면 환불계좌 3필드 오류로 422 가 나고 주문이 취소되지 않는지 확인한다.
      *
      * @scenario surface=admin_cancel_modal, payment_method=vbank, refund_bank_requirement=vbank_paid_required, refund_bank_input=empty
+     *
      * @effects cancel_refund_bank_required_for_paid_vbank_422
      *
      * @return void 반환값 없음
@@ -325,6 +327,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * 결제행에 주문 시 입력한 환불계좌가 있으면 취소 요청에 계좌를 빼도 입금완료 가상계좌 취소가 통과하는지 확인한다.
      *
      * @scenario surface=admin_cancel_modal, payment_method=vbank, refund_bank_requirement=vbank_paid_required, refund_bank_input=empty
+     *
      * @effects cancel_refund_bank_omitted_when_untouched
      *
      * @return void 반환값 없음
@@ -380,6 +383,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * 입금 대기 상태의 가상계좌 주문은 환불계좌 없이도 취소되는지 확인한다.
      *
      * @scenario surface=admin_cancel_modal, payment_method=vbank, payment_status=waiting_deposit, refund_bank_requirement=vbank_waiting_optional
+     *
      * @effects cancel_refund_bank_optional_before_deposit
      *
      * @return void 반환값 없음
@@ -444,6 +448,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * 카드 결제 주문은 환불계좌를 묻지 않으므로 계좌 없이 취소되는지 확인한다.
      *
      * @scenario surface=admin_cancel_modal, payment_method=card, refund_bank_requirement=card_hidden
+     *
      * @effects cancel_refund_bank_optional_before_deposit
      *
      * @return void 반환값 없음
@@ -463,6 +468,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * 무통장 취소에서 계좌번호만 주면 은행과 예금주 누락으로 422 가 나는지 확인한다.
      *
      * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_input=partial_account_only
+     *
      * @effects cancel_refund_bank_partial_input_rejected_422
      *
      * @return void 반환값 없음
@@ -482,6 +488,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * 가상계좌 취소에서 예금주를 빼고 보내면 예금주 누락으로 422 가 나는지 확인한다.
      *
      * @scenario surface=admin_cancel_modal, payment_method=vbank, refund_bank_input=partial_missing_holder
+     *
      * @effects cancel_refund_bank_partial_input_rejected_422
      *
      * @return void 반환값 없음

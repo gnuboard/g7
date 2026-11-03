@@ -29,7 +29,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *   2. 집계를 붙이지 않은 경로에서는 0 을 지어내지 않고 **필드를 생략**한다.
  *      (집계를 붙였는데 리뷰가 0건이면 별칭은 존재하고 값만 null 이므로 종전대로 0 으로 표기)
  *
- * @scenario product_list_review_aggregate
+ * @scenario surface=product_grid
  */
 class ProductListReviewAggregateTest extends ModuleTestCase
 {
@@ -152,7 +152,6 @@ class ProductListReviewAggregateTest extends ModuleTestCase
      *
      * @param  Product  $product  대상 상품
      * @param  int  $rating  평점
-     *
      * @return void 반환값 없음
      */
     private function makeVisibleReview(Product $product, int $rating): void

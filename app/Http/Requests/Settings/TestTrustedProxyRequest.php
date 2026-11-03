@@ -34,9 +34,9 @@ class TestTrustedProxyRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * 검증 규칙을 반환합니다.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string> 필드별 검증 규칙
      */
     public function rules(): array
     {
