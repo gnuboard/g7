@@ -27,9 +27,9 @@
 | `sirsoft-hero_section.banner.store_validation_rules` | filter | 등록 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/StoreBannerRequest.php:56` |
 | `sirsoft-hero_section.banner.update_validation_rules` | filter | 수정 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/UpdateBannerRequest.php:66` |
 | `sirsoft-hero_section.banner_image.after_change` | action | 배너 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Banner $banner, string $device, string $change — replaced·removed) | `src/Services/BannerService.php:173` |
-| `sirsoft-hero_section.banner_image.after_delete` | action | 배너 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/BannerImageService.php:147` |
-| `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:127` |
-| `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:79` |
+| `sirsoft-hero_section.banner_image.after_delete` | action | 배너 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/BannerImageService.php:148` |
+| `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:128` |
+| `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:80` |
 | `sirsoft-hero_section.hero.filter_public_banners` | filter | 사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale) | `src/Services/PublicHeroService.php:69` |
 | `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:131` |
 <!-- @generated:hooks-published END -->
@@ -164,7 +164,7 @@ _등록하는 알림 정의가 없습니다._
 
 `HeroBannerPreview`는 선택적 `frame`(위치 설정 응답 `editor.preview_frame`)과 `position`(`home_hero`·`shop_hero`)을 받아 실제 사이트와 같은 구좌 폭에서 그립니다. 주지 않으면 종전처럼 기기 폭 전체를 씁니다.
 
-구좌 폭을 정하는 템플릿 제작자를 위한 제약: 미리보기 틀은 활성 사용자 템플릿에서 확장점(`home_hero`·`shop_hero`)까지 내려가는 **레이아웃 노드의 정적 `className`과 `responsive`의 `className` 덮어쓰기만** 읽어, 같은 템플릿 CSS(`css/components.css`)로 다시 그립니다. 다음은 반영되지 않으므로 미리보기 폭이 실제 사이트와 어긋날 수 있습니다.
+구좌 폭을 정하는 템플릿 제작자를 위한 제약: 미리보기 틀은 활성 사용자 템플릿에서 확장점(`home_hero`·`shop_hero`)까지 내려가는 **레이아웃 노드의 정적 `className`과 `responsive`의 `className` 덮어쓰기만** 읽어, 같은 템플릿 CSS(sirsoft-basic 이면 `templates/_bundled/sirsoft-basic/dist/css/components.css`)로 다시 그립니다. 다음은 반영되지 않으므로 미리보기 폭이 실제 사이트와 어긋날 수 있습니다.
 
 - 합성 컴포넌트가 자기 안에서 주는 여백·최대 폭(예: 내부에 `max-w-*`·`px-*`를 가진 컨테이너 컴포넌트) — 미리보기는 컴포넌트를 렌더하지 않고 노드 클래스만 씁니다.
 - 노드의 `style` 속성(인라인 폭·여백)과 `{{…}}` 바인딩이 든 클래스 조각(서버가 상태 값을 모르므로 지웁니다).

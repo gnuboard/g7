@@ -144,6 +144,7 @@ class BannerTextLayoutTest extends PluginTestCase
      */
     public function test_header_overlay_saved_kept_and_hinted_only_for_full_width(): void
     {
+        $this->registerPluginInstance();
         $url = $this->api('/admin/position-settings/home_hero');
         $base = ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide'];
 

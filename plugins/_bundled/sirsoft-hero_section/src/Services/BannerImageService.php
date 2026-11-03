@@ -15,6 +15,7 @@ use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -336,6 +337,8 @@ class BannerImageService
      * 로컬 디스크에 있는 파일의 절대 경로를 반환합니다 — 원격 디스크이거나 파일이 없으면 null.
      *
      * 경로는 업로드 때 서버가 만든 값(`Y/m/<무작위>.<확장자>`)이고 스토리지 드라이버의 기준 폴더 아래에만 붙인다.
+     * 로컬 디스크 판정은 기준 폴더가 절대 경로인지로 한다 — `/` 로 시작하는지만 보면 Windows(`C:\…`)에서 로컬 영상도
+     * 스트림으로 떨어져 범위 요청(건너뛰기·iOS 재생)을 받지 못한다.
      *
      * @param  BannerImage  $file  파일 행
      * @return string|null 절대 경로
@@ -350,7 +353,7 @@ class BannerImageService
 
         $path = rtrim($base, '/').'/'.$file->path;
 
-        return str_starts_with($base, '/') && ! str_contains($file->path, '..') && is_file($path) ? $path : null;
+        return Path::isAbsolute($base) && ! str_contains($file->path, '..') && is_file($path) ? $path : null;
     }
 
     /**

@@ -14,7 +14,7 @@
 <!-- @intent START -->
 `Popup::statusAt()` 은 PHP 판정이고 목록 필터·정렬·공개 노출은 `PopupRepository` 의 SQL 판정을 쓴다 — 두 판정이 같은지 `PopupStatusParityTest` 가 잠근다. 다국어 값(`image_alt`·`body_html`)은 `{locale: 값}` JSON, 관리용 `title` 은 다국어가 아니다.
 
-`overlays`(이미지 위 글 상자)는 `{"pc": [상자…], "mobile": [상자…] | null}` JSON 이다. 상자는 `id`·`x`·`y`·`w`(이미지 폭·높이 대비 %)·`text`(`{locale: 일반 글}`)·`size`(이미지 폭 대비 %)·`color`·`bold`·`align`·`bg`(`{color, opacity}` 또는 null)·`shadow` — 서식은 언어 공통이고 글만 언어별이다. 한도(기기별 10개·글 200자·폭 5% 이상·글자 크기 2~20·진하기 90 이하)는 `Support\Overlays` 가 서버 SSoT 이고 프런트 `lib/overlays.ts` 가 같은 숫자를 쓴다. `mobile` null = 휴대폰도 PC 배치, 상자가 하나도 없으면 컬럼 자체가 null. 모바일 이미지가 없으면 `PopupService` 가 저장 뒤 `mobile` 을 비운다(세대 번호는 그대로). 활동 로그 변경 추적 필드(`$activityLogFields`)에는 넣지 않는다 — `image_alt`·`body_html` 처럼 다국어 묶음 값이다.
+`overlays`(이미지 위 글 상자)는 `{"pc": [상자…], "mobile": [상자…] | null}` JSON 이다. 상자는 `id`·`x`·`y`·`w`(이미지 폭·높이 대비 %)·`text`(`{locale: 일반 글}`)·`size`(이미지 폭 대비 %)·`color`·`bold`·`align`·`bg`(`{color, opacity}` 또는 null)·`shadow` — 서식은 언어 공통이고 글만 언어별이다. 한도(기기별 10개·글 200자·폭 5% 이상·글자 크기 2~20·진하기 90 이하)는 `Support\Overlays` 가 서버 SSoT 이고 프런트 `resources/js/lib/overlays.ts` 가 같은 숫자를 쓴다. `mobile` null = 휴대폰도 PC 배치, 상자가 하나도 없으면 컬럼 자체가 null. 모바일 이미지가 없으면 `PopupService` 가 저장 뒤 `mobile` 을 비운다(세대 번호는 그대로). 활동 로그 변경 추적 필드(`$activityLogFields`)에는 넣지 않는다 — `image_alt`·`body_html` 처럼 다국어 묶음 값이다.
 <!-- @intent END -->
 
 ## 소유 테이블

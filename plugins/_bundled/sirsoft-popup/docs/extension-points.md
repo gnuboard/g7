@@ -101,7 +101,7 @@
 <!-- @intent START -->
 주입 조각 `popup_layer` 는 `user_global_overlay` 에 priority 60 으로 붙는다(GDPR 쿠키 배너 50 뒤). 레이어는 z-index 40 이라 GDPR 배너(z-50) 아래에 깔리고, 모바일 하단 시트는 GDPR 배너 요소(`#gdpr_cookie_banner` — GDPR 조각의 data-ref, 공개 계약이 아니다)의 높이만큼 올라간다. 그 요소가 없으면 바닥에 붙는다.
 
-템플릿이 레이어를 바꾸려면 `src/components/overrides/sirsoft-popup/PopupLayer.tsx` 로 오버라이드한다. props 계약: `popups`(공개 API 배열, 서버 순서) · `settings`(표시 방식) · `path`(현재 경로 — 바뀔 때마다 다시 판정) · `className`.
+템플릿이 레이어를 바꾸려면 오버라이드(템플릿 루트 기준 src/components/overrides/sirsoft-popup/PopupLayer.tsx)로 대체한다. props 계약: `popups`(공개 API 배열, 서버 순서) · `settings`(표시 방식) · `path`(현재 경로 — 바뀔 때마다 다시 판정) · `className`.
 <!-- @intent END -->
 
 ## 미들웨어

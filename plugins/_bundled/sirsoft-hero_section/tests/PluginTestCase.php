@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\HeroSection\Tests;
 
 use App\Enums\PermissionType;
 use App\Extension\HookListenerRegistrar;
+use App\Extension\PluginManager;
 use App\Extension\HookManager;
 use App\Models\Permission;
 use App\Models\Role;
@@ -265,6 +266,26 @@ abstract class PluginTestCase extends TestCase
     {
         Storage::fake('local');
         Storage::fake('plugins');
+    }
+
+    /**
+     * 플러그인 설정 저장(`PluginSettingsService::save()`)이 개발 환경의 설치 상태와 무관하게 돌게 합니다.
+     *
+     * 저장은 `PluginManager::getPlugin()` 인스턴스가 있어야 하고 그 플러그인 디스크(`plugins`)에 설정 파일을 쓴다 —
+     * 설치하지 않은 클론에서는 인스턴스가 없어 저장이 실패하고, 설치한 클론에서는 실제 설정 파일을 덮는다.
+     * 인스턴스를 직접 등록하고 디스크를 가짜로 둔다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function registerPluginInstance(): void
+    {
+        Storage::fake('plugins');
+
+        $manager = app(PluginManager::class);
+        $prop = new \ReflectionProperty($manager, 'plugins');
+        $plugins = $prop->getValue($manager);
+        $plugins['sirsoft-hero_section'] = new Plugin;
+        $prop->setValue($manager, $plugins);
     }
 
     /**

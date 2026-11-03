@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 플러그인 (sirsoft-popup) — 사용자 화면 위에 덮는 공지·프로모션 팝업 레이어(등록·예약 노출·전역 표시 방식·캐러셀)
-2. 확장 방식: 발행 훅(`sirsoft-popup.popup.*`·`sirsoft-popup.popup.filter_sanitize_config`)을 구독하거나, 템플릿이 `src/components/overrides/sirsoft-popup/PopupLayer.tsx` 로 레이어를 대체한다
+2. 확장 방식: 발행 훅(`sirsoft-popup.popup.*`·`sirsoft-popup.popup.filter_sanitize_config`)을 구독하거나, 템플릿이 오버라이드(템플릿 루트 기준 src/components/overrides/sirsoft-popup/PopupLayer.tsx)로 레이어를 대체한다
 3. 건드리면 안 되는 것: 사용자 템플릿·GDPR 플러그인 수정(공통 확장점·계약 훅으로만 붙는다), 상태 컬럼 저장(조회 시점 SQL 판정), 경로 판정 규칙을 한쪽(PHP `RoutePath` / TS `popupVisibility`)만 고치기
 4. 작업 위치: `plugins/_bundled/sirsoft-popup` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-popup --force`
@@ -122,7 +122,7 @@
 | 레이어 폭 판정에 `window.matchMedia`·`<picture media>` | `G7Core.useResponsive()` 폭(없을 때만 `window.innerWidth`), 이미지는 레이어가 판정한 기기로 `src` 를 고른다 | 경계 폭 1px 어긋남과 편집기·관리자 미리보기(창이 넓다)에서 기기가 갈린다 |
 | `PopupLayer`·`PopupPreview` 를 템플릿 basic 컴포넌트(`Div`·`Button`)로 옮김 | 이 두 컴포넌트와 이미지 프레임(`lib/ImageFrame`), 편집기 캔버스(`PopupOverlayEditor` 의 `.g7pp-ov-editor__canvas` 안)만 HTML 태그 + `g7pp-` 소유 CSS(**예외**). 관리 화면 조각(`PopupConflictResolver`·`PopupPeriodHint`·편집기 옆 패널)은 basic 컴포넌트 | 레이어는 어떤 사용자 템플릿에 붙어도 같은 모양·같은 접근성 구조(dialog·포커스 가둠)여야 하고, 템플릿마다 basic 컴포넌트의 클래스·마크업이 다르다 |
 | 미리보기 틀 안 높이를 `100%`·`vh` 로 잼 | 틀이 넘긴 `--g7pp-frame-h` 로 잰다(`.g7pp-root--preview` 규칙) | 대화상자 높이가 정해져 있지 않아 `100%` 는 풀리지 않고 본문이 0px 로 접힌다. `vh` 는 관리자 창 기준이다 |
-| 레이어 문구에 한국어 대체 문구를 박음 | `support/editor.ts` 의 `translate()`(전체 키) — 번역이 없으면 키가 보인다 | 번역 누락이 한국어로 가려지면 다른 언어 방문자에게만 드러난다 |
+| 레이어 문구에 한국어 대체 문구를 박음 | `resources/js/support/editor.ts` 의 `translate()`(전체 키) — 번역이 없으면 키가 보인다 | 번역 누락이 한국어로 가려지면 다른 언어 방문자에게만 드러난다 |
 | 넘김 컨트롤(점·「n / N」·일시정지)을 본문과 하단 바 사이 별도 띠로 두거나, 점 줄을 줄바꿈시킴 | 본문 안 아래 가운데에 겹친 캡슐(`.g7pp-pager`, 덮는 링크보다 위 층) — 한 줄에 들어갈 개수(`dotLimit`: PC 8·휴대폰 5·좁은 창은 그 폭만큼)를 넘으면 점 대신 숫자. 캡슐·화살표 위 누름은 본문 끌기에서 뺀다(`onPointerDown`) | 띠는 그만큼 창을 길게 만들어 헤더·쿠키 배너 사이 자리를 먹고, 줄바꿈된 점은 캡슐을 본문 밖으로 밀어낸다. 겹친 컨트롤 위에서 끌기·링크가 시작되면 점을 누르려다 장이 넘어가거나 링크로 간다 |
 | 장 전환에 모든 장을 한 줄로 놓은 트랙을 되감거나, 외부 슬라이더 라이브러리(Swiper 등)를 싣음 | 현재 장 + 들어올 옆 장 하나만 ±100% 자리에 두고 `transform` 으로 옮긴다(`PopupLayer` 의 `moveTo`·끌기 처리) | 끝 → 처음이 N장을 거꾸로 되감는 움직임이 된다. 같은 페이지의 다른 확장(히어로 섹션 등)이 자기 번들에 슬라이더 라이브러리를 이미 실어 두 번 받게 된다 |
 | 끌기 영역에서 올라온 `lostpointercapture` 로 끌기를 끝냄 | 영역 자신이 포인터를 잃었을 때(`event.target === event.currentTarget`)만 끝낸다 | 터치는 브라우저가 누른 자식에 포인터를 잡아 두므로, 영역이 넘겨받는 순간 자식의 `lostpointercapture` 가 올라와 휴대폰에서만 끌기가 끊긴다 |
