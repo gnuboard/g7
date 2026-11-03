@@ -1,0 +1,21 @@
+feature: 사용자 화면 히어로섹션 주입 조각 (플러그인 → home_hero·shop_hero)
+
+description: |
+  템플릿 쪽 슬롯(존재·주입 없을 때 빈 렌더)은 sirsoft-basic 매니페스트 `hero-extension-points.yaml` 이 소유한다.
+  플러그인 주입 조각은 공개 API 를 받아 배너가 있을 때만 슬라이더를 그리고, 0건·받기 실패면 구좌를 숨긴다.
+  조각의 data-source·전역 키는 플러그인 접두를 쓴다.
+
+axes:
+  surface:
+    - home_extension_targets_home_hero
+    - shop_extension_targets_shop_hero
+    - hidden_when_no_banners
+    - loading_skeleton_until_response
+    - hidden_when_fetch_fails
+    - data_source_keys_prefixed
+
+effects:
+  - extension_injected_conditionally
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_extensions.test.tsx

@@ -1,0 +1,28 @@
+feature: 히어로섹션 확장점 슬롯 (home_hero · shop_hero)
+
+description: |
+  사이트 홈(`layouts/home`)과 쇼핑몰 메인(`layouts/shop/index`) 상단에 빈 슬롯 확장점을 둔다(#810).
+  템플릿은 자리만 열고, 화면은 히어로섹션 플러그인 같은 확장이 주입한다. 주입이 없으면 지금 화면과 같아야 한다(회귀).
+  확장점 이름은 다른 템플릿도 따르는 공개 계약이라 바꾸지 않는다.
+  메뉴 겹침: 맨 위 배너가 `<html data-header-overlay="dark|light">` 로 알리면 헤더 높이(`--g7-header-height`)만큼 page_top 을 당기고,
+  화면 맨 위에서만 데스크톱 헤더·모바일 툴바(`g7-site-header`)를 투명하게 해 글자를 바탕에 맞춘다. 신호가 없으면 화면이 그대로다.
+
+axes:
+  surface:
+    - home_layout_has_home_hero_slot
+    - shop_layout_has_shop_hero_slot
+    - slot_without_injection_renders_nothing
+    - header_overlay_contract
+    - header_overlay_no_signal
+    - header_overlay_signal_top_scroll
+    - header_overlay_signal_removed
+
+effects:
+  - template_regression_free
+  - header_overlays_banner
+  - scroll_restores_header
+  - header_unchanged_without_signal
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/hero-extension-points.test.tsx
+  - templates/_bundled/sirsoft-basic/src/support/__tests__/headerOverlay.test.tsx

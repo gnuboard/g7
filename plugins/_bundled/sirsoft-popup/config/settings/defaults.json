@@ -1,0 +1,38 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "팝업 플러그인 환경설정 — 표시 방식은 모든 팝업에 똑같이 적용된다"
+    },
+    "defaults": {
+        "pc_position": "center",
+        "pc_left": 80,
+        "pc_top": 120,
+        "pc_width": 480,
+        "pc_height": 520,
+        "mobile_style": "sheet",
+        "dim_background": true,
+        "close_on_backdrop": false,
+        "autoplay": true,
+        "autoplay_interval": 6,
+        "dismiss_mode": "today",
+        "dismiss_days": 7,
+        "max_upload_mb": 5,
+        "public_cache_minutes": 10
+    },
+    "frontend_schema": {
+        "pc_position": { "expose": false },
+        "pc_left": { "expose": false },
+        "pc_top": { "expose": false },
+        "pc_width": { "expose": false },
+        "pc_height": { "expose": false },
+        "mobile_style": { "expose": false },
+        "dim_background": { "expose": false },
+        "close_on_backdrop": { "expose": false },
+        "autoplay": { "expose": false },
+        "autoplay_interval": { "expose": false },
+        "dismiss_mode": { "expose": false },
+        "dismiss_days": { "expose": false },
+        "max_upload_mb": { "expose": false },
+        "public_cache_minutes": { "expose": false }
+    }
+}

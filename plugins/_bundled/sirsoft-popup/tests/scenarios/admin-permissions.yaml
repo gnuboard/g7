@@ -1,0 +1,20 @@
+feature: 팝업 관리자 API 권한 경계 (조회 / 등록·수정 / 삭제 3권한, 범위 없음)
+
+description: |
+  관리자 API 를 필요한 권한 단계(read·update·delete)로 묶고, 행위자 5종이 각 묶음의 모든 엔드포인트를 부를 때
+  기대 응답(401·403·성공)을 잠근다. 한 테스트가 그 묶음의 엔드포인트 전부를 데이터 공급자로 돈다.
+  read: 목록·요약·순서 조회·상세·표시 방식 / update: 등록·수정·순서 저장·일괄 노출/비노출·일괄 복사·이미지 업로드·임시 이미지 삭제 /
+  delete: 단건·일괄 삭제. owner_key 범위가 없으므로 범위 판정 케이스는 두지 않는다.
+  editor 는 read+update, deleter 는 read+delete 를 가진 역할이다.
+
+axes:
+  permission_level: [read, update, delete]
+  actor: [guest, no_permission, read_only, editor, deleter]
+
+effects:
+  - unauthenticated_returns_401
+  - missing_permission_returns_403
+  - granted_permission_succeeds
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupPermissionTest.php

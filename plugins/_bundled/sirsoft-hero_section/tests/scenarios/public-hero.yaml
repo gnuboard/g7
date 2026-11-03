@@ -1,0 +1,63 @@
+feature: 히어로섹션 공개 API (위치별 노출 배너·이미지·캐시)
+
+description: |
+  사용자 화면 확장점이 부르는 공개 API. 노출중 배너만 순서대로, 요청 언어 → 사이트 기본 언어 → en 순으로 문구를 고르고,
+  alt 는 alt → 제목 순으로 대체한다(D9). 운영 정보(사용 여부·기간·작성자)는 싣지 않는다.
+  이미지는 해시 주소로 래스터만 인라인 응답한다(저장 전 미리보기를 위해 임시 업로드도 포함).
+  캐시는 위치·언어별이며 노출 기간 경계와 충돌하지 않게 두 겹으로 막는다 — 만료 = min(설정 시간, 다음 시작·종료 시각),
+  꺼낼 때 now 로 기간을 다시 거름. 관리자 저장·삭제·일괄·순서·이미지·슬라이더 설정·플러그인 설정 변경과
+  플러그인 비활성화 때 비운다. 판정·캐시 경계·관리자 표시는 모두 UTC 기준이고 사이트 시간대는 입력·표시에서만 변환한다.
+  플러그인이 꺼지면 라우트가 사라지는 것은 코어 라우트 로더(활성 플러그인만 싣는다)의 동작이라 PHPUnit 에서 재현하지 않고,
+  실제 사이트 E2E(`e2e-flows.yaml` plugin_deactivate_hides_section)가 확인한다.
+
+axes:
+  surface:
+    - returns_active_only_in_sort_order
+    - excludes_inactive
+    - excludes_scheduled
+    - excludes_ended
+    - start_boundary_just_before_excluded
+    - start_boundary_just_after_included
+    - end_boundary_just_before_included
+    - end_boundary_just_after_excluded
+    - empty_position_returns_empty_list
+    - unknown_position_returns_422
+    - text_in_requested_locale
+    - text_falls_back_to_site_default_locale
+    - text_falls_back_to_en
+    - alt_falls_back_to_title
+    - mobile_image_null_when_missing
+    - includes_position_slider_settings
+    - includes_image_dimensions
+    - omits_internal_fields
+    - image_streams_inline_raster
+    - image_unknown_hash_returns_404
+    - image_temp_hash_streams_for_preview
+    - cache_reused_within_ttl
+    - cache_ttl_capped_at_next_start
+    - cache_ttl_capped_at_next_end
+    - cache_read_refilters_by_period
+    - cache_disabled_when_zero_minutes
+    - cache_version_expiry_never_serves_stale
+    - cache_cleared_on_save
+    - cache_cleared_on_delete
+    - cache_cleared_on_bulk_change
+    - cache_cleared_on_reorder
+    - cache_cleared_on_image_change
+    - cache_cleared_on_slider_setting_change
+    - cache_cleared_on_plugin_setting_change
+    - cache_cleared_on_plugin_deactivate
+    - site_timezone_boundary_consistent
+
+effects:
+  - public_payload_localized
+  - cache_key_per_position_locale
+  - cache_never_outlives_period_boundary
+  - cache_edit_never_reverts_to_stale
+  - inline_media_policy_applied
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Public/HeroControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Public/PublicBannerImageTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Services/PublicHeroServiceTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Listeners/HeroCacheListenerTest.php

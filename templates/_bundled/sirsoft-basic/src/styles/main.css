@@ -296,3 +296,46 @@
     @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
   }
 }
+
+/*
+ * 메뉴 겹침 — 화면 맨 위 배너(히어로섹션 등)가 `<html data-header-overlay="dark|light">` 로 알리면 본문 앞 전폭 자리를 헤더 높이만큼
+ * 당겨 배너를 메뉴 밑으로 넣고, 화면 맨 위에서만(`data-header-overlay-active`) 메뉴를 투명하게 해 글자를 배너 바탕에 맞춘다
+ * (어두운 바탕 → 흰 글자, 밝은 바탕 → 검은 글자). 높이와 맨 위 판정은 support/headerOverlay.ts 가 맡는다.
+ * 글자색을 바꾸지 않는 것: 자기 배경색이 있는 요소와 그 안(드롭다운·알림 목록·숫자 배지·현재 메뉴 알약·가입 단추), 검색 폼.
+ * 유틸리티 클래스가 아니라 레이아웃 정적 클래스(g7-site-header·g7-page-top)라 safelist 없이 여기 둔다.
+ */
+html[data-header-overlay] .g7-page-top {
+  margin-top: calc(-1 * var(--g7-header-height, 0px));
+}
+
+.g7-site-header {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+html[data-header-overlay-active] .g7-site-header,
+html[data-header-overlay-active] .g7-site-header nav {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+html[data-header-overlay-active="dark"] .g7-site-header {
+  --g7-header-ink: #ffffff;
+  --g7-header-hover: rgba(255, 255, 255, 0.16);
+}
+
+html[data-header-overlay-active="light"] .g7-site-header {
+  --g7-header-ink: #111827;
+  --g7-header-hover: rgba(17, 24, 39, 0.08);
+}
+
+html[data-header-overlay-active] .g7-site-header :is(a, button, span, svg, i):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *) {
+  color: var(--g7-header-ink) !important;
+}
+
+html[data-header-overlay-active] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *):hover {
+  background-color: var(--g7-header-hover) !important;
+}
+
+html[data-header-overlay-active="dark"] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *) {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}

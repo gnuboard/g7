@@ -1,0 +1,53 @@
+feature: 히어로섹션 문구 자리 · 머리글 · 등장 효과 · 메뉴 겹치기
+
+description: |
+  배너마다 문구 자리(PC·휴대폰 따로 가로·세로 %, 9칸 빠른 선택, 편집 미리보기에서 끌기·화살표 키)와 문구 상자 폭, 머리글(제목 위
+  한 줄, 다국어·보이기·색), 등장 효과(없음·떠오르기·서서히·왼쪽·오른쪽·확대·흐림 걷힘·글자 하나씩 + 속도·시작 지연, 줄마다 0.2초
+  시차), 바탕 밝기(메뉴 글자색)를 정한다. 기본값(왼쪽 아래·전폭·효과 없음·어두움)은 종전 화면과 같다. 위치 설정의 메뉴 겹치기를
+  켜고 화면 전체 폭이면 슬라이더가 문서 뿌리에 `data-header-overlay="dark|light"` 를 달고, sirsoft-basic 헤더는 그 높이만큼 배너를
+  당겨 맨 위에서만 투명해진다(내리면 원래 배경). 움직임 줄이기면 효과가 없다. 받는 동안 스켈레톤은 힌트(`slot_overlays`)를 따른다.
+
+axes:
+  surface:
+    - slider_text_default_compat
+    - slider_text_spot_by_device
+    - slider_eyebrow
+    - slider_motion_stagger
+    - slider_motion_letters
+    - slider_motion_reduced
+    - overlay_signal_full_only
+    - overlay_signal_excluded
+    - overlay_skeleton_hint
+    - editor_text_keyboard
+    - editor_text_drag
+    - editor_text_grid
+    - form_text_layout_card
+    - admin_header_overlay_setting
+    - text_layout_saved
+    - text_layout_defaults
+    - text_layout_validation
+    - position_settings_header_overlay
+    - site_overlay_pc_mobile
+    - site_overlay_content_width
+    - site_overlay_reduced_motion
+    - admin_editor_grid_drag_keyboard_save
+    - admin_settings_header_overlay_save
+
+effects:
+  - header_overlays_banner
+  - text_placed_by_device
+  - lines_staggered
+  - scroll_restores_header
+  - overlay_requires_full_width
+  - reduced_motion_disables_text_effect
+  - editor_position_persisted
+  - eyebrow_persisted
+  - public_payload_text_layout
+  - position_setting_overlay_persisted
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerTextLayoutTest.php
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSliderTextLayout.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/text-layout-overlay.spec.ts

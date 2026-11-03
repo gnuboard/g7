@@ -482,7 +482,9 @@ php g7-install --no-interaction ...  # automation — see "방법 5" in INSTALL.
 | **sirsoft-koreaexim** | Korea Eximbank exchange rate updates and history |
 | **sirsoft-ckeditor5** | CKEditor 5 editor |
 | **sirsoft-gdpr** | Privacy and GDPR support |
+| **sirsoft-popup** | Popup layer for notices and promotions |
 | **sirsoft-message_bizppurio** | Bizppurio messaging (SMS/LMS and KakaoTalk alimtalk delivery) |
+| **sirsoft-hero_section** | Hero section (main banner) management and user screen slider |
 
 ### Templates
 
@@ -504,12 +506,14 @@ Official language packs you can install alongside the initial setup, so the core
 | **g7-plugin-sirsoft-ckeditor5-ja** | CKEditor 5 plugin, Japanese |
 | **g7-plugin-sirsoft-daum_postcode-ja** | Daum postcode plugin, Japanese |
 | **g7-plugin-sirsoft-gdpr-ja** | Privacy/GDPR plugin, Japanese |
+| **g7-plugin-sirsoft-hero_section-ja** | Hero section plugin, Japanese |
 | **g7-plugin-sirsoft-marketing-ja** | Marketing plugin, Japanese |
 | **g7-plugin-sirsoft-koreaexim-ja** | Korea Eximbank exchange rates plugin Japanese |
 | **g7-plugin-sirsoft-message_bizppurio-ja** | Bizppurio messaging plugin, Japanese |
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG Inicis payment plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | NICE Payments plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP payment plugin, Japanese |
+| **g7-plugin-sirsoft-popup-ja** | Popup plugin, Japanese |
 | **g7-plugin-sirsoft-social_login-ja** | Social login plugin, Japanese |
 | **g7-plugin-sirsoft-sso-ja** | Single Sign-On plugin, Japanese |
 | **g7-plugin-sirsoft-tosspayments-ja** | Toss Payments plugin, Japanese |

@@ -529,7 +529,9 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `html_content` | 페이지 본문·약관·개인정보 창, 게시글 본문·원글·답글, 글쓰기의 원글 미리보기 | 편집기 플러그인(CKEditor5) | 편집기 본문 서식(`ck-content`)이 빠진 채 기본 HTML 로 보인다 |
 | `html_editor` | 글쓰기 본문 입력 칸 | 편집기 플러그인(CKEditor5) | 본문이 서식 편집기 대신 기본 입력 칸으로 나온다 |
 | `identity_provider_ui:provider` | 본인인증 요구 창(`_user_base` 모달) | 본인인증 플러그인 2종(KG이니시스·NHN KCP) | 본인인증 창에 제공자 인증 단추가 없다 |
-| `user_global_overlay` | `_user_base` 끝 | GDPR | 쿠키 동의 배너가 뜨지 않는다 |
+| `home_hero` (7.2.0+) | 사이트 홈 본문 맨 위(본문 상자 밖 전폭 슬롯 `page_top`). 본문 상자 클래스를 속성 `contentClass`·`contentClassDesktop` 으로 넘긴다 | 히어로섹션 | 사이트 홈 상단 배너 슬라이더가 보이지 않는다 |
+| `shop_hero` (7.2.0+) | 쇼핑몰 메인 본문 맨 위(본문 상자 밖 전폭 슬롯 `page_top`). 속성은 `home_hero` 와 같다 | 히어로섹션 | 쇼핑몰 메인 상단 배너 슬라이더가 보이지 않는다 |
+| `user_global_overlay` | `_user_base` 끝 | GDPR · 팝업 | 쿠키 동의 배너·공지 팝업 레이어가 뜨지 않는다 |
 | `user_global_footer` | `_user_base` 푸터 바로 뒤 | (번들 사용처 없음 — 확장 공용 자리) | 푸터 아래 정보 영역을 붙일 곳이 없다 |
 | `board_post_row_badges` (7.1.1+) | 글이 보이는 모든 목록의 제목 바로 뒤 — 게시판 목록 세 유형(basic 은 PC·모바일 두 자리), 홈 최근 글·게시판 요약, 인기글, 통합 검색(전체·글 탭), 회원 글·회원 프로필, 마이페이지 내 글·스크랩(PC·모바일) | (번들 사용처 없음 — 확장 공용 자리) | 글마다 표시(언어·상태 배지 등)를 붙일 곳이 없다 |
 | `board_post_header_badges` (7.1.1+) | 글 상세 제목 바로 뒤(게시판 유형 세 갈래 모두) | (번들 사용처 없음) | 상세 제목 옆 표시를 붙일 곳이 없다 |
@@ -542,6 +544,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `mypage_change_password_reauth` (7.2.0+) | 비밀번호 변경, 비밀번호 없는 회원의 첫 설정 재확인 안내 자리 | 소셜 로그인 | 같은 회원이 비밀번호 첫 설정 전 재확인 단추를 못 본다 (호환 심이 채운다) |
 
 - 슬롯형 확장점은 `<extension-point name="…"><default/></extension-point>` 로 둔다. 주입이 없으면 아무것도 그리지 않는다.
+- 메뉴 겹침(`home_hero`·`shop_hero` 를 여는 템플릿 선택 계약, 7.2.0+): 맨 위 배너가 `<html data-header-overlay="dark|light">`(배너 바탕 밝기)를 달면 템플릿은 보이는 헤더 높이를 `--g7-header-height`(px)로 문서 뿌리에 알리고, 배너 자리를 그만큼 위로 당겨 헤더를 배너 위에 투명하게 겹친다(글자는 dark → 흰색, light → 검은색, 스크롤하면 원래 배경). 배너는 이 값만큼 문구를 아래에서 시작한다. 지원하지 않는 템플릿은 아무것도 하지 않으면 된다 — 변수가 없어 배너가 겹침 없이 그려진다. sirsoft-basic 구현: `src/support/headerOverlay.ts`·`src/styles/main.css`.
 - 모달 안의 목록(예: 탈퇴 경고)은 노드 id 를 겨냥하는 Overlay 가 닿지 않으므로 확장점으로 연다.
 - 표시 분기(결제수단·PG·발급 상태 등)는 주입하는 쪽이 조건으로 처리한다 — 템플릿은 자리만 둔다.
 

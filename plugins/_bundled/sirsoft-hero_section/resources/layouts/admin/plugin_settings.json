@@ -1,0 +1,501 @@
+{
+    "comment": "히어로섹션 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 따른다. 배너 자체와 위치별 슬라이더 설정은\n  배너 관리 화면이 맡고, 여기에는 운영자가 서버 사정에 맞춰 바꾸는 두 값(이미지 최대 용량·사용자 화면 배너 캐시 시간)만 둔다.",
+    "version": "1.0.0",
+    "layout_name": "plugin_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-hero_section.settings.title",
+        "description": "$t:sirsoft-hero_section.settings.description"
+    },
+    "data_sources": [
+        {
+            "id": "settings",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.settings",
+            "type": "api",
+            "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "처음 받기 실패는 빈 폼·기본값으로 저장되지 않게 본문 오류 화면, 다시 받기 실패는 보던 값을 그대로 두고 알린다",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게"
+        },
+        {
+            "id": "upload_limit",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.upload_limit",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/admin/position-settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": null
+            },
+            "comment": "서버 PHP 업로드 한도 — 코어 설정 응답에는 없는 값이라 배너 관리 쪽 위치 설정 응답의 `upload` 를 함께 받는다. 배너 조회 권한이 없어 실패하면 한도 안내만 숨긴다"
+        }
+    ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "core.plugins.update"
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "plugin_settings_content",
+                "type": "basic",
+                "name": "Div",
+                "dataKey": "form",
+                "trackChanges": true,
+                "props": {
+                    "className": "hs-admin-page-content-responsive"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-hero_section.settings.title",
+                            "description": "$t:sirsoft-hero_section.settings.description",
+                            "backPath": "/admin/plugins",
+                            "backLabel": "$t:admin.plugins.back_to_list"
+                        }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "hs-alert-warning hs:mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "hs:text-xs hs:text-yellow-700 hs:dark:text-yellow-300"
+                                },
+                                "text": "$t:sirsoft-hero_section.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "settings_form",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "hs:mt-6 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:shadow-sm hs:border hs:border-gray-200 hs:dark:border-gray-700"
+                        },
+                        "children": [
+                            {
+                                "id": "settings_fields",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "hs:p-6 hs:space-y-6"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_max_upload_mb",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs-grid-3col-responsive"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "hs:lg:col-span-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "hs-form-label",
+                                                            "htmlFor": "hero_section_max_upload_mb"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "hs-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "hs:lg:col-span-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "number",
+                                                            "id": "hero_section_max_upload_mb",
+                                                            "name": "max_upload_mb",
+                                                            "min": 1,
+                                                            "max": 10,
+                                                            "className": "hs:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.max_upload_mb}}",
+                                                        "props": {
+                                                            "className": "hs-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.max_upload_mb?.[0]}}"
+                                                    },
+                                                    {
+                                                        "id": "server_upload_limit",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!upload_limit?.data?.upload?.server_limit_mb}}",
+                                                        "props": {
+                                                            "className": "hs-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
+                                                    },
+                                                    {
+                                                        "id": "server_upload_limit_warning",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!upload_limit?.data?.upload?.server_limit_mb && Number(_local.form?.max_upload_mb ?? 0) > upload_limit.data.upload.server_limit_mb}}",
+                                                        "props": {
+                                                            "role": "status",
+                                                            "className": "hs:text-sm hs:text-amber-700 hs:dark:text-amber-300"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_max_video_upload_mb",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs-grid-3col-responsive"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "hs:lg:col-span-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "hs-form-label",
+                                                            "htmlFor": "hero_section_max_video_upload_mb"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_video_upload_mb.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "hs-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_video_upload_mb.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "hs:lg:col-span-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "number",
+                                                            "id": "hero_section_max_video_upload_mb",
+                                                            "name": "max_video_upload_mb",
+                                                            "min": 1,
+                                                            "max": 100,
+                                                            "className": "hs:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.max_video_upload_mb}}",
+                                                        "props": {
+                                                            "className": "hs-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.max_video_upload_mb?.[0]}}"
+                                                    },
+                                                    {
+                                                        "id": "server_video_upload_limit_warning",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!upload_limit?.data?.upload?.server_limit_mb && Number(_local.form?.max_video_upload_mb ?? 0) > upload_limit.data.upload.server_limit_mb}}",
+                                                        "props": {
+                                                            "role": "status",
+                                                            "className": "hs:text-sm hs:text-amber-700 hs:dark:text-amber-300"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_public_cache_minutes",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "hs-grid-3col-responsive"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "hs:lg:col-span-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "hs-form-label",
+                                                            "htmlFor": "hero_section_public_cache_minutes"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.public_cache_minutes.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "hs-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.public_cache_minutes.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "hs:lg:col-span-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "number",
+                                                            "id": "hero_section_public_cache_minutes",
+                                                            "name": "public_cache_minutes",
+                                                            "min": 0,
+                                                            "max": 60,
+                                                            "className": "hs:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.public_cache_minutes}}",
+                                                        "props": {
+                                                            "className": "hs-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.public_cache_minutes?.[0]}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "hs-sticky-footer-buttons"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "A",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate"
+                                    }
+                                ],
+                                "props": {
+                                    "href": "/admin/plugins",
+                                    "className": "hs-button hs-btn hs-btn-secondary"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다. 실패하면 필드 오류를 칸 아래에 보이고 사유를 알린다",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": true,
+                                                    "errors": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "PUT",
+                                                    "body": "{{_local.form}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "hasChanges": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.plugins.settings.save_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "settings"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "errors": "{{error.errors}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                                    "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

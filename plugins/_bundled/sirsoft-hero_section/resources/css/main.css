@@ -1,0 +1,856 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(hs);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(hs) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
+/*
+ * 히어로섹션 슬라이더 — 플러그인 소유 스타일(hs- 접두).
+ * 템플릿 CSS 에 기대지 않는다: 확장 컴포넌트의 유틸리티 클래스는 템플릿 빌드에 들어 있다는 보장이 없다.
+ * 영역 비율(--hs-ratio-pc / --hs-ratio-mobile)은 기기별 고정값(PC 1920×640, 모바일 750×1000)이다 — 이미지가 오기 전에
+ * 높이를 잡아 화면 밀림을 막는다. 넘김·전환 효과는 Swiper(라이브러리 CSS 는 동봉 자산 dist/vendor/swiper 로 따로 싣는다 —
+ * resources/js/support/swiperStyles.ts)가 맡고, 여기서는 Swiper 영역을 히어로 영역 크기에 맞추고 플러그인 소유 컨트롤을 그 위에 둔다.
+ */
+.hs-slider {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  aspect-ratio: var(--hs-ratio-pc, 1920 / 640);
+  background: #111827;
+}
+
+@media (max-width: 767px) {
+  .hs-slider {
+    aspect-ratio: var(--hs-ratio-mobile, 750 / 1000);
+  }
+}
+
+/*
+ * 받는 중 스켈레톤 — 슬라이더와 같은 비율·폭·높이 상한(.hs-slider·.hs-slider--full 규칙을 그대로 받는다)이라 배너가 와도 아래 본문이 밀리지
+ * 않는다. 물결 빛은 움직임 줄이기에서 멈춘다. 실제 배너는 나타날 때 0.4초 동안 서서히 보인다.
+ */
+.hs-slider.hs-slider--skeleton {
+  background: #e5e7eb;
+}
+
+.hs-slider.hs-slider--skeleton:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+  background: #1f2937;
+}
+
+.hs-slider--skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.45) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: hs-shimmer 1.4s ease-in-out infinite;
+}
+
+.hs-slider--skeleton:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))::after {
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.08) 50%, transparent 80%);
+}
+
+.hs-slider__skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hs-slider__skeleton-line {
+  display: block;
+  height: 14px;
+  border-radius: 9999px;
+  background: rgba(156, 163, 175, 0.55);
+}
+
+.hs-slider__skeleton-line--title { width: min(60%, 520px); height: clamp(20px, 3.2vw, 40px); }
+.hs-slider__skeleton-line--description { width: min(80%, 680px); }
+.hs-slider__skeleton-line--button { width: 120px; height: 36px; border-radius: 9999px; }
+
+.hs-slider:not(.hs-slider--skeleton) {
+  animation: hs-appear 0.4s ease-out;
+}
+
+@keyframes hs-shimmer {
+  to { transform: translateX(100%); }
+}
+
+@keyframes hs-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-slider--skeleton::after,
+  .hs-slider:not(.hs-slider--skeleton) {
+    animation: none;
+  }
+}
+
+/*
+ * 화면 전체 폭 — 넓은 화면에서 비율대로 키우면 지나치게 높아지므로 권장 이미지 높이(640px)에서 멈추고, 그보다 넓으면 이미지는
+ * 초점(object-position) 기준으로 위아래를 자른다. 문구(.hs-slider__box)·넘김 단추(.hs-slider__controls-box)는 템플릿 본문 상자 클래스로 감싸
+ * 본문과 같은 줄에 세운다 — 상자의 좌우 여백이 문구 여백을 대신한다.
+ */
+.hs-slider--full {
+  max-height: var(--hs-max-height-full, 640px);
+}
+
+.hs-slider__text.hs-slider__text--boxed {
+  padding-inline: 0;
+}
+
+.hs-slider__box {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.hs-slider__controls-layer {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  pointer-events: none;
+}
+
+.hs-slider__controls-box {
+  display: flex;
+  justify-content: flex-end;
+  box-sizing: border-box;
+}
+
+.hs-slider__controls.hs-slider__controls--boxed {
+  position: static;
+  pointer-events: auto;
+}
+
+.hs-slider__track {
+  width: 100%;
+  height: 100%;
+}
+
+.hs-slider__slide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 전체 링크 배너 — 슬라이드를 덮는 빈 링크. 문구(.hs-slider__text)는 그 위에 따로 둔다 */
+.hs-slider__link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  color: inherit;
+  text-decoration: none;
+}
+
+.hs-slider__picture,
+.hs-slider__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hs-slider__image {
+  object-fit: cover;
+  object-position: var(--hs-focus-pc, 50% 50%);
+}
+
+@media (max-width: 767px) {
+  .hs-slider__image { object-position: var(--hs-focus-mobile, 50% 50%); }
+}
+
+/*
+ * 영상 배너 — 영상·유튜브는 대표 이미지 위에 겹친다(받는 동안·멈춘 동안은 대표 이미지가 보인다). 영상은 object-fit 으로, 유튜브
+ * 플레이어는 구좌를 덮도록 16:9 를 늘려(컨테이너 단위) 가운데 맞춘다 — 비율이 달라도 검은 띠가 생기지 않는다. 손가락 넘기기·
+ * 전체 링크가 플레이어에 먹히지 않게 플레이어는 누르기를 받지 않는다(재생·멈춤은 슬라이더 단추가 맡는다).
+ */
+.hs-slider__video,
+.hs-slider__youtube {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hs-slider__video {
+  object-fit: cover;
+  object-position: var(--hs-focus-pc, 50% 50%);
+}
+
+@media (max-width: 767px) {
+  .hs-slider__video { object-position: var(--hs-focus-mobile, 50% 50%); }
+}
+
+.hs-slider__youtube {
+  overflow: hidden;
+  container-type: size;
+}
+
+.hs-slider__youtube-host {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.hs-slider__youtube--ready .hs-slider__youtube-host { opacity: 1; }
+
+.hs-slider__youtube-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* 배너를 덮는 16:9 크기 중 높이가 배너의 1.45배 이상이 되게 키운다 — 유튜브가 재생 시작 때 띄우는 위 제목·채널 띠와
+     아래 「동영상 더보기」·로고 띠(각각 플레이어 높이의 위·아래 약 15%)는 잘려 나가고 가운데 재생 표시만 잠깐 보인다.
+     가로로 긴 배너는 이미 위아래가 그만큼 잘려 크기가 그대로다 */
+  width: max(100cqw, 257.78cqh);
+  height: max(56.25cqw, 145cqh);
+  border: 0;
+  transform: translate(-50%, -50%);
+}
+
+/* 동의 전 — 대표 이미지 위 가운데 재생 단추와 안내. 단추는 전체 링크·문구 층 위에서 누르기를 받는다 */
+.hs-slider__youtube-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.hs-slider__youtube-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.65);
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hs-slider__youtube-play:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.hs-slider__youtube-notice {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(17, 24, 39, 0.55);
+  color: #ffffff;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-slider__youtube-host { transition: none; }
+}
+
+/*
+ * 문구 띠 — 슬라이드 폭 전체, 높이는 문구만큼. 세로 위치(--hs-ty, 0 위 ~ 100 아래)로 띠를 올리고 내리며, 기준점과 띠 기준점이 같아
+ * 끝값에서도 배너 밖으로 넘치지 않는다. 기본값 100 은 종전의 「아래쪽 붙임」과 같다. 문구 배경 그라데이션도 이 띠에 깔고, 문구가
+ * 위쪽에 있으면 위로 짙어진다(--hs-shade). 띠는 누르기를 받지 않고 안의 문구 상자만 받는다 — 상자 밖은 전체 링크로 간다.
+ */
+.hs-slider__text {
+  --hs-tx: var(--hs-tx-pc, 0);
+  --hs-ty: var(--hs-ty-pc, 100);
+  --hs-shade: var(--hs-shade-pc, to bottom);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--hs-ty) * 1%);
+  transform: translateY(calc(var(--hs-ty) * -1%));
+  padding: clamp(16px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  /* 긴 문구는 줄이지 않고 구좌 안(.hs-slider__scroll)에서 스크롤로 모두 읽게 한다(#810 후속) */
+  box-sizing: border-box;
+  max-height: 100%;
+  z-index: 2; /* 전체 링크(.hs-slider__link) 위 — 문구 스크롤·탭 진입이 링크와 섞이지 않게 */
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .hs-slider__text {
+    --hs-tx: var(--hs-tx-mobile, 0);
+    --hs-ty: var(--hs-ty-mobile, 100);
+    --hs-shade: var(--hs-shade-mobile, to bottom);
+  }
+}
+
+/*
+ * 문구 상자 — 띠 안 폭(--hs-tw %, 기본 100)과 가로 위치(--hs-tx, 0 왼쪽 ~ 100 오른쪽). 남는 폭 × 위치만큼 왼쪽을 띄운다.
+ * 화면 전체 폭이면 띠 안의 본문 상자(.hs-slider__box) 기준이라 본문과 같은 줄 안에서 움직인다.
+ */
+.hs-slider__textbox {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  width: calc(var(--hs-tw, 100) * 1%);
+  max-width: 100%;
+  margin-left: calc((100% - var(--hs-tw, 100) * 1%) * var(--hs-tx) / 100);
+  pointer-events: auto;
+}
+
+.hs-slider__text--linked { cursor: pointer; }
+
+/* 편집 미리보기 — 끌어 옮기는 문구 상자. 점선 테두리로 옮길 수 있음을 보이고, 끄는 동안 손가락 스크롤·글자 선택을 막는다 */
+.hs-slider__textbox--editable {
+  cursor: move;
+  outline: 1px dashed rgba(255, 255, 255, 0.7);
+  outline-offset: 4px;
+  touch-action: none;
+  user-select: none;
+}
+
+.hs-slider__textbox--editable:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 4px;
+}
+
+.hs-slider__textbox--dragging { cursor: grabbing; }
+
+/* 메뉴 겹침 — 사이트 상단 메뉴가 배너 위에 있으므로 문구는 메뉴 높이(템플릿이 알려 준 값, 모르면 0)만큼 아래에서 시작한다 */
+.hs-slider--header-overlay .hs-slider__text {
+  padding-top: calc(clamp(16px, 5vw, 64px) + var(--g7-header-height, 0px));
+}
+
+/* 화면 읽기 프로그램에만 읽히는 원문(「글자 하나씩」 효과) */
+.hs-slider__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.hs-slider__word { display: inline-block; white-space: nowrap; }
+.hs-slider__letter { display: inline-block; }
+
+.hs-slider__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  /* 스크롤은 문구가 실제로 넘칠 때만(.hs-slider__scroll--overflow) — 아래·옆에서 들어오는 등장 효과가 잠깐 밀어낸 만큼으로는
+     스크롤 막대가 생기지 않게 한다(막대가 자리를 차지하는 Windows 크롬에서 보였다) */
+  overflow-y: hidden;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  /* 버튼 초점 테두리(3px + 2px)가 스크롤 경계에 잘리지 않을 만큼 안쪽 여백을 두고 같은 만큼 되돌린다 */
+  padding: 6px;
+  margin: -6px;
+}
+
+.hs-slider__scroll--overflow {
+  overflow-y: auto;
+}
+
+.hs-slider__eyebrow {
+  margin: 0;
+  font-size: clamp(0.8125rem, 1.4vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1.4;
+  opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  overflow-wrap: anywhere;
+}
+
+.hs-slider__title {
+  margin: 0;
+  font-size: clamp(1.25rem, 3.2vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  overflow-wrap: anywhere;
+}
+
+.hs-slider__description {
+  margin: 0;
+  font-size: clamp(0.875rem, 1.6vw, 1.25rem);
+  line-height: 1.5;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  overflow-wrap: anywhere;
+}
+
+.hs-slider__text--dark { background: linear-gradient(var(--hs-shade), transparent, rgba(0, 0, 0, .78)); }
+.hs-slider__text--light { background: linear-gradient(var(--hs-shade), transparent, rgba(255, 255, 255, .9)); }
+
+/*
+ * 문구 등장 효과 — 활성 장(.hs-slider__slide--active)이 될 때마다 줄마다 --hs-line-delay(시작 지연 + 순번 × 0.2초) 뒤 --hs-anim-duration
+ * 동안 재생한다. 장이 바뀌면 클래스가 빠졌다 붙으며 처음부터 다시 재생한다. 비활성 장은 효과 없이 그대로 보인다(나가는 장의 문구가
+ * 사라지지 않게). 「글자 하나씩」은 머리글·제목을 글자마다, 설명·버튼은 서서히 보인다. 움직임 줄이기면 모두 끈다.
+ */
+.hs-slider__slide--active .hs-slider__textbox--rise .hs-slider__line { animation: hs-text-rise var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs-slider__slide--active .hs-slider__textbox--fade .hs-slider__line { animation: hs-text-fade var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs-slider__slide--active .hs-slider__textbox--left .hs-slider__line { animation: hs-text-left var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs-slider__slide--active .hs-slider__textbox--right .hs-slider__line { animation: hs-text-right var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs-slider__slide--active .hs-slider__textbox--zoom .hs-slider__line { animation: hs-text-zoom var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs-slider__slide--active .hs-slider__textbox--blur .hs-slider__line { animation: hs-text-blur var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs-slider__slide--active .hs-slider__textbox--letters .hs-slider__line:not(.hs-slider__line--letters) { animation: hs-text-fade var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs-slider__slide--active .hs-slider__textbox--letters .hs-slider__letter {
+  animation: hs-text-letter var(--hs-anim-duration, 0.6s) ease both;
+  animation-delay: calc(var(--hs-line-delay, 0s) + var(--hs-letter, 0) * var(--hs-letter-step, 0.05s));
+}
+
+@keyframes hs-text-rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes hs-text-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hs-text-left { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+@keyframes hs-text-right { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes hs-text-zoom { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
+@keyframes hs-text-blur { from { opacity: 0; filter: blur(12px); } to { opacity: 1; filter: none; } }
+@keyframes hs-text-letter { from { opacity: 0; transform: translateY(0.4em); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-slider__slide--active .hs-slider__line,
+  .hs-slider__slide--active .hs-slider__letter {
+    animation: none !important;
+  }
+}
+.hs-slider--controlled .hs-slider__text { padding-bottom: max(76px, 5vw); }
+
+.hs-editor-preview { position: sticky; top: 84px; }
+.hs-preview__viewport { width: 100%; overflow: hidden; position: relative; }
+.hs-preview__expand { display: block; margin: 8px; border: 1px solid #64748b; border-radius: 6px; padding: 6px 12px; background: #f8fafc; color: #0f172a; cursor: pointer; }
+.hs-preview__expand:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #1e293b; color: #f8fafc; }
+.hs-preview__dialog { width: min(1400px, 96vw); max-width: 96vw; max-height: 94vh; overflow: auto; padding: 12px; border: 1px solid #64748b; border-radius: 10px; background: #fff; color: #0f172a; }
+.hs-preview__dialog:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #0f172a; color: #f8fafc; }
+.hs-preview__dialog::backdrop { background: rgba(0, 0, 0, .6); }
+.hs-preview__fallback,
+.hs-preview__hint { padding: 0 8px 8px; }
+.hs-editor-language { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.hs-editor-language select { color: #0f172a; background: #fff; border: 1px solid #64748b; padding: 6px; border-radius: 6px; }
+.hs-editor-language select:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #1e293b; color: #f8fafc; }
+@media (max-width: 1023px) { .hs-editor-preview { position: static; } }
+
+.hs-slider__button {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 600;
+  text-decoration: none;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.hs-slider__button:focus-visible,
+.hs-slider__control:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+/* 슬라이드를 덮는 링크·넘칠 때만 탭으로 들어오는 문구 영역 — 테두리를 안쪽에 그려 구좌 경계에 잘리지 않게 한다 */
+.hs-slider__link:focus-visible,
+.hs-slider__scroll:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: -3px;
+}
+
+.hs-slider__controls {
+  position: absolute;
+  z-index: 2; /* Swiper 영역(z-index 1) 위 */
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hs-slider__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.55);
+  color: #ffffff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* 장 번호 — 점 표시가 위치를 보여 주므로 화면에서는 감추고 화면 읽기 프로그램에만 알린다 */
+.hs-slider__counter {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/*
+ * Swiper 기본 화살표·점 표시 — 모양은 Swiper(14.3.0) navigation·pagination CSS 의 선언을 자기 클래스로 옮겨 쓰고(라이브러리 클래스는
+ * 걸지 않는다), 색·크기만 배너에 맞춘다(흰색, 사진 위에서 보이게 그림자). 단추 기본 테두리·배경은 지운다. 화살표는 데스크톱
+ * (1024px 이상)에서만 — 좁은 화면에서는 문구 여백보다 넓어 글자를 가린다. 변수 이름은 Swiper 와 같은 --swiper-* 를 그대로 둔다.
+ */
+.hs-slider {
+  --swiper-navigation-size: 32px;
+  --swiper-navigation-sides-offset: 4px;
+  --swiper-navigation-color: #ffffff;
+  --swiper-pagination-color: #ffffff;
+  --swiper-pagination-bullet-inactive-color: #ffffff;
+  --swiper-pagination-bullet-inactive-opacity: 0.5;
+  --swiper-pagination-bullet-size: 10px;
+  /* 점 사이 14px — 누를 자리(24px) 가운데끼리 24px 떨어져 이웃 점의 누를 자리와 겹치지 않는다 */
+  --swiper-pagination-bullet-horizontal-gap: 7px;
+  --swiper-pagination-bottom: 24px;
+}
+
+.hs-slider__arrow {
+  position: absolute;
+  top: var(--swiper-navigation-top-offset, 50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--swiper-navigation-size);
+  height: var(--swiper-navigation-size);
+  margin-top: calc(0px - (var(--swiper-navigation-size) / 2));
+  margin-left: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--swiper-navigation-color, var(--swiper-theme-color));
+  cursor: pointer;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.hs-slider__arrow svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+  fill: currentColor;
+  pointer-events: none;
+}
+
+.hs-slider__prev {
+  left: var(--swiper-navigation-sides-offset, 4px);
+  right: auto;
+}
+
+.hs-slider__prev .hs-slider__arrow-icon {
+  transform: rotate(180deg);
+}
+
+.hs-slider__next {
+  right: var(--swiper-navigation-sides-offset, 4px);
+  left: auto;
+}
+
+.hs-slider__arrow:focus-visible,
+.hs-slider__pagination .hs-slider__bullet:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.hs-slider__pagination {
+  pointer-events: none;
+}
+
+/* 점 줄 — 맨 아래 가운데(Swiper pagination·bullets·horizontal 선언) */
+.hs-slider__bullets {
+  position: absolute;
+  bottom: var(--swiper-pagination-bottom, 8px);
+  top: var(--swiper-pagination-top, auto);
+  left: 0;
+  z-index: 10;
+  width: 100%;
+  text-align: center;
+  transition: 300ms opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+.hs-slider__bullet {
+  display: inline-block;
+  width: var(--swiper-pagination-bullet-width, var(--swiper-pagination-bullet-size, 8px));
+  height: var(--swiper-pagination-bullet-height, var(--swiper-pagination-bullet-size, 8px));
+  margin: 0;
+  border-radius: var(--swiper-pagination-bullet-border-radius, 50%);
+  background: var(--swiper-pagination-bullet-inactive-color, #000);
+  opacity: var(--swiper-pagination-bullet-inactive-opacity, 0.2);
+  appearance: none;
+}
+
+.hs-slider__bullet--active {
+  opacity: var(--swiper-pagination-bullet-opacity, 1);
+  background: var(--swiper-pagination-color, var(--swiper-theme-color));
+}
+
+.hs-slider__bullets .hs-slider__bullet {
+  margin: 0 var(--swiper-pagination-bullet-horizontal-gap, 4px);
+}
+
+.hs-slider__pagination .hs-slider__bullet {
+  position: relative;
+  padding: 0;
+  border: 0;
+  pointer-events: auto;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+/* 점은 10px 로 보이되 누를 자리는 24px(WCAG 2.5.8) — 보이지 않는 테두리 층이 단추의 누를 자리를 넓힌다 */
+.hs-slider__pagination .hs-slider__bullet::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 9999px;
+}
+
+/*
+ * 페이징 모양(위치 설정) — 진행 막대 점 · 배너 이름 탭 · 번호. 막대는 Swiper 자동 넘김의 남은 시간(--hs-progress, 0~1)만큼 차고,
+ * 자동 넘김이 멈춰 있으면(마우스·포커스·일시정지·움직임 줄이기·자동 넘김 끔) 가득 찬 채로 둔다.
+ */
+.hs-slider__bullet-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  border-radius: inherit;
+  background: #ffffff;
+}
+
+.hs-slider--autoplaying .hs-slider__bullet-fill {
+  width: calc(var(--hs-progress, 0) * 100%);
+}
+
+/* 진행 막대 점 — 지금 장 점이 24px 막대로 길어진다(누를 자리는 위 ::before 로 24px 이상) */
+.hs-slider__pagination--progress .hs-slider__bullet {
+  transition: width 0.3s ease;
+}
+
+.hs-slider__pagination--progress .hs-slider__bullet.hs-slider__bullet--active {
+  width: 24px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* 배너 이름 탭 — 맨 아래 가운데, 오른쪽 일시정지 단추 자리를 비운다. 탭마다 위쪽 3px 막대 + 배너 이름 */
+.hs-slider__tabs {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  width: min(880px, calc(100% - 144px));
+}
+
+.hs-slider__tab {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0 4px;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  opacity: 0.7;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hs-slider__tab--active,
+.hs-slider__tab:hover {
+  opacity: 1;
+}
+
+.hs-slider__tab:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.hs-slider__tab-track {
+  position: relative;
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.hs-slider__tab-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 휴대폰 — 이름은 화면 읽기용으로만 남기고(단추 이름) 막대만 보인다. 막대 단추 높이 24px */
+@media (max-width: 767px) {
+  /* 양옆 60px — 오른쪽 일시정지 단추(오른쪽 16px + 36px)와 8px 띄운다 */
+  .hs-slider__tabs {
+    width: calc(100% - 120px);
+    gap: 8px;
+  }
+
+  .hs-slider__tab {
+    justify-content: center;
+    min-height: 24px;
+    padding: 0;
+  }
+
+  .hs-slider__tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+/* 번호 — 「01 / 05」, 맨 아래 가운데. 장 번호는 슬라이드 이름이 읽어 주므로 화면 읽기에서는 감춘다 */
+.hs-slider__fraction {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.hs-slider__fraction-current {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* 관리자 미리보기(iframe)는 Swiper 가 붙지 않아 장 번호(--hs-index)만큼 줄을 옮겨 그 장을 보인다 — 전환 효과 없음 */
+.hs-slider--static .hs-slider__wrapper {
+  transform: translateX(calc(var(--hs-index, 0) * -100%));
+}
+
+/* 화살표 기본 규칙(.hs-slider__arrow{display:flex})을 두 클래스로 이긴다 */
+@media (max-width: 1023px) {
+  .hs-slider .hs-slider__arrow { display: none; }
+}
+
+/* PC 마우스로 끌어 넘길 때 사진이 끌려 나오거나 글자가 선택되지 않게 */
+.hs-slider__image {
+  -webkit-user-drag: none;
+}
+
+/* 관리자 미리보기 — 기기 폭 틀 */
+.hs-preview {
+  margin: 0 auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.hs-preview--pc {
+  width: 100%;
+}
+
+.hs-preview--mobile {
+  width: 100%;
+  max-width: 375px;
+}
+
+.hs-preview--mobile .hs-slider {
+  aspect-ratio: var(--hs-ratio-mobile, 750 / 1000);
+}
+
+.hs-preview__empty {
+  margin: 0;
+  padding: 32px 16px;
+  color: #6b7280;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* 관리자 편집 화면 — 문구 자리 고르기(HeroTextPositionPad). 9칸은 배너 모양의 작은 판, 고른 칸은 진하게 */
+.hs-pad { display: flex; flex-direction: column; gap: 12px; }
+.hs-pad__devices { display: flex; gap: 4px; }
+.hs-pad__device { padding: 4px 12px; font-size: 12px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; color: #334155; cursor: pointer; }
+.hs-pad__device--on { background: #0f172a; border-color: #0f172a; color: #fff; }
+.hs-pad__device:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #1e293b; color: #e2e8f0; border-color: #475569; }
+.hs-pad__device--on:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #f1f5f9; border-color: #f1f5f9; color: #0f172a; }
+.hs-pad__body { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.hs-pad__grid { display: grid; grid-template-columns: repeat(3, 36px); grid-template-rows: repeat(3, 24px); gap: 4px; padding: 6px; border: 1px solid #94a3b8; border-radius: 8px; background: #f1f5f9; }
+.hs-pad__grid:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #0f172a; border-color: #475569; }
+.hs-pad__cell { display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; }
+.hs-pad__cell:hover { background: rgba(100, 116, 139, 0.15); }
+.hs-pad__cell:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
+.hs-pad__dot { width: 8px; height: 8px; border-radius: 9999px; background: #94a3b8; }
+.hs-pad__cell--on { border-color: #2563eb; background: rgba(37, 99, 235, 0.12); }
+.hs-pad__cell--on .hs-pad__dot { width: 12px; height: 12px; background: #2563eb; }
+.hs-pad__axes { display: flex; flex-wrap: wrap; gap: 12px; }
+.hs-pad__axis { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+
+/* 관리자 편집 화면 — 동시 수정 충돌 뒤 비교·재적용(HeroConflictResolver). 테마와 무관하게 읽히도록 반투명 테두리만 쓴다. */
+.hs-conflict { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.hs-conflict__title { margin: 0; font-weight: 600; }
+.hs-conflict__row { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px solid rgba(127, 127, 127, 0.35); border-radius: 8px; }
+.hs-conflict__row--both { border-color: #d97706; }
+.hs-conflict__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 600; }
+.hs-conflict__badge { font-size: 12px; font-weight: 500; opacity: 0.8; }
+.hs-conflict__option { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; font-size: 14px; overflow-wrap: anywhere; }
+.hs-conflict__side { flex: none; min-width: 4.5em; font-weight: 500; }
+.hs-conflict__value { flex: 1 1 12em; min-width: 0; }
+.hs-conflict__apply { align-self: flex-start; }

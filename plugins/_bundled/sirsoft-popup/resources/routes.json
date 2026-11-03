@@ -1,0 +1,32 @@
+{
+    "version": "1.0.0",
+    "routes": [
+        {
+            "path": "*/admin/plugins/sirsoft-popup/popups",
+            "layout": "popup_list",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-popup.admin.title",
+                "permission": "sirsoft-popup.popups.read"
+            }
+        },
+        {
+            "path": "*/admin/plugins/sirsoft-popup/popups/create",
+            "layout": "popup_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-popup.admin.form.create_title",
+                "permission": "sirsoft-popup.popups.update"
+            }
+        },
+        {
+            "path": "*/admin/plugins/sirsoft-popup/popups/:id/edit",
+            "layout": "popup_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-popup.admin.form.edit_title",
+                "permission": "sirsoft-popup.popups.update"
+            }
+        }
+    ]
+}
