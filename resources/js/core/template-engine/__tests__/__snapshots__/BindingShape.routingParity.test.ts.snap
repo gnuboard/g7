@@ -150,7 +150,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `963`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `987`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
@@ -400,6 +400,8 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_consent_log.json",
       "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/gdpr_notice_log.json",
       "plugins/_bundled/sirsoft-gdpr/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.json",
+      "plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/hero_section_banner_form.json",
+      "plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/hero_section_banner_list.json",
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_history_grid.json",
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.json",
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/plugin_settings.json",
@@ -625,6 +627,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json",
       "modules/_bundled/sirsoft-page/resources/layouts/admin/admin_page_list.json",
       "plugins/_bundled/sirsoft-ckeditor5/resources/layouts/admin/ckeditor5_uploads.json",
+      "plugins/_bundled/sirsoft-hero_section/resources/layouts/admin/hero_section_banner_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_module_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_plugin_list.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_user_list.json",

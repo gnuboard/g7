@@ -1,0 +1,20 @@
+feature: 활동 로그 배너 이름 해석 (core.activity_log.filter_description_params)
+
+description: |
+  활동 로그에는 배너 id 만 저장하고, 화면에 보일 때 이 플러그인 설명 키만 골라 이름으로 바꾼다.
+  기록 시점 제목 스냅샷(다국어면 현재 언어) → 「ID: {id}」 순. 다른 확장의 키와 이미 채워진 이름은 건드리지 않는다.
+  배너 모델이 생기면(1.0.0) 스냅샷이 없을 때 DB 에서 현재 제목을 찾는 단계가 사이에 더해진다.
+
+axes:
+  surface:
+    - registered_on_core_filter
+    - localized_snapshot_current_locale
+    - falls_back_to_id
+    - ignores_other_extension_keys
+    - keeps_already_resolved_title
+
+effects:
+  - banner_title_resolved
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Listeners/ActivityLogDescriptionResolverTest.php

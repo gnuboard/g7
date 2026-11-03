@@ -1,0 +1,95 @@
+feature: 히어로섹션 배너 관리 API (목록·등록·수정·삭제·일괄·순서·이미지·위치 설정)
+
+description: |
+  관리자 배너 API 의 동작 계약. 각 surface 값이 한 케이스다.
+  - 목록: 위치·상태·제목 검색(모든 언어)·통계·abilities.
+  - 등록·수정: 기본 언어 제목 필수, 활성 언어 키만, 기간·색·정렬·링크 검증, PC 이미지 필수, 위치 변경 시 새 위치 맨 뒤.
+  - 삭제(영구, D11)는 PC·모바일 이미지 파일까지 지운다. 일괄 처리는 항목별 활동 로그(Per-Item).
+  - 상태 필터·정렬은 SQL 에서 — PHP 에서 걸러 총건수·쪽 수가 어긋나지 않는다.
+  - 링크는 `//`·`/\` 로 시작하는 외부 유출 주소를 거부한다.
+  - 업로드 한도는 min(설정, PHP upload_max_filesize, post_max_size) 이며 PHP 한도 초과는 전용 안내로 응답한다.
+  - 순서 변경(D12)은 그 위치 전체 id 집합만 받는다.
+  - 이미지: 업로드는 언제나 임시 키 묶음(같은 기기 교체·형식/용량), 이미지 API 는 임시 이미지만 지운다.
+  - 등록·수정 화면 이미지는 「저장」 때만 반영 — 고른 이미지 ID 로 붙이고 옛 이미지는 떼어 지운다.
+    옛 파일 삭제가 실패하면 임시 이미지로 남아 정리 명령이 다시 지운다. 다른 배너·다른 화면의 이미지는 고를 수 없다.
+  - 위치 설정: 행이 없으면 기본값, 저장 때 upsert, 간격은 3·5·7초.
+  - 기간 입력은 사이트 시간대로 받아 UTC 로 저장한다(쿠폰 발급 기간 규약).
+  모든 쓰기는 before/after 훅을 발행하고 공개 캐시(해당 위치)를 지운다.
+
+axes:
+  surface:
+    - list_filter_position
+    - list_filter_status
+    - list_status_filter_paginates_in_sql
+    - list_sort_by_status
+    - list_search_title_all_locales
+    - list_statistics_by_position_and_status
+    - list_collection_abilities
+    - store_appends_to_position_end
+    - store_links_temp_images
+    - store_requires_pc_image
+    - store_requires_default_locale_title
+    - store_rejects_inactive_locale_key
+    - store_period_range_requires_dates
+    - store_period_end_after_start
+    - store_color_format
+    - store_align_enum
+    - link_url_accepts_internal_path
+    - link_url_accepts_http_absolute
+    - link_url_rejects_script_scheme
+    - link_url_rejects_protocol_relative
+    - link_url_rejects_backslash_variant
+    - period_site_timezone_stored_utc
+    - admin_period_display_in_site_timezone
+    - update_position_change_moves_to_end
+    - update_detects_changes_for_log
+    - show_returns_raw_translations_and_images
+    - destroy_removes_pc_and_mobile_files
+    - destroy_without_mobile_image_succeeds
+    - bulk_status_updates_each
+    - bulk_delete_removes_each_with_files
+    - bulk_ids_validation
+    - bulk_mutations_constant_queries
+    - bulk_status_logged_from_snapshot
+    - reorder_accepts_complete_set
+    - reorder_rejects_partial_set
+    - reorder_rejects_other_position_id
+    - image_upload_with_temp_key
+    - image_upload_replaces_same_device
+    - image_upload_requires_temp_key
+    - image_upload_rejects_type_and_size
+    - image_upload_over_server_limit_message
+    - image_attached_cannot_be_deleted
+    - image_temp_can_be_deleted
+    - update_image_upload_not_applied_until_save
+    - update_image_replaced_on_save
+    - update_image_mobile_removed_on_save
+    - update_image_kept_when_ids_omitted
+    - update_image_rejects_foreign_image
+    - update_image_release_failure_left_for_prune
+    - destroy_file_failure_left_for_prune
+    - store_links_one_image_per_device
+    - store_respects_selected_images
+    - store_double_submit_keeps_first_image
+    - position_settings_reports_upload_limits
+    - position_settings_default_when_missing
+    - position_settings_upsert
+    - position_settings_concurrent_first_save
+    - position_settings_pagination
+    - position_settings_interval_enum
+
+effects:
+  - hooks_before_after_fired
+  - activity_log_per_item
+  - public_cache_invalidated_for_position
+  - image_files_deleted
+  - sort_order_reassigned
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerImageControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerImageSaveTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionSettingControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Requests/BannerRequestTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Listeners/BannerActivityLogListenerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Listeners/HeroCacheListenerTest.php

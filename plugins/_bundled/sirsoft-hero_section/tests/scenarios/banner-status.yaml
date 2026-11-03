@@ -1,0 +1,24 @@
+feature: 배너 노출 상태 판정 (cron 없이 조회 시점 계산)
+
+description: |
+  상태는 저장하지 않고 now 기준으로 계산한다 — 비활성 > 예약 > 종료 > 노출중.
+  모델 접근자(PHP 판정)와 Repository 상태 필터(SQL 판정)가 같은 결과를 내는지 경계 시각마다 대조한다.
+  상시 노출 배너는 기간이 없으므로 now 위치 축이 의미 없다 — within 하나만 남긴다.
+
+axes:
+  display_period: [always, range]
+  is_active: [true, false]
+  now_position: [before_start, at_start, within, at_end, after_end]
+
+exclusions:
+  - { display_period: always, now_position: before_start, reason: "상시 노출은 시작 시각이 없다" }
+  - { display_period: always, now_position: at_start, reason: "상시 노출은 시작 시각이 없다" }
+  - { display_period: always, now_position: at_end, reason: "상시 노출은 종료 시각이 없다" }
+  - { display_period: always, now_position: after_end, reason: "상시 노출은 종료 시각이 없다" }
+
+effects:
+  - accessor_status_matches_query_filter
+  - public_exposure_matches_active_status
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/BannerStatusParityTest.php

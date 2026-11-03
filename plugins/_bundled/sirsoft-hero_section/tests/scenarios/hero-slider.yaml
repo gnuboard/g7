@@ -1,0 +1,64 @@
+feature: HeroSlider 사용자 슬라이더 컴포넌트
+
+description: |
+  플러그인 소유 컴포넌트 `sirsoft-hero_section.HeroSlider` 의 렌더·동작 계약(Vitest, jsdom).
+  배너 0개면 아무것도 그리지 않고, 1개면 컨트롤·자동 재생이 없다. PC/모바일 이미지는 picture 로 전환하고,
+  버튼 문구가 있으면 버튼만, 없으면 슬라이드 전체가 링크다(새 창이면 rel="noopener noreferrer"). 전체 링크는 슬라이드를 덮는 빈 링크이고
+  문구는 그 위 형제라 문구를 눌러도 링크로 간다.
+  첫 슬라이드 이미지는 즉시, 나머지는 지연 로딩하고, width·height·aspect-ratio 로 화면 밀림을 막는다. 자동 재생은 마우스·포커스·일시정지 단추·
+  reduced-motion 에서 멈춘다. 관리자 미리보기(HeroBannerPreview)는 같은 렌더 함수를 쓴다.
+  넘김은 Swiper(무한 반복·손가락 넘기기·PC 마우스 끌기, 효과 slide·fade·cube·flip·coverflow·creative·none)가 맡고, 좌우 화살표·점 표시는 Swiper 기본 모양의 이름 붙은 단추다 — 단위 시험은 Swiper 대역으로 옵션·호출·장 번호 동기만 보고,
+  실제 넘김·자동 재생·쓸기는 e2e-flows.yaml 의 slider_* 흐름이 실브라우저에서 본다. 자동으로 넘어가는 동안 장 번호는 읽지 않는다.
+  장 번호(「3개 중 1번째」)와 캐러셀·슬라이드 역할 이름은 사이트 언어로 슬라이드 이름에만 두고, 방문자가 넘긴 때만 알림 칸에 3초 채운다.
+  제목은 한 번만 읽힌다(전체 링크면 링크 이름, 제목과 같은 대체 문구의 이미지는 장식). 점 표시는 10px 로 보이되 누를 자리는 24px(slider-a11y.spec.ts).
+
+axes:
+  surface:
+    - renders_nothing_when_empty
+    - single_banner_hides_controls
+    - loop_and_touch_swipe_enabled
+    - picture_has_mobile_source
+    - picture_omits_mobile_source_when_missing
+    - text_visibility_color_align
+    - button_text_makes_button_link
+    - empty_button_makes_whole_slide_link
+    - new_window_sets_rel_noopener_noreferrer
+    - autoplay_advances_by_interval
+    - autoplay_pauses_on_hover_and_focus
+    - pointer_click_does_not_hold_autoplay
+    - pause_button_toggles_autoplay
+    - reduced_motion_disables_autoplay
+    - effect_fade_and_none
+    - prev_next_buttons_and_keyboard
+    - carousel_aria_roles_and_counter
+    - counter_not_announced_while_autoplaying
+    - counter_announced_only_on_visitor_change
+    - title_read_once
+    - pagination_bullet_target_24px
+    - carousel_labels_follow_locale
+    - motion_does_not_make_text_scroll
+    - preview_static_without_swiper
+    - swiper_styles_vendor_asset
+    - index_resets_when_banners_change
+    - first_image_eager_rest_lazy
+    - next_slide_preloaded_before_transition
+    - images_have_dimensions_and_aspect_ratio
+    - aspect_ratio_falls_back_to_recommended
+    - preview_renders_device_frame
+    - swiper_pagination_and_arrows
+    - swiper_extra_effects
+    - loading_skeleton_until_response
+    - loading_skeleton_remembers_slot
+
+effects:
+  - accessible_carousel_semantics
+  - responsive_image_switch
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroBannerPreview.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSwiperStyles.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/swiper-ui.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/loading-skeleton.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/slider-a11y.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/text-motion-scroll.spec.ts
