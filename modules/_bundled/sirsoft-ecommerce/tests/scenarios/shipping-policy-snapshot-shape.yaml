@@ -1,0 +1,21 @@
+feature: 주문 배송정책 스냅샷 구조 분리 (items 리스트 + address)
+
+description: |
+  shipping_policy_applied_snapshot 은 종전에 항목 리스트(정수 키)와 배송지 메타('address')를 한 배열에
+  섞어 저장해 json_encode 가 객체로 직렬화했고, 프론트의 .find 가 죽어 주문 상세 배송정책 블록이 사라졌다.
+  ShippingPolicySnapshot 이 {items: [...], address: {...}} 로 분리해 JSON 왕복 후에도 items 를 배열로 유지하고,
+  구형 혼합 배열·빈 스냅샷도 같은 구조로 정규화하며, 옵션별 정책 맵 변환은 신형/구형에서 같은 결과를 낸다.
+
+axes:
+  case: [modern_snapshot, empty_snapshot, legacy_mixed_snapshot]
+
+effects:
+  - items_serialized_as_json_array
+  - address_separated_from_items
+  - legacy_mixed_snapshot_normalized
+  - normalization_is_idempotent
+  - empty_snapshot_normalized_to_empty_structure
+  - option_policy_map_same_for_legacy_and_modern
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingPolicySnapshotShapeTest.php

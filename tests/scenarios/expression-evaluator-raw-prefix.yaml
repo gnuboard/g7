@@ -1,0 +1,18 @@
+feature: SEO 렌더러 {{raw:...}} 번역 면제 바인딩 패리티
+
+description: |
+  봇(SEO) 렌더러의 ExpressionEvaluator 가 React 렌더러와 같이 `raw:` 접두사를 벗긴 뒤 표현식을 평가해야 한다.
+  raw 바인딩 결과의 $t: 토큰은 번역하지 않고, raw 가 없는 바인딩은 종전대로 번역한다.
+  evaluateRaw() 도 접두사를 벗기고 원본 타입을 유지한다.
+
+axes:
+  case: [raw_binding, plain_binding, evaluate_raw]
+
+effects:
+  - raw_prefix_stripped_before_evaluation
+  - raw_result_translation_exempt
+  - plain_binding_translates_tokens
+  - evaluate_raw_strips_prefix_keeps_type
+
+test_files:
+  - tests/Unit/Seo/ExpressionEvaluatorRawPrefixTest.php

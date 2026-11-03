@@ -15,6 +15,7 @@ use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
 
@@ -58,12 +59,21 @@ use Tests\TestCase;
  */
 class ModuleArtisanCommandsTest extends TestCase
 {
+    use FakesGithubReleases;
     use ProtectsExtensionDirectories;
     use RefreshDatabase;
 
+    /**
+     * GitHub 접속을 막고 확장 디렉토리 보호를 켠 뒤 모듈 매니저가 모듈 디렉토리를 스캔하게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
 
         // 활성 디렉토리 보호 — uninstall 등이 dev 환경 디렉토리를 삭제하는 것을 차단
         $this->setUpExtensionProtection();
@@ -73,6 +83,11 @@ class ModuleArtisanCommandsTest extends TestCase
         $moduleManager->loadModules();
     }
 
+    /**
+     * 확장 디렉토리 보호를 해제한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->tearDownExtensionProtection();
@@ -87,6 +102,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * module:list 커맨드가 모듈 목록을 정상적으로 출력하는지 테스트
+     *
+     * @scenario case=list
+     *
+     * @effects module_list_renders_with_status_filter
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_displays_modules(): void
     {
@@ -96,6 +117,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * module:list 커맨드가 상태 필터를 정상적으로 처리하는지 테스트
+     *
+     * @scenario case=list
+     *
+     * @effects module_list_renders_with_status_filter, module_list_rejects_unknown_status_filter
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_filters_by_status(): void
     {
@@ -114,6 +141,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * module:list 커맨드가 모듈이 없을 때 적절한 메시지를 출력하는지 테스트
+     *
+     * @scenario case=list
+     *
+     * @effects module_list_reports_empty_result_message
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_shows_message_when_no_modules(): void
     {
@@ -126,6 +159,12 @@ class ModuleArtisanCommandsTest extends TestCase
      * module:install 커맨드가 존재하지 않는 모듈에 대해 실패하는지 테스트
      *
      * 이 테스트는 DDL을 유발하지 않음 (모듈이 없어서 마이그레이션 실행 안 됨)
+     *
+     * @scenario case=missing_target
+     *
+     * @effects command_fails_for_unknown_or_uninstalled_module
+     *
+     * @return void 반환값 없음
      */
     public function test_install_command_fails_for_nonexistent_module(): void
     {
@@ -137,6 +176,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * module:check-updates 커맨드가 존재하지 않는 모듈에 대해 실패하는지 테스트
+     *
+     * @scenario case=missing_target
+     *
+     * @effects command_fails_for_unknown_or_uninstalled_module
+     *
+     * @return void 반환값 없음
      */
     public function test_check_updates_fails_for_nonexistent_module(): void
     {
@@ -148,6 +193,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * module:update 커맨드가 미설치 모듈에 대해 실패하는지 테스트
+     *
+     * @scenario case=missing_target
+     *
+     * @effects command_fails_for_unknown_or_uninstalled_module
+     *
+     * @return void 반환값 없음
      */
     public function test_update_fails_for_noninstalled_module(): void
     {
@@ -159,6 +210,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * module:update --force 커맨드가 미설치 모듈에 대해 실패하는지 테스트
+     *
+     * @scenario case=missing_target
+     *
+     * @effects command_fails_for_unknown_or_uninstalled_module
+     *
+     * @return void 반환값 없음
      */
     public function test_update_force_fails_for_noninstalled_module(): void
     {
@@ -173,6 +230,12 @@ class ModuleArtisanCommandsTest extends TestCase
      *
      * 실재하는 상태 키(ext.modules.*_identifiers)가 소멸하고 캐시 버전이 bump 되는지
      * 검증한다 (#588 — 기존 forget 대상은 writer 없는 유령 키였다).
+     *
+     * @scenario case=cache_clear
+     *
+     * @effects cache_clear_all_purges_status_and_middleware_index_and_bumps_version
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_clear_command_clears_all_caches(): void
     {
@@ -213,6 +276,12 @@ class ModuleArtisanCommandsTest extends TestCase
      * 해석 캐시(layout_resolver.{templateId}.{name})는 버전 접미사 없는 고정 키로
      * 레이아웃 row ID 를 저장하므로, 커맨드가 능동 삭제하지 않으면 TTL 동안
      * 이전 해석 결과가 유지된다 (#588 동종 보강).
+     *
+     * @scenario case=cache_clear
+     *
+     * @effects cache_clear_single_also_purges_module_layout_resolver_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_clear_command_clears_single_module_cache(): void
     {
@@ -265,6 +334,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * module:cache-clear 커맨드가 존재하지 않는 모듈에 대해 실패하는지 테스트
+     *
+     * @scenario case=missing_target
+     *
+     * @effects command_fails_for_unknown_or_uninstalled_module
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_clear_command_fails_for_nonexistent_module(): void
     {
@@ -320,6 +395,12 @@ class ModuleArtisanCommandsTest extends TestCase
      * Part 6: 전체 라이프사이클 워크플로우
      *   - install → activate → deactivate → uninstall 순서 실행
      * ─────────────────────────────────────────────────────────────────────
+     *
+     * @scenario case=lifecycle_workflow
+     *
+     * @effects lifecycle_commands_transition_status_with_duplicate_warnings, uninstall_confirmation_respected_and_permissions_preserved, command_fails_for_unknown_or_uninstalled_module
+     *
+     * @return void 반환값 없음
      */
     public function test_z_module_commands_full_workflow(): void
     {
@@ -506,6 +587,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * 잘못된 식별자 형식으로 모듈 설치 시 FAILURE 반환
+     *
+     * @scenario case=invalid_identifier
+     *
+     * @effects invalid_identifier_format_rejected_on_install
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_invalid_identifier_format(): void
     {
@@ -515,6 +602,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * 숫자로 시작하는 단어가 포함된 식별자로 모듈 설치 시 FAILURE 반환
+     *
+     * @scenario case=invalid_identifier
+     *
+     * @effects invalid_identifier_format_rejected_on_install
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_digit_starting_identifier(): void
     {
@@ -524,6 +617,12 @@ class ModuleArtisanCommandsTest extends TestCase
 
     /**
      * 대문자가 포함된 식별자로 모듈 설치 시 FAILURE 반환
+     *
+     * @scenario case=invalid_identifier
+     *
+     * @effects invalid_identifier_format_rejected_on_install
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_uppercase_identifier(): void
     {

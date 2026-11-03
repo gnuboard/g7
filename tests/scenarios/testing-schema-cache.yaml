@@ -1,0 +1,78 @@
+feature: 테스트 DB 스키마 재사용(마이그레이션이 바뀌지 않았으면 migrate:fresh 생략)
+
+description: |
+  DB 를 쓰는 테스트가 프로세스마다 마이그레이션 300여 개로 테스트 DB 를 처음부터 다시 만들던 것(약 50초)을, 마이그레이션 지문·환경 키·
+  migrations 이름 집합·DB 실물 구조 지문이 기록과 모두 같을 때만 스키마를 재사용하고 잔여 행을 정리하도록 바꿨다(하나라도 다르면 전체 재생,
+  재생 전 기록 삭제). 같은 테스트 DB 는 프로세스 잠금으로 한 실행만 쓰고, 요구 프로필(시드·시드 없음)은 베이스 클래스 선언을 따른다.
+  트랜잭션 테스트 안 DDL 의 암묵 커밋은 다음 테스트 전 재판정을 유발하고, 강제 재생은 G7_TEST_FRESH_SCHEMA(1 = 프로세스당 1회, 그 밖 = 실행 ID)다.
+
+axes:
+  case: [no_record, fingerprint_or_env_changed, migration_set_mismatch, structure_changed, all_match, force_once, force_run_id, order_independent, input_changed, imports_and_logic, write_read, unusable_record, delete_and_state, held_by_other, acquired, child_process, verified_any, state_changed, profile_mismatch, fatal, core_and_unseeded_plugin, seeded_bases, first_use_bases, excluded, migrator_parity, extension_base_parity, stable, detects_changes, long_definitions, residual_rows, migration_batches, auto_increment, failure, round_trip, ddl_in_transaction, next_test_redecides, reuse, column_order_restore, removed_extension_migration, removed_extension_with_irreversible_migration, read_only, committed_write]
+
+effects:
+  # 판정
+  - missing_record_forces_fresh
+  - source_change_forces_fresh
+  - partial_schema_forces_fresh
+  - schema_drift_forces_fresh
+  - structure_checksum_evaluated_lazily
+  - matching_schema_is_reused
+  - force_value_one_refreshes_once_per_process
+  - run_id_refreshes_once_across_processes
+  # 지문·구조
+  - fingerprint_ignores_path_order
+  - fingerprint_tracks_every_schema_input
+  - checksum_ignores_rows_and_auto_increment
+  - checksum_detects_schema_drift
+  - checksum_untruncated_beyond_1024_chars
+  # 기록·잠금
+  - record_written_atomically
+  - unusable_record_treated_as_missing
+  - record_deleted_before_fresh
+  - state_token_changes_on_touch
+  - second_process_fails_fast_with_owner_pid
+  - owner_pid_exported_to_children
+  - child_process_skips_lock
+  # 테스트마다 판정 필요 여부·요구 프로필
+  - verified_schema_skips_decision
+  - changed_state_triggers_decision
+  - profile_requirement_enforced
+  - failed_fresh_stops_process_immediately
+  - requirement_follows_base_class_declaration
+  - shared_seeder_shares_profile
+  - isolated_and_pure_tests_skip_schema
+  # 정규 집합
+  - canonical_set_matches_migrator
+  - canonical_set_matches_extension_base
+  - active_copies_excluded
+  # 잔여 행 정리·기준 행
+  - residual_rows_removed
+  - baseline_rows_restored
+  - migrations_record_count_kept
+  - migration_batches_restored_to_fresh_layout
+  - committed_write_without_transaction_marks_dirty
+  - empty_table_auto_increment_kept
+  - foreign_key_checks_restored_on_failure
+  - baseline_round_trips_every_column_type
+  # 암묵 커밋·재사용 경로
+  - implicit_commit_marks_schema_dirty
+  - removed_migrations_restored_after_test
+  - reuse_path_completes_quickly
+  - column_order_restored_with_same_definition
+
+test_files:
+  - tests/Unit/Testing/SchemaCache/DecisionTest.php
+  - tests/Unit/Testing/SchemaCache/FingerprintTest.php
+  - tests/Unit/Testing/SchemaCache/RecordStoreTest.php
+  - tests/Unit/Testing/SchemaCache/ProcessLockTest.php
+  - tests/Unit/Testing/SchemaCache/EnsureNeedTest.php
+  - tests/Unit/Testing/SchemaCache/RequirementResolverTest.php
+  - tests/Unit/Testing/SchemaCache/CanonicalMigrationFilesTest.php
+  - tests/Feature/Testing/SchemaCache/StructureChecksumTest.php
+  - tests/Feature/Testing/SchemaCache/DataResetTest.php
+  - tests/Feature/Testing/SchemaCache/BaselineRoundTripTest.php
+  - tests/Feature/Testing/SchemaCache/DirtyDetectionTest.php
+  - tests/Feature/Testing/SchemaCache/EnsureReusePathTest.php
+  - tests/Feature/Testing/SchemaCache/ColumnOrderRestoreTest.php
+  - tests/Feature/Testing/SchemaCache/RemovedMigrationRestoreTest.php
+  - tests/Feature/Testing/SchemaCache/CommittedWriteWithoutTransactionTest.php

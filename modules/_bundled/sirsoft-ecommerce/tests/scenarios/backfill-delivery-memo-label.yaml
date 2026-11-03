@@ -1,0 +1,18 @@
+feature: 배송 메모 라벨 백필 업그레이드 (1.0.0)
+
+description: |
+  기존 주문 배송지의 delivery_memo(프리셋 키 또는 자유 텍스트)를 delivery_memo_label 로 채우는
+  BackfillDeliveryMemoLabel 데이터 마이그레이션의 계약. 프리셋 키는 현재 로케일 문구로, 자유 텍스트는
+  원문 그대로 기록하고, 이미 라벨이 있거나 메모가 비어 있는 행은 건드리지 않는다.
+
+axes:
+  case: [preset_key, custom_text, label_already_filled, empty_memo]
+
+effects:
+  - preset_key_backfilled_with_locale_label
+  - custom_text_copied_as_label
+  - existing_label_preserved
+  - empty_memo_left_null
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/BackfillDeliveryMemoLabelTest.php

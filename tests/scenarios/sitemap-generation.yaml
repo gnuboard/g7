@@ -46,6 +46,11 @@ effects:
   - incremental_skips_rebalance
   # ── 다국어 (P1) ──
   - hreflang_bounded
+  # ── 기여자 배열 ↔ 지연 스트림 브리지 (P1) ──
+  - contributor_lazy_streams_array_urls
+  - contributor_array_materializes_lazy_urls
+  - contributor_lazy_defers_execution_until_iterated
+  - contributor_base_implements_contributor_interface
   # ── 진행상황 / 실시간 (P3) ──
   - progress_recorded_per_phase
   - progress_broadcast_when_reverb_on

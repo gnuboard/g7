@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 걷어낸 조각(`admin_order_list_test_badge`·`checkout_easy_pay`)의 남은 파일·등록 행 정리 (R1).
@@ -62,7 +63,7 @@ class PruneRetiredExtensionFragmentsTest extends PluginTestCase
         parent::setUp();
 
         // DataMigration 은 AbstractUpgradeStep 이 동적으로 require 하므로 일반 autoload 대상이 아니다.
-        require_once base_path('plugins/_bundled/'.self::SELF.'/upgrades/data/1.1.0/migrations/PruneRetiredExtensionFragments.php');
+        UpgradeFiles::requireOnce(base_path('plugins/_bundled/'.self::SELF.'/upgrades/data/1.1.0/migrations/PruneRetiredExtensionFragments.php'));
 
         $this->templateId = $this->ensureTemplate();
         DB::table(self::TABLE)->where('template_id', $this->templateId)->delete();

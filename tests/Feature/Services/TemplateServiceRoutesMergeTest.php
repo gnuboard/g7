@@ -9,6 +9,8 @@ use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Extension\Helpers\ExtensionPendingHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Models\Template;
 use App\Repositories\TemplateRepository;
 use App\Services\TemplateService;
@@ -34,6 +36,11 @@ class TemplateServiceRoutesMergeTest extends TestCase
     /** @var bool 활성 디렉토리가 테스트 전에 이미 존재했는지 (tearDown에서 정리 판단용) */
     private bool $boardExistedBefore = false;
 
+    /**
+     * 번들 게시판 모듈을 활성 디렉토리로 복사하고 매니저 목을 주입한 TemplateService 를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,7 +50,7 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $bundledPath = base_path('modules/_bundled/sirsoft-board');
         $this->boardExistedBefore = File::isDirectory($activePath);
         if (! $this->boardExistedBefore && File::isDirectory($bundledPath)) {
-            File::copyDirectory($bundledPath, $activePath);
+            FilePermissionHelper::copyDirectory($bundledPath, $activePath, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
         }
 
         // Mock 의존성
@@ -65,6 +72,11 @@ class TemplateServiceRoutesMergeTest extends TestCase
         );
     }
 
+    /**
+     * 테스트가 새로 만든 게시판 모듈 활성 디렉토리만 지우고 원래 있던 디렉토리는 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트에서 생성한 활성 디렉토리만 정리 (기존에 있었으면 건드리지 않음)
@@ -78,6 +90,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 활성 모듈이 없을 때 활성 템플릿의 routes 와 version 을 성공 응답으로 돌려준다.
+     *
+     * @scenario case=template_routes
+     *
+     * @effects template_routes_returned_with_version
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function get_routes_data_returns_template_routes(): void
     {
@@ -109,7 +130,13 @@ class TemplateServiceRoutesMergeTest extends TestCase
     }
 
     /**
-     * @effects code_editor_restores_layout_from_route_query
+     * 레이아웃 이름을 라우트 path 로 매핑하고, 라우트가 없는 base 레이아웃은 매핑에서 뺀다.
+     *
+     * @scenario case=layout_route_path_map
+     *
+     * @effects code_editor_restores_layout_from_route_query, layout_route_path_map_excludes_routeless_layouts
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function get_layout_route_path_map_maps_layout_name_to_route_path(): void
@@ -135,6 +162,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertArrayNotHasKey('_user_base', $map, 'base 레이아웃은 라우트가 없어 매핑에서 제외');
     }
 
+    /**
+     * routes.json 이 없는 템플릿의 레이아웃-경로 매핑은 빈 배열이다.
+     *
+     * @scenario case=layout_route_path_map
+     *
+     * @effects layout_route_path_map_empty_without_routes_file
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function get_layout_route_path_map_returns_empty_for_template_without_routes(): void
     {
@@ -156,6 +192,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertSame([], $map);
     }
 
+    /**
+     * 활성 게시판 모듈의 /admin/boards 라우트가 템플릿 routes 에 병합된다.
+     *
+     * @scenario case=module_merge
+     *
+     * @effects active_module_routes_merged_into_template_routes
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function module_routes_data_is_merged_with_template_routes(): void
     {
@@ -201,6 +246,12 @@ class TemplateServiceRoutesMergeTest extends TestCase
      * 이 순간의 응답이 캐시 버전 키에 남으면, 업데이트가 끝난 뒤에도 캐시가 만료될 때까지
      * 해당 모듈의 모든 화면이 404 가 된다 — 버전은 이미 올라간 뒤라 스스로 회복되지 않는다.
      * 캐시 여부를 판단할 수 있도록 병합 결과가 열화였음을 알려야 한다.
+     *
+     * @scenario case=degraded_flag
+     *
+     * @effects missing_active_module_directory_flags_degraded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function route_merge_is_flagged_degraded_when_active_module_directory_is_missing(): void
@@ -237,6 +288,12 @@ class TemplateServiceRoutesMergeTest extends TestCase
      * 정상 상태에서는 열화로 표시되지 않는지 확인합니다 (과잉 차단 방지).
      *
      * 열화 판정이 헐거우면 모든 응답이 캐시되지 않아 매 요청이 디스크 병합으로 떨어진다.
+     *
+     * @scenario case=degraded_flag
+     *
+     * @effects normal_merge_not_flagged_degraded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function route_merge_is_not_flagged_degraded_in_normal_state(): void
@@ -264,6 +321,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertFalse($result['degraded']);
     }
 
+    /**
+     * 존재하지 않는 템플릿을 조회하면 template_not_found 오류를 돌려준다.
+     *
+     * @scenario case=error_response
+     *
+     * @effects unavailable_template_returns_template_not_found
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function returns_error_for_nonexistent_template(): void
     {
@@ -277,6 +343,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertEquals('template_not_found', $result['error']);
     }
 
+    /**
+     * 활성 템플릿이라도 routes.json 이 없으면 routes_not_found 오류를 돌려준다.
+     *
+     * @scenario case=error_response
+     *
+     * @effects missing_routes_file_returns_routes_not_found
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function returns_error_when_routes_file_not_found(): void
     {
@@ -300,6 +375,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertEquals('routes_not_found', $result['error']);
     }
 
+    /**
+     * 병합 결과에 템플릿 라우트(/admin/dashboard)와 모듈 라우트(/admin/boards)가 함께 들어 있다.
+     *
+     * @scenario case=module_merge
+     *
+     * @effects active_module_routes_merged_into_template_routes
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function module_routes_merged_correctly(): void
     {
@@ -343,6 +427,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertNotEmpty($moduleRoute, 'Module routes should be merged');
     }
 
+    /**
+     * 비활성 템플릿을 조회하면 존재하지 않는 경우와 같이 template_not_found 오류를 돌려준다.
+     *
+     * @scenario case=error_response
+     *
+     * @effects unavailable_template_returns_template_not_found
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function returns_error_for_inactive_template(): void
     {
@@ -360,6 +453,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertEquals('template_not_found', $result['error']);
     }
 
+    /**
+     * 설정을 가진 활성 플러그인마다 설정 라우트를 자동 생성하고 layout·제목·identifier 파라미터를 채운다.
+     *
+     * @scenario case=plugin_settings_routes
+     *
+     * @effects plugin_settings_route_generated_per_plugin_with_settings
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function plugin_settings_routes_auto_generated_for_plugins_with_settings(): void
     {
@@ -422,6 +524,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
             'params.identifier가 플러그인 식별자와 일치해야 함');
     }
 
+    /**
+     * 설정이 없는 플러그인에는 설정 라우트를 만들지 않는다.
+     *
+     * @scenario case=plugin_settings_routes
+     *
+     * @effects plugin_without_settings_gets_no_settings_route
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function plugin_without_settings_does_not_get_settings_route(): void
     {
@@ -461,6 +572,15 @@ class TemplateServiceRoutesMergeTest extends TestCase
         $this->assertEmpty($settingsRoutes, '설정 없는 플러그인에 설정 라우트가 없어야 함');
     }
 
+    /**
+     * 플러그인 설정 라우트마다 그 플러그인 자신의 plugin_settings 레이아웃이 연결되고 서로 공유되지 않는다.
+     *
+     * @scenario case=plugin_settings_routes
+     *
+     * @effects plugin_settings_route_uses_own_layout
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function each_plugin_gets_its_own_layout_not_shared(): void
     {
@@ -526,6 +646,12 @@ class TemplateServiceRoutesMergeTest extends TestCase
      * 편집기 경로가 한 번 열화를 만나면 그 판정이 인스턴스에 남아, 모듈 디렉토리가
      * 복구된 뒤의 병합까지 열화로 보고된다. 열화 응답은 캐시되지 않으므로
      * 편집기 라우트 트리가 매 요청 디스크 병합으로 떨어진다.
+     *
+     * @scenario case=degraded_flag
+     *
+     * @effects editor_merge_resets_degraded_state_per_call
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function editor_route_merge_does_not_inherit_previous_degraded_state(): void
@@ -573,6 +699,12 @@ class TemplateServiceRoutesMergeTest extends TestCase
 
     /**
      * 진입 리셋을 넣은 뒤에도 편집기 경로의 열화 검출이 살아 있는지 확인합니다 (과잉 리셋 방지).
+     *
+     * @scenario case=degraded_flag
+     *
+     * @effects missing_active_module_directory_flags_degraded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function editor_route_merge_still_flags_missing_module_directory(): void

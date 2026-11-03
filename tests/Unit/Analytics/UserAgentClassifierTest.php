@@ -4,7 +4,7 @@ namespace Tests\Unit\Analytics;
 
 use App\Analytics\UserAgentClassifier;
 use App\Enums\Analytics\DeviceType;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * User-Agent 분류 — 브라우저·운영체제·기기.
@@ -13,7 +13,7 @@ use Tests\TestCase;
  * "Chrome", 안드로이드 안의 "Linux"), 순서를 잘못 두면 전 방문이 엉뚱한 브라우저로
  * 집계된다 — 숫자는 그럴듯해 보이므로 화면만 봐서는 드러나지 않는다.
  */
-class UserAgentClassifierTest extends TestCase
+class UserAgentClassifierTest extends PureTestCase
 {
     /**
      * 데스크톱 브라우저를 가른다.

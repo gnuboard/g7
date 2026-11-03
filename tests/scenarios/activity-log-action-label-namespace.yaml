@@ -48,8 +48,13 @@ effects:
   - extension_manager_handles_internal_underscore_via_pascal_to_snake
   - extension_manager_returns_null_for_app_namespace
   - extension_manager_returns_null_for_too_short_namespace
+  - extension_manager_returns_null_for_unknown_namespace
+  - extension_manager_returns_null_for_empty_fqcn
+  - extension_manager_ignores_leading_backslash
+  - extension_manager_round_trips_directory_to_namespace
   - ja_locale_module_lang_resolved_via_module_lang_pack
   - ja_locale_core_lang_resolved_via_core_lang_pack
+  - module_lang_action_labels_defined_for_module_origin
 
 test_files:
   - tests/Unit/Extension/ExtensionManagerResolveByFqcnTest.php

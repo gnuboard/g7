@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\DTO;
 use Modules\Sirsoft\Ecommerce\DTO\AppliedShippingPolicy;
 use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * OrderCalculationResult::getShippingByPolicy 정책별 집계 테스트 (S-Q26-b)
@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 시나리오 매니페스트: `tests/scenarios/partial-cancel-row-allocation.yaml`
  */
-class OrderCalculationResultTest extends ModuleTestCase
+class OrderCalculationResultTest extends PureTestCase
 {
     /**
      * 정책 몫을 가진 결과 아이템을 만듭니다.

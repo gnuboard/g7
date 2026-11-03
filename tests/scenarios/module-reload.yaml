@@ -1,0 +1,16 @@
+feature: 확장 업데이트 시 진입점 클래스 재로드 메커니즘 존재 계약
+
+description: |
+  모듈·플러그인 업데이트 때 진입점 클래스를 메모리에 다시 올리는 reloadModule·evalFreshModule,
+  reloadPlugin·evalFreshPlugin 메서드가 제거되거나 필수 매개변수 개수가 바뀌지 않았는지 지킨다.
+  실제 eval 동작은 다루지 않고 존재·시그니처 계약만 확인한다.
+
+axes:
+  case: [module_manager, plugin_manager]
+
+effects:
+  - module_reload_methods_exist_with_signature
+  - plugin_reload_methods_exist_with_signature
+
+test_files:
+  - tests/Feature/Extension/ModuleReloadTest.php

@@ -8,14 +8,14 @@ use App\Models\Menu;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * MenuUserOverridesListener 테스트
  *
  * 메뉴 업데이트/순서 변경/역할 동기화 시 user_overrides 필드 기록을 검증합니다.
  */
-class MenuUserOverridesListenerTest extends TestCase
+class MenuUserOverridesListenerTest extends PureTestCase
 {
     use MockeryPHPUnitIntegration;
 

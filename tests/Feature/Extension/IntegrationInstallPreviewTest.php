@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Validator;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use RuntimeException;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -37,6 +38,7 @@ use Tests\TestCase;
 class IntegrationInstallPreviewTest extends TestCase
 {
     use DatabaseTransactions;
+    use FakesGithubReleases;
     use MockeryPHPUnitIntegration;
 
     private string $fixturePath;
@@ -49,6 +51,9 @@ class IntegrationInstallPreviewTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
 
         $this->fixturePath = base_path('templates/test-integration_preview');
         File::deleteDirectory($this->fixturePath);

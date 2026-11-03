@@ -1,0 +1,22 @@
+feature: 활동 로그 변경 이력 감지(ChangeDetector)
+
+description: |
+  ChangeDetector::detect 가 모델의 $activityLogFields 선언과 스냅샷을 비교해 바뀐 추적 필드만
+  field·label_key·type·old·new 구조로 돌려주는 계약을 지킨다. enum 필드는 old·new 라벨 키를 함께 싣고,
+  스냅샷의 BackedEnum 객체는 값으로 바꿔 비교하며, 변경이 없거나 스냅샷·추적 선언이 없으면 null 을 돌려준다.
+
+axes:
+  case: [text_field_change, no_change, enum_field_change, untracked_field]
+
+effects:
+  - changed_text_fields_reported_with_label_key
+  - unchanged_snapshot_yields_null
+  - missing_snapshot_yields_null
+  - enum_change_carries_old_and_new_label_keys
+  - null_enum_old_value_has_null_label_key
+  - untracked_fields_ignored
+  - model_without_tracked_fields_yields_null
+  - backed_enum_snapshot_compared_by_value
+
+test_files:
+  - tests/Unit/ActivityLog/ChangeDetectorTest.php

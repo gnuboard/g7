@@ -2,7 +2,7 @@
 
 namespace Plugins\Sirsoft\VerificationKginicis\Tests\Feature\Libs;
 
-use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * KG이니시스 SEED 라이브러리(INILib.php / KISA_SEED_CBC.php) 재선언 가드 회귀 테스트.
@@ -15,12 +15,16 @@ use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
  *
  * @since 1.0.0-beta.1
  */
-class SeedLibRedeclareGuardTest extends PluginTestCase
+class SeedLibRedeclareGuardTest extends PureTestCase
 {
     /**
      * autoload 로 이미 로드된 라이브러리를 재차 require 해도 fatal 없이 통과한다.
      *
-     * @return void
+     * @scenario case=repeated_require
+     *
+     * @effects seed_libs_require_again_without_redeclare_fatal
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_libs_can_be_required_again_without_redeclare_fatal(): void
     {
@@ -47,7 +51,11 @@ class SeedLibRedeclareGuardTest extends PluginTestCase
      * 동작한다 (실사용 decrypt_SEED 입력은 KG이니시스가 보낸 블록 정렬 암호문). 테스트도
      * 16바이트 배수 평문으로 라운드트립을 검증한다.
      *
-     * @return void
+     * @scenario case=encrypt_roundtrip
+     *
+     * @effects seed_encrypt_decrypt_roundtrip_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_encrypt_decrypt_roundtrip(): void
     {

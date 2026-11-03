@@ -1,0 +1,18 @@
+feature: 이커머스 결제수단 설정 레이아웃 보정 리스너
+
+description: |
+  결제수단 카탈로그가 pg_locked / needs_pg 를 내려주고 코어 레이아웃이 직접 분기하므로(#475),
+  리스너는 분기 표현식을 치환하지 않고 주문 설정 탭에 테스트모드 경고만 멱등하게 주입한다.
+  이커머스 설정 외 레이아웃은 손대지 않는다.
+
+axes:
+  case: [hook_subscription, settings_layout, other_layout]
+
+effects:
+  - subscribed_as_layout_after_apply_filter
+  - pg_branch_expressions_preserved
+  - test_mode_warning_injected_once_before_payment_methods
+  - other_layouts_unchanged
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/AdjustEcommercePaymentMethodsLayoutListenerTest.php

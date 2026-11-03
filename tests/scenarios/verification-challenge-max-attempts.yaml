@@ -1,0 +1,16 @@
+feature: 본인인증 챌린지 DTO 의 최대 시도 횟수 노출
+
+description: |
+  VerificationChallenge DTO 가 maxAttempts 필드를 보유하고(기본값 0), toArray() 가 max_attempts 키로
+  응답 페이로드에 노출하는지 지킨다. 프론트 launcher 가 하드코딩 5회로 fallback 하던 결함(#275)의 회귀를 막는다.
+
+axes:
+  case: [named_argument, default_value, to_array_payload]
+
+effects:
+  - max_attempts_field_holds_given_value
+  - max_attempts_defaults_to_zero
+  - max_attempts_exposed_in_payload
+
+test_files:
+  - tests/Unit/Extension/IdentityVerification/DTO/VerificationChallengeMaxAttemptsTest.php

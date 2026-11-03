@@ -6,6 +6,7 @@ use App\Extension\UpgradeContext;
 use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * claim 설정 병합 스텝이 실제 판정값(order_settings.cancellable_statuses)도 1.2.x 값으로 고정하는지 (7.1.0 출시 점검 EU-3)
@@ -46,8 +47,8 @@ class MergeClaimSettingsCancellableStatusesTest extends ModuleTestCase
         $this->originalClaim = File::exists($this->claimPath) ? File::get($this->claimPath) : null;
         File::ensureDirectoryExists($dir);
 
-        require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/03_MergeClaimSettingsDefaults.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/03_MergeClaimSettingsDefaults.php');
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\MergeClaimSettingsDefaults';
 

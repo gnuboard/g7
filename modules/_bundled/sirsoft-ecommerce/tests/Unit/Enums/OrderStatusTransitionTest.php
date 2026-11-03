@@ -3,8 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Enums;
 
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\PureTestCase;
 
 /**
  * 주문 상태 전이 규칙(OrderStatusEnum 전이 맵 SSoT) 테스트
@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * A30 — 역방향/비연속 역행 전이 차단. progressOrder/allowedTransitions/canTransitionTo
  * 게이트의 전수 매트릭스(10×10=100쌍) 단언.
  */
-class OrderStatusTransitionTest extends ModuleTestCase
+class OrderStatusTransitionTest extends PureTestCase
 {
     /**
      * 진행 순서 SSoT 가 취소 제외 9단계로 구성되는지 검증합니다.

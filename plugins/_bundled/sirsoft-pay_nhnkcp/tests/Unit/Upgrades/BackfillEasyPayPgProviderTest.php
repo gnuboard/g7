@@ -9,8 +9,9 @@ use App\Support\ExtensionStoragePath;
 use App\Upgrades\Data\Ext\Plugins\SirsoftPayNhnkcp\V1_0_0_beta_4\Migrations\BackfillEasyPayPgProvider;
 use Illuminate\Support\Facades\File;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
-require_once dirname(__DIR__, 3).'/upgrades/data/1.0.0-beta.4/migrations/BackfillEasyPayPgProvider.php';
+UpgradeFiles::requireOnce(dirname(__DIR__, 3).'/upgrades/data/1.0.0-beta.4/migrations/BackfillEasyPayPgProvider.php');
 
 /**
  * 저장된 주문설정의 NHN KCP 간편결제 PG 고정 백필 테스트 — 이슈 #475
@@ -27,6 +28,11 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
 
     private ?string $originalSettings = null;
 
+    /**
+     * 이커머스 주문설정 파일 경로를 잡고 기존 원본 내용을 백업한 뒤 설정 디렉터리를 마련한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +44,11 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
         File::ensureDirectoryExists(dirname($this->settingsPath));
     }
 
+    /**
+     * 백업해 둔 원본 주문설정을 되돌리고, 원본이 없었으면 테스트가 만든 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->hadOriginalSettings && $this->originalSettings !== null) {
@@ -50,9 +61,13 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
     }
 
     /**
+     * pg_provider 가 null 로 저장된 NHN KCP 간편결제 수단에 PG·pg_locked·needs_pg·환불방식을 채우고 관리자 활성값은 보존한다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=pg_locked
      *
      * @effects upgrade_step_backfills_settings_file, saved_null_pg_provider_self_healed
+     *
+     * @return void 반환값 없음
      */
     public function test_backfills_pg_declaration_for_nhnkcp_easy_pay_methods(): void
     {
@@ -76,6 +91,15 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
         }
     }
 
+    /**
+     * 자기 접두사(nhnkcp_) 수단만 백필하고 카드·무통장 등 내장 수단과 다른 PG 플러그인 수단은 건드리지 않는다.
+     *
+     * @scenario case=other_methods
+     *
+     * @effects other_plugin_and_builtin_methods_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_does_not_touch_other_plugins_or_builtin_methods(): void
     {
         $this->writeSettings([
@@ -102,9 +126,13 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
     }
 
     /**
+     * 백필 스텝을 두 번 실행해도 주문설정 파일 내용이 첫 실행 결과와 같다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=pg_locked
      *
      * @effects upgrade_step_backfills_settings_file
+     *
+     * @return void 반환값 없음
      */
     public function test_is_idempotent(): void
     {
@@ -121,6 +149,15 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
         $this->assertSame($first, $second, '재실행해도 결과가 달라지지 않아야 한다');
     }
 
+    /**
+     * 주문설정 파일이 없으면 스텝이 건너뛰고 새 파일을 만들지 않는다.
+     *
+     * @scenario case=settings_missing
+     *
+     * @effects missing_settings_file_skipped
+     *
+     * @return void 반환값 없음
+     */
     public function test_skips_when_settings_file_is_missing(): void
     {
         File::delete($this->settingsPath);
@@ -130,6 +167,15 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
         $this->assertFalse(File::exists($this->settingsPath));
     }
 
+    /**
+     * 주문설정 JSON 이 깨져 있으면 스텝이 건너뛰고 손상된 원문을 덮어쓰지 않는다.
+     *
+     * @scenario case=settings_malformed
+     *
+     * @effects malformed_settings_json_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_skips_when_settings_json_is_malformed(): void
     {
         File::put($this->settingsPath, '{ not valid json');
@@ -140,7 +186,10 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $paymentMethods
+     * 주어진 결제수단 목록을 payment_methods 로 담아 주문설정 파일에 씁니다.
+     *
+     * @param  array<int, array<string, mixed>>  $paymentMethods  저장할 결제수단 설정 목록
+     * @return void 반환값 없음
      */
     private function writeSettings(array $paymentMethods): void
     {
@@ -150,6 +199,8 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
     }
 
     /**
+     * 주문설정 파일의 payment_methods 를 읽어 결제수단 ID 를 키로 하는 맵으로 바꿉니다.
+     *
      * @return array<string, array<string, mixed>> 결제수단 ID => 설정
      */
     private function readMethods(): array
@@ -164,6 +215,11 @@ class BackfillEasyPayPgProviderTest extends PluginTestCase
         return $keyed;
     }
 
+    /**
+     * 업그레이드 컨텍스트를 만들어 간편결제 PG 백필 마이그레이션을 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function runMigration(): void
     {
         (new BackfillEasyPayPgProvider)->run(new UpgradeContext(

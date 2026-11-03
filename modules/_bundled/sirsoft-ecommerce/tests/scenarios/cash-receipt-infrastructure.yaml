@@ -125,6 +125,8 @@ effects:
   - business_number_checksum_validated         # 사업자번호 체크섬 (000 접두 배제 포함)
   - phone_and_card_allowed_for_both_types      # 휴대폰/카드번호는 소득공제·지출증빙 공통
   - business_number_only_for_expense           # 사업자번호는 지출증빙 전용
+  - identifier_format_validated_per_type       # 휴대폰·카드·사업자번호 종류별 형식 규칙 판정
+  - self_issue_number_recognized               # 국세청 자진발급 지정번호(010-000-1234) 식별
 
   # 데이터 정합성
   - legacy_receipt_type_normalized             # income_deduction/expenditure_proof 정규화

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * base_unit 정규화 마이그레이션 테스트 (MP08-3 방향 B)
@@ -24,19 +25,29 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
 
     private string $settingsFile;
 
+    /**
+     * 설정·주문 스냅샷 base_unit 정규화 마이그레이션 파일을 불러오고 테스트 전용 통화 설정 경로를 정한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         // DataMigration 클래스는 오토로드 밖 — 직접 로드
         $migDir = dirname(__DIR__, 3).'/upgrades/data/1.0.0/migrations';
-        require_once $migDir.'/NormalizeCurrencyBaseUnit.php';
-        require_once $migDir.'/NormalizeOrderSnapshotBaseUnit.php';
+        UpgradeFiles::requireOnce($migDir.'/NormalizeCurrencyBaseUnit.php');
+        UpgradeFiles::requireOnce($migDir.'/NormalizeOrderSnapshotBaseUnit.php');
 
         // 운영 storage 오염 방지: 테스트 환경 경로 사용 (마이그레이션의 runningUnitTests 분기와 일치)
         $this->settingsPath = storage_path('framework/testing/modules/sirsoft-ecommerce/settings');
         $this->settingsFile = $this->settingsPath.'/language_currency.json';
     }
 
+    /**
+     * 테스트가 기록한 통화 설정 파일을 지워 다음 테스트에 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::exists($this->settingsFile)) {
@@ -45,6 +56,11 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**
+     * 통화 설정 base_unit 정규화 마이그레이션 인스턴스를 새로 만든다.
+     *
+     * @return object NormalizeCurrencyBaseUnit 인스턴스
+     */
     private function settingsMigration(): object
     {
         $class = self::SETTINGS_NS;
@@ -52,6 +68,11 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
         return new $class;
     }
 
+    /**
+     * 주문 통화 스냅샷 base_unit 정규화 마이그레이션 인스턴스를 새로 만든다.
+     *
+     * @return object NormalizeOrderSnapshotBaseUnit 인스턴스
+     */
     private function snapshotMigration(): object
     {
         $class = self::SNAPSHOT_NS;
@@ -59,6 +80,11 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
         return new $class;
     }
 
+    /**
+     * 1.0.0-beta.4 → 1.0.0 업그레이드 단계를 나타내는 컨텍스트를 만든다.
+     *
+     * @return UpgradeContext 1.0.0 단계 업그레이드 컨텍스트
+     */
     private function context(): UpgradeContext
     {
         return new UpgradeContext(
@@ -68,12 +94,23 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 통화 설정 파일에 주어진 설정 배열을 JSON 으로 기록한다.
+     *
+     * @param  array  $settings  기록할 language_currency 설정
+     * @return void 반환값 없음
+     */
     private function writeSettings(array $settings): void
     {
         File::ensureDirectoryExists($this->settingsPath);
         File::put($this->settingsFile, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
+    /**
+     * 마이그레이션 후 통화 설정 파일 내용을 배열로 읽는다.
+     *
+     * @return array 저장된 language_currency 설정
+     */
     private function readSettings(): array
     {
         return json_decode((string) File::get($this->settingsFile), true);
@@ -83,6 +120,15 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
     // 설정 정규화 (NormalizeCurrencyBaseUnit)
     // ──────────────────────────────────────────────
 
+    /**
+     * USD 기본 설치본에서 통화별 base_unit 이 부여되고 "1000단위당" 환율이 base_unit 기준으로 환산된다.
+     *
+     * @scenario case=settings_non_krw_base
+     *
+     * @effects settings_base_unit_assigned, settings_rate_rescaled_to_base_unit
+     *
+     * @return void 반환값 없음
+     */
     public function test_usd_base_settings_normalize_rate_and_assign_base_unit(): void
     {
         // 현 워크스페이스 형태: base=USD, 환율 = "1000달러당 N"(÷1000 전제)
@@ -116,6 +162,15 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
         $this->assertNull($byCode['USD']['exchange_rate']);
     }
 
+    /**
+     * KRW 기본 설치본은 환산 배율이 1 이라 환율이 그대로 남고 KRW base_unit 은 1000 이 된다.
+     *
+     * @scenario case=settings_krw_base
+     *
+     * @effects settings_base_unit_assigned, krw_base_rate_unchanged
+     *
+     * @return void 반환값 없음
+     */
     public function test_krw_base_settings_keep_rate_unchanged(): void
     {
         // KRW base: base_unit=1000 → scale=1 → 환율 불변(등가)
@@ -137,6 +192,15 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
         $this->assertSame(1000, $byCode['KRW']['base_unit']);
     }
 
+    /**
+     * 이미 base_unit 이 있는 설정은 건너뛰어 환율이 두 번 환산되지 않는다.
+     *
+     * @scenario case=settings_rerun
+     *
+     * @effects settings_normalization_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_settings_normalization_is_idempotent(): void
     {
         $this->writeSettings([
@@ -158,6 +222,15 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
     // 스냅샷 정규화 등가성 (NormalizeOrderSnapshotBaseUnit) — 환차손 0
     // ──────────────────────────────────────────────
 
+    /**
+     * 옛 주문 스냅샷을 정규화해도 결제 환산 금액(JPY 942)이 변환 전과 같다.
+     *
+     * @scenario case=snapshot_payment
+     *
+     * @effects snapshot_payment_amount_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_snapshot_normalization_preserves_conversion_result(): void
     {
         $svc = app(CurrencyConversionService::class);
@@ -195,6 +268,15 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
         $this->assertSame($before['minor_unit_amount'], $after['minor_unit_amount']);
     }
 
+    /**
+     * 옛 주문 스냅샷을 정규화해도 KRW 환불 환산 금액이 변환 전과 같다.
+     *
+     * @scenario case=snapshot_refund
+     *
+     * @effects snapshot_refund_amount_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_snapshot_refund_amount_unchanged_after_normalization(): void
     {
         $svc = app(CurrencyConversionService::class);
@@ -222,6 +304,15 @@ class NormalizeCurrencyBaseUnitTest extends ModuleTestCase
         $this->assertSame($before['KRW']['refund'], $after['KRW']['refund'], '환불 금액이 변환 후 달라짐 — 환차손 0 위반');
     }
 
+    /**
+     * DB 의 주문 스냅샷에 두 번 실행해도 base_unit 가드로 한 번만 정규화된다.
+     *
+     * @scenario case=snapshot_rerun
+     *
+     * @effects snapshot_normalization_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_snapshot_run_is_idempotent_via_db(): void
     {
         // run() 의 base_unit 가드가 이중 정규화를 막는지 DB 로 검증 (rate 가 두 번 ÷1000 되면 안 됨)

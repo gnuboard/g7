@@ -31,6 +31,11 @@ class SettingsControllerTest extends TestCase
 
     private string $token;
 
+    /**
+     * 설정 읽기·수정 권한을 가진 관리자를 만들고 인증 토큰을 발급해 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,7 @@ class SettingsControllerTest extends TestCase
      * 관리자 역할 생성 및 할당
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
+     * @return User admin 역할과 지정 권한을 가진 테스트용 역할이 할당된 사용자
      */
     private function createAdminUser(array $permissions = ['core.settings.read', 'core.settings.update']): User
     {
@@ -107,6 +113,8 @@ class SettingsControllerTest extends TestCase
     /**
      * super_admin 역할을 가진 사용자 생성 (필요한 권한 포함)
      * admin 미들웨어를 통과하기 위해 admin 역할도 함께 할당
+     *
+     * @return User admin·super_admin 역할이 할당된 사용자
      */
     private function createSuperAdminUser(): User
     {
@@ -169,6 +177,10 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
+     *
+     * 기본 관리자 토큰과 JSON Accept 헤더를 붙인 요청 빌더를 돌려준다.
+     *
+     * @return static Authorization·Accept 헤더가 설정된 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -184,6 +196,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 인증 없이 설정 목록 조회 시 401 반환
+     *
+     * @scenario case=auth_guard
+     *
+     * @effects unauthenticated_request_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_401_without_authentication(): void
     {
@@ -194,6 +212,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 권한 없이 설정 목록 조회 시 403 반환
+     *
+     * @scenario case=auth_guard
+     *
+     * @effects missing_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_403_without_permission(): void
     {
@@ -233,6 +257,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 권한 없이 설정 저장 시 403 반환
+     *
+     * @scenario case=auth_guard
+     *
+     * @effects missing_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_store_returns_403_without_update_permission(): void
     {
@@ -262,6 +292,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 설정 목록 조회 성공
+     *
+     * @scenario case=index_read
+     *
+     * @effects index_returns_settings_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_all_settings(): void
     {
@@ -273,6 +309,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 설정 목록 응답 구조 검증
+     *
+     * @scenario case=index_read
+     *
+     * @effects index_returns_settings_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_correct_structure(): void
     {
@@ -292,6 +334,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * read+update 권한 사용자 → abilities.can_update: true
+     *
+     * @scenario case=index_read
+     *
+     * @effects abilities_can_update_reflects_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_can_update_true_with_update_permission(): void
     {
@@ -310,6 +358,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * read 권한만 사용자 → abilities.can_update: false
+     *
+     * @scenario case=index_read
+     *
+     * @effects abilities_can_update_reflects_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_can_update_false_without_update_permission(): void
     {
@@ -339,6 +393,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 일반 탭 설정 저장 성공
+     *
+     * @scenario case=tab_store
+     *
+     * @effects tab_settings_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_store_saves_general_tab_settings(): void
     {
@@ -359,6 +419,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 보안 탭 설정 저장 성공
+     *
+     * @scenario case=tab_store
+     *
+     * @effects tab_settings_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_store_saves_security_tab_settings(): void
     {
@@ -379,6 +445,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 고급 탭 설정 저장 성공
+     *
+     * @scenario case=tab_store
+     *
+     * @effects tab_settings_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_store_saves_advanced_tab_settings(): void
     {
@@ -408,6 +480,12 @@ class SettingsControllerTest extends TestCase
      *
      * 회귀 방지: identity 가 _tab Rule::in 목록에서 누락되어 422 ("선택한 tab이(가) 올바르지 않습니다.") 가
      * 발생했던 사례. 환경설정 > 본인인증 탭의 모든 저장 시도가 차단됐음.
+     *
+     * @scenario case=tab_store
+     *
+     * @effects tab_settings_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_store_saves_identity_tab_settings(): void
     {
@@ -445,6 +523,12 @@ class SettingsControllerTest extends TestCase
      * 이 중첩 구조가 정상이지만, validation rule 이 1단계 깊이만 string 으로 허용하면
      * 중첩된 `inicis` 가 배열이 되어 422 ("문자열이어야 합니다.") 가 발생했던 사례.
      * 환경설정 > 본인인증 > 목적별 프로바이더 저장이 전면 차단됐음.
+     *
+     * @scenario case=tab_store
+     *
+     * @effects identity_tab_accepts_nested_purpose_providers
+     *
+     * @return void 반환값 없음
      */
     public function test_store_saves_identity_purpose_providers_with_dotted_purpose_id(): void
     {
@@ -473,6 +557,12 @@ class SettingsControllerTest extends TestCase
      * 본인인증 탭 — 점 포함 purpose 매핑 값이 max:100 을 초과하면 중첩 경로로 검증 실패.
      *
      * nested 허용으로 완화하되, 값 길이 제약(string|max:100)은 임의 깊이에서도 유지되어야 한다.
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_nested_purpose_provider_value_length(): void
     {
@@ -495,6 +585,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 본인인증 탭 — challenge_ttl_minutes 범위(1~1440) 검증.
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_identity_challenge_ttl_range(): void
     {
@@ -513,6 +609,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 본인인증 탭 — max_attempts 범위(1~20) 검증.
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_identity_max_attempts_range(): void
     {
@@ -531,6 +633,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 일반 탭에서 site_name 필수 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_site_name_required_for_general_tab(): void
     {
@@ -551,6 +659,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * site_url 형식 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_site_url_format(): void
     {
@@ -571,6 +685,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * admin_email 형식 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_admin_email_format(): void
     {
@@ -591,6 +711,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * timezone 지원 목록 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_timezone_in_supported_list(): void
     {
@@ -611,6 +737,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * auth_token_lifetime 범위 검증 (30-3600 또는 0)
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_auth_token_lifetime_range(): void
     {
@@ -630,6 +762,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 캐시 TTL 범위 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_cache_ttl_range(): void
     {
@@ -654,6 +792,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 잘못된 탭 값 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_returns_422_for_invalid_tab(): void
     {
@@ -672,6 +816,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 단일 설정 조회 성공
+     *
+     * @scenario case=single_key
+     *
+     * @effects single_setting_read_and_update
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_single_setting(): void
     {
@@ -691,6 +841,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 존재하지 않는 설정 키 조회 시 기본값 반환
+     *
+     * @scenario case=single_key
+     *
+     * @effects single_setting_read_and_update
+     *
+     * @return void 반환값 없음
      */
     public function test_show_returns_default_for_nonexistent_key(): void
     {
@@ -707,6 +863,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 단일 설정 업데이트 성공
+     *
+     * @scenario case=single_key
+     *
+     * @effects single_setting_read_and_update
+     *
+     * @return void 반환값 없음
      */
     public function test_update_modifies_single_setting(): void
     {
@@ -721,6 +883,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 설정 업데이트 시 value 필수 검증
+     *
+     * @scenario case=single_key
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_update_validates_value_required(): void
     {
@@ -740,6 +908,8 @@ class SettingsControllerTest extends TestCase
      * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=authenticated_with_permission
      *
      * @effects all_probes_success_returns_full_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_returns_correct_structure(): void
     {
@@ -759,6 +929,12 @@ class SettingsControllerTest extends TestCase
      *
      * 회귀 테스트: memory_get_usage(true)는 PHP 프로세스 메모리만 반환하여
      * 서버 물리 RAM과 무관한 값(6~12MB)이 노출되던 이슈 방지.
+     *
+     * @scenario case=system_info
+     *
+     * @effects system_info_payload_shape_is_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_memory_usage_has_disk_like_structure(): void
     {
@@ -784,6 +960,12 @@ class SettingsControllerTest extends TestCase
      *
      * 회귀 테스트: Windows 11/Server 2025에서 wmic 제거로 인해
      * "operable program or batch file."가 그대로 노출되던 이슈 방지.
+     *
+     * @scenario case=system_info
+     *
+     * @effects system_info_payload_shape_is_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_cpu_info_is_not_shell_error_tail(): void
     {
@@ -804,6 +986,12 @@ class SettingsControllerTest extends TestCase
      * 회귀 테스트: PowerShell(CIM) 호출이 수백ms ~ 수초 걸려 탭 전환
      * UX 를 저해하던 이슈 방지. server_time 은 캐시 제외이므로
      * 매 호출마다 갱신됨도 함께 검증한다.
+     *
+     * @scenario case=system_info
+     *
+     * @effects system_info_hardware_cached_but_server_time_fresh
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_caches_hardware_payload_but_refreshes_server_time(): void
     {
@@ -816,8 +1004,9 @@ class SettingsControllerTest extends TestCase
         // 캐시에 기록됐는지 직접 확인
         $this->assertTrue($cache->has('settings.system_info.'.app()->getLocale()));
 
-        // 1초 이상 간격을 두고 재호출 → server_time 은 갱신, cpu_info 는 동일해야 함
-        sleep(1);
+        // 시각을 2초 앞으로 옮겨 재호출 → server_time 은 갱신, cpu_info 는 동일해야 함
+        // (server_time 은 now() 라 실제로 기다릴 필요가 없다)
+        $this->travel(2)->seconds();
         $second = $this->authRequest()->getJson('/api/admin/settings/system-info');
         $second->assertStatus(200);
 
@@ -835,6 +1024,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * clearCache 호출 시 시스템 정보 캐시도 함께 무효화된다.
+     *
+     * @scenario case=maintenance
+     *
+     * @effects clear_cache_succeeds_and_invalidates_system_info
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_cache_invalidates_system_info_cache(): void
     {
@@ -860,6 +1055,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 캐시 정리 성공
+     *
+     * @scenario case=maintenance
+     *
+     * @effects clear_cache_succeeds_and_invalidates_system_info
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_cache_succeeds(): void
     {
@@ -875,6 +1076,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 앱 키 조회 시 마스킹된 키 반환
+     *
+     * @scenario case=maintenance
+     *
+     * @effects app_key_masked_and_regeneration_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_get_app_key_returns_masked_key(): void
     {
@@ -897,6 +1104,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 앱 키 재생성 시 비밀번호 필수
+     *
+     * @scenario case=maintenance
+     *
+     * @effects app_key_masked_and_regeneration_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_app_key_requires_password(): void
     {
@@ -914,6 +1127,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 앱 키 재생성 시 잘못된 비밀번호 검증
+     *
+     * @scenario case=maintenance
+     *
+     * @effects app_key_masked_and_regeneration_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_app_key_validates_password(): void
     {
@@ -933,6 +1152,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 앱 키 재생성 시 super_admin 역할 필수
+     *
+     * @scenario case=maintenance
+     *
+     * @effects app_key_masked_and_regeneration_guarded, missing_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_app_key_requires_super_admin_role(): void
     {
@@ -947,6 +1172,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * super_admin 역할로 앱 키 재생성 성공
+     *
+     * @scenario case=maintenance
+     *
+     * @effects app_key_masked_and_regeneration_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_app_key_succeeds_with_super_admin(): void
     {
@@ -977,6 +1208,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 인증 없이 테스트 메일 발송 시 401 반환
+     *
+     * @scenario case=test_mail
+     *
+     * @effects unauthenticated_request_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_test_mail_returns_401_without_authentication(): void
     {
@@ -989,6 +1226,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 이메일 없이 테스트 메일 발송 시 422 반환
+     *
+     * @scenario case=test_mail
+     *
+     * @effects test_mail_validates_recipient_and_sends
+     *
+     * @return void 반환값 없음
      */
     public function test_test_mail_returns_422_without_email(): void
     {
@@ -1000,6 +1243,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 잘못된 이메일 형식으로 테스트 메일 발송 시 422 반환
+     *
+     * @scenario case=test_mail
+     *
+     * @effects test_mail_validates_recipient_and_sends
+     *
+     * @return void 반환값 없음
      */
     public function test_test_mail_returns_422_with_invalid_email(): void
     {
@@ -1013,6 +1262,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 올바른 이메일로 테스트 메일 발송 성공
+     *
+     * @scenario case=test_mail
+     *
+     * @effects test_mail_validates_recipient_and_sends
+     *
+     * @return void 반환값 없음
      */
     public function test_test_mail_succeeds_with_valid_email(): void
     {
@@ -1037,6 +1292,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * Europe/Paris 타임존이 유효성 검사를 통과하는지 테스트합니다.
+     *
+     * @scenario case=tab_store
+     *
+     * @effects tab_settings_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_store_accepts_europe_paris_timezone(): void
     {
@@ -1057,6 +1318,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 타임존 저장 후 app.timezone이 UTC를 유지하는지 테스트합니다.
+     *
+     * @scenario case=tab_store
+     *
+     * @effects timezone_setting_keeps_app_timezone_utc
+     *
+     * @return void 반환값 없음
      */
     public function test_store_timezone_does_not_change_app_timezone(): void
     {
@@ -1079,6 +1346,14 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 고급 탭에서 코어 업데이트 설정(GitHub URL, 토큰) 저장 성공
+     *
+     * 저장한 GitHub URL·토큰이 설정 목록 조회의 advanced 카테고리에 그대로 실리는지도 확인한다.
+     *
+     * @scenario case=tab_store
+     *
+     * @effects core_update_settings_persisted_and_readable
+     *
+     * @return void 반환값 없음
      */
     public function test_store_saves_core_update_settings_in_advanced_tab(): void
     {
@@ -1114,6 +1389,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 코어 업데이트 GitHub URL 형식 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_core_update_github_url_format(): void
     {
@@ -1139,6 +1420,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 코어 업데이트 GitHub 토큰 최대 길이 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects invalid_tab_input_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_core_update_github_token_max_length(): void
     {
@@ -1164,6 +1451,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 코어 업데이트 설정이 비어있어도 저장 성공 (nullable)
+     *
+     * @scenario case=tab_store
+     *
+     * @effects tab_settings_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_store_allows_empty_core_update_settings(): void
     {
@@ -1190,6 +1483,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 코어 업데이트 설정 저장 후 config()에 반영되는지 확인
+     *
+     * @scenario case=tab_store
+     *
+     * @effects core_update_settings_persisted_and_readable
+     *
+     * @return void 반환값 없음
      */
     public function test_core_update_settings_override_config(): void
     {
@@ -1230,6 +1529,12 @@ class SettingsControllerTest extends TestCase
      *
      * initLocal로 복사된 Attachment 객체가 폼 데이터에 포함되어
      * 정수 검증 실패하는 버그 회귀 방지
+     *
+     * @scenario case=tab_store
+     *
+     * @effects site_logo_accepts_attachment_objects_and_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_store_general_accepts_site_logo_as_attachment_objects(): void
     {
@@ -1268,6 +1573,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * site_logo가 정수 ID 배열로 전송되어도 정상 동작
+     *
+     * @scenario case=tab_store
+     *
+     * @effects site_logo_accepts_attachment_objects_and_ids
+     *
+     * @return void 반환값 없음
      */
     public function test_store_general_accepts_site_logo_as_integer_ids(): void
     {
@@ -1297,6 +1608,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 웹소켓 활성화 시 앱 ID, 앱 키, 앱 시크릿 필수 검증
+     *
+     * @scenario case=tab_validation
+     *
+     * @effects websocket_credentials_required_only_when_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_store_validates_websocket_required_fields_when_enabled(): void
     {
@@ -1323,6 +1640,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 웹소켓 비활성화 시 앱 ID, 앱 키, 앱 시크릿 비필수
+     *
+     * @scenario case=tab_store
+     *
+     * @effects websocket_credentials_required_only_when_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_store_allows_empty_websocket_fields_when_disabled(): void
     {
@@ -1348,6 +1671,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 웹소켓 활성화 + 모든 필수 필드 입력 시 저장 성공
+     *
+     * @scenario case=tab_store
+     *
+     * @effects tab_settings_saved, websocket_credentials_required_only_when_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_store_saves_websocket_settings_with_all_required_fields(): void
     {
@@ -1376,6 +1705,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 드라이버 탭 저장 왕복에 S3 신규 키(s3_endpoint/s3_use_path_style)가 포함되어야 합니다 (#563).
+     *
+     * @scenario case=tab_store
+     *
+     * @effects drivers_roundtrip_keeps_s3_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_store_drivers_roundtrip_includes_new_s3_keys(): void
     {
@@ -1422,6 +1757,8 @@ class SettingsControllerTest extends TestCase
      * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=unauthenticated
      *
      * @effects unauthenticated_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_returns_401_without_authentication(): void
     {
@@ -1436,6 +1773,8 @@ class SettingsControllerTest extends TestCase
      * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=authenticated_without_permission
      *
      * @effects without_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_returns_403_without_permission(): void
     {
@@ -1483,6 +1822,8 @@ class SettingsControllerTest extends TestCase
      *
      * @effects failing_probe_isolated_and_api_returns_200
      * @effects failed_item_filled_with_unknown_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_isolates_failing_probe_and_returns_200(): void
     {
@@ -1492,6 +1833,11 @@ class SettingsControllerTest extends TestCase
 
         $service = new class($this->app) extends SettingsService
         {
+            /**
+             * 컨테이너에서 실제 의존성을 꺼내 부모 SettingsService 를 그대로 조립한다.
+             *
+             * @param  mixed  $app  의존성을 꺼낼 애플리케이션 컨테이너
+             */
             public function __construct($app)
             {
                 parent::__construct(
@@ -1502,6 +1848,11 @@ class SettingsControllerTest extends TestCase
                 );
             }
 
+            /**
+             * disable_functions 로 shell_exec 가 막힌 호스팅처럼 CPU 정보 수집에서 Error 를 던진다.
+             *
+             * @return string 반환하지 않고 항상 Error 를 던짐
+             */
             protected function getCpuInfo(): string
             {
                 throw new \Error('Call to undefined function shell_exec() (disable_functions)');
@@ -1538,6 +1889,8 @@ class SettingsControllerTest extends TestCase
      * @scenario probe_item=opcache,probe_outcome=success,auth_state=authenticated_with_permission
      *
      * @effects opcache_status_exposed_in_system_info
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_includes_opcache_status(): void
     {
@@ -1581,6 +1934,9 @@ class SettingsControllerTest extends TestCase
      * @scenario opcache_state=enabled, surface=system_info_api
      *
      * @effects opcache_status_exposed_in_system_info
+     *
+     * @param  array  $probe  getOpcacheStatus() 가 돌려줄 {loaded, enabled} 판정 스텁
+     * @return void 반환값 없음
      */
     #[DataProvider('opcacheStateProvider')]
     public function test_system_info_reports_each_opcache_state(array $probe): void
@@ -1592,6 +1948,12 @@ class SettingsControllerTest extends TestCase
         {
             private array $stub;
 
+            /**
+             * 부모 SettingsService 를 실제 의존성으로 조립하고 OPcache 판정 스텁을 보관한다.
+             *
+             * @param  mixed  $app  의존성을 꺼낼 애플리케이션 컨테이너
+             * @param  array  $stub  getOpcacheStatus() 가 그대로 돌려줄 판정 배열
+             */
             public function __construct($app, array $stub)
             {
                 parent::__construct(
@@ -1603,6 +1965,11 @@ class SettingsControllerTest extends TestCase
                 $this->stub = $stub;
             }
 
+            /**
+             * 실제 OPcache 조회 대신 주입된 판정 스텁을 돌려준다.
+             *
+             * @return array 생성자로 받은 {loaded, enabled} 판정 배열
+             */
             protected function getOpcacheStatus(): array
             {
                 return $this->stub;
@@ -1617,7 +1984,9 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: array{loaded: bool, enabled: bool|null}}>
+     * OPcache 네 가지 상태(활성·로드됐으나 비활성·미로드·ini_get 차단)의 판정 스텁을 제공한다.
+     *
+     * @return array<string, array{0: array{loaded: bool, enabled: bool|null}}> 상태 이름별 {loaded, enabled} 스텁
      */
     public static function opcacheStateProvider(): array
     {
@@ -1639,6 +2008,8 @@ class SettingsControllerTest extends TestCase
      *
      * @effects failing_probe_isolated_and_api_returns_200
      * @effects failed_item_filled_with_unknown_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_system_info_isolates_failing_opcache_probe(): void
     {
@@ -1647,6 +2018,11 @@ class SettingsControllerTest extends TestCase
 
         $service = new class($this->app) extends SettingsService
         {
+            /**
+             * 컨테이너에서 실제 의존성을 꺼내 부모 SettingsService 를 그대로 조립한다.
+             *
+             * @param  mixed  $app  의존성을 꺼낼 애플리케이션 컨테이너
+             */
             public function __construct($app)
             {
                 parent::__construct(
@@ -1657,6 +2033,11 @@ class SettingsControllerTest extends TestCase
                 );
             }
 
+            /**
+             * ini_get 이 disable_functions 로 막힌 호스팅처럼 OPcache 조회에서 Error 를 던진다.
+             *
+             * @return array 반환하지 않고 항상 Error 를 던짐
+             */
             protected function getOpcacheStatus(): array
             {
                 throw new \Error('Call to undefined function ini_get() (disable_functions)');
@@ -1682,6 +2063,8 @@ class SettingsControllerTest extends TestCase
      * @scenario probe_item=memory_usage,probe_outcome=throws_error,auth_state=authenticated_with_permission
      *
      * @effects usage_array_fallback_keeps_total_used_free_unknown_and_percentage_zero
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_usage_fallback_keeps_usage_array_shape(): void
     {
@@ -1704,6 +2087,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * safeSystemProbe 단위 검증: 콜백이 \Error 를 던지면 전파하지 않고 폴백을 반환한다.
+     *
+     * @scenario case=system_info
+     *
+     * @effects safe_system_probe_returns_fallback_on_error
+     *
+     * @return void 반환값 없음
      */
     public function test_safe_system_probe_returns_fallback_on_error(): void
     {
@@ -1725,6 +2114,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 인증 없이 설정 복원 요청 시 401 반환
+     *
+     * @scenario case=restore
+     *
+     * @effects unauthenticated_request_returns_401
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_returns_401_without_authentication(): void
     {
@@ -1735,6 +2130,12 @@ class SettingsControllerTest extends TestCase
 
     /**
      * update 권한 없이 설정 복원 요청 시 403 반환
+     *
+     * @scenario case=restore
+     *
+     * @effects missing_permission_returns_403
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_returns_403_without_update_permission(): void
     {
@@ -1754,6 +2155,12 @@ class SettingsControllerTest extends TestCase
      *
      * 회귀: 검증을 컨트롤러 내 empty() 체크에서 RestoreSettingsRequest 로 이전한 뒤에도
      * 백업 경로 미입력이 422 로 차단되는지 확인한다.
+     *
+     * @scenario case=restore
+     *
+     * @effects restore_requires_backup_path
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_returns_422_when_backup_path_missing(): void
     {

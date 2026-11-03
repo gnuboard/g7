@@ -2,7 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Http;
 
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 응답 메시지 플레이스홀더 치환 테스트 (S2-D1 회귀 · #599 통합실측 세션2)
@@ -22,7 +22,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 이 테스트는 **호출부를 정적으로 잠근다** — 플레이스홀더를 가진 메시지 키를
  * 쓰는 컨트롤러 호출은 반드시 치환 배열을 함께 넘겨야 한다.
  */
-class ResponseMessagePlaceholderTest extends ModuleTestCase
+class ResponseMessagePlaceholderTest extends PureTestCase
 {
     /**
      * 플레이스홀더를 치환해야 하는 호출부 — [파일, 메시지 키, 기대 치환키].
@@ -47,6 +47,12 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
         ['Http/Controllers/Public/CartController.php', 'messages.cart.merged', 'count'],
     ];
 
+    /**
+     * 이커머스 모듈 src 디렉터리 기준 상대 경로를 이 테스트 파일에서 접근할 수 있는 경로로 바꾼다.
+     *
+     * @param  string  $relative  src 디렉터리 기준 상대 경로
+     * @return string src 아래 대상 파일·디렉터리 경로
+     */
     private function srcPath(string $relative): string
     {
         return __DIR__.'/../../../src/'.$relative;
@@ -55,7 +61,8 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
     /**
      * 호출 인자를 최상위 콤마로 가른다 (중첩 배열·문자열 안의 콤마는 무시).
      *
-     * @return array<int, string>
+     * @param  string  $call  메시지 키부터 닫는 괄호 직전까지 잘라 낸 호출 인자 원문
+     * @return array<int, string> 앞뒤 공백을 걷어 낸 최상위 인자 목록
      */
     private function splitTopLevelArgs(string $call): array
     {
@@ -104,6 +111,10 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
 
     /**
      * ko·en 메시지 정의에서 그 키의 원문을 읽는다.
+     *
+     * @param  string  $locale  읽을 언어 파일 로케일(ko 또는 en)
+     * @param  string  $key  'messages.' 로 시작하는 점 표기 메시지 키
+     * @return string|null 키의 원문 문자열, 키가 없거나 문자열이 아니면 null
      */
     private function messageTemplate(string $locale, string $key): ?string
     {
@@ -136,6 +147,8 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
      * @scenario contract=message_key_carries_placeholder
      *
      * @effects placeholder_present_in_ko_and_en
+     *
+     * @return void 반환값 없음
      */
     public function test_listed_message_keys_actually_carry_placeholders(): void
     {
@@ -164,6 +177,8 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
      * @scenario contract=call_site_passes_message_params
      *
      * @effects message_params_passed_at_every_placeholder_call_site
+     *
+     * @return void 반환값 없음
      */
     public function test_placeholder_message_calls_pass_replacement_params(): void
     {
@@ -239,6 +254,8 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
      * @scenario contract=call_site_passes_message_params
      *
      * @effects message_params_passed_at_every_placeholder_call_site
+     *
+     * @return void 반환값 없음
      */
     public function test_every_placeholder_message_key_is_called_with_replacement_params(): void
     {
@@ -319,7 +336,7 @@ class ResponseMessagePlaceholderTest extends ModuleTestCase
     /**
      * `modules/_bundled/sirsoft-ecommerce/src/lang/ko/messages.php` 에서 **플레이스홀더를 가진 키**를 전수 수집합니다.
      *
-     * @return array<string, array<int, string>> 'messages.a.b' => ['count', …]
+     * @return array<string, array<int, string>> 플레이스홀더를 가진 메시지 키 => 그 키의 치환 이름 목록 (예: 'messages.a.b' => ['count'])
      */
     private function collectPlaceholderMessageKeys(): array
     {

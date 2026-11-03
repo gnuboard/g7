@@ -16,13 +16,11 @@ use App\Services\ModuleSettingsService;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Routing\CompiledRouteCollection;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\TestingSeeder;
 use Modules\Sirsoft\Ecommerce\Exceptions\UnauthorizedPresetAccessException;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -41,8 +39,8 @@ use Tests\TestCase;
  * 모든 Ecommerce 모듈 테스트는 이 클래스를 상속받아야 합니다.
  * 모듈 오토로드, ServiceProvider 등록, 마이그레이션, 라우트 등록을 자동으로 처리합니다.
  *
- * 성능 최적화: 마이그레이션은 테스트 클래스당 1회만 실행됩니다.
- * 트랜잭션 충돌 방지: 시딩을 통해 기본 데이터를 트랜잭션 시작 전에 삽입합니다.
+ * 스키마·시드: 코어 TestCase 의 테스트 스키마 판정이 트랜잭션 전에 맞춘다 — migrateFreshUsing() 의 시더(TestingSeeder)가
+ * 요구 프로필(seed:…)이 되어, 시드가 없거나 다른 상태면 잔여 행을 정리하고 시더를 다시 돌린다.
  */
 abstract class ModuleTestCase extends TestCase
 {
@@ -127,60 +125,6 @@ abstract class ModuleTestCase extends TestCase
      * @var array{hooks: array, filters: array}|null
      */
     private ?array $hookSnapshot = null;
-
-    /**
-     * setUpTraits 단계에서 모듈 마이그레이션 부재를 검사해 RefreshDatabase 의 process-static
-     * `$migrated` 플래그를 리셋한다 — 그래야 곧이은 RefreshDatabase 초기화가 본 클래스의
-     * `migrateFreshUsing()` 으로 migrate:fresh 를 재실행한다.
-     *
-     * 다른 테스트 클래스(예: 코어 전용 Tests\TestCase 상속)가 같은 프로세스에서 먼저 실행되어
-     * 모듈 마이그레이션 없이 schema 를 만든 경우의 회귀 가드.
-     *
-     * setUp() 안에서 Artisan migrate 를 별도 호출하면 DDL 의 implicit commit 이
-     * 진행 중인 테스트 트랜잭션을 깨뜨려 첫 테스트가 transaction 외부에서 실행되는
-     * side-effect 가 발생하므로, 트랜잭션 시작 *전* 에 처리해야 한다.
-     *
-     * @return array<class-string, class-string> 이 테스트가 쓰는 트레이트 목록
-     */
-    protected function setUpTraits()
-    {
-        if (RefreshDatabaseState::$migrated) {
-            try {
-                if (! $this->moduleSchemaAndSeedArePresent()) {
-                    RefreshDatabaseState::$migrated = false;
-                }
-            } catch (\Throwable $e) { /* DB 미초기화 / 연결 부재 — RefreshDatabase 가 처리 */
-            }
-        }
-
-        return parent::setUpTraits();
-    }
-
-    /**
-     * 모듈 마이그레이션 **과 시드**가 모두 반영된 DB 인지 판정합니다.
-     *
-     * 종전에는 테이블 존재(`ecommerce_shipping_types`) 하나만 봤다. 그런데 코어
-     * {@see TestCase::loadExtensionMigrations()} 가 "테스트 순서와 무관하게 모든 번들
-     * 테이블을 만든다" 로 바뀌면서 이 판정식은 **항상 참**이 됐다 — 즉 대리 지표가 무력해졌다.
-     *
-     * 그 결과 코어 전용 테스트가 먼저 `migrate:fresh` 를 돌린 프로세스에서는 모듈 테이블은
-     * 있는데 모듈 시더({@see TestingSeeder})는 돌지 않은 DB 가 만들어지고, 그 위에서 도는
-     * 모듈 테스트가 주문번호 시퀀스 같은 시드 의존 경로에서 500 으로 깨진다
-     * (단독 실행은 통과하므로 순서 의존 결함으로만 나타난다).
-     *
-     * 그래서 판정을 **실제 의존 대상**으로 옮긴다 — 스키마 + 시드 양쪽을 본다.
-     *
-     * @return bool 모듈 스키마와 시드가 모두 있으면 true
-     */
-    private function moduleSchemaAndSeedArePresent(): bool
-    {
-        if (! Schema::hasTable('ecommerce_shipping_types') || ! Schema::hasTable('ecommerce_sequences')) {
-            return false;
-        }
-
-        // 시드 마커 — TestingSeeder 가 SequenceType 전량을 만든다. 0건이면 시드가 돌지 않은 DB다.
-        return DB::table('ecommerce_sequences')->exists();
-    }
 
     /**
      * 모듈 테스트 환경을 준비합니다.

@@ -2,6 +2,7 @@
 
 namespace App\Extension\Upgrade;
 
+use App\Extension\Support\UpgradeStepFileLoader;
 use App\Extension\UpgradeContext;
 use RuntimeException;
 
@@ -91,6 +92,7 @@ final class DataSnapshot
      * 보유한 모든 Applier 를 순차 실행.
      *
      * @param  UpgradeContext  $context  업그레이드 컨텍스트 (로거, 현재 스텝 버전 등)
+     * @return void 반환값 없음
      */
     public function apply(UpgradeContext $context): void
     {
@@ -105,6 +107,13 @@ final class DataSnapshot
      * 예: kind="permissions", context->currentStep="7.0.0-beta.5"
      *  → 클래스 "App\Upgrades\Data\V7_0_0_beta_5\Appliers\PermissionsApplier"
      *  → 파일 "{dataDir}/appliers/PermissionsApplier.php"
+     *
+     * @param  string  $applierClass  Applier 클래스 이름(네임스페이스 제외)
+     * @param  string  $kind  카탈로그 종류(오류 문구용)
+     * @param  string  $dataDir  해당 스텝 버전의 data 디렉터리
+     * @param  string  $jsonPath  Applier 가 읽을 카탈로그 JSON 경로
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트(현재 스텝 버전)
+     * @return SnapshotApplier 생성한 Applier
      *
      * @throws RuntimeException Applier 파일/클래스 부재 또는 인터페이스 미구현 시
      */
@@ -124,9 +133,10 @@ final class DataSnapshot
             ));
         }
 
-        require_once $applierFile;
-
         $fqcn = self::versionedNamespace($context, $dataDir).'\\Appliers\\'.$applierClass;
+
+        // 활성·번들 동일 사본이 이미 선언한 클래스는 다시 싣지 않는다(재선언 Fatal 방지, 7.1.5)
+        UpgradeStepFileLoader::load($applierFile, $fqcn);
         if (! class_exists($fqcn)) {
             throw new RuntimeException(sprintf(
                 'Applier class not declared in expected namespace: %s (file=%s)',
@@ -191,6 +201,9 @@ final class DataSnapshot
      *
      *   "sirsoft-ecommerce"   → "SirsoftEcommerce"
      *   "vendor_module_v2"    → "VendorModuleV2"
+     *
+     * @param  string  $identifier  확장 식별자
+     * @return string StudlyCase 이름(비면 'Anonymous')
      */
     private static function studlyIdentifier(string $identifier): string
     {
@@ -212,6 +225,9 @@ final class DataSnapshot
      * permissions          → PermissionsApplier
      * role_permissions     → RolePermissionsApplier
      * notification_definitions → NotificationDefinitionsApplier
+     *
+     * @param  string  $kind  snake_case 카탈로그 종류
+     * @return string Applier 클래스 이름
      */
     private static function kindToClassName(string $kind): string
     {
