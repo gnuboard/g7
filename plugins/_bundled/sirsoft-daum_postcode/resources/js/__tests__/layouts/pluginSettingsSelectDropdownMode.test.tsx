@@ -5,7 +5,8 @@
  *
  * 관리자 템플릿 Select 는 `props.options` 가 있으면 단추(`aria-haspopup=listbox`) + 목록 상자로, 없으면 브라우저 기본
  * `<select>` 로 그린다. 표시 방식 칸은 `<select>` 바로 아래 `<option>` 을 적어 기본 선택상자였다. 실물 Select 를 엔진 렌더러로
- * 그려 목록형인지, 고른 값이 폼 자동 바인딩으로 `form.display_mode` 에 담기는지, 읽기 전용이면 잠기는지를 본다.
+ * 그려 목록형인지, 고른 값이 폼 자동 바인딩으로 `form.display_mode_pc`·`form.display_mode_mobile` 에 담기는지(1.2.0 기기별
+ * 두 칸), 읽기 전용이면 잠기는지를 본다.
  *
  * @scenario-manifest tests/scenarios/plugin-settings-select-dropdown-mode.yaml
  *
@@ -46,7 +47,8 @@ function find(node: unknown, match: (n: Node) => boolean): Node | undefined {
     return undefined;
 }
 
-const displayModeSelect = find(settingsLayout, (n) => n.name === 'Select' && n.props?.name === 'display_mode');
+const pcSelect = find(settingsLayout, (n) => n.name === 'Select' && n.props?.name === 'display_mode_pc');
+const mobileSelect = find(settingsLayout, (n) => n.name === 'Select' && n.props?.name === 'display_mode_mobile');
 
 let utils: ReturnType<typeof createLayoutTest> | null = null;
 
@@ -63,7 +65,7 @@ afterEach(() => {
  * @param readOnly 읽기 전용 여부
  * @returns 목록형 단추
  */
-async function drawDisplayMode(form: Record<string, any>, readOnly = false): Promise<HTMLButtonElement> {
+async function drawDisplayMode(displayModeSelect: Node | undefined, form: Record<string, any>, readOnly = false): Promise<HTMLButtonElement> {
     const registry = createMockComponentRegistryWithBasics();
     registry.register('basic', 'Select', Select as any);
     utils = createLayoutTest(
@@ -85,32 +87,59 @@ async function drawDisplayMode(form: Record<string, any>, readOnly = false): Pro
 describe('다음 우편번호 환경설정 — 표시 방식 칸 목록형 드롭다운', () => {
     // @scenario screen=daum_postcode_display_mode
     // @effects select_renders_listbox_dropdown, select_choice_reaches_change_action
-    it('표시 방식 칸은 목록형이고 저장된 값을 단추에 보이며, 고르면 form.display_mode 에 담긴다', async () => {
-        expect(displayModeSelect, '표시 방식 Select').toBeTruthy();
-        expect(Array.isArray(displayModeSelect!.props?.options), 'props.options').toBe(true);
-        expect(displayModeSelect!.props.options.map((o: Node) => o.value)).toEqual(['popup', 'layer']);
+    it('PC 표시 방식 칸은 목록형(popup·layer·inline)이고 저장된 값을 단추에 보이며, 고르면 form.display_mode_pc 에 담긴다', async () => {
+        expect(pcSelect, 'PC 표시 방식 Select').toBeTruthy();
+        expect(Array.isArray(pcSelect!.props?.options), 'props.options').toBe(true);
+        expect(pcSelect!.props.options.map((o: Node) => o.value)).toEqual(['popup', 'layer', 'inline']);
 
-        const trigger = await drawDisplayMode({ display_mode: 'popup' });
-        expect(trigger.textContent).toContain('display_mode.popup');
+        const trigger = await drawDisplayMode(pcSelect, { display_mode_pc: 'popup' });
+        expect(trigger.textContent).toContain('display_mode_pc.popup');
 
         fireEvent.click(trigger);
         const layer = await waitFor(() => {
-            const hit = screen.getAllByRole('option').find((o) => /display_mode\.layer$/.test(o.textContent ?? ''));
+            const hit = screen.getAllByRole('option').find((o) => /display_mode_pc\.layer$/.test(o.textContent ?? ''));
             expect(hit).toBeTruthy();
 
             return hit!;
         });
         fireEvent.click(layer);
-        await waitFor(() => expect(trigger.textContent).toContain('display_mode.layer'));
-        // 자동 바인딩은 운영에서 G7Core.state.setLocal({ 'form.display_mode': 값 }) 으로 쓴다 — 시험 도구는 점 경로 키를 그대로 담는다
+        await waitFor(() => expect(trigger.textContent).toContain('display_mode_pc.layer'));
+        // 자동 바인딩은 운영에서 G7Core.state.setLocal({ 'form.display_mode_pc': 값 }) 으로 쓴다 — 시험 도구는 점 경로 키를 그대로 담는다
         const local = utils!.getState()._local;
-        expect(local['form.display_mode'] ?? local.form?.display_mode).toBe('layer');
+        expect(local['form.display_mode_pc'] ?? local.form?.display_mode_pc).toBe('layer');
+    });
+
+    // @scenario screen=daum_postcode_display_mode
+    // @effects select_renders_listbox_dropdown, select_choice_reaches_change_action
+    it('모바일 표시 방식 칸은 목록형(inline·fullscreen)이고, 고르면 form.display_mode_mobile 에 담긴다', async () => {
+        expect(mobileSelect, '모바일 표시 방식 Select').toBeTruthy();
+        expect(mobileSelect!.props.options.map((o: Node) => o.value)).toEqual(['inline', 'fullscreen']);
+
+        const trigger = await drawDisplayMode(mobileSelect, { display_mode_mobile: 'inline' });
+        expect(trigger.textContent).toContain('display_mode_mobile.inline');
+
+        fireEvent.click(trigger);
+        const fullscreen = await waitFor(() => {
+            const hit = screen.getAllByRole('option').find((o) => /display_mode_mobile\.fullscreen$/.test(o.textContent ?? ''));
+            expect(hit).toBeTruthy();
+
+            return hit!;
+        });
+        fireEvent.click(fullscreen);
+        await waitFor(() => expect(trigger.textContent).toContain('display_mode_mobile.fullscreen'));
+        const local = utils!.getState()._local;
+        expect(local['form.display_mode_mobile'] ?? local.form?.display_mode_mobile).toBe('fullscreen');
     });
 
     // @scenario screen=daum_postcode_display_mode
     // @effects select_renders_listbox_dropdown
-    it('읽기 전용(설정 수정 권한 없음)이면 표시 방식 칸 단추가 잠긴다', async () => {
-        const trigger = await drawDisplayMode({ display_mode: 'layer' }, true);
-        expect(trigger.disabled).toBe(true);
+    it('읽기 전용(설정 수정 권한 없음)이면 두 표시 방식 칸 단추가 잠긴다', async () => {
+        const pcTrigger = await drawDisplayMode(pcSelect, { display_mode_pc: 'layer' }, true);
+        expect(pcTrigger.disabled).toBe(true);
+        utils?.cleanup();
+        utils = null;
+        document.body.innerHTML = '';
+        const mobileTrigger = await drawDisplayMode(mobileSelect, { display_mode_mobile: 'inline' }, true);
+        expect(mobileTrigger.disabled).toBe(true);
     });
 });

@@ -34,7 +34,7 @@
             "sirsoft-page": ">=1.2.0"
         },
         "plugins": {
-            "sirsoft-daum_postcode": ">=1.0.0"
+            "sirsoft-daum_postcode": ">=1.2.0"
         }
     },
     "necessary_storage": {

@@ -1,0 +1,51 @@
+feature: 우편번호 검색 창 표시 방식 — 카카오 SDK 전환, 기기별 표시 방식(PC·모바일), 좁은 화면 레이어
+
+description: |
+  레이어 모드가 너비를 설정값(기본 500px)으로 고정해 폭 360px 휴대폰에서 검색 창 좌우가 잘렸다. 레이어는 설정값과
+  화면 크기(100vw - 32px · 100vh - 96px) 중 작은 쪽을 쓴다. 표시 방식은 기기별로 고른다 — PC
+  (클릭 시점 화면 폭이 엔진 반응형 portable 상한 1023px 초과)는 `display_mode_pc`: popup·layer·inline(기본 layer),
+  모바일(휴대폰+태블릿, 1023px 이하)은 `display_mode_mobile`: inline·fullscreen(기본 inline). inline 은 클릭한 버튼이 있는
+  주소 입력 줄(가까운 `[data-postcode-anchor]`, 없으면 입력 칸을 가진 가까운 조상, 그것도 없으면 버튼 조각 컨테이너의
+  부모) 바로 뒤에 폭 100% 영역을 넣고 embed 하며, onresize 로 높이를 맞추고, 주소를 고르거나 닫기·같은 버튼을 다시
+  누르면 걷는다. 클릭 이벤트가 없으면 PC 는 레이어, 모바일은 전체 화면으로 띄운다. fullscreen 은 화면 전체를 덮는 창
+  (제목 + 닫기)에 100% 높이로 embed 하고, 고르거나 닫기·ESC 로 닫는다. SDK 는 카카오 주소(`t1.kakaocdn.net`)에서
+  받고 `kakao.Postcode` 를 먼저, 옛 `daum.Postcode` 를 대체로 쓴다.
+
+axes:
+  case:
+    - sdk_kakao                  # kakao.Postcode 가 있는 새 SDK
+    - sdk_daum                   # 옛 daum.Postcode 만 있는 SDK
+    - sdk_kakao_without_postcode # 카카오 지도 SDK 처럼 kakao 전역에 Postcode 없음
+    - inline                     # 펼치기 동작 세부(위치·닫기·높이·토글·자리 지정·다크 모드)
+    - inline_without_event       # PC 펼치기인데 이벤트 없음 → 레이어
+    - layer                      # 레이어 세부(크기·닫기 단추 이름)
+    - pc_popup                   # PC × popup
+    - pc_layer                   # PC × layer
+    - pc_inline                  # PC × inline
+    - mobile_inline              # 모바일 × inline
+    - mobile_fullscreen          # 모바일 × fullscreen
+    - boundary                   # 1023/1024 경계, 엔진 portable 상한 사용
+    - settings_fallback          # 매개변수 없음 → 플러그인 설정 → 기본값, 옛 displayMode
+
+effects:
+  - postcode_sdk_loads_from_kakao_cdn               # SDK 주소가 t1.kakaocdn.net
+  - postcode_prefers_kakao_constructor              # 둘 다 있으면 kakao.Postcode
+  - postcode_falls_back_to_daum_constructor         # daum.Postcode 만 있으면 그것
+  - postcode_sdk_not_ready_without_constructor      # kakao 전역에 Postcode 가 없으면 미확보
+  - inline_area_expands_after_address_row           # 주소 입력 줄 바로 뒤 폭 100% 영역에 embed
+  - inline_area_has_translated_close_button         # 닫기 단추 접근 이름 번역, 초점 복귀
+  - inline_area_height_follows_onresize             # onresize 높이로 영역 높이 맞춤
+  - inline_area_removed_after_address_selected      # 주소를 고르면 영역 제거 + 대상 칸 기록
+  - inline_area_toggles_on_same_button              # 같은 버튼 다시 누르면 접기
+  - inline_area_uses_declared_anchor                # data-postcode-anchor 우선, 없으면 컨테이너 부모
+  - inline_area_visible_in_dark_mode                # 다크 모드 테두리·배경 규칙
+  - inline_falls_back_to_layer_without_event        # PC: 이벤트 없으면 레이어
+  - inline_falls_back_without_event                 # 모바일: 이벤트 없으면 전체 화면
+  - layer_fits_narrow_viewport                      # 레이어 크기 = min(설정, 화면)
+  - device_mode_follows_viewport_at_click           # 클릭 시점 폭으로 PC·모바일 방식 선택
+  - fullscreen_covers_viewport_with_title_and_close # 전체 화면 창(제목·닫기), 100% 높이 embed, 스크롤 잠금
+  - fullscreen_closes_on_select_and_escape          # 고르면·ESC 로 닫힘
+  - device_modes_fall_back_to_plugin_settings       # 매개변수 없으면 설정, 그다음 기본값, 기기에 맞지 않는 값은 버림
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/postcode-display-modes.test.ts

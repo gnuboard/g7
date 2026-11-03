@@ -17,6 +17,7 @@
     "detail_placeholder": "Enter detail address",
     "building_name": "Building Name",
     "selected": "Address has been selected.",
+    "close": "Close address search",
     "error": {
       "load_failed": "Failed to load postcode service.",
       "search_failed": "Address search failed.",
@@ -29,24 +30,31 @@
     "notice": "Daum Postcode service is free to use without API key.",
     "guide": {
       "title": "Usage Guide",
-      "step1": "Select display mode. Popup opens in a new window, Layer displays as an overlay on the current page.",
-      "step2": "If popup mode is selected, set the popup window size.",
+      "step1": "Choose the display mode separately for PC and for mobile (phones and tablets). Inline expands the search right below the address field, Layer overlays the current page, Popup opens a new window, and Fullscreen opens a window covering the whole screen.",
+      "step2": "If you chose layer or popup for PC, set the search window size. A layer larger than the screen shrinks to fit.",
       "step3": "Customize the postcode search window style by setting the theme color."
     },
     "fields": {
-      "display_mode": {
-        "label": "Display Mode",
-        "hint": "Select how to display the address search window.",
+      "display_mode_pc": {
+        "label": "Display Mode (PC)",
+        "hint": "How the address search opens on PC (screen width 1024px or more).",
         "popup": "Popup",
-        "layer": "Layer"
+        "layer": "Layer",
+        "inline": "Inline (expand in page)"
+      },
+      "display_mode_mobile": {
+        "label": "Display Mode (Mobile)",
+        "hint": "How the address search opens on phones and tablets (screen width 1023px or less).",
+        "inline": "Inline (expand in page)",
+        "fullscreen": "Fullscreen"
       },
       "popup_width": {
-        "label": "Popup Width (px)",
-        "hint": "Window width used in popup mode. (100–2000)"
+        "label": "PC Layer/Popup Width (px)",
+        "hint": "Window width used by the layer and popup modes on PC. A layer larger than the screen shrinks to fit. (100–2000)"
       },
       "popup_height": {
-        "label": "Popup Height (px)",
-        "hint": "Window height used in popup mode. (100–2000)"
+        "label": "PC Layer/Popup Height (px)",
+        "hint": "Window height used by the layer and popup modes on PC. A layer larger than the screen shrinks to fit. (100–2000)"
       },
       "theme_color": {
         "label": "Theme Color",

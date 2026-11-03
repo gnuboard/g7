@@ -16,15 +16,15 @@
  * 그래서 이 spec 은 "칸이 편집 가능한가" 가 아니라 **친 값이 주문 상태에 도달하는가** 를 잰다.
  * 편집 가능 여부만 보면 이 결함이 있는 채로도 통과한다.
  *
- * @scenario asset_class=vendored, outcome=failed
+ * @scenario asset_class=service_sdk, outcome=failed
  * @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice
  */
 import { test, expect, type Page } from '@playwright/test';
 
 import { issueToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';
 
-/** 주소 검색 SDK (외부 서비스 — 자체 제공 대상이 아니다) */
-const POSTCODE_SDK = /t1\.daumcdn\.net/i;
+/** 주소 검색 SDK (외부 서비스 — 자체 제공 대상이 아니다). 카카오 주소와 옛 다음 주소를 모두 막는다 */
+const POSTCODE_SDK = /t1\.(kakaocdn|daumcdn)\.net/i;
 
 /**
  * 판매 중인 상품 1건을 장바구니에 담습니다 (주문서 진입 조건).
@@ -101,6 +101,8 @@ test.describe('#123 주소 검색 실패 시 직접 입력', () => {
     testInfo.setTimeout(120_000);
   });
 
+  // @scenario asset_class=service_sdk, outcome=failed
+  // @effects failed_asset_falls_back_to_plain_input, address_fields_editable_when_sdk_missing
   test('SDK 를 못 불러와도 직접 친 주소가 주문 상태에 도달하고 결제로 넘어갈 수 있다', async ({ page }) => {
     await page.route(POSTCODE_SDK, route => route.abort());
     await authenticatePage(page, issueToken());

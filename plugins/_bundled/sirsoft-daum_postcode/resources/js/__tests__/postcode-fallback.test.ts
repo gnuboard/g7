@@ -67,6 +67,10 @@ describe('우편번호 SDK 미확보 시 주소 입력 가능성', () => {
         expect(notifyFailure).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario asset_class=service_sdk, outcome=failed
+     * @effects address_fields_editable_when_sdk_missing, failed_asset_shows_retry_notice
+     */
     it('SDK 를 끝내 못 불러오면 읽기 전용을 걸지 않고 안내를 띄운다', async () => {
         const inputs = mountFields();
 
@@ -88,6 +92,10 @@ describe('우편번호 SDK 미확보 시 주소 입력 가능성', () => {
         expect(typeof failure.retry).toBe('function');
     });
 
+    /**
+     * @scenario asset_class=service_sdk, outcome=failed
+     * @effects address_fields_editable_when_sdk_missing
+     */
     it('읽기 전용 해제는 SDK 를 기다리지 않는다 (해제는 언제나 안전)', async () => {
         const inputs = mountFields();
         inputs.forEach(input => {
@@ -106,16 +114,28 @@ describe('우편번호 SDK 미확보 시 주소 입력 가능성', () => {
     });
 
     describe('SDK 확보 판정', () => {
+        /**
+         * @scenario asset_class=service_sdk, outcome=failed
+         * @effects address_fields_editable_when_sdk_missing
+         */
         it('전역이 없으면 미확보', () => {
             expect(isPostcodeSdkReady()).toBe(false);
         });
 
+        /**
+         * @scenario asset_class=service_sdk, outcome=loaded
+         * @effects runtime_asset_served_same_origin
+         */
         it('전역이 있으면 확보', () => {
             (window as any).daum = { Postcode: function () {} };
 
             expect(isPostcodeSdkReady()).toBe(true);
         });
 
+        /**
+         * @scenario asset_class=service_sdk, outcome=loaded
+         * @effects runtime_asset_served_same_origin
+         */
         it('대기 중에 전역이 생기면 확보로 판정한다', async () => {
             const waiting = waitForPostcodeSdk(2000);
 
@@ -126,6 +146,10 @@ describe('우편번호 SDK 미확보 시 주소 입력 가능성', () => {
             await expect(waiting).resolves.toBe(true);
         });
 
+        /**
+         * @scenario asset_class=service_sdk, outcome=failed
+         * @effects address_fields_editable_when_sdk_missing
+         */
         it('시간 안에 오지 않으면 미확보로 판정한다', async () => {
             await expect(waitForPostcodeSdk(200)).resolves.toBe(false);
         });

@@ -8,8 +8,8 @@
     <button data-ref="btn_user_search_address" type="button" class="flex-shrink-0 px-4 py-2.5 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
       <responsive on="portable" class="flex-shrink-0 px-3 py-2 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"/>
       <on type="click">
-        <!-- 주소 검색창 열기 — 띄우는 방식(레이어/팝업)과 크기·색은 플러그인 설정에서 오고, 설정이 없으면 기본값으로 뜬다. 고른 주소를 받는 쪽은 이 조각이 아니라 끼워 넣은 화면이 넘겨 준 콜백이다. -->
-        <action handler="sirsoft-daum_postcode.openPostcode" displayMode="{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}" width="{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}" height="{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}" callbackAction="{{extensionPointCallbacks.onAddressSelect}}" targetFields="{{extensionPointProps.targetFields}}">
+        <!-- 주소 검색창 열기 — 띄우는 방식(PC: 팝업/레이어/펼치기, 모바일: 펼치기/전체 화면 — 클릭 시점 화면 폭으로 가른다)과 크기·색은 플러그인 설정에서 오고, 설정이 없으면 기본값으로 뜬다. 고른 주소를 받는 쪽은 이 조각이 아니라 끼워 넣은 화면이 넘겨 준 콜백이다. -->
+        <action handler="sirsoft-daum_postcode.openPostcode" displayModePc="{{_global.plugins['sirsoft-daum_postcode']?.display_mode_pc ?? 'layer'}}" displayModeMobile="{{_global.plugins['sirsoft-daum_postcode']?.display_mode_mobile ?? 'inline'}}" width="{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}" height="{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}" callbackAction="{{extensionPointCallbacks.onAddressSelect}}" targetFields="{{extensionPointProps.targetFields}}">
           <field name="theme">
             <field name="searchBgColor" value="{{_global.plugins['sirsoft-daum_postcode']?.theme_color ?? '#1D4ED8'}}"/>
             <field name="queryTextColor" value="#FFFFFF"/>
@@ -20,5 +20,5 @@
       <span>$t:sirsoft-daum_postcode.search_address</span>
     </button>
   </div>
-  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" label="$t:sirsoft-daum_postcode.search_address"/>
+  <script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" label="$t:sirsoft-daum_postcode.search_address"/>
 </extension>

@@ -87,12 +87,42 @@ class SettingsValidationLabelTest extends PluginTestCase
      */
     public function test_in_range_popup_size_is_saved(): void
     {
-        $this->putSettings('ko', ['display_mode' => 'popup', 'popup_width' => 100, 'popup_height' => 2000])
+        $this->putSettings('ko', ['display_mode_pc' => 'popup', 'popup_width' => 100, 'popup_height' => 2000])
             ->assertStatus(200);
     }
 
     /**
-     * ko 요청에서 설정 항목 4개 모두의 오류 문구가 화면과 같은 한국어 항목 이름을 쓴다.
+     * 기기별 표시 방식(1.2.0)은 기기에 맞는 값만 저장된다 — PC 는 popup·layer·inline, 모바일은 inline·fullscreen.
+     *
+     * @scenario locale=ko
+     *
+     * @effects device_display_modes_accept_only_their_values
+     *
+     * @return void 반환값 없음
+     */
+    public function test_device_display_modes_accept_only_their_values(): void
+    {
+        foreach (['popup', 'layer', 'inline'] as $mode) {
+            $this->putSettings('ko', ['display_mode_pc' => $mode])->assertStatus(200);
+        }
+
+        foreach (['inline', 'fullscreen'] as $mode) {
+            $this->putSettings('ko', ['display_mode_mobile' => $mode])->assertStatus(200);
+        }
+
+        $this->putSettings('ko', ['display_mode_pc' => 'fullscreen'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['display_mode_pc']);
+
+        foreach (['popup', 'layer'] as $mode) {
+            $this->putSettings('ko', ['display_mode_mobile' => $mode])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['display_mode_mobile']);
+        }
+    }
+
+    /**
+     * ko 요청에서 설정 항목 5개 모두의 오류 문구가 화면과 같은 한국어 항목 이름을 쓴다.
      *
      * @scenario locale=ko
      *
@@ -154,17 +184,19 @@ class SettingsValidationLabelTest extends PluginTestCase
         Lang::addLines($lines, 'ja', self::IDENTIFIER);
 
         $ko = [
-            'display_mode' => '표시 방식',
-            'popup_width' => '팝업 너비 (px)',
-            'popup_height' => '팝업 높이 (px)',
+            'display_mode_pc' => 'PC 표시 방식',
+            'display_mode_mobile' => '모바일 표시 방식',
+            'popup_width' => 'PC 레이어·팝업 너비 (px)',
+            'popup_height' => 'PC 레이어·팝업 높이 (px)',
             'theme_color' => '테마 색상',
         ];
         $expected = [
             'ko' => $ko,
             'en' => [
-                'display_mode' => 'Display Mode',
-                'popup_width' => 'Popup Width (px)',
-                'popup_height' => 'Popup Height (px)',
+                'display_mode_pc' => 'Display Mode (PC)',
+                'display_mode_mobile' => 'Display Mode (Mobile)',
+                'popup_width' => 'PC Layer/Popup Width (px)',
+                'popup_height' => 'PC Layer/Popup Height (px)',
                 'theme_color' => 'Theme Color',
             ],
             'ja' => array_combine(array_keys($ko), array_map(
@@ -174,7 +206,8 @@ class SettingsValidationLabelTest extends PluginTestCase
         ][$locale];
 
         $response = $this->putSettings($locale, [
-            'display_mode' => 'zz',
+            'display_mode_pc' => 'zz',
+            'display_mode_mobile' => 'zz',
             'popup_width' => -10,
             'popup_height' => 5000,
             'theme_color' => ['x'],
