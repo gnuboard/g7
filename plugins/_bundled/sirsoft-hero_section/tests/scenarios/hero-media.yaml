@@ -13,6 +13,8 @@ description: |
 
 axes:
   surface:
+    - video_follows_core_file_serving_contract
+    - media_urls_carry_site_mount_prefix
     - video_upload_accepted
     - video_upload_rejects_disguised
     - video_upload_size_limit
@@ -53,13 +55,17 @@ axes:
     - form_save_blocked_reason
 
 effects:
+  - file_serving_contract_matches_core
+  - media_served_inside_site_mount
   - public_hero_media_fields
   - image_files_deleted
   - activity_log_per_item
   - accessible_names_present
 
 test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Models/MediaUrlBasePrefixTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerMediaTest.php
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSliderMedia.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/media-banner.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/site-media-prefix.spec.ts

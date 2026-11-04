@@ -12,6 +12,7 @@
 3. 입력 규칙: empty=default, yes/y=true, no/n=false, 그 외=재질문 루프
 4. --no-interaction 또는 콘솔 없는 STDIN: default 즉시 반환 (파괴적 확인의 default 는 false 여야 한다)
 5. upgrade step / Symfony 외부 환경: \App\Console\Helpers\ConsoleConfirm::ask() FQN 직접 호출
+6. 기본값 「아니오」가 곧 작업 취소인 확인은 canAnswerConfirmation() 으로 먼저 가르고, 답할 수 없으면 refuseUnanswerableConfirmation() 으로 사유 출력 + 종료 코드 1 (취소를 0 으로 끝내지 않는다)
 ```
 
 ---
@@ -107,6 +108,44 @@ posix 확장 없이 Windows 를 포함해 동작하므로 이 판정의 근거�
 
 이 가드가 의미를 가지려면 **파괴적 확인의 `$default` 는 반드시 `false`(중단)** 여야 한다.
 콘솔이 없으면 그 기본값이 곧 결정이 되기 때문이다.
+
+### 답할 수 없는 실행의 작업 취소는 실패로 끝낸다
+
+기본값 「아니오」가 곧 작업 취소인 확인(업데이트, 제거, 삭제, 덮어쓰기)을 `unifiedConfirm()` 하나로만 받으면,
+cron, CI, 원격 명령, `--no-interaction` 실행은 묻지 않고 취소되어 「취소되었습니다」와 종료 코드 0 으로 끝난다.
+자동화는 그 0 을 작업이 끝났다는 뜻으로 읽는다. 그래서 확인 앞에서 먼저 가른다.
+
+```php
+if (! $this->option('force')) {
+    if (! $this->canAnswerConfirmation()) {
+        return $this->refuseUnanswerableConfirmation(
+            __('foo.commands.delete.confirm_unavailable'),       // 작업하지 않은 사유
+            __('foo.commands.delete.confirm_unavailable_hint'),  // 확인 생략 옵션, 없으면 터미널에서 실행하라는 안내
+        );
+    }
+
+    if (! $this->unifiedConfirm(__('foo.commands.delete.confirm_question'), false)) {
+        $this->info(__('foo.commands.delete.aborted'));
+
+        return self::SUCCESS; // 대화형에서 운영자가 직접 답한 「아니오」는 의도한 취소라 0
+    }
+}
+```
+
+| 메서드 | 동작 |
+|--------|------|
+| `canAnswerConfirmation(): bool` | `isInteractive()` 이고 `canPromptForAnswer()` 이면 true. 답할 수 없는 실행 판정의 단일 지점이며 `unifiedConfirm()` 도 이 판정을 쓴다 |
+| `refuseUnanswerableConfirmation(string $reason, string $hint): int` | 사유를 오류로, 안내를 한 줄로 출력하고 `Command::FAILURE` 를 돌려준다 |
+
+안내 문구는 사실대로 쓴다. 확인 생략 옵션이 있는 명령은 그 옵션(`--force`, `core:update` 는 `--yes`)을 안내하고,
+없는 명령은 터미널에서 실행해 질문에 답하라고 안내한다. 되돌릴 수 없는 삭제(`analytics:purge` 등)의 필수 동의
+표식(`--confirm`)은 비대화형 동의가 아니다. 이 규칙을 따르는 명령: `core:update`, `module:update`, `plugin:update`,
+`template:update`, `module:uninstall`, `plugin:uninstall`, `template:uninstall`, `language-pack:uninstall`,
+`analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`,
+`settings:migrate-to-json`.
+
+선택 질문(기본값이 문서화된 진행 방식이고 거절이 작업 취소가 아닌 것, 예: 검색 인덱스 재생성 여부)은 종전처럼
+`unifiedConfirm()` 의 기본값을 그대로 쓴다.
 
 ---
 
@@ -217,10 +256,20 @@ $this->artisan('foo:bar')
     ->assertExitCode(0);
 ```
 
-`--no-interaction` 또는 `--force` 시 default 동작 회귀:
+`--no-interaction` 시 default 동작 회귀(선택 질문):
 
 ```php
 $this->artisan('foo:bar --no-interaction')->assertExitCode(0);
+```
+
+작업 취소 확인은 비대화형이 실패(1)로 끝나는지 본다. 테스트 실행에서는 `canPromptForAnswer()` 가 늘 true 이므로
+「터미널 없음」은 그 메서드만 false 로 바꾼 익명 하위 클래스를 `Kernel::registerCommand()` 로 등록해 흉내 낸다
+(`tests/Feature/Console/ExtensionLifecycleNonInteractiveConfirmTest.php` 참조).
+
+```php
+$this->artisan('foo:delete --no-interaction')
+    ->expectsOutputToContain(__('foo.commands.delete.confirm_unavailable'))
+    ->assertExitCode(1);
 ```
 
 ### 주의
@@ -273,6 +322,9 @@ $confirmed = \App\Console\Helpers\ConsoleConfirm::ask('진행할까요?', true);
 ```text
 □ Laravel Command 에서 yes/no 입력이 필요한가?
    → use HasUnifiedConfirm + $this->unifiedConfirm($question, $default)
+
+□ 「아니오」가 곧 작업 취소인 확인인가?
+   → 확인 앞에서 canAnswerConfirmation() 으로 가르고, 답할 수 없으면 refuseUnanswerableConfirmation() 으로 종료 코드 1
 
 □ upgrade step 또는 단순 PHP CLI 에서 yes/no 입력이 필요한가?
    → \App\Console\Helpers\ConsoleConfirm::ask($question, $default) FQN 호출

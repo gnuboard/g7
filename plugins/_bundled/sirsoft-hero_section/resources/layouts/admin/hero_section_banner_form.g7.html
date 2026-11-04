@@ -714,13 +714,13 @@
               </button>
             </div>
           </div>
-          <sirsoft-hero_section.hero-preview-language data-type="composite" locales="{{position_settings?.data?.editor?.locales ?? []}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}">
+          <sirsoft-hero_section.hero-preview-language data-type="composite" locales="{{position_settings?.data?.editor?.locales ?? []}}" localeNames="{{_global.appConfig?.localeNames ?? null}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}">
             <on type="change" event="onLocaleChange">
               <!-- 미리보기 언어 고르기 — 화면 상태만 바꾼다(저장 안 됨) -->
               <set-state target="local" previewLocale="{{$args[0]}}"/>
             </on>
           </sirsoft-hero_section.hero-preview-language>
-          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="form_preview" draft="{{_local.form}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}" defaultLocale="{{position_settings?.data?.editor?.default_locale}}" settings="{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (position_settings?.data?.positions ?? []).find(p =&gt; p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content' })}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_local.form?.position ?? 'home_hero'}}" emptyText="$t:sirsoft-hero_section.admin.form.preview.empty">
+          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="form_preview" draft="{{_local.form}}" localeNames="{{_global.appConfig?.localeNames ?? null}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}" defaultLocale="{{position_settings?.data?.editor?.default_locale}}" settings="{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (position_settings?.data?.positions ?? []).find(p =&gt; p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content' })}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_local.form?.position ?? 'home_hero'}}" emptyText="$t:sirsoft-hero_section.admin.form.preview.empty">
             <on type="change" event="onContentLocaleChange">
               <!-- 미리보기 안에서 바꾼 콘텐츠 언어를 언어 고르기와 맞춘다 -->
               <set-state target="local" previewLocale="{{$args[0]}}"/>

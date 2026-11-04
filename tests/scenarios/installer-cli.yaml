@@ -139,6 +139,7 @@ effects:
   - cli_takeover_discards_web_runtime_and_drop_confirm
   - cli_interrupted_cli_install_requires_resume
   - reclaim_refused_for_cli_owned_installation
+  - cli_worker_lock_survives_long_blocking_task   # 심장박동 없이 오래 걸린 단계 뒤에도 터미널 설치가 자기 잠금을 잃지 않는다
   # 터미널 소유 설치의 웹 잠금 화면 — 이어서 설치 명령은 멈춘 경우에만 안내
   - cli_owned_notice_hides_resume_while_running
   - cli_owned_notice_shows_resume_when_stopped

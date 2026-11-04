@@ -2858,11 +2858,16 @@ export class TemplateApp {
      * 실패해도 reject 하지 않는다 — 한 스크립트의 실패가 나머지 스크립트 로드를 막지
      * 않는다는 기존 계약을 유지한다. 대신 `failedLayoutScripts` 와 안내 배너로 표면화한다.
      *
+     * 모드 보정 전에 사이트 마운트 접두사를 붙인다(`withBasePrefix()`, 이미 붙은 값·`//host` 는
+     * 그대로). 레이아웃이 적은 루트 상대 주소는 그 값을 쓰는 쪽이 접두사를 붙인다는 규칙
+     * (`A`·`Img` 컴포넌트, `apiCall` 타깃)과 같다 — 붙이지 않으면 하위 폴더 설치에서 확장자 방식일 때
+     * 요청이 사이트 밖으로 나가 404 가 된다(확장자 없는 방식은 모드 변환이 접두사를 붙여 가려졌다).
+     *
      * @param script 스크립트 정의
      * @returns Promise<void> 성공·실패 모두 resolve
      */
     private async loadLayoutScript(script: LayoutScript): Promise<void> {
-        const url = script.src.startsWith('/') ? convertToCurrentMode(script.src) : script.src;
+        const url = script.src.startsWith('/') ? convertToCurrentMode(withBasePrefix(script.src)) : script.src;
 
         try {
             await loadScriptWithRetry(

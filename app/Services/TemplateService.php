@@ -32,6 +32,7 @@ use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LocaleTag;
 use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -2198,7 +2199,7 @@ class TemplateService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'template.json', 'templates', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'template.json', 'templates', UploadedFileName::original($file)
             );
 
             $manifest = $result['config'];
@@ -2248,7 +2249,7 @@ class TemplateService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'template.json', 'templates', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'template.json', 'templates', UploadedFileName::original($file)
             );
 
             $this->ensureTemplateNotInstalled($result['identifier']);

@@ -146,6 +146,16 @@ class MigrateSettingsToJsonCommand extends Command
 
         // 기존 JSON 파일 존재 확인
         if (file_exists(storage_path('app/settings/general.json')) && ! $this->option('force')) {
+            // 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 종전에 기본값 「아니오」로 취소 문구만 내고
+            // 종료 코드 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 --force 안내를 남기고 실패로 끝낸다.
+            // 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+            if (! $this->canAnswerConfirmation()) {
+                return $this->refuseUnanswerableConfirmation(
+                    __('settings.console.migrate_to_json.confirm_unavailable'),
+                    __('settings.console.migrate_to_json.confirm_unavailable_hint'),
+                );
+            }
+
             if (! $this->unifiedConfirm(__('settings.console.migrate_to_json.confirm_overwrite'), false)) {
                 $this->info(__('settings.console.migrate_to_json.cancelled'));
 

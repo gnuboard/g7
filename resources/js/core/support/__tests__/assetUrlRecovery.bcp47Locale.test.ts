@@ -20,24 +20,31 @@ function loadInlineStaticToLegacy(): (url: string) => string | null {
     const shellPath = resolve(__dirname, '../../../../../public/assets/core/js/g7-shell-head.js');
     const source = readFileSync(shellPath, 'utf-8');
 
-    const start = source.indexOf('function staticToLegacy(url) {');
-    expect(start, '셸 head 스크립트에서 staticToLegacy 를 찾지 못했다').toBeGreaterThan(-1);
+    const slice = (signature: string): string => {
+        const start = source.indexOf(signature);
+        expect(start, `셸 head 스크립트에서 ${signature} 를 찾지 못했다`).toBeGreaterThan(-1);
 
-    let depth = 0;
-    let end = start;
-    for (let i = source.indexOf('{', start); i < source.length; i += 1) {
-        if (source[i] === '{') depth += 1;
-        else if (source[i] === '}') {
-            depth -= 1;
-            if (depth === 0) {
-                end = i + 1;
-                break;
+        let depth = 0;
+        let end = start;
+        for (let i = source.indexOf('{', start); i < source.length; i += 1) {
+            if (source[i] === '{') depth += 1;
+            else if (source[i] === '}') {
+                depth -= 1;
+                if (depth === 0) {
+                    end = i + 1;
+                    break;
+                }
             }
         }
-    }
 
+        return source.slice(start, end);
+    };
+
+    // 역변환기가 부르는 셸 스코프(접두사 정규화·루트 설치의 빈 접두사)를 함께 주입한다.
     // eslint-disable-next-line no-new-func
-    return new Function(`${source.slice(start, end)}\nreturn staticToLegacy;`)() as (url: string) => string | null;
+    return new Function(
+        `var BASE_PATH = '';\n${slice('function normalizeBasePath(value) {')}\n${slice('function staticToLegacy(url) {')}\nreturn staticToLegacy;`,
+    )() as (url: string) => string | null;
 }
 
 describe('정적 게시 언어 파일 역변환 — BCP 47 로케일 (#148)', () => {

@@ -1055,6 +1055,8 @@
 
             const startedAt = Date.now();
             this.longTaskNoticeShown = false;
+            // 첫 표시를 한 주기 뒤로 미루면 그동안 직전 단계의 경과 줄이 남는다 — 보내는 순간 이번 단계로 바꾼다
+            this._invoke('onProgressTick', 0, this.currentTaskName);
             this.activeTickHandle = setInterval(() => {
                 if (this.stopped) { this._stopProgressTicker(); return; }
 
@@ -1068,6 +1070,23 @@
                     this._invoke('onLongTask', elapsed, this.currentTaskName);
                 }
             }, this.progressTickMs);
+        }
+
+        /**
+         * 이번 요청이 돌릴 단계 이름을 화면에 묻는다. 콜백이 없거나 실패하면 null 이다.
+         *
+         * @returns {string|null} 단계 이름
+         */
+        _resolveNextTaskName() {
+            const resolve = this.callbacks.resolveNextTask;
+            if (typeof resolve !== 'function') return null;
+            try {
+                const name = resolve();
+                return typeof name === 'string' && name !== '' ? name : null;
+            } catch (e) {
+                console.error('[InstallationMonitor] callback resolveNextTask failed:', e);
+                return null;
+            }
         }
 
         _stopProgressTicker() {
@@ -1133,6 +1152,10 @@
                     : null;
                 this.activeController = controller;
                 this.activeTimeoutHandle = timeoutHandle;
+                // 경과 표시와 장시간 안내가 댈 이름은 **이번 요청이 돌릴 단계**다. 응답의 `task_start`
+                // 는 요청이 끝난 뒤에야 오므로, 그 이름을 다음 요청에 쓰면 언제나 직전에 끝난 단계를
+                // 가리킨다. 화면이 다음 단계를 알려 주면 그것을 쓰고, 모르면 이름 없이 경과만 보인다.
+                this.currentTaskName = this._resolveNextTaskName();
                 this._startProgressTicker();
 
                 try {

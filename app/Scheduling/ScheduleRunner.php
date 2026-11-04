@@ -5,9 +5,13 @@ namespace App\Scheduling;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
+use App\Exceptions\ScheduleExecutionException;
 use App\Execution\CommandRunnerResolver;
 use App\Execution\ExecutionMode;
+use App\Models\ScheduleHistory;
 use App\Scheduling\Exceptions\ScheduleCommandExtractionException;
+use App\Services\Schedule\ScheduleRegistrar;
+use App\Services\Schedule\ScheduleRunContext;
 use App\Support\ExecutionEnvironment;
 use Carbon\CarbonImmutable;
 use Cron\CronExpression;
@@ -43,10 +47,11 @@ use Illuminate\Support\Facades\Log;
  *
  * 실행 창 소급 판정(D17)의 근거는 ScheduleRunState 가 보관한다.
  *
- * DB 스케줄 계통(schedules 테이블)은 이 안에서 연결하지 않는다 (D8 — 별건). 붙일 때는
- * runDatabaseSchedules() 자리에 Schedule::scopeDue() → ScheduleService::runSchedule()
- * 를 잇되, 그 경로는 **반드시** ScheduleCommandValidator 를 경유해야 한다 (R15).
- * 큐 소진 경로도 같은 방식의 확장 지점이다 (D22 — 이번 안에서 만들지 않는다).
+ * DB 스케줄 계통(schedules 테이블)은 등록기(`ScheduleRegistrar`)가 행마다 `schedule:{id}` 콜백
+ * 이벤트로 등록하므로 이 러너도 등록된 이벤트로서 돌린다. 그 실행은 실행기(`ScheduleExecutor`)를
+ * 거쳐 보안 검증(R15)과 행 기준 이력이 붙는다 — 이 러너는 그 이벤트에 자기 이력을 따로 남기지 않고,
+ * 계기·실행자는 `ScheduleRunContext` 로 실행기에 넘긴다.
+ * 큐 소진 경로는 확장 지점으로만 남긴다 (D22 — 이번 안에서 만들지 않는다).
  *
  * @since 7.1.0
  */
@@ -59,6 +64,9 @@ class ScheduleRunner
      * 리터럴을 다시 적으면 한쪽만 바뀌었을 때 목록이 조용히 빈다.
      */
     public const HISTORY_SOURCE = 'code';
+
+    /** @var ScheduleRegistrar|null DB 스케줄 등록기 (처음 쓸 때 꺼낸다) */
+    private ?ScheduleRegistrar $registrar = null;
 
     /**
      * @param  ScheduleRunState  $state  점검·실행 기록
@@ -87,11 +95,13 @@ class ScheduleRunner
      *
      * @param  CarbonImmutable|null  $now  기준 시각 (테스트 주입용)
      * @param  ScheduleTriggerType  $trigger  트리거 유형 (예약 호출 / 화면의 [지금 실행])
+     * @param  int|null  $userId  [지금 실행]을 누른 관리자 ID (예약 호출이면 null)
      * @return ScheduleRunSummary 실행 요약
      */
     public function run(
         ?CarbonImmutable $now = null,
         ScheduleTriggerType $trigger = ScheduleTriggerType::Scheduled,
+        ?int $userId = null,
     ): ScheduleRunSummary {
         $startedAt = $now ?? CarbonImmutable::now();
         $startedElapsed = ($this->clock)();
@@ -159,7 +169,14 @@ class ScheduleRunner
 
             $eventStartedAt = $this->momentOf($startedAt, $startedElapsed);
 
-            $outcome = $this->execute($event, $app);
+            // DB 스케줄 이벤트(`schedule:{id}`)는 실행기가 행 기준 이력을 남긴다 — 여기서 또 남기면
+            // 같은 실행이 내부 이름(`schedule:87`)을 단 기록과 짝을 이뤄 두 줄이 된다. 그 대신
+            // 계기·실행자를 실행기까지 넘기고, 실행기가 마감한 결과를 요약에 그대로 센다.
+            $managed = $this->registrar()->isManaged($event);
+
+            $outcome = $managed
+                ? $this->executeManaged($event, $app, $trigger, $userId)
+                : $this->execute($event, $app);
 
             $eventEndedAt = $this->momentOf($startedAt, $startedElapsed);
 
@@ -168,8 +185,8 @@ class ScheduleRunner
             // 실행 이력은 **한 건씩** 남긴다 — 상태 파일의 '직전 1회' 요약은 다음 호출에
             // 덮여 사라지므로, 그것만으로는 「어젯밤 그 작업이 실패했나」를 나중에 볼 수
             // 없다. 건너뛴 이벤트는 남기지 않는다(실행되지 않았다는 사실은 요약이 나른다).
-            if ($outcome['status'] !== 'skipped') {
-                $this->recordHistory($event, $key, $eventStartedAt, $eventEndedAt, $outcome, $trigger);
+            if ($outcome['status'] !== 'skipped' && ! $managed) {
+                $this->recordHistory($event, $key, $eventStartedAt, $eventEndedAt, $outcome, $trigger, $userId);
             }
 
             match ($outcome['status']) {
@@ -452,6 +469,63 @@ class ScheduleRunner
     }
 
     /**
+     * DB 스케줄 등록기 (관리 이벤트 판정용).
+     *
+     * 생성자로 받지 않는다 — 시계를 다섯째 인자로 넘기는 호출부(시험)가 있어 인자 순서를 바꿀 수 없고,
+     * 판정은 이름 접두사만 보므로 호출마다 꺼내도 비용이 없다.
+     *
+     * @return ScheduleRegistrar 등록기
+     */
+    private function registrar(): ScheduleRegistrar
+    {
+        return $this->registrar ??= app(ScheduleRegistrar::class);
+    }
+
+    /**
+     * DB 스케줄 이벤트를 실행하고 실행기가 마감한 결과로 판정합니다.
+     *
+     * 등록기의 콜백은 실행기의 실패를 예외로 올리지 않는다(실패도 이력으로 마감하고 돌아온다). 그래서
+     * 콜백이 예외 없이 끝났다는 것만으로는 성공이 아니다 — 실행 문맥에 돌려받은 이력·거부를 본다.
+     *
+     * - 실패 이력 → 실패 (사유는 이력의 오류 출력)
+     * - 수동 실행 중복 거부(앞선 실행이 돌고 있음) → 건너뜀 `overlapping` — 실행 기록을 남기지 않아 다음 호출이 다시 잡는다
+     * - 그 밖의 실행 전 거부 → 실패 (사유는 거부 메시지)
+     * - 성공 이력·큐 투입·「실패만 기록」 성공·하트비트 → 실행됨
+     *
+     * @param  Event  $event  `schedule:` 이벤트
+     * @param  Container  $container  컨테이너
+     * @param  ScheduleTriggerType  $trigger  실행 계기
+     * @param  int|null  $userId  수동 실행자 ID
+     * @return array{status: string, reason?: string} 실행 결과
+     */
+    private function executeManaged(Event $event, Container $container, ScheduleTriggerType $trigger, ?int $userId): array
+    {
+        return ScheduleRunContext::within($trigger, $userId, function () use ($event, $container): array {
+            $outcome = $this->execute($event, $container);
+
+            if ($outcome['status'] !== 'executed') {
+                return $outcome;
+            }
+
+            $reported = ScheduleRunContext::outcome();
+
+            if ($reported instanceof ScheduleExecutionException && $reported->reasonCode === 'already_running') {
+                return ['status' => 'skipped', 'reason' => 'overlapping'];
+            }
+
+            if ($reported instanceof \Throwable) {
+                return ['status' => 'failed', 'reason' => $reported->getMessage()];
+            }
+
+            if ($reported instanceof ScheduleHistory && $reported->status === ScheduleResultStatus::Failed) {
+                return ['status' => 'failed', 'reason' => mb_substr((string) ($reported->error_output ?? 'failed'), 0, 500)];
+            }
+
+            return $outcome;
+        });
+    }
+
+    /**
      * Schedule::call() / Schedule::job() 이벤트를 실행합니다.
      *
      * 이미 in-process 이므로 프레임워크의 실행 경로를 그대로 쓴다 — before/after 콜백이
@@ -593,6 +667,7 @@ class ScheduleRunner
      * @param  CarbonImmutable  $endedAt  실행 종료 시각
      * @param  array{status: string, reason?: string}  $outcome  실행 결과
      * @param  ScheduleTriggerType  $trigger  트리거 유형
+     * @param  int|null  $userId  수동 실행자 ID
      * @return void 반환값 없음
      */
     private function recordHistory(
@@ -602,6 +677,7 @@ class ScheduleRunner
         CarbonImmutable $endedAt,
         array $outcome,
         ScheduleTriggerType $trigger,
+        ?int $userId = null,
     ): void {
         $failed = $outcome['status'] === 'failed';
 
@@ -619,6 +695,7 @@ class ScheduleRunner
                 'exit_code' => $failed ? 1 : 0,
                 'error_output' => $failed ? ($outcome['reason'] ?? null) : null,
                 'trigger_type' => $trigger,
+                'triggered_by' => $userId,
             ]);
         } catch (\Throwable $e) {
             Log::error('예약 작업 실행 이력을 남기지 못했습니다.', [

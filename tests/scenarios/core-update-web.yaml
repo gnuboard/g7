@@ -111,6 +111,7 @@ effects:
   - a_failed_update_check_leaves_its_reason_on_screen
   - an_interrupted_run_continues_without_operator_action
   - server_notices_reach_the_screen
+  - the_current_version_does_not_wait_for_the_slow_server_info
 
   # 사전 조건 · 되돌리기 마무리 · 스폰 강제 (검증 라운드 1 에서 신설)
   - the_start_screen_receives_the_preflight_verdict

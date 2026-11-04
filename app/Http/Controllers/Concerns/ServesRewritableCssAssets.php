@@ -83,22 +83,9 @@ trait ServesRewritableCssAssets
 
         // ETag 는 **내보내는 본문** 기준이어야 한다. 파일 stat 기준으로 잡으면 URL 모드가
         // 바뀌어 본문이 달라져도 같은 ETag 가 나와 브라우저가 옛 본문을 계속 쓴다.
-        $etag = md5($rewritten);
-
-        if (request()->header('If-None-Match') === $etag) {
-            return response('', 304)->header('ETag', $etag);
-        }
-
-        $cacheControl = app()->environment('production')
-            ? "public, max-age={$maxAge}, immutable"
-            : 'no-cache';
-
-        return response($rewritten, 200, [
-            'Content-Type' => $mimeType,
-            'Expires' => gmdate('D, d M Y H:i:s', time() + $maxAge).' GMT',
-            'ETag' => $etag,
-            'Cache-Control' => $cacheControl,
-        ]);
+        // 캐싱 정책(버전 실린 주소만 immutable)·형식 추측 금지·따옴표 ETag·재검증은 파일 응답과 같은
+        // 헬퍼가 맡는다 — 여기서 응답을 직접 만들면 그 계약이 이 통로에서만 빠진다.
+        return $this->generatedFileResponse($rewritten, $mimeType, $maxAge, null, basename($filePath));
     }
 
     /**

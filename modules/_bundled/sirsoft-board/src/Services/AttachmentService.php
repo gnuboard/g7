@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
@@ -189,7 +190,7 @@ class AttachmentService
             'board_id' => $boardId,
             'post_id' => $postId,
             'temp_key' => $postId ? null : $tempKey,
-            'original_filename' => $file->getClientOriginalName(),
+            'original_filename' => UploadedFileName::original($file),
             'stored_filename' => $storedFilename,
             'disk' => $disk,
             'path' => $path,

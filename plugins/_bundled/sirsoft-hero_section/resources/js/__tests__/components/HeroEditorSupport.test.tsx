@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 import { localized, periodStatus } from '../../support/editor';
 import { HeroBannerPreview } from '../../components/composite/HeroBannerPreview';
+import { HeroPreviewLanguage } from '../../components/composite/HeroPreviewLanguage';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: {}, EffectFade: {}, EffectCube: {}, EffectFlip: {}, EffectCoverflow: {}, EffectCreative: {} }));
@@ -85,5 +86,23 @@ describe('[case:hero-preview-iframe-init] [case:hero-preview-dialog-escape] 사�
     fireEvent(container.querySelector('dialog')!, new Event('cancel', { bubbles: false, cancelable: true }));
     expect(container.querySelector('dialog')).toBeNull();
     expect(document.activeElement).toBe(opener);
+  });
+
+  // @scenario case=preview_language_names
+  // @effects languages_named_like_tabs
+  it('미리보기 언어 선택과 「기본 언어로 대신 표시」 안내는 언어 탭과 같은 언어 이름을 쓰고, 이름이 없는 언어만 코드로 보인다', () => {
+    (window as any).G7Core = { t: (key: string, params?: Record<string, unknown>) => `${key}${params ? JSON.stringify(params) : ''}` };
+    try {
+      const names = { ko: '한국어', en: 'English' };
+      const draft = { title: { ko: '한국어 제목' }, images: { pc: { url: '/pc.png' } } };
+      const view = render(<HeroBannerPreview draft={draft} locale="en" defaultLocale="ko" localeNames={names} />);
+      expect(view.container.querySelector('.hs-preview__fallback')?.textContent).toContain('"locale":"한국어"');
+      view.rerender(<HeroBannerPreview draft={draft} locale="en" defaultLocale="ko" />);
+      expect(view.container.querySelector('.hs-preview__fallback')?.textContent).toContain('"locale":"KO"');
+      view.unmount();
+
+      const select = render(<HeroPreviewLanguage locales={['ko', 'en', 'ja']} locale="ko" localeNames={names} />);
+      expect([...select.container.querySelectorAll('option')].map((o) => [o.value, o.textContent])).toEqual([['ko', '한국어'], ['en', 'English'], ['ja', 'JA']]);
+    } finally { delete (window as any).G7Core; }
   });
 });

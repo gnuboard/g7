@@ -9,6 +9,7 @@ use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
+use App\Scheduling\ScheduleRunner;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -186,6 +187,36 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
     public function getRecentBySource(string $source, int $limit = 20): Collection
     {
         return ScheduleHistory::where('source', $source)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
+     * 출처를 가리지 않고 최근 실행 이력을 조회합니다 (스케줄 행을 함께 싣는다).
+     *
+     * 정렬은 `getRecentBySource()` 와 같다(시각 역순 + 기본키로 전순서).
+     *
+     * @param  int  $limit  최대 건수
+     * @param  string|null  $excludeCodeEventPrefix  빼낼 코드 이력의 이벤트 이름 접두사 (null 이면 빼지 않음)
+     * @return Collection 시각 역순 이력
+     */
+    public function getRecentRuns(int $limit = 20, ?string $excludeCodeEventPrefix = null): Collection
+    {
+        $query = ScheduleHistory::query()->with('schedule');
+
+        if ($excludeCodeEventPrefix !== null && $excludeCodeEventPrefix !== '') {
+            $pattern = addcslashes($excludeCodeEventPrefix, '\\%_').'%';
+
+            $query->where(function ($q) use ($pattern): void {
+                $q->where('source', '!=', ScheduleRunner::HISTORY_SOURCE)
+                    ->orWhereNull('event_name')
+                    ->orWhere('event_name', 'not like', $pattern);
+            });
+        }
+
+        return $query
             ->orderByDesc('started_at')
             ->orderByDesc('id')
             ->limit(max(1, $limit))

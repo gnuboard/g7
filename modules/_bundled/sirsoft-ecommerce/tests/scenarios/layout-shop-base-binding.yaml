@@ -1,0 +1,41 @@
+feature: 레이아웃의 상점 기준 경로(_global.shopBase) 바인딩
+
+description: |
+  사용자 레이아웃은 상점 주소를 `{{_global.shopBase}}/cart` 처럼 조립한다. shopBase 는
+  `_user_base.json` 이 상점 주소 설정에서 만든다 — 기본은 `/shop`, 바꾼 주소는 `/store` 같은
+  값, 주소 없이 루트에 붙이는 no_route 는 빈 문자열이다.
+
+  no_route 를 `/` 로 두면 조립한 값이 `//cart` 가 된다. 브라우저는 이를 `cart` 라는 다른 호스트로
+  읽고, 엔진도 사이트 밖 이동으로 막는다(engine-v1.87.0). 그래서 no_route 의 기준 경로는 빈
+  문자열이어야 하고, 조립한 이동과 링크가 사이트 안 경로(`/cart`)로 남는지 잰다.
+
+  서버가 만드는 상점 주소는 shop-route-path-server-urls.yaml 이 맡는다.
+
+axes:
+  route_setting:
+    - default    # 설정 없음 → /shop
+    - custom     # 운영자가 바꾼 주소 (예: store)
+    - no_route   # 주소 없이 루트 운영 → 빈 문자열
+  surface:
+    - text       # 텍스트 바인딩
+    - navigate   # navigate 액션 path
+    - href       # A 태그 href
+
+effects:
+  - shop_base_text_binds_default_shop
+  - shop_base_text_binds_custom_route
+  - shop_base_text_is_empty_when_no_route
+  - navigate_cart_follows_shop_base
+  - navigate_checkout_follows_custom_route
+  - navigate_cart_stays_on_site_when_no_route
+  - navigate_products_follows_shop_base
+  - href_follows_shop_base
+  - href_category_follows_custom_route
+  - href_product_detail_binds_dynamic_id
+  - href_category_stays_on_site_when_no_route
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/ecommerce-route-binding.test.tsx
+
+validation:
+  audit_rule: test-scenario-coverage

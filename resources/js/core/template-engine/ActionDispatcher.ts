@@ -7393,7 +7393,10 @@ export class ActionDispatcher {
 
     const script = document.createElement('script');
     script.id = scriptId;
-    script.src = src;
+    // 레이아웃이 적은 루트 상대 주소에는 사이트 마운트 접두사를 붙인다(멱등 — 이미 붙은 값·`//host`·절대 URL 은 그대로).
+    // 레이아웃 `scripts[]`(TemplateApp.loadLayoutScript)와 같은 규칙이다. 캐시·중복 판정 키(scriptId)는 레이아웃이
+    // 적은 원래 주소로 둔다.
+    script.src = withBasePrefix(src);
     script.async = async;
     script.defer = defer;
 

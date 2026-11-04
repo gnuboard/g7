@@ -930,6 +930,51 @@ if (! function_exists('installerSessionOwnsStepwiseInstall')) {
     }
 }
 
+if (! function_exists('installerTransferStepwiseOwnership')) {
+    /**
+     * 복구 토큰으로 소유권을 되찾은 세션에 진행 중인 단계별 설치의 조작 권한을 옮긴다.
+     *
+     * 단계별 실행은 브라우저가 다음 단계를 불러야만 진행하고, 그 토큰은 설치를 시작한 세션에만 화면으로
+     * 나간다(`installerSessionOwnsStepwiseInstall`). 되찾기가 소유 해시만 바꾸면 되찾은 창은 토큰을 받지 못해
+     * 이어 갈 수도(run-task), 멈출 수도(abort) 없고 설치는 그 자리에 영영 남는다 — 그 창이 소유권을 되찾은
+     * 유일한 출구인데도.
+     *
+     * 소유자 표식과 토큰을 **둘 다 새로 만든다**. 표식만 옮기면 닫힌 줄 알았던 이전 창이 살아 있을 때 두 창이
+     * 같은 토큰으로 함께 진행한다. 이미 돌고 있는 요청은 시작할 때 토큰을 확인했으므로 끝까지 가고, 되찾은 창은
+     * 그동안 busy 를 받으며 기다렸다가 다음 단계부터 이어 간다. 호출부가 복구 토큰 대조(또는 소유 세션 확인)를
+     * 먼저 하고, 결과의 runtime 을 저장한 뒤 표식을 세션에 심는다.
+     *
+     * @param  array<string, mixed>  $state  인스톨러 state
+     * @param  array<string, mixed>|null  $runtime  readInstallerRuntime() 결과
+     * @return array{runtime: array<string, mixed>, session_owner: string}|null 옮길 것이 없으면 null
+     */
+    function installerTransferStepwiseOwnership(array $state, ?array $runtime): ?array
+    {
+        if (! installerRequiresStepwiseToken($state)) {
+            return null;
+        }
+
+        // 설치 화면이 토큰을 싣는 상태와 같은 집합이다 (views/5-installation.php)
+        if (! in_array($state['installation_status'] ?? '', ['running', 'failed', 'aborted', 'completed'], true)) {
+            return null;
+        }
+
+        $installer = $runtime['installer'] ?? null;
+        if (! is_array($installer) || (string) ($installer['stepwise_token'] ?? '') === '') {
+            // 보관된 토큰이 없으면 옮길 권한도 없다 — 그 설치는 다시 시작해야 한다(run-task 가 같은 사유로 거부한다)
+            return null;
+        }
+
+        $sessionOwner = bin2hex(random_bytes(16));
+        $runtime['installer'] = array_merge($installer, [
+            'stepwise_token' => bin2hex(random_bytes(16)),
+            'session_owner' => $sessionOwner,
+        ]);
+
+        return ['runtime' => $runtime, 'session_owner' => $sessionOwner];
+    }
+}
+
 if (! function_exists('installerProbeRateLimitExceeded')) {
     /**
      * 무인증 probe 엔드포인트의 호출 횟수 상한 (13차 보안#6·보안#7).
@@ -1373,6 +1418,11 @@ if (! function_exists('installerOutputConfirmsAlreadyApplied')) {
      */
     function installerOutputConfirmsAlreadyApplied(string $outputText): bool
     {
+        // 터미널 색 코드를 먼저 벗긴다. 하위 artisan 은 출력이 파일이어도 색을 켤 수 있고(Windows 에서 TERM 이
+        // xterm 이면 Symfony 콘솔이 색을 켠다), 그러면 문장 끝 마침표 뒤에 색 해제 코드가 붙어 아래 줄 끝 앵커가
+        // 빗나간다 — 이어 하기가 이미 끝난 활성화를 「이미 활성화된 템플릿입니다」 실패로 읽어 영구히 멈췄다.
+        $outputText = (string) preg_replace('/\x1B\[[0-9;?]*[ -\/]*[@-~]/', '', $outputText);
+
         if ($outputText === '') {
             return false;
         }

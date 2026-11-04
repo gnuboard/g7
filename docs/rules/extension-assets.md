@@ -65,6 +65,7 @@
 | 사이트 주소·외부 출처 | `app/Support/SiteUrl.php`, `app/Support/TrustedScriptHosts.php` | 게시판, 이커머스, gdpr, koreaexim, 결제 4종, 본인인증 2종 |
 | 권한 | `app/Support/PermissionEscalationGuard.php`, `app/Exceptions/PermissionEscalationException.php`, `app/Support/GuestRoleResolver.php`, `app/Contracts/Repositories/PermissionRepositoryInterface.php` | 게시판 |
 | 첨부·본문 미디어 | `app/Helpers/InlineMediaPolicy.php`, `app/Rules/AttachmentFileContent.php`, `app/Services/AttachmentService.php`, `app/Contracts/Repositories/AttachmentRepositoryInterface.php`, `app/Enums/AttachmentSourceType.php`, `app/Exceptions/UnsafeStoragePathException.php` | 게시판, 이커머스, 페이지, ckeditor5 |
+| 업로드 파일 이름 | `app/Support/UploadedFileName.php`(브라우저가 바꿔 보낸 `%22`, `%0D`, `%0A` 복원) | 게시판, 이커머스, 페이지, ckeditor5, 히어로섹션, 팝업 |
 | 본인인증 | `app/Enums/IdentityVerificationChannel.php`, `app/Enums/IdentityVerificationPurpose.php` | totp |
 | SEO | `app/Seo/SeoRenderRequest.php` | 게시판 |
 | 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |

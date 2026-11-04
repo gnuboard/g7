@@ -8,6 +8,7 @@ use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -141,7 +142,7 @@ class ProductImageService
         $image = $this->repository->create([
             'product_id' => $productId,
             'temp_key' => $productId ? null : $tempKey,
-            'original_filename' => $file->getClientOriginalName(),
+            'original_filename' => UploadedFileName::original($file),
             'stored_filename' => $storedFilename,
             'disk' => $disk,
             'path' => $path,

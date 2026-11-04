@@ -659,6 +659,11 @@ class StateManagementApi
             addLog(lang('log_ownership_reclaimed'));
         }
 
+        // 단계별 실행 중이면 그 조작 권한(토큰)도 이 세션으로 옮긴다 — 소유 해시만 바뀌면 되찾은 창은
+        // 토큰을 받지 못해 이어 가지도 멈추지도 못한다. 여기 닿은 세션은 위에서 복구 토큰을 증명했거나
+        // 이미 소유자다. 소유 해시가 저장된 뒤에만 옮긴다(CAS 가 실패한 되찾기가 이전 창의 토큰을 지우지 않게).
+        $this->transferStepwiseOwnershipToSession($state);
+
         // 재개 화면으로 — 세션 step 을 state 의 진행 단계로 맞춘다.
         $_SESSION['installer_current_step'] = (int) ($state['current_step'] ?? 0);
 
@@ -666,6 +671,36 @@ class StateManagementApi
             'success' => true,
             'message' => lang('recovery_success'),
         ], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * 소유권을 되찾은 세션에 진행 중인 단계별 설치의 토큰을 넘긴다 (판정은 execution-mode.php 가 소유).
+     *
+     * 이미 이 세션이 단계별 실행 소유자면 아무것도 바꾸지 않는다 — 같은 세션의 되찾기 재요청이 자기 토큰을
+     * 회전시켜 열려 있는 자기 화면을 끊지 않게 한다.
+     *
+     * @param  array<string, mixed>  $state  소유자가 이 세션으로 저장된 state
+     * @return void 반환값 없음 (runtime 쓰기에 실패하면 500 으로 응답하고 끝낸다)
+     */
+    private function transferStepwiseOwnershipToSession(array $state): void
+    {
+        $runtime = readInstallerRuntime();
+
+        if (installerSessionOwnsStepwiseInstall($_SESSION ?? [], $runtime)) {
+            return;
+        }
+
+        $transfer = installerTransferStepwiseOwnership($state, $runtime);
+        if ($transfer === null) {
+            return;
+        }
+
+        if (! writeInstallerRuntime($transfer['runtime'])) {
+            // 소유권은 이미 이 세션이다 — 같은 화면에서 다시 되찾기를 누르면 이 단계만 다시 시도된다.
+            installer_json_error(500, 'stepwise_transfer_failed', lang('state_save_failed'));
+        }
+
+        setSessionData('installer_session_owner', $transfer['session_owner']);
     }
 
     /**

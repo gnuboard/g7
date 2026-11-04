@@ -43,6 +43,7 @@ import { stripTranslationParamMarkers } from './translationParamValues';
 import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { useTransitionState, useIdleTransitionState } from './TransitionContext';
+import { transitionManager } from './TransitionManager';
 import { getLocalInitTracking, markLocalInitConsumed, registerTrackChangesRoot, resolveLocalInitAction, shouldResetHasChanges } from './localInitSlot';
 import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
@@ -572,6 +573,13 @@ interface ErrorBoundaryProps {
   componentId?: string;
   componentName?: string;
   fallback?: React.ReactNode;
+  /**
+   * 렌더 문맥의 `route` — 오류 상태일 때 값이 바뀌면 자식을 다시 그린다 (engine-v1.87.0).
+   * 렌더 문맥의 객체를 그대로 넘긴다(새 객체를 만들지 않는다).
+   */
+  route?: unknown;
+  /** 렌더 문맥의 `query` — `route` 와 같은 계약 (engine-v1.87.0) */
+  query?: unknown;
 }
 
 /**
@@ -580,6 +588,30 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  /** 마지막으로 본 `route`·`query` 참조 — 오류가 난 렌더의 값이 남는다 (engine-v1.87.0) */
+  route?: unknown;
+  query?: unknown;
+  /**
+   * 커밋 뒤 다시 그려 볼 오류인지 (engine-v1.87.0) — 경로·쿼리가 바뀐 오류, 화면이 데이터를 받는 중(`transitionManager.getIsPending()`)에
+   * 난 실패. 다시 그리기는 렌더 중이 아니라 커밋 뒤(받기가 끝났으면 곧바로, 아니면 받기 끝 알림 때) 전환 갱신으로 한다.
+   */
+  provisional?: boolean;
+}
+
+/**
+ * 오류 경계가 경로·쿼리 변경을 판정하는 값 — 렌더 문맥의 `route`·`query` 는 문자열·배열만 담는 평범한 객체다.
+ *
+ * @param route 렌더 문맥의 route
+ * @param query 렌더 문맥의 query
+ * @returns 비교용 문자열(직렬화하지 못하면 null — 그때는 참조가 바뀐 것을 변경으로 본다)
+ * @since engine-v1.87.0
+ */
+function routeQueryKey(route: unknown, query: unknown): string | null {
+  try {
+    return JSON.stringify([route ?? null, query ?? null]);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -587,15 +619,49 @@ interface ErrorBoundaryState {
  *
  * 렌더링 중 발생하는 에러를 캐치하여 에러 UI를 표시합니다.
  * 전체 페이지가 깨지는 것을 방지하고, 해당 컴포넌트만 에러 상태로 표시합니다.
+ *
+ * 오류 상태는 화면의 경로·쿼리(렌더 문맥 `route`·`query`)가 오류 때와 달라지면 풀고 자식을 다시 그린다 (engine-v1.87.0).
+ * 같은 레이아웃 안의 SPA 이동(쿼리만 바꾸는 탭 전환, 같은 레이아웃의 다른 경로)은 노드를 다시 마운트하지 않아, 종전에는
+ * 새 화면의 데이터가 정상이어도 「컴포넌트 로드 실패」 박스가 새로고침 전까지 남았다.
+ * - 정상 경계는 손대지 않는다 — 참조만 기록하고 자식을 다시 마운트하지 않는다.
+ * - 값이 같은 새 객체(같은 탭을 다시 누름)는 변경으로 보지 않는다.
+ * - 다시 그리기는 렌더 중(`getDerivedStateFromProps`)에 하지 않는다. 렌더 중에는 「커밋 뒤 다시 그림」 표시만 하고, 커밋 뒤 받기가
+ *   끝났으면 곧바로, 아니면 받기 끝 알림(`transitionManager`, 그 상태의 경계만 구독) 때 전환 갱신(`React.startTransition`)으로 다시
+ *   그린다. 같은 화면 쿼리 이동(`handleRouteChange` 의 같은 화면 판정)은 첫 렌더에 앞 화면의 progressive 값을 이어 그린다. 그 렌더는
+ *   전환 렌더라 응답이 빠르면 렌더가 끝나기 전에 응답이 모두 와 받는 중 표시가 꺼진다 — 렌더 중에 지금의 표시를 보고 다시 그리면
+ *   이 렌더의 옛 값으로 던지고, React 가 예약된 새 값으로 루트를 동기로 다시 그려 회복 오류(#520)를 알린다. 커밋 뒤의 전환 갱신은
+ *   받는 중 표시가 꺼지기 전에 예약된 화면 갱신(전환 갱신)과 같은 렌더에서 그려진다.
+ * - 받기가 끝난 뒤(받는 중 표시가 꺼진 때)의 실패는 확정이다 — 다음 경로·쿼리 변경 전까지 다시 시도하지 않는다(루프 없음).
+ * - 판정은 주소(`window.location`)가 아니라 렌더 문맥 값으로 한다 — 쿼리 갱신은 주소를 먼저 바꾸고 데이터를 받은 뒤 새 `query` 를
+ *   싣는다(`TemplateApp.updateQueryParams` → `applyQueryContextToScreen`). 주소로 판정하면 옛 데이터로 먼저 다시 그린다.
  */
 class ComponentErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  /** 받기가 끝나기를 기다리는 구독 해제 함수 — 「커밋 뒤 다시 그림」 오류 상태일 때만 둔다 */
+  private unwatchPending: (() => void) | null = null;
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, route: props.route, query: props.query };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    return { hasError: true, error, provisional: transitionManager.getIsPending() };
+  }
+
+  static getDerivedStateFromProps(props: ErrorBoundaryProps, state: ErrorBoundaryState): Partial<ErrorBoundaryState> | null {
+    if (props.route === state.route && props.query === state.query) {
+      return null;
+    }
+    if (state.hasError) {
+      const previousKey = routeQueryKey(state.route, state.query);
+      if (previousKey === null || previousKey !== routeQueryKey(props.route, props.query)) {
+        // 경로·쿼리가 바뀌었다 — 이 렌더의 값은 앞 화면 값일 수 있어 커밋 뒤에 다시 그린다
+        return { route: props.route, query: props.query, provisional: true };
+      }
+    }
+
+    // 정상 경계·같은 값의 새 객체 — 참조만 맞춘다
+    return { route: props.route, query: props.query };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
@@ -604,6 +670,59 @@ class ComponentErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundary
       error,
       errorInfo
     );
+    this.syncPendingWatch();
+  }
+
+  componentDidUpdate(): void {
+    this.syncPendingWatch();
+  }
+
+  componentWillUnmount(): void {
+    this.stopPendingWatch();
+  }
+
+  /**
+   * 「커밋 뒤 다시 그림」 오류 상태면 받기가 끝났을 때 곧바로, 아니면 받기 끝 알림 때 다시 그린다 (engine-v1.87.0).
+   * 정상 경계·확정 오류 경계는 구독하지 않는다.
+   */
+  private syncPendingWatch(): void {
+    const needed = this.state.hasError && this.state.provisional === true;
+    if (!needed) {
+      this.stopPendingWatch();
+      return;
+    }
+    if (this.unwatchPending) {
+      return;
+    }
+    this.unwatchPending = transitionManager.subscribe((isPending: boolean) => {
+      if (!isPending) {
+        this.retryAfterSettled();
+      }
+    });
+    // 받는 중이 아니면(이미 끝났으면 알림이 오지 않는다) 곧바로
+    if (!transitionManager.getIsPending()) {
+      this.retryAfterSettled();
+    }
+  }
+
+  private stopPendingWatch(): void {
+    if (this.unwatchPending) {
+      this.unwatchPending();
+      this.unwatchPending = null;
+    }
+  }
+
+  /**
+   * 받기가 끝난 뒤 한 번 다시 그린다 — 전환 갱신으로 내어 받은 값의 화면 갱신(`updateTemplateData` 의 전환 갱신)과 같은 렌더에서
+   * 그려지게 한다. 또 실패하면 그때는 받는 중이 아니므로 확정 오류가 된다.
+   */
+  private retryAfterSettled(): void {
+    this.stopPendingWatch();
+    React.startTransition(() => {
+      this.setState((current) => (current.hasError && current.provisional
+        ? { hasError: false, error: null, provisional: false }
+        : null));
+    });
   }
 
   render(): React.ReactNode {
@@ -2047,7 +2166,20 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         && dataContext._localInit !== lastProcessedInitRef.current;
       let localState: Record<string, any>;
       if (hasUnappliedInit && dataContext._local) {
-        localState = dataContext._local;
+        // @since engine-v1.87.0: 페이지 루트는 이 렌더에서 렌더 시점의 저장소 B 를 쓴다.
+        // dataContext._local 은 마지막으로 `_global` 을 실은 루트 다시 그리기 때의 B 사본이다. 입력칸의 setState·자동바인딩은
+        // B 에 render:false 로 쓰므로 사본에 닿지 않고, 데이터 소스 initLocal 갱신(progressive·다시 받기·쿼리 갱신)은
+        // `_global` 없이 `_localInit` 만 싣는다. 그래서 A 를 뺀 이 렌더가 늦은 사본을 그려, 같은 화면의 다른 `_local` 칸
+        // (내 정보 수정의 비밀번호 확인, 주문서의 받는 분·주소 등)이 한 커밋 동안 앞 값으로 돌아가고 그 사이 친 키가 앞 글자를
+        // 잃었다(engine-v1.41.0 부터). 응답 처리 때 B 를 복사해 싣지 않고 여기서 읽는 것은 응답 처리 뒤, 커밋 전에 친 키도 담기 위해서다.
+        // 대상은 레이아웃 루트만이다 — 모달 렌더러(layoutKey 없음)의 상태는 모달 자신의 것이고, 레이아웃 편집기 미리보기는
+        // 호스트 앱의 B 가 아니라 미리보기 문맥을 쓴다(isEditMode).
+        const renderTimeLocal = (!parentComponentContext && layoutKey && !isEditMode)
+          ? (window as any).__templateApp?.getGlobalState?.()?._local
+          : undefined;
+        localState = renderTimeLocal && typeof renderTimeLocal === 'object' && !Array.isArray(renderTimeLocal)
+          ? renderTimeLocal
+          : dataContext._local;
       } else {
         localState = dataContext._local
           ? deepMergeState(dataContext._local, dynamicState)
@@ -5178,6 +5310,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       <ComponentErrorBoundary
         componentId={componentDef.id}
         componentName={componentDef.name}
+        route={dataContext?.route}
+        query={dataContext?.query}
       >
         {effectiveComponentDef.blur_until_loaded ? (
           <div className={[

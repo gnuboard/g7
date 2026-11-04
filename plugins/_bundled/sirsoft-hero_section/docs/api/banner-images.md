@@ -45,7 +45,7 @@ _단건 응답: 올린 이미지(관리자 업로더 첨부 모양 + `url`·`dev
 | id | integer | `717` | 이미지 식별자 |
 | hash | string | `FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWI…` | 공개 주소에 쓰는 64자 해시(불변) |
 | device | string | `pc` | 기기 `pc`·`mobile` |
-| url | string | `/api/plugins/sirsoft-hero_section/ima…` | 공개 이미지 주소(인증 불필요) |
+| url | string | `/api/plugins/sirsoft-hero_section/ima…` | 공개 이미지 주소(인증 불필요). 사이트 마운트 접두사 포함 — 하위 폴더 설치(`/g7/`)면 `/g7/api/plugins/…` |
 | download_url | string | `/api/plugins/sirsoft-hero_section/ima…` | `url` 과 같음 — 관리자 업로더가 미리보기로 읽는 자리 |
 | original_filename | string | `pc.jpg` | 올린 파일의 원래 이름 |
 | mime_type | string | `image/jpeg` | 파일 형식 |

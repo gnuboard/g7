@@ -174,7 +174,7 @@ php artisan module:uninstall [identifier]
 - `--delete-data`: 데이터도 함께 삭제 (동적 테이블 + 마이그레이션 롤백 + 스토리지)
 
 **수행 작업**:
-- 확인 프롬프트 표시 (--force 미사용 시)
+- 확인 프롬프트 표시 (--force 미사용 시). 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 삭제하지 않은 사유와 `--force` 안내를 출력하고 종료 코드 1 로 끝남. 터미널에서 「아니오」를 답하면 취소 문구와 종료 코드 0
 - `--delete-data` 사용 시 (트랜잭션 외부, DDL):
   - `getDynamicTables()` 반환 테이블 삭제 (Manager가 처리)
   - 마이그레이션 롤백 (정적 테이블 삭제)
@@ -278,7 +278,7 @@ php artisan module:update [identifier] [--force] [--source=auto|bundled|github] 
 
 **수행 작업**:
 - 업데이트 가용 여부 확인 (없으면 info + SUCCESS, `--force` 시 무시하고 진행)
-- 확인 프롬프트 → 업데이트 실행
+- 확인 프롬프트 → 업데이트 실행 (`--force` 면 묻지 않음. 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 시작하지 않은 사유와 `--force` 안내를 출력하고 종료 코드 1, 터미널에서 「아니오」를 답하면 종료 코드 0)
 - 상태 가드 확인 → 백업 → status: Updating → 파일 교체 → 마이그레이션 → 업그레이드 스텝 → 복원
 - 실패 시 백업 복원 안내
 

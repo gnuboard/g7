@@ -2934,6 +2934,7 @@
                                         ],
                                         "props": {
                                             "locales": "{{position_settings?.data?.editor?.locales ?? []}}",
+                                            "localeNames": "{{_global.appConfig?.localeNames ?? null}}",
                                             "locale": "{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}"
                                         }
                                     },
@@ -2966,6 +2967,7 @@
                                         ],
                                         "props": {
                                             "draft": "{{_local.form}}",
+                                            "localeNames": "{{_global.appConfig?.localeNames ?? null}}",
                                             "locale": "{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}",
                                             "defaultLocale": "{{position_settings?.data?.editor?.default_locale}}",
                                             "settings": "{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (position_settings?.data?.positions ?? []).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content' })}}",

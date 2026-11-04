@@ -13,6 +13,7 @@
  */
 
 import { ckeditorScriptUrl } from './ckeditorAssets';
+import { withdrawCoreScriptFailureAfterRecovery } from './editorFailureNotice';
 
 /** 플러그인이 본체를 직접 실을 때 붙이는 id */
 const VENDOR_SCRIPT_ID = 'ckeditor5-vendor-umd';
@@ -144,7 +145,14 @@ async function loadVendorScript(): Promise<boolean> {
         return false;
     }
 
-    return isReady();
+    const ready = isReady();
+
+    // 코어 레이아웃 스크립트 로더가 같은 본체에서 실패해 띄운 안내는 이제 사실이 아니다 — 걷는다.
+    if (ready) {
+        withdrawCoreScriptFailureAfterRecovery();
+    }
+
+    return ready;
 }
 
 /**

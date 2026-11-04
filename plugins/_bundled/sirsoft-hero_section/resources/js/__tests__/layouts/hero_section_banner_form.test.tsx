@@ -7,6 +7,8 @@
  *
  * @vitest-environment node
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import form from '../../../layouts/admin/hero_section_banner_form.json';
 import ko from '../../../lang/ko.json';
@@ -133,6 +135,35 @@ describe('배너 등록·수정 화면', () => {
       // 미리보기 슬라이더는 그 칸 안에 있다
       expect(collect(card, (n) => n.id === 'form_preview')).toHaveLength(1);
     });
+  });
+
+  // @scenario surface=form_link_example_path_exists
+  it('링크 칸 예시의 사이트 안 주소는 번들 사용자 템플릿(sirsoft-basic)에 실제로 있는 화면이다 — 예시대로 넣으면 404 로 가지 않는다', () => {
+    const routes = JSON.parse(readFileSync(resolve(__dirname, '../../../../../../../templates/_bundled/sirsoft-basic/routes.json'), 'utf8'));
+    // 쇼핑몰 경로는 이커머스 기본 경로(shop)로 펼친다
+    const paths = new Set<string>();
+    const walk = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (!node || typeof node !== 'object') return;
+      const path = (node as Record<string, unknown>).path;
+      if (typeof path === 'string') paths.add(path.replace(/^\/\{\{.*\}\}\//, '/shop/'));
+      Object.values(node).forEach(walk);
+    };
+    walk(routes);
+    for (const [locale, messages] of [['ko', ko], ['en', en]] as const) {
+      const example = ((messages as any).admin.form.link_url_placeholder as string).split(' ')[0];
+      expect(example.startsWith('/'), locale).toBe(true);
+      expect(paths.has(example), `${locale} ${example}`).toBe(true);
+    }
+  });
+
+  // @scenario surface=form_preview_language_names
+  // @effects languages_named_like_tabs
+  it('미리보기 언어 선택과 미리보기(기본 언어 대체 안내)에 언어 탭과 같은 언어 이름 표를 넘긴다', () => {
+    const select = collect(form, (n) => n.name === 'sirsoft-hero_section.HeroPreviewLanguage');
+    expect(select).toHaveLength(1);
+    expect(select[0].props.localeNames).toBe('{{_global.appConfig?.localeNames ?? null}}');
+    expect(findById(form, 'form_preview')!.props.localeNames).toBe('{{_global.appConfig?.localeNames ?? null}}');
   });
 
   // @scenario surface=form_upload_limit_uses_effective_mb

@@ -73,6 +73,12 @@ class SeoDeclarationCollector
                 continue;
             }
 
+            // 코어 시스템 라우트(미리보기 등)는 저장된 레이아웃이 없어 읽기가 늘 실패한다 — 읽기 전에 거른다.
+            // 저장된 레이아웃을 못 읽은 일반 라우트는 아래에서 그대로 오류로 보고한다.
+            if (TemplateRouteResolver::isSystemRoute($route)) {
+                continue;
+            }
+
             $layoutName = $route['layout'] ?? '';
             if (empty($layoutName)) {
                 continue;

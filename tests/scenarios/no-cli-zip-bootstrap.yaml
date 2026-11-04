@@ -63,6 +63,8 @@ effects:
   - zip_bootstrap_self_deletes_entry_archive_and_state
   # 확인 번호 (원격 대입 표면)
   - zip_bootstrap_rejects_wrong_confirmation_number_without_writing
+  - zip_bootstrap_empty_number_is_not_counted_as_attempt
+  - zip_bootstrap_guard_blocks_number_file_without_access_compat
   - zip_bootstrap_locks_and_reissues_after_attempt_limit
   - zip_bootstrap_lock_does_not_stall_authenticated_session
   - zip_bootstrap_reissues_number_after_browser_session_loss

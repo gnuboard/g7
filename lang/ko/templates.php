@@ -301,6 +301,8 @@ return [
             'versions_deleted' => '버전 히스토리 :count개 삭제됨',
             'custom_preserved' => '운영자 파일(:directory)을 :archive 에 보관했습니다.',
             'aborted' => '삭제가 취소되었습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 ":template" 템플릿을 삭제하지 않았습니다.',
+            'confirm_unavailable_hint' => 'cron, CI, 원격 명령처럼 확인 없이 삭제해야 하면 --force 옵션을 붙여 다시 실행하세요. 예: php artisan template:uninstall :template --force',
             'delete_data_notice' => '⚠️  --delete-data: 「데이터도 삭제」를 선택한 것으로 제거합니다(활동 로그와 제거를 구독하는 확장에 전달됩니다).',
         ],
         'list' => [
@@ -355,6 +357,8 @@ return [
             'modified_layout_item' => '  - :name (수정일: :date)',
             'confirm_question' => '업데이트를 진행하시겠습니까?',
             'aborted' => '업데이트가 취소되었습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 ":template" 템플릿 업데이트를 시작하지 않았습니다. (템플릿은 바뀌지 않았습니다)',
+            'confirm_unavailable_hint' => 'cron, CI, 원격 명령처럼 확인 없이 진행해야 하면 --force 옵션을 붙여 다시 실행하세요. --force 는 버전 비교도 건너뛰어 같은 버전도 다시 적용합니다. 예: php artisan template:update :template --force',
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
             'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
         ],

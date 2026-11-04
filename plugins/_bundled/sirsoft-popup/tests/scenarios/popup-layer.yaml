@@ -23,6 +23,8 @@ description: |
 
 axes:
   surface:
+    - image_src_carries_site_mount_prefix
+    - image_url_carries_site_mount_prefix
     - renders_nothing_when_no_visible_popup
     - filters_by_route_on_path_change
     - filters_by_device_on_viewport_change
@@ -117,12 +119,14 @@ axes:
     - preview_pager_overlays_body
 
 effects:
+  - media_served_inside_site_mount
   - accessible_modal_carousel
   - dismiss_cookie_written
   - gdpr_banner_not_covered
   - preview_sample_slides
 
 test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Models/ImageUrlBasePrefixTest.php
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupLayer.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupPreview.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/lib/dismissCookie.test.ts

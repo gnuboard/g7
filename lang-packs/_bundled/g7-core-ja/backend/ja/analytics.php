@@ -303,6 +303,8 @@ return [
             'option_required' => '--mask-octets または --hash のいずれかを指定してください。',
             'confirm' => '既に蓄積された訪問記録を元に戻せない形で変更します。続行しますか？',
             'cancelled' => 'キャンセルしました。',
+            'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、匿名化を行いませんでした。(訪問記録は変更されていません)',
+            'confirm_unavailable_hint' => 'cron、CI、リモートコマンドのように確認なしで進める必要がある場合は、--force オプションを付けて再実行してください。例: php artisan analytics:anonymize --mask-octets=2 --force',
             'failed' => '遡及匿名化に失敗しました: :error',
             'done' => '訪問 :count 件を匿名化しました。',
         ],
@@ -340,6 +342,8 @@ return [
             'confirm_option_required' => '全体削除は --confirm を付けた場合のみ実行されます。元に戻せません。',
             'confirm' => '訪問者統計の記録と集計をすべて削除します。元に戻せません。続行しますか？',
             'cancelled' => 'キャンセルしました。',
+            'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、訪問者統計を削除しませんでした。--confirm はこの確認の代わりにはなりません。',
+            'confirm_unavailable_hint' => 'このコマンドは削除の前に端末で直接確認する必要があり、確認なしで削除する方法は提供していません。サーバーの端末で php artisan analytics:purge --confirm を実行し、質問に答えてください。',
             'headers' => [
                 'target' => '対象',
                 'deleted' => '削除',
@@ -353,6 +357,8 @@ return [
             'not_installed' => ':type :identifier はインストールされていません。データを残して削除した拡張であればそのまま続行し、識別子を誤って入力した場合はキャンセルしてください。',
             'confirm' => ':type :identifier の訪問者統計のコンバージョン・ディメンション集計を削除します。元に戻せません。続行しますか？',
             'cancelled' => 'キャンセルしました。',
+            'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、:type :identifier の統計を削除しませんでした。--confirm はこの確認の代わりにはなりません。',
+            'confirm_unavailable_hint' => 'このコマンドは削除の前に端末で直接確認する必要があり、確認なしで削除する方法は提供していません。サーバーの端末で php artisan analytics:purge-extension :type :identifier --confirm を実行し、質問に答えてください。',
             'failed' => '整理に失敗しました。診断画面の実行履歴とアプリケーションログで原因を確認してください。',
             'headers' => [
                 'target' => '対象',

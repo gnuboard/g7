@@ -73,6 +73,16 @@ class StorePopupRequest extends FormRequest
     }
 
     /**
+     * 검증 메시지를 반환합니다.
+     *
+     * @return array<string, string> 규칙 키 => 메시지
+     */
+    public function messages(): array
+    {
+        return $this->popupMessages();
+    }
+
+    /**
      * 검증 오류에 쓸 필드 이름을 반환합니다.
      *
      * @return array<string, string> 필드 => 이름

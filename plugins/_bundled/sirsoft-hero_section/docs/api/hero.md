@@ -57,7 +57,7 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | banners[].description_align | string | `left` | 설명 정렬 |
 | banners[].link_url | string\|null | `/shop` | 이동할 주소(사이트 경로 또는 http(s), 없으면 null) |
 | banners[].link_new_window | boolean | `false` | 새 창 열기 |
-| banners[].images.pc | object | `{"url":"/api/plugins/sirsoft-hero_section/images/FCm6p4tn…` | PC 이미지 `url`·`width`·`height` |
+| banners[].images.pc | object | `{"url":"/api/plugins/sirsoft-hero_section/images/FCm6p4tn…` | PC 이미지 `url`·`width`·`height`. `url` 은 사이트 마운트 접두사 포함(하위 폴더 설치면 `/g7/api/plugins/…`, 영상 `videos.*.url` 도 같다) |
 | banners[].images.mobile | object | `{"url":"/api/plugins/sirsoft-hero_section/images/KrjUXDR7…` | 모바일 이미지(없으면 null — PC 를 쓴다) |
 
 **응답 예시**

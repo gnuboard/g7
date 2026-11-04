@@ -6,15 +6,20 @@ use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
 use App\Execution\CommandRunnerResolver;
+use App\Models\Schedule as ScheduleModel;
 use App\Models\ScheduleHistory;
+use App\Models\User;
 use App\Scheduling\ArtisanCommandExtractor;
 use App\Scheduling\ScheduleRunner;
 use App\Scheduling\ScheduleRunState;
+use App\Services\Schedule\ScheduleRegistrar;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernelContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -285,6 +290,90 @@ class ScheduleRunnerIntegrityTest extends TestCase
         $runOnServer('2026-08-31 09:01:00');
 
         $this->assertSame(['shared'], $this->executed, 'onOneServer 예약이 두 서버에서 각각 실행됐다.');
+    }
+
+    /**
+     * DB 스케줄 이벤트는 실행기의 행 이력 한 건만 남기고, 그 이력에 러너의 계기·실행자가 실린다.
+     *
+     * 등록기가 행마다 등록한 `schedule:{id}` 이벤트를 러너가 자기 이력으로도 남기면 같은 실행이 두 줄이 된다 —
+     * 한 줄은 내부 이름(`schedule:87`)에 러너의 계기(수동), 다른 한 줄은 실행기의 행 기준 기록에 등록기가 정한
+     * 계기(예약)라 서로 다르게 적힌다. 실행기가 실패로 마감한 작업도 러너 요약은 성공으로 셌다(콜백은 실패를
+     * 예외로 올리지 않는다).
+     *
+     * @scenario caller=panel, event_kind=callback_event, vector=browser_run_now
+     *
+     * @effects database_schedule_run_leaves_one_history_row_with_the_runner_trigger, database_schedule_failure_is_counted_as_failed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_database_schedule_run_leaves_one_history_row_with_the_runner_trigger(): void
+    {
+        Config::set('g7_settings.core.security.allow_internal_outbound_urls', true);
+        Http::fake([
+            'http://192.168.0.10/ok' => Http::response('pong', 200),
+            'http://192.168.0.10/fail' => Http::response('nope', 500),
+        ]);
+
+        $ok = ScheduleModel::factory()->create(['type' => 'url', 'command' => 'http://192.168.0.10/ok', 'expression' => '0 4 * * *']);
+        $broken = ScheduleModel::factory()->create(['type' => 'url', 'command' => 'http://192.168.0.10/fail', 'expression' => '0 4 * * *']);
+        $admin = User::factory()->create();
+
+        app(ScheduleRegistrar::class)->register(app(Schedule::class));
+
+        $summary = $this->runner()->run(
+            CarbonImmutable::parse('2026-08-31 04:00:00'),
+            ScheduleTriggerType::Manual,
+            (int) $admin->id,
+        );
+
+        $this->assertSame(
+            0,
+            ScheduleHistory::where('source', ScheduleRunner::HISTORY_SOURCE)->count(),
+            'DB 스케줄 이벤트(생존 신호 포함)에 러너가 자기 이력을 또 남겼다.',
+        );
+
+        foreach ([$ok, $broken] as $row) {
+            $rows = ScheduleHistory::where('schedule_id', $row->id)->get();
+
+            $this->assertCount(1, $rows, '실행기의 행 이력이 한 건이 아니다.');
+            $this->assertSame(ScheduleTriggerType::Manual, $rows[0]->trigger_type, '[지금 실행]이 실행기 기록에서 예약 실행으로 적혔다.');
+            $this->assertSame((int) $admin->id, (int) $rows[0]->triggered_by, '누른 관리자가 실행기 기록에 없다.');
+        }
+
+        $this->assertSame(ScheduleResultStatus::Failed, ScheduleHistory::where('schedule_id', $broken->id)->firstOrFail()->status);
+        $this->assertSame(1, $summary->failed, '실행기가 실패로 마감한 작업을 요약이 실패로 세지 않았다.');
+        $this->assertSame(2, $summary->executed, '성공한 행과 생존 신호만 실행됨으로 세야 한다.');
+    }
+
+    /**
+     * 서버 크론처럼 문맥 밖에서 도는 DB 스케줄 이벤트는 예약 실행으로 남는다.
+     *
+     * @scenario entry_point=cli, event_kind=callback_event
+     *
+     * @effects database_schedule_outside_the_runner_stays_scheduled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_database_schedule_outside_the_runner_context_is_scheduled(): void
+    {
+        Config::set('g7_settings.core.security.allow_internal_outbound_urls', true);
+        Http::fake(['http://192.168.0.10/ok' => Http::response('pong', 200)]);
+
+        $row = ScheduleModel::factory()->create(['type' => 'url', 'command' => 'http://192.168.0.10/ok', 'expression' => '0 4 * * *']);
+
+        app(ScheduleRegistrar::class)->register(app(Schedule::class));
+
+        $event = collect(app(Schedule::class)->events())
+            ->first(fn ($candidate) => $candidate->description === ScheduleRegistrar::EVENT_PREFIX.$row->id);
+
+        $this->assertNotNull($event, '행 이벤트가 등록되지 않았다.');
+
+        $event->run($this->app);
+
+        $history = ScheduleHistory::where('schedule_id', $row->id)->firstOrFail();
+
+        $this->assertSame(ScheduleTriggerType::Scheduled, $history->trigger_type);
+        $this->assertNull($history->triggered_by);
     }
 
     /**

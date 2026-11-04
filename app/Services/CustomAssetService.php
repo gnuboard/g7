@@ -8,6 +8,7 @@ use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Rules\AllowedTemplateFileType;
 use App\Support\CustomAssets;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
@@ -213,7 +214,7 @@ class CustomAssetService
         UploadedFile $file,
         ?string $directory = null
     ): array {
-        $name = $this->sanitizeFileName($file->getClientOriginalName());
+        $name = $this->sanitizeFileName(UploadedFileName::original($file));
         $relative = $directory !== null && $directory !== '' ? trim($directory, '/').'/'.$name : $name;
 
         $absolute = $this->resolveWritable($extensionType, $identifier, $relative);

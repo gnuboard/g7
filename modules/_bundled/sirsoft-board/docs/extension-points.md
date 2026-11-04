@@ -10,15 +10,15 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:181` |
-| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:641` |
-| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:1035` |
-| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:239` 외 1곳 |
-| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:829` |
-| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:214` |
-| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:620` |
-| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:824` |
-| `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:130` |
-| `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:133` |
+| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:642` |
+| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:1036` |
+| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:240` 외 1곳 |
+| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:830` |
+| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:215` |
+| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:621` |
+| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:825` |
+| `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:131` |
+| `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:134` |
 | `sirsoft-board.attachment.reorder_validation_rules` | filter | — | `src/Http/Requests/ReorderAttachmentsRequest.php:40` |
 | `sirsoft-board.attachment.upload_validation_rules` | filter | — | `src/Http/Requests/UploadAttachmentRequest.php:80` |
 | `sirsoft-board.author_ip.after_prune` | action | — | `src/Privacy/BoardIpRetentionHandler.php:135` |

@@ -29,9 +29,11 @@ class SanitizedBodyNotEmpty implements ValidationRule
         }
 
         $sanitizer = app(PopupHtmlSanitizer::class);
+        // 언어는 화면의 언어 탭과 같은 표시 이름으로 알린다(코어 다국어 검증과 같은 표) — 이름이 없는 언어만 코드로
+        $languageNames = (array) config('app.locale_names', []);
         foreach ($value as $locale => $html) {
             if (is_string($html) && trim($html) !== '' && ! $sanitizer->hasVisibleContent($sanitizer->sanitize($html))) {
-                $fail(__('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => $locale]));
+                $fail(__('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => $languageNames[$locale] ?? (string) $locale]));
 
                 return;
             }

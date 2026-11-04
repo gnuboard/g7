@@ -31,6 +31,7 @@ axes:
     - bulk_copy_copies_overlays
     - migration_adds_nullable_overlays_column
     - error_names_box_position
+    - error_names_box_background_parts
     # 백엔드 — 공개 응답
     - public_picks_request_locale_text
     - public_falls_back_to_default_locale_text
@@ -86,6 +87,7 @@ effects:
   - public_response_has_localized_boxes
   - boxes_follow_image_scale
   - image_link_and_swipe_unchanged
+  - validation_messages_fully_translated
 
 test_files:
   - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupOverlayTest.php

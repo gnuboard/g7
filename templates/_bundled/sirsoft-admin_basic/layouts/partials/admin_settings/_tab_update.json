@@ -63,7 +63,7 @@
                                     "props": {
                                         "className": "text-heading"
                                     },
-                                    "text": "{{systemInfo?.data?.g7_version ?? '-'}}"
+                                    "text": "{{_computed.coreUpdateStatus?.current_version ?? systemInfo?.data?.g7_version ?? '-'}}"
                                 }
                             ]
                         },

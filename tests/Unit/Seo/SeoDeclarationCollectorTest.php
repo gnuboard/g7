@@ -623,6 +623,59 @@ class SeoDeclarationCollectorTest extends TestCase
     }
 
     /**
+     * 코어가 모든 템플릿에 덧붙이는 시스템 라우트(미리보기)는 레이아웃을 읽지 않고 건너뛰는지 확인합니다.
+     *
+     * 시스템 라우트의 레이아웃(`__preview__`)은 저장된 레이아웃이 아니라 읽기가 늘 실패한다. 읽기 전에
+     * 거르지 않으면 사이트맵을 만들 때마다 오류 보고가 한 건씩 남는다. 저장된 레이아웃을 못 읽은
+     * 일반 라우트는 같은 수집에서 여전히 오류로 보고되어야 한다.
+     *
+     * @scenario surface=declaration
+     *
+     * @effects declaration_skips_system_routes_without_layout_read, declaration_skips_layout_that_fails_to_load
+     *
+     * @return void 반환값 없음
+     */
+    public function test_collect_skips_system_routes_without_reading_layout_or_reporting(): void
+    {
+        $this->setupActiveTemplateWithRoutes([
+            ['path' => '/', 'layout' => 'home', 'auth_required' => false],
+            [
+                'path' => '*/preview/:token',
+                'layout' => '__preview__',
+                'auth_required' => false,
+                'meta' => ['title' => 'Preview', 'is_system_route' => true],
+            ],
+            ['path' => '/broken', 'layout' => 'broken', 'auth_required' => false],
+        ]);
+
+        $requested = [];
+        $this->layoutService
+            ->shouldReceive('getLayout')
+            ->andReturnUsing(function (string $template, string $layout) use (&$requested): array {
+                $requested[] = $layout;
+
+                if ($layout === 'broken') {
+                    throw new \Exception('레이아웃 파일을 찾을 수 없습니다');
+                }
+                if ($layout === '__preview__') {
+                    throw new \Exception('Layout not found');
+                }
+
+                return ['meta' => ['seo' => ['enabled' => true]], 'components' => []];
+            });
+
+        Exceptions::fake();
+
+        $result = $this->collector->collect();
+
+        $this->assertSame(['home'], array_column($result, 'layoutName'));
+        $this->assertNotContains('__preview__', $requested, '시스템 라우트의 레이아웃은 읽지 않는다');
+
+        Exceptions::assertNotReported(fn (\RuntimeException $e): bool => str_contains($e->getMessage(), '__preview__'));
+        Exceptions::assertReported(fn (\RuntimeException $e): bool => str_ends_with($e->getMessage(), ': broken'));
+    }
+
+    /**
      * 빈 레이아웃 이름인 라우트가 건너뛰어지는지 확인합니다.
      *
      * @scenario surface=declaration

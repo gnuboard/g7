@@ -2147,8 +2147,10 @@
      * 요구사항 재검증
      */
     function recheckRequirements() {
-        // 페이지 리로드로 캐시 문제 해결
-        window.location.reload();
+        // 같은 주소를 GET 으로 다시 연다. 2단계 오류는 POST 응답 화면에 그려지므로 reload() 는 그 POST 를
+        // 다시 보낸다(「양식 다시 제출」 확인 창, 서버 차단 기록 중복). 조각(#…)만 남은 주소로 옮기면
+        // 같은 문서 안 이동이라 다시 열리지 않으므로 조각을 뗀다.
+        window.location.replace(window.location.href.split('#')[0]);
     }
 
     /**
@@ -5404,6 +5406,16 @@
                 // 요청이 도는 동안의 경과 표시 (D2 L9) — DOM 텍스트 한 곳만 만진다.
                 // 실측에서 44 초짜리 태스크 구간에 화면이 한 글자도 바뀌지 않았고,
                 // 사용자에게 그것은 「멈춘 화면」이다.
+                // 단계별 실행 전용 — 요청을 보내기 전에 이번 요청이 돌릴 단계(이미 진행 중인 행, 없으면
+                // 작업 목록의 첫 대기 행. 목록은 실제 설치 순서다)를 진행 중으로 그리고 그 이름을 경과 표시에 쓴다.
+                resolveNextTask: () => {
+                    const row = requestTaskRow();
+                    if (!row) return null;
+                    if (!row.alreadyActive) {
+                        updateTaskStatus(row.taskId, 'active', row.name, row.target);
+                    }
+                    return row.name;
+                },
                 onProgressTick: (elapsedSec, taskName) => {
                     const el = document.getElementById('task-elapsed');
                     if (!el) return;
@@ -5821,6 +5833,65 @@
         renderCurrentTaskLabel();
     }
 
+    /**
+     * 작업 목록에서 아직 시작하지 않은 첫 단계 행을 돌려준다(목록은 실제 설치 순서로 그려진다).
+     * @returns {{taskId: string, target: string|null, name: string}|null} 단계 행 정보
+     */
+    function firstPendingTaskRow() {
+        const row = document.querySelector('#task-list .task-item.task-pending');
+        if (!row) return null;
+        const nameEl = row.querySelector('.task-name');
+
+        return {
+            taskId: row.getAttribute('data-task-id') || '',
+            target: row.getAttribute('data-target') || null,
+            name: nameEl ? nameEl.textContent.trim() : '',
+        };
+    }
+
+    /**
+     * 이번 단계별 요청이 돌릴 단계 행을 고른다.
+     * 이미 진행 중인 행이 있으면 그 행이다 — busy 대기·재시도로 요청이 되풀이될 때마다 다음 대기 행을
+     * 새로 칠하면, 칠한 행이 되돌려지지 않은 채 남은 단계가 하나씩 진행 중으로 바뀐다. 없으면 첫 대기 행이다.
+     * @returns {{taskId: string, target: string|null, name: string, alreadyActive: boolean}|null} 단계 행 정보
+     */
+    function requestTaskRow() {
+        const active = document.querySelector('#task-list .task-item.task-active');
+        if (active) {
+            const nameEl = active.querySelector('.task-name');
+
+            return {
+                taskId: active.getAttribute('data-task-id') || '',
+                target: active.getAttribute('data-target') || null,
+                name: nameEl ? nameEl.textContent.trim() : '',
+                alreadyActive: true,
+            };
+        }
+        const row = firstPendingTaskRow();
+
+        return row ? { ...row, alreadyActive: false } : null;
+    }
+
+    /**
+     * 현재 작업 줄에 쓸 이름을 만든다.
+     * 서버 단계 이름(`task_start` 의 name)은 확장 단계에서 이미 확장 이름과 식별자를 담아 온다
+     * (「게시판 모듈 활성화 (sirsoft-board)」). 그 위에 다시 붙이면 이름과 식별자가 두 번 나온다.
+     * 서버 이름이 없거나 대상을 담지 않은 경로(재개 등)만 확장 이름과 식별자를 한 번 붙인다.
+     * @param {string|null} serverName 서버가 보낸 단계 이름
+     * @param {string} fallbackName taskId 로 도출한 단계 이름
+     * @param {string|null} target 확장 식별자
+     * @param {string} extName 확장 이름 (모르면 빈 문자열)
+     * @returns {string} 현재 작업 줄 이름
+     */
+    function composeCurrentTaskName(serverName, fallbackName, target, extName) {
+        const taskName = serverName || fallbackName;
+        if (!target || (serverName && serverName.includes(`(${target})`))) {
+            return taskName;
+        }
+
+        return extName ? `${extName} ${taskName} (${target})` : `${taskName} (${target})`;
+    }
+
     /* endregion:ui-state */
 
     /**
@@ -5842,13 +5913,12 @@
             // 「Vendor 번들 추출」이 「필수 패키지 설치」로 표시된다(실제로 도는 일과
             // 화면 문구가 어긋난다). 서버가 이름을 싣지 않는 재개 경로는 종전대로 도출.
             // target이 있으면 확장 이름과 조합 (예: "게시판 모듈 설치 (sirsoft-board)")
-            let taskName = message || getTaskName(taskId);
-            if (target) {
-                const extName = getStoredExtensionName(target);
-                taskName = extName
-                    ? `${extName} ${taskName} (${target})`
-                    : `${taskName} (${target})`;
-            }
+            const taskName = composeCurrentTaskName(
+                message,
+                getTaskName(taskId),
+                target,
+                target ? getStoredExtensionName(target) : '',
+            );
             // 단계가 바뀌면 앞 단계의 부분 진행 표시는 함께 버린다.
             setCurrentTaskLabel(taskName || message || '');
         } else if (status === 'completed' || status === 'skipped') {

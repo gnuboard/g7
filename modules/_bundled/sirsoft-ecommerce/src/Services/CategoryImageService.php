@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -113,7 +114,7 @@ class CategoryImageService
         $image = $this->repository->create([
             'category_id' => $categoryId,
             'temp_key' => $categoryId ? null : $tempKey,
-            'original_filename' => $file->getClientOriginalName(),
+            'original_filename' => UploadedFileName::original($file),
             'stored_filename' => $storedFilename,
             'disk' => $disk,
             'path' => $path,

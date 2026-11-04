@@ -99,6 +99,32 @@ describe('HeroSlider 영상 배너', () => {
     expect(play).toHaveBeenCalled();
   });
 
+  // @scenario surface=media_urls_carry_site_mount_prefix
+  // @effects media_served_inside_site_mount
+  it('하위 폴더 사이트에서 이미지·모바일 이미지·영상·대표 이미지 주소에 마운트 접두사를 붙이고, 이미 붙은 주소와 바깥 주소는 그대로 둔다', () => {
+    (window as any).G7Config = { basePath: '/g7' };
+    try {
+      const api = '/api/plugins/sirsoft-hero_section/images';
+      const image = banner(1, { images: { pc: { url: `${api}/pc1`, width: 1920, height: 640 }, mobile: { url: `${api}/m1`, width: 750, height: 1000 } } });
+      const video = banner(2, {
+        media_type: 'video',
+        images: { pc: { url: `/g7${api}/pc2`, width: 1920, height: 640 }, mobile: null },
+        videos: { pc: { url: `${api}/v2`, mime: 'video/mp4' }, mobile: { url: 'https://cdn.example.com/v2m.webm', mime: 'video/webm' } },
+      });
+      const { container } = render(<HeroSlider banners={[image, video]} />);
+      const first = container.querySelector('[data-banner-id="1"]')!;
+      expect(first.querySelector('img.hs-slider__image')?.getAttribute('src')).toBe(`/g7${api}/pc1`);
+      expect(first.querySelector('source')?.getAttribute('srcset')).toBe(`/g7${api}/m1`);
+      const second = container.querySelector('[data-banner-id="2"]')!;
+      expect(second.querySelector('img.hs-slider__image')?.getAttribute('src')).toBe(`/g7${api}/pc2`);
+      const player = second.querySelector('video.hs-slider__video') as HTMLVideoElement;
+      expect(player.getAttribute('src')).toBe(`/g7${api}/v2`);
+      expect(player.getAttribute('poster')).toBe(`/g7${api}/pc2`);
+    } finally {
+      delete (window as any).G7Config;
+    }
+  });
+
   // @scenario surface=video_device_source
   it('휴대폰 폭이면 모바일 영상, 없으면 PC 영상을 재생한다', () => {
     mockMedia({ narrow: true });

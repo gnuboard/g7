@@ -15,7 +15,8 @@ use Illuminate\Console\Command;
  *
  * 확장이 남긴 전환·차원 집계를 지웁니다. 확장을 「데이터 보존」으로 제거한 뒤 나중에
  * 지우거나, 제거 때의 정리가 실패(진단 화면 실행 이력 「실패」)한 뒤 다시 돌릴 때 씁니다.
- * 되돌릴 수 없으므로 --confirm 을 반드시 붙여야 하고, 대화형 실행에서는 한 번 더 묻습니다.
+ * 되돌릴 수 없으므로 --confirm 을 반드시 붙여야 하고, 지우기 전에 터미널에서 한 번 더 묻습니다.
+ * 그 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 지우지 않고 실패로 끝납니다.
  *
  * @example php artisan analytics:purge-extension module sirsoft-ecommerce --confirm
  */
@@ -77,6 +78,17 @@ class PurgeExtensionCommand extends Command
             // 「데이터 보존」으로 제거한 확장이 이 커맨드의 주 대상이라 막지는 않는다 — 다만 식별자
             // 오타는 「0건 삭제 성공」으로 끝나므로 확인 전에 알린다.
             $this->warn(__('analytics.console.purge_extension.not_installed', ['type' => $type, 'identifier' => $identifier]));
+        }
+
+        // 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 종전에 기본값 「아니오」로 취소 문구만 내고
+        // 종료 코드 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 터미널 확인 안내를 남기고 실패로 끝낸다.
+        // 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+        // --confirm 은 필수 동의 표식일 뿐 비대화형 동의로 보지 않는다(되돌릴 수 없는 삭제라 대화형 확인을 유지).
+        if (! $this->canAnswerConfirmation()) {
+            return $this->refuseUnanswerableConfirmation(
+                __('analytics.console.purge_extension.confirm_unavailable', ['type' => $type, 'identifier' => $identifier]),
+                __('analytics.console.purge_extension.confirm_unavailable_hint', ['type' => $type, 'identifier' => $identifier]),
+            );
         }
 
         if (! $this->unifiedConfirm(__('analytics.console.purge_extension.confirm', ['type' => $type, 'identifier' => $identifier]))) {

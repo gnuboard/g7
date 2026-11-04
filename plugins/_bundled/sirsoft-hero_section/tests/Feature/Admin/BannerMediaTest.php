@@ -296,6 +296,33 @@ class BannerMediaTest extends PluginTestCase
     }
 
     /**
+     * 공개 영상도 코어 파일 서빙 계약을 따른다 — 운영 환경에서 1년 불변 캐시, ETag 로 304 재검증, 범위 요청은 그대로 받는다.
+     *
+     * @scenario surface=video_follows_core_file_serving_contract
+     *
+     * @effects file_serving_contract_matches_core
+     *
+     * @return void 반환값 없음
+     */
+    public function test_video_follows_core_file_serving_contract(): void
+    {
+        $data = $this->uploadVideo('pc', (string) Str::uuid())->assertCreated()->json('data');
+
+        $this->app->detectEnvironment(fn () => 'production');
+        $first = $this->get($data['url'])->assertOk();
+        $this->assertEqualsCanonicalizing(['public', 'max-age=31536000', 'immutable'], $this->directives($first->headers->get('Cache-Control')));
+        $etag = (string) $first->headers->get('ETag');
+        $this->assertNotSame('', $etag);
+
+        $again = $this->get($data['url'], ['If-None-Match' => $etag]);
+        $again->assertStatus(304);
+        $this->assertEqualsCanonicalizing(['public', 'max-age=31536000', 'immutable'], $this->directives($again->headers->get('Cache-Control')));
+        $this->assertSame('nosniff', $again->headers->get('X-Content-Type-Options'));
+
+        $this->get($data['url'], ['Range' => 'bytes=0-9'])->assertStatus(206);
+    }
+
+    /**
      * 관리자 API 로 영상을 올립니다.
      *
      * @param  string  $device  기기 (pc, mobile)
@@ -353,5 +380,16 @@ class BannerMediaTest extends PluginTestCase
     private function update(int $id, array $overrides): TestResponse
     {
         return $this->actingAs($this->admin)->putJson($this->api('/admin/banners/'.$id), $this->bannerPayload($overrides));
+    }
+
+    /**
+     * Cache-Control 값을 지시어 목록으로 나눕니다(순서는 응답 종류마다 다르다).
+     *
+     * @param  string|null  $header  Cache-Control 값
+     * @return array<int, string> 지시어 목록
+     */
+    private function directives(?string $header): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', (string) $header))));
     }
 }

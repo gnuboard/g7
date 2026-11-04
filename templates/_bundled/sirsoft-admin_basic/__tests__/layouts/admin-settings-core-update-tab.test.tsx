@@ -227,6 +227,26 @@ describe('환경설정 업데이트 탭 — W6 상태 분리·진단·이어받�
     expect(gate).toContain('coreUpdateZipFile');
   });
 
+  // @scenario actor=with_permission, run_state=finished
+  // @effects the_current_version_does_not_wait_for_the_slow_server_info
+  it('현재 버전 칸은 업데이트 상태 응답의 버전을 먼저 쓴다 (느린 서버 정보 응답을 기다리며 - 로 비지 않는다)', () => {
+    const cell = collect(updateTab, (obj) => obj.id === 'core_update_current_version')[0];
+
+    expect(cell, '현재 버전 칸을 찾지 못했다').toBeDefined();
+
+    const text = JSON.stringify(cell);
+    const statusAt = text.indexOf('coreUpdateStatus?.current_version');
+    const systemInfoAt = text.indexOf('systemInfo?.data?.g7_version');
+
+    // 완료 화면은 업데이트 상태 응답(빠르다)을 이미 받았는데 서버 정보 응답(트리 크기 계산으로 느리다)을
+    // 기다리는 동안 「현재 버전 -」 아래에 「현재 버전은 7.x 입니다」가 함께 보였다.
+    expect(statusAt, '업데이트 상태 응답의 버전을 읽지 않는다').toBeGreaterThanOrEqual(0);
+    expect(systemInfoAt === -1 || statusAt < systemInfoAt, '서버 정보 응답이 먼저 읽히면 같은 공백이 남는다').toBe(true);
+
+    const computed = (settings as Json).computed as Json;
+    expect(Object.keys(computed)).toContain('coreUpdateStatus');
+  });
+
   // @scenario actor=with_permission, run_state=idle, failing_step=preflight
   // @effects the_start_screen_receives_the_preflight_verdict
   it('사전 조건 미충족 진단이 착수 전에 화면에 있다', () => {

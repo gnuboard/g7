@@ -334,30 +334,36 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          *
          * @effects static_asset_tag_recovers_to_api_url
          */
-        function loadInlineStaticToLegacy(): (url: string) => string | null {
+        function loadInlineStaticToLegacy(basePath = ''): (url: string) => string | null {
             const shellPath = resolve(__dirname, '../../../../../public/assets/core/js/g7-shell-head.js');
             const source = readFileSync(shellPath, 'utf-8');
 
-            const start = source.indexOf('function staticToLegacy(url) {');
-            expect(start, '셸 head 스크립트에서 staticToLegacy 를 찾지 못했다').toBeGreaterThan(-1);
+            const slice = (signature: string): string => {
+                const start = source.indexOf(signature);
+                expect(start, `셸 head 스크립트에서 ${signature} 를 찾지 못했다`).toBeGreaterThan(-1);
 
-            let depth = 0;
-            let end = start;
-            for (let i = source.indexOf('{', start); i < source.length; i += 1) {
-                if (source[i] === '{') depth += 1;
-                else if (source[i] === '}') {
-                    depth -= 1;
-                    if (depth === 0) {
-                        end = i + 1;
-                        break;
+                let depth = 0;
+                let end = start;
+                for (let i = source.indexOf('{', start); i < source.length; i += 1) {
+                    if (source[i] === '{') depth += 1;
+                    else if (source[i] === '}') {
+                        depth -= 1;
+                        if (depth === 0) {
+                            end = i + 1;
+                            break;
+                        }
                     }
                 }
-            }
 
+                return source.slice(start, end);
+            };
+
+            // 역변환기가 부르는 셸 스코프(접두사 정규화·서버 접두사 값)를 함께 주입한다.
             // eslint-disable-next-line no-new-func
             return new Function(
-                `${source.slice(start, end)}\nreturn staticToLegacy;`,
-            )() as (url: string) => string | null;
+                'basePath',
+                `var BASE_PATH = basePath;\n${slice('function normalizeBasePath(value) {')}\n${slice('function staticToLegacy(url) {')}\nreturn staticToLegacy;`,
+            )(basePath) as (url: string) => string | null;
         }
 
         const staticCases = [
@@ -396,6 +402,71 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             for (const url of ['/build/core/template-engine.min.js', '/api/templates/t/routes.json', '']) {
                 expect(inline(url)).toBeNull();
                 expect(staticToLegacy(url)).toBeNull();
+            }
+        });
+
+        /**
+         * 하위 폴더 설치에서 정적 게시본은 `/g7/build/ext/{v}/…` 로 나간다.
+         *
+         * 역변환기가 접두사를 벗기지 않으면 그 실패 URL 을 몰라보고(복구 없음), 벗기기만 하고
+         * 결과에 다시 붙이지 않으면 `/api/…` 가 사이트 밖을 가리켜 복구 시도가 또 404 가 된다.
+         * 첫 방문의 템플릿 CSS 가 그 경로였다 — 정적 404 → 접두사 없는 API 404 → 서식 없는 화면.
+         * 접두사 없이 남은 옛 HTML 의 정적 URL 도 같은 사이트의 API 로 되돌린다.
+         *
+         * @effects static_publish_recovery_keeps_the_site_base_prefix
+         */
+        // @scenario base_path=subpath, asset_url_mode=extension
+        // @effects static_publish_recovery_keeps_the_site_base_prefix
+        it('하위 폴더 마운트에서 두 구현이 접두사를 벗겨 판정하고 결과에 다시 붙인다', () => {
+            const basePath = '/g7';
+            const inline = loadInlineStaticToLegacy(basePath);
+            (globalThis as any).G7Config = { cache_version: 7, basePath };
+
+            const pairs: Array<[string, string]> = [
+                [
+                    '/g7/build/ext/1234/templates/sirsoft-basic/assets/css/components.css',
+                    '/g7/api/templates/assets/sirsoft-basic/css/components.css?v=1234',
+                ],
+                [
+                    '/g7/build/ext/1234/templates/sirsoft-admin_basic/assets/vendor/font-awesome/6.4.0/css/all.inlined.css',
+                    '/g7/api/templates/assets/sirsoft-admin_basic/vendor/font-awesome/6.4.0/css/all.inlined.css?v=1234',
+                ],
+                ['/g7/build/ext/1234/bundles/modules.js', '/g7/api/modules/bundle.js?v=1234'],
+                ['/g7/build/ext/1234/bundles/plugins.css', '/g7/api/plugins/bundle.css?v=1234'],
+                ['/g7/build/ext/1234/templates/sirsoft-basic/routes.json', '/g7/api/templates/sirsoft-basic/routes.json?v=1234'],
+                ['/g7/build/ext/1234/templates/sirsoft-basic/lang/ko.json', '/g7/api/templates/sirsoft-basic/lang/ko.json?v=1234'],
+                ['/g7/build/ext/1234/modules/sirsoft-page/assets/custom/a.css', '/g7/api/modules/assets/sirsoft-page/custom/a.css?v=1234'],
+                // 같은 사이트의 절대 URL(DOM 프로퍼티 형태)
+                [
+                    `${window.location.origin}/g7/build/ext/1234/bundles/modules.js`,
+                    '/g7/api/modules/bundle.js?v=1234',
+                ],
+                // 접두사 없이 남은 옛 HTML 의 정적 URL — 같은 사이트의 API 로 되돌린다
+                ['/build/ext/1234/bundles/modules.js', '/g7/api/modules/bundle.js?v=1234'],
+            ];
+
+            for (const [input, expected] of pairs) {
+                expect(staticToLegacy(input), `TS: ${input}`).toBe(expected);
+                expect(inline(input), `셸 head 드리프트: ${input}`).toBe(expected);
+            }
+
+            // 접두사가 경계 없이 이어진 다른 경로·다른 사이트의 게시본은 대상이 아니다
+            for (const url of ['/g7x/build/ext/1234/bundles/modules.js', '/other/build/ext/1234/bundles/modules.js', '/g7/build/core/template-engine.min.js']) {
+                expect(staticToLegacy(url), `TS: ${url}`).toBeNull();
+                expect(inline(url), `셸 head: ${url}`).toBeNull();
+            }
+        });
+
+        // @scenario base_path=root, asset_url_mode=extension
+        // @effects static_publish_recovery_keeps_the_site_base_prefix
+        it('루트 설치에서는 두 구현이 종전 문자열을 낸다 (접두사 `/` 표기 포함)', () => {
+            for (const raw of ['', '/']) {
+                const inline = loadInlineStaticToLegacy(raw);
+                (globalThis as any).G7Config = { cache_version: 7, basePath: raw };
+
+                expect(staticToLegacy('/build/ext/1234/bundles/modules.js')).toBe('/api/modules/bundle.js?v=1234');
+                expect(inline('/build/ext/1234/bundles/modules.js'), '`//api/…` 는 다른 호스트다')
+                    .toBe('/api/modules/bundle.js?v=1234');
             }
         });
     });
@@ -460,6 +531,47 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
                 link.getAttribute('href'),
                 '확장자 형태로 끝나면 그 서버가 다시 404 를 돌려주고 재시도 예산은 이미 소진된다',
             ).toBe('/api/templates/assets/sirsoft-basic?file=css%2Fcomponents.css&v=1234');
+        });
+
+        /**
+         * 첫 방문(저장소 빈 상태)의 템플릿 CSS 복구 — 하위 폴더 설치.
+         *
+         * 서버 값(`#g7-shell-head-data` 의 `basePath`)을 실제 셸처럼 읽게 해 둔다. 교체 예산이
+         * 링크당 1회라, 그 한 번이 사이트 밖 주소로 끝나면 첫 방문 화면 전체가 서식 없이 남는다.
+         */
+        // @scenario base_path=subpath, asset_url_mode=extension
+        // @effects static_publish_recovery_keeps_the_site_base_prefix
+        it('하위 폴더 설치에서 정적 CSS 실패는 같은 사이트의 API 주소로 교체된다', () => {
+            const data = document.createElement('script');
+            data.type = 'application/json';
+            data.id = 'g7-shell-head-data';
+            data.textContent = JSON.stringify({ cacheVersion: 1234, basePath: '/g7' });
+            document.head.appendChild(data);
+
+            try {
+                const api = loadPartialApi();
+
+                const link = document.createElement('link');
+                link.setAttribute('href', `/g7${staticHref}`);
+                api.recoverStylesheet(link);
+
+                expect(link.getAttribute('href')).toBe(
+                    '/g7/api/templates/assets/sirsoft-basic/css/components.css?v=1234',
+                );
+
+                // 확장자 없는 형태로 확정된 브라우저도 같은 사이트 안으로 간다
+                (globalThis as any).window.__g7AssetUrlMode = MODE_EXTENSIONLESS;
+                const api2 = loadPartialApi();
+                const link2 = document.createElement('link');
+                link2.setAttribute('href', `/g7${staticHref}`);
+                api2.recoverStylesheet(link2);
+
+                expect(link2.getAttribute('href')).toBe(
+                    '/g7/api/templates/assets/sirsoft-basic?file=css%2Fcomponents.css&v=1234',
+                );
+            } finally {
+                data.remove();
+            }
         });
 
         // @scenario asset_url_mode=extension, publish_state=partial, environment=production

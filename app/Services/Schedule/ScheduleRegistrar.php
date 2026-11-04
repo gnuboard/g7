@@ -5,7 +5,6 @@ namespace App\Services\Schedule;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ScheduleDispatchMode;
 use App\Enums\ScheduleFrequency;
-use App\Enums\ScheduleTriggerType;
 use App\Models\Schedule as ScheduleModel;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
@@ -24,7 +23,7 @@ use Throwable;
  * - Laravel `withoutOverlapping` 은 쓰지 않는다 — 큐 모드는 투입 직후 잠금이 풀리므로
  *   중복 방지는 실행기의 캐시 잠금(`schedule:run:{id}`)이 모든 경로(틱·수동·큐)를 맡는다.
  * - 이름이 `schedule:` 로 시작하는 이벤트는 이 등록기가 관리한다(isManaged) — 웹 크론 러너(#609)는
- *   이 이벤트를 그대로 돌리고 이력은 실행기에 맡긴다.
+ *   이 이벤트를 그대로 돌리고 이력은 실행기에 맡긴다. 러너가 정한 계기·실행자는 `ScheduleRunContext` 로 넘어온다.
  */
 class ScheduleRegistrar
 {
@@ -129,11 +128,17 @@ class ScheduleRegistrar
     {
         $id = (int) $row->id;
 
+        // 계기·실행자는 실행 문맥에서 읽는다 — 서버 크론에서는 늘 예약 실행이고, 웹 러너가 관리자의
+        // [지금 실행]으로 돌릴 때만 수동 실행과 누른 사람이 실린다. 결과는 문맥에 돌려줘 러너 요약이
+        // 실행기가 마감한 성공·실패를 그대로 센다.
         $event = $schedule->call(static function () use ($id): void {
             try {
-                app(ScheduleDispatcher::class)->dispatch($id, ScheduleTriggerType::Scheduled);
+                ScheduleRunContext::report(
+                    app(ScheduleDispatcher::class)->dispatch($id, ScheduleRunContext::trigger(), ScheduleRunContext::userId()),
+                );
             } catch (Throwable $e) {
-                // 실행 실패는 실행기가 이력으로 남긴다 — 여기는 실행 전 거부(비활성 확장 등)만 온다.
+                ScheduleRunContext::report($e);
+                // 실행 실패는 실행기가 이력으로 남긴다 — 여기는 실행 전 거부(비활성 확장, 수동 실행 중복 등)만 온다.
                 Log::warning('DB 스케줄 실행 거부', ['schedule_id' => $id, 'error' => $e->getMessage()]);
             }
         })->name(self::EVENT_PREFIX.$id);

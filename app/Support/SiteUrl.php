@@ -65,6 +65,41 @@ final class SiteUrl
     }
 
     /**
+     * 화면 주소를 정본 끝 슬래시 형태로 맞춥니다 — 하위 폴더 마운트 루트만 끝 슬래시, 그 밖은 끝 슬래시 없음.
+     *
+     * 하위 폴더 설치(`https://example.com/g7`)의 마운트 루트는 웹서버에게 **폴더**라, 끝 슬래시 없는
+     * `…/g7` 로 들어오면 웹서버가 `…/g7/` 로 301 을 돌려보낸다. 검색엔진에 알리는 정본(canonical·og:url·
+     * hreflang·사이트맵 loc)이 접힌 형태면 그 주소마다 이동을 한 번 거치고, 엔진이 주소창에 두는 정본
+     * (마운트 루트만 끝 슬래시 유지)과도 갈린다. 그 밖의 화면 주소는 끝·연속 슬래시 정규화 규칙대로
+     * 끝 슬래시가 없는 형태가 정본이다. 루트 설치의 홈은 종전과 같이 `https://example.com` 이다.
+     *
+     * 쿼리는 그대로 뒤에 붙는다(`…/g7/?locale=en`). 마운트 접두사는 `$base`(생략 시 사이트 주소)의
+     * 경로 부분으로 판정한다 — 사용자 화면 URL 처럼 사이트 주소와 다른 베이스로 만든 주소는 그 베이스를 넘긴다.
+     *
+     * @param  string  $url  절대 화면 주소 (쿼리 포함 가능)
+     * @param  string|null  $base  주소를 만든 베이스 (null 이면 사이트 주소)
+     * @return string 정본 끝 슬래시 형태의 주소
+     */
+    public static function canonicalScreenForm(string $url, ?string $base = null): string
+    {
+        $query = '';
+        $queryPosition = strpos($url, '?');
+        if ($queryPosition !== false) {
+            $query = substr($url, $queryPosition);
+            $url = substr($url, 0, $queryPosition);
+        }
+
+        $trimmed = rtrim($url, '/');
+        $mount = self::pathOf(rtrim(trim((string) ($base ?? self::base())), '/'));
+
+        if ($mount !== '' && parse_url($trimmed, PHP_URL_PATH) === $mount) {
+            return $trimmed.'/'.$query;
+        }
+
+        return $trimmed.$query;
+    }
+
+    /**
      * 요청에서 온 경로(+쿼리)를 사이트 주소 안의 절대 URL 로 바꿉니다.
      *
      * 입력을 언제나 경로로 취급한다 — 제어 문자를 지우고 앞의 `/`·`\` 를 모두 뗀 뒤 `/` 하나로

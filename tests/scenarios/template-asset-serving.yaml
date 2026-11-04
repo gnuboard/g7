@@ -38,6 +38,8 @@ effects:
   - template_asset_etag_changes_when_file_is_modified
   - template_asset_applies_immutable_caching_in_production
   - template_asset_applies_no_cache_in_development
+  - css_asset_carries_the_file_response_contract
+  - css_asset_is_immutable_only_when_the_url_carries_a_version
   - template_asset_serves_components_json
   - template_asset_components_json_returns_304_with_matching_etag
   - template_asset_returns_404_for_components_of_inactive_template

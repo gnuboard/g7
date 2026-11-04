@@ -120,7 +120,7 @@
 
 사용 예: GitHub 에 임시 장애가 있거나 잘못된 태그가 퍼블리시되어 자동 경로가 실패할 때 `--source=bundled` 로 강제 설치, 반대로 긴급 핫픽스를 GitHub 태그로만 배포한 경우 `--source=github` 로 번들 폴백을 차단합니다.
 
-`module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. 스크립트나 `--no-interaction` 처럼 답할 수 없는 환경에서는 기본값(아니오)으로 **오류 없이 취소**되므로(종료 코드 0, 아무것도 바뀌지 않음) 자동 실행에는 `--force` 를 붙입니다. 단 `--force` 는 확인을 건너뛸 뿐 아니라 버전 비교 없이 같은 판도 다시 적용하므로, 실제로 갱신할 확장에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않습니다.
+`module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. cron, CI, 원격 명령, `--no-interaction` 처럼 확인에 답할 수 없는 실행에서 `--force` 가 없으면 업데이트를 시작하지 않은 사유와 `--force` 안내를 출력하고 **종료 코드 1** 로 끝나므로(아무것도 바뀌지 않음) 자동 실행에는 `--force` 를 붙입니다. 터미널에서 직접 「아니오」를 답한 취소는 종료 코드 0 입니다. 제거 명령(`module:uninstall` / `plugin:uninstall` / `template:uninstall` / `language-pack:uninstall`)도 같은 규칙입니다. 단 `--force` 는 확인을 건너뛸 뿐 아니라 버전 비교 없이 같은 판도 다시 적용하므로, 실제로 갱신할 확장에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않습니다.
 
 #### 외부 ZIP 직접 지정 (`--zip`)
 

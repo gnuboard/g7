@@ -232,11 +232,33 @@ trait PopupFieldRules
             $box = __('sirsoft-popup::validation.attributes.overlay_box.'.$device);
             $names["overlays.{$device}"] = __('sirsoft-popup::validation.attributes.overlays');
             $names["overlays.{$device}.*"] = $box;
+            // 번역 키는 점 대신 밑줄 — `bg` 가 문자열이라 `bg.color` 를 점 표기로 찾으면 키가 그대로 나온다
             foreach (['x', 'y', 'w', 'text', 'size', 'color', 'bold', 'align', 'bg', 'bg.color', 'bg.opacity', 'shadow', 'id'] as $key) {
-                $names["overlays.{$device}.*.{$key}"] = $box.' '.__('sirsoft-popup::validation.attributes.overlay_field.'.$key);
+                $names["overlays.{$device}.*.{$key}"] = $box.' '.__('sirsoft-popup::validation.attributes.overlay_field.'.str_replace('.', '_', $key));
             }
         }
 
         return $names;
+    }
+
+    /**
+     * 공통 검증 메시지를 반환합니다.
+     *
+     * 바탕 색·진하기의 `required_with` 는 기본 문구가 `:values`(= 「PC 글 상자 :position 바탕」)를 넣는데, 검증기는 순번 자리를
+     * `:attribute` 에서만 채워 `:position` 이 그대로 남는다. 바탕을 보냈다는 조건은 칸 이름(「PC 글 상자 1 바탕 색」)에 이미 담겨
+     * 있으므로 필수 문구로 알린다.
+     *
+     * @return array<string, string> 규칙 키 => 메시지
+     */
+    protected function popupMessages(): array
+    {
+        $messages = [];
+        foreach (ImageDevice::values() as $device) {
+            foreach (['color', 'opacity'] as $part) {
+                $messages["overlays.{$device}.*.bg.{$part}.required_with"] = __('validation.required');
+            }
+        }
+
+        return $messages;
     }
 }

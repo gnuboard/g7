@@ -215,6 +215,7 @@ HookManager::addAction(
 | 크리덴셜(비밀번호·API 키·발신프로필 키)을 프론트에 노출 | `expose: false` + `sensitive: true` 유지 | 발송 권한이 곧 비용이다 |
 | 일시 오류와 영구 실패를 같은 방식으로 재시도 | 결과 코드 4분류를 따른다 | 영구 실패를 재시도하면 비용만 늘고, 일시 오류를 포기하면 발송이 누락된다 |
 | 문자 본문이 없는 언어에 기본 언어 본문도 없이 발송 시도 | 두 단계 폴백 후 그 알림의 문자 발송을 건너뛴다 | 빈 본문 발송은 비용이 나가면서 수신자에게 아무 정보도 주지 않는다 |
+| 템플릿 이미지 업로드(`BizppurioTemplateService::uploadImage()`)에서 파일 이름을 `UploadedFileName::original()` 로 되돌려 카카오에 보내기 | 브라우저가 보낸 이름(`getClientOriginalName()`)을 그대로 넘긴다 | 이 이름은 저장하지 않고 multipart 요청으로 외부 API 에 다시 실린다. HTTP 클라이언트는 `filename` 의 따옴표와 줄바꿈을 이스케이프하지 않으므로, 되돌린 `"`, CR, LF 가 나가는 요청 머리글을 깨뜨린다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

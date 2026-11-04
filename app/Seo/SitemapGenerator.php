@@ -9,6 +9,7 @@ use App\Seo\Contracts\SitemapContributorInterface;
 use App\Services\TemplateService;
 use App\Support\RequestPath;
 use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 
 /**
  * Sitemap XML 생성기
@@ -364,8 +365,10 @@ class SitemapGenerator
                 $routePath = RequestPath::normalize(ltrim($routePath, '*/'));
 
                 // 검색엔진에 알릴 주소는 사람이 여는 주소라 「사용자 화면 URL」(비면 사이트 주소) 기준이다(#792 W17).
-                // 홈은 끝 슬래시 없는 정규형으로 싣는다(공개#156 — 사이트 주소 기준 SiteUrl::absolute 와 같은 모양)
-                $loc = rtrim(ScreenUrl::toAbsolute($routePath), '/');
+                // 홈은 끝 슬래시 없는 정규형으로 싣는다(공개#156 — 사이트 주소 기준 SiteUrl::absolute 와 같은 모양).
+                // 단 하위 폴더 설치의 마운트 루트는 끝 슬래시 형태가 정본이다 — 웹서버가 `…/g7` 을 `…/g7/` 로
+                // 301 하므로 봇 화면 canonical 과 같은 규칙(SiteUrl::canonicalScreenForm)을 쓴다.
+                $loc = SiteUrl::canonicalScreenForm(ScreenUrl::toAbsolute($routePath), ScreenUrl::userBase());
 
                 // 필터 훅(core.seo.register_layouts)으로 같은 화면이 두 번 들어와도 한 번만 싣는다
                 $key = $this->comparableLoc($loc);

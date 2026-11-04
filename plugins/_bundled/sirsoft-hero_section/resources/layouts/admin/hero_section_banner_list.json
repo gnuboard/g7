@@ -514,7 +514,7 @@
                                         "type": "composite",
                                         "name": "sirsoft-hero_section.HeroBannerPreview",
                                         "props": {
-                                            "banners": "{{(preview?.data?.data ?? []).map(b => ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}",
+                                            "banners": "{{(preview?.data?.data ?? []).map(b => ({...b, title: b.title_localized, eyebrow: $localized(b.eyebrow) ?? '', description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}",
                                             "settings": "{{_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings}}",
                                             "device": "{{_local.previewDevice}}",
                                             "frame": "{{position_settings?.data?.editor?.preview_frame ?? null}}",
@@ -1785,7 +1785,7 @@
                                                             "props": {
                                                                 "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:border hs:border-dashed hs:border-amber-400 hs:text-amber-700 hs:dark:border-amber-500 hs:dark:text-amber-300"
                                                             },
-                                                            "text": "$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{locale.toUpperCase()}}"
+                                                            "text": "$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{_global.appConfig?.localeNames?.[locale] ?? locale.toUpperCase()}}"
                                                         },
                                                         {
                                                             "id": "media_badge",

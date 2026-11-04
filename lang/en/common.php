@@ -418,6 +418,8 @@ return [
             'prune_blocked_hint' => 'Run the beta.6 upgrade step first to write the manifest, then retry.',
             'confirm_prune' => 'Clean up the candidates above from the active directory?',
             'cancelled' => 'Cancelled.',
+            'confirm_unavailable' => 'The leftover files were not cleaned up because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). (No files were deleted.)',
+            'confirm_unavailable_hint' => 'This command has no option to clean up without confirmation. Run php artisan hotfix:rollback-stale-files --prune in a server terminal and answer the prompt. Without --prune it only reports.',
             'done' => 'Cleanup complete: removed :files files and :dirs directories. Protected :protected, symlinks skipped :symlinks, failed :failed.',
             'log_path' => 'Log: :path',
         ],

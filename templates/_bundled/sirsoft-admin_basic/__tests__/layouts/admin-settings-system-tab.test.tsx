@@ -285,6 +285,63 @@ describe('환경설정 시스템 탭 (W5)', () => {
 
         expect(screen.getByTestId('cron_last_run_empty')).toBeInTheDocument();
     });
+
+    // 큐로 보낸 작업은 워커가 끝내기 전까지 이력이 실행 중(`running`)으로 남는다. 성공·실패 두 갈래로만
+    // 그리면 아직 도는 작업이 「성공」으로 보인다.
+    // @scenario event_kind=callback_event
+    // @effects recent_history_shows_a_running_entry_as_running
+    it('실행 이력의 실행 중 항목은 성공이 아니라 실행 중으로 나온다', async () => {
+        const entry = (id: number, name: string, status: string) => ({
+            id,
+            name,
+            expression: '0 2 * * *',
+            status,
+            trigger_type: 'manual',
+            started_at: '2026-11-04T01:38:56+09:00',
+            duration: 0,
+            error_output: null,
+        });
+
+        active = createLayoutTest(buildLayout(), {
+            componentRegistry: setupTestRegistry(),
+            queryParams: { tab: 'system' },
+            initialState: { _global: editableUser() },
+            initialData: {
+                system_status: {
+                    data: {
+                        ...STATUS_PAYLOAD,
+                        cron: {
+                            ...STATUS_PAYLOAD.cron,
+                            recent_history: [
+                                entry(3, '사이트맵 생성', 'running'),
+                                entry(2, '내보내기 파일 정리', 'failed'),
+                                entry(1, 'SSO 이력 보관 정리', 'success'),
+                            ],
+                        },
+                    },
+                },
+            },
+        });
+
+        const { container } = await active.render();
+        const statusOf = (name: string): HTMLElement => {
+            const row = Array.from(container.querySelectorAll('p')).find((p) => p.textContent === name)?.closest('div')?.parentElement;
+            const spans = Array.from(row?.querySelectorAll(':scope > span') ?? []) as HTMLElement[];
+
+            return spans[spans.length - 1];
+        };
+
+        const running = statusOf('사이트맵 생성');
+        const failed = statusOf('내보내기 파일 정리');
+        const success = statusOf('SSO 이력 보관 정리');
+
+        expect(running.textContent).toContain('admin.schedules.result.running');
+        expect(running.className).toContain('text-yellow-600');
+        expect(failed.textContent).toContain('admin.settings.system.cron_history_failed');
+        expect(failed.className).toContain('text-red-600');
+        expect(success.textContent).toContain('admin.settings.system.cron_history_success');
+        expect(success.className).toContain('text-green-600');
+    });
 });
 
 /**

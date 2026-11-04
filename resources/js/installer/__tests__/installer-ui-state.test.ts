@@ -32,6 +32,9 @@ type UiState = {
   setInstallationCardInteractive: (enabled: boolean) => void;
   setCurrentTaskLabel: (label: string) => void;
   setCurrentTaskProgress: (done: unknown, total: unknown) => void;
+  composeCurrentTaskName: (serverName: string | null, fallbackName: string, target: string | null, extName: string) => string;
+  firstPendingTaskRow: () => { taskId: string; target: string | null; name: string } | null;
+  requestTaskRow: () => { taskId: string; target: string | null; name: string; alreadyActive: boolean } | null;
 };
 
 /** `region:ui-state` ~ `endregion:ui-state` 사이를 잘라 평가한다. */
@@ -59,6 +62,9 @@ function loadUiState(): UiState {
       setInstallationCardInteractive,
       setCurrentTaskLabel,
       setCurrentTaskProgress,
+      composeCurrentTaskName,
+      firstPendingTaskRow,
+      requestTaskRow,
     };
   `)() as UiState;
 }
@@ -208,5 +214,64 @@ describe('현재 작업 줄의 부분 진행 (#B35)', () => {
     ui.setCurrentTaskProgress(0, 0);
 
     expect(label(), '값 없는 heartbeat 가 표시를 0/0 으로 덮었다').toBe('필수 패키지 설치');
+  });
+});
+
+describe('현재 작업 줄의 확장 이름 조합', () => {
+  // 서버 단계 이름(`task_start` 의 name)은 이미 확장 이름과 식별자를 담아 온다
+  // (「게시판 모듈 활성화 (sirsoft-board)」). 화면이 그 위에 다시 확장 이름과 식별자를 붙이면
+  // 「게시판 게시판 모듈 활성화 (sirsoft-board) (sirsoft-board)」가 된다(실측).
+
+  // @scenario task_duration=long_no_feedback
+  // @effects installer_current_task_names_the_extension_once
+  it('서버 이름이 대상을 이미 담고 있으면 그대로 쓴다', () => {
+    expect(ui.composeCurrentTaskName('게시판 모듈 활성화 (sirsoft-board)', '모듈 활성화', 'sirsoft-board', '게시판'))
+      .toBe('게시판 모듈 활성화 (sirsoft-board)');
+    expect(ui.composeCurrentTaskName('Admin Basic 관리자 템플릿 설치 (sirsoft-admin_basic)', '템플릿 설치', 'sirsoft-admin_basic', 'Admin Basic'))
+      .toBe('Admin Basic 관리자 템플릿 설치 (sirsoft-admin_basic)');
+  });
+
+  // @scenario task_duration=long_no_feedback
+  // @effects installer_current_task_names_the_extension_once
+  it('서버 이름이 없거나 대상을 담지 않으면 확장 이름과 식별자를 한 번 붙인다', () => {
+    expect(ui.composeCurrentTaskName(null, '모듈 설치', 'sirsoft-board', '게시판')).toBe('게시판 모듈 설치 (sirsoft-board)');
+    expect(ui.composeCurrentTaskName('모듈 설치', '모듈 설치', 'sirsoft-board', '게시판')).toBe('게시판 모듈 설치 (sirsoft-board)');
+    expect(ui.composeCurrentTaskName(null, '모듈 설치', 'sirsoft-board', '')).toBe('모듈 설치 (sirsoft-board)');
+    expect(ui.composeCurrentTaskName('데이터베이스 마이그레이션', '마이그레이션', null, '')).toBe('데이터베이스 마이그레이션');
+  });
+});
+
+describe('이번 요청이 돌릴 단계 (단계별 실행)', () => {
+  // @scenario task_duration=long_no_feedback
+  // @effects stepwise_progress_names_the_task_being_run
+  it('작업 목록에서 아직 시작하지 않은 첫 행을 고른다 — 끝난 행과 진행 중 행은 건너뛴다', () => {
+    document.getElementById('task-list')!.innerHTML = `
+      <div class="task-item task-completed" data-task-id="composer_check" data-target=""><span class="task-name">패키지 관리자 확인</span></div>
+      <div class="task-item task-pending" data-task-id="module_install" data-target="sirsoft-board"><span class="task-name"> 게시판 모듈 설치 (sirsoft-board) </span></div>
+      <div class="task-item task-pending" data-task-id="module_activate" data-target="sirsoft-board"><span class="task-name">게시판 모듈 활성화 (sirsoft-board)</span></div>`;
+
+    expect(ui.firstPendingTaskRow()).toEqual({ taskId: 'module_install', target: 'sirsoft-board', name: '게시판 모듈 설치 (sirsoft-board)' });
+
+    document.querySelectorAll('.task-item').forEach((el) => el.classList.replace('task-pending', 'task-completed'));
+    expect(ui.firstPendingTaskRow(), '남은 단계가 없는데 행을 골랐다').toBeNull();
+  });
+
+  // @scenario task_duration=long_no_feedback
+  // @effects stepwise_progress_names_the_task_being_run
+  it('이미 진행 중인 행이 있으면 그 행을 그대로 쓴다 — busy 대기로 요청이 되풀이돼도 다음 행을 칠하지 않는다', () => {
+    // 모니터는 busy(다른 요청이 단계를 도는 중) 대기와 재시도마다 요청을 다시 보내고 그때마다 이번 요청이
+    // 돌릴 단계를 묻는다. 매번 첫 대기 행을 고르면 진행 중으로 칠한 행이 되돌려지지 않은 채 다음 행이
+    // 또 칠해져, 대기가 이어지는 동안 남은 단계가 하나씩 진행 중으로 바뀐다.
+    document.getElementById('task-list')!.innerHTML = `
+      <div class="task-item task-completed" data-task-id="composer_check" data-target=""><span class="task-name">패키지 관리자 확인</span></div>
+      <div class="task-item task-active" data-task-id="module_install" data-target="sirsoft-ecommerce"><span class="task-name">이커머스 모듈 설치 (sirsoft-ecommerce)</span></div>
+      <div class="task-item task-pending" data-task-id="module_activate" data-target="sirsoft-ecommerce"><span class="task-name">이커머스 모듈 활성화 (sirsoft-ecommerce)</span></div>`;
+
+    for (let i = 0; i < 3; i++) {
+      expect(ui.requestTaskRow()).toEqual({ taskId: 'module_install', target: 'sirsoft-ecommerce', name: '이커머스 모듈 설치 (sirsoft-ecommerce)', alreadyActive: true });
+    }
+
+    document.querySelector('.task-active')!.classList.replace('task-active', 'task-completed');
+    expect(ui.requestTaskRow()).toEqual({ taskId: 'module_activate', target: 'sirsoft-ecommerce', name: '이커머스 모듈 활성화 (sirsoft-ecommerce)', alreadyActive: false });
   });
 });

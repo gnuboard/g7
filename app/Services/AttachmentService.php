@@ -11,6 +11,7 @@ use App\Models\Attachment;
 use App\Models\User;
 use App\Services\Concerns\ResolvesRowStorage;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -117,7 +118,7 @@ class AttachmentService
             'attachmentable_id' => $attachmentableId,
             'source_type' => $sourceType,
             'source_identifier' => $sourceIdentifier,
-            'original_filename' => $file->getClientOriginalName(),
+            'original_filename' => UploadedFileName::original($file),
             'stored_filename' => $storedFilename,
             'disk' => $disk,
             'path' => $path,

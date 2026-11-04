@@ -57,6 +57,7 @@ effects:
   - recovery_token_rejects_wrong_token
   - recovery_reclaim_is_rate_limited
   - same_session_resumes_without_token
+  - recovery_reclaim_transfers_stepwise_control   # 단계별 실행 중 되찾으면 되찾은 세션이 새 단계별 토큰을 받고 이전 창의 토큰은 무효가 된다
   # 회귀 가드 — 엔드포인트 require 체인, 워커 동시 실행 락(이슈 #319)
   - endpoint_require_chain_defines_gate_helpers
   - worker_lock_prevents_concurrent_workers

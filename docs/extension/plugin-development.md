@@ -1371,7 +1371,7 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 | `php artisan plugin:install [identifier]` | 플러그인 설치 (Composer 의존성 자동 설치 포함) |
 | `php artisan plugin:activate [identifier]` | 플러그인 활성화 (끌 때 함께 꺼진 언어팩도 함께 켬, `--without-language-packs` 로 생략). 필요한 의존 확장이 없거나 꺼져 있거나 버전이 모자라면 사유(미설치·비활성·버전 미달 설치 → 요구)를 출력하고 멈춘다 — `--force` 로 강제 활성화 |
 | `php artisan plugin:deactivate [identifier]` | 플러그인 비활성화 |
-| `php artisan plugin:uninstall [identifier]` | 플러그인 삭제 (--delete-data 시 vendor/ 삭제 포함) |
+| `php artisan plugin:uninstall [identifier]` | 플러그인 삭제 (--delete-data 시 vendor/ 삭제 포함). 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 `--force` 가 없으면 사유를 출력하고 종료 코드 1 |
 | `php artisan plugin:composer-install [identifier]` | 플러그인 Composer 의존성 설치 |
 | `php artisan plugin:build [identifier]` | 플러그인 에셋 빌드 |
 | `php artisan plugin:refresh-layout [identifier?]` | 플러그인 레이아웃 갱신 |

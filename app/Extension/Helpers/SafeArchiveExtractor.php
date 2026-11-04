@@ -45,6 +45,32 @@ class SafeArchiveExtractor
      */
     public static function extractZip(string $zipPath, string $destination, ?string $displayName = null): array
     {
+        return self::extractZipChunk($zipPath, $destination, 0, null, $displayName)['written'];
+    }
+
+    /**
+     * ZIP 을 나눠서 풉니다 (`extractZip()` 은 이 함수를 멈춤 없이 부른다).
+     *
+     * 한 요청이 한 단계를 맡는 웹 업데이트는 배포본(수만 항목)을 한 요청에 다 풀면 서버의 요청
+     * 시간 제한에 걸린다. 그래서 `$shouldPause` 가 참을 돌려주면 그 자리에서 멈추고, 다음 호출이
+     * `$from`(돌려준 `next`)부터 이어 간다.
+     *
+     * 안전 검사(압축 밖 경로·심볼릭 링크 거부)는 **매 호출마다 전 항목에** 한다 — 항목 이름만 읽는
+     * 일이라 싸고, 앞 호출의 판정을 믿지 않으면 호출 사이에 바뀐 파일도 거른다. 하나라도 거부되면
+     * 이번 호출은 아무것도 쓰지 않는다.
+     *
+     * @param  string  $zipPath  ZIP 파일 경로
+     * @param  string  $destination  풀 대상 디렉터리 (없으면 만든다)
+     * @param  int  $from  이어 풀 항목 순번 (처음이면 0)
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
+     * @param  string|null  $displayName  경고에 보일 이름
+     * @return array{done: bool, next: int, total: int, written: list<string>} 이번 호출이 쓴 파일과 다음 순번
+     *
+     * @throws UnsafeArchiveException 허용되지 않는 항목이 하나라도 있을 때 (아무것도 풀지 않음)
+     * @throws \RuntimeException ZIP 을 열 수 없거나 항목을 쓰지 못했을 때
+     */
+    public static function extractZipChunk(string $zipPath, string $destination, int $from = 0, ?\Closure $shouldPause = null, ?string $displayName = null): array
+    {
         if (! class_exists(\ZipArchive::class)) {
             throw new \RuntimeException(__('settings.core_update.no_extract_method_available'));
         }
@@ -57,6 +83,10 @@ class SafeArchiveExtractor
         if ($zip->open($zipPath) !== true) {
             throw new \RuntimeException(__('common.errors.zip_open_failed'));
         }
+
+        $from = max(0, $from);
+        $done = true;
+        $next = 0;
 
         try {
             // 1차: 전 항목 검사 — 하나라도 거부되면 아무것도 쓰지 않는다
@@ -85,35 +115,46 @@ class SafeArchiveExtractor
                 $plan[] = ['index' => $i, 'path' => $normalized, 'dir' => $isDir];
             }
 
-            // 2차: 정규화된 경로에 직접 쓴다
+            // 2차: 정규화된 경로에 직접 쓴다 (이어 풀 때는 앞 순번을 건너뛴다)
             $root = self::prepareDestination($destination);
             $written = [];
-            foreach ($plan as $entry) {
+            $count = count($plan);
+            $next = $count;
+
+            for ($position = $from; $position < $count; $position++) {
+                $entry = $plan[$position];
                 $target = $root.'/'.$entry['path'];
 
                 if ($entry['dir']) {
                     self::ensureDirectoryInside($root, $target);
+                } else {
+                    self::ensureDirectoryInside($root, dirname($target));
 
-                    continue;
+                    $stream = $zip->getStream($zip->getNameIndex($entry['index']));
+                    if ($stream === false) {
+                        throw new \RuntimeException(__('common.errors.zip_open_failed'));
+                    }
+
+                    self::writeStream($stream, $target);
+                    $written[] = $entry['path'];
                 }
 
-                self::ensureDirectoryInside($root, dirname($target));
+                if ($shouldPause !== null && $position + 1 < $count && $shouldPause()) {
+                    $done = false;
+                    $next = $position + 1;
 
-                $stream = $zip->getStream($zip->getNameIndex($entry['index']));
-                if ($stream === false) {
-                    throw new \RuntimeException(__('common.errors.zip_open_failed'));
+                    break;
                 }
-
-                self::writeStream($stream, $target);
-                $written[] = $entry['path'];
             }
         } finally {
             $zip->close();
         }
 
-        self::reportNormalized($normalizedCount, $displayName ?? $zipPath);
+        if ($done) {
+            self::reportNormalized($normalizedCount, $displayName ?? $zipPath);
+        }
 
-        return $written;
+        return ['done' => $done, 'next' => $next, 'total' => $count, 'written' => $written];
     }
 
     /**

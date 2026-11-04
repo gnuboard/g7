@@ -458,6 +458,11 @@ function g7setup_token_issue(array &$state): bool
  *
  * 압축 해제 마지막 단계에서 배포본의 루트 `.htaccess` 가 이 파일을 대체한다.
  *
+ * 거부 수단은 루트 `.htaccess` 와 같다 — 경로 판정은 `RedirectMatch 403`(mod_alias, `AllowOverride
+ * FileInfo` 등급)을 쓰고, mod_alias 가 없을 때만 `Order`/`Deny`(mod_access_compat)로 물러선다.
+ * `Order`/`Deny` 하나만 두면 그 하위호환 모듈이 없는 Apache 2.4 에서 두 파일이 그대로 열린다.
+ * `Require` 는 `AuthConfig` 등급이라 제한 호스팅에서 디렉토리 전체가 500 이 되므로 쓰지 않는다.
+ *
  * @return bool 보호 규칙이 놓였거나 이미 다른 `.htaccess` 가 있으면 true
  */
 function g7setup_guard_file_ensure(): bool
@@ -470,12 +475,17 @@ function g7setup_guard_file_ensure(): bool
 
     $header = G7_SETUP_GUARD_HEADER.' — 압축 해제가 끝나면 배포본의 루트 .htaccess 가 대체한다.';
     $rules = $header."\n".<<<'HTACCESS'
-<FilesMatch "^g7-setup-(token\.txt|state\.json)$">
-    <IfModule mod_access_compat.c>
-        Order allow,deny
-        Deny from all
-    </IfModule>
-</FilesMatch>
+<IfModule mod_alias.c>
+    RedirectMatch 403 (?i)/g7-setup-(token\.txt|state\.json)$
+</IfModule>
+<IfModule !mod_alias.c>
+    <FilesMatch "^g7-setup-(token\.txt|state\.json)$">
+        <IfModule mod_access_compat.c>
+            Order allow,deny
+            Deny from all
+        </IfModule>
+    </FilesMatch>
+</IfModule>
 HTACCESS;
 
     return @file_put_contents($path, $rules."\n", LOCK_EX) !== false;
@@ -1080,6 +1090,7 @@ function g7setup_dictionary(): array
             'no_zip' => '이 폴더에서 압축 파일(.zip)을 찾지 못했습니다. 배포 ZIP 을 이 파일과 같은 폴더에 올려주세요.',
             'already_installed' => '이미 설치가 완료된 사이트입니다. 압축 풀기를 진행할 수 없습니다.',
             'already_installed_action' => '이 파일과 압축 파일을 FTP 로 삭제해주세요.',
+            'token_required' => '확인 번호를 넣어주세요. 번호는 서버의 :file 파일에 있습니다.',
             'invalid_token' => '확인 번호가 맞지 않습니다. :remaining 회 남았습니다.',
             'locked' => '입력 시도가 많아 :seconds 초 동안 잠겼습니다.',
             'token_reissued' => '입력 시도가 많아 확인 번호를 새로 만들었습니다. 서버의 :file 파일을 다시 열어주세요.',
@@ -1115,6 +1126,7 @@ function g7setup_dictionary(): array
             'no_zip' => 'No archive (.zip) was found in this folder. Upload the release ZIP next to this file.',
             'already_installed' => 'This site is already installed. Extraction cannot proceed.',
             'already_installed_action' => 'Please delete this file and the archive over FTP.',
+            'token_required' => 'Enter the confirmation number. It is in :file on the server.',
             'invalid_token' => 'The confirmation number is incorrect. :remaining attempt(s) left.',
             'locked' => 'Too many attempts. Locked for :seconds seconds.',
             'token_reissued' => 'Too many attempts, so a new confirmation number was issued. Open :file on the server again.',
@@ -1225,6 +1237,15 @@ function g7setup_authenticate(array &$state): array
     }
 
     $token = (string) preg_replace('/[^0-9]/', '', (string) ($_POST['token'] ?? ''));
+
+    // 번호를 넣지 않은 요청은 대입 시도가 아니다 — 세면 브라우저를 다시 연 운영자가 번호 칸을 비운 채
+    // [이어서 풀기] 를 누를 때마다 남은 횟수가 줄고 지연이 걸려, 다섯 번이면 번호가 또 바뀌고 잠긴다.
+    if ($token === '') {
+        return ['ok' => false, 'session' => '', 'error' => [
+            'code' => 'token_required',
+            'message' => g7setup_lang('token_required', ['file' => G7_SETUP_TOKEN_FILE]),
+        ]];
+    }
 
     if ($token !== '' && (string) $state['token_hash'] !== ''
         && hash_equals((string) $state['token_hash'], hash('sha256', $token))) {
@@ -1802,6 +1823,7 @@ function g7setup_format_size(int $bytes): string
     ], $jsonFlags) ?>;
     var LOCALE = <?= json_encode($locale, $jsonFlags) ?>;
     var MAY_NEED_REISSUE = <?= json_encode($mayNeedReissue, $jsonFlags) ?>;
+    var TOKEN_REQUIRED_MESSAGE = <?= json_encode(g7setup_lang('token_required', ['file' => G7_SETUP_TOKEN_FILE]), $jsonFlags) ?>;
 
     var toggle = document.getElementById('setup-theme-toggle');
     if (toggle) {
@@ -1928,11 +1950,13 @@ function g7setup_format_size(int $bytes): string
             if (!data.ok) {
                 showAlert(data.message || LANG.network_error, 'error');
                 startBtn.disabled = false;
-                // 번호가 재발급되면 이전 세션은 무효다 — 다시 입력받는다.
-                if (data.code === 'token_reissued' || data.code === 'invalid_token') {
+                // 번호가 재발급되면 이전 세션은 무효다 — 다시 입력받는다. 세션을 가진 탭이 번호 없이 보내
+                // `token_required` 를 받은 경우(서버에서 세션이 무효가 됨)도 같다. 숨겨 둔 번호 칸을 다시 보인다.
+                if (data.code === 'token_reissued' || data.code === 'invalid_token' || data.code === 'token_required') {
                     sessionKey = '';
                     try { window.sessionStorage.removeItem('g7_setup_session'); } catch (e) {}
                     tokenInput.value = '';
+                    if (tokenField) { tokenField.style.display = ''; }
                 }
                 return;
             }
@@ -1958,6 +1982,13 @@ function g7setup_format_size(int $bytes): string
 
     startBtn.addEventListener('click', function () {
         clearAlert();
+        // 번호 칸이 보이는데 비어 있으면 보내지 않는다(서버도 빈 번호는 세지 않는다).
+        if (!sessionKey && tokenInput && tokenField && tokenField.style.display !== 'none'
+            && tokenInput.value.replace(/[^0-9]/g, '') === '') {
+            showAlert(TOKEN_REQUIRED_MESSAGE, 'error');
+            tokenInput.focus();
+            return;
+        }
         startBtn.disabled = true;
         step();
     });

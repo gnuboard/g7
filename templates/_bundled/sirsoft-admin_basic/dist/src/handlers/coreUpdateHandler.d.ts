@@ -14,6 +14,12 @@
  * 상태를 고르므로, 진행 중 다른 곳에서 부분 갱신이 끼어들 여지가 없다.
  */
 /**
+ * 기다리기 함수를 바꿔 끼운다 (테스트 전용).
+ *
+ * @param fn 대체 함수 (null 이면 기본값으로 되돌린다)
+ */
+export declare function __setCoreUpdateSleepForTests(fn: ((ms: number) => Promise<void>) | null): void;
+/**
  * 상태를 다시 읽어 화면에 반영한다.
  *
  * 화면 진입 시(진행 중이던 실행을 이어받는 경우 포함)와 [업데이트 확인] 이후에

@@ -29,6 +29,10 @@ description: |
     9. 되뽑기 실패는 조용히 건너뛰지 않는다 — 건너뛰면 그 예약이 오류 없이 사라진다.
     10. DB 스케줄 계통은 이 안에서 연결하지 않는다 (D8). 붙일 때 보안 검증기를 반드시
         경유해야 한다는 조건만 설계에 남긴다 (R15).
+    11. 7.2.0 에서 DB 스케줄은 등록기가 `schedule:{id}` 이벤트로 등록하므로 러너가 그 이벤트를 돈다.
+        그 실행의 이력은 실행기가 행 기준으로 한 건 남긴다 — 러너는 자기 이력을 따로 남기지 않고,
+        [지금 실행]의 계기(수동)와 누른 관리자를 실행기까지 넘기며, 실행기가 실패로 마감한 작업을
+        요약의 실패로 센다. 화면의 실행 이력은 두 출처를 함께 싣고 행 이력은 표시 명칭으로 부른다.
 
 axes:
   caller: [panel, external, visit]                          # 호출 주체 — 관리자 화면 / 외부 크론 서비스 / 방문 트리거 폴백
@@ -86,6 +90,7 @@ effects:
   # 화면 표시 (D43 — G8 실측 F5·F6)
   - schedule_history_name_is_human_readable
   - schedule_status_times_use_the_site_timezone
+  - run_now_times_use_the_site_timezone
   # 확장 예약 커맨드 해석 (D42 — G8 실측 F4)
   - only_declared_schedule_commands_are_registered
   - declared_schedule_command_is_resolvable_in_web_context
@@ -158,6 +163,12 @@ effects:
   - each_run_leaves_one_history_row
   - failed_run_history_carries_the_reason
   - skipped_event_leaves_no_history_row
+  # DB 스케줄 이벤트 — 같은 실행을 두 기록에 다른 계기로 남기지 않는다
+  - database_schedule_run_leaves_one_history_row_with_the_runner_trigger
+  - database_schedule_failure_is_counted_as_failed
+  - database_schedule_outside_the_runner_stays_scheduled
+  - recent_history_names_registered_schedules_by_their_display_label
+  - recent_history_shows_a_running_entry_as_running
   # 무인증 표면의 응답 계약
   - oversized_token_is_unauthorized_not_unprocessable
   - runner_failure_still_returns_200

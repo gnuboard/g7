@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Ckeditor5\Services;
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -69,7 +70,7 @@ class ImageUploadService
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
         $record = $this->repository->create([
-            'original_name' => $file->getClientOriginalName(),
+            'original_name' => UploadedFileName::original($file),
             'file_path' => "images/{$path}",
             'storage_disk' => $this->storage->getDisk(),
             'file_size' => $file->getSize(),

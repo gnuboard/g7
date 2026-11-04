@@ -32,6 +32,7 @@ exclusions:
 effects:
   - site_url_ignores_request_host
   - site_url_absolute_shape
+  - canonical_screen_url_keeps_only_the_mount_root_slash
   - site_url_empty_base_stays_relative
   - site_url_for_path_stays_inside_site
   - return_url_must_be_same_origin

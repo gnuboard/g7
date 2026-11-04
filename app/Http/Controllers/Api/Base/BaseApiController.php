@@ -196,6 +196,108 @@ abstract class BaseApiController extends Controller
     }
 
     /**
+     * 서버가 만든 본문을 파일 응답과 같은 캐싱·보안 계약으로 내보냅니다 (확장 CSS 치환본 등).
+     *
+     * 확장 CSS 는 상대 참조를 절대 자산 주소로 바꿔 내보내므로 디스크 파일을 그대로 넘길 수 없다. 그 응답을
+     * 호출부가 직접 만들면 `fileResponse()` 가 지키는 계약이 통째로 빠진다 — 종전 CSS 통로는 형식 추측 금지
+     * 헤더가 없었고, 따옴표 없는 ETag 를 내보내 규격 형태의 재검증(`If-None-Match: "…"`)이 매번 전문을 받았고,
+     * 운영 환경에서 버전 없는 주소에도 `immutable` 을 붙였다. 같은 통로의 JS 는 `fileResponse()` 를 지나 셋 다
+     * 맞았으므로, 이 헬퍼가 같은 판정(`assetCacheControl`·`etagMatches`·`notModified`·`declareNoSniff`)을 쓴다.
+     *
+     * `Last-Modified` 는 싣지 않는다 — 본문이 파일 내용뿐 아니라 자산 주소 방식 설정에도 달라지므로 파일
+     * 수정 시각으로는 이 표현의 변경 시각을 말할 수 없다. 그 값을 실으면 `If-Modified-Since` 만 보내는
+     * 중간 캐시가 설정 변경 뒤에도 옛 본문을 304 로 재사용한다. 검증자는 본문 기준 강한 ETag 하나다.
+     *
+     * @param  string  $body  내보낼 본문
+     * @param  string  $mimeType  MIME 타입 (비어 있으면 내려받기 유형)
+     * @param  int  $maxAge  캐시 유지 시간 (초, 기본: 1년)
+     * @param  bool|null  $immutable  URL 이 내용을 고유하게 가리키는가 (`fileResponse()` 와 같은 뜻, null 이면 `?v=` 로 판정)
+     * @param  string|null  $filename  `Content-Disposition: inline` 으로 선언할 파일 이름 (null 이면 선언하지 않음)
+     * @return Response 본문 응답 또는 304 응답
+     */
+    protected function generatedFileResponse(
+        string $body,
+        string $mimeType,
+        int $maxAge = 31536000,
+        ?bool $immutable = null,
+        ?string $filename = null,
+    ): Response {
+        $immutable ??= $this->requestCarriesAssetVersion();
+
+        if (trim($mimeType) === '') {
+            $mimeType = self::UNKNOWN_MIME_TYPE;
+        }
+
+        $etag = '"'.md5($body).'"';
+        $cacheControl = $this->assetCacheControl($immutable, $maxAge);
+
+        $ifNoneMatch = request()->header('If-None-Match');
+        if ($ifNoneMatch !== null && $ifNoneMatch !== '' && $this->etagMatches($ifNoneMatch, $etag)) {
+            return $this->notModified(
+                $this->negotiatedEtag($ifNoneMatch, $etag),
+                null,
+                $cacheControl,
+                $maxAge,
+                $mimeType
+            );
+        }
+
+        $response = response($body, 200, [
+            'Content-Type' => $mimeType,
+            'Expires' => gmdate('D, d M Y H:i:s', time() + $maxAge).' GMT',
+            'ETag' => $etag,
+        ]);
+
+        $response->headers->set('Cache-Control', $cacheControl);
+        $this->declareNoSniff($response);
+
+        // 형제 `fileResponse()` 와 같은 이유로 이름을 선언한다 — 무확장자 자산 주소에서는 마지막 세그먼트가
+        // 확장 식별자라, 선언이 없으면 내려받기 이름이 자산 주소 방식에 따라 갈린다.
+        $filename = $filename !== null ? str_replace(['\\', '/'], '_', $filename) : '';
+
+        if ($filename !== '') {
+            $response->headers->set(
+                'Content-Disposition',
+                HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, $filename, $this->asciiFallbackName($filename))
+            );
+        }
+
+        return $response;
+    }
+
+    /**
+     * 자산 응답의 `Cache-Control` 값을 정합니다 — 파일 응답과 생성 본문 응답이 함께 쓰는 판정.
+     *
+     * @param  bool  $immutable  URL 이 내용을 고유하게 가리키는가
+     * @param  int  $maxAge  캐시 유지 시간 (초)
+     * @return string Cache-Control 값
+     */
+    private function assetCacheControl(bool $immutable, int $maxAge): string
+    {
+        if (! app()->environment('production')) {
+            return 'no-cache';  // 개발: 캐싱 비활성화
+        }
+
+        return $immutable
+            ? "public, max-age={$maxAge}, immutable"          // 버전이 URL 에 담긴 자산
+            : "public, max-age={$maxAge}, must-revalidate";   // 같은 URL 의 내용이 교체되는 자산
+    }
+
+    /**
+     * `Content-Disposition` 의 ASCII 대체 이름을 만듭니다 (ASCII 밖 글자와 `%` 는 `_`).
+     *
+     * `BinaryFileResponse::setContentDisposition()` 이 대체 이름을 비워 둘 때 쓰는 규칙과 같다 —
+     * `HeaderUtils::makeDisposition()` 은 대체 이름에 그 글자가 있으면 예외를 던진다.
+     *
+     * @param  string  $filename  파일 이름
+     * @return string ASCII 대체 이름
+     */
+    private function asciiFallbackName(string $filename): string
+    {
+        return preg_replace('/[^\x20-\x7E]|%/', '_', $filename) ?? '_';
+    }
+
+    /**
      * 파일 응답을 반환합니다 (ETag 및 캐싱 헤더 포함).
      *
      * @param  string  $filePath  파일 경로
@@ -268,12 +370,7 @@ abstract class BaseApiController extends Controller
         // 304 는 `private, must-revalidate` 라, 200 이 `public` 인 자산이 재검증 한 번으로
         // 비공유로 격하된다(공유 캐시·CDN 이 항목을 버리거나 재사용하지 않는다). 정적
         // 서빙은 304 에도 200 과 같은 `Cache-Control` 을 재전송한다.
-        $productionPolicy = $immutable
-            ? "public, max-age={$maxAge}, immutable"          // 버전이 URL 에 담긴 자산
-            : "public, max-age={$maxAge}, must-revalidate";   // 같은 URL 의 내용이 교체되는 자산
-        $cacheControl = app()->environment('production')
-            ? $productionPolicy
-            : 'no-cache';  // 개발: 캐싱 비활성화
+        $cacheControl = $this->assetCacheControl($immutable, $maxAge);
 
         $ifNoneMatch = request()->header('If-None-Match');
         if ($ifNoneMatch !== null && $ifNoneMatch !== '') {
@@ -356,7 +453,7 @@ abstract class BaseApiController extends Controller
      * 단일 출처(`GzipEncodeResponse::isCompressibleMimeType`)를 그대로 부른다.
      *
      * @param  string  $etag  따옴표를 포함한 entity-tag
-     * @param  string  $lastModified  RFC 7231 형식의 GMT 시각
+     * @param  string|null  $lastModified  RFC 7231 형식의 GMT 시각 (200 이 싣지 않는 표현이면 null)
      * @param  string  $cacheControl  200 응답과 동일한 Cache-Control 값
      * @param  int  $maxAge  200 응답과 동일한 만료 기간(초)
      * @param  string  $mimeType  200 응답의 Content-Type (Vary 축 판정용)
@@ -364,7 +461,7 @@ abstract class BaseApiController extends Controller
      */
     private function notModified(
         string $etag,
-        string $lastModified,
+        ?string $lastModified,
         string $cacheControl,
         int $maxAge,
         string $mimeType
@@ -372,7 +469,10 @@ abstract class BaseApiController extends Controller
         $response = new NotModifiedResponse('', 304);
 
         $response->headers->set('ETag', $etag);
-        $response->headers->set('Last-Modified', $lastModified);
+
+        if ($lastModified !== null) {
+            $response->headers->set('Last-Modified', $lastModified);
+        }
         $response->headers->set('Cache-Control', $cacheControl);
         $response->headers->set('Expires', gmdate('D, d M Y H:i:s', time() + $maxAge).' GMT');
         $this->declareNoSniff($response);

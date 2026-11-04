@@ -206,7 +206,9 @@ class CoreUpdateSafeDefaultsTest extends TestCase
         }
 
         // 백업·점검 모드는 **건너뛸 수 없는 단계**로 존재해야 한다.
-        $this->assertStringContainsString('createBackup(', $source, '웹은 백업 필수다 (D10 의 전제).');
+        // 웹은 요청 시간 몫 안에서 나눠 만드는 커서 판(`createBackupChunk`)을 부른다 — 명령줄의 `createBackup()` 이
+        // 같은 함수를 멈춤 없이 부르는 래퍼다.
+        $this->assertStringContainsString('createBackupChunk(', $source, '웹은 백업 필수다 (D10 의 전제).');
         $this->assertStringContainsString('enableMaintenanceMode(', $source, '웹은 점검 모드 필수다 (D27).');
     }
 

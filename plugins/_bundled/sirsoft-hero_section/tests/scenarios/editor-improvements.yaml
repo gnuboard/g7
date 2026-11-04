@@ -16,6 +16,7 @@ axes:
     - editor_preview_roundtrip
     - editor_conflict_preserves_input
     - preview_language
+    - preview_language_names
     - preview_viewport
     - preview_expand
     - locked_mutation_snapshot
@@ -26,3 +27,4 @@ test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroEditorSupport.test.tsx
 effects:
   - editor_state_protected
+  - languages_named_like_tabs

@@ -72,6 +72,16 @@ class UninstallTemplateCommand extends Command
                     $this->warn(__('templates.commands.uninstall.delete_data_notice'));
                 }
 
+                // 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 종전에 기본값 「아니오」로 취소 문구만 내고
+                // 종료 코드 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 --force 안내를 남기고 실패로 끝낸다.
+                // 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+                if (! $this->canAnswerConfirmation()) {
+                    return $this->refuseUnanswerableConfirmation(
+                        '❌ '.__('templates.commands.uninstall.confirm_unavailable', ['template' => $identifier]),
+                        __('templates.commands.uninstall.confirm_unavailable_hint', ['template' => $identifier]),
+                    );
+                }
+
                 if (! $this->unifiedConfirm(__('templates.commands.uninstall.confirm_question'), false)) {
                     $this->info(__('templates.commands.uninstall.aborted'));
 

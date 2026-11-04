@@ -23,9 +23,9 @@ return [
     // Mount prefix — what request-less contexts (queue, console, scheduler) build URLs from
     'base_path' => [
         'title' => 'Mount prefix (request-less contexts — what queue/console URLs are built from)',
-        'context' => 'Prefix in this context: :prefix',
-        'configured' => 'Path of APP_URL: :prefix (:url)',
+        'context' => 'Prefix in this context: :prefix (the console uses the path of APP_URL in .env, or the site address path below when that is empty)',
+        'configured' => 'Path of the site address: :prefix (:url — the Site URL setting, or APP_URL in .env when it is empty)',
         'mismatch' => 'The two values differ — mail and sitemap URLs built by the queue/console point outside the site. Set the path of APP_URL to the actual mount location.',
-        'hint' => 'When a web request detects the mismatch, one warning log ([AssetUrl]) is written per request.',
+        'hint' => 'When a web request detects the mismatch, one error log ([AssetUrl]) is written per request (recorded even at the default log level, error).',
     ],
 ];

@@ -19,6 +19,7 @@ use App\Services\Concerns\SecuresExtensionAssetPath;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
@@ -876,7 +877,7 @@ class PluginService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', UploadedFileName::original($file)
             );
 
             $manifest = $result['config'];
@@ -926,7 +927,7 @@ class PluginService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', UploadedFileName::original($file)
             );
 
             $this->ensurePluginNotInstalled($result['identifier']);

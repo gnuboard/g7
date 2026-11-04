@@ -356,6 +356,8 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
       if (kids.length !== 2 || row.iteration) return false;
       const label = typeof kids[0]?.text === 'string' ? kids[0].text : '';
       if (!/^\$t:[\w.-]+$/.test(label.trim())) return false;
+      // 둘째가 단추·링크면 값이 아니라 동작이다(「이유 문구 + 그 자리로 가기」 같은 안내 줄 — 히어로 저장 잠김 이유).
+      if (['Button', 'A', 'Link'].includes(kids[1]?.name)) return false;
       const cls = words(row);
       if (cls.includes('kv-row')) return true;
       const flex = cls.some((w) => ['flex', 'inline-flex', 'flex-center'].includes(w));

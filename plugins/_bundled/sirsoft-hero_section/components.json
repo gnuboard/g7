@@ -29,6 +29,11 @@
                         "type": "string",
                         "required": false
                     },
+                    "localeNames": {
+                        "type": "object",
+                        "required": false,
+                        "description": "언어 코드 => 언어 이름(언어 탭과 같은 표시 이름). 없거나 빠진 언어는 코드 대문자로 보인다."
+                    },
                     "onContentLocaleChange": {
                         "type": "function",
                         "required": false,
@@ -152,6 +157,11 @@
                         "type": "string",
                         "required": false,
                         "description": "미리 볼 콘텐츠 언어"
+                    },
+                    "localeNames": {
+                        "type": "object",
+                        "required": false,
+                        "description": "언어 코드 => 언어 이름(언어 탭과 같은 표시 이름). 없거나 빠진 언어는 코드 대문자로 보인다."
                     },
                     "onLocaleChange": {
                         "type": "function",

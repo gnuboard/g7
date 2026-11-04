@@ -207,6 +207,7 @@ effects:
   - every_server_rule_is_accounted_for_in_its_correspondence_table
   - unverified_axes_are_declared_not_narrated
   - install_redirect_destination_is_encoded_for_its_output_context
+  - install_redirect_does_not_loop_without_delegation
   # 8차 라운드 등재 — 테스트 docblock 에 마커는 달렸으나 어느 매니페스트에도 없어
   # effects 대조를 한 번도 받지 않던 축(넓은 면제 뒤에 가려져 있었다).
   - root_htaccess_declares_its_residual_risk
@@ -301,6 +302,11 @@ effects:
   # 7차 — 하위 폴더 마운트·응답 계약·정적 방어선 동형
   - asset_urls_follow_the_site_base_path
   - asset_url_recovery_follows_the_site_base_path_in_both_implementations
+  - static_publish_urls_carry_the_site_base_prefix   # 정적 게시본 주소(`/build/ext/{v}/…`)가 서버 태그·프론트 fetch·디렉토리 주소 모두 마운트 접두사를 갖는다(게이트 값은 접두사 없는 형태 유지, 루트 설치는 종전 문자열)
+  - address_mismatch_diagnostics_survive_the_shipped_log_level   # 마운트·APP_URL 불일치와 오리진 미해결 진단이 출하 기본 로그 레벨(error)에서도 실제 로그에 남는다(요청당·프로세스당 1회 상한 유지)
+  - static_publish_recovery_keeps_the_site_base_prefix   #정적 게시 실패 역변환이 접두사 붙은 실패 URL 을 알아보고 결과 API 주소에도 접두사를 붙인다(TS·셸 head 두 구현 동일)
+  - browser_subfolder_first_visit_stays_inside_the_site   # 하위 폴더 운영 설치의 첫 방문(관리자·사용자)에서 같은 오리진 요청이 전부 마운트 접두사 안이고, 템플릿 정적 조회가 정적 게시본 200, 서식·글꼴이 실리고, 자산 디렉토리 주소도 접두사를 갖는다 (E2E)
+  - browser_subfolder_recovery_stays_inside_the_site   # 하위 폴더에서 정적 게시본이 사라지면 셸 head(템플릿 CSS)와 엔진(확장 번들)이 사이트 안 API 주소로 바꿔 싣는다 (E2E)
   # 12차 — 하위 폴더 마운트의 **화면 이동** 절반 + 확장 모집단 + 상한 신원 축
   - route_matching_strips_the_site_base_path
   - history_entries_carry_the_site_base_path
@@ -420,6 +426,7 @@ effects:
   - installer_forwarded_prefix_collapses_empty_segments
   - installer_app_root_strip_is_case_insensitive
   - installer_alert_text_meets_aa_contrast_in_both_themes
+  - installer_exposure_address_wraps_in_narrow_viewport
   - installer_web_exposure_verdict_vocabulary_matches_between_screen_and_server
   - installer_web_exposure_pending_verdict_is_in_the_closed_set
   - installer_app_url_host_falls_back_to_server_name
@@ -740,6 +747,7 @@ test_files:
   - tests/Playwright/specs/asset-url-mode.spec.ts
   - tests/Playwright/specs/admin/dashboard-asset-url-mode-drift.spec.ts
   - tests/Playwright/specs/admin/settings-asset-url-mode-detect.spec.ts
+  - tests/Playwright/specs/rehearsal/subfolder-static-assets.spec.ts
   # 코어 첨부 서빙 메타 계약 — 위 `attachment_*_serve_meta*` effects 와 짝. 14차 검증 라운드까지
   # 어느 매니페스트에도 없어 통째로 지워도 아무것도 red 가 되지 않는 상태였다.
   # 마운트 접두사 4통로 · 행 disk 고아 폴백 — 위 14차 등재 effects 와 짝. 첨부 URL 은

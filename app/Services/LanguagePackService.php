@@ -25,6 +25,7 @@ use App\Services\LanguagePack\LanguagePackPhpArrayValidator;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Support\OutboundUrlValidator;
 use App\Support\SafeExceptionMessage;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -817,9 +818,9 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
-            ZipInstallHelper::extractZip($zipPath, $extractPath, $file->getClientOriginalName());
+            ZipInstallHelper::extractZip($zipPath, $extractPath, UploadedFileName::original($file));
 
-            return $this->finalizeInstall($extractPath, 'zip', $file->getClientOriginalName(), $autoActivate, $installedBy);
+            return $this->finalizeInstall($extractPath, 'zip', UploadedFileName::original($file), $autoActivate, $installedBy);
         } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             throw $e;
@@ -2252,7 +2253,7 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
-            ZipInstallHelper::extractZip($zipPath, $extractPath, $file->getClientOriginalName());
+            ZipInstallHelper::extractZip($zipPath, $extractPath, UploadedFileName::original($file));
 
             $manifestPath = ZipInstallHelper::findManifest($extractPath, 'language-pack.json');
             if (! $manifestPath) {

@@ -21,6 +21,7 @@ use App\Services\Concerns\SecuresExtensionAssetPath;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
+use App\Support\UploadedFileName;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -757,7 +758,7 @@ class ModuleService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'module.json', 'modules', UploadedFileName::original($file)
             );
 
             $manifest = $result['config'];
@@ -807,7 +808,7 @@ class ModuleService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'module.json', 'modules', UploadedFileName::original($file)
             );
 
             $this->ensureModuleNotInstalled($result['identifier']);

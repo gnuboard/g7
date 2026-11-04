@@ -901,6 +901,25 @@ describe('PopupLayer', () => {
     }
   });
 
+  // @scenario surface=image_src_carries_site_mount_prefix
+  // @effects media_served_inside_site_mount
+  it('하위 폴더 사이트에서 팝업 이미지 주소에 마운트 접두사를 붙이고, 이미 붙은 주소는 두 번 붙이지 않는다', () => {
+    installCore();
+    (window as any).G7Config = { basePath: '/g7' };
+    try {
+      const api = '/api/plugins/sirsoft-popup/images';
+      const { container } = show([
+        imagePopup(1, { image: { pc: { url: `${api}/p1`, width: 480, height: 520 }, mobile: { url: `${api}/m1`, width: 750, height: 900 } } }),
+        imagePopup(2, { image: { pc: { url: `/g7${api}/p2`, width: 480, height: 520 }, mobile: null } }),
+      ]);
+      const sources = [...container.querySelectorAll('img.g7pp-media__img')].map((img) => img.getAttribute('src'));
+      expect(sources.length).toBeGreaterThan(0);
+      for (const src of sources) expect(src).toMatch(/^\/g7\/api\/plugins\/sirsoft-popup\/images\/(p1|m1|p2)$/);
+    } finally {
+      delete (window as any).G7Config;
+    }
+  });
+
   // @scenario surface=html_body_purified_on_render
   it('직접 작성형 본문은 출력 때 DOMPurify 로 한 번 더 거른다', () => {
     const { container } = show([htmlPopup(1, '<p onclick="x()">안내</p><script>alert(1)</script><iframe src="https://evil"></iframe><img src="x" onerror="y()">')]);

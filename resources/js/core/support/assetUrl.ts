@@ -215,11 +215,13 @@ export function templateAssetDir(identifier: string, path: string): string {
     }
 
     // @since engine-v1.75.1 확장자 없는 모드의 file 쿼리 디렉토리
+    // 형제 생성기(`extensionAsset()`)와 같이 마운트 접두사를 붙인다 — 하위 폴더 배치에서
+    // 이 주소만 사이트 밖(`/api/…`)을 가리켜 편집기 로더가 404 를 받았다.
     if (isExtensionless()) {
-        return `/api/templates/assets/${id}?${FILE_QUERY_PARAM}=${normalizedPath}`;
+        return withBasePrefix(`/api/templates/assets/${id}?${FILE_QUERY_PARAM}=${normalizedPath}`);
     }
 
-    return `/api/templates/assets/${id}/${normalizedPath}`;
+    return withBasePrefix(`/api/templates/assets/${id}/${normalizedPath}`);
 }
 
 /**
@@ -415,6 +417,11 @@ export function extStaticVersion(): number | null {
  * 서버측 `App\Support\AssetUrl`(정적 게시 트리 규약)과 경로 규칙 1:1 —
  * 실파일 확장자를 그대로 쓰므로 dualSuffix 접미사 규칙은 적용하지 않는다.
  *
+ * 결과에는 사이트 마운트 접두사를 붙인다. `staticBase` 는 서버 게이트 값(`/build/ext/{v}`)을
+ * 그대로 실은 것이라 접두사가 없고, 게시 트리는 사이트의 `public/` 아래에 있다 — 붙이지
+ * 않으면 하위 폴더 배치에서 정적 조회가 전부 문서 루트(사이트 밖)로 나간다. 이미 접두사를
+ * 가진 값에는 다시 붙이지 않는다(`withBasePrefix()`).
+ *
  * @param path 게시 트리 상대 경로 (예: `templates/{id}/routes.json`)
  * @param forVersion 명시 버전 (생략 시 페이지 렌더 버전)
  * @returns 정적 URL 또는 null (staticBase 미주입)
@@ -427,19 +434,23 @@ export function extStaticUrl(path: string, forVersion?: number): string | null {
     const normalizedPath = path.replace(/^\/+/, '');
 
     if (forVersion !== undefined && forVersion > 0 && forVersion !== extStaticVersion()) {
-        return `${base.replace(/\/\d+$/, '')}/${forVersion}/${normalizedPath}`;
+        return withBasePrefix(`${base.replace(/\/\d+$/, '')}/${forVersion}/${normalizedPath}`);
     }
 
-    return `${base}/${normalizedPath}`;
+    return withBasePrefix(`${base}/${normalizedPath}`);
 }
 
 /**
  * 실패한 정적 게시 URL 을 종전 API URL 로 역변환합니다 (#122 F15).
  *
- * blade 인라인 복구기(`partials/asset-url-recovery.blade.php` 의 `staticToLegacy`)와
+ * 셸 head 복구기(`public/assets/core/js/g7-shell-head.js` 의 `staticToLegacy`)와
  * **동일 규칙**이어야 한다 — 드리프트는 `assetUrlRecovery.test.ts` 의 대조 케이스가 잡는다.
  * 변환 대상이 아니면(정적 게시 경로가 아니면) null. `/build/core/**` 등 다른 정적
  * 파일은 대상이 아니다.
+ *
+ * 하위 폴더 배치에서 서버는 `/g7/build/ext/{v}/…` 를 렌더한다. 접두사를 벗겨 판정하고
+ * 결과에는 다시 붙인다(`convertToCurrentMode()` 와 같은 규칙). 벗기지 않으면 그 실패를
+ * 몰라보고, 붙이지 않으면 복구 주소가 사이트 밖을 가리켜 또 404 가 된다.
  *
  * @param url 실패한 URL
  * @returns 종전 API URL 또는 null
@@ -449,7 +460,13 @@ export function staticToLegacy(url: string): string | null {
     if (!url) return null;
 
     const origin = (globalThis as any)?.location?.origin;
-    const relative = origin && url.startsWith(origin) ? url.slice(origin.length) : url;
+    let relative = origin && url.startsWith(origin) ? url.slice(origin.length) : url;
+
+    const basePath = basePrefix();
+
+    if (basePath && (relative === basePath || relative.startsWith(basePath + '/'))) {
+        relative = relative.slice(basePath.length);
+    }
 
     const match = relative.match(/^\/build\/ext\/(\d+)\/(.+)$/);
     if (!match) return null;
@@ -465,12 +482,12 @@ export function staticToLegacy(url: string): string | null {
     if (extensionAssetMatch) {
         const [, type, identifier, assetPath] = extensionAssetMatch;
 
-        return `/api/${type}/assets/${identifier}/${assetPath}?v=${version}`;
+        return `${basePath}/api/${type}/assets/${identifier}/${assetPath}?v=${version}`;
     }
 
     const bundleMatch = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);
     if (bundleMatch) {
-        return `/api/${bundleMatch[1]}/bundle.${bundleMatch[2]}?v=${version}`;
+        return `${basePath}/api/${bundleMatch[1]}/bundle.${bundleMatch[2]}?v=${version}`;
     }
 
     const templateFetchMatch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([A-Za-z0-9-]+)\.json)$/);
@@ -478,7 +495,7 @@ export function staticToLegacy(url: string): string | null {
         const [, identifier, kind] = templateFetchMatch;
         const suffixless = kind.replace(/\.json$/, '');
 
-        return `/api/templates/${identifier}/${suffixless}.json?v=${version}`;
+        return `${basePath}/api/templates/${identifier}/${suffixless}.json?v=${version}`;
     }
 
     return null;

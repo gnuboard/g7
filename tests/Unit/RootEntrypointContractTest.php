@@ -2078,7 +2078,7 @@ class RootEntrypointContractTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            '/if\s*\(\s*!\s*\$isInstalled\s*\)\s*\{\s*\$installUrl\s*=[^;]+;\s*header\(\s*\'Location: \'\s*\.\s*\$installUrl\s*,\s*true\s*,\s*302\s*\)\s*;\s*exit\s*;/',
+            '/if\s*\(\s*!\s*\$isInstalled\s*\)\s*\{\s*\$installUrl\s*=[^;]+;.*?header\(\s*\'Location: \'\s*\.\s*\$installUrl\s*,\s*true\s*,\s*302\s*\)\s*;\s*exit\s*;/s',
             $code,
             '미설치 안내의 이동 지점(302 Location + exit)을 찾지 못했다 — 이 검사가 아무것도 재지 않는다'
         );
@@ -2110,6 +2110,78 @@ class RootEntrypointContractTest extends TestCase
                 unset($_SERVER['SCRIPT_NAME']);
             } else {
                 $_SERVER['SCRIPT_NAME'] = $saved;
+            }
+        }
+    }
+
+    /**
+     * 미설치 안내가 이미 설치 화면 주소로 온 요청을 같은 곳으로 다시 보내지 않는다.
+     *
+     * 위임 규칙이 없는 문서 루트 배치(nginx 에 배치 조각을 넣지 않은 서버 등)에서는 `/install` 이
+     * `public/install/` 로 가지 못하고 이 진입점으로 다시 떨어진다. 그때 또 `/install` 로 302 하면
+     * 끝없는 순환이 되어 브라우저가 「리디렉션 횟수가 너무 많다」로 멈추고, 웹 노출 점검에도 닿지
+     * 못한 채 아무 안내도 없다(실측: `/install` → 302 `Location: /install`). 표준 배치에서는 설치
+     * 화면 폴더가 실재해 웹 서버가 직접 내어주므로 이 진입점이 그 주소를 받는 일이 없다.
+     *
+     * 프로덕션 소스의 판정식을 그대로 평가해, 설치 화면 주소(끝 슬래시, 인코딩 변형 포함)만 순환으로
+     * 보고 다른 주소는 종전처럼 302 로 보내는지 잰다. 순환이면 302 를 내지 않고 끝나는지도 본다.
+     *
+     * @scenario mount_shape=docroot_relative, base_path=subpath
+     *
+     * @effects install_redirect_does_not_loop_without_delegation
+     *
+     * @return void 반환값 없음
+     */
+    public function test_install_redirect_stops_instead_of_looping_onto_itself(): void
+    {
+        $source = (string) file_get_contents(base_path('public/index.php'));
+        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^
+]*#'], '', $source);
+
+        $this->assertSame(1, preg_match('/\$installUrl\s*=\s*([^;]+);/', $code, $assignment), '목적지 조립식을 찾지 못했다');
+        $this->assertSame(
+            1,
+            preg_match('/\$g7InstallLoop\s*=\s*([^;]+);\s*if\s*\(\s*\$g7InstallLoop\s*\)\s*\{(.*?)\}\s*header\(\s*\'Location: \'/s', $code, $guard),
+            '순환 판정식과 그 분기가 302 앞에 없다 — 위임 없는 배치에서 /install 이 자기 자신으로 순환한다'
+        );
+        $this->assertStringNotContainsString('Location', $guard[2], '순환 분기가 다시 이동을 보낸다');
+        $this->assertMatchesRegularExpression('/exit\s*;/', $guard[2], '순환 분기가 끝나지 않고 302 로 흘러간다');
+        $this->assertMatchesRegularExpression('/http_response_code\(\s*503\s*\)/', $guard[2], '순환 분기가 503 안내가 아니다');
+
+        $judge = eval('return static function (): bool { $installUrl = '.$assignment[1].'; return '.$guard[1].'; };');
+
+        $saved = [$_SERVER['SCRIPT_NAME'] ?? null, $_SERVER['REQUEST_URI'] ?? null];
+        try {
+            $cases = [
+                ['/index.php', '/install', true],
+                ['/index.php', '/install/', true],
+                ['/index.php', '/install?step=2', true],
+                ['/index.php', '/%69nstall', true],
+                ['/g7sub/index.php', '/g7sub/install', true],
+                ['/g7sub/index.php', '/g7sub/install/', true],
+                ['/index.php', '/', false],
+                ['/index.php', '/board/free', false],
+                ['/index.php', '/installer', false],
+                ['/g7sub/index.php', '/install', false],
+                ['/g7sub/index.php', '/g7sub/', false],
+            ];
+            foreach ($cases as [$scriptName, $requestUri, $expected]) {
+                $_SERVER['SCRIPT_NAME'] = $scriptName;
+                $_SERVER['REQUEST_URI'] = $requestUri;
+
+                $this->assertSame($expected, $judge(), "SCRIPT_NAME={$scriptName} REQUEST_URI={$requestUri} 의 순환 판정이 다르다");
+            }
+
+            unset($_SERVER['REQUEST_URI']);
+            $_SERVER['SCRIPT_NAME'] = '/index.php';
+            $this->assertFalse($judge(), 'REQUEST_URI 가 없는 요청을 순환으로 보았다');
+        } finally {
+            foreach (['SCRIPT_NAME', 'REQUEST_URI'] as $i => $key) {
+                if ($saved[$i] === null) {
+                    unset($_SERVER[$key]);
+                } else {
+                    $_SERVER[$key] = $saved[$i];
+                }
             }
         }
     }

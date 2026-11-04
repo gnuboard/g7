@@ -86,7 +86,8 @@
             "mobile": "모바일",
             "empty": "노출 중인 배너가 없습니다.",
             "open_site": "사이트에서 보기",
-            "empty_with_counts": "지금 노출 중인 배너가 없습니다. (예약 {{scheduled}}건 · 비노출 {{inactive}}건 · 종료 {{ended}}건)"
+            "empty_with_counts": "지금 노출 중인 배너가 없습니다. (예약 {{scheduled}}건 · 비노출 {{inactive}}건 · 종료 {{ended}}건)",
+            "render_failed": "미리보기를 그리지 못했습니다. 배너 문구를 확인한 뒤 다시 열어 주세요."
         },
         "slider": {
             "title": "슬라이더 설정",
@@ -236,7 +237,7 @@
                 "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 달라 화면에 따라 잘려 보일 수 있습니다."
             },
             "link_url": "이동할 주소",
-            "link_url_placeholder": "/shop 또는 https://example.com",
+            "link_url_placeholder": "/shop/products 또는 https://example.com",
             "link_url_hint": "사이트 안 경로(/로 시작) 또는 http(s) 주소만 쓸 수 있습니다.",
             "link_new_window": "새 창에서 열기",
             "period": {

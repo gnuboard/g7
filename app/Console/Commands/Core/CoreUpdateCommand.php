@@ -44,7 +44,8 @@ class CoreUpdateCommand extends Command
     use ReportsLifecycleWarnings;
 
     protected $signature = 'core:update
-        {--force : 버전 비교 없이 강제 업데이트}
+        {--yes : 진행 확인을 「예」로 처리 (cron·CI·원격 명령처럼 확인에 답할 수 없는 실행용. 없으면 그런 실행은 사유를 출력하고 실패 코드로 끝남)}
+        {--force : 버전 비교 없이 강제 업데이트 (진행 확인은 건너뛰지 않음 — --yes 참조)}
         {--no-backup : 백업 생성 건너뛰기}
         {--prune : 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용하고 나머지는 보존}
         {--no-maintenance : 유지보수 모드 활성화 건너뛰기}
@@ -273,8 +274,20 @@ class CoreUpdateCommand extends Command
             }
             $this->newLine();
 
-            if (! $this->unifiedConfirm(__('settings.core_update.console.confirm_update'), false)) {
-                return Command::SUCCESS;
+            // 확인에 답할 수 없는 실행(cron·CI·원격 명령·--no-interaction)은 종전에 기본값 「아니오」로
+            // 아무 출력 없이 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 --yes 안내를 남기고
+            // 실패로 끝낸다. 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+            if (! $this->option('yes')) {
+                if (! $this->canAnswerConfirmation()) {
+                    return $this->refuseUnanswerableConfirmation(
+                        __('settings.core_update.console.confirm_unavailable'),
+                        __('settings.core_update.console.confirm_unavailable_hint'),
+                    );
+                }
+
+                if (! $this->unifiedConfirm(__('settings.core_update.console.confirm_update'), false)) {
+                    return Command::SUCCESS;
+                }
             }
 
             // ── 공식 번들 배치 판정 (#146 D6) ──
@@ -381,7 +394,9 @@ class CoreUpdateCommand extends Command
             if (! $this->option('no-maintenance')) {
                 $secret = $service->enableMaintenanceMode();
                 $maintenanceEnabled = true;
-                $log("유지보수 모드 활성화 (secret: {$secret})");
+                // 우회 비밀값은 업데이트 기록 파일에 남기지 않는다(저장소 폴더의 로그는 보호 규칙이
+                // 빠진 웹 서버에서 그대로 열린다). 실패 시 터미널 안내만 값을 보여 준다.
+                $log('유지보수 모드 활성화');
             }
 
             // ── Step 4: 다운로드 ──

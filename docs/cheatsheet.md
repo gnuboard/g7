@@ -148,7 +148,7 @@ php artisan migrate:rollback
 ```bash
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
-php artisan core:update [--force] [--no-backup] [--no-maintenance] [--vendor-mode=auto|composer|bundled] [--bundled-sources=none|all|id,…]
+php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] [--vendor-mode=auto|composer|bundled] [--bundled-sources=none|all|id,…]
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
 
@@ -186,6 +186,7 @@ php artisan template:cache-clear [identifier?]
 php artisan template:check-updates [identifier?]
 php artisan template:update [identifier] [--layout-strategy=overwrite|keep] [--force] [--source=auto|bundled|github]
 # --layout-strategy=keep: 운영자가 고친 부분은 유지하고 손대지 않은 조각·설정에 새 버전을 병합 + 결과 표 (3종 공통)
+# update, uninstall 은 진행 확인을 묻는다. 확인에 답할 수 없는 실행(--no-interaction, cron, CI, 원격 명령)은 --force 가 없으면 사유를 출력하고 종료 코드 1 (3종과 language-pack:uninstall 공통, --force 가 확인 생략을 겸함)
 
 # 언어팩
 php artisan language-pack:list
@@ -232,7 +233,7 @@ php artisan ext-static:cleanup
 ```bash
 # 코어 자동 롤백 후 활성 디렉토리에 잔존한 신 파일 진단/정리 (7.0.0-beta.6 신설)
 php artisan hotfix:rollback-stale-files                              # 진단 모드 (실제 삭제 없음)
-php artisan hotfix:rollback-stale-files --prune                      # 정리 (확인 프롬프트 동반)
+php artisan hotfix:rollback-stale-files --prune                      # 정리 (확인 프롬프트 동반, 확인 생략 옵션 없음 — 답할 수 없는 실행은 정리하지 않고 종료 코드 1)
 php artisan hotfix:rollback-stale-files --backup=<경로>              # 특정 백업 디렉토리 지정
 ```
 
@@ -396,7 +397,7 @@ php artisan api:docgen-backfill-fields               # 응답 필드 표 TODO �
 ```bash
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
-php artisan core:update [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행
+php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행 (cron, CI 처럼 확인에 답할 수 없으면 --yes)
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용)
 
@@ -407,6 +408,7 @@ php artisan plugin:check-updates [identifier?]                   # 플러그인 
 php artisan plugin:update [identifier] [--force] [--layout-strategy=overwrite|keep]  # 플러그인 업데이트 실행
 php artisan template:check-updates [identifier?]                 # 템플릿 업데이트 확인
 php artisan template:update [identifier] [--force] [--layout-strategy=overwrite|keep]  # 템플릿 업데이트 실행
+# 위 update 는 확인에 답할 수 없는 실행(cron, CI, 원격 명령)이면 --force 없을 때 사유를 출력하고 종료 코드 1
 
 # API 엔드포인트
 POST /api/admin/core-update/check                              # 코어 업데이트 확인
@@ -594,7 +596,7 @@ php artisan plugin:build sirsoft-payment --active       # 활성 디렉토리에
 ```bash
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
-php artisan core:update [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행
+php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행 (cron, CI 처럼 확인에 답할 수 없으면 --yes)
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]  # 업그레이드 스텝 단독 실행 (HANDOFF 안내/수동 복구용 — 사전·사후 단계 자동 수행)
 

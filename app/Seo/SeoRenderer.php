@@ -524,9 +524,10 @@ class SeoRenderer implements SeoRendererInterface
         $defaultLocale = $defaultLocale ?? config('app.locale');
         // 요청 Host 가 아니라 사이트 주소 기준 — 위조 Host 로 그린 canonical 이 캐시에 남아
         // 정상 방문자에게 나가던 경로를 막는다(SeoUrl 참고).
+        // 하위 폴더 마운트 루트는 끝 슬래시 형태가 정본이다(SeoUrl::canonical) — 접힌 주소는 웹서버가 301 로 돌려보낸다.
         $canonicalUrl = $locale === $defaultLocale
-            ? SeoUrl::absolute($url)
-            : SeoUrl::absolute($url).'?locale='.$locale;
+            ? SeoUrl::canonical($url)
+            : SeoUrl::canonical($url).'?locale='.$locale;
         $ogUrl = '<meta property="og:url" content="'.e($canonicalUrl).'">'."\n";
 
         // hreflang 태그 생성 (다국어 SEO)
@@ -841,7 +842,7 @@ class SeoRenderer implements SeoRendererInterface
             return '';
         }
 
-        $baseUrl = SeoUrl::absolute($url);
+        $baseUrl = SeoUrl::canonical($url);
         $tags = '';
 
         foreach ($supportedLocales as $loc) {

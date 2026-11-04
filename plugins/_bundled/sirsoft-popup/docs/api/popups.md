@@ -19,8 +19,8 @@
 - 관리자 API 는 모두 `auth:sanctum` + 관리자(`admin`) 미들웨어 뒤에 있고, 권한은 조회(`sirsoft-popup.popups.read`) · 등록·수정(`sirsoft-popup.popups.update`) · 삭제(`sirsoft-popup.popups.delete`) 셋입니다. 관리자가 아니면 403 `관리자 권한이 필요합니다.`, 관리자이지만 권한이 없으면 403 `해당 권한이 없습니다.` 입니다.
 - 기간 입력(`starts_at`·`ends_at`)은 사이트 시간대의 `YYYY-MM-DDTHH:mm`(datetime-local) 로 받아 UTC 로 저장하고, 응답의 `*_display`·`*_local` 은 다시 사이트 시간대로 돌려 줍니다.
 - 다국어 값(`image_alt`·`body_html`)은 `{언어 코드: 값}` 객체이며 사이트 지원 언어만 받습니다. 비운 언어는 사용자 화면에서 사이트 기본 언어 값으로 대체됩니다. 수정 때는 언어팩을 꺼서 지원 목록에서 빠진 언어라도 이미 저장된 번역이면 받고(보내지 않아도 지우지 않음), 저장돼 있지 않던 지원 밖 언어만 422 입니다.
-- 직접 작성형 본문은 정화한 뒤에도 내용이 남아야 합니다 — 허용하지 않는 요소(`iframe`·`script`·`form` 등)만 있는 언어가 있으면 422(`body_html`)입니다.
-- 이미지 위 글 상자(`overlays`)는 `{"pc": [상자…], "mobile": [상자…] | null}` 입니다. 상자 한 개는 `id`(영숫자 8자, 기기 안에서 유일)·`x`·`y`(왼쪽 위, 이미지 폭·높이 대비 % 0~100)·`w`(폭 %, 5~100, `x + w ≤ 100`)·`text`(`{언어: 일반 글}`, 언어별 200자, 사이트 기본 언어 필수, 태그는 저장 때 제거)·`size`(글자 크기, 이미지 폭 대비 % 2~20, 0.5 단위)·`color`(`#RRGGBB`)·`bold`·`align`(`left`·`center`·`right`)·`bg`(null 또는 `{color, opacity}` — opacity 는 진하기 % 0~90)·`shadow` 입니다. 기기마다 10개까지, `mobile` 이 null 이면 휴대폰도 PC 배치를 씁니다. 이미지형만 저장하고(직접 작성형이면 null), 모바일 이미지가 없으면 `mobile` 을 null 로 저장합니다. 상자가 하나도 없으면 null 입니다. 수정 때 지원 밖 언어의 저장된 상자 글은 같은 `id` 상자에 보존합니다.
+- 직접 작성형 본문은 정화한 뒤에도 내용이 남아야 합니다 — 허용하지 않는 요소(`iframe`·`script`·`form` 등)만 있는 언어가 있으면 422(`body_html`)입니다. 오류 문구는 그 언어를 화면의 언어 탭과 같은 이름으로 알립니다(예: 「English 본문에 표시할 내용이 없습니다. …」, 이름이 정해지지 않은 언어만 코드).
+- 이미지 위 글 상자(`overlays`)는 `{"pc": [상자…], "mobile": [상자…] | null}` 입니다. 상자 한 개는 `id`(영숫자 8자, 기기 안에서 유일)·`x`·`y`(왼쪽 위, 이미지 폭·높이 대비 % 0~100)·`w`(폭 %, 5~100, `x + w ≤ 100`)·`text`(`{언어: 일반 글}`, 언어별 200자, 사이트 기본 언어 필수, 태그는 저장 때 제거)·`size`(글자 크기, 이미지 폭 대비 % 2~20, 0.5 단위)·`color`(`#RRGGBB`)·`bold`·`align`(`left`·`center`·`right`)·`bg`(null 또는 `{color, opacity}` — opacity 는 진하기 % 0~90)·`shadow` 입니다. 기기마다 10개까지, `mobile` 이 null 이면 휴대폰도 PC 배치를 씁니다. 이미지형만 저장하고(직접 작성형이면 null), 모바일 이미지가 없으면 `mobile` 을 null 로 저장합니다. 상자가 하나도 없으면 null 입니다. 수정 때 지원 밖 언어의 저장된 상자 글은 같은 `id` 상자에 보존합니다. 상자 오류는 어느 기기의 몇 번째 상자인지와 칸 이름으로 알립니다(예: `errors["overlays.pc.0.bg.color"]` = 「PC 글 상자 1 바탕 색 필드는 필수입니다.」, `bg` 를 보냈으면 `color`·`opacity` 둘 다 필수).
 - 응답 예시의 ID·날짜·해시는 설명용 예시 값입니다(`{hash}` 는 64자 영숫자 이미지 해시 자리).
 
 ---
@@ -1417,7 +1417,7 @@ HTTP/1.1 200
 | page_scope | string | `all` | 노출 페이지: `all` 전체 · `routes` 지정 경로만(브라우저가 판정) |
 | routes | array | `["/shop"]` | 노출 경로 목록. 현재 경로가 같거나 그 하위 경로면 노출, `/` 는 첫 화면만 |
 | device | string | `all` | 노출 기기: `all` · `pc` · `mobile`(템플릿 반응형 기준 폭으로 브라우저가 판정) |
-| image | object\|null | `{"pc":{"url":"…","width":480,"height":520},"mobile":null}` | 이미지형의 기기별 이미지 `{url, width, height}`(없으면 null). 모바일 이미지가 없으면 화면은 PC 이미지를 씁니다. 직접 작성형은 null |
+| image | object\|null | `{"pc":{"url":"…","width":480,"height":520},"mobile":null}` | 이미지형의 기기별 이미지 `{url, width, height}`(없으면 null). `url` 은 사이트 마운트 접두사 포함(하위 폴더 설치면 `/g7/api/plugins/sirsoft-popup/images/{hash}`). 모바일 이미지가 없으면 화면은 PC 이미지를 씁니다. 직접 작성형은 null |
 | image_alt | string | `예시 이미지 설명` | 요청 언어의 대체 텍스트(없으면 사이트 기본 언어). 둘 다 비었으면 빈 문자열이며 관리용 제목으로 채우지 않습니다. 직접 작성형은 빈 문자열 |
 | link_url | string\|null | `/shop` | 이미지 클릭 시 이동 주소(이미지형만, 없으면 null) |
 | link_new_window | boolean | `false` | 새 창에서 열기(이미지형만) |

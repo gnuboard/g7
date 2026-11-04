@@ -73,7 +73,7 @@ class DatabaseScheduleRunnerTest extends TestCase
         ]);
 
         $dispatcher = Mockery::mock(ScheduleDispatcher::class);
-        $dispatcher->shouldReceive('dispatch')->with($row->id, Mockery::any())->never();
+        $dispatcher->shouldReceive('dispatch')->with($row->id, Mockery::any(), Mockery::any())->never();
         $dispatcher->shouldReceive('dispatch')->andReturnNull();
         $this->app->instance(ScheduleDispatcher::class, $dispatcher);
 

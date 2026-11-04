@@ -301,6 +301,8 @@ return [
             'versions_deleted' => ':count version(s) deleted',
             'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'aborted' => 'Uninstall aborted.',
+            'confirm_unavailable' => 'Template ":template" was not uninstalled because this run cannot answer the confirmation prompt (no terminal, or --no-interaction).',
+            'confirm_unavailable_hint' => 'To uninstall without confirmation from cron, CI or a remote command, run it again with the --force option. Example: php artisan template:uninstall :template --force',
             'delete_data_notice' => '⚠️  --delete-data: Uninstalls as if "Also delete data" was chosen (passed to the activity log and to extensions that subscribe to uninstall).',
         ],
         'list' => [
@@ -355,6 +357,8 @@ return [
             'modified_layout_item' => '  - :name (modified: :date)',
             'confirm_question' => 'Do you want to proceed with the update?',
             'aborted' => 'Update cancelled.',
+            'confirm_unavailable' => 'The update of template ":template" was not started because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). (The template was not changed.)',
+            'confirm_unavailable_hint' => 'To proceed without confirmation from cron, CI or a remote command, run it again with the --force option. --force also skips the version comparison and re-applies the same version. Example: php artisan template:update :template --force',
             'backup_restored' => 'Previous version has been restored from backup.',
             'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
         ],

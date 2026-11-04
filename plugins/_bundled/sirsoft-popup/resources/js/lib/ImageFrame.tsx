@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { PopupImage } from './types';
 import { overlayStyle, type PublicOverlayBox } from './overlays';
+import { sitePath } from '../apiUrl';
 
 /** 이미지 프레임 props */
 export interface ImageFrameProps {
@@ -50,8 +51,9 @@ export const ImageFrame: React.FC<ImageFrameProps> = ({ image, alt, eager = fals
       style={size ? { ['--g7pp-ratio' as string]: String(size.w / size.h) } : undefined}
       data-ratio={size ? (size.w / size.h).toFixed(4) : undefined}
     >
+      {/* 브라우저가 그대로 받는 주소라 하위 폴더 설치의 마운트 접두사를 붙인다(멱등, 바깥 주소는 그대로) — 서버가 붙이기 전에 담긴 캐시도 맞춘다 */}
       <img
-        src={image.url}
+        src={sitePath(image.url)}
         alt={alt}
         width={image.width ?? undefined}
         height={image.height ?? undefined}

@@ -56,8 +56,8 @@ test('목록은 행마다 제작 상태를 보이고, 사이트 주소로 가는
   await expect(row).toBeVisible({ timeout: 30_000 });
   await expect(row.getByText('모바일: PC 이미지 사용')).toBeVisible();
   await expect(row.getByText('버튼 안 보임: 주소 없음')).toBeVisible();
-  // 한국어 제목만 넣었으니 다른 사이트 언어는 「제목 없음」 — 언어 이름이 비지 않는다
-  await expect(row.getByText('EN 제목 없음', { exact: true })).toBeVisible();
+  // 한국어 제목만 넣었으니 다른 사이트 언어는 「제목 없음」 — 언어 탭과 같은 언어 이름으로 보인다(코드 대문자 「EN」 이 아니다)
+  await expect(row.getByText('English 제목 없음', { exact: true })).toBeVisible();
 
   // 홈 자리는 기본 사용자 템플릿의 「/」 에 있다 — 새 창 링크
   const site = page.getByRole('link', { name: /사이트에서 보기/ });

@@ -1357,12 +1357,109 @@ class CoreUpdateService
     }
 
     /**
+     * 내려받은(또는 운영자가 올린) 배포본 ZIP 을 나눠서 풉니다 (웹 업데이트 — 한 요청의 시간 몫 안에서 멈춘다).
+     *
+     * 풀이는 `extractZipToPending()` 과 같은 안전 해제(`SafeArchiveExtractor`)다. 처음 호출(`$from` 0)은
+     * 앞 시도의 잔여물을 지우고 시작한다. 다 풀면 소스 루트를 판별하고 G7 패키지 구조를 검증해
+     * `source_path` 로 돌려준다.
+     *
+     * @param  string  $zipPath  ZIP 경로
+     * @param  string  $pendingPath  격리 디렉토리 (`createPendingDirectory()` 결과)
+     * @param  int  $from  이어 풀 항목 순번
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수
+     * @return array{done: bool, next: int, total: int, source_path: string|null} 진행분
+     *
+     * @throws CoreUpdateOperationException 압축 해제 수단이 없거나 패키지 검증 실패 시
+     */
+    public function extractArchiveChunk(string $zipPath, string $pendingPath, int $from = 0, ?\Closure $shouldPause = null): array
+    {
+        if (! File::exists($zipPath)) {
+            throw new CoreUpdateOperationException('settings.core_update.zip_file_not_found', ['path' => $zipPath]);
+        }
+
+        if ($this->buildExtractionStrategies() === []) {
+            throw new CoreUpdateOperationException('settings.core_update.no_extract_method_available');
+        }
+
+        $extractDir = $pendingPath.DIRECTORY_SEPARATOR.'extracted';
+
+        if ($from === 0 && File::isDirectory($extractDir)) {
+            File::deleteDirectory($extractDir);
+        }
+
+        File::ensureDirectoryExists($extractDir);
+
+        $chunk = SafeArchiveExtractor::extractZipChunk($zipPath, $extractDir, $from, $shouldPause);
+
+        if (! $chunk['done']) {
+            return ['done' => false, 'next' => $chunk['next'], 'total' => $chunk['total'], 'source_path' => null];
+        }
+
+        $sourcePath = $this->resolveExtractedRoot($extractDir);
+        $this->validatePendingUpdate($sourcePath);
+
+        return ['done' => true, 'next' => $chunk['next'], 'total' => $chunk['total'], 'source_path' => $sourcePath];
+    }
+
+    /**
+     * GitHub 릴리스 배포본 ZIP 을 격리 디렉토리로 내려받기만 합니다 (풀기는 `extractArchiveChunk()`).
+     *
+     * 웹 업데이트는 내려받기와 풀기를 다른 요청에서 한다 — 한 요청에 둘을 다 하면 큰 배포본이 요청 시간
+     * 제한에 걸린다. 명령줄 업데이트는 `downloadUpdate()` 가 둘을 이어 한다.
+     *
+     * @param  string  $version  대상 버전
+     * @param  string  $pendingPath  격리 디렉토리
+     * @return string 내려받은 ZIP 경로
+     *
+     * @throws CoreUpdateOperationException 저장소 주소가 잘못됐거나 배포본을 찾지 못한 경우
+     */
+    public function fetchReleaseArchive(string $version, string $pendingPath): string
+    {
+        $githubUrl = (string) config('app.update.github_url');
+
+        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
+            throw new CoreUpdateOperationException('settings.core_update.invalid_github_url');
+        }
+
+        if ($this->buildExtractionStrategies() === []) {
+            throw new CoreUpdateOperationException('settings.core_update.no_extract_method_available');
+        }
+
+        $token = (string) (config('app.update.github_token') ?? '');
+        $archiveUrl = GithubHelper::resolveArchiveUrl($matches[1], $matches[2], $version, 'zipball', $token);
+
+        if (! $archiveUrl) {
+            throw new CoreUpdateOperationException('settings.core_update.release_not_found', ['version' => $version]);
+        }
+
+        $archivePath = $pendingPath.DIRECTORY_SEPARATOR.'core_update.zip';
+        GithubHelper::downloadArchive($archiveUrl, $archivePath, $token);
+
+        return $archivePath;
+    }
+
+    /**
      * 코어 핵심 파일을 백업합니다.
      *
      * @param  \Closure|null  $onProgress  진행 콜백
      * @return string 백업 경로
      */
     public function createBackup(?\Closure $onProgress = null): string
+    {
+        return $this->createBackupChunk([], null, $onProgress)['backup_path'];
+    }
+
+    /**
+     * 코어 핵심 파일 백업을 나눠서 만듭니다 (웹 업데이트 — 한 요청의 시간 몫 안에서 멈춘다).
+     *
+     * `createBackup()` 은 이 함수를 멈춤 없이 부른다 — 명령줄과 웹이 같은 복사 경로를 쓴다.
+     *
+     * @param  array<string, mixed>  $progress  직전 호출이 돌려준 진행분 (처음이면 빈 배열)
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
+     * @param  \Closure|null  $onProgress  진행 콜백
+     * @return array{done: bool, backup_path: string, target: int, cursor: string|null} 진행분
+     */
+    public function createBackupChunk(array $progress = [], ?\Closure $shouldPause = null, ?\Closure $onProgress = null): array
     {
         $targets = array_merge(
             config('app.update.targets', []),
@@ -1372,7 +1469,7 @@ class CoreUpdateService
 
         $excludes = config('app.update.excludes', []);
 
-        return CoreBackupHelper::createBackup($targets, $onProgress, $excludes);
+        return CoreBackupHelper::createBackupChunk($targets, $excludes, $progress, $shouldPause, $onProgress);
     }
 
     /**
@@ -2224,6 +2321,45 @@ class CoreUpdateService
     }
 
     /**
+     * _pending 의 vendor 를 운영 vendor 와 통째로 바꿔 끼웁니다 (웹 업데이트 — 한 요청 안에 끝난다).
+     *
+     * 파일 단위 복사(`copyVendorFromPending()`)는 수만 개라 한 요청 시간 안에 끝나지 않을 수 있고, 중간에
+     * 끊기면 다음 요청이 부팅할 vendor 가 반쪽이다. 이름 바꾸기는 즉시 끝나고 운영 vendor 는 언제나 한쪽 판
+     * 전체다. 옛 vendor 는 `$parking` 으로 옮겨 두어 되돌리기가 그대로 다시 끼운다.
+     *
+     * 바꿔 끼우지 못하면(프로젝트 루트 쓰기 권한 없음, 다른 파일 시스템, 사용 중 파일) 운영 vendor 를 그대로
+     * 둔 채 false 를 돌려준다 — 호출부가 복사로 넘어간다.
+     *
+     * @param  string  $pendingPath  _pending 경로
+     * @param  string  $parking  옛 vendor 를 옮겨 둘 경로 (없는 경로)
+     * @return bool 바꿔 끼웠으면 true
+     *
+     * @throws CoreUpdateOperationException vendor 디렉토리가 없을 경우
+     */
+    public function swapVendorFromPending(string $pendingPath, string $parking): bool
+    {
+        $sourceVendor = $pendingPath.DIRECTORY_SEPARATOR.'vendor';
+
+        if (! File::isDirectory($sourceVendor)) {
+            throw new CoreUpdateOperationException('settings.core_update.source_vendor_missing');
+        }
+
+        return FilePermissionHelper::swapDirectory(base_path('vendor'), $sourceVendor, $parking);
+    }
+
+    /**
+     * 옮겨 둔 옛 vendor 를 운영 vendor 로 다시 끼웁니다 (웹 되돌리기).
+     *
+     * @param  string  $parking  `swapVendorFromPending()` 이 옛 vendor 를 옮겨 둔 경로
+     * @param  string  $discard  새 vendor 를 옮겨 둘 경로 (없는 경로 — 정리 대상)
+     * @return bool 다시 끼웠으면 true
+     */
+    public function swapVendorBack(string $parking, string $discard): bool
+    {
+        return FilePermissionHelper::swapDirectory(base_path('vendor'), $parking, $discard);
+    }
+
+    /**
      * 지정 디렉토리에서 composer install을 별도 프로세스로 실행합니다.
      *
      * @param  string  $workingDir  작업 디렉토리
@@ -2888,10 +3024,44 @@ class CoreUpdateService
      */
     public function restoreFromBackup(string $backupPath, ?\Closure $onProgress = null): array
     {
-        $targets = array_merge(
-            config('app.update.targets', []),
-            config('app.update.backup_only', [])
-        );
+        $result = $this->restoreFromBackupChunk($backupPath, [], null, null, [], $onProgress);
+
+        return [
+            'failed_targets' => $result['failed_targets'],
+            'root_file_warnings' => $result['root_file_warnings'],
+        ];
+    }
+
+    /**
+     * 백업에서 나눠서 복원합니다 (웹 되돌리기 — 한 요청의 시간 몫 안에서 멈춘다).
+     *
+     * `restoreFromBackup()` 은 이 함수를 멈춤 없이 부른다. 다 끝난 호출만 루트 진입·보호 파일 경고를
+     * 싣는다 — 끝나기 전의 디스크는 아직 판정할 상태가 아니다.
+     *
+     * @param  string  $backupPath  백업 경로
+     * @param  array<string, mixed>  $progress  직전 호출이 돌려준 진행분 (처음이면 빈 배열)
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
+     * @param  array<int, string>|null  $priorityFiles  먼저 되돌릴 base 상대 파일 경로 (웹은 증분 적용 목록)
+     * @param  array<int, string>  $skipTargets  덮어쓰지 않을 target (웹은 바꿔 끼워 되돌린 vendor 등)
+     * @param  \Closure|null  $onProgress  진행 콜백
+     * @return array{done: bool, phase: string, priority_index: int, target: int, cursor: string|null, failed_targets: list<string>, root_file_warnings: list<string>} 진행분
+     */
+    public function restoreFromBackupChunk(
+        string $backupPath,
+        array $progress = [],
+        ?\Closure $shouldPause = null,
+        ?array $priorityFiles = null,
+        array $skipTargets = [],
+        ?\Closure $onProgress = null,
+    ): array {
+        $skip = array_map(static fn ($t): string => trim((string) $t), $skipTargets);
+        $targets = array_values(array_filter(
+            array_merge(
+                config('app.update.targets', []),
+                config('app.update.backup_only', [])
+            ),
+            static fn ($t): bool => ! in_array(trim((string) $t), $skip, true),
+        ));
         $excludes = config('app.update.excludes', []);
 
         // 경고 버퍼는 **호출 단위**다(프로퍼티 주석이 선언한 규약). 적용 단계에서 쌓인
@@ -2901,7 +3071,13 @@ class CoreUpdateService
         // 쫓게 된다.
         $this->lastRootFileWarnings = [];
 
-        $failedTargets = CoreBackupHelper::restoreFromBackup($backupPath, $targets, $onProgress, $excludes);
+        $result = CoreBackupHelper::restoreFromBackupChunk($backupPath, $targets, $excludes, $progress, $shouldPause, $priorityFiles, $onProgress);
+
+        if (! $result['done']) {
+            return $result + ['root_file_warnings' => []];
+        }
+
+        $failedTargets = $result['failed_targets'];
 
         // 적용 단계가 `deploy/**` 옆에 둔 `.dist` 는 백업에 없어 복원만으로는 남는다.
         $this->removeDeployFragmentSidecars(base_path());
@@ -2936,10 +3112,10 @@ class CoreUpdateService
             ]);
         }
 
-        return [
+        return array_merge($result, [
             'failed_targets' => array_values($failedTargets),
             'root_file_warnings' => $this->lastRootFileWarnings,
-        ];
+        ]);
     }
 
     /**
@@ -2957,7 +3133,10 @@ class CoreUpdateService
             '--refresh' => 15,
         ]);
 
-        Log::channel('upgrade')->info('코어 업데이트: 유지보수 모드 활성화', ['secret' => $secret]);
+        // 우회 비밀값은 기록에 싣지 않는다 — 로그는 저장소 폴더 안에 있어 보호 규칙이 빠진 웹
+        // 서버에서는 그대로 열리고, 그 값이면 점검 중인 사이트에 들어갈 수 있다. 값이 필요한
+        // 쪽(명령줄 실패 안내, 관리자 화면 우회 쿠키)은 반환값과 점검 모드 파일에서 읽는다.
+        Log::channel('upgrade')->info('코어 업데이트: 유지보수 모드 활성화');
 
         return $secret;
     }
@@ -3597,242 +3776,405 @@ class CoreUpdateService
      */
     public function restoreOwnership(array $snapshot, ?\Closure $onProgress = null, array $detailedSnapshot = []): void
     {
-        $this->lastPermissionWarnings = [];
+        $result = $this->restoreOwnershipChunk($snapshot, $detailedSnapshot, [], null, $onProgress);
 
-        if (! function_exists('chown')) {
-            return;
-        }
-
-        // 스냅샷이 제공되면 그 키를 복원 대상 범위로 사용 (스코프 복원).
-        // 스냅샷이 비어있으면 전체 config 범위로 fallback (기존 동작 유지).
-        $targets = ! empty($snapshot)
-            ? array_keys($snapshot)
-            : config('app.update.restore_ownership', ['vendor']);
-        $restoredCount = 0;
-        $fallbackOwner = null;
-        $fallbackGroup = null;
-        $fallbackSource = null;
-
-        foreach ($targets as $target) {
-            $path = base_path($target);
-            if (! File::exists($path) && ! File::isDirectory($path)) {
-                continue;
-            }
-
-            // 1순위: 스냅샷의 원본 소유자
-            $owner = $snapshot[$target]['owner'] ?? false;
-            $group = $snapshot[$target]['group'] ?? false;
-            $source = 'snapshot';
-
-            // 2순위: inferWebServerOwnership fallback
-            if ($owner === false) {
-                if ($fallbackOwner === null) {
-                    [$fallbackOwner, $fallbackGroup, $fallbackSource] = FilePermissionHelper::inferWebServerOwnership();
-                }
-                $owner = $fallbackOwner;
-                $group = $fallbackGroup;
-                $source = 'infer:'.$fallbackSource;
-            }
-
-            if ($owner === false) {
-                continue;
-            }
-
-            $onProgress?->__invoke('ownership', $target);
-            // 트랙 2-A — `.preserve-ownership` 마커가 있는 서브트리(사용자 데이터 영역) 자동 skip.
-            // ModuleStorageDriver/PluginStorageDriver 가 자동 작성하는 마커로 시드 시점 owner 영구 보존.
-            $report = FilePermissionHelper::chownRecursiveDetailed($path, $owner, $group, respectPreservationMarker: true);
-
-            if ($report['changed'] > 0) {
-                Log::channel('upgrade')->info('코어 업데이트: 소유권 복원', [
-                    'target' => $target,
-                    'owner' => $owner,
-                    'group' => $group,
-                    'source' => $source,
-                    'changed_entries' => $report['changed'],
-                ]);
-                $restoredCount += $report['changed'];
-            }
-
-            if ($report['failed'] > 0) {
-                $this->lastPermissionWarnings[] = [
-                    'target' => $target,
-                    'kind' => 'chown',
-                    'failed' => $report['failed'],
-                    'failed_paths' => $report['failed_paths'],
-                ];
-            }
-        }
-
-        // Stage 4 — detailed snapshot 기반 항목별 정확 복원 (chown + chgrp + chmod).
-        // 좁힌 영역(PHP-FPM 쓰기 경로)의 owner/group/perms 를 원본과 100% 일치 복원.
-        if (! empty($detailedSnapshot)) {
-            $this->restoreFromDetailedSnapshot($detailedSnapshot, $onProgress);
-        }
-
-        // 7.0.0-beta.3+: Laravel 런타임 쓰기 경로(storage/, bootstrap/cache/) 에 한해
-        // 그룹 쓰기 권한 비대칭 정상화. sudo root 업데이트가 umask 022 로 신규 생성한
-        // 하위 디렉토리(g-w) 가 chownRecursive 후에도 g-w 로 남아 php-fpm(www-data 그룹)
-        // 이 cache 쓰기 실패하는 문제를 구조적으로 차단.
-        //
-        // 정책: 루트가 g+w 면 하위 g-w 항목을 g+w 로 승격, 그 외 비트 무변경.
-        // 운영자가 의도적으로 그룹 쓰기를 차단한 경로는 보존됨.
-        $groupWritableTargets = config('app.update.restore_ownership_group_writable', [
-            'storage',
-            'bootstrap/cache',
-        ]);
-        // 백업 디렉토리는 운영자 정책 보존 대상이 아니라 업데이트/롤백이 생성·소비·삭제하는
-        // 임시 산출물이다. sudo 업데이트가 이들을 g-w(0755) 로 만들어 두면 이후 www-data 가
-        // 그 안에 백업을 mkdir 하지 못한다(mkdir(): Permission denied). 따라서 이 경로들은
-        // force=true 로 정상화하여 루트가 g-w 라도 g+w 승격 후 하위까지 재귀 전파한다.
-        // (그 외 경로는 force=false — 운영자가 의도적으로 차단한 그룹 쓰기 정책을 보존.)
-        $forceGroupWritablePaths = [
-            'storage/app/extension_backups',
-            'storage/app/core_backups',
-        ];
-
-        $groupWritableChanged = 0;
-        foreach ($groupWritableTargets as $target) {
-            $path = base_path($target);
-            if (! File::isDirectory($path)) {
-                continue;
-            }
-
-            $force = in_array($target, $forceGroupWritablePaths, true);
-
-            $onProgress?->__invoke('group_writable', $target);
-            $report = FilePermissionHelper::syncGroupWritabilityDetailed($path, $force);
-            $groupWritableChanged += $report['changed'];
-
-            if ($report['failed'] > 0) {
-                $this->lastPermissionWarnings[] = [
-                    'target' => $target,
-                    'kind' => 'group_writable',
-                    'failed' => $report['failed'],
-                    'failed_paths' => $report['failed_paths'],
-                ];
-            }
-        }
-
-        if ($groupWritableChanged > 0) {
-            Log::channel('upgrade')->info('코어 업데이트: 그룹 쓰기 권한 정상화', [
-                'targets' => $groupWritableTargets,
-                'changed_entries' => $groupWritableChanged,
-            ]);
-        }
-
-        if ($restoredCount > 0) {
-            Log::channel('upgrade')->info('코어 업데이트: 소유권 복원 완료', [
-                'restored_entries_total' => $restoredCount,
-                'targets' => $targets,
-            ]);
-        }
+        $this->lastPermissionWarnings = $result['warnings'];
     }
 
     /**
-     * `snapshotOwnershipDetailed()` 결과를 항목별로 정확 복원합니다.
+     * 소유권·퍼미션 복원을 나눠서 합니다 (웹 업데이트 — 한 요청의 시간 몫 안에서 멈춘다).
+     *
+     * `restoreOwnership()` 은 이 함수를 멈춤 없이 부른다 — 명령줄과 웹이 같은 판정을 쓴다. 세 구간을 지난다:
+     * ① 스냅샷 대상별 소유권(`chownRecursiveChunk`) ② 항목별 정확 복원(detailed, 상한 5만 항목이라 한 번에)
+     * ③ 런타임 쓰기 경로 그룹 쓰기 권한(`syncGroupWritabilityChunk`). 대상 트리(vendor·확장·백업)는 수만 항목이라
+     * 한 요청에 다 훑으면 요청 시간 제한에 걸린다(큰 사이트에서는 수 분) — 대상 안에서도 경로 커서로 멈춘다.
+     *
+     * @param  array<string, array{owner:int|false, group:int|false}>  $snapshot  snapshotOwnership() 결과
+     * @param  array<string, array<string, mixed>>  $detailedSnapshot  snapshotOwnershipDetailed() 결과
+     * @param  array<string, mixed>  $progress  직전 호출이 돌려준 진행분 (처음이면 빈 배열)
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
+     * @param  \Closure|null  $onProgress  진행 콜백
+     * @return array{done: bool, phase: string, index: int, cursor: string|null, report: array<string, mixed>, restored: int, group_changed: int, warnings: list<array<string, mixed>>} 진행분
+     */
+    public function restoreOwnershipChunk(array $snapshot, array $detailedSnapshot = [], array $progress = [], ?\Closure $shouldPause = null, ?\Closure $onProgress = null): array
+    {
+        $phase = is_string($progress['phase'] ?? null) ? $progress['phase'] : 'chown';
+        $index = max(0, (int) ($progress['index'] ?? 0));
+        $cursor = is_string($progress['cursor'] ?? null) ? $progress['cursor'] : null;
+        $report = (array) ($progress['report'] ?? []);
+        $restoredCount = (int) ($progress['restored'] ?? 0);
+        $groupWritableChanged = (int) ($progress['group_changed'] ?? 0);
+        $warnings = array_values((array) ($progress['warnings'] ?? []));
+        $detailedProgress = (array) ($progress['detailed'] ?? []);
+
+        $snapshotOf = static function (bool $done) use (&$phase, &$index, &$cursor, &$report, &$restoredCount, &$groupWritableChanged, &$warnings, &$detailedProgress): array {
+            return [
+                'done' => $done,
+                'phase' => $phase,
+                'index' => $index,
+                'cursor' => $cursor,
+                'report' => $report,
+                'restored' => $restoredCount,
+                'group_changed' => $groupWritableChanged,
+                'warnings' => $warnings,
+                'detailed' => $detailedProgress,
+            ];
+        };
+
+        if (! function_exists('chown')) {
+            $phase = 'done';
+
+            return $snapshotOf(true);
+        }
+
+        if ($phase === 'chown') {
+            // 스냅샷이 제공되면 그 키를 복원 대상 범위로 사용 (스코프 복원).
+            // 스냅샷이 비어있으면 전체 config 범위로 fallback (기존 동작 유지).
+            $targets = array_values(! empty($snapshot)
+                ? array_keys($snapshot)
+                : config('app.update.restore_ownership', ['vendor']));
+            $fallback = null;
+
+            for (; $index < count($targets); $index++) {
+                $target = (string) $targets[$index];
+                $path = base_path($target);
+                if (! File::exists($path) && ! File::isDirectory($path)) {
+                    $cursor = null;
+                    $report = [];
+
+                    continue;
+                }
+
+                // 1순위: 스냅샷의 원본 소유자
+                $owner = $snapshot[$target]['owner'] ?? false;
+                $group = $snapshot[$target]['group'] ?? false;
+                $source = 'snapshot';
+
+                // 2순위: inferWebServerOwnership fallback
+                if ($owner === false) {
+                    $fallback ??= FilePermissionHelper::inferWebServerOwnership();
+                    [$owner, $group, $fallbackSource] = $fallback;
+                    $source = 'infer:'.$fallbackSource;
+                }
+
+                if ($owner === false) {
+                    $cursor = null;
+                    $report = [];
+
+                    continue;
+                }
+
+                if ($cursor === null) {
+                    $onProgress?->__invoke('ownership', $target);
+                }
+
+                // 트랙 2-A — `.preserve-ownership` 마커가 있는 서브트리(사용자 데이터 영역) 자동 skip.
+                // ModuleStorageDriver/PluginStorageDriver 가 자동 작성하는 마커로 시드 시점 owner 영구 보존.
+                $chunk = FilePermissionHelper::chownRecursiveChunk($path, (int) $owner, $group, true, $cursor, $shouldPause, $report);
+                $report = $chunk['report'];
+
+                if (! $chunk['done']) {
+                    $cursor = $chunk['cursor'];
+
+                    return $snapshotOf(false);
+                }
+
+                if ($report['failed'] > 0) {
+                    Log::warning('chownRecursive: 부분 실패', [
+                        'root' => $path,
+                        'owner' => $owner,
+                        'group' => $group,
+                        'changed' => $report['changed'],
+                        'failed' => $report['failed'],
+                        'first_failure' => $report['first_failure'],
+                    ]);
+                }
+
+                if ($report['changed'] > 0) {
+                    Log::channel('upgrade')->info('코어 업데이트: 소유권 복원', [
+                        'target' => $target,
+                        'owner' => $owner,
+                        'group' => $group,
+                        'source' => $source,
+                        'changed_entries' => $report['changed'],
+                    ]);
+                    $restoredCount += $report['changed'];
+                }
+
+                if ($report['failed'] > 0) {
+                    $warnings[] = [
+                        'target' => $target,
+                        'kind' => 'chown',
+                        'failed' => $report['failed'],
+                        'failed_paths' => array_slice($report['failed_paths'], 0, 50),
+                    ];
+                }
+
+                $cursor = null;
+                $report = [];
+
+                if ($shouldPause !== null && $index + 1 < count($targets) && $shouldPause()) {
+                    $index++;
+
+                    return $snapshotOf(false);
+                }
+            }
+
+            $phase = 'detailed';
+            $index = 0;
+        }
+
+        if ($phase === 'detailed') {
+            // Stage 4 — detailed snapshot 기반 항목별 정확 복원 (chown + chgrp + chmod).
+            // 좁힌 영역(PHP-FPM 쓰기 경로)의 owner/group/perms 를 원본과 100% 일치 복원.
+            // 항목이 최대 5만 개라 이것도 항목 순번 커서로 나눈다(한 구간으로 하면 실행 시간이 짧은 서버에서 그 한 요청이 몫을 넘긴다).
+            if (! empty($detailedSnapshot)) {
+                $detailedProgress = $this->restoreFromDetailedSnapshotChunk($detailedSnapshot, $detailedProgress, $shouldPause, $onProgress);
+
+                if (! $detailedProgress['done']) {
+                    return $snapshotOf(false);
+                }
+
+                if ($detailedProgress['warning'] !== null) {
+                    $warnings[] = $detailedProgress['warning'];
+                }
+
+                $detailedProgress = [];
+            }
+
+            $phase = 'group';
+            $index = 0;
+
+            if ($shouldPause !== null && $shouldPause()) {
+                return $snapshotOf(false);
+            }
+        }
+
+        if ($phase === 'group') {
+            // 7.0.0-beta.3+: Laravel 런타임 쓰기 경로(storage/, bootstrap/cache/) 에 한해
+            // 그룹 쓰기 권한 비대칭 정상화. sudo root 업데이트가 umask 022 로 신규 생성한
+            // 하위 디렉토리(g-w) 가 chownRecursive 후에도 g-w 로 남아 php-fpm(www-data 그룹)
+            // 이 cache 쓰기 실패하는 문제를 구조적으로 차단.
+            //
+            // 정책: 루트가 g+w 면 하위 g-w 항목을 g+w 로 승격, 그 외 비트 무변경.
+            // 운영자가 의도적으로 그룹 쓰기를 차단한 경로는 보존됨.
+            $groupWritableTargets = array_values(config('app.update.restore_ownership_group_writable', [
+                'storage',
+                'bootstrap/cache',
+            ]));
+            // 백업 디렉토리는 운영자 정책 보존 대상이 아니라 업데이트/롤백이 생성·소비·삭제하는
+            // 임시 산출물이다. sudo 업데이트가 이들을 g-w(0755) 로 만들어 두면 이후 www-data 가
+            // 그 안에 백업을 mkdir 하지 못한다(mkdir(): Permission denied). 따라서 이 경로들은
+            // force=true 로 정상화하여 루트가 g-w 라도 g+w 승격 후 하위까지 재귀 전파한다.
+            // (그 외 경로는 force=false — 운영자가 의도적으로 차단한 그룹 쓰기 정책을 보존.)
+            $forceGroupWritablePaths = [
+                'storage/app/extension_backups',
+                'storage/app/core_backups',
+            ];
+
+            for (; $index < count($groupWritableTargets); $index++) {
+                $target = (string) $groupWritableTargets[$index];
+                $path = base_path($target);
+                if (! File::isDirectory($path)) {
+                    $cursor = null;
+                    $report = [];
+
+                    continue;
+                }
+
+                if (! function_exists('chmod')) {
+                    break;
+                }
+
+                if ($cursor === null) {
+                    $onProgress?->__invoke('group_writable', $target);
+                }
+
+                $force = in_array($target, $forceGroupWritablePaths, true);
+                $chunk = FilePermissionHelper::syncGroupWritabilityChunk($path, $force, $cursor, $shouldPause, $report);
+                $report = $chunk['report'];
+
+                if (! $chunk['done']) {
+                    $cursor = $chunk['cursor'];
+
+                    return $snapshotOf(false);
+                }
+
+                $groupWritableChanged += (int) $report['changed'];
+
+                if ($report['changed'] > 0) {
+                    Log::info('syncGroupWritability: 그룹 쓰기 권한 정상화', ['root' => $path, 'changed' => $report['changed']]);
+                }
+
+                if ($report['failed'] > 0) {
+                    Log::warning('syncGroupWritability: 부분 실패', [
+                        'root' => $path,
+                        'changed' => $report['changed'],
+                        'failed' => $report['failed'],
+                        'first_failure' => $report['failed_paths'][0] ?? null,
+                    ]);
+                    $warnings[] = [
+                        'target' => $target,
+                        'kind' => 'group_writable',
+                        'failed' => $report['failed'],
+                        'failed_paths' => array_slice($report['failed_paths'], 0, 50),
+                    ];
+                }
+
+                $cursor = null;
+                $report = [];
+
+                if ($shouldPause !== null && $index + 1 < count($groupWritableTargets) && $shouldPause()) {
+                    $index++;
+
+                    return $snapshotOf(false);
+                }
+            }
+
+            if ($groupWritableChanged > 0) {
+                Log::channel('upgrade')->info('코어 업데이트: 그룹 쓰기 권한 정상화', [
+                    'targets' => $groupWritableTargets,
+                    'changed_entries' => $groupWritableChanged,
+                ]);
+            }
+
+            if ($restoredCount > 0) {
+                Log::channel('upgrade')->info('코어 업데이트: 소유권 복원 완료', [
+                    'restored_entries_total' => $restoredCount,
+                    'targets' => ! empty($snapshot) ? array_keys($snapshot) : config('app.update.restore_ownership', ['vendor']),
+                ]);
+            }
+
+            $phase = 'done';
+        }
+
+        return $snapshotOf(true);
+    }
+
+    /**
+     * `snapshotOwnershipDetailed()` 결과를 항목별로 정확 복원합니다 — 항목 순번 커서로 나눠 한다.
      *
      * 동작:
      * - 각 항목의 현재 stat 을 읽어 snapshot 과 비교
      * - owner/group/perms 가 다르면 해당 비트만 변경 (chown/chgrp/chmod)
      * - symbolic link 는 lchown 시도 (없으면 skip), perms 무변경
      * - silent fail — 권한 부족·chmod 미지원 환경에서도 예외 미발생
-     * - 실패 항목 누적 → `lastPermissionWarnings` 에 'kind' => 'detailed' 로 기록
+     * - 실패 항목 누적 → 끝났을 때 'kind' => 'detailed' 경고로 돌려준다 (`restoreOwnershipChunk()` 가 경고 목록에 싣는다)
+     * 멈춤은 항목 하나를 끝낼 때마다 묻는다. 스냅샷은 실행 기록에 저장된 배열이라 요청 사이에 순서가 같다.
      *
-     * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $detailedSnapshot
+     * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $detailedSnapshot  스냅샷
+     * @param  array<string, mixed>  $progress  직전 호출이 돌려준 진행분 (처음이면 빈 배열)
+     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
      * @param  \Closure|null  $onProgress  항목별 진행 콜백 (선택)
-     * @return void 반환값 없음
+     * @return array{done: bool, next: int, changed: int, failed: int, failed_paths: list<string>, warning: array<string, mixed>|null} 진행분 (warning 은 끝났을 때만)
      */
-    private function restoreFromDetailedSnapshot(array $detailedSnapshot, ?\Closure $onProgress = null): void
+    private function restoreFromDetailedSnapshotChunk(array $detailedSnapshot, array $progress = [], ?\Closure $shouldPause = null, ?\Closure $onProgress = null): array
     {
-        $changed = 0;
-        $failed = 0;
-        $failedPaths = [];
+        $changed = (int) ($progress['changed'] ?? 0);
+        $failed = (int) ($progress['failed'] ?? 0);
+        $failedPaths = array_values(array_map('strval', (array) ($progress['failed_paths'] ?? [])));
         $supportsLchown = function_exists('lchown');
         $supportsLchgrp = function_exists('lchgrp');
+        $paths = array_keys($detailedSnapshot);
+        $total = count($paths);
+        $position = max(0, (int) ($progress['next'] ?? 0));
 
-        foreach ($detailedSnapshot as $absolutePath => $meta) {
-            if (! file_exists($absolutePath) && ! is_link($absolutePath)) {
-                continue;
-            }
+        for (; $position < $total; $position++) {
+            $absolutePath = (string) $paths[$position];
+            $meta = (array) $detailedSnapshot[$paths[$position]];
 
-            $isLink = $meta['is_link'] ?? is_link($absolutePath);
-            $targetOwner = $meta['owner'] ?? false;
-            $targetGroup = $meta['group'] ?? false;
-            $targetPerms = $meta['perms'] ?? null;
-            $itemFailed = false;
+            if (file_exists($absolutePath) || is_link($absolutePath)) {
+                $isLink = $meta['is_link'] ?? is_link($absolutePath);
+                $targetOwner = $meta['owner'] ?? false;
+                $targetGroup = $meta['group'] ?? false;
+                $targetPerms = $meta['perms'] ?? null;
+                $itemFailed = false;
 
-            // owner 복원
-            if ($targetOwner !== false) {
-                $currentOwner = $isLink ? @lstat($absolutePath)['uid'] ?? false : @fileowner($absolutePath);
-                if ($currentOwner !== false && $currentOwner !== $targetOwner) {
-                    if ($isLink) {
-                        if ($supportsLchown && @lchown($absolutePath, $targetOwner)) {
-                            $changed++;
+                // owner 복원
+                if ($targetOwner !== false) {
+                    $currentOwner = $isLink ? @lstat($absolutePath)['uid'] ?? false : @fileowner($absolutePath);
+                    if ($currentOwner !== false && $currentOwner !== $targetOwner) {
+                        if ($isLink) {
+                            if ($supportsLchown && @lchown($absolutePath, $targetOwner)) {
+                                $changed++;
+                            } else {
+                                $itemFailed = true;
+                            }
                         } else {
-                            $itemFailed = true;
+                            if (@chown($absolutePath, $targetOwner)) {
+                                $changed++;
+                            } else {
+                                $itemFailed = true;
+                            }
                         }
-                    } else {
-                        if (@chown($absolutePath, $targetOwner)) {
+                    }
+                }
+
+                // group 복원
+                if ($targetGroup !== false) {
+                    $currentGroup = $isLink ? @lstat($absolutePath)['gid'] ?? false : @filegroup($absolutePath);
+                    if ($currentGroup !== false && $currentGroup !== $targetGroup) {
+                        if ($isLink) {
+                            if ($supportsLchgrp && @lchgrp($absolutePath, $targetGroup)) {
+                                $changed++;
+                            } else {
+                                $itemFailed = true;
+                            }
+                        } else {
+                            if (@chgrp($absolutePath, $targetGroup)) {
+                                $changed++;
+                            } else {
+                                $itemFailed = true;
+                            }
+                        }
+                    }
+                }
+
+                // perms 복원 — symbolic link 는 perms 무변경 (대부분 OS 가 link perms 무시)
+                if (! $isLink && $targetPerms !== null) {
+                    $currentPerms = @fileperms($absolutePath);
+                    if ($currentPerms !== false && ($currentPerms & 0777) !== $targetPerms) {
+                        if (@chmod($absolutePath, $targetPerms)) {
                             $changed++;
                         } else {
                             $itemFailed = true;
                         }
                     }
                 }
-            }
 
-            // group 복원
-            if ($targetGroup !== false) {
-                $currentGroup = $isLink ? @lstat($absolutePath)['gid'] ?? false : @filegroup($absolutePath);
-                if ($currentGroup !== false && $currentGroup !== $targetGroup) {
-                    if ($isLink) {
-                        if ($supportsLchgrp && @lchgrp($absolutePath, $targetGroup)) {
-                            $changed++;
-                        } else {
-                            $itemFailed = true;
-                        }
-                    } else {
-                        if (@chgrp($absolutePath, $targetGroup)) {
-                            $changed++;
-                        } else {
-                            $itemFailed = true;
-                        }
+                if ($itemFailed) {
+                    $failed++;
+                    if (count($failedPaths) < 50) {
+                        $failedPaths[] = $absolutePath;
                     }
                 }
+
+                $onProgress?->__invoke('detailed_restore', $absolutePath);
             }
 
-            // perms 복원 — symbolic link 는 perms 무변경 (대부분 OS 가 link perms 무시)
-            if (! $isLink && $targetPerms !== null) {
-                $currentPerms = @fileperms($absolutePath);
-                if ($currentPerms !== false && ($currentPerms & 0777) !== $targetPerms) {
-                    if (@chmod($absolutePath, $targetPerms)) {
-                        $changed++;
-                    } else {
-                        $itemFailed = true;
-                    }
-                }
+            if ($shouldPause !== null && $position + 1 < $total && $shouldPause()) {
+                return [
+                    'done' => false,
+                    'next' => $position + 1,
+                    'changed' => $changed,
+                    'failed' => $failed,
+                    'failed_paths' => $failedPaths,
+                    'warning' => null,
+                ];
             }
-
-            if ($itemFailed) {
-                $failed++;
-                if (count($failedPaths) < 50) {
-                    $failedPaths[] = $absolutePath;
-                }
-            }
-
-            $onProgress?->__invoke('detailed_restore', $absolutePath);
         }
 
         if ($changed > 0) {
             Log::channel('upgrade')->info('코어 업데이트: 항목별 정확 복원 완료', [
-                'snapshot_items' => count($detailedSnapshot),
+                'snapshot_items' => $total,
                 'changed_attributes' => $changed,
             ]);
         }
 
+        $warning = null;
+
         if ($failed > 0) {
-            $this->lastPermissionWarnings[] = [
+            $warning = [
                 'target' => 'detailed_snapshot',
                 'kind' => 'detailed',
                 'failed' => $failed,
@@ -3843,6 +4185,8 @@ class CoreUpdateService
                 'first_failed' => $failedPaths[0] ?? null,
             ]);
         }
+
+        return ['done' => true, 'next' => $total, 'changed' => $changed, 'failed' => $failed, 'failed_paths' => $failedPaths, 'warning' => $warning];
     }
 
     /**

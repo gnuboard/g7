@@ -29,6 +29,9 @@ import {
     layoutUrl,
     layoutPreviewUrl,
     basePrefix,
+    extStaticUrl,
+    extStaticVersion,
+    templateAssetDir,
 } from '../assetUrl';
 
 /**
@@ -531,6 +534,64 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             delete (globalThis as any).G7Config.basePath;
 
             expect(templateAsset('t', 'js/app.js')).toBe('/api/templates/assets/t/js/app.js');
+        });
+
+        /**
+         * 정적 게시본 주소(`/build/ext/{v}/…`)도 사이트 안을 가리켜야 한다.
+         *
+         * 서버는 게이트 값 `staticBase` 를 접두사 없는 형태로 싣는다(버전 비교용 값). 그 값에
+         * 파일 경로만 이어 붙이면 하위 폴더 배치에서 routes·lang·components 정적 조회가 전부
+         * 문서 루트로 나가 404 를 받고, 매 화면 API 로 다시 받는다. 접두사는 이미 붙어 있으면
+         * 다시 붙이지 않는다(서버가 접두사 붙은 값을 싣는 경우에도 이중 접두가 되지 않는다).
+         */
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects static_publish_urls_carry_the_site_base_prefix
+        it('정적 게시본 주소도 마운트 접두사를 붙인다 (명시 버전 포함, 이중 접두 없음)', () => {
+            (globalThis as any).G7Config.staticBase = '/build/ext/1234';
+
+            expect(extStaticUrl('templates/t/routes.json')).toBe('/g7/build/ext/1234/templates/t/routes.json');
+            expect(extStaticUrl('templates/t/lang/ko.json', 5678)).toBe('/g7/build/ext/5678/templates/t/lang/ko.json');
+            expect(extStaticUrl('templates/t/components.json', 1234)).toBe('/g7/build/ext/1234/templates/t/components.json');
+            expect(extStaticVersion()).toBe(1234);
+
+            (globalThis as any).G7Config.staticBase = '/g7/build/ext/1234';
+            expect(extStaticUrl('templates/t/routes.json')).toBe('/g7/build/ext/1234/templates/t/routes.json');
+            expect(extStaticVersion()).toBe(1234);
+
+            delete (globalThis as any).G7Config.staticBase;
+        });
+
+        /**
+         * 자산 디렉토리 주소(Monaco `paths.vs` 등)도 세 분기 모두 접두사를 갖는다.
+         *
+         * 이 함수만 `withBasePrefix()` 를 거치지 않아, 하위 폴더 배치에서 편집기 로더가 사이트
+         * 밖의 `/api/templates/assets/…` 를 불렀다.
+         */
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects static_publish_urls_carry_the_site_base_prefix
+        it('자산 디렉토리 주소도 정적·확장자 없는·확장자 세 분기 모두 접두사를 붙인다', () => {
+            expect(templateAssetDir('t', 'vendor/monaco/vs')).toBe('/g7/api/templates/assets/t/vendor/monaco/vs');
+
+            setAssetUrlMode(MODE_EXTENSIONLESS);
+            expect(templateAssetDir('t', 'vendor/monaco/vs')).toBe('/g7/api/templates/assets/t?file=vendor/monaco/vs');
+
+            (globalThis as any).G7Config.staticBase = '/build/ext/1234';
+            expect(templateAssetDir('t', 'vendor/monaco/vs')).toBe('/g7/build/ext/1234/templates/t/assets/vendor/monaco/vs');
+            delete (globalThis as any).G7Config.staticBase;
+        });
+
+        // @scenario base_path=root, fetch_origin=core_bundle, navigation_direction=request
+        // @effects static_publish_urls_carry_the_site_base_prefix
+        it('루트 설치의 정적 게시본·디렉토리 주소는 종전 문자열과 같다', () => {
+            delete (globalThis as any).G7Config.basePath;
+            (globalThis as any).G7Config.staticBase = '/build/ext/1234';
+
+            expect(extStaticUrl('templates/t/routes.json')).toBe('/build/ext/1234/templates/t/routes.json');
+            expect(extStaticUrl('templates/t/routes.json', 5678)).toBe('/build/ext/5678/templates/t/routes.json');
+            expect(templateAssetDir('t', 'vendor/monaco/vs')).toBe('/build/ext/1234/templates/t/assets/vendor/monaco/vs');
+
+            delete (globalThis as any).G7Config.staticBase;
+            expect(templateAssetDir('t', 'vendor/monaco/vs')).toBe('/api/templates/assets/t/vendor/monaco/vs');
         });
     });
 

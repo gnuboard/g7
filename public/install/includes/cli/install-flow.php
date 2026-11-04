@@ -646,6 +646,11 @@ if (! function_exists('g7_cli_execute')) {
         $out->step(5, lang('step_5_installation'));
         $out->info(lang('cli_abort_hint'));
         $workerId = (string) $lock['worker_id'];
+        // 이 프로세스가 점유한 잠금을 알린다 — 웹 워커 입구(run-task·install-worker·install-process)와 같은 배선.
+        // 알리지 않으면 상태를 읽는 단일 지점의 「예산을 넘긴 점유자 = 죽은 워커」 승격이 자기 자신을 대상으로 삼아,
+        // 심장박동 없이 오래 걸린 단계가 끝나는 순간 자기 잠금을 지우고 「다른 설치 작업이 잠금을 넘겨받았다」로
+        // 멈춘다(그 단계의 완료 표시도 남지 않는다). 하위 명령 실행 직전의 점유 시간 연장도 이 값으로 자기 잠금을 찾는다.
+        installerCurrentWorkerId($workerId);
         setProgressEmitter($out->json ? new JsonLinesEmitter($workerId) : new CliEmitter($workerId));
 
         try {

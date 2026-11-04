@@ -7,10 +7,12 @@ use App\Enums\ScheduleTriggerType;
 use App\Execution\CommandRunnerResolver;
 use App\Execution\ExecutionMode;
 use App\Helpers\TimezoneHelper;
+use App\Models\ScheduleHistory;
 use App\Scheduling\ScheduleRunner;
 use App\Scheduling\ScheduleRunState;
 use App\Scheduling\WebCronPolicy;
 use App\Scheduling\WebCronTokenStore;
+use App\Services\Schedule\ScheduleRegistrar;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -28,6 +30,9 @@ class SystemExecutionService
 {
     /** @var int 화면이 보여 주는 최근 실행 이력 건수 */
     private const RECENT_HISTORY_LIMIT = 20;
+
+    /** @var int 실행 이력 한 줄에 싣는 오류 출력 길이 */
+    private const ERROR_PREVIEW_LENGTH = 500;
 
     /**
      * @param  CommandRunnerResolver  $resolver  실행 모드 해석기
@@ -138,7 +143,7 @@ class SystemExecutionService
         return [
             'url' => $this->tokens->callUrl($token),
             'header_name' => WebCronTokenStore::TOKEN_HEADER,
-            'issued_at' => $this->tokens->issuedAt()?->toIso8601String(),
+            'issued_at' => $this->toSiteTime($this->tokens->issuedAt()),
         ];
     }
 
@@ -154,16 +159,21 @@ class SystemExecutionService
         return [
             'url' => $this->tokens->callUrl($token),
             'header_name' => WebCronTokenStore::TOKEN_HEADER,
-            'issued_at' => $this->tokens->issuedAt()?->toIso8601String(),
+            'issued_at' => $this->toSiteTime($this->tokens->issuedAt()),
         ];
     }
 
     /**
      * 예약 작업을 지금 한 번 실행합니다.
      *
+     * 응답 시각은 상태 조회(`status()`)의 `last_run` 과 같이 사이트 시간대로 옮긴다 — 화면은 이 응답을
+     * 「마지막 실행」 줄에 바로 그리므로, 표준시로 내보내면 누른 직후에만 9시간 어긋난 시각이 보이고
+     * 새로고침하면 바뀐다.
+     *
+     * @param  int|null  $userId  누른 관리자 ID (실행 이력의 실행자로 남는다)
      * @return array<string, mixed> 실행 요약
      */
-    public function runNow(): array
+    public function runNow(?int $userId = null): array
     {
         $now = CarbonImmutable::now();
 
@@ -171,7 +181,9 @@ class SystemExecutionService
 
         // 화면에서 누른 실행은 예약 호출과 이력에서 구분된다 — 「왜 이 시각에 돌았나」를
         // 되짚을 때 사람이 누른 것과 주기가 도래한 것은 다른 사실이다.
-        return $this->runner->run($now, ScheduleTriggerType::Manual)->toArray();
+        return $this->localizeSummaryTimes(
+            $this->runner->run($now, ScheduleTriggerType::Manual, $userId)->toArray(),
+        ) ?? [];
     }
 
     /**
@@ -229,25 +241,58 @@ class SystemExecutionService
     }
 
     /**
-     * 코드 예약의 최근 실행 이력을 화면용 배열로 반환합니다.
+     * 예약 작업의 최근 실행 이력을 화면용 배열로 반환합니다.
+     *
+     * 7.2.0 부터 예약 작업 대부분이 `schedules` 행으로 돌아 실행기가 행 기준 이력(`source=database`)을
+     * 남긴다 — 코드 예약 이력만 실으면 이 목록이 거의 빈다. 그래서 두 출처를 시각순으로 함께 싣고,
+     * 행 이력의 이름은 스케줄 관리 화면과 같은 표시 명칭(지금 언어 → 기본 언어 → 식별자)으로 푼다.
+     *
+     * 예전 판 웹 러너가 DB 스케줄 이벤트에 남긴 코드 이력(이름이 `schedule:{id}`)은 뺀다 — 같은 실행의
+     * 행 이력이 이미 있고, 이름이 내부 식별자라 운영자가 알아볼 수 없다.
      *
      * @return array<int, array<string, mixed>> 시각 역순 이력
      */
     private function recentHistory(): array
     {
         return $this->histories
-            ->getRecentBySource(ScheduleRunner::HISTORY_SOURCE, self::RECENT_HISTORY_LIMIT)
+            ->getRecentRuns(self::RECENT_HISTORY_LIMIT, ScheduleRegistrar::EVENT_PREFIX)
             ->map(fn ($history): array => [
                 'id' => $history->id,
-                'name' => $history->event_name,
-                'expression' => $history->event_expression,
+                'name' => $this->historyName($history),
+                'expression' => $history->event_expression ?? $history->schedule?->expression,
                 'status' => $history->status?->value,
                 'trigger_type' => $history->trigger_type?->value,
                 'started_at' => $this->toSiteTime($history->started_at),
                 'duration' => $history->duration,
-                'error_output' => $history->error_output,
+                // 행 이력의 오류 출력은 최대 65,535자다 — 화면은 한 줄만 보이므로 앞부분만 싣는다.
+                'error_output' => $history->error_output !== null
+                    ? mb_substr((string) $history->error_output, 0, self::ERROR_PREVIEW_LENGTH)
+                    : null,
             ])
             ->all();
+    }
+
+    /**
+     * 실행 이력 한 건의 화면 이름을 만듭니다.
+     *
+     * @param  ScheduleHistory  $history  실행 이력
+     * @return string 표시 이름
+     */
+    private function historyName(ScheduleHistory $history): string
+    {
+        if ($history->schedule_id !== null) {
+            $schedule = $history->schedule;
+
+            if ($schedule !== null) {
+                return $schedule->localizedLabel();
+            }
+        }
+
+        if (is_string($history->event_name) && $history->event_name !== '') {
+            return $history->event_name;
+        }
+
+        return $history->schedule_id !== null ? '#'.$history->schedule_id : '';
     }
 
     /**

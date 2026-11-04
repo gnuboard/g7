@@ -371,7 +371,7 @@ class PopupControllerTest extends PluginTestCase
         $this->actingAs($this->admin)->postJson($this->api('/admin/popups'), $this->htmlPopupPayload([
             'body_html' => ['ko' => '<iframe src="https://evil.example"></iframe>'],
         ]))->assertStatus(422)->assertJsonValidationErrors([
-            'body_html' => __('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => 'ko']),
+            'body_html' => __('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => config('app.locale_names.ko', 'ko')]),
         ]);
         $this->assertSame($before, Popup::query()->count());
 
@@ -381,9 +381,45 @@ class PopupControllerTest extends PluginTestCase
             'body_html' => ['ko' => '<p>정상 본문</p>', 'en' => '<script>alert(1)</script>'],
             'revision' => 0,
         ]))->assertStatus(422)->assertJsonValidationErrors([
-            'body_html' => __('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => 'en']),
+            'body_html' => __('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => config('app.locale_names.en', 'en')]),
         ]);
         $this->assertSame(['ko' => '<p>공지</p>'], $popup->fresh()->body_html);
+    }
+
+    /**
+     * 정화 뒤 빈 본문 안내는 화면의 언어 탭과 같은 언어 이름으로 알린다(「English 본문에 …」) — 코드(`en`)만으로는 어느 탭인지 바로 알기 어렵다.
+     * 이름을 정하지 않은 언어는 코드로 알린다.
+     *
+     * @scenario surface=body_emptied_message_names_language
+     *
+     * @effects validation_messages_name_languages
+     *
+     * @return void 반환값 없음
+     */
+    public function test_emptied_body_message_names_the_language(): void
+    {
+        config([
+            'app.translatable_locales' => ['ko', 'en', 'ja', 'xx'],
+            'app.locale_names' => ['ko' => '한국어', 'en' => 'English', 'ja' => '日本語'],
+        ]);
+        $cases = [
+            'ko' => ['ko' => '<script>alert(1)</script>'],
+            'en' => ['ko' => '<p>정상 본문</p>', 'en' => '<script>x</script>'],
+            'ja' => ['ko' => '<p>정상 본문</p>', 'ja' => '<p>&nbsp;</p><p> </p>'],
+            'xx' => ['ko' => '<p>정상 본문</p>', 'xx' => '<iframe src="https://evil.example"></iframe>'],
+        ];
+        $expected = ['ko' => '한국어 본문에', 'en' => 'English 본문에', 'ja' => '日本語 본문에', 'xx' => 'xx 본문에'];
+        foreach ($cases as $locale => $body) {
+            $message = $this->withHeader('Accept-Language', 'ko')->actingAs($this->admin)
+                ->postJson($this->api('/admin/popups'), $this->htmlPopupPayload(['body_html' => $body]))
+                ->assertStatus(422)->json('errors.body_html.0');
+            $this->assertStringStartsWith($expected[$locale], (string) $message, $locale);
+        }
+
+        $english = $this->withHeader('Accept-Language', 'en')->actingAs($this->admin)
+            ->postJson($this->api('/admin/popups'), $this->htmlPopupPayload(['body_html' => $cases['en']]))
+            ->assertStatus(422)->json('errors.body_html.0');
+        $this->assertStringStartsWith('The English content has nothing to display.', (string) $english);
     }
 
     /**

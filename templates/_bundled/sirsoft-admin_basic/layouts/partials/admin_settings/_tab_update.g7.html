@@ -10,7 +10,7 @@
       <div data-ref="core_update_version_row" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 mb-4 flex flex-wrap items-center gap-x-6 gap-y-2">
         <div class="flex items-center gap-2">
           <span class="text-label-subtle">$t:admin.settings.core_update.current_version</span>
-          <span data-ref="core_update_current_version" class="text-heading">{{systemInfo?.data?.g7_version ?? '-'}}</span>
+          <span data-ref="core_update_current_version" class="text-heading">{{_computed.coreUpdateStatus?.current_version ?? systemInfo?.data?.g7_version ?? '-'}}</span>
         </div>
         <div data-if="{{_local.coreUpdateInfo?.update_available}}" class="flex items-center gap-2">
           <span class="text-label-subtle">$t:admin.settings.core_update.latest_version</span>

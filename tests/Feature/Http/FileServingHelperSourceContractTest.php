@@ -62,7 +62,7 @@ class FileServingHelperSourceContractTest extends TestCase
     /**
      * 코어 헬퍼 호출 — 이 중 하나를 지나야 응답 계약(nosniff·ETag·304)이 성립한다.
      */
-    private const CORE_HELPER_CALL = '/\$this\s*->\s*(streamedFileResponseFromMeta|streamedFileResponse|fileResponse|inlineContentResponse)\s*\(/';
+    private const CORE_HELPER_CALL = '/\$this\s*->\s*(streamedFileResponseFromMeta|streamedFileResponse|generatedFileResponse|fileResponse|inlineContentResponse)\s*\(/';
 
     /**
      * 파일 서빙 메서드 수의 하한 (회차 15 전수표 기준).
@@ -79,7 +79,10 @@ class FileServingHelperSourceContractTest extends TestCase
     // SSO 로그인 페이지와 메타데이터 등 서빙 메서드가 모집단에 들어왔다(병합 결과 실측).
     // 44 → 45: develop-7.2.0 3차 병합으로 NHN KCP PC 결제창 프레임 문서(`KcpFrameController::show()`)가
     // 들어왔다 — 생성 문서라 `file-serving:allow` 로 처분하되 모집단에는 남는다(병합 결과 실측).
-    private const MIN_FILE_SERVING_METHODS = 45;
+    // 45 → 47: develop-7.2.0 4차 병합으로 히어로섹션·팝업 플러그인의 공개 이미지 서빙
+    // (`BannerImageController::show()`·`PopupImageController::show()`)이 들어왔다 — 둘 다 코어 헬퍼
+    // (`streamedFileResponseFromMeta`·`fileResponse`)를 지나도록 고친 뒤 모집단에 남는다(실측).
+    private const MIN_FILE_SERVING_METHODS = 47;
 
     /**
      * 컨트롤러 소스 파일 전수 (코어 + 번들 확장).

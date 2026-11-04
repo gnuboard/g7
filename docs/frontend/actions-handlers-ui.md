@@ -1407,6 +1407,8 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 `src` 는 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받습니다 — same-origin 절대 경로(`/` 로 시작)이거나, 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 그 밖의 원격 URL 은 로드 전에 차단되고 액션이 실패합니다(`onError`·`errorHandling` 오류 채널로 전달). 상세: [security.md](security.md#외부-스크립트-신뢰-출처-허용목록)
 
+same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/…`) 적습니다. 사이트를 하위 폴더(`https://host/g7/`)에 설치하면 엔진이 싣는 시점에 마운트 접두사를 붙입니다(이미 붙은 값과 `//host`·절대 URL 은 그대로). 레이아웃 `scripts[]` 와 레이아웃 편집기 미리보기도 같은 규칙입니다.
+
 ```html
 <on type="click">
   <load-script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script">

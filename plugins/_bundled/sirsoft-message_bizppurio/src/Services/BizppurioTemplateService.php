@@ -529,6 +529,7 @@ class BizppurioTemplateService
     {
         $response = $this->kakao->uploadTemplateImage(
             $file->getRealPath(),
+            // audit:allow uploaded-file-name-via-helper 이름을 저장하지 않고 외부 API multipart 로 다시 보내며, 되돌린 따옴표나 줄바꿈이 나가는 요청 머리글을 깨뜨리므로 브라우저 인코딩 그대로 보낸다
             $file->getClientOriginalName(),
         );
         $this->assertSuccess($response);
