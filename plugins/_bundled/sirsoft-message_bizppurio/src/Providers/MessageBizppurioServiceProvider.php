@@ -63,6 +63,8 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
      *
      * 콘솔 커맨드(bizppurio:sync-template-status)는 plugin.php::getSchedules() 가 30분
      * 주기로 스케줄한다(#597 §3.4).
+     *
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -82,6 +84,8 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
      *
      * 백엔드 다국어는 lang/{ko,en}/*.php 에 두고 `$this->translationNamespace()`
      * (= 플러그인 식별자) 네임스페이스로 로드한다.
+     *
+     * @return void 반환값 없음
      */
     protected function loadExtensionTranslations(): void
     {
@@ -104,21 +108,27 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
      * 알림톡('alimtalk')도 동일하게 AlimtalkChannelDriver 로 위임한다(Phase 6). 관리자가
      * 알림톡 탭에서 연결한 승인 템플릿(binding)이 있을 때만 실제 발송되고, 미연결 알림은
      * 드라이버가 조용히 skip 한다.
+     *
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
         parent::boot();
 
-        // ChannelManager 는 지연 싱글턴(첫 알림 발송 시 해석)이므로 resolving 콜백으로 등록한다.
-        // 다만 다른 코드가 이미 해석해 둔 경우 resolving 이 발화하지 않으므로, 이미 해석돼
-        // 있으면 즉시 등록하여 어느 순서에서도 누락되지 않게 한다.
-        $this->app->resolving(
-            ChannelManager::class,
-            fn (ChannelManager $manager) => $this->registerChannelDrivers($manager),
-        );
+        // 비활성이면 채널 드라이버를 걸지 않는다 (#730 게이트, #860). 비활성 확장의 채널은 코어가
+        // 사용 가능 채널 목록에서 빼므로(isChannelAvailable) 발송 경로가 이 드라이버를 찾지 않는다.
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            // ChannelManager 는 지연 싱글턴(첫 알림 발송 시 해석)이므로 resolving 콜백으로 등록한다.
+            // 다만 다른 코드가 이미 해석해 둔 경우 resolving 이 발화하지 않으므로, 이미 해석돼
+            // 있으면 즉시 등록하여 어느 순서에서도 누락되지 않게 한다.
+            $this->app->resolving(
+                ChannelManager::class,
+                fn (ChannelManager $manager) => $this->registerChannelDrivers($manager),
+            );
 
-        if ($this->app->resolved(ChannelManager::class)) {
-            $this->registerChannelDrivers($this->app->make(ChannelManager::class));
+            if ($this->app->resolved(ChannelManager::class)) {
+                $this->registerChannelDrivers($this->app->make(ChannelManager::class));
+            }
         }
     }
 
@@ -130,6 +140,7 @@ class MessageBizppurioServiceProvider extends BasePluginServiceProvider
      *   (binding)이 있을 때만 발송하고 미연결 알림은 드라이버가 skip 한다.
      *
      * @param  ChannelManager  $manager  코어 알림 채널 매니저
+     * @return void 반환값 없음
      */
     private function registerChannelDrivers(ChannelManager $manager): void
     {

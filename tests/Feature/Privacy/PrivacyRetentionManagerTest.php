@@ -93,7 +93,8 @@ class PrivacyRetentionManagerTest extends TestCase
         $handlers = app(PrivacyRetentionManager::class)->handlers();
 
         $this->assertArrayHasKey('user-withdrawn', $handlers);
-        $this->assertCount(1, $handlers);
+        // 코어 기본 핸들러 둘(탈퇴 회원 잔여 정보 · 최근 검색어 보관 기한, 7.1.5)만 남고 계약 위반 클래스는 빠진다
+        $this->assertSame(['user-withdrawn', 'search-history'], array_keys($handlers));
     }
 
     /**
@@ -219,7 +220,7 @@ class PrivacyRetentionManagerTest extends TestCase
 
         $results = app(PrivacyRetentionManager::class)->process(dryRun: true);
 
-        $this->assertSame(['user-withdrawn', 'fake-domain'], array_keys($results), '식별자를 못 읽은 핸들러만 빠지고 앞뒤 도메인은 모두 실행된다');
+        $this->assertSame(['user-withdrawn', 'search-history', 'fake-domain'], array_keys($results), '식별자를 못 읽은 핸들러만 빠지고 앞뒤 도메인은 모두 실행된다');
     }
 
     /**

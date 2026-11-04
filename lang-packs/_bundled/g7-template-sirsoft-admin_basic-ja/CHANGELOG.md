@@ -4,6 +4,18 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-11-04
+
+### Added
+
+- 관리자 기본 템플릿 1.1.5 의 레이아웃 편집기 상태 이름 「상품 진열 탭」(`editor.state.tab.product_display` 「商品陳列タブ」)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 환경설정 > 개인정보 「최근 검색어」 카드 문구(`admin.settings.privacy.search_history.*`, 대상 행·창 제목 `targets.rows|title.search_history`)와 확장 경고 단계 이름(`search_scopes`)의 일본어 번역을 추가했습니다.
+- 회원 상세·수정 「최근 검색어」 구획 문구(`users.detail.tabs.search_history_info`·`users.detail.search_history.*` 「最近の検索語」 등)의 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 관리자 기본 템플릿 1.1.5 의 환경설정 > SEO 「타이틀 접미사」 안내(`admin.settings.seo.meta_title_suffix_hint`) 일본어 문구를 코어 7.1.5 제목 규칙(검색엔진·브라우저 탭 공통, `{site_name}`, 빈 값이면 「 - サイト名」)에 맞게 고쳤습니다.
+
 ## [1.1.3] - 2026-11-01
 
 ### Added

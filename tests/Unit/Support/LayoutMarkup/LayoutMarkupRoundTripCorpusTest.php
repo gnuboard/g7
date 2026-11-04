@@ -934,6 +934,10 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_user_list/_partial_filter_section.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-mileage.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-address.g7.html',
+        // ── #860 이 저작하고 등재를 빠뜨린 2건 — develop 리베이스 뒤 저작 트랙 종료 게이트(2026-11-04)가 찾았다.
+        // 관리자 회원 상세 「최근 검색어」 게시판 탭, 이커머스 환경설정 「상품 표시」 탭.
+        'modules/_bundled/sirsoft-board/resources/extensions/admin-user-search-history-tab.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_product_display.g7.html',
     ];
 
     /**
@@ -1008,6 +1012,12 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_form.g7.html' => [':ui' => 1],
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_claim_detail.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_claim_list.g7.html',
+        // #860 — **`<meta>` 의 구조 객체 속성**. 엔진 스크롤 복원(engine-v1.85.0)의 `meta.scroll_restoration` 은
+        // `containers`(문자열 리스트)·`snapshot`(하위 객체)을 담는 객체인데, `<meta>` 는 `seo` 만 `<seo>` 하위
+        // 요소로 펴고 나머지 키는 속성값으로 내보낸다({@see LayoutMarkupDecompiler::meta}). 문법이 없는 자리라
+        // 등재한다 — `<meta>` 에 하위 요소 문법이 생기면 이 두 행을 지우고 재생성한다.
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_common_info_index.g7.html' => [':scroll_restoration' => 1],
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_notice_index.g7.html' => [':scroll_restoration' => 1],
     ];
 
     /**

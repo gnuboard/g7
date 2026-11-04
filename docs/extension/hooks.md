@@ -132,7 +132,11 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
 `{prefix}.before_prune`(보존일) / `{prefix}.after_prune`(보존일, 건수).
 **`--dry-run` 에서는 발행하지 않습니다** — 리허설에서 자기 리스너가 돌았다고 착각하지 않도록
 실제 처리 때만 발행합니다. 번들 핸들러의 접두사 전수는 아래 「보존 기간 자동 파기」 카탈로그에 있습니다.
-코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다.
+코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다. 코어 최근 검색어 보관 기한 핸들러(7.1.5)는
+`core.privacy.search_history` 이고, 인자가 보존일 대신 범위별 기한 맵(`array<범위 id, 일>`)입니다.
+
+최근 검색어 기록(7.1.5)은 `core.search_history.filter_keyword`(filter — 검색어·범위·회원, 빈 문자열이나 문자열이 아닌 값을 돌려주면
+기록하지 않음, 예: 금칙어)와 `core.search_history.after_record`(action — 기록한 행·회원)를 발행합니다.
 구현 예시·규약 표·검증 매트릭스는 [개인정보 보유기간 처리 가이드](../backend/privacy-retention.md)에 있습니다.
 
 ### 개인정보 조치 직권 실행 대상·알림 훅
@@ -1806,10 +1810,20 @@ doAction('hook.name')
 ### addAction/addFilter 내부 동작
 
 ```text
-addAction()  → Event::listen() 등록 + 리스너 배열 관리
-addFilter()  → Event::listen() 등록 + 리스너 배열 관리 (동일)
-removeAction() / removeFilter() → Event::forget() + 배열에서 제거
+addAction()    → 액션 배열에 추가 + 지금 이벤트 디스패처에 `hook.*` 와일드카드 미러가 없으면 1개 등록
+addFilter()    → 필터 배열에 추가 (Laravel 이벤트에는 등록하지 않음)
+doAction()     → 배열의 콜백을 우선순위 순으로 실행 → Event::dispatch("hook.{이름}") (바깥 리스너용)
+removeAction() → 배열에서 그 콜백만 제거 (같은 훅에 바깥에서 건 Event::listen 리스너는 남음)
+clearAction()  → 배열에서 그 훅 전체 제거 + Event::forget("hook.{이름}") (바깥 리스너도 제거)
+removeFilter() / clearFilter() → 필터 배열에서만 제거
 ```
+
+**이벤트 미러 (7.1.5)** — 바깥 코드가 `Event::listen('hook.x')` 로 듣거나 `Event::dispatch('hook.x')` 로 직접 보내는 계약을 위해, 액션은 Laravel 이벤트로도 연결됩니다. 7.1.4 까지는 액션 콜백마다 이름 리스너를 하나씩 걸었고(요청마다 액션 수만큼), 7.1.5 부터는 디스패처당 `hook.*` 와일드카드 리스너 하나가 액션 배열을 읽어 실행합니다. 등록 여부는 디스패처 객체별로 기억하므로 새 앱·테스트의 새 디스패처에도 다시 걸리고, `Event::fake()` 가 감싼 경우에도 실제 디스패처에 두 번 걸리지 않습니다.
+
+- `doAction()` 안에서 나가는 `Event::dispatch` 는 위 가드(`$dispatching`)로 미러가 건너뛰므로 액션은 **정확히 1회** 실행됩니다.
+- 바깥에서 `Event::dispatch('hook.x', [$a, $b])` 로 보내면 액션이 doAction 과 같은 우선순위 순·같은 인자로 1회 실행됩니다(7.1.4 까지는 등록 순).
+- Laravel 은 이름 리스너를 와일드카드보다 먼저 부르므로, 바깥에서 직접 보낼 때는 같은 이름으로 건 `Event::listen` 리스너가 액션보다 먼저 실행됩니다.
+- 액션이 하나라도 등록된 뒤에는 `Event::hasListeners('hook.x')` 가 모든 훅 이름에 참입니다 — 훅 존재 여부 판정에 쓰지 마세요.
 
 ---
 

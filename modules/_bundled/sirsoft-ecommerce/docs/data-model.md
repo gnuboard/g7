@@ -48,7 +48,7 @@
 | `ProductNotice` | `ecommerce_product_notices` | 2 | product→Product | - |
 | `ProductNoticeTemplate` | `ecommerce_product_notice_templates` | 5 | - | - |
 | `ProductOption` | `ecommerce_product_options` | 19 | product→Product | - |
-| `ProductReview` | `ecommerce_product_reviews` | 13 | product→Product, orderOption→OrderOption, user→User, replyAdmin→User, images→ProductReviewImage | SoftDeletes |
+| `ProductReview` | `ecommerce_product_reviews` | 14 | product→Product, orderOption→OrderOption, user→User, replyAdmin→User, images→ProductReviewImage | SoftDeletes |
 | `ProductReviewImage` | `ecommerce_product_review_images` | 15 | review→ProductReview, creator→User | SoftDeletes |
 | `ProductWishlist` | `ecommerce_product_wishlists` | 2 | user→User, product→Product | - |
 | `SearchPreset` | `ecommerce_search_presets` | 6 | user→User | - |
@@ -244,7 +244,7 @@
 지우는 테이블 전수: `ecommerce_claim_images`(행 — 파일은 커밋 뒤, 임시 첨부 포함) · `ecommerce_claim_payments` ·
 `ecommerce_order_exchange_options` · `_exchanges` · `_return_options` · `_returns` · `ecommerce_order_shippings` · `_refund_options` · `_refunds` · `_cancel_options` ·
 `_cancels` · `_tax_invoices` · `_cash_receipts` · `_payments` · `_options` · `_addresses` · `ecommerce_orders`,
-그리고 주문 옵션에 묶인 `ecommerce_product_reviews`·`_review_images`(파일 포함). `ecommerce_promotion_coupon_issues`
+그리고 주문 옵션에 묶인 `ecommerce_product_reviews`·`_review_images`(파일 포함 — 주문 없이 등록한 후기는 `order_option_id` 가 NULL 이라 대상이 아님). `ecommerce_promotion_coupon_issues`
 ·`ecommerce_mileage_transactions` 는 행을 남기고 `order_id`(마일리지는 `claim_payment_id`·`order_refund_id` 도)만
 NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 테이블이 `ecommerce_orders`·`ecommerce_order_options` 를 참조하면 `OrderPrivacyRetentionService::purge()`
 의 이 목록에도 더해야 합니다 — 빠지면 삭제가 FK 오류로 그 주문에서 멈춥니다(건별 격리로 다른 주문은 계속됨).
@@ -259,7 +259,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 129개.
+마이그레이션 130개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -392,6 +392,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_10_26_000001_add_tax_status_to_ecommerce_product_options_table.php` | - | `ecommerce_product_options` | ✅ |
 | `2026_10_26_000002_add_tax_status_to_ecommerce_order_options_table.php` | - | `ecommerce_order_options` | ✅ |
 | `2026_10_26_000003_add_total_zero_rated_amount_to_ecommerce_orders_table.php` | - | `ecommerce_orders` | ✅ |
+| `2026_11_02_000001_update_imported_review_fields_in_ecommerce_product_reviews_table.php` | - | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -476,6 +477,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `RefundPriorityEnum` | `string` | 2 | `pg_first`, `points_first` |
 | `RefundSourceTypeEnum` | `string` | 5 | `cancel`, `return`, `exchange`, `direct`, `admin` |
 | `RefundStatusEnum` | `string` | 7 | `requested`, `approved`, `processing`, `on_hold`, `completed`, `rejected`, `withdrawn` |
+| `RelatedProductOrder` | `string` | 4 | `random`, `sales`, `reviews`, `latest` |
 | `ReturnStatusEnum` | `string` | 11 | `requested`, `payment_pending`, `paid`, `approved`, `on_hold`, `rejected`, `collection_ready`, `collecting`, `외 3개` |
 | `ReviewStatus` | `string` | 2 | `visible`, `hidden` |
 | `SearchPresetTargetScreen` | `string` | 4 | `products`, `orders`, `customers`, `claims` |

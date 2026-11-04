@@ -45,4 +45,7 @@ return [
             'dispatched' => 'Sitemap 생성이 큐에 디스패치되었습니다. (모드: :mode)',
         ],
     ],
+
+    // 관리자 화면 브라우저 탭 제목 접미사 — `{화면 제목}` 뒤에 붙는다({site_name} 은 사이트 이름)
+    'admin_title_suffix' => ' - {site_name} 관리자',
 ];

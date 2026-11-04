@@ -271,7 +271,7 @@
             "auto_fetch": true,
             "auth_required": true,
             "params": {
-                "targets": "retention:user-withdrawn,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw",
+                "targets": "retention:user-withdrawn,retention:search-history,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw",
                 "since": "{{_global.privacyRunWatchSince ?? ''}}"
             },
             "fallback": {

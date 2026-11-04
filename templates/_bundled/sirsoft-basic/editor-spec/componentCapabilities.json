@@ -494,6 +494,25 @@
       }
     ]
   },
+  "RecentSearchCombobox": {
+    "label": "$t:editor.component.recent_search_combobox",
+    "propControls": [
+      "sbPlaceholder",
+      "rscScope",
+      "rscResultPath",
+      "sbShowButton",
+      "rscButtonText",
+      "inputName"
+    ],
+    "styleControls": [
+      "marginAll",
+      "width",
+      "selfAlign"
+    ],
+    "events": [
+      "onSearch"
+    ]
+  },
   "Avatar": {
     "label": "$t:editor.component.avatar",
     "propControls": [
@@ -1446,6 +1465,7 @@
       "hdrSiteName",
       "hdrLogo",
       "hdrShopBase",
+      "hdrSearchHistoryScope",
       "hdrMaxBoards",
       "hdrCurrentLocale",
       "hdrNotifTitle",

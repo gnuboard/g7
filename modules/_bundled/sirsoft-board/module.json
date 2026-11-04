@@ -5,7 +5,7 @@
         "ko": "게시판",
         "en": "Board"
     },
-    "version": "1.2.2",
+    "version": "1.2.3",
     "license": "MIT",
     "description": {
         "ko": "게시판 관리를 위한 모듈",
@@ -35,5 +35,11 @@
     "loading": {
         "strategy": "global",
         "priority": 100
+    },
+    "search_scopes": {
+        "posts": {
+            "label": "sirsoft-board::messages.search_history.scope_posts",
+            "max_count": 10
+        }
     }
 }

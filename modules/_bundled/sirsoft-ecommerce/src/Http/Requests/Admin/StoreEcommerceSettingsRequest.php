@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesSiteLocale;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
@@ -43,7 +44,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @var array<int, string>
      */
-    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'privacy_retention'];
+    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'privacy_retention'];
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -592,6 +593,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // 출처다 — 손으로 나열하면 유형이 늘 때 규칙이 없는 유형이 생기고, validated()
             // 가 그 섹션을 통째로 버려 응답은 200 인데 아무것도 저장되지 않는다.
             ...$this->claimReasonRulesForAllTypes(),
+
+            // product_display 섹션 — 상품 상세 관련 상품(「이 상품은 어떠세요?」) 단계 안 순서와 고른 목록 캐시 시간(0 이면 캐시 안 함)
+            'product_display' => ['sometimes', 'array'],
+            'product_display.related_order' => ['nullable', 'string', Rule::in(RelatedProductOrder::values())],
+            'product_display.related_cache_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
 
             // review_settings 섹션
             'review_settings' => ['sometimes', 'array'],
@@ -2143,7 +2149,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry', 'notifications', 'mileage', 'privacy_retention'];
+        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'inquiry', 'notifications', 'mileage', 'privacy_retention'];
 
         return array_filter(
             $validated,

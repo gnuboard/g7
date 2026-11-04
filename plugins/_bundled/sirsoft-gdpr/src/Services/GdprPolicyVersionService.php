@@ -7,6 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType;
 use Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPolicyVersionRepositoryInterface;
+use Plugins\Sirsoft\Gdpr\Support\GdprConsentReadMemo;
 use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
 
 /**
@@ -27,7 +28,7 @@ class GdprPolicyVersionService
     /**
      * GdprPolicyVersionService 생성자
      *
-     * @param GdprPolicyVersionRepositoryInterface $repository 정책 버전 Repository
+     * @param  GdprPolicyVersionRepositoryInterface  $repository  정책 버전 Repository
      */
     public function __construct(
         private readonly GdprPolicyVersionRepositoryInterface $repository,
@@ -44,10 +45,10 @@ class GdprPolicyVersionService
      * - filter_publish_data: snapshot/memo 등 발행 데이터 필터 가능
      * - after_publish: 발행 후 (활동 로그, 알림 등)
      *
-     * @param GdprPolicyChangeType $changeType 변경 종류
-     * @param array $snapshot 발행 시점 settings 스냅샷
-     * @param string|null $memo 운영자 변경 사유 (Material 시 권장)
-     * @param int|null $userId 발행 운영자 user_id (콘솔/시스템 발행 시 NULL)
+     * @param  GdprPolicyChangeType  $changeType  변경 종류
+     * @param  array  $snapshot  발행 시점 settings 스냅샷
+     * @param  string|null  $memo  운영자 변경 사유 (Material 시 권장)
+     * @param  int|null  $userId  발행 운영자 user_id (콘솔/시스템 발행 시 NULL)
      * @return GdprPolicyVersion 발행된 행
      */
     public function publish(
@@ -70,6 +71,7 @@ class GdprPolicyVersionService
         $data = HookManager::applyFilters(self::PLUGIN_ID.'.policy_version.filter_publish_data', $data);
 
         $version = $this->repository->create($data);
+        GdprConsentReadMemo::forgetPolicyVersion();
 
         HookManager::doAction(self::PLUGIN_ID.'.policy_version.after_publish', $version);
 
@@ -82,7 +84,7 @@ class GdprPolicyVersionService
      * Controller / 외부 호출자는 본 메서드로 접근하며, Repository 를 직접 참조하지 않습니다
      * (controllers.md "Service 주입 필수 — Repository 직접 주입 금지" 준수).
      *
-     * @param bool $loadCreatedBy createdBy 관계 eager load 여부
+     * @param  bool  $loadCreatedBy  createdBy 관계 eager load 여부
      * @return GdprPolicyVersion|null 발행 row 가 없으면 null
      */
     public function getCurrent(bool $loadCreatedBy = false): ?GdprPolicyVersion
@@ -105,7 +107,10 @@ class GdprPolicyVersionService
      */
     public function getCurrentVersion(): int
     {
-        return $this->repository->getCurrentVersion();
+        // 한 요청에서 미들웨어·동의 제공자·리소스가 여러 번 묻는다 — 요청 메모 (#860, 발행·모델 저장 때 비움)
+        $memo = GdprConsentReadMemo::current();
+
+        return $memo->policyVersion ??= $this->repository->getCurrentVersion();
     }
 
     /**
@@ -114,7 +119,7 @@ class GdprPolicyVersionService
      * admin 동의 이력 / 정책 버전 이력 화면에서 행 클릭 시 그 시점 snapshot 조회용
      * (B-3 admin 한정 — GDPR Art.7(1) 입증 책임 충족).
      *
-     * @param int $version 조회할 정책 버전 정수
+     * @param  int  $version  조회할 정책 버전 정수
      * @return GdprPolicyVersion|null 해당 버전 row 가 없으면 null
      */
     public function getByVersion(int $version): ?GdprPolicyVersion
@@ -125,7 +130,7 @@ class GdprPolicyVersionService
     /**
      * 정책 버전 이력을 페이지네이션 형태로 반환합니다 (version DESC).
      *
-     * @param int $perPage 페이지당 행 수 (Repository 단에서 1~100 clamp)
+     * @param  int  $perPage  페이지당 행 수 (Repository 단에서 1~100 clamp)
      * @return LengthAwarePaginator
      */
     public function paginate(int $perPage): LengthAwarePaginator
@@ -142,9 +147,9 @@ class GdprPolicyVersionService
      *
      * change_type 은 항상 Material (운영자 의도적 발행 = 재동의 트리거).
      *
-     * @param array $snapshot 발행 시점의 settings 스냅샷
-     * @param string $memo 운영자 변경 사유 (필수)
-     * @param int|null $userId 발행 운영자 user_id
+     * @param  array  $snapshot  발행 시점의 settings 스냅샷
+     * @param  string  $memo  운영자 변경 사유 (필수)
+     * @param  int|null  $userId  발행 운영자 user_id
      * @return GdprPolicyVersion 새 발행 행
      */
     public function publishManually(array $snapshot, string $memo, ?int $userId = null): GdprPolicyVersion
@@ -170,8 +175,8 @@ class GdprPolicyVersionService
      *
      * 동등 (변경 없음): NonMaterial 반환 (publish 호출자에서 publish 생략 결정)
      *
-     * @param array $oldSnapshot 이전 settings snapshot (없으면 빈 배열)
-     * @param array $newSnapshot 새 settings snapshot
+     * @param  array  $oldSnapshot  이전 settings snapshot (없으면 빈 배열)
+     * @param  array  $newSnapshot  새 settings snapshot
      * @return GdprPolicyChangeType Material 또는 NonMaterial
      */
     public function detectChangeType(array $oldSnapshot, array $newSnapshot): GdprPolicyChangeType
@@ -199,7 +204,7 @@ class GdprPolicyVersionService
     /**
      * cookie_categories 의 key 집합을 정렬된 배열로 반환합니다.
      *
-     * @param array $snapshot
+     * @param  array  $snapshot
      * @return array<int, string>
      */
     private function extractCategoryKeys(array $snapshot): array
@@ -225,7 +230,7 @@ class GdprPolicyVersionService
     /**
      * cookie_categories 의 key → description 매핑을 반환합니다 (정렬 보장).
      *
-     * @param array $snapshot
+     * @param  array  $snapshot
      * @return array<string, mixed>
      */
     private function extractCategoryDescriptions(array $snapshot): array

@@ -1,0 +1,21 @@
+feature: 1.2.0 업그레이드 — 표시 방식을 기기별 두 칸(PC·모바일)으로 나누기
+
+description: |
+  1.1.x 는 표시 방식 한 칸(`display_mode`: popup·layer)이었다. 1.2.0 은 PC(`display_mode_pc`: popup·layer·inline,
+  기본 layer)와 모바일(`display_mode_mobile`: inline·fullscreen, 기본 inline)로 나눈다. 업그레이드
+  스텝이 저장된 popup·layer 를 PC 칸으로 옮기고 모바일은 inline 으로 두며 옛 키를 지운다. 이미 나뉜 값은 보존하고,
+  옛 키가 없으면(저장값 없음) 파일을 건드리지 않아 조회가 기본값으로 폴백한다.
+
+axes:
+  stored: [popup_or_layer, unknown_value, already_split, no_legacy_key, missing_or_malformed]
+
+effects:
+  - legacy_display_mode_moves_to_pc                  # popup·layer → display_mode_pc
+  - mobile_display_mode_set_to_inline                # display_mode_mobile 없으면 inline
+  - legacy_display_mode_key_removed                  # 옛 display_mode 키 삭제
+  - display_mode_split_is_idempotent                 # 재실행해도 같은 결과, 기존 기기별 값 보존
+  - missing_display_mode_falls_back_to_defaults      # 옛 키 없으면 쓰지 않음(기본값 폴백)
+  - display_mode_split_skips_missing_or_malformed_file # 파일 없음·JSON 깨짐 skip
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/tests/Unit/Upgrades/SplitDisplayModeByDeviceTest.php

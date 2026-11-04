@@ -182,7 +182,7 @@
 ### scripts - 외부 스크립트 로드
 
 ```html
-<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
+<script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script" data-if="{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' &amp;&amp; p.status === 'active')}}"/>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -191,7 +191,7 @@
 {
   "scripts": [
     {
-      "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+      "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
       "id": "daum_postcode_script",
       "if": "{{_global.installedPlugins?.find(p => p.identifier === 'sirsoft-daum_postcode' && p.status === 'active')}}"
     }

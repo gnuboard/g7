@@ -1340,6 +1340,37 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 - 정적 검사 `state-contract-write-ownership` 이 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
   규칙은 [레이아웃 확장 — 조각의 전역 상태 키 접두 규칙](layout-extensions.md#조각의-전역-상태-키-접두-규칙)입니다.
 
+### 최근 검색어 범위 (search_scopes)
+
+검색창 「최근 검색어」는 **검색 범위**마다 따로 쌓입니다(코어 7.1.5). 코어 통합검색은 `core.site` 이고, 자기 검색창을 가진 모듈·플러그인은
+매니페스트(`module.json`·`plugin.json`)에 범위를 선언합니다. 템플릿은 선언하지 않습니다.
+
+```json
+{
+    "search_scopes": {
+        "products": {
+            "label": "sirsoft-ecommerce::messages.search_history.scope_products",
+            "max_count": 10,
+            "retention_days": 0
+        }
+    }
+}
+```
+
+| 필드 | 의미 |
+| --- | --- |
+| 키 | 확장 안의 이름(`/^[a-z][a-z0-9_-]{0,49}$/`). 코어가 `{식별자}.` 를 붙여 범위 id(`sirsoft-ecommerce.products`)를 만든다 — 남의 범위를 주장할 수 없다 |
+| `label` | 관리자 화면에 보일 범위 이름. 번역 키 문자열(`{식별자}::파일.키` — 일본어 언어팩까지 번역된다) 또는 다국어 맵(`{"ko": "…", "en": "…"}`) |
+| `max_count` | 기본 보관 개수(1~50, 생략하면 10) |
+| `retention_days` | 기본 보관 기한(일, 0 = 기한 없음, 생략하면 0). 0 보다 크면 설치만으로 보유기간 작업이 지우기 시작하므로 꼭 필요할 때만 적는다 |
+
+- 형식이 틀린 항목은 버리고 설치·활성화 결과에 경고(`search_scopes`)로 알립니다. 설치는 막지 않습니다.
+- 운영자는 환경설정 > 개인정보 「최근 검색어」 카드에서 범위마다 보관 개수·보관 기한을 고칩니다(설정이 선언값보다 우선).
+- 확장이 꺼지면 그 범위는 사라집니다 — 서버 API 가 그 범위의 기록을 422 로 거부하고, 엔진은 조용히 건너뜁니다. 운영자가 고친 값은 보존됩니다.
+- 검색창 쪽은 [G7Core.searchHistory](../frontend/g7core-api.md#최근-검색어-g7coresearchhistory) 를 씁니다 — 레이아웃은 검색 이동 앞에
+  `<record-search-keyword scope="sirsoft-ecommerce.products" keyword="{{…}}"/>`, 컴포넌트는 `G7Core.useSearchHistory(scope)`.
+- PHP 에서는 `getSearchScopes()`(정규화된 선언)와 `App\Support\SearchScopes::keys()`(지금 선언된 범위 전체)로 읽습니다.
+
 ### 코어 비공개 내부를 쓰지 않는다
 
 확장의 브라우저 코드는 코어의 **공개 API** 만 씁니다. 엔진 내부 구조는 예고 없이 바뀌고, 그때 확장은 오류 없이 조용히 다르게 동작합니다.

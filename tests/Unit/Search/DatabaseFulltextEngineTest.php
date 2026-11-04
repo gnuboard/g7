@@ -22,6 +22,11 @@ class DatabaseFulltextEngineTest extends TestCase
 {
     private DatabaseFulltextEngine $engine;
 
+    /**
+     * 테스트마다 엔진을 새로 만들고 픽스처 테이블의 FULLTEXT 인덱스 카탈로그를 시드합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +40,11 @@ class DatabaseFulltextEngineTest extends TestCase
         ]);
     }
 
+    /**
+     * 시드한 인덱스 카탈로그와 경고 기록을 비워 다음 테스트로 정적 캐시가 새지 않게 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         DatabaseFulltextEngine::forgetFulltextIndexCatalog();
@@ -44,6 +54,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * update()가 no-op으로 동작하는지 테스트합니다.
+     *
+     * @scenario entry_point=index_sync
+     *
+     * @effects scout_update_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_update_is_noop(): void
     {
@@ -56,6 +72,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * delete()가 no-op으로 동작하는지 테스트합니다.
+     *
+     * @scenario entry_point=index_sync
+     *
+     * @effects scout_delete_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_is_noop(): void
     {
@@ -67,6 +89,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * flush()가 no-op으로 동작하는지 테스트합니다.
+     *
+     * @scenario entry_point=index_sync
+     *
+     * @effects scout_flush_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_flush_is_noop(): void
     {
@@ -78,6 +106,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * createIndex()가 no-op으로 동작하는지 테스트합니다.
+     *
+     * @scenario entry_point=index_sync
+     *
+     * @effects scout_create_index_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_create_index_is_noop(): void
     {
@@ -87,6 +121,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * deleteIndex()가 no-op으로 동작하는지 테스트합니다.
+     *
+     * @scenario entry_point=index_sync
+     *
+     * @effects scout_delete_index_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_index_is_noop(): void
     {
@@ -96,6 +136,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * 빈 검색어로 검색 시 빈 결과를 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=search_guard
+     *
+     * @effects blank_keyword_returns_empty_result
+     *
+     * @return void 반환값 없음
      */
     public function test_search_returns_empty_for_blank_query(): void
     {
@@ -110,6 +156,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * 빈 검색어로 검색 시 getTotalCount가 0을 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=result_mapping
+     *
+     * @effects total_count_reads_result_total
+     *
+     * @return void 반환값 없음
      */
     public function test_get_total_count_returns_zero_for_empty_results(): void
     {
@@ -120,6 +172,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * getTotalCount가 올바른 값을 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=result_mapping
+     *
+     * @effects total_count_reads_result_total
+     *
+     * @return void 반환값 없음
      */
     public function test_get_total_count_returns_correct_value(): void
     {
@@ -130,6 +188,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * mapIds가 빈 결과에 대해 빈 컬렉션을 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=result_mapping
+     *
+     * @effects null_query_maps_to_empty_key_collection
+     *
+     * @return void 반환값 없음
      */
     public function test_map_ids_returns_empty_collection_for_null_query(): void
     {
@@ -143,6 +207,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * map()이 빈 결과에 대해 빈 컬렉션을 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=result_mapping
+     *
+     * @effects null_query_maps_to_empty_model_collection
+     *
+     * @return void 반환값 없음
      */
     public function test_map_returns_empty_collection_for_null_query(): void
     {
@@ -158,6 +228,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * lazyMap()이 빈 결과에 대해 빈 LazyCollection을 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=result_mapping
+     *
+     * @effects null_query_maps_to_empty_lazy_collection
+     *
+     * @return void 반환값 없음
      */
     public function test_lazy_map_returns_empty_for_null_query(): void
     {
@@ -173,6 +249,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * FulltextSearchable 미구현 모델로 검색 시 빈 결과를 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=search_guard
+     *
+     * @effects non_fulltext_searchable_model_returns_empty_result
+     *
+     * @return void 반환값 없음
      */
     public function test_search_returns_empty_for_non_fulltext_searchable_model(): void
     {
@@ -187,6 +269,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * searchableColumns()가 빈 배열인 모델로 검색 시 빈 결과를 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=search_guard
+     *
+     * @effects empty_searchable_columns_returns_empty_result
+     *
+     * @return void 반환값 없음
      */
     public function test_search_returns_empty_for_empty_searchable_columns(): void
     {
@@ -201,6 +289,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * supportsFulltext()가 MySQL/MariaDB에서 true를 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=dbms_detection
+     *
+     * @effects fulltext_support_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_supports_fulltext_returns_true_for_mysql(): void
     {
@@ -217,6 +311,12 @@ class DatabaseFulltextEngineTest extends TestCase
     /**
      * supportsNgramParser()가 MySQL에서만 true를 반환하는지 테스트합니다.
      * MariaDB를 mysql 드라이버로 연결한 경우에도 false를 반환해야 합니다.
+     *
+     * @scenario entry_point=dbms_detection
+     *
+     * @effects ngram_parser_only_on_real_mysql
+     *
+     * @return void 반환값 없음
      */
     public function test_supports_ngram_parser_returns_true_only_for_mysql(): void
     {
@@ -238,6 +338,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * isMariaDb()가 mariadb 드라이버에서 true를 반환하는지 테스트합니다.
+     *
+     * @scenario entry_point=dbms_detection
+     *
+     * @effects mariadb_detected_by_driver_or_server_version
+     *
+     * @return void 반환값 없음
      */
     public function test_is_mariadb_detects_mariadb_driver(): void
     {
@@ -257,6 +363,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * whereFulltext()가 FULLTEXT 지원 DBMS에서 MATCH...AGAINST를 생성하는지 테스트합니다.
+     *
+     * @scenario entry_point=where_fulltext
+     *
+     * @effects where_fulltext_assembles_match_against
+     *
+     * @return void 반환값 없음
      */
     public function test_where_fulltext_generates_match_against_on_mysql(): void
     {
@@ -277,6 +389,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * whereFulltext()가 OR 조건을 올바르게 생성하는지 테스트합니다.
+     *
+     * @scenario entry_point=where_fulltext
+     *
+     * @effects where_fulltext_or_boolean_assembles_match_against
+     *
+     * @return void 반환값 없음
      */
     public function test_where_fulltext_generates_or_condition(): void
     {
@@ -297,6 +415,14 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * whereFulltext()가 FULLTEXT 미지원 DBMS에서 LIKE fallback을 생성하는지 테스트합니다.
+     *
+     * FULLTEXT 지원 DBMS(MySQL·MariaDB)로 도는 시험 환경에서는 건너뛴다.
+     *
+     * @scenario entry_point=where_fulltext
+     *
+     * @effects where_fulltext_falls_back_to_like_without_fulltext
+     *
+     * @return void 반환값 없음
      */
     public function test_where_fulltext_like_fallback_on_non_fulltext_dbms(): void
     {
@@ -317,6 +443,14 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * addFulltextIndex()가 FULLTEXT 미지원 DBMS에서 예외 없이 스킵하는지 테스트합니다.
+     *
+     * FULLTEXT 지원 DBMS(MySQL·MariaDB)로 도는 시험 환경에서는 건너뛴다.
+     *
+     * @scenario entry_point=index_creation
+     *
+     * @effects add_fulltext_index_skips_without_fulltext
+     *
+     * @return void 반환값 없음
      */
     public function test_add_fulltext_index_skips_on_non_fulltext_dbms(): void
     {
@@ -333,6 +467,10 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * sanitizeBooleanModeKeyword()가 BOOLEAN MODE 연산자를 제거하고 phrase로 변환하는지 테스트합니다.
+     *
+     * @effects plain_keyword_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_sanitize_boolean_mode_keyword_wraps_tokens_in_phrases(): void
     {
@@ -344,6 +482,10 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * sanitizeBooleanModeKeyword()가 각 BOOLEAN MODE 연산자를 제거하는지 테스트합니다.
+     *
+     * @effects no_500_on_special_chars
+     *
+     * @return void 반환값 없음
      */
     public function test_sanitize_boolean_mode_keyword_strips_operators(): void
     {
@@ -361,7 +503,35 @@ class DatabaseFulltextEngineTest extends TestCase
     }
 
     /**
+     * sanitizeBooleanModeKeyword()가 토큰 하나를 MySQL 구문 낱말 한도 안으로 자르는지 테스트합니다.
+     *
+     * ngram 파서는 공백 없는 토큰을 글자 단위 n-gram 낱말로 쪼개고, InnoDB 는 따옴표 구문 하나에
+     * 낱말이 128개를 넘으면 오류(191 Too many words in a FTS phrase)를 냅니다. 한글 130자 검색이
+     * 목록 화면을 500 으로 만들던 결함의 회귀 잠금입니다.
+     *
+     * @effects long_token_capped_to_phrase_word_limit
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sanitize_boolean_mode_keyword_caps_each_phrase_to_phrase_word_limit(): void
+    {
+        $long = str_repeat('가', 130);
+        $this->assertSame('"'.str_repeat('가', 128).'"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword($long));
+
+        // 한도 이하 토큰은 그대로, 여러 토큰은 각각 자른다
+        $this->assertSame('"'.str_repeat('나', 128).'"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword(str_repeat('나', 128)));
+        $this->assertSame(
+            '"'.str_repeat('a', 128).'" "짧음"',
+            DatabaseFulltextEngine::sanitizeBooleanModeKeyword(str_repeat('a', 200).' 짧음')
+        );
+    }
+
+    /**
      * sanitizeBooleanModeKeyword()가 연산자만 입력 시 빈 문자열을 반환하는지 테스트합니다.
+     *
+     * @effects operators_only_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_sanitize_boolean_mode_keyword_returns_empty_for_operators_only(): void
     {
@@ -373,6 +543,10 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * sanitizeBooleanModeKeyword()가 제어문자를 제거하는지 테스트합니다.
+     *
+     * @effects control_chars_stripped
+     *
+     * @return void 반환값 없음
      */
     public function test_sanitize_boolean_mode_keyword_removes_control_chars(): void
     {
@@ -382,6 +556,12 @@ class DatabaseFulltextEngineTest extends TestCase
 
     /**
      * whereFulltext()가 특수문자 입력 시 정제된 안전한 phrase를 바인딩하는지 테스트합니다.
+     *
+     * @scenario entry_point=where_fulltext
+     *
+     * @effects sanitized_phrase_bound
+     *
+     * @return void 반환값 없음
      */
     public function test_where_fulltext_binds_sanitized_keyword(): void
     {
@@ -408,6 +588,12 @@ class DatabaseFulltextEngineTest extends TestCase
      * 조건이 어떤 문자열로 렌더되는지(`1 = 0` / `0 = 1`)는 빌더 구현 사항이므로 단언하지
      * 않는다. 여기서 고정할 것은 **매칭을 시도하지 않고(AGAINST 없음) 결과가 비어야 한다**
      * 는 동작이다. 리터럴을 박아 두면 빈 whereIn 처럼 동등한 구현으로 바꿀 때 깨진다.
+     *
+     * @scenario entry_point=where_fulltext
+     *
+     * @effects operators_only_returns_empty, where_fulltext_operators_only_adds_constant_false
+     *
+     * @return void 반환값 없음
      */
     public function test_where_fulltext_uses_false_condition_for_operators_only(): void
     {
@@ -438,7 +624,7 @@ class DatabaseFulltextEngineTest extends TestCase
     /**
      * Searchable + FulltextSearchable 모델을 생성합니다.
      *
-     * @return Model&FulltextSearchable
+     * @return Model&FulltextSearchable test_table 의 name·description 을 검색 대상으로 선언한 익명 모델
      */
     private function createSearchableModel(): Model
     {
@@ -448,11 +634,21 @@ class DatabaseFulltextEngineTest extends TestCase
 
             protected $table = 'test_table';
 
+            /**
+             * FULLTEXT 검색 대상 컬럼을 반환합니다.
+             *
+             * @return array<int, string> 검색 대상 컬럼명 (name, description)
+             */
             public function searchableColumns(): array
             {
                 return ['name', 'description'];
             }
 
+            /**
+             * 컬럼별 스코어 가중치를 반환합니다.
+             *
+             * @return array<string, float> 컬럼명 => 가중치 (name 2.0, description 1.0)
+             */
             public function searchableWeights(): array
             {
                 return ['name' => 2.0, 'description' => 1.0];
@@ -463,7 +659,7 @@ class DatabaseFulltextEngineTest extends TestCase
     /**
      * 빈 컬럼을 가진 FulltextSearchable 모델을 생성합니다.
      *
-     * @return Model&FulltextSearchable
+     * @return Model&FulltextSearchable 검색 대상 컬럼·가중치가 모두 빈 익명 모델
      */
     private function createSearchableModelWithEmptyColumns(): Model
     {
@@ -473,11 +669,21 @@ class DatabaseFulltextEngineTest extends TestCase
 
             protected $table = 'test_table';
 
+            /**
+             * 검색 대상 컬럼이 없음을 반환합니다 (엔진의 빈 컬럼 가드 검증용).
+             *
+             * @return array<int, string> 빈 배열
+             */
             public function searchableColumns(): array
             {
                 return [];
             }
 
+            /**
+             * 가중치가 없음을 반환합니다.
+             *
+             * @return array<string, float> 빈 배열
+             */
             public function searchableWeights(): array
             {
                 return [];
@@ -495,6 +701,11 @@ class NonFulltextModel extends Model
 
     protected $table = 'test_non_fulltext';
 
+    /**
+     * Scout 색인용 배열을 반환합니다 (FULLTEXT 엔진은 이 값을 쓰지 않는다).
+     *
+     * @return array<string, string> 고정 색인 데이터
+     */
     public function toSearchableArray(): array
     {
         return ['title' => 'test'];

@@ -5,6 +5,77 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.88.0] - 2026-11-04
+
+### Added
+
+- 관리자 화면도 브라우저 탭 제목을 화면마다 바꾼다 — 「{화면 제목} - {사이트 이름} 관리자」(영어 `Admin`, 일본어 `管理画面`). 화면 제목은 레이아웃이 선언한 `meta.title`(식·`$t:` 허용), 없으면 라우트 제목이다. 검색엔진 규칙(SEO 선언·확장 제목 틀·코어 접미사 설정·사이트 첫 화면 규칙)은 관리자에 쓰지 않는다. 사이트 이름과 언어별 접미사는 관리자 셸이 `G7Config.seoTitle`(`SeoTitleRuleExporter::exportForAdmin`)로 넘긴다 — 값이 없는 옛 서버에서는 종전처럼 셸 제목을 둔다. 컨트롤러·화면 세대 판정(이동 시작 때 라우트 제목, 앞 화면의 늦은 데이터 무시)은 사용자 화면과 같다(`DocumentTitleOptions.mode`·`TitleComputeDeps.mode`).
+
+배경: engine-v1.86.0 이 탭 제목 컨트롤러를 사용자 템플릿에서만 켜, 관리자 화면은 어느 화면에서나 셸 제목 「{앱 이름} - Admin」 그대로였다(탭 여러 개를 열면 구분되지 않음). 발생 시점: engine-v1.86.0 설계 범위 밖(미구현). 회귀 잠금: `TemplateApp.documentTitle.test.ts` 관리자 4건 — 관리자 켜기 제거 변이 3 red, 관리자 후보 갈래 제거 변이 2 red.
+
+## [engine-v1.87.1] - 2026-11-04
+
+### Changed
+
+- 브라우저 탭 제목 후보에 레이아웃 편집기 「검색 제목」(`meta.seo.title`)을 더한다 — 순서: 리소스 `meta_title` → 페이지 `seo_meta.title` → **`meta.seo.title`** → 확장 제목 틀(`_seo`) → `meta.seo.og.title` → 라우트 제목. 서버 `SeoMetaResolver::resolveLayoutSeoValue`(제목·설명)와 같은 자리다. 식(`{{…}}`)·다국어 배열을 받고 식 안에서 `_seo` 를 읽는다(`og.title` 과 같은 평가 경로를 `layoutValueTier` 로 함께 쓴다).
+
+배경: 편집기에서 저장한 「검색 제목」이 어디에서도 읽히지 않았다(공유 미리보기만). engine-v1.86.0 제목 규칙 도입 때부터 빠져 있었다. 번들 레이아웃·로컬·개발 서버 DB 에 이 값을 쓴 레이아웃은 0건이라 지금 화면 제목은 바뀌지 않는다.
+
+회귀 잠금: `routing/__tests__/DocumentTitle.parity.test.ts` 「레이아웃 편집기 「검색 제목」」 3건(고치기 전 2 실패 — og 제목·라우트 제목이 나옴), 서버 짝 `tests/Unit/Seo/SeoMetaResolverTest.php` 3건.
+
+## [engine-v1.87.0] - 2026-11-04
+
+### Added
+
+- 최근 검색어 런타임(`searchHistory/`) — 검색창에 제출한 검색어를 검색 범위(scope)별로 보관한다. 범위는 서버가 인라인한 `G7Config.searchScopes`(코어 `core.site` + 활성 확장 manifest `search_scopes`, 범위 → `{max_count}`)에 있는 것만 다루고, 없는 범위(선언 안 됨·확장 꺼짐·기능 꺼짐)는 조용히 건너뛴다. 회원은 서버(`/api/me/search-history`), 비회원은 localStorage `g7_search_history`(`{v:1, autoSave, items:{범위:[{k, t}]}}`, 최신순·범위별 보관 개수로 자름 — 쿠키 동의 플러그인이 코어 필수 키로 받는다). 같은 검색어(대소문자 무시)는 하나로 맨 앞에 올린다. 검색어는 연속 공백을 하나로·앞뒤 공백 제거·100자.
+- 로그인 병합 — 비회원 → 회원이 되면(`authStateChange`, 부팅 때 이미 회원이어도) 브라우저 목록을 최신순 최대 200건으로 `POST /api/me/search-history/merge` 에 보내고 성공하면 브라우저 칸을 지운다(실패하면 남겨 다음 로그인 때 다시 보낸다). 인증이 바뀌면 회원 캐시를 버리고, 인증 세대가 바뀐 뒤 도착한 앞 계정의 조회 결과는 캐시에 넣지 않는다. 회원 데이터가 바뀌면(기록·삭제·전체 삭제·자동 저장 변경·병합 성공) 데이터 변경 세대를 올리고 진행 중 조회를 떼어 낸다 — 그 전에 출발한 목록 응답은 캐시·자동 저장 값에 쓰지 않고 최신 상태를 다시 받는다(조회 중 자동 저장을 끄면 늦게 온 옛 목록이 목록을 다시 보이게 하던 문제, 조회 중 기록한 검색어가 옛 목록에 덮여 빠지던 문제).
+- 내장 핸들러 `recordSearchKeyword`(`params {scope, keyword}`) — 검색 이동 앞에 둔다. 범위 미선언·빈 검색어·자동 저장 꺼짐·관리자 화면(런타임 없음)이면 아무것도 하지 않고, 실패해도 던지지 않는다(검색 이동을 막지 않음). 미리보기(레이아웃 편집기)에서는 실행하지 않는다(`PREVIEW_SUPPRESSED_HANDLERS`). 편집기 미리보기에서는 핸들러만이 아니라 런타임 쓰기 전부(파사드·훅의 record·remove·clear·setAutoSave, 로그인·부팅 병합)를 하지 않고 false 를 돌려준다 — 미리보기 모드는 런타임 설치 뒤에 켜지므로 쓰기마다 호출 시점에 디스패처 미리보기 모드·`_global.__isPreview`·시스템 미리보기 경로(`…/preview/{token}`)로 판정한다. 읽기(list·getSnapshot)는 그대로다. 주소에 직접 넣은 검색어는 이 경로를 거치지 않으므로 기록되지 않는다. 레이아웃 편집기 동작 레시피 「최근 검색어에 기록」.
+- 파사드 `G7Core.searchHistory`(동결) — `isEnabled(scope)` · `getSnapshot(scope)` · `list(scope, {force?})` · `record(scope, keyword)` · `remove(scope, item|id|keyword)` · `clear(scope?)` · `getAutoSave()` · `setAutoSave(on)` · `subscribe(listener)`(해제 함수 반환). 변경 이벤트 `searchHistory:changed`(`{scope, reason}` — 범위 전체면 scope null, reason `record|remove|clear|autoSave|auth|merge|load`).
+- 훅 `G7Core.useSearchHistory(scope)` → `{items:[{id, keyword, searchedAt}], autoSave, enabled, loading, maxCount, record, remove, clear, setAutoSave, refresh}`. 같은 범위를 쓰는 검색창끼리 목록을 공유하고, 늦게 끝난 조회가 그 사이 바뀐 상태(기록·자동 저장 끄기)를 옛 값으로 덮지 않게 차례 번호로 거른다. 관리자 화면에서는 `enabled: false`.
+- 「자동 저장 끄기」 — 기록을 멈추고 목록을 감춘다(저장된 검색어는 남김). 범위별이 아니라 사람 단위 하나(회원 `users.search_history_auto_save`, 비회원 브라우저 칸).
+
+배경: 검색창에 최근 검색어가 없었다(새 기능, 코어 7.1.5). 화면(검색창 펼침 목록)은 템플릿이 이 훅으로 그린다.
+
+회귀 잠금: `searchHistory/__tests__/SearchHistoryRuntime.test.ts`(12 — 비회원 정규화·중복·보관 개수, 미선언 범위, 자동 저장 끄기, 삭제, 로그인 병합·실패 보존·부팅 병합, 회원 기록·캐시, 인증 세대 경쟁, 로그아웃) · `searchHistory/__tests__/searchHistoryMemberStaleList.test.tsx`(2 — 실 훅 렌더: 회원 목록 GET 을 붙잡은 채 자동 저장 끄기·검색어 기록 뒤 옛 응답 해제) · `searchHistory/__tests__/searchHistoryPreviewGuard.test.tsx`(3 — 실 ActionDispatcher 미리보기 모드·기본 의존성: 비회원 파사드·훅·핸들러·자동 저장, 회원 기록·삭제·전체 삭제·자동 저장·로그인 병합, 미리보기 경로 부팅 병합 — 수정 전 3 red) · `searchHistory/__tests__/searchHistoryFacadeAndHandler.test.tsx`(3 — 실 ActionDispatcher 의 `recordSearchKeyword` 바인딩 해석·같은 범위 검색창 목록 공유, 런타임 없는 화면, 파사드 동결·구독 해제·자동 저장 끄기가 훅 목록을 감춤). 훅 차례 번호 가드 제거 변이에서 파사드 시험 2 red, 데이터 변경 세대 가드 제거 변이(와 가드 전 구현)에서 회원 경쟁 시험 2 red(자동 저장 끈 뒤 `autoSave` true, 기록한 검색어 빠짐), 인증 세대 가드 제거 변이에서 경쟁 시험 red. 매니페스트 `tests/scenarios/search-history.yaml`
+
+## [engine-v1.86.0] - 2026-11-04
+
+### Added
+
+- 브라우저 탭 제목(`routing/DocumentTitle.ts`) — 사용자 템플릿에서 `document.title` 을 검색엔진(봇) `<title>` 과 같은 규칙으로 정한다. 후보 순서: 리소스 `meta_title` → 페이지 `seo_meta.title` → 확장 제목 틀(`_seo.{page_type}.title` — `meta.seo.extensions` 의 `seoVariables()`·설정 틀을 서버 `SeoRenderer::resolveSeoContext` 와 같게 계산, 하위호환 모듈 틀 포함) → 평가한 `meta.seo.og.title` → 라우트 `meta.title`. 사이트 이름만 되풀이하는 후보는 건너뛰고, 사이트 이름은 코어 접미사(`seo.meta_title_suffix`, 비면 ` - {site_name}`, `{site_name}` 치환)로만 붙인다. 제목이 이미 접미사나 「구분자(` - `·` | `·` · `) + 사이트 이름」으로 끝나면 다시 붙이지 않는다. 사이트 첫 화면(`/`)은 사이트 이름만. 계산은 화면이 가진 데이터(`meta.seo.data_sources` 의 소스만, 레이아웃 순서)와 부팅 값 `G7Config.seoTitle`(서버 `SeoTitleRuleExporter`)로만 한다 — 이동마다 서버에 묻지 않는다. 서버 규칙 원본 `app/Seo/SeoTitleRule.php` 와 판정 사례 파일 `tests/fixtures/seo/title-rule-cases.json` 을 함께 쓴다.
+- 갱신 시점 — `handleRouteChange` 시작 즉시 라우트 제목(+접미사)을 쓰고 앞 화면 레이아웃과의 연결을 끊는다(`beginRoute`). 새 화면을 그린 뒤 그 레이아웃 객체에 연결하고(`bind`), `updateTemplateData` 끝에서 **연결한 레이아웃 객체일 때만** 다시 계산한다(`recompute` — 앞 화면의 늦은 데이터가 새 화면 제목을 덮지 않는다). 언어 전환은 재진입 경로로 다시 계산한다. 경로 없음(404)은 템플릿 `/404` 라우트 제목, 레이아웃 로드 실패는 「페이지 로딩 실패」(+접미사). 값이 바뀔 때만 쓴다.
+- 대상 — 사용자 템플릿만(관리자 템플릿은 종전대로 셸 제목). 레이아웃 편집기 경로(`/admin/layout-editor/*`)와 편집기 미리보기(`__preview__`)에서는 쓰지 않는다. `toggle_setting`(봇에게 SEO 화면을 줄지)은 보지 않는다. `G7Config.seoTitle` 이 없는 옛 서버에서는 켜지 않는다.
+
+배경: 사람 방문자의 탭 제목은 셸의 `config('app.name')`(사이트 이름) 그대로였고 봇만 SEO 제목을 받았다 — 엔진에 `document.title` 을 쓰는 코드가 처음부터 없었다. 함께 바꾼 서버 쪽(코어 7.1.5): 봇 `<title>` 도 같은 규칙(`SeoTitleRule`)으로 정해, 접미사를 비운 사이트에도 기본 접미사 ` - {사이트 이름}` 이 붙는다.
+
+회귀 잠금: `routing/__tests__/DocumentTitle.parity.test.ts`(37 — 서버 `tests/Unit/Seo/SeoTitleRuleParityTest.php` 와 같은 사례 파일) · `__tests__/TemplateApp.documentTitle.test.ts`(8 — 실 TemplateApp 화면 처리 + 실 renderTemplate·updateTemplateData: 이동 시작 라우트 제목·데이터 도착·앞 화면 늦은 데이터·언어 전환·첫 화면·404·편집기·관리자) — 수정 전 엔진(HEAD 작업 사본)에서 8 중 6 red(제목이 셸 제목 그대로), 「연결 끊기」 제거 변이에서 늦은 데이터 시험 red(「늦은 앞 화면 상품 - …」), 편집기 억제 제거 변이에서 편집기 시험 red. 매니페스트 `tests/scenarios/browser-tab-title-rule.yaml`
+
+## [engine-v1.85.0] - 2026-11-03
+
+### Added
+
+- 뒤로/앞으로 가기·새로고침 스크롤 위치 복원(`routing/ScrollMemory.ts`) — 브라우저 기본 복원(`history.scrollRestoration = 'auto'`)을 끄고 히스토리 항목(Navigation API `currentEntry.key`, 없으면 주소)마다 창·내부 스크롤 영역 위치를 기억했다가, 뒤로/앞으로 가기로 돌아온 화면을 다시 그린 뒤 문서가 그 위치를 담을 만큼 자라면 되돌린다. 높이가 바뀌거나 위치가 밀리면 다시 맞추고, **이 화면의 데이터를 다 받은 뒤** 600ms 동안 변화가 없거나 최대 대기(기본 5초)가 지나거나 사용자가 휠·터치·키·포인터로 만지면 끝낸다. 새 화면으로 가는 이동(navigate)은 종전대로 navigate `scroll`(기본 맨 위)을 따른다. 새로고침 복원은 sessionStorage `g7_scroll_positions`(sirsoft-gdpr 1.1.4 필수 저장 허용목록 등재).
+- 설정 `scroll_restoration` — `mode`(`restore`·`top`·`none`·`#선택자`) · `on_reload` · `wait`(`height` 높이 대기 / `data` 데이터를 다 받은 뒤) · `timeout_ms` · `containers`(함께 기억할 내부 스크롤 영역) · `snapshot`(`enabled`·`ttl_seconds`·`revalidate`·`item_key`·`state`). 엔진 기본값 → template.json(`/api/templates/{id}/config.json`) → 베이스 레이아웃 meta → 화면 meta(서버가 깊게 병합) 순으로 적은 키만 덮어쓴다(`mergeScrollRestorationConfig`).
+- navigate 액션 `returnScroll` — 이 이동으로 **떠나는 화면**에 뒤로 가기로 돌아올 때의 동작. 이탈 가드에서 머무르기를 고르면 붙지 않는다(`runWithReturnScroll` 동기 범위).
+- 먼저 스크롤을 가져간 쪽을 따른다 — 뒤로/앞으로 가기·새로고침 표시부터 복원 시작 전까지 사용자 입력(휠·터치·키·포인터)이나 화면의 스크롤 액션(`scrollIntoView`, `navigate` 의 `scroll` — `notifyScreenScroll`)이 있으면 복원하지 않고, 복원 중 스크롤 액션은 복원을 멈춘다. `mode` 는 `restore`·`top`·`none`·`#`·`.`·`[` 로 시작하는 선택자만 받고, 그 밖의 값은 경고와 함께 버린다. 스냅샷 유효 시간은 처음 기억한 때부터 잰다(되살려 오가도 늘어나지 않음).
+- 더보기 스냅샷(`template-engine/dataSourceSnapshot.ts`) — `appendDataSource`(`G7Core.dataSource.updateData` append·prepend)로 늘어난 데이터소스를 화면을 떠날 때 그 항목 키로 기억했다가(최근 10항목, 메모리), 돌아오면 유효 시간(기본 600초) 안이고 화면 언어·계정이 같고 진입 때 자동으로 받는 소스(`auto_fetch !== false`)일 때 그 데이터로 먼저 그린다. 다시 받은 첫 묶음은 `item_key`(기본 `id`)로 대조해 바뀐 항목을 갈아끼우고, 첫 묶음에서 스냅샷과 처음 겹치는 항목보다 앞의 새 항목은 앞에 붙인다. 다시 받기 실패·대체 값(`kept`)이면 스냅샷을 버린다. 심는 시점은 화면 초기화(init_global·init_local·init_actions) 뒤 첫 렌더 직전.
+- `snapshot.state` — 스냅샷과 함께 기억했다가 되돌릴 진행 상태 경로(`_global.…`·`_local.…`). 더보기의 다음 쪽 번호처럼 목록 길이와 맞아야 하는 값을 화면 초기화 뒤 첫 렌더 직전에 되돌린다(공유 키를 다른 화면이 1로 되돌리면 다음 더보기가 받은 쪽을 다시 받아 행이 중복됐다).
+- 레이아웃 편집기 — 페이지 설정 [스크롤] 탭(`ScrollRestorationForm` — 칸별 상속 출처 표시, 베이스 레이아웃에서 고치면 템플릿 기본값), 「다른 페이지로 이동」 액션 편집에 「돌아올 때 스크롤」·「스크롤 애니메이션」·「이탈 확인 묻지 않기」 칸(레시피 입력·저장 틀 양쪽). 편집 모드에서는 스크롤 기억·복원을 끈다.
+
+### Changed
+
+- 페이지 설정이 meta 를 저장할 때 영속 meta 에는 이 화면이 직접 적은 `scroll_restoration` 만 남긴다(베이스에서 물려받은 값이 화면 값으로 굳지 않게).
+
+### Fixed
+
+- 모바일에서 홈을 내린 뒤 상품을 눌렀다가 뒤로 가면 맨 위로 가던 문제 — 돌아온 화면이 데이터를 다시 받느라 popstate 직후 짧아 브라우저 기본 복원이 실패했다(개발 서버 390×844 실측: 홈 2,742px → 상품 → 뒤로 = 0, 홈 높이 약 1초에 걸쳐 3,416 → 5,574px; 측정마다 결과가 달랐다). 수정 후 로컬 실측: 2,742px → 상품 → 뒤로 = 2,742px(눌렀던 카드 화면 위 300px 그대로, 0.4초), 연속 왕복 3,198 → 3,198, 관리자 상품 목록 본문 영역 2,000px → 수정 → 뒤로 = 2,000px, 동의 전 새로고침 1,700 → 1,700. 발생: 엔진에 스크롤 복원이 처음부터 없었다(브라우저 기본 동작 의존).
+- 「레이아웃 편집기에서 다른 페이지로 이동 동작을 열어 저장하면 `scrollBehavior`·`bypassLeaveGuard` 값이 사라지던」 문제 — 레시피 저장 틀에 없는 인자를 버렸다.
+- 레이아웃 편집기 페이지 설정 [기본 정보]·[검색엔진] 탭 저장이 병합본 meta 를 통째로 영속해 베이스 레이아웃의 SEO 가 화면 값으로 굳던 문제(기존 결함) — 서버 `mergeSeo` 와 같은 규칙으로 이 화면이 적은 키·베이스와 달라진 키만 남긴다(`page-settings/seoOwnValue.ts`). 실 편집기 저장 실측: 화면 `data_sources` 에 베이스 `boards`·`vars` 가 더해지지 않음.
+
+구현 중 실측으로 찾아 고친 결함(출시 전): 돌아온 직후 뼈대 화면이 이미 목표만큼 길면 그 위치에서 0.85초 만에 끝나고, 데이터가 와 위쪽이 바뀐 뒤 스크롤 앵커링이 위치를 4,501 로 옮겨 그 값이 다시 기억을 오염시켰다 → 데이터 준비 신호(`notifyScrollRestoreDataReady`) 전에는 끝내지 않는다. 사례 전수 대조(색인 389건, 위험 7)로 찾은 방어 — 스냅샷 init 뒤 주입(setState 사례 9) · 밀린 뒤로 가기에서 앞 화면 값이 스냅샷으로 오염되지 않게 심을 때 늘어남 표시(state-global 7·12) · `auto_fetch:false` 소스 제외(state-global 11) · 실패 시 스냅샷 폐기(state-global 8) · 대체 값·계정·언어 변경 시 폐기(cache 21) · 복원 시작 전 세대 검사. 편집 모드에서 끈 뒤 `history.scrollRestoration` 을 `auto` 로 되돌림. `returnScroll` 이 항목 기록에 남아, 같은 화면을 다음에 일반 링크로 떠났다 돌아와도 계속 맨 위로 가던 것 → 새 이동은 늘 덮어쓴다(뒤로/앞으로 가기로 떠날 때만 유지).
+
+회귀 잠금: `routing/__tests__/Router.scrollRestoration.test.ts`(18) · `__tests__/TemplateApp.scrollRestoration.test.ts`(10 — 실 TemplateApp·Router: 늦게 자라는 홈·뼈대가 이미 긴 화면·더보기 스냅샷·`snapshot.state`·대체 값·계정 변경·`wait:"data"`·설정 층) · `template-engine/__tests__/dataSourceSnapshot.test.ts`(7) — 수정 전 엔진(HEAD 작업 사본)에서 Router·TemplateApp 18 중 13 red, 뼈대 경우 red(4,658 ≠ 2,500) · 편집기 `ScrollRestorationForm.test.tsx`(15)·셸·왕복·레시피 · E2E `tests/Playwright/specs/scroll-restoration.spec.ts`(3) · 이커머스 `infinite-list-scroll-restoration.test.ts`(소스에서 기계 도출한 더보기 화면 선언) · 매니페스트 `tests/scenarios/client-router-scroll-restoration.yaml`
+
 ## [engine-v1.84.1] - 2026-10-31
 
 ### Fixed

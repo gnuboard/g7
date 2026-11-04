@@ -172,6 +172,7 @@ class BenchmarkProfileTest extends PureTestCase
         $this->assertSame([['route', 'uri']], BenchmarkAxis::Screen->requiredOptions());
         $this->assertSame([['callback']], BenchmarkAxis::Write->requiredOptions());
         $this->assertSame([['command']], BenchmarkAxis::Batch->requiredOptions());
+        $this->assertSame([['uri']], BenchmarkAxis::Boot->requiredOptions());
     }
 
     /**
@@ -186,7 +187,9 @@ class BenchmarkProfileTest extends PureTestCase
     #[Test]
     public function 축_값과_라벨이_정의된다(): void
     {
-        $this->assertSame(['list', 'screen', 'write', 'batch'], BenchmarkAxis::values());
+        $this->assertSame(['list', 'screen', 'write', 'batch', 'boot'], BenchmarkAxis::values());
+        // 부팅 축은 GET 요청만 새 프로세스로 처리하므로 데이터를 바꾸지 않는다
+        $this->assertFalse(BenchmarkAxis::Boot->mutatesByDefault());
 
         foreach (BenchmarkAxis::cases() as $axis) {
             $this->assertNotSame('', $axis->label());

@@ -577,4 +577,8 @@ return [
             'resubmit_done' => '再受付/特殊ケースの作成完了: :count 件',
         ],
     ],
+    // 最近の検索語の範囲名 (module.json search_scopes.posts.label)
+    'search_history' => [
+        'scope_posts' => '投稿検索',
+    ],
 ];

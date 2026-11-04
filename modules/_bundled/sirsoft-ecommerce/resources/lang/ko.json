@@ -458,7 +458,9 @@
             "saved_addresses": "저장된 배송지",
             "address_empty": "등록한 배송지가 없습니다.",
             "address_default": "기본",
-            "address_more": "외 {{count}}건은 배송지 관리에서 봅니다."
+            "address_more": "외 {{count}}건은 배송지 관리에서 봅니다.",
+            "search_history": "최근 상품 검색어",
+            "search_history_empty": "저장된 상품 검색어가 없습니다."
         },
         "claim": {
             "$partial": "partial/ko/admin/claim.json"

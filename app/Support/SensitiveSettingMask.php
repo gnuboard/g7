@@ -77,4 +77,42 @@ final class SensitiveSettingMask
 
         return $settings;
     }
+
+    /**
+     * 스키마의 sensitive 필드를 키째 제거한다 (카테고리형 중첩 스키마 포함).
+     *
+     * 설정 config 미러처럼 민감값을 아예 담으면 안 되는 경로가 쓴다 — 마스크도 남기지 않는다.
+     * 값을 복호화하기 전에 걸러도 결과가 같으므로 호출자는 복호화 없이 부를 수 있다(#860).
+     *
+     * @param  array<string, mixed>  $settings  설정 배열
+     * @param  array<string, mixed>  $schema  설정 스키마
+     * @return array<string, mixed> 민감 항목이 제거된 설정
+     */
+    public static function strip(array $settings, array $schema): array
+    {
+        foreach ($schema as $field => $config) {
+            if (! is_array($config)) {
+                continue;
+            }
+
+            if ($config['sensitive'] ?? false) {
+                unset($settings[$field]);
+
+                continue;
+            }
+
+            // 카테고리형 스키마 (category.field) 지원
+            if (! isset($settings[$field]) || ! is_array($settings[$field])) {
+                continue;
+            }
+
+            $nested = array_filter($config, 'is_array');
+
+            if ($nested !== []) {
+                $settings[$field] = self::strip($settings[$field], $nested);
+            }
+        }
+
+        return $settings;
+    }
 }

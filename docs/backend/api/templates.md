@@ -96683,6 +96683,18 @@ _단건 응답: `data` 객체의 필드 (LayoutResource)._
 | content.meta.guest_only | body | boolean | 아니오 | — | 비로그인 전용 화면 여부 (로그인 상태면 리다이렉트, SEO/sitemap 제외 판정에도 사용) |
 | content.meta.is_error_layout | body | boolean | 아니오 | — | error layout 여부 |
 | content.meta.error_code | body | integer | 아니오 | — | 에러 레이아웃일 때 담당하는 HTTP 상태 코드 (예: 404, 500) |
+| content.meta.scroll_restoration | body | array | 아니오 | — | 뒤로/앞으로 가기·새로고침으로 돌아왔을 때의 스크롤 동작 설정 객체 (모든 하위 키 선택, 베이스→화면 깊은 병합) |
+| content.meta.scroll_restoration.mode | body | string | 아니오 | max 200 | 돌아왔을 때 동작 (`restore`, `top`, `none`, 또는 이동할 요소 선택자) |
+| content.meta.scroll_restoration.on_reload | body | boolean | 아니오 | — | 새로고침 때도 같은 동작 적용 여부 |
+| content.meta.scroll_restoration.wait | body | string | 아니오 | `height`, `data` | 복원 시점 (높이가 찰 때까지 / 데이터를 다 받은 뒤) |
+| content.meta.scroll_restoration.timeout_ms | body | integer | 아니오 | min 0, max 60000 | 최대 대기 시간(ms) |
+| content.meta.scroll_restoration.containers | body | array | 아니오 | — | 창 말고 함께 기억·복원할 안쪽 스크롤 영역 선택자 배열 (각 항목 string, max 200) |
+| content.meta.scroll_restoration.snapshot | body | array | 아니오 | — | 더보기 목록 스냅샷 설정 객체 |
+| content.meta.scroll_restoration.snapshot.enabled | body | boolean | 아니오 | — | 더보기로 늘어난 데이터 소스를 기억해 돌아올 때 먼저 그릴지 여부 |
+| content.meta.scroll_restoration.snapshot.ttl_seconds | body | integer | 아니오 | min 0, max 86400 | 스냅샷 유효 시간(초) |
+| content.meta.scroll_restoration.snapshot.revalidate | body | boolean | 아니오 | — | 스냅샷으로 그린 뒤 첫 묶음을 다시 받아 바뀐 항목만 갈아끼울지 여부 |
+| content.meta.scroll_restoration.snapshot.item_key | body | string | 아니오 | max 100 | 갈아끼울 때 항목을 알아보는 필드 이름 |
+| content.meta.scroll_restoration.snapshot.state | body | array | 아니오 | — | 스냅샷과 함께 되돌릴 진행 상태 경로 배열 (각 항목 `_global.*`·`_local.*` 형식, max 200) |
 | content.meta.seo | body | array | 아니오 | — | SEO 메타데이터 객체 (봇 HTML 렌더/sitemap 생성기가 소비하는 하위 키 묶음) |
 | content.meta.seo.enabled | body | boolean | 아니오 | — | 사용 여부 |
 | content.meta.seo.data_sources | body | array | 아니오 | — | API 데이터 소스 정의 배열 (id/endpoint/method) |

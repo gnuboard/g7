@@ -29,5 +29,11 @@
     "latest_reacted_at": "最近のリアクション",
     "none": "リアクションはありません。",
     "view_list": "このユーザーのリアクション一覧を表示"
+  },
+  "search_history": {
+    "tab_label": "投稿検索語",
+    "title": "最近の投稿検索語",
+    "count_unit": "{{count}}件",
+    "empty": "保存された投稿検索語はありません。"
   }
 }

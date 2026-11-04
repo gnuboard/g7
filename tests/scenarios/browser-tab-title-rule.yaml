@@ -1,0 +1,65 @@
+feature: 브라우저 탭 제목과 검색엔진 제목의 단일 규칙
+
+description: |
+  사람 방문자의 브라우저 탭 제목(document.title)을 검색엔진(봇) `<title>` 과 같은 규칙으로 정한다(engine-v1.86.0, 코어 7.1.5).
+  규칙의 서버 원본은 `app/Seo/SeoTitleRule.php`(SeoMetaResolver·SeoRenderer 가 사용), 화면 짝은
+  `resources/js/core/routing/DocumentTitle.ts` 다. 두 구현은 `tests/fixtures/seo/title-rule-cases.json` 하나로 같은 답을 잠근다.
+
+  제목 후보: 리소스 meta_title → 페이지 seo_meta.title → 확장 제목 틀(_seo.{page_type}.title) → meta.seo.og.title → 라우트 meta.title.
+  사이트 이름만 되풀이하는 후보는 건너뛰고, 사이트 이름은 코어 접미사(비면 ` - {site_name}`)로만 붙인다. 제목이 이미
+  「구분자 + 사이트 이름」으로 끝나면 다시 붙이지 않는다. 사이트 첫 화면은 사이트 이름만 쓴다.
+
+  엔진은 이동을 시작하면 라우트 제목(+접미사)을 곧바로 쓰고, 새 화면을 그린 뒤 그 레이아웃에 연결해 데이터가 올 때마다
+  다시 계산한다(연결한 레이아웃 객체일 때만 — 앞 화면의 늦은 데이터 무시). 레이아웃 편집기·편집기 미리보기는 탭 제목을 바꾸지 않는다.
+
+  관리자 템플릿(engine-v1.88.0)은 검색엔진 규칙 대신 「{레이아웃 meta.title 또는 라우트 제목} - {사이트 이름} 관리자」다. 사이트
+  이름과 언어별 접미사(`seo.admin_title_suffix`)는 관리자 셸이 `G7Config.seoTitle` 로 넘긴다. 값이 없는 옛 서버면 셸 제목을 둔다.
+
+  종전: 엔진이 document.title 을 쓰지 않아 사람 탭 제목은 늘 셸의 사이트 이름이었다.
+
+axes:
+  case:
+    - rule_fixture_server
+    - rule_fixture_engine
+    - substitute_fixture_server
+    - substitute_fixture_engine
+    - resolver_imported_title_server
+    - navigate_shows_route_title
+    - data_arrival_replaces_title
+    - late_previous_layout_data_ignored
+    - locale_switch_recomputes
+    - home_site_name_only
+    - not_found_title
+    - editor_mode_suppressed
+    - admin_template_untouched
+    - layout_seo_title_server
+    - layout_seo_title_engine
+    - admin_screen_title
+
+effects:
+  - server_title_rule_matches_fixture                 # 서버 규칙이 공용 판정 사례와 같은 답을 낸다
+  - engine_title_rule_matches_fixture                 # 엔진 규칙이 공용 판정 사례와 같은 답을 낸다
+  - server_substitute_matches_fixture                 # 서버 틀 치환이 공용 사례와 같다
+  - engine_substitute_matches_fixture                 # 엔진 틀 치환이 공용 사례와 같다
+  - server_resolver_applies_shared_rule               # 봇 해석기가 같은 규칙(기본 접미사·중복 방지·첫 화면)을 쓴다
+  - route_title_shown_at_navigation_start             # 이동 시작 즉시 라우트 제목 + 접미사
+  - loading_route_title_replaced_by_data_title        # 받는 동안 라우트 제목, 받으면 데이터 제목
+  - late_previous_layout_data_does_not_overwrite_title  # 앞 화면 레이아웃의 늦은 데이터가 새 화면 제목을 덮지 않는다
+  - locale_switch_recomputes_title                    # 언어 전환 뒤 새 언어 값으로 다시 계산
+  - home_title_is_site_name_only                      # 사이트 첫 화면은 사이트 이름만
+  - not_found_uses_template_404_route_title           # 경로 없음은 템플릿 404 라우트 제목
+  - layout_editor_tab_title_untouched                 # 편집기·미리보기는 탭 제목을 바꾸지 않는다
+  - admin_template_keeps_shell_title                  # 관리자 셸이 제목 계산 값을 넘기지 않으면(옛 서버) 셸 제목 유지
+  - admin_title_uses_layout_title_with_admin_suffix   # 관리자: 레이아웃 meta.title + 「 - {사이트 이름} 관리자」, 검색엔진 선언(og) 무시
+  - admin_title_falls_back_to_route_title             # 관리자: 레이아웃 제목이 없으면 라우트 제목, 앞 화면 제목 잔류 없음
+  - admin_title_suffix_follows_locale                 # 관리자 접미사는 화면 언어를 따른다
+  - admin_shell_exports_site_name_and_localized_suffix  # 관리자 셸이 사이트 이름과 지원 언어별 접미사 맵을 넘긴다
+  - layout_seo_title_before_extension_template_and_og  # 편집기 「검색 제목·설명」(meta.seo.title·description)이 자체 값 다음·확장 틀·og 앞 후보
+
+test_files:
+  - tests/Unit/Seo/SeoTitleRuleParityTest.php
+  - tests/Unit/Seo/SeoMetaResolverTest.php
+  - resources/js/core/routing/__tests__/DocumentTitle.parity.test.ts
+  - resources/js/core/__tests__/TemplateApp.documentTitle.test.ts
+  - tests/Feature/View/AdminShellTitleTest.php
+  - tests/Playwright/specs/admin/admin-tab-title-and-member-search-history.spec.ts

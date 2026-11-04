@@ -658,4 +658,8 @@ return [
             'resubmit_done' => 'Re-submitted/special cases created: :count',
         ],
     ],
+    // Recent search scope name (module.json search_scopes.posts.label — admin Settings > Privacy "Recent searches" card)
+    'search_history' => [
+        'scope_posts' => 'Post search',
+    ],
 ];

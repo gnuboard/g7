@@ -448,7 +448,8 @@
         "profile_memo": "Profile/Memo",
         "activity_info": "Activity",
         "consent_info": "Consent",
-        "notifications_info": "Inbox"
+        "notifications_info": "Inbox",
+        "search_history_info": "Recent searches"
       },
       "unlock": "Unlock",
       "unlock_success": "The account lock has been released.",
@@ -473,6 +474,15 @@
         "no": "No",
         "postponed_until": "Postponed until",
         "policy": "Expiry setting"
+      },
+      "search_history": {
+        "auto_save": "Save search history",
+        "auto_save_on": "On",
+        "auto_save_off": "Off — new searches are not saved",
+        "feature_off": "Recent searches are turned off for this site. Only searches saved earlier are shown.",
+        "keywords": "Searches",
+        "count": "{{count}}",
+        "empty": "No saved searches."
       }
     },
     "filter": {
@@ -1716,7 +1726,7 @@
       "meta_settings": "Meta Tag Settings",
       "meta_settings_desc": "Configure meta tags for search engine optimization.",
       "meta_title_suffix": "Title Suffix",
-      "meta_title_suffix_hint": "Text appended to all page titles. (e.g., ' | Gnuboard7')",
+      "meta_title_suffix_hint": "Text appended to every page title (the search engine title and the visitor's browser tab title). {site_name} is replaced with the site name; when empty, ' - site name' is appended. It is not appended again when the title already ends with the site name. (e.g., ' | {site_name}')",
       "meta_description": "Default Meta Description",
       "meta_description_placeholder": "Enter the default meta description for your site.",
       "meta_description_hint": "Description shown in search results. Max 160 characters recommended.",
@@ -2596,6 +2606,25 @@
         "withdraw_warning": "A withdrawn account cannot be restored. Administrator accounts are excluded from automatic withdrawal.",
         "restore_hint": "Dormancy is lifted automatically when the member signs in — no application is required."
       },
+      "search_history": {
+        "title": "Recent searches",
+        "desc": "Search terms submitted in search boxes are kept per search scope. Members’ terms are stored on the server and visitors’ in their browser; when a visitor logs in, the browser list is merged into the member list. A member’s terms are deleted on withdrawal.",
+        "enabled": "Use recent searches",
+        "enabled_desc": "On by default. When off, search boxes do not record terms and no recent-search list is shown. Terms already saved are still deleted according to the retention periods below.",
+        "auto_save_notice": "Members and visitors can stop their own history with \"Turn off auto-save\" in the search box. This stops recording and hides the list; saved terms are not deleted.",
+        "scopes_title": "Retention per search scope",
+        "scopes_desc": "Search scopes declared by core site search and active extensions. Search boxes using the same scope share one list. When an extension is deactivated its scope leaves this list and its settings are kept.",
+        "scope_meta": "{{owner}} · {{scope}}",
+        "max_count": "Searches kept",
+        "max_count_aria": "Searches kept for {{scope}}",
+        "retention_days": "Retention (days)",
+        "retention_days_aria": "Retention in days for {{scope}}",
+        "retention_days_hint": "0 = no limit",
+        "retention_desc": "For scopes with a retention of 1 day or more, the nightly privacy retention job deletes expired terms. The target list shows the member, scope and count instead of the terms.",
+        "target_count": "{{count}} searches",
+        "target_count_one": "{{count}} search",
+        "empty": "No search scopes are declared."
+      },
       "targets": {
         "view": "View targets",
         "title": {
@@ -2603,14 +2632,16 @@
           "pre_notice": "Members to receive the dormancy notice",
           "convert": "Members to be converted to dormant",
           "withdraw_notice": "Dormant members to receive the withdrawal notice",
-          "withdraw": "Dormant members to be withdrawn"
+          "withdraw": "Dormant members to be withdrawn",
+          "search_history": "Recent searches past retention"
         },
         "rows": {
           "withdrawn": "Withdrawn members' residual data",
           "pre_notice": "Advance notice before dormancy",
           "convert": "Convert to dormant",
           "withdraw_notice": "Notice before withdrawing dormant accounts",
-          "withdraw": "Withdraw dormant accounts"
+          "withdraw": "Withdraw dormant accounts",
+          "search_history": "Recent searches past retention"
         },
         "hint": "Counts and lists follow the saved settings. Even while a feature is off, they show what would be processed once it is turned on.",
         "total": "{{count}} in total",
@@ -4486,6 +4517,7 @@
         "necessary_storage": "Necessary storage",
         "operation_lock": "Operation lock",
         "reseed": "Reseed",
+        "search_scopes": "Recent search scope declaration",
         "seeder": "Seeder"
       }
     }

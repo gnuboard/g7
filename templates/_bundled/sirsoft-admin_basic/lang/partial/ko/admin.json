@@ -440,7 +440,8 @@
         "profile_memo": "프로필/메모",
         "activity_info": "활동정보",
         "consent_info": "동의이력",
-        "notifications_info": "알림함"
+        "notifications_info": "알림함",
+        "search_history_info": "최근 검색어"
       },
       "unlock": "잠금 해제",
       "unlock_success": "계정 잠금이 해제되었습니다.",
@@ -465,6 +466,15 @@
         "no": "아니오",
         "postponed_until": "연기 종료",
         "policy": "만료 개별 설정"
+      },
+      "search_history": {
+        "auto_save": "검색어 자동 저장",
+        "auto_save_on": "켜짐",
+        "auto_save_off": "꺼짐 — 새 검색어를 기록하지 않습니다",
+        "feature_off": "사이트에서 최근 검색어 기능을 끈 상태입니다. 저장돼 있던 검색어만 보입니다.",
+        "keywords": "검색어",
+        "count": "{{count}}건",
+        "empty": "저장된 검색어가 없습니다."
       }
     },
     "filter": {
@@ -1692,7 +1702,7 @@
       "meta_settings": "메타 태그 설정",
       "meta_settings_desc": "검색엔진 최적화를 위한 메타 태그를 설정합니다.",
       "meta_title_suffix": "타이틀 접미사",
-      "meta_title_suffix_hint": "모든 페이지 타이틀 뒤에 붙는 문구입니다. (예: ' | 그누보드7')",
+      "meta_title_suffix_hint": "모든 페이지 제목(검색엔진 제목과 방문자 브라우저 탭 제목) 뒤에 붙는 문구입니다. {site_name} 자리에 사이트 이름이 들어가고, 비우면 ' - 사이트 이름' 을 붙입니다. 제목이 이미 사이트 이름으로 끝나면 다시 붙이지 않습니다. (예: ' | {site_name}')",
       "meta_description": "기본 메타 설명",
       "meta_description_placeholder": "사이트의 기본 메타 설명을 입력하세요.",
       "meta_description_hint": "검색 결과에 표시되는 설명입니다. 최대 160자를 권장합니다.",
@@ -2563,6 +2573,24 @@
         "withdraw_warning": "탈퇴 처리된 계정은 되돌릴 수 없습니다. 관리자 계정은 자동 탈퇴 대상에서 제외됩니다.",
         "restore_hint": "휴면 회원이 로그인하면 자동으로 해제되며, 별도의 신청 절차는 없습니다."
       },
+      "search_history": {
+        "title": "최근 검색어",
+        "desc": "검색창에 입력해 제출한 검색어를 검색 범위별로 보관합니다. 회원은 서버에, 비회원은 방문자 브라우저에 저장되며 로그인하면 브라우저 목록이 회원 목록으로 합쳐집니다. 탈퇴하면 그 회원의 검색어를 지웁니다.",
+        "enabled": "최근 검색어 사용",
+        "enabled_desc": "기본 켬. 끄면 검색창이 검색어를 기록하지 않고 최근 검색어 목록도 보이지 않습니다. 이미 저장된 검색어는 아래 보관 기한에 따라 지워집니다.",
+        "auto_save_notice": "회원과 방문자는 검색창의 「자동 저장 끄기」로 자기 기록을 멈출 수 있습니다. 끄면 기록이 멈추고 목록이 감춰지며, 저장된 검색어는 지우지 않습니다.",
+        "scopes_title": "검색 범위별 보관",
+        "scopes_desc": "코어 통합 검색과 활성 확장이 선언한 검색 범위입니다. 같은 범위를 쓰는 검색창끼리 목록을 공유합니다. 확장을 끄면 그 범위는 목록에서 빠지고 설정값은 남습니다.",
+        "scope_meta": "{{owner}} · {{scope}}",
+        "max_count": "보관 개수",
+        "max_count_aria": "{{scope}} 보관 개수",
+        "retention_days": "보관 기한 (일)",
+        "retention_days_aria": "{{scope}} 보관 기한 (일)",
+        "retention_days_hint": "0 = 기한 없음",
+        "retention_desc": "보관 기한을 1일 이상 적은 범위는 매일 새벽 개인정보 보유기간 작업이 기한이 지난 검색어를 지웁니다. 대상 목록에는 검색어 대신 회원·범위·건수만 보입니다.",
+        "target_count": "검색어 {{count}}건",
+        "empty": "선언된 검색 범위가 없습니다."
+      },
       "targets": {
         "view": "대상 보기",
         "title": {
@@ -2570,14 +2598,16 @@
           "pre_notice": "휴면 사전 안내 대상",
           "convert": "휴면 전환 대상",
           "withdraw_notice": "휴면 탈퇴 예고 대상",
-          "withdraw": "휴면 자동 탈퇴 대상"
+          "withdraw": "휴면 자동 탈퇴 대상",
+          "search_history": "보관 기한이 지난 최근 검색어"
         },
         "rows": {
           "withdrawn": "탈퇴 회원 잔여정보",
           "pre_notice": "휴면 전환 사전 안내",
           "convert": "휴면 전환",
           "withdraw_notice": "휴면 계정 탈퇴 예정 안내",
-          "withdraw": "휴면 계정 탈퇴 처리"
+          "withdraw": "휴면 계정 탈퇴 처리",
+          "search_history": "최근 검색어 보관 기한 경과"
         },
         "hint": "건수와 명단은 저장된 설정 기준입니다. 기능이 꺼져 있어도 켜면 처리될 대상을 미리 보여 줍니다.",
         "total": "총 {{count}}건",
@@ -4431,6 +4461,7 @@
         "necessary_storage": "필수 브라우저 저장 항목",
         "operation_lock": "작업 잠금",
         "reseed": "기본 데이터 다시 넣기",
+        "search_scopes": "최근 검색어 범위 선언",
         "seeder": "기본 데이터 생성"
       }
     }

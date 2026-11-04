@@ -41,6 +41,7 @@
 9. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
 10. [방문자 동의 (G7Core.consent)](#방문자-동의-g7coreconsent)
 11. [전역 상태 계약 (G7Core.stateContracts)](#전역-상태-계약-g7corestatecontracts)
+12. [최근 검색어 (G7Core.searchHistory)](#최근-검색어-g7coresearchhistory)
 
 ---
 
@@ -71,6 +72,7 @@
 | 자산 실패 안내 | `G7Core.assets` | 자산 로드 실패 표면화 및 재시도 | 현재 문서 |
 | 방문자 동의 | `G7Core.consent` | 동의 스냅샷 조회/재조회/구독 | 현재 문서 |
 | 상태 계약 | `G7Core.stateContracts` | 공개 전역 상태의 소유자와 모양 조회 | 현재 문서 |
+| 최근 검색어 | `G7Core.searchHistory`, `G7Core.useSearchHistory` | 검색 범위별 최근 검색어 읽기·기록·삭제·자동 저장 | 현재 문서 |
 | React Hooks | `G7Core.useControllableState` | 상태 패턴 훅 | [고급 API](g7core-api-advanced.md) |
 
 ### 사용 컨텍스트
@@ -328,6 +330,9 @@ useEffect(() => {
 ---
 
 ## 데이터소스 관리 (G7Core.dataSource)
+
+> `G7Core.dataSource.updateData(id, path, items, 'append' | 'prepend')` 로 늘린 데이터소스는 뒤로/앞으로 가기 스크롤 복원의
+> 더보기 스냅샷 대상이 된다(engine-v1.85.0+) — [scroll-restoration.md](scroll-restoration.md#더보기-목록-스냅샷-snapshot).
 
 데이터소스의 조회, 설정, refetch를 관리하는 API입니다.
 
@@ -1114,6 +1119,95 @@ useEffect(() => {
 ```
 
 `_global.consent` 는 코어 동의 런타임만 씁니다. 확장이나 레이아웃이 직접 쓰지 않습니다.
+
+---
+
+## 최근 검색어 (G7Core.searchHistory)
+
+> **engine-v1.87.0+** 추가 (코어 7.1.5)
+
+검색창에 제출한 검색어를 **검색 범위(scope)** 별로 보관하는 API입니다. 범위는 코어 통합검색 `core.site` 와 활성 확장이 manifest
+`search_scopes` 로 선언한 `{확장 식별자}.{이름}` 입니다([최근 검색어 범위](../extension/plugin-development.md#최근-검색어-범위-search_scopes)).
+같은 범위를 쓰는 검색창끼리 목록을 공유합니다. 서버가 셸에 실은 `G7Config.searchScopes`(범위 → `{max_count}`)에 없는 범위
+(선언 안 됨·확장 꺼짐·운영자가 기능을 끔)는 조용히 건너뜁니다.
+
+- **회원**: 서버(`/api/me/search-history`)에 둡니다. 보관 개수·자동 저장은 서버가 판정합니다.
+- **비회원**: 브라우저 localStorage `g7_search_history` 한 칸(`{v:1, autoSave, items:{범위:[{k, t}]}}`, 최신순)에 둡니다.
+  코어 필수 저장 키라 쿠키 동의 전에도 유지됩니다.
+- **로그인**: 비회원 → 회원이 되면(부팅 때 이미 회원이어도) 브라우저 목록을 회원 목록에 시간순으로 합치고(같은 검색어는 하나)
+  성공하면 브라우저 칸을 지웁니다. 실패하면 남겨 다음 로그인 때 다시 보냅니다.
+- **자동 저장 끄기**: 기록을 멈추고 목록을 감춥니다. 저장된 검색어는 남습니다. 범위별이 아니라 사람 단위 하나입니다.
+- **기록 시점**: 검색창 제출 때만 기록합니다. 주소에 검색어를 직접 넣은 검색(`?q=`)은 기록하지 않습니다.
+- 검색어는 연속 공백을 하나로 줄이고 앞뒤 공백을 떼며 100자까지 씁니다. 대소문자만 다른 검색어는 하나로 봅니다.
+
+런타임은 **사용자 템플릿에서만** 동작합니다. 관리자 화면에서는 모든 범위가 `enabled: false` 이고 동작은 `false` 를 돌려줍니다.
+레이아웃 편집기 미리보기(`/preview/{token}`)에서는 읽기만 하고 쓰기(record·remove·clear·setAutoSave·로그인 병합)는 서버·브라우저에 손대지 않고 `false` 를 돌려줍니다.
+
+### API 목록
+
+`G7Core.searchHistory` 는 동결된 객체입니다.
+
+| 메서드 | 설명 | 반환값 |
+|--------|------|--------|
+| `isEnabled(scope)` | 지금 쓸 수 있는 범위인지 | `boolean` |
+| `getSnapshot(scope)` | 지금 상태의 사본(회원 목록을 아직 받지 않았으면 `loading: true`) | `SearchHistoryState` |
+| `list(scope, { force? })` | 목록 읽기(회원은 서버에서 받아 캐시, `force` 면 다시 받음) | `Promise<SearchHistoryState>` |
+| `record(scope, keyword)` | 검색어 기록 | `Promise<boolean>` (기록했으면 `true`) |
+| `remove(scope, target)` | 한 건 삭제 — 항목·id(회원)·검색어 | `Promise<boolean>` |
+| `clear(scope?)` | 범위 전체 삭제(생략하면 전 범위) | `Promise<boolean>` |
+| `getAutoSave()` | 자동 저장 여부 | `boolean` |
+| `setAutoSave(on)` | 자동 저장 켜기/끄기 | `Promise<boolean>` |
+| `subscribe(listener)` | 컴포넌트 이벤트 `searchHistory:changed` 구독 | 구독 해제 함수 |
+
+`SearchHistoryState` 모양:
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `scope` | `string` | 범위 id |
+| `enabled` | `boolean` | 쓸 수 있는 범위인지 |
+| `autoSave` | `boolean` | 자동 저장 여부 |
+| `items` | `Array<{ id: number \| null, keyword: string, searchedAt: number }>` | 최신순. `id` 는 회원 서버 행 id(비회원은 `null`), `searchedAt` 은 밀리초. 자동 저장을 끄면 `[]` |
+| `maxCount` | `number` | 보관 개수 |
+| `loading` | `boolean` | 회원 목록을 받는 중 |
+| `source` | `'member' \| 'guest' \| 'none'` | 저장 위치 |
+
+`searchHistory:changed` 이벤트 값은 `{ scope: string \| null, reason }` 입니다. `scope` 가 `null` 이면 여러 범위가 함께 바뀌었고(로그인·병합·
+자동 저장·전체 삭제), `reason` 은 `record`·`remove`·`clear`·`autoSave`·`auth`·`merge`·`load` 중 하나입니다.
+
+### React 훅 — G7Core.useSearchHistory(scope)
+
+```tsx
+const history = G7Core.useSearchHistory('core.site');
+// history: { items, autoSave, enabled, loading, maxCount, record, remove, clear, setAutoSave, refresh }
+
+if (!history.enabled) return null;           // 범위가 없거나 관리자 화면
+if (!history.autoSave) {
+  // 「검색어 저장 기능이 꺼져 있습니다 · 켜기」 → history.setAutoSave(true)
+}
+history.items.map((item) => /* item.keyword, item.searchedAt */ null);
+
+await history.record(keyword);                // 제출 때
+await history.remove(item);                   // 항목 ×
+await history.clear();                        // 이 범위 전체 삭제
+```
+
+- 같은 범위를 쓰는 다른 검색창(헤더·모바일 서랍 등)의 변경이 바로 반영됩니다.
+- 늦게 끝난 조회는 그 사이 바뀐 상태(기록·자동 저장 끄기)를 덮지 않습니다.
+- 다른 훅과 같이 조건 밖 최상위에서 부릅니다. `items` 는 바뀔 때마다 새 배열이므로 effect 의존성에 넣고 그 안에서 상태를 바꾸지 않습니다.
+
+### 레이아웃에서 쓰기
+
+내장 핸들러 `recordSearchKeyword` 를 검색 이동 앞에 둡니다. 범위 미선언·빈 검색어·자동 저장 꺼짐·관리자 화면·레이아웃 편집기
+미리보기에서는 아무것도 하지 않고, 실패해도 던지지 않아 다음 이동을 막지 않습니다. 회원은 서버 응답을 기다린 뒤 다음 동작으로 넘어갑니다.
+
+```html
+<sequence>
+  <record-search-keyword scope="core.site" keyword="{{_local.searchQuery}}"/>
+  <navigate path="/search">
+    <query q="{{_local.searchQuery}}"/>
+  </navigate>
+</sequence>
+```
 
 ---
 

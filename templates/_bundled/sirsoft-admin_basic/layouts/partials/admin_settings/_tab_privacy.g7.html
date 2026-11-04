@@ -54,7 +54,7 @@
           <h3 class="text-heading">$t:admin.settings.privacy.policy_notice_title</h3>
           <p class="text-label-subtle mt-1">$t:admin.settings.privacy.policy_notice_desc</p>
           <p class="text-hint mt-1">$t:admin.settings.privacy.targets.hint</p>
-          <p data-ref="privacy_manual_run_desc" data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}" class="text-hint mt-1">$t:admin.settings.privacy.manual_run.section_desc</p>
+          <p data-ref="privacy_manual_run_desc" data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}" class="text-hint mt-1">$t:admin.settings.privacy.manual_run.section_desc</p>
           <p data-ref="privacy_manual_run_save_first" data-if="{{_local.hasChanges &amp;&amp; (privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run)}}" class="text-hint mt-1">$t:admin.settings.privacy.manual_run.save_first_hint</p>
         </div>
       </div>
@@ -148,7 +148,7 @@
         <!-- 휴면 네 단계 — 단계마다 한 행. 탈퇴 쪽 두 단계는 계정이 사라지므로 배지를 붉게 둔다.
              「대기기간 생략」은 전환·탈퇴 단계만 지원한다(서버가 `supports_skip_waiting` 으로 알린다).
              row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다. -->
-        <div data-ref="dormant_target_list_row" data-if="{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}">
+        <div data-ref="dormant_target_list_row" data-if="{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}">
           <div data-ref="dormant_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
             <div data-each="stage in {{['pre_notice', 'convert', 'withdraw_notice', 'withdraw']}}" data-ref="dormant_target_row_{{stage}}" class="px-4 py-3">
               <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -230,6 +230,122 @@
           <p class="text-error-soft mt-1">$t:admin.settings.privacy.dormant.withdraw_warning</p>
         </div>
         <p class="text-hint">$t:admin.settings.privacy.dormant.restore_hint</p>
+      </div>
+    </div>
+    <!-- 최근 검색어 (코어 7.1.5) — 검색창에 제출한 검색어를 검색 범위별로 보관한다. 사용 여부(기본 켬)와, 코어·활성 확장이
+      선언한 범위마다 보관 개수·보관 기한(일, 0 = 기한 없음) 한 행. 범위 행은 서버가 선언 순서로 다듬어 주는 목록
+      (`privacy.search_history_scopes = [{scope, max_count, retention_days}]`)이다 — 범위 id 에 점이 있어 맵 폼 경로를 쓸 수 없다.
+      범위 이름·소유 확장·선언 기본값은 `_meta.search_scopes` 에서 읽는다. 보관 기한은 사용 여부와 무관하게 쓰이므로(이미
+      저장된 검색어 파기) 꺼져 있어도 표를 보인다. 대상 행은 보유기간 핸들러 `search-history` 의 건수·명단·직권 실행이다
+      (탈퇴 카드와 같은 구성 — 명단은 검색어 대신 회원·범위·건수만). -->
+    <div data-ref="card_search_history" class="card-stack-item">
+      <h3 class="card-title">$t:admin.settings.privacy.search_history.title</h3>
+      <div class="card-description">$t:admin.settings.privacy.search_history.desc</div>
+      <div class="row-stack">
+        <div data-ref="toggle_search_history" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.privacy.search_history.enabled</span>
+            <p class="text-label-subtle">$t:admin.settings.privacy.search_history.enabled_desc</p>
+            <span data-if="{{_local.errors?.['privacy.search_history_enabled']}}" class="form-error">{{_local.errors?.['privacy.search_history_enabled']?.[0] ?? ''}}</span>
+          </div>
+          <toggle data-type="composite" name="privacy.search_history_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="search_history_auto_save_notice" role="note" class="alert-info">
+          <div class="flex gap-3">
+            <icon name="circle-info" class="text-xl flex-shrink-0" aria-hidden="true"/>
+            <p class="text-label-subtle">$t:admin.settings.privacy.search_history.auto_save_notice</p>
+          </div>
+        </div>
+        <div data-ref="search_history_scopes_field">
+          <span class="text-heading">$t:admin.settings.privacy.search_history.scopes_title</span>
+          <p class="text-hint mt-1">$t:admin.settings.privacy.search_history.scopes_desc</p>
+          <p data-ref="search_history_scopes_empty" data-if="{{!!_local.form?._meta &amp;&amp; (_local.form?.privacy?.search_history_scopes ?? []).length === 0}}" class="text-hint mt-2">$t:admin.settings.privacy.search_history.empty</p>
+          <div data-ref="search_history_scope_list" data-if="{{(_local.form?.privacy?.search_history_scopes ?? []).length &gt; 0}}" class="mt-2 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+            <div data-each="row, idx in _local.form?.privacy?.search_history_scopes ?? []" data-ref="search_history_scope_row_{{idx}}" class="px-4 py-3 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div class="min-w-0">
+                <span class="text-heading wrap-anywhere">{{(_local.form?._meta?.search_scopes ?? []).find((s) =&gt; s.scope === row.scope)?.label ?? row.scope}}</span>
+                <p class="text-hint wrap-anywhere">$t:admin.settings.privacy.search_history.scope_meta|owner={{(_local.form?._meta?.search_scopes ?? []).find((s) =&gt; s.scope === row.scope)?.owner_label ?? ''}}|scope={{row.scope}}</p>
+              </div>
+              <div class="flex flex-wrap gap-4">
+                <div>
+                  <label class="form-label">$t:admin.settings.privacy.search_history.max_count</label>
+                  <input type="number" value="{{row.max_count ?? ''}}" min="{{_local?.form?._meta?.limits?.search_history_max_count_min ?? 1}}" max="{{_local?.form?._meta?.limits?.search_history_max_count_max ?? 50}}" aria-label="$t:admin.settings.privacy.search_history.max_count_aria|scope={{row.scope}}" disabled="{{_computed.isReadOnly}}" class="input input-w-sm {{_local.errors?.['privacy.search_history_scopes.' + idx + '.max_count'] ? 'input-error' : ''}}">
+                    <on type="change">
+                      <!-- 이 범위 행의 보관 개수만 바꾼다 — 숫자로 바꿔 담는다(입력 이벤트 값은 문자열). -->
+                      <set-state target="local" form.privacy.search_history_scopes="{{(_local.form?.privacy?.search_history_scopes ?? []).map((r, i) =&gt; i === idx ? {...r, max_count: Number($event.target.value)} : r)}}" :hasChanges="true"/>
+                    </on>
+                  </input>
+                  <span data-if="{{_local.errors?.['privacy.search_history_scopes.' + idx + '.max_count']}}" class="form-error">{{_local.errors?.['privacy.search_history_scopes.' + idx + '.max_count']?.[0] ?? ''}}</span>
+                </div>
+                <div>
+                  <label class="form-label">$t:admin.settings.privacy.search_history.retention_days</label>
+                  <input type="number" value="{{row.retention_days ?? 0}}" min="0" max="{{_local?.form?._meta?.limits?.privacy_retention_days_max ?? 3650}}" aria-label="$t:admin.settings.privacy.search_history.retention_days_aria|scope={{row.scope}}" disabled="{{_computed.isReadOnly}}" class="input input-w-sm {{_local.errors?.['privacy.search_history_scopes.' + idx + '.retention_days'] ? 'input-error' : ''}}">
+                    <on type="change">
+                      <!-- 이 범위 행의 보관 기한(일)만 바꾼다 — 빈 칸은 0(기한 없음)이 된다. -->
+                      <set-state target="local" form.privacy.search_history_scopes="{{(_local.form?.privacy?.search_history_scopes ?? []).map((r, i) =&gt; i === idx ? {...r, retention_days: Number($event.target.value)} : r)}}" :hasChanges="true"/>
+                    </on>
+                  </input>
+                  <p class="text-hint mt-1">$t:admin.settings.privacy.search_history.retention_days_hint</p>
+                  <span data-if="{{_local.errors?.['privacy.search_history_scopes.' + idx + '.retention_days']}}" class="form-error">{{_local.errors?.['privacy.search_history_scopes.' + idx + '.retention_days']?.[0] ?? ''}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span data-if="{{_local.errors?.['privacy.search_history_scopes']}}" class="form-error">{{_local.errors?.['privacy.search_history_scopes']?.[0] ?? ''}}</span>
+          <p class="text-hint mt-2">$t:admin.settings.privacy.search_history.retention_desc</p>
+        </div>
+        <!-- row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다 -->
+        <div data-ref="search_history_target_list_row" data-if="{{privacyPreview?.data?.retention?.['search-history'] || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}">
+          <div data-ref="search_history_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700">
+            <div data-ref="search_history_target_row" class="px-4 py-3">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex-wrap-center gap-2 min-w-0">
+                  <span class="text-heading">$t:admin.settings.privacy.targets.rows.search_history</span>
+                  <span data-if="{{privacyPreview?.data?.retention?.['search-history']?.count !== null &amp;&amp; privacyPreview?.data?.retention?.['search-history']?.count !== undefined}}" class="badge badge-yellow">$t:admin.settings.privacy.search_history.target_count|count={{privacyPreview?.data?.retention?.['search-history']?.count ?? 0}}</span>
+                </div>
+                <div class="flex-wrap-center gap-2">
+                  <button data-ref="view_search_history_targets" data-if="{{privacyPreview?.data?.retention?.['search-history']?.can_view_targets}}" type="button" class="btn btn-sm btn-ghost">
+                    <on type="click">
+                      <!-- 보관 기한이 지난 최근 검색어 명단 — 탈퇴 카드와 같은 창을 목록 경로·제목만 바꿔 1쪽부터 다시 받아 연다. -->
+                      <sequence>
+                        <set-state target="global" privacyTargets="{{({ path: 'retention-targets/search-history', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                        <set-state target="global" privacyTargets.title="$t:admin.settings.privacy.targets.title.search_history"/>
+                        <refetch-data-source dataSourceId="privacyTargets"/>
+                        <open-modal target="privacy_targets_modal"/>
+                      </sequence>
+                    </on>
+                    $t:admin.settings.privacy.targets.view
+                  </button>
+                  <button data-ref="run_search_history" data-if="{{!!privacyManualRuns?.data?.targets?.['retention:search-history']}}" type="button" class="btn btn-sm btn-outline" disabled="{{!privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run || _local.hasChanges || privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.is_active}}">
+                    <on type="click">
+                      <!-- 보관 기한 경과 검색어 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 대기기간이 없는 대상이라
+                           생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다. -->
+                      <sequence>
+                        <set-state target="global" privacyRun="{{({ key: 'retention:search-history', label: privacyManualRuns?.data?.targets?.['retention:search-history']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"/>
+                        <open-modal target="privacy_run_modal"/>
+                        <api-call :auth_required="true" target="/api/admin/privacy/manual-runs/retention:search-history/preview" method="GET">
+                          <success>
+                            <set-state target="global" privacyRun.preview="{{response.data}}" :privacyRun.loading="false"/>
+                          </success>
+                          <fail>
+                            <set-state target="global" :privacyRun.loading="false"/>
+                            <toast type="error" message="{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"/>
+                          </fail>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    $t:admin.settings.privacy.manual_run.run
+                  </button>
+                </div>
+              </div>
+              <div data-ref="search_history_manual_run_status" data-if="{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run}}" class="text-hint mt-1">
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status === 'completed'}}">$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.processed_count ?? 0}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status === 'failed'}}" class="text-error-soft">$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.error ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -562,6 +562,11 @@
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"
                                 },
                                 {
+                                    "id": "product_display",
+                                    "href": "/admin/ecommerce/settings?tab=product_display",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.product_display"
+                                },
+                                {
                                     "id": "notification_definitions",
                                     "href": "/admin/ecommerce/settings?tab=notification_definitions",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"
@@ -743,6 +748,9 @@
                             },
                             {
                                 "partial": "partials/admin_ecommerce_settings/_tab_review_settings.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_product_display.json"
                             },
                             {
                                 "partial": "partials/admin_ecommerce_settings/_tab_notification_definitions.json"

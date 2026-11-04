@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\Log;
  *
  * 코어는 어떤 확장이 제공자인지 모릅니다 — 이 클래스에 특정 확장 이름이 나오면 안 됩니다.
  *
+ * 요청 단위(scoped) 인스턴스이고, 등록 목록과 선택 상태를 요청 안에서 메모합니다(#860). 메모는 운영자
+ * 선택값과 필터 등록 변경 번호가 그대로일 때만 쓰고, 제공자 수집 여부를 바꾸는 플러그인 설정 저장은
+ * `forgetSelection()` 으로 비웁니다.
+ *
  * @since 7.1.0
  */
 class ConsentManager
@@ -33,6 +37,20 @@ class ConsentManager
     public const SETTING_KEY = 'privacy.consent_provider';
 
     /**
+     * 등록 목록 메모 — [필터 변경 번호, 목록].
+     *
+     * @var array{0: int, 1: array<string, ConsentProviderInterface>}|null
+     */
+    private ?array $registeredMemo = null;
+
+    /**
+     * 선택 상태 메모 — [필터 변경 번호, 운영자 선택값, 선택 상태].
+     *
+     * @var array{0: int, 1: string, 2: ConsentSelection}|null
+     */
+    private ?array $selectionMemo = null;
+
+    /**
      * 등록된 제공자 전부를 반환합니다 (수집을 꺼 둔 제공자 포함).
      *
      * 인터페이스를 구현하지 않은 값은 버리고, 같은 id 가 둘이면 먼저 온 것만 남기고 경고를 남깁니다.
@@ -40,6 +58,24 @@ class ConsentManager
      * @return array<string, ConsentProviderInterface> id → 제공자
      */
     public function registered(): array
+    {
+        $revision = HookManager::filterRevision();
+        if ($this->registeredMemo !== null && $this->registeredMemo[0] === $revision) {
+            return $this->registeredMemo[1];
+        }
+
+        $providers = $this->collectRegistered();
+        $this->registeredMemo = [$revision, $providers];
+
+        return $providers;
+    }
+
+    /**
+     * 제공자 등록 필터를 돌려 등록 목록을 만듭니다.
+     *
+     * @return array<string, ConsentProviderInterface> id → 제공자
+     */
+    private function collectRegistered(): array
     {
         try {
             $merged = HookManager::applyFilters(self::REGISTERED_PROVIDERS_FILTER, []);
@@ -101,9 +137,39 @@ class ConsentManager
      */
     public function selection(): ConsentSelection
     {
+        $revision = HookManager::filterRevision();
+        $configured = $this->configuredProviderId();
+        if ($this->selectionMemo !== null && $this->selectionMemo[0] === $revision && $this->selectionMemo[1] === $configured) {
+            return $this->selectionMemo[2];
+        }
+
+        $selection = $this->resolveSelection($configured);
+        $this->selectionMemo = [$revision, $configured, $selection];
+
+        return $selection;
+    }
+
+    /**
+     * 등록 목록·선택 상태 메모를 비웁니다 — 제공자의 수집 여부를 바꾸는 설정 저장 뒤에 부릅니다.
+     *
+     * @return void 반환값 없음
+     */
+    public function forgetSelection(): void
+    {
+        $this->registeredMemo = null;
+        $this->selectionMemo = null;
+    }
+
+    /**
+     * 선택 상태를 계산합니다.
+     *
+     * @param  string  $configured  운영자 선택값 (빈 문자열 = 자동)
+     * @return ConsentSelection 선택 상태
+     */
+    private function resolveSelection(string $configured): ConsentSelection
+    {
         $registered = $this->registered();
         $candidates = array_values(array_filter($registered, fn (ConsentProviderInterface $p): bool => $this->isAvailable($p)));
-        $configured = $this->configuredProviderId();
 
         if ($configured === '') {
             return match (count($candidates)) {

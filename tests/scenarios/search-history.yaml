@@ -1,0 +1,140 @@
+feature: 최근 검색어 (검색 범위별 보관 · 회원 서버 / 비회원 브라우저 · 로그인 병합 · 보관 기한 파기)
+
+description: |
+  검색창에 제출한 검색어를 검색 범위(scope)별로 보관한다(코어 7.1.5 · engine-v1.87.0).
+
+  범위: 코어 예약 `core.site`(통합검색) + 활성 모듈·플러그인이 manifest `search_scopes` 로 선언한 `{식별자}.{이름}`.
+  코어가 식별자 접두어를 붙여 남의 범위를 주장하지 못하게 하고, 선언하지 않았거나 비활성인 확장의 범위는 API 가 422 로
+  거부하며 엔진은 조용히 건너뛴다. 같은 범위를 적은 검색창끼리 목록을 공유한다.
+
+  저장: 회원은 서버(`user_search_histories`, `/api/me/search-history`), 비회원은 localStorage `g7_search_history`
+  (`{v:1, autoSave, items:{범위:[{k,t}]}}`, 코어 필수 저장 키 — 쿠키 동의 플러그인이 합쳐 읽는다). 같은 검색어는 한 행으로
+  맨 앞에 올리고, 범위별 보관 개수를 넘는 옛 검색어는 지운다. 기록은 검색창 제출 경로(`recordSearchKeyword`·
+  `G7Core.searchHistory.record`)만 한다 — 주소에 직접 넣은 검색은 기록하지 않는다.
+
+  자동 저장 끄기(회원 `users.search_history_auto_save` · 비회원 브라우저 칸): 기록을 멈추고 목록을 감춘다. 저장된 검색어는 남는다.
+  로그인: 브라우저 목록을 서버에 시간순 병합(같은 검색어 하나)하고 성공하면 브라우저 칸을 지운다(실패하면 남긴다).
+
+  운영자 설정: 환경설정 > 개인정보 「최근 검색어」 카드 — 사용 여부 + 범위별 보관 개수·보관 기한(일, 0 = 기한 없음).
+  저장은 목록 모양(`privacy.search_history_scopes = [{scope, max_count, retention_days}]`) — 범위 id 에 점이 있어 맵 불가.
+  보관 기한 파기는 개인정보 보유기간 핸들러 `search-history`(명단은 검색어 대신 회원·범위·건수·가장 오래된 검색일).
+  탈퇴·삭제 시 그 회원의 검색어를 명시 삭제한다.
+
+axes:
+  case:
+    - scope_declaration_normalized
+    - scope_aggregate_active_only
+    - scope_effective_values
+    - settings_rows_present_and_merge
+    - frontend_inline
+    - member_submit_records
+    - guest_submit_records
+    - max_count_trim
+    - undeclared_or_inactive_scope
+    - auto_save_off
+    - delete_owner_only
+    - login_merge
+    - feature_disabled_or_guest
+    - retention_per_scope
+    - retention_disabled_by_default
+    - retention_targets_and_manual_run
+    - withdraw_purge
+    - delete_purge
+    - settings_save_list_shape
+    - settings_rejects_invalid_rows
+    - admin_card_layout
+    - preview_write_blocked
+    - admin_user_detail
+
+effects:
+  # 범위 선언·집계 (App\Support\SearchScopes)
+  - extension_scope_prefixed_with_identifier           # 확장 선언 키에 `{식별자}.` 접두어
+  - invalid_scope_declaration_dropped_with_warning     # 이름 규칙·범위 밖 값은 버리고 설치·활성화 경고(search_scopes)
+  - core_scope_always_present                          # core.site 가 늘 맨 앞
+  - inactive_extension_scope_absent                    # 비활성 확장 범위는 집계에 없다
+  - effective_value_precedence_settings_declared_default   # 설정 행 → 선언값 → 10개·기한 없음
+  - retention_policy_keeps_inactive_scope_rows         # 끈 확장의 설정 행 기한도 파기 정책에 든다
+  - settings_rows_one_per_declared_scope               # 관리자 응답 행은 선언 범위마다 한 행
+  - saving_keeps_rows_of_inactive_scopes               # 저장은 화면에 없던 끈 확장 행을 보존
+  - frontend_inline_lists_scope_max_count              # G7Config.searchScopes = 범위 → {max_count}
+  - disabled_feature_inlines_no_scopes                 # 기능을 끄면 빈 객체
+
+  # 기록·목록 (API · 엔진)
+  - keyword_normalized_on_record                       # 연속 공백 하나·앞뒤 공백 제거·100자
+  - same_keyword_deduped_and_moved_first               # 같은 검색어는 한 행으로 맨 앞
+  - records_trimmed_to_scope_max_count                 # 회원: 넘친 행은 지운다
+  - guest_list_capped_to_max_count                     # 비회원: 보관 개수로 자른다
+  - undeclared_scope_rejected                          # API 422
+  - active_extension_scope_accepted                    # 활성 확장 범위는 받는다
+  - undeclared_scope_skipped_by_engine                 # 엔진은 조용히 건너뛴다(관리자 화면 포함)
+  - auto_save_off_stops_recording
+  - auto_save_off_hides_list_keeps_rows
+  - delete_is_owner_scoped                             # 남의 검색어는 404
+  - clear_by_scope_only
+  - guest_remove_and_clear_by_scope
+  - disabled_feature_records_nothing
+  - guest_api_unauthorized
+  - member_record_goes_to_server_and_updates_cache
+  - record_handler_resolves_bindings_and_records       # recordSearchKeyword 핸들러 + 같은 범위 검색창 목록 공유
+  - search_history_facade_frozen_and_subscribe_unsubscribes
+
+  # 로그인 병합
+  - merge_dedupes_and_orders_by_time
+  - merge_skips_undeclared_scope
+  - merge_trims_to_max_count
+  - guest_list_merged_then_cleared_on_login
+  - merge_failure_keeps_browser_history
+  - logout_switches_back_to_guest_store
+  - preview_blocks_all_search_history_writes        # 편집기 미리보기에서 파사드·훅·핸들러·자동 저장·병합 쓰기 0(호출 시점 판정)
+  - member_stale_list_does_not_override_changes      # 조회 중 기록·자동 저장 변경 뒤 늦게 온 옛 목록이 덮지 않음(데이터 변경 세대)
+
+  # 보관 기한 파기 · 탈퇴 삭제
+  - retention_deletes_only_expired_rows_per_scope
+  - retention_zero_days_keeps_rows
+  - retention_preview_matches_process
+  - retention_disabled_without_any_scope_days
+  - retention_targets_hide_keywords
+  - retention_registered_as_core_handler_with_manual_run
+  - withdraw_purges_search_history
+  - delete_purges_search_history
+
+  # 관리자 설정
+  - settings_saved_as_list_shape
+  - settings_meta_lists_declared_scopes
+  - settings_unknown_scope_rejected
+  - settings_range_rejected
+  - admin_card_binds_enabled_toggle_and_scope_rows
+  - admin_card_target_row_uses_search_history_handler
+  - admin_card_i18n_keys_in_ko_en_ja
+
+  # 관리자 회원 조회 (상세 응답 `search_history` · 코어 구획 · 수정 화면 잠금)
+  - admin_detail_lists_keywords_per_scope_newest_first   # 범위 id 키, 최신순, 소유자·라벨 포함
+  - admin_list_omits_search_history                      # 목록 응답에는 싣지 않는다(행마다 조회 방지)
+  - admin_detail_shows_stored_rows_when_saving_is_off    # 기능 끔·자동 저장 끔이어도 저장된 검색어는 보인다
+  - admin_detail_includes_active_extension_scope         # 활성 확장 범위는 자기 키로
+  - admin_detail_omits_inactive_extension_scope_keeps_rows   # 끈 확장 범위는 빠지고 행은 남는다
+  - admin_detail_core_section_shows_core_scope_only      # 코어 구획은 core.site 만, 확장 범위는 확장 탭
+  - admin_detail_empty_scope_keeps_section               # 0건이어도 구획을 비우지 않는다
+  - admin_form_search_history_section_locked             # 수정 화면에도 같은 자리, 잠금
+
+test_files:
+  # PHPUnit
+  - tests/Unit/Support/SearchScopesTest.php
+  - tests/Feature/Api/Auth/SearchHistoryApiTest.php
+  - tests/Feature/Privacy/SearchHistoryRetentionTest.php
+  - tests/Feature/Privacy/SearchHistoryUserPurgeTest.php
+  - tests/Feature/Settings/SearchHistorySettingsTest.php
+  # Vitest
+  - resources/js/core/searchHistory/__tests__/SearchHistoryRuntime.test.ts
+  - resources/js/core/searchHistory/__tests__/searchHistoryFacadeAndHandler.test.tsx
+  - resources/js/core/searchHistory/__tests__/searchHistoryMemberStaleList.test.tsx
+  - resources/js/core/searchHistory/__tests__/searchHistoryPreviewGuard.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-privacy-search-history.test.ts
+  - tests/Feature/Api/Admin/UserSearchHistoryDetailTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-detail-search-history.test.tsx
+  - tests/Playwright/specs/admin/admin-tab-title-and-member-search-history.spec.ts
+
+limitations:
+  - "검색창 펼침 목록 UI(기본 템플릿 헤더·모바일 서랍·통합검색 화면)는 2단계다 — 이 매니페스트는 코어·엔진·관리자 카드까지만 잠근다."
+  - "대소문자만 다른 검색어는 서버 콜레이션(대소문자 구분 없음)과 엔진 비교 키(toLocaleLowerCase)로 한 행이 된다. 악센트 무시 등 콜레이션의 나머지 규칙은 엔진(비회원)이 흉내 내지 않는다."
+  - "비회원 목록은 그 브라우저에만 있다 — 다른 기기·브라우저와 공유되지 않고, 로그인할 때 그 브라우저의 목록만 병합된다."

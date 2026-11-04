@@ -10,7 +10,7 @@
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
 | [백엔드](backend/) | 42개 | 정상 |
-| [프론트엔드](frontend/) | 49개 | 정상 |
+| [프론트엔드](frontend/) | 50개 | 정상 |
 | [확장 시스템](extension/) | 38개 | 정상 |
 | 공통 | 21개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
@@ -176,7 +176,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
 
-### 프론트엔드 (49개)
+### 프론트엔드 (50개)
 
 | 문서 | 제목 |
 |------|------|
@@ -221,6 +221,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [modal-usage.md](frontend/modal-usage.md) | Modal 컴포넌트 사용 가이드 |
 | [README.md](frontend/README.md) | 그누보드7 프론트엔드 개발 가이드 |
 | [responsive-layout.md](frontend/responsive-layout.md) | 반응형 레이아웃 개발 (engine-v1.1.0+) |
+| [scroll-restoration.md](frontend/scroll-restoration.md) | 뒤로/앞으로 가기·새로고침 스크롤 복원 |
 | [security.md](frontend/security.md) | 보안 및 검증 |
 | [state-management-advanced.md](frontend/state-management-advanced.md) | 상태 관리 - 고급 기능 |
 | [state-management-forms.md](frontend/state-management-forms.md) | 상태 관리 - 폼 자동 바인딩 및 setState |
@@ -313,7 +314,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 
 | 대상 | 진입점 | 문서/엔드포인트 |
 |------|--------|----------------|
-| 코어 | [docs/backend/api/README.md](backend/api/README.md) | 40 / 358 |
+| 코어 | [docs/backend/api/README.md](backend/api/README.md) | 41 / 364 |
 
 
 ### 확장 API 레퍼런스 (16개 확장, 자동 스캔)
@@ -348,7 +349,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 |------|------|----------------|----------|----------|
 | `gnuboard7-hello_module` | 모듈 | [AGENTS.md](../modules/_bundled/gnuboard7-hello_module/AGENTS.md) | [docs/](../modules/_bundled/gnuboard7-hello_module/docs/README.md) | 훅 2 · 라우트 7 · 모델 1 · 레이아웃 4 |
 | `sirsoft-board` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-board/docs/README.md) | 훅 167 · 라우트 111 · 모델 12 · 레이아웃 58 |
-| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 593 · 라우트 314 · 모델 54 · 레이아웃 247 |
+| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 594 · 라우트 315 · 모델 54 · 레이아웃 248 |
 | `sirsoft-page` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-page/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-page/docs/README.md) | 훅 21 · 라우트 18 · 모델 3 · 레이아웃 3 |
 | `gnuboard7-hello_plugin` | 플러그인 | [AGENTS.md](../plugins/_bundled/gnuboard7-hello_plugin/AGENTS.md) | [docs/](../plugins/_bundled/gnuboard7-hello_plugin/docs/README.md) | 훅 1 · 라우트 0 · 모델 0 · 레이아웃 1 |
 | `sirsoft-ckeditor5` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-ckeditor5/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-ckeditor5/docs/README.md) | 훅 4 · 라우트 5 · 모델 1 · 레이아웃 2 |

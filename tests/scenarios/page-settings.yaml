@@ -1,12 +1,15 @@
-# audit:allow test-scenario-coverage[cross_product,effects,test_files] reason: 페이지 설정은 편집기 모달(8탭 셸/제목 배너/SEO 값 칸/타겟 picker — dnd-kit·합성 이벤트·포털 모달 의존)이라 Playwright 자동화 부적합(text-inline-binding.yaml 동일 정책). 입력 조합·후속 효과 cross product 는 단위 RTL(PageSettingsModal/PageTitleBanner/DataChipValueInput 14 + computed-inheritance 등)이 전수 커버하고, 캔버스 라이브 반영·저장→DB 영속→새로고침 복원·실사용자화면 렌더는 Chrome MCP §공통 검증 매트릭스(L0~L7)로 라이브 실측. SEO 값 칸 키화 0·이중인코딩 0 은 tinker DB 실측이 SSoT.
+# audit:allow test-scenario-coverage[cross_product,effects,test_files] reason: 페이지 설정은 편집기 모달(9탭 셸/제목 배너/SEO 값 칸/타겟 picker — dnd-kit·합성 이벤트·포털 모달 의존)이라 Playwright 자동화 부적합(text-inline-binding.yaml 동일 정책). 입력 조합·후속 효과 cross product 는 단위 RTL(PageSettingsModal/PageTitleBanner/DataChipValueInput 14 + computed-inheritance 등)이 전수 커버하고, 캔버스 라이브 반영·저장→DB 영속→새로고침 복원·실사용자화면 렌더는 Chrome MCP §공통 검증 매트릭스(L0~L7)로 라이브 실측. SEO 값 칸 키화 0·이중인코딩 0 은 tinker DB 실측이 SSoT.
 #   test-files 면제 사유: page-settings/PageTitleBanner.test.tsx 미작성 (#383 이월)
-feature: 레이아웃 편집기 페이지 설정 모달 (8탭 셸 + 제목 배너 + 캔버스 dataKey/격리/타겟 picker + SEO 값 칸 표현식·칩 확대)
+feature: 레이아웃 편집기 페이지 설정 모달 (9탭 셸(engine-v1.85.0 에 [스크롤] 추가) + 제목 배너 + 캔버스 dataKey/격리/타겟 picker + SEO 값 칸 표현식·칩 확대)
 phase: 8
 session: S10-1
 issue: 383
 axes:
   # 셸 라우팅·고급 배지·진입점 (~2.2)
-  active_tab: [meta, seo, init, overlay, computed, state, error, data]
+  active_tab: [meta, seo, init, overlay, scroll, computed, state, error, data]
+  # [스크롤] 탭 meta.scroll_restoration (engine-v1.85.0) — 칸별 값 출처와 편집 대상 레이아웃
+  scroll_value_source: [own, base_layout, template_json, engine_default]
+  scroll_edit_target: [route_layout, base_layout, standalone_document]
   advanced_badge: [none, init_advanced_count, computed_advanced_count, total_summary]
   entry_point: [toolbar_button, banner_settings_gear]
   toolbar_state: [route_active, base_active, modal_active, extension_disabled, iteration_item_disabled, no_selection_disabled]
@@ -107,13 +110,36 @@ effects:
   - seo_form_vars_candidates_fetch_carries_page_type_and_extensions
   - seo_form_forwards_route_layout_name_to_bot_preview
   # 셸 라우팅/배지
-  - shell_routes_eight_tabs_meta_seo_init_overlay_computed_state_error_data
+  - shell_routes_nine_tabs_meta_seo_init_overlay_scroll_computed_state_error_data
+  - shell_initial_tab_prop_opens_that_tab
+  - shell_tab_underline_uses_longhand_only_no_stale_color
+  - shell_tab_row_overflow_y_hidden_no_vertical_scrollbar
+  - shell_error_tab_receives_standard_http_codes_and_declared_codes
+  - shell_overlay_tab_derives_base_and_own_from_merged_minus_own
+  - shell_passes_page_sample_context_to_seo_form_seed_context
+  - shell_recipe_forms_receive_resolve_label_as_t
+  - shell_init_actions_reads_snake_then_camel_keys
   - shell_tab_click_switches_active_panel
   - shell_advanced_badge_counts_unreduced_init_and_computed_items
   - shell_advanced_summary_sums_total_when_positive
   - shell_no_save_button_patches_immediately_via_patchDocumentRaw
   - shell_title_resolves_metaTitle_else_editorLabel_else_path
   - shell_close_x_and_footer_call_onClose
+  # [스크롤] 탭 (engine-v1.85.0)
+  - shell_scroll_tab_derives_base_as_merged_minus_own_per_snapshot_key
+  - shell_scroll_patch_writes_merged_meta_and_own_only_original_meta
+  - shell_meta_and_seo_tab_patch_keeps_only_own_scroll_restoration_in_original
+  - shell_meta_patch_keeps_only_own_or_changed_seo_in_original  # [기본 정보]·[검색엔진] 탭 meta 패치는 베이스 SEO 를 이 화면 값으로 굳히지 않는다(이 화면이 적은 키·달라진 키만)
+  - shell_scroll_tab_reads_template_json_scroll_restoration_lazily
+  - shell_scroll_tab_marks_base_layout_edit_as_template_default
+  - scroll_form_field_source_badge_own_base_template_engine
+  - scroll_form_empty_field_removes_key_to_inherit
+  - scroll_form_selector_mode_saved_only_when_selector_typed
+  - scroll_form_containers_override_add_remove_revert
+  - scroll_form_snapshot_state_list_accepts_only_global_or_local_state_paths
+  - scroll_form_numbers_clamped_to_server_rule_range
+  - scroll_form_base_layout_banner_marks_template_default
+  - scroll_restoration_meta_saved_and_deep_merged_base_to_route
   # 진입점
   - toolbar_page_settings_button_replaces_legacy_data_button
   - toolbar_page_settings_active_only_route_base_modal_with_selectedRoute
@@ -218,6 +244,10 @@ test_files:
   # 자동 계산/로딩 화면 데이터칩 승격
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/CustomComputedBuilder.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/TransitionOverlayForm.test.tsx
+  # [스크롤] 탭 meta.scroll_restoration (engine-v1.85.0)
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ScrollRestorationForm.test.tsx
+  - tests/Unit/Services/LayoutServiceMergeScrollRestorationTest.php
+  - tests/Feature/Api/Admin/LayoutControllerTest.php
   # ($*_settings:) 칩 + [✎수정] 칩 편집기 + SeoVars 값전용 교체
   - resources/js/core/template-engine/layout-editor/__tests__/spec/inlineBindingUtils.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/components/prop-i18n-text-field.test.tsx

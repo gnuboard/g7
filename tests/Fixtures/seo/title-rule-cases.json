@@ -1,0 +1,202 @@
+{
+    "_comment": "화면 제목 규칙 판정 사례 — 서버(app/Seo/SeoTitleRule.php · SubstitutesSeoVariables)와 엔진(resources/js/core/routing/DocumentTitle.ts)이 같은 답을 내는지 두 시험(tests/Unit/Seo/SeoTitleRuleParityTest.php · resources/js/core/routing/__tests__/DocumentTitle.parity.test.ts)이 함께 읽는다. 한쪽만 고치지 않는다.",
+    "rule": [
+        {
+            "name": "리소스 meta_title 이 이긴다",
+            "input": { "tiers": ["가죽 크로스백", "개인정보처리방침", "후드 티", "OG 제목", "상품 상세"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "가죽 크로스백", "suffix": " - G7 Shop", "full": "가죽 크로스백 - G7 Shop" }
+        },
+        {
+            "name": "페이지 seo_meta.title 이 이긴다",
+            "input": { "tiers": ["", "개인정보처리방침", "후드 티", "OG 제목", "상품 상세"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "개인정보처리방침", "suffix": " - G7 Shop", "full": "개인정보처리방침 - G7 Shop" }
+        },
+        {
+            "name": "확장 제목 틀이 이긴다",
+            "input": { "tiers": ["", "", "후드 티", "OG 제목", "상품 상세"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "후드 티", "suffix": " - G7 Shop", "full": "후드 티 - G7 Shop" }
+        },
+        {
+            "name": "og.title 이 이긴다",
+            "input": { "tiers": ["", "", "", "OG 제목", "상품 상세"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "OG 제목", "suffix": " - G7 Shop", "full": "OG 제목 - G7 Shop" }
+        },
+        {
+            "name": "라우트 제목이 마지막 후보다",
+            "input": { "tiers": ["", "", "", "", "장바구니"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "장바구니", "suffix": " - G7 Shop", "full": "장바구니 - G7 Shop" }
+        },
+        {
+            "name": "사이트 이름뿐인 후보는 건너뛴다 (게시판 목록 기본 틀 {site_name})",
+            "input": { "tiers": ["", "", "G7 Shop", "", "게시판"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "게시판", "suffix": " - G7 Shop", "full": "게시판 - G7 Shop" }
+        },
+        {
+            "name": "앞뒤 공백이 있는 사이트 이름 후보도 건너뛴다",
+            "input": { "tiers": ["  G7 Shop ", "게시판"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "게시판", "suffix": " - G7 Shop", "full": "게시판 - G7 Shop" }
+        },
+        {
+            "name": "접미사 속 이름과 같은 후보도 사이트 이름뿐으로 본다",
+            "input": { "tiers": ["우리가게", "상품"], "site_name": "G7 Shop", "suffix": " | 우리가게" },
+            "expected": { "title": "상품", "suffix": " | 우리가게", "full": "상품 | 우리가게" }
+        },
+        {
+            "name": "사이트 첫 화면은 사이트 이름만 쓴다",
+            "input": { "tiers": ["홈 OG 제목", "홈"], "site_name": "G7 Shop", "suffix": "", "is_home": true },
+            "expected": { "title": "", "suffix": "G7 Shop", "full": "G7 Shop" }
+        },
+        {
+            "name": "후보가 모두 비면 사이트 이름",
+            "input": { "tiers": ["", "", "", "", ""], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "", "suffix": "G7 Shop", "full": "G7 Shop" }
+        },
+        {
+            "name": "사이트 이름도 접미사도 없으면 빈 제목 (구분자만 붙지 않는다)",
+            "input": { "tiers": ["상품"], "site_name": "", "suffix": "" },
+            "expected": { "title": "상품", "suffix": "", "full": "상품" }
+        },
+        {
+            "name": "사이트 이름도 후보도 없으면 빈 값",
+            "input": { "tiers": [""], "site_name": "", "suffix": "" },
+            "expected": { "title": "", "suffix": "", "full": "" }
+        },
+        {
+            "name": "사용자 접미사의 {site_name} 을 바꾼다",
+            "input": { "tiers": ["상품"], "site_name": "G7 Shop", "suffix": " :: {site_name} 공식몰" },
+            "expected": { "title": "상품", "suffix": " :: G7 Shop 공식몰", "full": "상품 :: G7 Shop 공식몰" }
+        },
+        {
+            "name": "앞 공백이 지워진 저장 접미사는 공백 하나를 복원한다",
+            "input": { "tiers": ["상품"], "site_name": "G7 Shop", "suffix": "| G7 Shop" },
+            "expected": { "title": "상품", "suffix": " | G7 Shop", "full": "상품 | G7 Shop" }
+        },
+        {
+            "name": "제목이 없으면 접미사 앞 구분자를 뗀다",
+            "input": { "tiers": [""], "site_name": "G7 Shop", "suffix": "| G7 Shop" },
+            "expected": { "title": "", "suffix": "G7 Shop", "full": "G7 Shop" }
+        },
+        {
+            "name": "공백뿐인 접미사는 기본 접미사",
+            "input": { "tiers": ["상품"], "site_name": "G7 Shop", "suffix": "   " },
+            "expected": { "title": "상품", "suffix": " - G7 Shop", "full": "상품 - G7 Shop" }
+        },
+        {
+            "name": "옮겨 온 meta_title 이 이미 「 - 사이트명」으로 끝나면 다시 붙이지 않는다",
+            "input": { "tiers": ["가죽크로스백 - G7 Shop"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "가죽크로스백 - G7 Shop", "suffix": "", "full": "가죽크로스백 - G7 Shop" }
+        },
+        {
+            "name": "「 | 사이트명」으로 끝나도 다시 붙이지 않는다",
+            "input": { "tiers": ["가죽크로스백 | G7 Shop"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "가죽크로스백 | G7 Shop", "suffix": "", "full": "가죽크로스백 | G7 Shop" }
+        },
+        {
+            "name": "「 · 사이트명」으로 끝나도 다시 붙이지 않는다",
+            "input": { "tiers": ["가죽크로스백 · G7 Shop"], "site_name": "G7 Shop", "suffix": " | {site_name}" },
+            "expected": { "title": "가죽크로스백 · G7 Shop", "suffix": "", "full": "가죽크로스백 · G7 Shop" }
+        },
+        {
+            "name": "사용자 접미사로 이미 끝나면 다시 붙이지 않는다",
+            "input": { "tiers": ["상품 :: G7 Shop 공식몰"], "site_name": "G7 Shop", "suffix": " :: {site_name} 공식몰" },
+            "expected": { "title": "상품 :: G7 Shop 공식몰", "suffix": "", "full": "상품 :: G7 Shop 공식몰" }
+        },
+        {
+            "name": "사이트 이름이 구분자 없이 붙은 제목은 접미사를 붙인다",
+            "input": { "tiers": ["G7 Shop 이벤트"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "G7 Shop 이벤트", "suffix": " - G7 Shop", "full": "G7 Shop 이벤트 - G7 Shop" }
+        },
+        {
+            "name": "다국어 사이트 이름 — 현재 언어",
+            "input": { "tiers": ["Product"], "site_name": { "ko": "지세븐", "en": "G7" }, "suffix": "", "locale": "en", "site_locale": "ko" },
+            "expected": { "title": "Product", "suffix": " - G7", "full": "Product - G7" }
+        },
+        {
+            "name": "다국어 사이트 이름 — 현재 언어 값이 없으면 사이트 기본 언어",
+            "input": { "tiers": ["製品"], "site_name": { "ko": "지세븐", "en": "G7" }, "suffix": "", "locale": "ja", "site_locale": "ko" },
+            "expected": { "title": "製品", "suffix": " - 지세븐", "full": "製品 - 지세븐" }
+        },
+        {
+            "name": "다국어 후보 값",
+            "input": { "tiers": [{ "ko": "상품", "en": "Product" }], "site_name": "G7", "suffix": "", "locale": "en", "site_locale": "ko" },
+            "expected": { "title": "Product", "suffix": " - G7", "full": "Product - G7" }
+        },
+        {
+            "name": "다국어 사이트 이름뿐인 후보는 건너뛴다",
+            "input": { "tiers": ["G7", "게시판"], "site_name": { "ko": "지세븐", "en": "G7" }, "suffix": "", "locale": "en", "site_locale": "ko" },
+            "expected": { "title": "게시판", "suffix": " - G7", "full": "게시판 - G7" }
+        },
+        {
+            "name": "태그·엔티티를 정리한다",
+            "input": { "tiers": ["<b>Tom</b> &amp; Jerry"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "Tom & Jerry", "suffix": " - G7 Shop", "full": "Tom & Jerry - G7 Shop" }
+        },
+        {
+            "name": "공백을 한 칸으로 줄인다",
+            "input": { "tiers": ["  Hello   World \n"], "site_name": "G7 Shop", "suffix": "" },
+            "expected": { "title": "Hello World", "suffix": " - G7 Shop", "full": "Hello World - G7 Shop" }
+        }
+    ],
+    "substitute": [
+        {
+            "name": "빈 변수 옆 구분자를 지운다 (앞)",
+            "template": "{commerce_name} - {product_name}",
+            "vars": { "commerce_name": "", "product_name": "후드 티" },
+            "expected": "후드 티"
+        },
+        {
+            "name": "빈 변수 옆 구분자를 지운다 (뒤)",
+            "template": "{product_name} | {commerce_name}",
+            "vars": { "commerce_name": "G7 Shop", "product_name": "" },
+            "expected": "G7 Shop"
+        },
+        {
+            "name": "가운뎃점 구분자",
+            "template": "{a} · {b}",
+            "vars": { "a": "가", "b": "" },
+            "expected": "가"
+        },
+        {
+            "name": "옵셔널 그룹 — 변수가 비면 통째로 지운다",
+            "template": "[{commerce_name} - ]{product_name}",
+            "vars": { "commerce_name": "", "product_name": "후드 티" },
+            "expected": "후드 티"
+        },
+        {
+            "name": "옵셔널 그룹 — 변수가 차면 남긴다",
+            "template": "[{commerce_name} - ]{product_name}",
+            "vars": { "commerce_name": "G7 Shop", "product_name": "후드 티" },
+            "expected": "G7 Shop - 후드 티"
+        },
+        {
+            "name": "선언되지 않은 변수는 자리표시자를 그대로 둔다",
+            "template": "{a} {unknown}",
+            "vars": { "a": "x" },
+            "expected": "x {unknown}"
+        },
+        {
+            "name": "새 기본 틀 — 상품명만",
+            "template": "{product_name}",
+            "vars": { "commerce_name": "G7 Shop", "product_name": "후드 티" },
+            "expected": "후드 티"
+        },
+        {
+            "name": "공백을 한 칸으로 줄이고 앞뒤를 지운다",
+            "template": "  {a}   {b}  ",
+            "vars": { "a": "가", "b": "나" },
+            "expected": "가 나"
+        },
+        {
+            "name": "빈 틀",
+            "template": "",
+            "vars": { "a": "가" },
+            "expected": ""
+        },
+        {
+            "name": "모든 변수가 비면 빈 값",
+            "template": "{commerce_name} - {keyword_name}",
+            "vars": { "commerce_name": "", "keyword_name": "" },
+            "expected": ""
+        }
+    ]
+}

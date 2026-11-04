@@ -46,6 +46,11 @@ interface HeaderProps {
     /** 검색칸을 그리는가 — 레이아웃은 게시판·쇼핑몰·페이지 중 하나라도 켜져 있으면 true 를 넘긴다(검색 공급자가 없으면 숨김). 기본값 true */
     searchEnabled?: boolean;
     /**
+     * 검색칸의 최근 검색어 범위 — 같은 범위를 쓰는 검색창(모바일 서랍·통합검색 화면)과 목록을 공유한다.
+     * 기본값 `core.site`(코어 통합검색). 엔진이 그 범위를 쓸 수 없다고 답하면 펼침 목록 없이 평범한 검색칸이다
+     */
+    searchHistoryScope?: string;
+    /**
      * 봇 화면(seo-config header_nav)의 「쇼핑」 링크 주소(예: "/shop/products") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다).
      * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
      */

@@ -3,6 +3,7 @@
 return [
     'handlers' => [
         'user_withdrawn' => '退会会員の残存個人情報',
+        'search_history' => '最近の検索語の保管期限',
     ],
     'targets' => [
         'columns' => [
@@ -11,9 +12,14 @@ return [
             'withdrawn_at' => '退会日',
             'last_activity_at' => '最後の活動日',
             'dormant_at' => '休眠転換日',
+            'member' => '会員',
+            'search_scope' => '検索範囲',
+            'keyword_count' => '検索語数',
+            'oldest_searched_at' => '最も古い検索日',
         ],
         'unknown_handler' => '登録されていない個人情報処理対象です。',
         'unknown_stage' => '不明な休眠ステージです。',
+        'keyword_count_value' => '検索語 :count件',
     ],
     'manual_run' => [
         'queued' => '実行をキューに受け付けました。処理が終わるとカードに結果が表示されます。',

@@ -319,7 +319,7 @@ class LayoutService
     }
 
     /**
-     * meta 병합 - 자식 값이 우선 (seo 키는 deep merge)
+     * meta 병합 - 자식 값이 우선 (seo·scroll_restoration 키는 deep merge)
      *
      * @param  array  $parentMeta  부모 메타 데이터
      * @param  array  $childMeta  자식 메타 데이터
@@ -332,7 +332,36 @@ class LayoutService
             $childMeta['seo'] = $this->mergeSeo($parentMeta['seo'], $childMeta['seo']);
         }
 
+        // scroll_restoration 은 베이스(편집기의 템플릿 기본값) 위에 화면이 적은 키만 덮어쓴다
+        if (is_array($parentMeta['scroll_restoration'] ?? null) && is_array($childMeta['scroll_restoration'] ?? null)) {
+            $childMeta['scroll_restoration'] = $this->mergeScrollRestoration(
+                $parentMeta['scroll_restoration'],
+                $childMeta['scroll_restoration']
+            );
+        }
+
         return array_merge($parentMeta, $childMeta);
+    }
+
+    /**
+     * 스크롤 복원 설정을 병합합니다.
+     *
+     * 최상위 키와 하위 snapshot 은 키 단위로 자식이 우선한다. 목록 값(containers·snapshot.state)은 자식이
+     * 적으면 통째로 바꾼다(array_replace_recursive 처럼 인덱스별로 섞지 않는다).
+     *
+     * @param  array  $parent  부모(베이스) 스크롤 복원 설정
+     * @param  array  $child  자식(화면) 스크롤 복원 설정
+     * @return array 병합된 스크롤 복원 설정
+     */
+    private function mergeScrollRestoration(array $parent, array $child): array
+    {
+        $merged = array_merge($parent, $child);
+
+        if (is_array($parent['snapshot'] ?? null) && is_array($child['snapshot'] ?? null)) {
+            $merged['snapshot'] = array_merge($parent['snapshot'], $child['snapshot']);
+        }
+
+        return $merged;
     }
 
     /**

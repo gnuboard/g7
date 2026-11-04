@@ -15,6 +15,7 @@
     "claim": "Claims",
     "shipping": "Shipping",
     "review_settings": "Review Settings",
+    "product_display": "Product display",
     "notification_definitions": "Notifications",
     "identity_policies": "Identity Policies",
     "mileage": "Mileage",
@@ -577,7 +578,7 @@
   "seo": {
     "meta_settings": {
       "title": "Meta Tag Settings",
-      "description": "Configure meta tags for each page. You can use variables for dynamic settings.",
+      "description": "Configure meta tags for each page. You can use variables for dynamic settings. The title is used both for search engines and for the visitor's browser tab, and the site name is appended by the core SEO \"Title Suffix\" (' - site name' when empty), so you do not need to put it in the template.",
       "main_page": "Main Page",
       "category_page": "Category",
       "search_page": "Search Results",
@@ -626,6 +627,19 @@
     "images_unit": "images",
     "max_image_size_mb_label": "Max Image Size",
     "max_image_size_mb_hint": "Maximum file size for uploaded images"
+  },
+  "product_display": {
+    "title": "Related products",
+    "description": "Controls the “You may also like” list under the product details. Products from the primary category come first, then products from its parent categories (up to 8).",
+    "order_label": "Order within a level",
+    "order_hint": "How products are ordered within the same level (primary category, parent category, …).",
+    "order_random": "Random",
+    "order_sales": "Best selling",
+    "order_reviews": "Most reviews",
+    "order_latest": "Newest",
+    "cache_hours_label": "List refresh interval",
+    "hours_unit": "hours",
+    "cache_hours_hint": "A chosen list is kept for this many hours (a random list stays the same during this time). 0 picks a new list on every view. Saving clears the lists chosen so far."
   },
   "notification_definitions": {
     "title": "Notification Settings",

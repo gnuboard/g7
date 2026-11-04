@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.4-0066FF?style=flat-square" alt="version 1.1.4">
+  <img src="https://img.shields.io/badge/version-1.1.5-0066FF?style=flat-square" alt="version 1.1.5">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.5-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.5">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -65,6 +65,11 @@ flowchart TD
 색 모드·사이드바 접힘·목록 필터·표시 열·보기 방식처럼 관리 화면이 쿠키 동의와 무관하게 쓰는 브라우저 저장
 항목은 `template.json` 의 `necessary_storage` 에 선언돼 있어, 개인정보 동의 플러그인을 쓰는 사이트에서도 동의
 전에 지워지지 않습니다(그누보드7 7.1.3 이상).
+
+목록에서 수정 화면으로 갔다가 뒤로 가면 보던 위치로 돌아옵니다. 관리 화면은 창이 아니라 본문 영역
+(`#right_content_area`)에서 스크롤되므로, `template.json` 의 `scroll_restoration.containers` 에 그 영역을 적어
+엔진이 함께 기억합니다(코어 엔진 engine-v1.85.0 이상). 사이트에서 바꾸려면 레이아웃 편집기에서 베이스 레이아웃
+(`_admin_base`)의 페이지 설정 「스크롤」 을 고칩니다.
 <!-- @intent END -->
 
 ## 요구 사항
@@ -72,7 +77,7 @@ flowchart TD
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.1` |
+| 그누보드7 코어 | `>=7.1.5` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 

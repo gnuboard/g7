@@ -912,58 +912,42 @@
                             },
                             "children": [
                                 {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "relative"
-                                    },
-                                    "children": [
+                                    "comment": "최근 검색어 검색창 — 머리글 검색칸·통합검색 화면과 같은 범위(core.site)라 목록을 함께 쓴다. 빈 칸에 초점을 두면 최근 검색어가 펼쳐지고, 제출할 때 검색창이 기록한다(기다리지 않음).",
+                                    "id": "mobile_drawer_search_box",
+                                    "type": "composite",
+                                    "name": "RecentSearchCombobox",
+                                    "actions": [
                                         {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "search",
-                                                "size": "sm",
-                                                "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Input",
+                                            "comment": "드로어 검색 — 제출에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다.",
+                                            "event": "onSearch",
+                                            "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "드로어 검색 — 엔터에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다.",
-                                                    "type": "keydown",
-                                                    "key": "Enter",
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "mobileMenuOpen": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "navigate",
-                                                            "params": {
-                                                                "path": "/search",
-                                                                "query": {
-                                                                    "q": "{{$event.target.value}}"
-                                                                }
-                                                            }
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "mobileMenuOpen": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/search",
+                                                        "query": {
+                                                            "q": "{{$args[0]}}"
                                                         }
-                                                    ]
+                                                    }
                                                 }
-                                            ],
-                                            "props": {
-                                                "type": "text",
-                                                "name": "q",
-                                                "placeholder": "$t:user.search_placeholder",
-                                                "className": "w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-                                            }
+                                            ]
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "scope": "core.site",
+                                        "name": "q",
+                                        "resultPath": "/search",
+                                        "placeholder": "$t:user.search_placeholder",
+                                        "inputClassName": "w-full min-h-[44px] pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
+                                    }
                                 }
                             ]
                         },
@@ -2375,6 +2359,7 @@
                         "boardEnabled": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
                         "shopEnabled": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                         "searchEnabled": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}",
+                        "searchHistoryScope": "core.site",
                         "availableLocales": "{{$locales}}",
                         "currentLocale": "{{$locale}}",
                         "availableCurrencies": "{{_global.availableCurrencies ?? []}}",

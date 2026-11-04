@@ -462,7 +462,9 @@
             "saved_addresses": "Saved addresses",
             "address_empty": "No saved addresses.",
             "address_default": "Default",
-            "address_more": "{{count}} more in address management."
+            "address_more": "{{count}} more in address management.",
+            "search_history": "Recent product searches",
+            "search_history_empty": "No saved product searches."
         },
         "claim": {
             "$partial": "partial/en/admin/claim.json"

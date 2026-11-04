@@ -1,0 +1,42 @@
+# 시나리오 매니페스트 — 상품 상세 관련 상품(「이 상품은 어떠세요?」)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: public_product_related
+
+description: >-
+  GET /api/modules/sirsoft-ecommerce/products/{product}/related 는 기준 상품의 대표 분류(하위 포함) 상품을 먼저,
+  모자라면 그 상위 분류 → 그 위 분류 상품으로 채운다(최대 limit, 기본 8). 지금 상품·숨긴 상품·앞 단계에서 고른
+  상품은 다시 고르지 않는다. 단계 안 순서는 환경설정 product_display.related_order(random 기본 / sales / reviews /
+  latest), 고른 ID 는 product_display.related_cache_hours(기본 24, 0 이면 캐시 안 함) 동안 코어 캐시에 두고 설정을
+  저장하면 비운다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicProductRelatedTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  case:
+    - tier_fill            # 대표 분류 → 상위 → 그 위 순서, 다른 갈래 분류 제외
+    - limit_cut            # 앞 단계만으로 limit 이 차면 상위 단계는 안 본다
+    - exclusions           # 지금 상품·숨긴 상품·두 분류에 걸린 상품 중복 제외
+    - no_category          # 분류가 없으면 빈 목록
+    - order_reviews        # 단계 안 순서 설정(리뷰 많은 순)
+    - cache_kept           # 유지 시간 동안 같은 목록(새 상품이 생겨도)
+    - cache_off            # 0 이면 볼 때마다 새로 고른다
+    - settings_save_flush  # 관리자가 설정을 저장하면 골라 둔 목록을 비운다
+    - settings_validation  # 순서 허용값·유지 시간 범위 밖은 422
+    - hidden_base          # 기준 상품이 숨김이면 404
+
+exclusions:
+  - { case: tier_fill, reason: "제외 없음 — 단일 축" }
+
+effects:
+  - related_products_fill_by_category_tier   # 단계·순서·제외 규칙대로 채운다
+  - related_products_cache_by_setting        # 설정 유지 시간 동안 캐시, 설정 저장 시 비움
+  - related_products_settings_validated      # 설정 저장 검증
+
+validation:
+  audit_rule: test-scenario-reverse-mapping
+  note: |
+    화면 축(사용자 템플릿 상세 아래 목록·관리자 상품 진열 탭)은 템플릿 시험과 브라우저 실측이 덮는다.

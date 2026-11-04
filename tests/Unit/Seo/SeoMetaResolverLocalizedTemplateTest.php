@@ -4,6 +4,7 @@ namespace Tests\Unit\Seo;
 
 use App\Seo\ExpressionEvaluator;
 use App\Seo\SeoMetaResolver;
+use App\Seo\SeoTitleRule;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
@@ -107,8 +108,8 @@ class SeoMetaResolverLocalizedTemplateTest extends TestCase
     }
 
     /**
-     * 접미사가 빈 사이트에서 사이트 이름뿐인 제목은 비우지 않고 사이트 이름을 제목으로 씁니다.
-     * 기본 설치는 접미사가 빈 값이라 봇 홈 제목이 `<title></title>` 로 나가던 결함의 회귀 가드입니다.
+     * 접미사가 빈 사이트에서도 사이트 이름뿐인 제목은 비우고, 기본 접미사(` - {사이트 이름}`)가 사이트 이름 하나만 남깁니다.
+     * 기본 설치는 접미사가 빈 값이라 봇 홈 제목이 `<title></title>` 로 나가던 결함의 회귀 가드입니다(7.1.5 부터 기본 접미사로 막는다).
      *
      * @scenario surface=title_suffix_empty
      *
@@ -125,8 +126,9 @@ class SeoMetaResolverLocalizedTemplateTest extends TestCase
 
         $result = $this->resolver->resolve(['page_type' => 'board'], [], 'sirsoft-board', null, []);
 
-        $this->assertSame('그누보드7', $result['title']);
+        $this->assertSame('', $result['title']);
         $this->assertSame('', $result['titleSuffix']);
+        $this->assertSame('그누보드7', $result['title'].SeoTitleRule::composeSuffix($result['title'], SeoTitleRule::assembleSuffix($result['titleSuffix'], '그누보드7'), '그누보드7'));
         $this->assertSame('그누보드7', $result['og']['title']);
     }
 
@@ -147,7 +149,9 @@ class SeoMetaResolverLocalizedTemplateTest extends TestCase
 
         $result = $this->resolver->resolve([], [], null, null, []);
 
-        $this->assertSame('그누보드7', $result['title']);
+        $this->assertSame('', $result['title']);
+        $this->assertSame('그누보드7', SeoTitleRule::composeSuffix($result['title'], SeoTitleRule::assembleSuffix($result['titleSuffix'], '그누보드7'), '그누보드7'));
+        $this->assertSame('그누보드7', $result['og']['title']);
     }
 
     /**

@@ -160,6 +160,10 @@
                                         "label": "$t:shop.sort.sales"
                                     },
                                     {
+                                        "value": "reviews",
+                                        "label": "$t:shop.sort.reviews"
+                                    },
+                                    {
                                         "value": "price_asc",
                                         "label": "$t:shop.sort.price_asc"
                                     },

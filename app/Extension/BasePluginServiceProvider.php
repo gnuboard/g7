@@ -38,6 +38,8 @@ abstract class BasePluginServiceProvider extends AbstractExtensionServiceProvide
      * 직접 생성한 in-memory 어댑터를 반환합니다. AbstractPlugin::getCache() /
      * getStorage() 의 기본 구현과 동일한 키 prefix 와 디스크를 사용하므로 운영
      * 동작은 보존됩니다.
+     *
+     * @return CacheableExtensionInterface 플러그인 인스턴스
      */
     protected function resolveExtension(): CacheableExtensionInterface
     {
@@ -52,7 +54,19 @@ abstract class BasePluginServiceProvider extends AbstractExtensionServiceProvide
     }
 
     /**
+     * 활성 플러그인 식별자 목록을 반환합니다 (boot 부수효과 게이트용, 요청 메모 경유).
+     *
+     * @return array<int, string>|null 활성 플러그인 식별자 목록
+     */
+    protected function activeIdentifiersForGate(): ?array
+    {
+        return PluginManager::getActivePluginIdentifiers();
+    }
+
+    /**
      * Register services.
+     *
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -62,6 +76,8 @@ abstract class BasePluginServiceProvider extends AbstractExtensionServiceProvide
 
     /**
      * Bootstrap services.
+     *
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -71,6 +87,8 @@ abstract class BasePluginServiceProvider extends AbstractExtensionServiceProvide
 
     /**
      * `$pluginIdentifier` 값을 부모의 `$extensionIdentifier` 로 미러링합니다.
+     *
+     * @return void 반환값 없음
      */
     private function ensureIdentifierAlias(): void
     {

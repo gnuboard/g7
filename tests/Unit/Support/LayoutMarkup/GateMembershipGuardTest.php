@@ -99,9 +99,9 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         //    "여기서도 빼라" 가 red 이므로, 이 목록은 늘지 않게만 잠그는 자리다.
         //    #745 가 게시판 매니페스트(`board-comment-on-post-state`·`board-upgrade-steps`)에 등재해
         //    `CommentPostStateTest`·`PlaintextPostPasswordRehashTest`·`PostListViewCountIndexUpgradeTest` 3행을 해소했다.
+        //    #860 이 긴 검색어 500 수정 회귀를 게시판 매니페스트에 등재해 `PostSearchKeywordSanitizationTest` 1행을 해소했다.
         'modules/_bundled/sirsoft-board/tests/Feature/NoticeResultCapTest.php' => '게시판 트랙 소유 (공지 조회의 결과 상한 준수).',
         'modules/_bundled/sirsoft-board/tests/Feature/PostNumberBoundedTotalRegressionTest.php' => '게시판 트랙 소유 (총 건수 절사 시 글번호 표기).',
-        'modules/_bundled/sirsoft-board/tests/Feature/PostSearchKeywordSanitizationTest.php' => '게시판 트랙 소유 (전문검색 연산자 입력의 500 방지).',
         // ── develop 8차 병합 유입분(7.0.10 · KVE-2026 보안 6묶음). 같은 형태 — develop 라인이 마킹은 달고
         //    매니페스트는 두지 않았다. 귀속 실측: 커밋 `07fd45e6b`(#645) 도입, 이 트랙 변경 0.
         //    #789 가 게시판 매니페스트(`board-secret-thread-visibility`·`board-secret-content-bypass-paths`)에 등재해

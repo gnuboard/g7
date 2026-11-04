@@ -45,4 +45,7 @@ return [
             'dispatched' => 'Sitemap generation dispatched to the queue. (mode: :mode)',
         ],
     ],
+
+    // Admin browser tab title suffix — appended after the screen title ({site_name} is the site name)
+    'admin_title_suffix' => ' - {site_name} Admin',
 ];

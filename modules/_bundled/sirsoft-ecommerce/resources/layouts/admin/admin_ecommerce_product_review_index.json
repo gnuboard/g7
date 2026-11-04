@@ -1,5 +1,5 @@
 {
-    "comment": "상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다\n  않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).\n  조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를\n  검색 입력값으로 되돌려 담는다.",
+    "comment": "e2e:allow 회원 없이 등록한 후기(다른 쇼핑몰 이관)의 작성자·「이관」·주문 「—」·HTML 본문 표시 — 이관 도구가 넣는 데이터라 조작 흐름이 없고, 소비 계약은 importedReviewDisplay.test.ts, 응답은 PHPUnit ImportedProductReviewTest 가 고정\n  상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다\n  않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).\n  조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를\n  검색 입력값으로 되돌려 담는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_review_index",
     "extends": "_admin_base",
@@ -1777,13 +1777,14 @@
                                             "sortable": false,
                                             "cellChildren": [
                                                 {
+                                                    "comment": "HTML 본문(다른 쇼핑몰에서 이관한 후기)은 태그를 걷어 낸 글자만 한 줄로 보인다",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
                                                         "className": "w-full max-w-[200px] truncate text-primary",
-                                                        "title": "{{row.content ?? ''}}"
+                                                        "title": "{{row.content_plain ?? row.content ?? ''}}"
                                                     },
-                                                    "text": "{{row.content ?? ''}}"
+                                                    "text": "{{row.content_plain ?? row.content ?? ''}}"
                                                 }
                                             ]
                                         },
@@ -1847,6 +1848,7 @@
                                                             "text": "{{row.user?.name ?? ''}}"
                                                         },
                                                         {
+                                                            "comment": "회원이 없는 후기(다른 쇼핑몰에서 이관) — 저장된 작성자 이름 그대로 + 「이관」 표시",
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "if": "{{!row.user_id}}",
@@ -1857,11 +1859,21 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "text": "{{row.user?.name ?? ''}}"
+                                                                    "text": "{{row.author_name ?? row.user?.name ?? ''}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
+                                                                    "if": "{{row.is_imported}}",
+                                                                    "props": {
+                                                                        "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                                    },
+                                                                    "text": "($t:sirsoft-ecommerce.admin.product_review.table.imported)"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!row.is_imported}}",
                                                                     "props": {
                                                                         "className": "text-gray-500 dark:text-gray-400 ml-1"
                                                                     },
@@ -1882,11 +1894,22 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "A",
+                                                    "if": "{{!!row.orderOption?.order_number}}",
                                                     "props": {
                                                         "href": "{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}",
                                                         "className": "text-blue-600 hover:underline dark:text-blue-400"
                                                     },
                                                     "text": "{{row.orderOption?.order_number ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "주문 없이 등록된 후기",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!row.orderOption?.order_number}}",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "—"
                                                 }
                                             ]
                                         },
@@ -2120,11 +2143,21 @@
                                                                                                 {
                                                                                                     "type": "basic",
                                                                                                     "name": "Span",
-                                                                                                    "text": "{{row.user?.name ?? ''}}"
+                                                                                                    "text": "{{row.author_name ?? row.user?.name ?? ''}}"
                                                                                                 },
                                                                                                 {
                                                                                                     "type": "basic",
                                                                                                     "name": "Span",
+                                                                                                    "if": "{{row.is_imported}}",
+                                                                                                    "props": {
+                                                                                                        "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                                                                    },
+                                                                                                    "text": "($t:sirsoft-ecommerce.admin.product_review.table.imported)"
+                                                                                                },
+                                                                                                {
+                                                                                                    "type": "basic",
+                                                                                                    "name": "Span",
+                                                                                                    "if": "{{!row.is_imported}}",
                                                                                                     "props": {
                                                                                                         "className": "text-gray-500 dark:text-gray-400 ml-1"
                                                                                                     },
@@ -2135,6 +2168,7 @@
                                                                                     ]
                                                                                 },
                                                                                 {
+                                                                                    "comment": "주문 없이 등록된 후기(다른 쇼핑몰에서 이관)는 주문번호·구매수량·구매일시를 「—」 로",
                                                                                     "type": "basic",
                                                                                     "name": "Div",
                                                                                     "props": {
@@ -2152,11 +2186,21 @@
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "A",
+                                                                                            "if": "{{!!row.orderOption?.order_number}}",
                                                                                             "props": {
                                                                                                 "href": "{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}",
                                                                                                 "className": "text-blue-600 hover:underline dark:text-blue-400 font-medium"
                                                                                             },
                                                                                             "text": "{{row.orderOption?.order_number ?? ''}}"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "if": "{{!row.orderOption?.order_number}}",
+                                                                                            "props": {
+                                                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                                            },
+                                                                                            "text": "—"
                                                                                         }
                                                                                     ]
                                                                                 },
@@ -2178,10 +2222,20 @@
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "Span",
+                                                                                            "if": "{{!!row.orderOption}}",
                                                                                             "props": {
                                                                                                 "className": "text-primary"
                                                                                             },
                                                                                             "text": "$t:defer:sirsoft-ecommerce.admin.product_review.table.quantity_value|count={{row.orderOption?.quantity ?? ''}}"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "if": "{{!row.orderOption}}",
+                                                                                            "props": {
+                                                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                                            },
+                                                                                            "text": "—"
                                                                                         }
                                                                                     ]
                                                                                 },
@@ -2206,7 +2260,7 @@
                                                                                             "props": {
                                                                                                 "className": "text-primary"
                                                                                             },
-                                                                                            "text": "{{row.orderOption?.created_at ?? ''}}"
+                                                                                            "text": "{{row.orderOption?.created_at ?? '—'}}"
                                                                                         }
                                                                                     ]
                                                                                 }
@@ -2286,10 +2340,22 @@
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Div",
+                                                                                    "if": "{{row.content_mode !== 'html'}}",
                                                                                     "props": {
                                                                                         "className": "text-primary mb-4"
                                                                                     },
                                                                                     "text": "{{row.content ?? ''}}"
+                                                                                },
+                                                                                {
+                                                                                    "comment": "HTML 본문(다른 쇼핑몰에서 이관한 후기) — 서버가 저장 때 정화했고 컴포넌트가 한 번 더 정화한다",
+                                                                                    "type": "composite",
+                                                                                    "name": "HtmlContent",
+                                                                                    "if": "{{row.content_mode === 'html'}}",
+                                                                                    "props": {
+                                                                                        "content": "{{row.content ?? ''}}",
+                                                                                        "isHtml": true,
+                                                                                        "className": "text-primary mb-4 prose prose-sm dark:prose-invert max-w-none"
+                                                                                    }
                                                                                 },
                                                                                 {
                                                                                     "comment": "첨부 이미지 레이블",
@@ -2340,11 +2406,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 0,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2389,11 +2455,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 1,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2438,11 +2504,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 2,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2487,11 +2553,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 3,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2536,11 +2602,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 3,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2682,10 +2748,21 @@
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Div",
+                                                                                    "if": "{{row.reply_content_mode !== 'html'}}",
                                                                                     "props": {
                                                                                         "className": "text-primary"
                                                                                     },
                                                                                     "text": "{{rowReplyContent}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "composite",
+                                                                                    "name": "HtmlContent",
+                                                                                    "if": "{{row.reply_content_mode === 'html'}}",
+                                                                                    "props": {
+                                                                                        "content": "{{rowReplyContent ?? ''}}",
+                                                                                        "isHtml": true,
+                                                                                        "className": "text-primary prose prose-sm dark:prose-invert max-w-none"
+                                                                                    }
                                                                                 }
                                                                             ]
                                                                         },
@@ -2699,12 +2776,13 @@
                                                                             },
                                                                             "children": [
                                                                                 {
+                                                                                    "comment": "이관한 답변은 등록 관리자가 없다 — 관리자 이름·이메일 칸을 빼고 답변일만",
                                                                                     "type": "basic",
                                                                                     "name": "Span",
                                                                                     "props": {
                                                                                         "className": "text-secondary text-xs"
                                                                                     },
-                                                                                    "text": "{{`${row.reply_admin?.name ?? ''} (${row.reply_admin?.email ?? ''}) · ${row.replied_at ?? ''}${row.reply_updated_at ? ' · ' + $t('sirsoft-ecommerce.admin.product_review.detail.customer_review.updated_at_label') + row.reply_updated_at : ''}`}}"
+                                                                                    "text": "{{`${row.reply_admin ? (row.reply_admin?.name ?? '') + ' (' + (row.reply_admin?.email ?? '') + ') · ' : ''}${row.replied_at ?? ''}${row.reply_updated_at ? ' · ' + $t('sirsoft-ecommerce.admin.product_review.detail.customer_review.updated_at_label') + row.reply_updated_at : ''}`}}"
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",

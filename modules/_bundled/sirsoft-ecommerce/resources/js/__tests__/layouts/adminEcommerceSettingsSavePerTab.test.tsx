@@ -258,9 +258,9 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
          *
          * @effects settings_tabs_include_privacy_retention
          */
-        it('11개 탭이 정의되어야 한다 (마일리지·개인정보 보유기간 탭 포함)', () => {
+        it('12개 탭이 정의되어야 한다 (마일리지·개인정보 보유기간·상품 진열 탭 포함)', () => {
             const tabs = tabNav.props.tabs;
-            expect(tabs).toHaveLength(11);
+            expect(tabs).toHaveLength(12);
 
             const tabIds = tabs.map((t: any) => t.id);
             expect(tabIds).toEqual([
@@ -271,6 +271,8 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
                 'claim',
                 'shipping',
                 'review_settings',
+                // 상품 상세 관련 상품(「이 상품은 어떠세요?」) 순서·목록 유지 시간
+                'product_display',
                 'notification_definitions',
                 'identity_policies',
                 'mileage',

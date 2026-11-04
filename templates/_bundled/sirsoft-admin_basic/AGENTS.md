@@ -95,6 +95,10 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 `template.json` 의 `necessary_storage`(코어 7.1.3+)는 이 템플릿 화면이 쿠키 동의와 무관하게 쓰는 브라우저 저장
 키(색 모드·사이드바 접힘·목록 필터·표시 열·보기 방식, 경고 닫음 기록)를 선언합니다 — 개인정보 동의 플러그인이
 이 선언을 「확장 제공 항목」에 합쳐 동의 전에도 지우지 않습니다. 화면이 새 필수 키를 쓰게 되면 여기에 추가합니다.
+
+`template.json` 의 `scroll_restoration`(코어 엔진 engine-v1.85.0+)은 뒤로/앞으로 가기·새로고침 스크롤 복원의 배포
+초깃값입니다. 관리 화면은 본문 영역(`#right_content_area`)에서 스크롤되므로 `containers` 에 그 선택자를 둡니다 —
+본문 영역 id 를 바꾸면 여기도 함께 바꿉니다. 사이트별 조정은 베이스 레이아웃 meta(`_admin_base` 페이지 설정)가 덮어씁니다.
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -190,7 +194,7 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 450개 | `vitest.config.ts` |
+| Vitest | 452개 | `vitest.config.ts` |
 | Playwright | 30개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 122개 | `tests/scenarios` |
 

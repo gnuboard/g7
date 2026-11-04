@@ -1416,6 +1416,10 @@ return [
         'review_settings.write_deadline_days' => 'レビュー作成期限(日)',
         'review_settings.max_images' => 'レビュー画像最大枚数',
         'review_settings.max_image_size_mb' => 'レビュー画像最大容量(MB)',
+
+        // 商品陳列設定
+        'product_display.related_order' => '関連商品の並び順',
+        'product_display.related_cache_hours' => '関連商品リストの保持時間',
         'country_settings.*.api_config.http_method' => 'HTTPメソッド',
         'country_settings.*.api_config.auth_type' => '認証方式',
         'country_settings.*.api_config.auth_token' => '認証トークン',

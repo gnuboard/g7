@@ -133,7 +133,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 79개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 제공 컴포넌트 | 80개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
 | 레이아웃 | 193개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 37개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 1개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
@@ -161,6 +161,10 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 `template.json` 의 `necessary_storage`(코어 7.1.3+)는 이 템플릿 화면이 쿠키 동의와 무관하게 쓰는 브라우저 저장
 키(`g7_color_scheme`)를 선언합니다 — 개인정보 동의 플러그인이 이 선언을 「확장 제공 항목」에 합쳐 동의 전에도
 지우지 않습니다. 화면이 새 필수 키를 쓰게 되면 여기에 추가합니다(선언하지 않은 키는 동의 전에 지워질 수 있다).
+
+`template.json` 의 `scroll_restoration`(코어 엔진 engine-v1.85.0+)은 뒤로/앞으로 가기·새로고침 스크롤 복원의 배포
+초깃값입니다(엔진 기본값과 같은 값을 명시). 화면 안 영역에서 스크롤되는 화면이 생기면 그 화면 meta 의 `containers` 에,
+더보기 진행 상태(다음 쪽 번호)는 `snapshot.state` 에 적습니다 — `docs/frontend/scroll-restoration.md`.
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -222,9 +226,9 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 323개 | `vitest.config.ts` |
-| Playwright | 34개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 127개 | `tests/scenarios` |
+| Vitest | 325개 | `vitest.config.ts` |
+| Playwright | 35개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 128개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

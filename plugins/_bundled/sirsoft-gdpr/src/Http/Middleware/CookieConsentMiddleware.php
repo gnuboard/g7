@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Plugins\Sirsoft\Gdpr\Concerns\IssuesGuestSessionCookie;
 use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 use Plugins\Sirsoft\Gdpr\Support\NecessaryAllowlist;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -55,6 +56,13 @@ class CookieConsentMiddleware
         /** @var Response $response */
         $response = $next($request);
 
+        // 0. 걸러낼 쿠키(허용목록 밖·파기 아님)가 없으면 동의를 읽을 필요가 없다 — DB 없이 통과 (#860).
+        //    대상 집합은 아래 제거 단계가 지우던 집합과 같은 판정으로 만든다.
+        $targets = $this->removableCookies($response);
+        if ($targets === []) {
+            return $response;
+        }
+
         // 1. functional 동의 여부 조회
         //
         // 자기 자신 (sirsoft-gdpr) 제거 응답 race condition 안전 통과:
@@ -75,25 +83,36 @@ class CookieConsentMiddleware
         }
 
         // 2. functional 미동의: 응답 Set-Cookie 중 strictly necessary 허용목록 외 모두 제거
-        foreach ($response->headers->getCookies() as $cookie) {
-            $name = $cookie->getName();
-
-            // strictly necessary 허용목록 — 통과 (운영자 설정 ∪ 잠금 집합)
-            if ($this->isStrictlyNecessary($name)) {
-                continue;
-            }
-
-            // 파기 cookie (cleared) 는 통과 — §117 (철회 즉시 파기) 와 §16 (사전 차단) 충돌 회피.
-            // GdprCookieConsentController 가 발송하는 Max-Age=0 cookie 도 본 분기로 통과 (현재는 미사용이나 안전 보장).
-            if ($cookie->isCleared()) {
-                continue;
-            }
-
-            // 응답에서 Set-Cookie 제거 (EDPB §16 — 동의 전 신규 저장 금지)
-            $response->headers->removeCookie($name, $cookie->getPath(), $cookie->getDomain());
+        //    (EDPB §16 — 동의 전 신규 저장 금지)
+        foreach ($targets as $cookie) {
+            $response->headers->removeCookie($cookie->getName(), $cookie->getPath(), $cookie->getDomain());
         }
 
         return $response;
+    }
+
+    /**
+     * 동의가 없을 때 응답에서 지울 쿠키를 모읍니다.
+     *
+     * - strictly necessary 허용목록(운영자 설정 ∪ 잠금 집합)은 통과
+     * - 파기 cookie (cleared) 는 통과 — §117 (철회 즉시 파기) 와 §16 (사전 차단) 충돌 회피.
+     *   GdprCookieConsentController 가 발송하는 Max-Age=0 cookie 도 이 분기로 통과한다.
+     *
+     * @param  Response  $response  응답
+     * @return array<int, Cookie> 지울 쿠키
+     */
+    private function removableCookies(Response $response): array
+    {
+        $targets = [];
+        foreach ($response->headers->getCookies() as $cookie) {
+            if ($this->isStrictlyNecessary($cookie->getName()) || $cookie->isCleared()) {
+                continue;
+            }
+
+            $targets[] = $cookie;
+        }
+
+        return $targets;
     }
 
     /**

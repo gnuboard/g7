@@ -71,9 +71,10 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
      *   그 시점에 누락된 채 잠겨 결제 직전 가드가 영구히 무력화되던 결함이 있었다.
      *
      *   그래서 코어 hook 은 getSubscribedHooks() 가 정적 등록을 전담하고, 동적(모듈/플러그인)
-     *   hook target 은 이 메서드가 단독 소유한다. 설정이 바뀌는 시점(모듈/플러그인 로드 완료 후
-     *   boot, 정책 sync, 토글, 확장 설치)에만 호출되어 현재 target 목록으로 구독을 재동기화한다.
-     *   평상시 훅 발화 경로에는 추가 비용이 없다(런타임 매회 조회 아님).
+     *   hook target 은 이 메서드가 단독 소유한다. 매 요청 부팅 후반(모듈/플러그인 로드 완료 뒤)과
+     *   정책 sync·토글·확장 설치 시점에 호출되어 현재 target 목록으로 구독을 재동기화한다.
+     *   target 목록은 `IdentityPolicyRepository::listHookTargets()` 가 캐시하고 정책이 바뀌면 지우므로
+     *   평상시 부팅은 DB 를 다시 조회하지 않는다(#860). 훅 발화 경로에는 추가 비용이 없다.
      *
      * 멱등성: 이전에 이 메서드가 등록한 콜백을 removeAction 으로 먼저 제거한 뒤 현재 target 으로
      * 다시 등록한다. 정적 추적($dynamicCallbacks)이 HookManager 실제 상태와 항상 일치하므로,

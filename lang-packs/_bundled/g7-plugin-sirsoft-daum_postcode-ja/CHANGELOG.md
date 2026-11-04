@@ -4,6 +4,20 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-11-02
+
+### Added
+
+- 기기별 표시 방식 설정(`settings.fields.display_mode_pc.*`·`settings.fields.display_mode_mobile.*` — 페이지 안에 펼치기·전체 화면 포함), 설정 저장 오류의 항목 이름(`settings.display_mode_pc_attribute`·`settings.display_mode_mobile_attribute`), 주소 검색 창 닫기 단추 이름(`postcode.close`)의 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 「팝업 너비·높이」 항목 이름과 안내를 원문에 맞춰 「PC 레이어·팝업 너비·높이」로 고쳤고, 사용 안내 1·2단계(`settings.guide.step1`·`step2`)를 기기별 표시 방식에 맞게 고쳤습니다.
+
+### Removed
+
+- 없어진 단일 표시 방식 설정의 번역(`settings.fields.display_mode.*`, `settings.display_mode_attribute`)을 지웠습니다.
+
 ## [1.0.2] - 2026-10-10
 
 ### Added

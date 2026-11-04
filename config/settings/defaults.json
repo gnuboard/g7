@@ -254,7 +254,9 @@
             "dormant_days": 730,
             "dormant_notice_days": 30,
             "dormant_withdraw_enabled": false,
-            "dormant_withdraw_days": 365
+            "dormant_withdraw_days": 365,
+            "search_history_enabled": true,
+            "search_history_scopes": []
         }
     },
     "frontend_schema": {

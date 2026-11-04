@@ -1,5 +1,5 @@
 {
-    "comment": "리뷰 탭 — 별점 분포와 리뷰 목록. 정렬·사진만·별점 조건은 `_local` 에 살고 `reviews` 소스가 그 값을\n     읽어 다시 받는다(조건이 URL 에 남지 않는 이유는 탭 안에서만 쓰는 값이기 때문).",
+    "comment": "리뷰 탭 — 별점 분포와 리뷰 목록. 정렬·사진만·별점 조건은 `_local` 에 살고 `reviews` 소스가 그 값을\n     읽어 다시 받는다(조건이 URL 에 남지 않는 이유는 탭 안에서만 쓰는 값이기 때문).\n     e2e:allow 회원 없이 등록한 후기의 작성자 이름·HTML 본문 표시 — 이관 도구가 넣는 데이터라 화면 조작 흐름이 없다. 레이아웃 소비 계약은 이커머스 importedReviewDisplay.test.ts, 응답은 PHPUnit ImportedProductReviewTest 가 고정",
     "meta": {
         "is_partial": true,
         "description": "상품 상세 리뷰 탭"
@@ -435,10 +435,11 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "작성자 표시 이름 — 회원 후기는 회원 이름, 회원 없이 등록된 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로.\n                 author_name 이 없는 옛 응답(이커머스 1.4.0 미만)은 회원 이름으로",
                                             "type": "composite",
                                             "name": "Avatar",
                                             "props": {
-                                                "name": "{{review.user?.name ?? '?'}}",
+                                                "name": "{{review.author_name ?? review.user?.name ?? '?'}}",
                                                 "avatar": "{{review.user?.avatar ?? null}}",
                                                 "size": "sm"
                                             }
@@ -456,7 +457,7 @@
                                                     "props": {
                                                         "className": "font-medium text-sm text-gray-900 dark:text-white"
                                                     },
-                                                    "text": "{{review.user?.name}}"
+                                                    "text": "{{review.author_name ?? review.user?.name}}"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -534,10 +535,22 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "if": "{{review.content_mode !== 'html'}}",
                             "props": {
                                 "className": "text-gray-700 dark:text-gray-300 mb-3 text-sm"
                             },
                             "text": "{{review.content}}"
+                        },
+                        {
+                            "comment": "HTML 본문(다른 쇼핑몰에서 이관한 후기) — 서버가 저장 때 정화했고 컴포넌트가 한 번 더 정화한다",
+                            "type": "composite",
+                            "name": "HtmlContent",
+                            "if": "{{review.content_mode === 'html'}}",
+                            "props": {
+                                "content": "{{review.content ?? ''}}",
+                                "isHtml": true,
+                                "className": "text-gray-700 dark:text-gray-300 mb-3 text-sm prose prose-sm dark:prose-invert max-w-none"
+                            }
                         },
                         {
                             "comment": "리뷰 이미지 (최대 4개, 초과 시 +N 오버레이) — 사진마다 단추라 Tab 으로 닿고 Enter·Space 로 큰 사진 창을 그 사진부터 연다(7.1.1 — 종전 클릭만 받는 img). 사진은 장식(alt 빈 값)이고 이름은 단추의 aria-label(몇 번째 사진인지)이 맡는다",
@@ -564,12 +577,12 @@
                                                         "target": "global",
                                                         "reviewImageIndex": 0,
                                                         "reviewForModal": {
-                                                            "userName": "{{review.user?.name ?? ''}}",
+                                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
                                                             "userAvatar": "{{review.user?.avatar ?? null}}",
                                                             "rating": "{{review.rating}}",
                                                             "createdAt": "{{review.created_at}}",
                                                             "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
-                                                            "content": "{{review.content ?? ''}}",
+                                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
                                                             "images": "{{review.images ?? []}}"
                                                         }
                                                     }
@@ -614,12 +627,12 @@
                                                         "target": "global",
                                                         "reviewImageIndex": 1,
                                                         "reviewForModal": {
-                                                            "userName": "{{review.user?.name ?? ''}}",
+                                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
                                                             "userAvatar": "{{review.user?.avatar ?? null}}",
                                                             "rating": "{{review.rating}}",
                                                             "createdAt": "{{review.created_at}}",
                                                             "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
-                                                            "content": "{{review.content ?? ''}}",
+                                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
                                                             "images": "{{review.images ?? []}}"
                                                         }
                                                     }
@@ -664,12 +677,12 @@
                                                         "target": "global",
                                                         "reviewImageIndex": 2,
                                                         "reviewForModal": {
-                                                            "userName": "{{review.user?.name ?? ''}}",
+                                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
                                                             "userAvatar": "{{review.user?.avatar ?? null}}",
                                                             "rating": "{{review.rating}}",
                                                             "createdAt": "{{review.created_at}}",
                                                             "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
-                                                            "content": "{{review.content ?? ''}}",
+                                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
                                                             "images": "{{review.images ?? []}}"
                                                         }
                                                     }
@@ -714,12 +727,12 @@
                                                         "target": "global",
                                                         "reviewImageIndex": 3,
                                                         "reviewForModal": {
-                                                            "userName": "{{review.user?.name ?? ''}}",
+                                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
                                                             "userAvatar": "{{review.user?.avatar ?? null}}",
                                                             "rating": "{{review.rating}}",
                                                             "createdAt": "{{review.created_at}}",
                                                             "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
-                                                            "content": "{{review.content ?? ''}}",
+                                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
                                                             "images": "{{review.images ?? []}}"
                                                         }
                                                     }
@@ -764,12 +777,12 @@
                                                         "target": "global",
                                                         "reviewImageIndex": 3,
                                                         "reviewForModal": {
-                                                            "userName": "{{review.user?.name ?? ''}}",
+                                                            "userName": "{{review.author_name ?? review.user?.name ?? ''}}",
                                                             "userAvatar": "{{review.user?.avatar ?? null}}",
                                                             "rating": "{{review.rating}}",
                                                             "createdAt": "{{review.created_at}}",
                                                             "optionValues": "{{review.option_snapshot?.option_values ?? []}}",
-                                                            "content": "{{review.content ?? ''}}",
+                                                            "content": "{{review.content_plain ?? review.content ?? ''}}",
                                                             "images": "{{review.images ?? []}}"
                                                         }
                                                     }
@@ -855,10 +868,21 @@
                                 {
                                     "type": "basic",
                                     "name": "P",
+                                    "if": "{{review.reply_content_mode !== 'html'}}",
                                     "props": {
                                         "className": "text-sm text-gray-700 dark:text-gray-300"
                                     },
                                     "text": "{{review.reply_content}}"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "HtmlContent",
+                                    "if": "{{review.reply_content_mode === 'html'}}",
+                                    "props": {
+                                        "content": "{{review.reply_content ?? ''}}",
+                                        "isHtml": true,
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none"
+                                    }
                                 }
                             ]
                         }

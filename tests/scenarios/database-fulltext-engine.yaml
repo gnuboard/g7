@@ -1,0 +1,58 @@
+feature: 코어 FULLTEXT 검색 엔진(DatabaseFulltextEngine)의 Scout 엔진 계약
+
+description: |
+  DatabaseFulltextEngine 은 MySQL·MariaDB FULLTEXT 를 쓰는 Scout 엔진이다. 테이블 자체가 색인 원천이라
+  색인 동기화 계열(update·delete·flush·createIndex·deleteIndex)은 아무 일도 하지 않고, 검색 진입점은
+  성립하지 않는 입력(빈 검색어·FulltextSearchable 미구현 모델·검색 대상 컬럼 없음)에서 쿼리 없는 빈 결과를
+  돌려준다. 결과 매핑(getTotalCount·mapIds·map·lazyMap)은 결과 쿼리가 없을 때 각자의 빈 컬렉션을 낸다.
+
+  DBMS 판정은 드라이버 이름만 믿지 않는다 — mysql 드라이버로 MariaDB 에 붙은 경우를 서버 버전 문자열로
+  가려 ngram 파서 사용 여부를 정한다. 직접 조건 헬퍼 whereFulltext() 는 FULLTEXT 지원 DBMS 에서
+  `MATCH(col) AGAINST(? IN BOOLEAN MODE)` 를, 미지원 DBMS 에서는 부분일치(LIKE)를 조립한다.
+  마이그레이션용 addFulltextIndex() 는 미지원 DBMS 에서 아무것도 하지 않는다.
+
+  검색어 정제(sanitizeBooleanModeKeyword — 연산자·제어문자 제거, 따옴표 구문 변환, 구문 낱말 한도 자르기)는
+  mp09-search-sanitize.yaml 이 소유한다. 같은 테스트 파일의 정제 테스트는 그쪽 effects 로 마킹한다.
+
+  시험 DB 는 MySQL 이므로 FULLTEXT 미지원 DBMS 분기 테스트 2건(where_fulltext 의 LIKE 폴백,
+  index_creation 의 건너뜀)은 실행 시 건너뛰고, sqlite 등 미지원 DBMS 로 돌릴 때만 단언이 실행된다.
+  반대로 MATCH 조립 테스트는 미지원 DBMS 에서 건너뛴다.
+
+# 입력 axis
+#  entry_point: 엔진의 호출 진입점 묶음 — 진입점마다 입력 조건과 결과 형태가 달라 테스트가 갈린다
+axes:
+  entry_point: [index_sync, search_guard, result_mapping, dbms_detection, where_fulltext, index_creation]
+
+effects:
+  # index_sync — 테이블이 곧 색인이므로 no-op
+  - scout_update_is_noop
+  - scout_delete_is_noop
+  - scout_flush_is_noop
+  - scout_create_index_is_noop
+  - scout_delete_index_is_noop
+  # search_guard — 검색이 성립하지 않으면 query=null, total=0
+  - blank_keyword_returns_empty_result
+  - non_fulltext_searchable_model_returns_empty_result
+  - empty_searchable_columns_returns_empty_result
+  # result_mapping
+  - total_count_reads_result_total                # getTotalCount 가 결과의 total 을 그대로 돌려준다
+  - null_query_maps_to_empty_key_collection       # mapIds → 빈 Support\Collection
+  - null_query_maps_to_empty_model_collection     # map → 빈 Eloquent\Collection
+  - null_query_maps_to_empty_lazy_collection      # lazyMap → 빈 LazyCollection
+  # dbms_detection
+  - fulltext_support_follows_driver               # mysql·mariadb 드라이버에서만 FULLTEXT 지원
+  - ngram_parser_only_on_real_mysql               # mysql 드라이버라도 실제 MariaDB 면 ngram 미지원
+  - mariadb_detected_by_driver_or_server_version  # mariadb 드라이버 또는 VERSION() 문자열로 판정
+  # where_fulltext
+  - where_fulltext_assembles_match_against
+  - where_fulltext_or_boolean_assembles_match_against
+  - where_fulltext_falls_back_to_like_without_fulltext
+  - where_fulltext_operators_only_adds_constant_false  # 매칭 시도 없이 바인딩 없는 상수 거짓 조건
+  # index_creation
+  - add_fulltext_index_skips_without_fulltext
+
+test_files:
+  - tests/Unit/Search/DatabaseFulltextEngineTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

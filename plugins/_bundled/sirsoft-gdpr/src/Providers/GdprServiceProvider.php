@@ -18,6 +18,7 @@ use Plugins\Sirsoft\Gdpr\Repositories\GdprPolicyVersionRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprPrivacyNoticeRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentHistoryRepository;
 use Plugins\Sirsoft\Gdpr\Repositories\GdprUserConsentRepository;
+use Plugins\Sirsoft\Gdpr\Support\GdprConsentReadMemo;
 
 /**
  * GDPR 플러그인 서비스 프로바이더.
@@ -36,12 +37,39 @@ class GdprServiceProvider extends BasePluginServiceProvider
 
     protected string $pluginIdentifier = 'sirsoft-gdpr';
 
+    /**
+     * 요청 단위(scoped)로 공유하는 객체 (#860).
+     *
+     * 동의 조회 메모 보관함 — 한 요청 안의 미들웨어·동의 제공자·리소스가 정책 버전·동의 행을 한 번만 읽는다.
+     * 큐 워커·상주 프로세스에서는 작업·요청마다 새로 만들어져 옛 값이 남지 않는다. 서비스 자체는 지금처럼
+     * 필요할 때마다 만든다(저장소 교체 등 기존 사용 방식 유지).
+     *
+     * @var array<int, class-string>
+     */
+    public const SCOPED_SERVICES = [
+        GdprConsentReadMemo::class,
+    ];
+
     protected array $repositories = [
         GdprPrivacyNoticeRepositoryInterface::class => GdprPrivacyNoticeRepository::class,
         GdprUserConsentRepositoryInterface::class => GdprUserConsentRepository::class,
         GdprUserConsentHistoryRepositoryInterface::class => GdprUserConsentHistoryRepository::class,
         GdprPolicyVersionRepositoryInterface::class => GdprPolicyVersionRepository::class,
     ];
+
+    /**
+     * 플러그인 서비스를 등록합니다 — 동의 조회 메모 보관함을 요청 단위로 둡니다.
+     *
+     * @return void 없음
+     */
+    public function register(): void
+    {
+        parent::register();
+
+        foreach (self::SCOPED_SERVICES as $service) {
+            $this->app->scoped($service);
+        }
+    }
 
     /**
      * 플러그인 서비스를 부팅합니다 — 게스트 동의 쿠키를 암호화 대상에서 빼고 콘솔 명령을 등록합니다.
@@ -56,9 +84,12 @@ class GdprServiceProvider extends BasePluginServiceProvider
         // 암호화가 그 값을 복호화하다 버리면, 문서 요청에서는 동의한 게스트도 「식별 불가 = 미동의」로
         // 읽힌다 — 방문자 통계의 서버 폴백이 동의자의 진입 화면을 버리던 원인이다. 값의 위변조는
         // 이 플러그인이 서명으로 검증하므로 암호화 대상에서 뺀다(#682 S3 라운드 13).
-        EncryptCookies::except(self::GUEST_SESSION_COOKIE);
+        // 요청·큐 처리에 끼어드는 부수효과는 활성일 때만 건다 (#730 게이트, #860)
+        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
+            EncryptCookies::except(self::GUEST_SESSION_COOKIE);
 
-        $this->registerQueueRelayHooks();
+            $this->registerQueueRelayHooks();
+        }
 
         if ($this->app->runningInConsole()) {
             $this->commands([

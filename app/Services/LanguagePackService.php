@@ -737,12 +737,19 @@ class LanguagePackService
      * 언어팩의 합집합을 반환하여 코어 기본 로케일이 누락되지 않도록
      * 합니다. 언어팩 설치/활성화 직후 사용자 UI 갱신용으로 사용됩니다.
      *
+     * 활성 코어 언어팩은 부팅에서 레지스트리가 이미 읽어 둔 메모를 쓴다 — DB 를 다시 조회하지 않는다(#860).
+     * 활성화·비활성화·제거는 `LanguagePackRegistry::invalidate()` 로 그 메모를 비운다.
+     *
      * @return array<int, string> 로케일 문자열 배열
      */
     public function getActiveLocales(): array
     {
         $configLocales = (array) config('app.supported_locales', ['ko', 'en']);
-        $activeLocales = $this->repository->getActiveCoreLocales();
+        $activeLocales = $this->registry->getActivePacks(LanguagePackScope::Core->value)
+            ->pluck('locale')
+            ->unique()
+            ->values()
+            ->all();
 
         return array_values(array_unique(array_merge($configLocales, $activeLocales)));
     }

@@ -54,7 +54,6 @@ const FILES = walk(LAYOUT_ROOT).filter((f) => !/^shop\/guest_/.test(rel(f)));
 const EXCEPTIONS: Array<{ file: string; node: string; path: string; reason: string }> = [
   { file: 'auth/reset_password.json', node: 'Modal', path: '/', reason: '모달 자체의 닫기 이동 — 누를 링크 요소가 없다' },
   { file: 'partials/board/form/_password_verify_modal.json', node: 'Modal', path: '/board/{{route.slug}}/{{route.id}}', reason: '모달 자체의 닫기 이동 — 누를 링크 요소가 없다' },
-  { file: 'partials/search/_search_input.json', node: 'Button', path: '/search', reason: '검색 실행 — 입력한 검색어로 이동하는 제출 단추' },
   { file: 'partials/shop/list/_search_filter_bar.json', node: 'Button', path: '{{_global.shopBase}}/products', reason: '검색 실행 — 입력한 검색어로 이동하는 제출 단추' },
   { file: 'partials/shop/list/_search_filter_bar.json', node: 'Button', path: '{{_global.shopBase}}/products', reason: '검색 초기화 — 입력값을 비우는 단추' },
   { file: 'shop/category.json', node: 'Button', path: '{{route.path}}', reason: '검색 실행 — 입력한 검색어로 이동하는 제출 단추' },

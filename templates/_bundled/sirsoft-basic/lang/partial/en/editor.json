@@ -677,6 +677,18 @@
       "label": "Layout",
       "row": "Row",
       "column": "Column"
+    },
+    "rsc_scope": {
+      "label": "Search scope (recent searches)"
+    },
+    "rsc_result_path": {
+      "label": "Search results path (follow address)"
+    },
+    "rsc_button_text": {
+      "label": "Search button text"
+    },
+    "hdr_search_history_scope": {
+      "label": "Recent search scope"
     }
   },
   "component": {
@@ -731,7 +743,8 @@
     "header": "Site Header",
     "footer": "Site Footer",
     "theme_toggle": "Theme Toggle",
-    "notification_center": "Notification Center"
+    "notification_center": "Notification Center",
+    "recent_search_combobox": "Recent search box"
   },
   "action": {
     "go_to_page": {

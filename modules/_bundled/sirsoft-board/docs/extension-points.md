@@ -554,6 +554,7 @@ Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 
 | `resources/extensions/admin-ecommerce-inquiry-settings.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `inquiry_board_setting` |
 | `resources/extensions/admin-user-reactions-tab.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
 | `resources/extensions/admin-user-scraps-tab.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
+| `resources/extensions/admin-user-search-history-tab.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
 | `resources/extensions/admin_dashboard_community.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_dashboard_community` |
 | `resources/extensions/admin_dashboard_quick_menu.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `admin_dashboard_quick_menu` |
 | `resources/extensions/user-notification-detail.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `admin_user_detail` |
