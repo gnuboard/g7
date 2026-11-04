@@ -36,6 +36,10 @@ import { Span } from '../basic/Span';
 import { Ul } from '../basic/Ul';
 import { Li } from '../basic/Li';
 import type { EditorAttrs } from '../../types';
+import { useLocationPath, useLocationSearch } from '../../support/navigationLink';
+
+/** 주소의 경로만(쿼리·해시·끝 / 제외) */
+const pathOf = (href: string): string => (href.split(/[?#]/)[0].replace(/\/+$/, '') || '/');
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -112,6 +116,11 @@ export interface RecentSearchComboboxProps {
   name?: string;
   /** 처음 보일 검색어(예: 주소의 `q`). 바뀌면 입력칸이 따라간다 — 기록하지 않는다 */
   value?: string | null;
+  /**
+   * 검색 결과 화면 경로(예: `/search`) — 주면 입력칸이 주소를 따라간다: 이 경로에 있으면 주소의 `name` 검색어를,
+   * 다른 화면이면 빈칸을 보인다. 화면을 옮겨도 다시 마운트되지 않는 머리글·모바일 서랍 검색창용(검색한 뒤 다른 화면에 검색어가 남지 않게)
+   */
+  resultPath?: string | null;
   /** 안내 문구 */
   placeholder?: string;
   /** 입력칸 접근성 이름 (없으면 안내 문구) */
@@ -145,6 +154,7 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
   scope: scopeProp,
   name = 'q',
   value,
+  resultPath,
   placeholder,
   ariaLabel,
   showButton = false,
@@ -176,6 +186,16 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
   useEffect(() => {
     if (value !== undefined) setText(value ?? '');
   }, [value]);
+
+  // 주소를 따라가는 검색창 — 결과 화면이면 주소의 검색어, 다른 화면이면 빈칸(설계 합의 2026-11-04).
+  // 주소가 바뀔 때만 맞추므로 입력 중인 글자는 건드리지 않는다.
+  const follow = typeof resultPath === 'string' && resultPath !== '';
+  const locationPath = useLocationPath(follow);
+  const locationSearch = useLocationSearch(follow);
+  useEffect(() => {
+    if (!follow) return;
+    setText(pathOf(locationPath) === pathOf(resultPath ?? '') ? new URLSearchParams(locationSearch).get(name) ?? '' : '');
+  }, [follow, locationPath, locationSearch, resultPath, name]);
 
   // 레이아웃 편집 모드(편집 대상을 가리지 않게)와 편집기 미리보기 화면(기록하지 않게)에서는 펼침 목록을 열지 않는다
   const inEditor = (editorAttrs !== undefined && editorAttrs !== null) || isLayoutPreview();

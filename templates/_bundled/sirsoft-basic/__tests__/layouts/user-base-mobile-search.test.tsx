@@ -114,6 +114,17 @@ describe('최근 검색어 검색창 연결 — 구조', () => {
   });
 
   /**
+   * @scenario surface=mobile_drawer
+   * @effects search_box_follows_result_url
+   */
+  it('서랍 검색창은 통합검색 화면(/search)을 결과 화면으로 두고 주소를 따라간다 — 검색 뒤 다른 화면에 검색어가 남지 않는다', () => {
+    expect(drawerBox.props.resultPath).toBe('/search');
+    expect(drawerBox.props.name).toBe('q');
+    // 통합검색 화면 검색줄은 화면이 다시 그리므로 value 로 받는다(주소 따라가기 불필요)
+    expect(pageBox.props.resultPath).toBeUndefined();
+  });
+
+  /**
    * @scenario surface=search_page
    * @effects search_page_shows_query_and_navigates, url_query_value_not_recorded
    */

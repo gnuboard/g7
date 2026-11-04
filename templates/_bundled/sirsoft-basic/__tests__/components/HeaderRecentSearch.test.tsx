@@ -127,4 +127,24 @@ describe('Header 데스크톱 검색칸 — 최근 검색어', () => {
     expect(navigatedPaths()).toEqual([]);
   });
 
+  /**
+   * @scenario surface=header_desktop
+   * @effects search_box_follows_result_url
+   */
+  it('검색칸은 주소를 따라간다 — 통합검색 화면이면 주소의 q, 첫 화면으로 가면 빈칸 (설계 합의 2026-11-04)', async () => {
+    window.history.pushState({}, '', '/search?q=%EB%93%B1%EC%82%B0%ED%99%94');
+    try {
+      const { getByTestId } = render(<Header />);
+      const input = within(getByTestId('header-search')).getByRole('combobox') as HTMLInputElement;
+      expect(input.value).toBe('등산화');
+
+      await act(async () => {
+        window.history.pushState({}, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      expect(input.value).toBe('');
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
+  });
 });

@@ -499,6 +499,7 @@
     "propControls": [
       "sbPlaceholder",
       "rscScope",
+      "rscResultPath",
       "sbShowButton",
       "rscButtonText",
       "inputName"

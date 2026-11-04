@@ -681,6 +681,9 @@
     "rsc_scope": {
       "label": "검색 범위 (최근 검색어)"
     },
+    "rsc_result_path": {
+      "label": "검색 결과 화면 경로 (주소 따라가기)"
+    },
     "rsc_button_text": {
       "label": "검색 단추 글자"
     },

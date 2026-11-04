@@ -1154,6 +1154,11 @@
             "required": false,
             "description": "처음 보일 검색어(예: 주소의 q) — 바뀌면 입력칸이 따라가고 기록하지 않는다"
           },
+          "resultPath": {
+            "type": "string",
+            "required": false,
+            "description": "검색 결과 화면 경로(예: /search) — 주면 입력칸이 주소를 따라간다: 그 경로에서는 주소의 name 검색어, 다른 화면에서는 빈칸. 화면을 옮겨도 다시 마운트되지 않는 머리글·모바일 서랍 검색창용"
+          },
           "placeholder": {
             "type": "string",
             "required": false,

@@ -488,3 +488,70 @@ describe('RecentSearchCombobox (대역 훅)', () => {
     expect(onSearch).toHaveBeenCalledWith('침낭');
   });
 });
+
+describe('RecentSearchCombobox (주소 따라가기 — resultPath, 설계 합의 2026-11-04)', () => {
+  /** SPA 이동 흉내 — 엔진 알림이 없는 대체 구독은 뒤로/앞으로(popstate)를 본다 */
+  async function go(url: string) {
+    await act(async () => {
+      window.history.pushState({}, '', url);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+  }
+
+  beforeEach(() => {
+    (window as any).G7Core = {
+      t: (k: string) => k,
+      useSearchHistory: () => ({
+        items: [], autoSave: true, enabled: true, loading: false, maxCount: 10,
+        record: vi.fn(async () => true), remove: vi.fn(), clear: vi.fn(), setAutoSave: vi.fn(), refresh: vi.fn(),
+      }),
+    };
+  });
+
+  afterEach(() => {
+    window.history.pushState({}, '', '/');
+    delete (window as any).G7Core;
+  });
+
+  /**
+   * @scenario surface=component
+   * @effects search_box_follows_result_url
+   */
+  it('결과 화면(resultPath)이면 주소의 name 검색어를, 다른 화면이면 빈칸을 보인다', async () => {
+    window.history.pushState({}, '', '/search?q=%EB%93%B1%EC%82%B0%ED%99%94');
+    render(<RecentSearchCombobox resultPath="/search" />);
+    expect(input().value).toBe('등산화');
+
+    await go('/');
+    expect(input().value).toBe('');
+
+    await go('/search?q=%EC%B9%A8%EB%82%AD&page=2');
+    expect(input().value).toBe('침낭');
+  });
+
+  /**
+   * @scenario surface=component
+   * @effects search_box_follows_result_url
+   */
+  it('입력만 하고 검색하지 않은 글자도 다른 화면으로 가면 지우고, 주소가 그대로면 입력 중 글자를 건드리지 않는다', async () => {
+    window.history.pushState({}, '', '/search?q=a');
+    const { rerender } = render(<RecentSearchCombobox resultPath="/search" />);
+    fireEvent.change(input(), { target: { value: 'ab' } });
+    rerender(<RecentSearchCombobox resultPath="/search" />);
+    expect(input().value).toBe('ab');
+
+    await go('/board/free');
+    expect(input().value).toBe('');
+  });
+
+  /**
+   * @scenario surface=component
+   * @effects search_box_follows_result_url
+   */
+  it('resultPath 가 없으면 주소를 따라가지 않는다 — 화면이 다시 그리는 검색창(value)은 종전대로', async () => {
+    render(<RecentSearchCombobox />);
+    fireEvent.change(input(), { target: { value: '코펠' } });
+    await go('/board/free');
+    expect(input().value).toBe('코펠');
+  });
+});

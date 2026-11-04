@@ -117,12 +117,12 @@ php artisan template:update sirsoft-basic --force
 ## 제공 컴포넌트
 
 <!-- @generated:settings-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 79개 (루트: `src/components`).
+컴포넌트 80개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 38개 |
-| `composite` | 36개 |
+| `composite` | 37개 |
 | `layout` | 5개 |
 <!-- @generated:settings-summary END -->
 
@@ -191,7 +191,7 @@ php artisan template:update sirsoft-basic --force
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
 | `sirsoft-board` | 모듈 | `>=1.2.1` | ✅ |
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.3.4` | ✅ |
 | `sirsoft-page` | 모듈 | `>=1.2.0` | ✅ |
 | `sirsoft-daum_postcode` | 플러그인 | `>=1.2.0` | ✅ |
 <!-- @generated:integrations END -->

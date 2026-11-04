@@ -681,6 +681,9 @@
     "rsc_scope": {
       "label": "検索範囲(最近の検索語)"
     },
+    "rsc_result_path": {
+      "label": "検索結果画面のパス(アドレスに連動)"
+    },
     "rsc_button_text": {
       "label": "検索ボタンの文字"
     },

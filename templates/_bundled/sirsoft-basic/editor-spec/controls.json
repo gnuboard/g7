@@ -11856,6 +11856,14 @@
     },
     "label": "$t:editor.control.rsc_scope.label"
   },
+  "rscResultPath": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "resultPath"
+    },
+    "label": "$t:editor.control.rsc_result_path.label"
+  },
   "rscButtonText": {
     "widget": "i18n-text",
     "apply": {

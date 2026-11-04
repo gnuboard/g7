@@ -681,6 +681,9 @@
     "rsc_scope": {
       "label": "Search scope (recent searches)"
     },
+    "rsc_result_path": {
+      "label": "Search results path (follow address)"
+    },
     "rsc_button_text": {
       "label": "Search button text"
     },

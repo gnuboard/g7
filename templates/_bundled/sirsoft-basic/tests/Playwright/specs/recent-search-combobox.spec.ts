@@ -142,4 +142,28 @@ test.describe('최근 검색어 검색창', () => {
     expect(await stored(page)).toEqual(['랜턴', '버너']);
   });
 
+  /**
+   * @scenario surface=header_desktop
+   * @effects search_box_follows_result_url
+   */
+  test('머리글 — 검색칸은 주소를 따라간다: 통합검색 화면이면 주소의 q, 첫 화면으로 가면 빈칸, 뒤로가기로 다시 채움', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await open(page, '/');
+    test.skip(!(await available(page)), '이 사이트의 활성 사용자 템플릿이 sirsoft-basic 이 아니거나 최근 검색어가 꺼져 있다');
+
+    const header = page.locator('[data-testid="header-search"] input[role="combobox"]');
+    await header.fill('등산화');
+    await header.press('Enter');
+    await page.waitForURL((url) => url.searchParams.get('q') === '등산화');
+    await expect(header).toHaveValue('등산화');
+
+    // 첫 화면 — SPA 이동(머리글은 다시 마운트되지 않는다)
+    await page.evaluate(() => (window as any).G7Core?.dispatch?.({ handler: 'navigate', params: { path: '/' } }));
+    await page.waitForURL((url) => url.pathname === '/');
+    await expect(header).toHaveValue('');
+
+    await page.goBack();
+    await page.waitForURL((url) => url.searchParams.get('q') === '등산화');
+    await expect(header).toHaveValue('등산화');
+  });
 });

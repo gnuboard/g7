@@ -429,6 +429,7 @@ const Header: React.FC<HeaderProps> = ({
               data-testid="header-search"
               scope={searchHistoryScope || 'core.site'}
               name="q"
+              resultPath="/search"
               placeholder={t('common.search_placeholder')}
               onSearch={handleSearch}
               className="flex basis-lg min-w-48 max-w-lg mx-8"
