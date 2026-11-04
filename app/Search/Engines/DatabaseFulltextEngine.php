@@ -30,6 +30,15 @@ use Throwable;
 class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
 {
     /**
+     * 따옴표 구문 하나에 담는 토큰의 최대 글자 수
+     *
+     * InnoDB 는 구문 하나에 낱말이 128개를 넘으면 오류(191 Too many words in a FTS phrase)를 낸다.
+     * ngram 파서는 공백 없는 토큰을 글자 단위 n-gram 낱말로 쪼개므로(L 글자 → L-n+1 낱말),
+     * 128 글자로 자르면 ngram_token_size 가 1 이어도 한도 안이다.
+     */
+    private const MAX_PHRASE_CHARS = 128;
+
+    /**
      * MariaDB 감지 결과 캐시 (프로세스 수명 동안 유지)
      */
     private static ?bool $isMariaDbCache = null;
@@ -61,6 +70,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * MySQL FULLTEXT는 테이블 자체가 인덱스 소스이므로 no-op.
      *
      * @param  Collection  $models  모델 컬렉션
+     * @return void 인덱스에 아무것도 쓰지 않고 돌아간다
      */
     public function update($models): void
     {
@@ -73,6 +83,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * MySQL FULLTEXT는 테이블 자체가 인덱스 소스이므로 no-op.
      *
      * @param  Collection  $models  모델 컬렉션
+     * @return void 인덱스에서 아무것도 지우지 않고 돌아간다
      */
     public function delete($models): void
     {
@@ -146,6 +157,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * 여기서 다시 좁힐 이유가 없다. `clone()` 은 호출자 쿼리 불변을 위해 유지한다.
      *
      * @param  array  $results  검색 결과
+     * @return \Illuminate\Support\Collection 모델 키 컬렉션 (결과 쿼리가 없으면 빈 컬렉션)
      */
     public function mapIds($results): \Illuminate\Support\Collection
     {
@@ -163,6 +175,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * @param  Builder  $builder  Scout 빌더
      * @param  array  $results  검색 결과
      * @param  Model  $model  기준 모델
+     * @return Collection 조회된 모델 컬렉션 (결과 쿼리가 없으면 기준 모델의 빈 컬렉션)
      */
     public function map(Builder $builder, $results, $model): Collection
     {
@@ -180,6 +193,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * @param  Builder  $builder  Scout 빌더
      * @param  array  $results  검색 결과
      * @param  Model  $model  기준 모델
+     * @return LazyCollection 커서로 읽는 모델 컬렉션 (결과 쿼리가 없으면 빈 LazyCollection)
      */
     public function lazyMap(Builder $builder, $results, $model): LazyCollection
     {
@@ -195,6 +209,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * 검색 결과의 전체 건수를 반환합니다.
      *
      * @param  array  $results  검색 결과
+     * @return int 결과의 `total` 값 (없으면 0)
      */
     public function getTotalCount($results): int
     {
@@ -231,6 +246,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * MySQL FULLTEXT는 테이블 자체가 인덱스 소스이므로 no-op.
      *
      * @param  Model  $model  모델
+     * @return void 인덱스에서 아무것도 지우지 않고 돌아간다
      */
     public function flush($model): void
     {
@@ -244,6 +260,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      *
      * @param  string  $name  인덱스명
      * @param  array  $options  옵션
+     * @return void 인덱스를 만들지 않고 돌아간다
      */
     public function createIndex($name, array $options = []): void
     {
@@ -256,6 +273,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * MySQL FULLTEXT는 마이그레이션에서 인덱스를 관리하므로 no-op.
      *
      * @param  string  $name  인덱스명
+     * @return void 인덱스를 지우지 않고 돌아간다
      */
     public function deleteIndex($name): void
     {
@@ -449,6 +467,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * 카탈로그를 테스트용으로 시드합니다.
      *
      * @param  array<string, array<int, array<int, string>>>  $catalog  테이블명 => 컬럼 집합 목록
+     * @return void 정규화한 카탈로그로 정적 캐시를 덮어쓴다
      */
     public static function primeFulltextIndexCatalog(array $catalog): void
     {
@@ -465,6 +484,8 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
 
     /**
      * 카탈로그 캐시와 경고 기록을 함께 초기화합니다 (인덱스 생성 직후·테스트).
+     *
+     * @return void 다음 커버 판정 때 카탈로그를 다시 적재한다
      */
     public static function forgetFulltextIndexCatalog(): void
     {
@@ -481,6 +502,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      *
      * @param  string  $table  테이블명
      * @param  array<int, string>  $columns  MATCH 대상 컬럼명
+     * @return void 처음 보는 조합이면 경고 로그를 남기고, 이미 기록한 조합이면 아무것도 하지 않는다
      */
     protected static function warnMissingFulltextIndexOnce(string $table, array $columns): void
     {
@@ -518,6 +540,9 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * 방식이 아니라 전용 검색 엔진(core.search.engine_drivers)으로 해결합니다.
      * 배경·실측: docs/backend/search-system.md, docs/backend/pagination.md
      *
+     * 토큰 하나는 MAX_PHRASE_CHARS 글자까지만 쓴다 — 넘으면 구문 낱말 한도 오류로 목록이 500 이 된다.
+     * 자른 앞부분 구문은 원래 토큰을 담은 문서도 그대로 찾는다.
+     *
      * @param  string  $keyword  원본 검색어
      * @return string 안전하게 정제된 BOOLEAN MODE 검색식 (정제 결과가 없으면 빈 문자열)
      */
@@ -537,8 +562,8 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
             return '';
         }
 
-        // 4. 각 토큰을 따옴표 phrase로 묶어 공백 결합 (따옴표는 1단계에서 제거됨 → 균형 깨질 위험 없음)
-        return implode(' ', array_map(fn ($t) => '"'.$t.'"', $tokens));
+        // 4. 각 토큰을 구문 낱말 한도 안으로 자르고 따옴표 phrase로 묶어 공백 결합 (따옴표는 1단계에서 제거됨 → 균형 깨질 위험 없음)
+        return implode(' ', array_map(fn ($t) => '"'.mb_substr($t, 0, self::MAX_PHRASE_CHARS).'"', $tokens));
     }
 
     /**
@@ -559,6 +584,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * @param  string|array<int, string>  $columns  검색 대상 컬럼명 (배열이면 복합 인덱스 필요)
      * @param  string  $keyword  검색어 (원문 — 정제는 이 메서드가 수행)
      * @param  string  $boolean  조건 결합 방식 ('and' 또는 'or')
+     * @return void 조건은 넘겨받은 $query 에 직접 덧붙는다
      */
     public static function whereFulltext(
         \Illuminate\Database\Eloquent\Builder $query,
@@ -598,6 +624,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * @param  array<int, string>  $columns  검색 대상 컬럼명
      * @param  string  $keyword  검색어 원문
      * @param  string  $boolean  조건 결합 방식 ('and' 또는 'or')
+     * @return void MATCH·부분일치·상수 거짓 중 하나를 넘겨받은 $query 에 직접 덧붙인다
      */
     protected static function applyFulltextPredicate(
         \Illuminate\Database\Eloquent\Builder $query,
@@ -658,6 +685,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * @param  array<int, string>  $columns  검색 대상 컬럼명 목록
      * @param  string  $keyword  검색어 (원문 — 정제는 내부에서 수행)
      * @param  string  $boolean  바깥 쿼리와의 결합 방식 ('and' 또는 'or')
+     * @return void 조건은 넘겨받은 $query 에 직접 덧붙는다
      */
     public static function whereFulltextAny(
         \Illuminate\Database\Eloquent\Builder $query,
@@ -678,6 +706,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * @param  string  $table  테이블명 (prefix 제외)
      * @param  string  $indexName  인덱스명
      * @param  string|array  $columns  대상 컬럼 (단일 또는 복수)
+     * @return void 인덱스를 만들고 카탈로그 캐시를 비운다 (미지원 DBMS 에서는 아무것도 하지 않는다)
      */
     public static function addFulltextIndex(string $table, string $indexName, string|array $columns): void
     {
@@ -892,6 +921,7 @@ class DatabaseFulltextEngine extends Engine implements KeywordPredicateProvider
      * @param  string  $scoreRaw  스코어 SELECT 표현식 (`... as _ft_score`)
      * @param  array<int, mixed>  $scoreBindings  스코어 표현식 바인딩
      * @param  bool  $keysOnly  키 컬럼만 조회할지 여부
+     * @return void SELECT 는 넘겨받은 $query 에 직접 적용된다
      */
     protected function applySelect(
         $query,

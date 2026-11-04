@@ -6,6 +6,7 @@ use App\Enums\PermissionType;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
+use App\Privacy\Handlers\SearchHistoryRetentionHandler;
 use App\Privacy\Handlers\WithdrawnUserRetentionHandler;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +20,7 @@ use Throwable;
  *
  * ## 등록
  *
- * 코어 기본은 탈퇴 회원 잔여 정보 핸들러 하나이고, 확장은 필터 훅으로 더합니다.
+ * 코어 기본은 탈퇴 회원 잔여 정보·최근 검색어 보관 기한 핸들러이고, 확장은 필터 훅으로 더합니다.
  *
  * ```php
  * HookManager::addFilter('core.privacy.retention_handlers', function (array $handlers) {
@@ -58,6 +59,8 @@ class PrivacyRetentionManager
     {
         return [
             WithdrawnUserRetentionHandler::class,
+            // 최근 검색어 범위별 보관 기한 (7.1.5)
+            SearchHistoryRetentionHandler::class,
         ];
     }
 

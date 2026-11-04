@@ -35,5 +35,11 @@
     "loading": {
         "strategy": "global",
         "priority": 100
+    },
+    "search_scopes": {
+        "posts": {
+            "label": "sirsoft-board::messages.search_history.scope_posts",
+            "max_count": 10
+        }
     }
 }

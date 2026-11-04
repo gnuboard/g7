@@ -74,7 +74,9 @@ describe('Header(PC) 긴 사이트 이름·사용자 이름', () => {
     // 52자 이름에서 로고 칸이 646px 를 차지해 검색창이 57px 로 눌렸다(1280 실측) — 로고 칸 상한과 검색창 하한
     expect(tokens(logoButton)).toContain('max-w-xs');
     const bar = logoButton!.parentElement!;
-    const form = bar.querySelector('form');
+    // 검색칸은 최근 검색어 검색창 — 줄 안의 flex 항목은 검색창 루트(양식은 그 안)
+    const form = bar.querySelector('[data-testid="header-search"]');
+    expect(form?.parentElement).toBe(bar);
     // 검색창이 남는 폭만 받으면(flex-1) 이름이 길수록 좁아졌다 — 1024px 329→192·1280px 512→345 (7.1.1 실측)
     expect(tokens(form)).toEqual(expect.arrayContaining(['basis-lg', 'min-w-48', 'max-w-lg']));
     expect(tokens(form)).not.toContain('flex-1');

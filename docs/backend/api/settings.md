@@ -107,7 +107,7 @@ _단건 응답: `data` 객체의 필드._
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 일곱 필드로 구성 |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 여덟 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
@@ -115,6 +115,7 @@ _단건 응답: `data` 객체의 필드._
 | _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
 | _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (#139) |
 | _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.kakaocdn.net","t1.daumcdn.net"]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(#158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트 |
+| _meta.search_scopes | array | `[{"scope":"core.site","owner":"core","owner_label":"코어","label":"통합 검색","default_max_count":10,"default_retention_days":0}]` | 개인정보 탭 「최근 검색어」 카드의 범위 메타(7.1.5) — 코어 `core.site` + 활성 모듈·플러그인이 manifest `search_scopes` 로 선언한 범위, 선언 순서. `owner` 는 `core`·`module:{id}`·`plugin:{id}`, `label`·`owner_label` 은 요청 언어 글자, `default_*` 는 선언값(없으면 10개·0=기한 없음) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -368,6 +369,11 @@ HTTP/1.1 200
 | privacy.dormant_notice_days | body | integer | 아니오 | min 1, max 365 | 휴면 전환 사전 통지를 며칠 전에 보낼지 (기본 30). **`privacy.dormant_days` 보다 작아야 하며**, 같거나 크면 422 (`validation.settings.privacy_dormant_notice_days_lt_dormant_days`). 통지 후 이 일수가 지나야 실제 전환된다 |
 | privacy.dormant_withdraw_enabled | body | boolean | 아니오 | — | 휴면이 오래 이어진 계정의 자동 탈퇴 사용 여부 (기본 false). 관리자 역할 보유자와 슈퍼 관리자는 예고·탈퇴 대상에서 모두 제외된다 |
 | privacy.dormant_withdraw_days | body | integer | 아니오 | min 1, max 3650 | 휴면 전환 시점부터 자동 탈퇴까지의 일수 (기본 365). 이때도 `privacy.dormant_notice_days` 만큼 앞서 탈퇴 예고를 보낸다 |
+| privacy.search_history_enabled | body | boolean | 아니오 | — | 최근 검색어 사용 여부 (기본 true, 7.1.5). 끄면 검색창이 기록하지 않고 목록도 보이지 않는다(셸 `G7Config.searchScopes` 가 빈 객체). 이미 저장된 검색어는 보관 기한대로 지워진다 |
+| privacy.search_history_scopes | body | array | 아니오 | 원소 `{scope, max_count, retention_days}` | 검색 범위별 보관 설정(7.1.5). 범위 id 에 점이 있어 맵이 아니라 목록이다. 응답은 지금 선언된 범위마다 한 행(선언 순서, 저장값 → 선언값 → 기본값)으로 다듬어 내고, 저장은 화면에 없던 범위(끈 확장)의 기존 행을 보존한다 |
+| privacy.search_history_scopes.*.scope | body | string | 예 | 지금 선언된 범위 id, 목록 안 중복 불가 | 범위 id (`core.site` · `{확장 식별자}.{이름}`). 선언되지 않은 범위는 422 (`validation.settings.privacy_search_history_scope_unknown`) |
+| privacy.search_history_scopes.*.max_count | body | integer | 예 | min 1, max 50 (`settings_limits.search_history_max_count_*`) | 범위별 보관 개수 — 넘치는 옛 검색어는 기록 때 지운다. 숫자 문자열도 정수로 정규화 |
+| privacy.search_history_scopes.*.retention_days | body | integer | 예 | min 0, max 3650 | 범위별 보관 기한(일). 0 = 기한 없음. 1 이상이면 보유기간 핸들러 `search-history` 가 지난 검색어를 지운다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.save_validation_rules`, `core.search.engine_drivers`).
 

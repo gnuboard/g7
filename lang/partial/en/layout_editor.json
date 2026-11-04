@@ -1433,6 +1433,11 @@
     "refresh_consent": {
       "label": "Reload visitor consent"
     },
+    "record_search_keyword": {
+      "label": "Record in recent searches",
+      "param_scope": "Search scope (e.g. core.site)",
+      "param_keyword": "Search term"
+    },
     "emit_event": {
       "label": "Send a component event",
       "param_event": "Event name",

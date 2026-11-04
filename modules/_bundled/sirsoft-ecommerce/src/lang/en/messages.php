@@ -1836,4 +1836,8 @@ return [
             'purged' => 'Deleted :count existing shipping policies.',
         ],
     ],
+    // Recent search scope name (module.json search_scopes.products.label — admin Settings > Privacy "Recent searches" card)
+    'search_history' => [
+        'scope_products' => 'Product search',
+    ],
 ];

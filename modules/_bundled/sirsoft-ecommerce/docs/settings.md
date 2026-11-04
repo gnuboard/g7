@@ -442,3 +442,11 @@ manifest 에는 없지만 **실제로 맞물리는 확장이 둘 더** 있습니
 `dependencies.modules.sirsoft-ecommerce` 하한으로 잡습니다. 하한이 그보다 낮으면 필터가 없는
 모듈로도 제약이 충족되어, 플러그인은 정상 활성화된 채 추가결제만 동작하지 않습니다(오류·로그 없음).
 <!-- @intent END -->
+
+## 최근 검색어 범위 (코어 7.1.5+)
+
+`module.json` 의 `search_scopes` 로 최근 검색어 범위 `products`(범위 id `sirsoft-ecommerce.products`, 이름 「상품 검색」 — 번역 키 `messages.search_history.scope_products`, 보관 개수 10)를 선언합니다.
+보관 기한은 선언하지 않아 기본값(기한 없음)입니다. 운영자는 코어 환경설정 > 개인정보 「최근 검색어」 카드에서 이 범위의 보관 개수·보관 기한을 고칩니다(설정이 선언값보다 우선).
+모듈을 끄면 범위가 사라져 그 범위의 기록을 서버가 거부하고 엔진은 건너뜁니다. 고친 설정 값은 보존됩니다.
+이 범위를 쓰는 검색창 연결(검색 이동 앞 `<record-search-keyword scope="sirsoft-ecommerce.products" …/>` 또는 `G7Core.useSearchHistory('sirsoft-ecommerce.products')`)은 템플릿 몫입니다.
+형식 규칙: 코어 문서 「플러그인 개발 — 최근 검색어 범위(search_scopes)」.

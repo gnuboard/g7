@@ -143,6 +143,7 @@ class User extends Authenticatable implements HasLocalePreference
         'password_expiry_notified_at',
         'password_expired_processed_at',
         'password_change_postponed_until',
+        'search_history_auto_save',
     ];
 
     /**
@@ -184,6 +185,7 @@ class User extends Authenticatable implements HasLocalePreference
             'password_expiry_notified_at' => 'datetime',
             'password_expired_processed_at' => 'datetime',
             'password_change_postponed_until' => 'datetime',
+            'search_history_auto_save' => 'boolean',
         ];
     }
 
@@ -248,6 +250,16 @@ class User extends Authenticatable implements HasLocalePreference
     public function passwordHistories(): HasMany
     {
         return $this->hasMany(UserPasswordHistory::class);
+    }
+
+    /**
+     * 최근 검색어 관계 (검색 범위별)
+     *
+     * @return HasMany 최근 검색어 관계
+     */
+    public function searchHistories(): HasMany
+    {
+        return $this->hasMany(UserSearchHistory::class);
     }
 
     /**

@@ -466,6 +466,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `setLocale` | 앱 언어 변경 | 로케일 (예 `en`) | - |
 | `emitEvent` | 커스텀 이벤트 발화 | - | event (이벤트명), data |
 | `refreshConsent` | 방문자 동의 스냅샷(`_global.consent`) 다시 읽기 — 사용자 템플릿 전용, 구독자(`consent:changed`)가 끝날 때까지(최대 3초) 기다린 뒤 다음 액션으로 진행 (engine-v1.78.0) | - | - |
+| `recordSearchKeyword` | 검색창 제출 검색어를 최근 검색어에 기록 — 검색 이동 앞에 둔다. 범위 미선언·빈 검색어·자동 저장 꺼짐·관리자 화면·편집기 미리보기에서는 아무것도 하지 않고, 실패해도 다음 액션을 막지 않는다 (engine-v1.87.0) | - | scope (범위 id — `core.site` 또는 `{확장 식별자}.{이름}`), keyword |
 | `loadScript` | 외부 스크립트 로드 (src 화이트리스트) | - | src, id, async, defer |
 | `callExternal` | 외부 SDK 함수 호출 | - | constructor (전역 생성자 경로), args, method, methodArgs, callbackEvent, callbackSetState, callbackAction |
 | `callExternalEmbed` | 외부 SDK 임베드 호출 (엔진이 만든 레이어에 띄움) | - | constructor, args, layerClassName, callbackEvent, callbackSetState, callbackAction |

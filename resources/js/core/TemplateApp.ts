@@ -56,6 +56,7 @@ import { buildProgressiveDataInit, isSameScreen, type RenderedScreen } from './t
 import { beginLocaleSwitchHandoff, closeLocaleSwitchHandoff, clearLocaleSwitchHandoff } from './template-engine/localeSwitchHandoff';
 import { createPublicApi, createTracker, type TrackerHandle } from './analytics';
 import { defaultConsentRuntimeDeps, getConsentRuntime, installConsentRuntime } from './consent';
+import { defaultSearchHistoryRuntimeDeps, installSearchHistoryRuntime } from './searchHistory';
 import {
     mergeScrollRestorationConfig,
     notifyScrollRestoreDataReady,
@@ -839,6 +840,11 @@ export class TemplateApp {
                     ),
                     (window as any).G7Config?.consentInitial,
                 );
+
+                // 2.2 최근 검색어 런타임 (사용자 템플릿 전용, engine-v1.87.0)
+                // 동의 런타임과 같은 자리 — `preloadAuth` 뒤라 회원 여부가 정해져 있다. 이미 회원이면 브라우저(비회원)
+                // 목록을 서버에 병합하고, 이후 로그인(authStateChange false→true)마다 같은 병합을 한다. 기다리지 않는다.
+                installSearchHistoryRuntime(defaultSearchHistoryRuntimeDeps());
             }
 
             // 2.5 ApiClient에 onUnauthorized 콜백 설정

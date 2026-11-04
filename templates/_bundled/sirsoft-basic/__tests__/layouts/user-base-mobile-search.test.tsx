@@ -1,193 +1,184 @@
 /**
  * @file user-base-mobile-search.test.tsx
- * @description 모바일 메뉴 통합검색 기능 테스트
+ * @description 최근 검색어 검색창 연결 — 모바일 서랍·통합검색 화면·데스크톱 머리글
  *
- * 테스트 대상:
- * - templates/.../layouts/_user_base.g7.html (모바일 검색바 섹션)
+ * 테스트 대상 (실제 굽기 산출 `.json`):
+ * - layouts/_user_base.json — 모바일 서랍 검색(`mobile_drawer_search_box`)과 머리글 Header 의 `searchHistoryScope`
+ * - layouts/partials/search/_search_input.json — 통합검색 화면 검색줄(`search_page_input`)
  *
  * 검증 항목:
- * - 검색 Input에 keydown Enter 액션이 정의되어 있는지
- * - Enter 키 입력 시 /search 페이지로 navigate 되는지
- * - 검색어가 query.q 파라미터로 전달되는지
+ * - 세 검색창이 같은 범위(core.site)라 목록을 공유한다
+ * - 서랍: onSearch → 서랍 닫기 → /search?q={검색어} (실제 엔진 액션 경로로 실행)
+ * - 검색 화면: 주소 q 를 value 로 보이기만 하고, onSearch → /search?q={검색어} (기록은 검색창이 제출 때만)
+ * - 레이아웃은 기록 핸들러(recordSearchKeyword)를 따로 두지 않는다 — 검색창이 기다리지 않고 기록한다(이중 기록 방지)
  *
  * @vitest-environment jsdom
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   createLayoutTest,
+  createMockComponentRegistryWithBasics,
   screen,
+  fireEvent,
 } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
-import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
-// ========== 테스트용 컴포넌트 ==========
+const LAYOUTS = path.resolve(__dirname, '../../layouts');
+const readJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(LAYOUTS, rel), 'utf8'));
 
-const TestDiv: React.FC<{ className?: string; children?: React.ReactNode; 'data-testid'?: string }> = ({ className, children, 'data-testid': testId }) => (
-  <div className={className} data-testid={testId}>{children}</div>
-);
+type Node = Record<string, any>;
 
-const TestInput: React.FC<{
-  type?: string;
-  name?: string;
-  placeholder?: string;
-  className?: string;
-  value?: string;
-  onKeyDown?: (e: React.KeyboardEvent) => void;
-  onChange?: (e: React.ChangeEvent) => void;
-}> = ({ type, name, placeholder, className, value, onKeyDown, onChange }) => (
-  <input
-    type={type}
-    name={name}
-    placeholder={placeholder}
-    className={className}
-    value={value}
-    onKeyDown={onKeyDown}
-    onChange={onChange}
-    data-testid="search-input"
-  />
-);
-
-const TestIcon: React.FC<{ name?: string; className?: string }> = ({ name, className }) => (
-  <span className={className} data-icon={name} />
-);
-
-// ========== 레지스트리 설정 ==========
-
-function setupTestRegistry(): ComponentRegistry {
-  const registry = ComponentRegistry.getInstance();
-  (registry as any).registry = {
-    Div: { component: TestDiv, metadata: { name: 'Div', type: 'basic' } },
-    Input: { component: TestInput, metadata: { name: 'Input', type: 'basic' } },
-    Icon: { component: TestIcon, metadata: { name: 'Icon', type: 'basic' } },
-  };
-  return registry;
+/** id 또는 name 으로 노드를 찾는다 */
+function find(tree: unknown, pred: (n: Node) => boolean): Node | null {
+  if (Array.isArray(tree)) {
+    for (const item of tree) {
+      const hit = find(item, pred);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  if (!tree || typeof tree !== 'object') return null;
+  const node = tree as Node;
+  if (pred(node)) return node;
+  for (const value of Object.values(node)) {
+    const hit = find(value, pred);
+    if (hit) return hit;
+  }
+  return null;
 }
 
-// ========== 모바일 검색바 레이아웃 (발췌) ==========
+/** 모든 핸들러 이름 (중첩 sequence 포함) */
+function handlersOf(tree: unknown, out: string[] = []): string[] {
+  if (Array.isArray(tree)) tree.forEach((t) => handlersOf(t, out));
+  else if (tree && typeof tree === 'object') {
+    const node = tree as Node;
+    if (typeof node.handler === 'string') out.push(node.handler);
+    Object.values(node).forEach((v) => handlersOf(v, out));
+  }
+  return out;
+}
 
-const mobileSearchLayout = {
-  version: '1.0',
-  layout_name: 'mobile_search_test',
-  meta: { title: '모바일 검색 테스트' },
-  components: [
-    {
-      comment: '검색바',
-      type: 'basic' as const,
-      name: 'Div',
-      props: { className: 'p-4' },
-      children: [
-        {
-          type: 'basic' as const,
-          name: 'Div',
-          props: { className: 'relative' },
-          children: [
-            {
-              type: 'basic' as const,
-              name: 'Icon',
-              props: {
-                name: 'search',
-                className: 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500',
-              },
-            },
-            {
-              type: 'basic' as const,
-              name: 'Input',
-              props: {
-                type: 'text',
-                name: 'q',
-                placeholder: '$t:user.search_placeholder',
-                className: 'w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500',
-              },
-              actions: [
-                {
-                  type: 'keydown',
-                  key: 'Enter',
-                  handler: 'sequence',
-                  actions: [
-                    {
-                      handler: 'setState',
-                      params: { target: 'global', mobileMenuOpen: false },
-                    },
-                    {
-                      handler: 'navigate',
-                      params: { path: '/search', query: { q: '{{$event.target.value}}' } },
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ],
-};
+const userBase = readJson('_user_base.json');
+const searchInput = readJson('partials/search/_search_input.json');
+const drawerBox = find(userBase, (n) => n.id === 'mobile_drawer_search_box')!;
+const pageBox = find(searchInput, (n) => n.id === 'search_page_input')!;
+const header = find(userBase, (n) => n.id === 'desktop_header')!;
 
-// ========== 테스트 ==========
+/** 검색창 대역 — 누르면 onSearch(검색어) 를 부른다 */
+const StubCombobox: React.FC<{ onSearch?: (keyword: string) => void; value?: string; scope?: string }> = ({ onSearch, value, scope }) => (
+  <button type="button" data-testid="stub-combobox" data-scope={scope} data-value={value ?? ''} onClick={() => onSearch?.('등산화 끈')}>
+    search
+  </button>
+);
 
-describe('모바일 메뉴 통합검색', () => {
-  let testUtils: ReturnType<typeof createLayoutTest>;
-  let registry: ComponentRegistry;
+function registry() {
+  const reg = createMockComponentRegistryWithBasics();
+  reg.register('composite', 'RecentSearchCombobox', StubCombobox as any);
+  return reg;
+}
 
-  beforeEach(() => {
-    registry = setupTestRegistry();
-    testUtils = createLayoutTest(mobileSearchLayout, {
-      translations: {},
-      locale: 'ko',
-      componentRegistry: registry,
-    });
+function layoutOf(node: Node) {
+  return { version: '1.0', layout_name: 'recent_search_wiring', meta: { title: 't' }, components: [node] };
+}
+
+describe('최근 검색어 검색창 연결 — 구조', () => {
+  /**
+   * @scenario surface=mobile_drawer
+   * @effects same_scope_boxes_share_list
+   */
+  it('세 검색창이 같은 범위 core.site 를 쓴다(목록 공유)', () => {
+    expect(drawerBox).toBeTruthy();
+    expect(pageBox).toBeTruthy();
+    expect(drawerBox.name).toBe('RecentSearchCombobox');
+    expect(pageBox.name).toBe('RecentSearchCombobox');
+    expect(drawerBox.props.scope).toBe('core.site');
+    expect(pageBox.props.scope).toBe('core.site');
+    expect(header.props.searchHistoryScope).toBe('core.site');
   });
+
+  /**
+   * @scenario surface=mobile_drawer
+   * @effects drawer_closes_then_navigates_search, touch_targets_44px_and_dark_pairs
+   */
+  it('서랍 검색창은 onSearch → 서랍 닫기 → /search?q=$args[0] 이다', () => {
+    const action = drawerBox.actions[0];
+    expect(action.event).toBe('onSearch');
+    expect(action.handler).toBe('sequence');
+    expect(action.actions[0]).toEqual({ handler: 'setState', params: { target: 'global', mobileMenuOpen: false } });
+    expect(action.actions[1]).toEqual({ handler: 'navigate', params: { path: '/search', query: { q: '{{$args[0]}}' } } });
+    // 모바일 누름 영역 44px
+    expect(drawerBox.props.inputClassName).toContain('min-h-[44px]');
+  });
+
+  /**
+   * @scenario surface=search_page
+   * @effects search_page_shows_query_and_navigates, url_query_value_not_recorded
+   */
+  it('검색 화면은 주소 q 를 value 로 보이고 onSearch 로만 이동한다(옛 _local.q 사본 제거)', () => {
+    expect(pageBox.props.value).toBe("{{query?.q ?? ''}}");
+    expect(pageBox.props.showButton).toBe(true);
+    expect(pageBox.actions).toHaveLength(1);
+    expect(pageBox.actions[0]).toMatchObject({ event: 'onSearch', handler: 'navigate', params: { path: '/search', query: { q: '{{$args[0]}}' } } });
+    expect(JSON.stringify(searchInput)).not.toContain('_local.q');
+  });
+
+  /**
+   * @scenario surface=mobile_drawer
+   * @effects layout_has_no_duplicate_record_handler
+   */
+  it('레이아웃은 기록 핸들러를 두지 않는다 — 검색창이 제출 때 기록(이중 기록 방지)', () => {
+    expect(handlersOf(drawerBox)).not.toContain('recordSearchKeyword');
+    expect(handlersOf(searchInput)).not.toContain('recordSearchKeyword');
+    expect(handlersOf(userBase)).not.toContain('recordSearchKeyword');
+  });
+});
+
+describe('최근 검색어 검색창 연결 — 엔진 액션 실행', () => {
+  let utils: ReturnType<typeof createLayoutTest> | null = null;
 
   afterEach(() => {
-    testUtils.cleanup();
+    utils?.cleanup();
+    utils = null;
   });
 
-  // ── 구조 검증 ──
+  /**
+   * @scenario surface=mobile_drawer
+   * @effects drawer_closes_then_navigates_search
+   */
+  it('서랍 검색창에서 검색하면 서랍이 닫히고 통합검색으로 이동한다', async () => {
+    utils = createLayoutTest(layoutOf(drawerBox), { translations: {}, locale: 'ko', componentRegistry: registry() } as any);
+    utils.setState('mobileMenuOpen', true, 'global');
+    await utils.render();
 
-  it('검색 Input에 keydown Enter sequence 액션이 정의되어 있다', () => {
-    const inputComponent = mobileSearchLayout.components[0].children[0].children[1];
-    expect(inputComponent.name).toBe('Input');
-    expect(inputComponent.actions).toBeDefined();
-    expect(inputComponent.actions).toHaveLength(1);
+    fireEvent.click(screen.getByTestId('stub-combobox'));
+    await new Promise((r) => setTimeout(r, 0));
 
-    const enterAction = inputComponent.actions![0];
-    expect(enterAction.type).toBe('keydown');
-    expect(enterAction.key).toBe('Enter');
-    expect(enterAction.handler).toBe('sequence');
-    expect(enterAction.actions).toHaveLength(2);
+    expect(utils.getState()._global.mobileMenuOpen).toBe(false);
+    expect(utils.getNavigationHistory().join(' ')).toContain('/search');
+    expect(decodeURIComponent(utils.getNavigationHistory().join(' ')).replace(/\+/g, ' ')).toContain('q=등산화 끈');
   });
 
-  it('Enter 시 메뉴 닫기 후 /search로 이동한다', () => {
-    const inputComponent = mobileSearchLayout.components[0].children[0].children[1];
-    const sequenceActions = inputComponent.actions![0].actions!;
+  /**
+   * @scenario surface=search_page
+   * @effects search_page_shows_query_and_navigates
+   */
+  it('검색 화면 검색창은 주소의 q 를 받고, 검색하면 통합검색으로 이동한다', async () => {
+    utils = createLayoutTest(layoutOf(pageBox), {
+      translations: {},
+      locale: 'ko',
+      componentRegistry: registry(),
+      initialData: { query: { q: '침낭' } } as any,
+    } as any);
+    await utils.render();
 
-    // 1단계: 메뉴 닫기
-    expect(sequenceActions[0].handler).toBe('setState');
-    expect(sequenceActions[0].params).toEqual({ target: 'global', mobileMenuOpen: false });
+    const stub = screen.getByTestId('stub-combobox');
+    expect(stub.getAttribute('data-scope')).toBe('core.site');
 
-    // 2단계: 검색 페이지 이동
-    expect(sequenceActions[1].handler).toBe('navigate');
-    expect(sequenceActions[1].params).toEqual({
-      path: '/search',
-      query: { q: '{{$event.target.value}}' },
-    });
-  });
-
-  it('검색 Input에 name="q" prop이 설정되어 있다', () => {
-    const inputComponent = mobileSearchLayout.components[0].children[0].children[1];
-    expect(inputComponent.props.name).toBe('q');
-  });
-
-  it('데스크톱 검색과 동일한 navigate 핸들러 패턴을 사용한다', () => {
-    // _search_input.g7.html의 keydown Enter 핸들러와 동일한 navigate 패턴 검증
-    const inputComponent = mobileSearchLayout.components[0].children[0].children[1];
-    const navigateAction = inputComponent.actions![0].actions![1];
-
-    expect(navigateAction.handler).toBe('navigate');
-    expect(navigateAction.params.query).toHaveProperty('q');
-    // $event.target.value 패턴 사용 ($value 금지)
-    expect(navigateAction.params.query.q).toContain('$event.target.value');
-    expect(navigateAction.params.query.q).not.toContain('$value');
+    fireEvent.click(stub);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(decodeURIComponent(utils.getNavigationHistory().join(' ')).replace(/\+/g, ' ')).toContain('/search?q=등산화 끈');
   });
 });

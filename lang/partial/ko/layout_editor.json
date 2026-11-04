@@ -1422,6 +1422,11 @@
     "refresh_consent": {
       "label": "방문자 동의 상태 다시 읽기"
     },
+    "record_search_keyword": {
+      "label": "최근 검색어에 기록",
+      "param_scope": "검색 범위 (예: core.site)",
+      "param_keyword": "검색어"
+    },
     "emit_event": {
       "label": "컴포넌트 이벤트 보내기",
       "param_event": "이벤트 이름",

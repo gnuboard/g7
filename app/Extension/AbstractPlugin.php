@@ -17,6 +17,7 @@ use App\Extension\Traits\ReportsLifecycleFailure;
 use App\Extension\Traits\ResolvesLayoutInstallSource;
 use App\Support\ExtensionIntegrations;
 use App\Support\PublicAssetDisk;
+use App\Support\SearchScopes;
 use App\Support\StateContracts;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
@@ -904,6 +905,23 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     public function getStateContracts(): array
     {
         return StateContracts::normalize($this->loadManifest()['state_contracts'] ?? []);
+    }
+
+    /**
+     * 이 플러그인이 선언한 최근 검색어 범위를 반환합니다.
+     *
+     * plugin.json 의 `search_scopes` 에서 읽고, 범위 id 에 `{식별자}.` 를 붙입니다. 같은 범위를 적은 검색창끼리
+     * 최근 검색어 목록을 공유하며, 운영자는 환경설정 > 개인정보 「최근 검색어」 카드에서 범위마다 보관 개수·보관
+     * 기한을 고칩니다. 형식이 틀린 항목은 버립니다({@see SearchScopes}).
+     *
+     * @param  bool  $reportWarnings  설치·활성화처럼 운영자에게 알릴 작업이면 true — 틀린 항목을 생명주기 경고로도 남긴다
+     * @return array<string, array{label: string|array<string, string>|null, max_count: int|null, retention_days: int|null}> 범위 id → 선언
+     *
+     * @since 7.1.5
+     */
+    public function getSearchScopes(bool $reportWarnings = false): array
+    {
+        return SearchScopes::normalize($this->loadManifest()['search_scopes'] ?? null, $this->getIdentifier(), $reportWarnings);
     }
 
     /**

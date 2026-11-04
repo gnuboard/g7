@@ -5,7 +5,7 @@ description: |
   그 시드 3블록(actionRecipes, initActionRecipes, errorRecipes)의 무결성 회귀 가드.
 
   핵심 동작:
-    - 카탈로그가 기대 핸들러 집합(C1~C22 핸들러, refreshConsent, 제어흐름 conditions,
+    - 카탈로그가 기대 핸들러 집합(C1~C22 핸들러, refreshConsent, recordSearchKeyword, 제어흐름 conditions,
       sequence, parallel, switch, suppress)과 정확히 일치한다. 결제 진입(requestPgPayment)은
       커머스 도메인이라 코어 카탈로그에 없다(ecommerce 모듈 editor-spec 소유).
     - 각 레시피는 label 과 build.handler 를 갖고, build.handler 가 카탈로그 키와 같으며,

@@ -529,6 +529,9 @@ class PluginManager implements PluginManagerInterface
             // 전역 상태 공개 계약 이름 충돌 검증 (#639)
             $this->validateStateContracts('plugin:'.$plugin->getIdentifier(), $plugin->getStateContracts());
 
+            // 최근 검색어 범위 선언(search_scopes) 형식 검사 — 틀린 항목은 버리고 경고로만 알린다(설치를 막지 않음, 7.1.5)
+            $plugin->getSearchScopes(reportWarnings: true);
+
             // 플러그인 설치 실행
             $onProgress?->__invoke('validate', __('extensions.progress.validate'));
             $plugin->clearLifecycleFailureReason();
@@ -754,6 +757,9 @@ class PluginManager implements PluginManagerInterface
 
         // 전역 상태 공개 계약 이름 충돌 검증 — 꺼져 있던 사이 다른 확장이 같은 이름을 가졌을 수 있다 (#639)
         $this->validateStateContracts('plugin:'.$plugin->getIdentifier(), $plugin->getStateContracts());
+
+        // 최근 검색어 범위 선언(search_scopes) 형식 검사 — 틀린 항목은 버리고 경고로만 알린다(설치를 막지 않음, 7.1.5)
+        $plugin->getSearchScopes(reportWarnings: true);
 
         // 의존성 검증: 필요한 모듈/플러그인이 활성 상태이고 버전 제약을 충족하는지 확인 (--force 는 우회)
         $unmet = $this->collectUnmetDependencies($plugin->getDependencies());

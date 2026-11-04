@@ -5,6 +5,21 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.87.0] - 2026-11-04
+
+### Added
+
+- 최근 검색어 런타임(`searchHistory/`) — 검색창에 제출한 검색어를 검색 범위(scope)별로 보관한다. 범위는 서버가 인라인한 `G7Config.searchScopes`(코어 `core.site` + 활성 확장 manifest `search_scopes`, 범위 → `{max_count}`)에 있는 것만 다루고, 없는 범위(선언 안 됨·확장 꺼짐·기능 꺼짐)는 조용히 건너뛴다. 회원은 서버(`/api/me/search-history`), 비회원은 localStorage `g7_search_history`(`{v:1, autoSave, items:{범위:[{k, t}]}}`, 최신순·범위별 보관 개수로 자름 — 쿠키 동의 플러그인이 코어 필수 키로 받는다). 같은 검색어(대소문자 무시)는 하나로 맨 앞에 올린다. 검색어는 연속 공백을 하나로·앞뒤 공백 제거·100자.
+- 로그인 병합 — 비회원 → 회원이 되면(`authStateChange`, 부팅 때 이미 회원이어도) 브라우저 목록을 최신순 최대 200건으로 `POST /api/me/search-history/merge` 에 보내고 성공하면 브라우저 칸을 지운다(실패하면 남겨 다음 로그인 때 다시 보낸다). 인증이 바뀌면 회원 캐시를 버리고, 인증 세대가 바뀐 뒤 도착한 앞 계정의 조회 결과는 캐시에 넣지 않는다. 회원 데이터가 바뀌면(기록·삭제·전체 삭제·자동 저장 변경·병합 성공) 데이터 변경 세대를 올리고 진행 중 조회를 떼어 낸다 — 그 전에 출발한 목록 응답은 캐시·자동 저장 값에 쓰지 않고 최신 상태를 다시 받는다(조회 중 자동 저장을 끄면 늦게 온 옛 목록이 목록을 다시 보이게 하던 문제, 조회 중 기록한 검색어가 옛 목록에 덮여 빠지던 문제).
+- 내장 핸들러 `recordSearchKeyword`(`params {scope, keyword}`) — 검색 이동 앞에 둔다. 범위 미선언·빈 검색어·자동 저장 꺼짐·관리자 화면(런타임 없음)이면 아무것도 하지 않고, 실패해도 던지지 않는다(검색 이동을 막지 않음). 미리보기(레이아웃 편집기)에서는 실행하지 않는다(`PREVIEW_SUPPRESSED_HANDLERS`). 편집기 미리보기에서는 핸들러만이 아니라 런타임 쓰기 전부(파사드·훅의 record·remove·clear·setAutoSave, 로그인·부팅 병합)를 하지 않고 false 를 돌려준다 — 미리보기 모드는 런타임 설치 뒤에 켜지므로 쓰기마다 호출 시점에 디스패처 미리보기 모드·`_global.__isPreview`·시스템 미리보기 경로(`…/preview/{token}`)로 판정한다. 읽기(list·getSnapshot)는 그대로다. 주소에 직접 넣은 검색어는 이 경로를 거치지 않으므로 기록되지 않는다. 레이아웃 편집기 동작 레시피 「최근 검색어에 기록」.
+- 파사드 `G7Core.searchHistory`(동결) — `isEnabled(scope)` · `getSnapshot(scope)` · `list(scope, {force?})` · `record(scope, keyword)` · `remove(scope, item|id|keyword)` · `clear(scope?)` · `getAutoSave()` · `setAutoSave(on)` · `subscribe(listener)`(해제 함수 반환). 변경 이벤트 `searchHistory:changed`(`{scope, reason}` — 범위 전체면 scope null, reason `record|remove|clear|autoSave|auth|merge|load`).
+- 훅 `G7Core.useSearchHistory(scope)` → `{items:[{id, keyword, searchedAt}], autoSave, enabled, loading, maxCount, record, remove, clear, setAutoSave, refresh}`. 같은 범위를 쓰는 검색창끼리 목록을 공유하고, 늦게 끝난 조회가 그 사이 바뀐 상태(기록·자동 저장 끄기)를 옛 값으로 덮지 않게 차례 번호로 거른다. 관리자 화면에서는 `enabled: false`.
+- 「자동 저장 끄기」 — 기록을 멈추고 목록을 감춘다(저장된 검색어는 남김). 범위별이 아니라 사람 단위 하나(회원 `users.search_history_auto_save`, 비회원 브라우저 칸).
+
+배경: 검색창에 최근 검색어가 없었다(새 기능, 코어 7.1.5). 화면(검색창 펼침 목록)은 템플릿이 이 훅으로 그린다.
+
+회귀 잠금: `searchHistory/__tests__/SearchHistoryRuntime.test.ts`(12 — 비회원 정규화·중복·보관 개수, 미선언 범위, 자동 저장 끄기, 삭제, 로그인 병합·실패 보존·부팅 병합, 회원 기록·캐시, 인증 세대 경쟁, 로그아웃) · `searchHistory/__tests__/searchHistoryMemberStaleList.test.tsx`(2 — 실 훅 렌더: 회원 목록 GET 을 붙잡은 채 자동 저장 끄기·검색어 기록 뒤 옛 응답 해제) · `searchHistory/__tests__/searchHistoryPreviewGuard.test.tsx`(3 — 실 ActionDispatcher 미리보기 모드·기본 의존성: 비회원 파사드·훅·핸들러·자동 저장, 회원 기록·삭제·전체 삭제·자동 저장·로그인 병합, 미리보기 경로 부팅 병합 — 수정 전 3 red) · `searchHistory/__tests__/searchHistoryFacadeAndHandler.test.tsx`(3 — 실 ActionDispatcher 의 `recordSearchKeyword` 바인딩 해석·같은 범위 검색창 목록 공유, 런타임 없는 화면, 파사드 동결·구독 해제·자동 저장 끄기가 훅 목록을 감춤). 훅 차례 번호 가드 제거 변이에서 파사드 시험 2 red, 데이터 변경 세대 가드 제거 변이(와 가드 전 구현)에서 회원 경쟁 시험 2 red(자동 저장 끈 뒤 `autoSave` true, 기록한 검색어 빠짐), 인증 세대 가드 제거 변이에서 경쟁 시험 red. 매니페스트 `tests/scenarios/search-history.yaml`
+
 ## [engine-v1.86.0] - 2026-11-04
 
 ### Added

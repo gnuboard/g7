@@ -26,6 +26,7 @@ import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { AuthManager, AuthType, LoginResult } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { getConsentRuntime } from '../consent';
+import { getSearchHistoryRuntime } from '../searchHistory';
 import { getErrorHandlingResolver } from '../error';
 import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
@@ -189,6 +190,9 @@ const PREVIEW_SUPPRESSED_HANDLERS: ReadonlySet<string> = new Set([
     // 간접 네비게이션 — 페이지 리로드 또는 리다이렉트 유발
     'refresh',          // window.location.reload()
     'logout',           // 로그아웃 후 로그인 페이지로 리다이렉트
+
+    // 사용자 데이터 쓰기 — 미리보기에서 검색창을 눌러 본 것이 실제 최근 검색어로 남으면 안 된다 (engine-v1.87.0)
+    'recordSearchKeyword',
 ]);
 
 /**
@@ -2288,6 +2292,22 @@ export class ActionDispatcher {
       await runtime.refresh();
     });
 
+    // recordSearchKeyword: 검색창 제출 때 최근 검색어를 기록한다 (engine-v1.87.0)
+    // 회원은 서버(/api/me/search-history), 비회원은 브라우저(localStorage g7_search_history)에 둔다. 범위(scope)가
+    // 선언되지 않았거나(확장 꺼짐·기능 꺼짐) 검색어가 비었거나 자동 저장을 껐거나 관리자 화면(런타임 없음)이면
+    // 아무것도 하지 않는다. 실패해도 던지지 않는다 — 같은 시퀀스의 다음 동작(검색 이동)을 막으면 안 된다.
+    // 주소에 검색어를 직접 넣은 검색은 이 핸들러를 거치지 않으므로 기록되지 않는다.
+    //
+    // @example <record-search-keyword scope="core.site" keyword="{{_local.searchQuery}}"/>
+    // 바인딩(`{{…}}`)은 디스패처가 이미 풀어서 넘긴다(커스텀 핸들러 경로의 resolvedParams).
+    this.registerHandler('recordSearchKeyword', async (action: ActionDefinition) => {
+      const params = (action.params ?? {}) as Record<string, unknown>;
+      const runtime = getSearchHistoryRuntime();
+      if (!runtime || typeof params.scope !== 'string') return false;
+
+      return runtime.record(params.scope, params.keyword);
+    });
+
     // suppress: 에러 전파를 의도적으로 방지하는 no-op 핸들러
     // 데이터소스/apiCall의 errorHandling에서 특정 에러 코드를 상위 레벨로 전파하지 않을 때 사용
     // 예: 비회원의 /api/auth/user 401은 정상 동작이므로 레이아웃 errorHandling으로 전파 방지
@@ -2318,6 +2338,7 @@ export class ActionDispatcher {
       { name: 'showErrorPage', description: '에러 페이지를 표시합니다' },
       { name: 'emitEvent', description: '이벤트를 발생시킵니다' },
       { name: 'refreshConsent', description: '방문자 동의 상태를 다시 조회합니다' },
+      { name: 'recordSearchKeyword', description: '검색창 제출 검색어를 최근 검색어에 기록합니다' },
       { name: 'updateProductField', description: '상품 필드를 인라인 수정합니다' },
       { name: 'updateOptionField', description: '상품 옵션 필드를 인라인 수정합니다' },
       { name: 'setLocale', description: '언어를 변경합니다 (DB 저장 + UI 리렌더링)' },

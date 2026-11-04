@@ -40,6 +40,7 @@ exclusions:
 
 effects:
   - template_declarations_merged_into_provided
+  - core_declarations_merged_into_provided   # 코어 선언 필수 키(비회원 최근 검색어 g7_search_history) — 코어 7.1.5
   - computed_keys_removed_from_saved_settings
   - ecommerce_order_keys_removed_from_allowlist
   - shipped_catalog_has_no_ecommerce_order_keys

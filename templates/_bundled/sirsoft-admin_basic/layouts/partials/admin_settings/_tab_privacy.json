@@ -257,7 +257,7 @@
                                     "id": "privacy_manual_run_desc",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}",
+                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}",
                                     "props": {
                                         "className": "text-hint mt-1"
                                     },
@@ -723,7 +723,7 @@
                             "id": "dormant_target_list_row",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run}}",
+                            "if": "{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}",
                             "children": [
                                 {
                                     "id": "dormant_target_list",
@@ -1160,6 +1160,559 @@
                                 "className": "text-hint"
                             },
                             "text": "$t:admin.settings.privacy.dormant.restore_hint"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "최근 검색어 (코어 7.1.5) — 검색창에 제출한 검색어를 검색 범위별로 보관한다. 사용 여부(기본 켬)와, 코어·활성 확장이\n      선언한 범위마다 보관 개수·보관 기한(일, 0 = 기한 없음) 한 행. 범위 행은 서버가 선언 순서로 다듬어 주는 목록\n      (`privacy.search_history_scopes = [{scope, max_count, retention_days}]`)이다 — 범위 id 에 점이 있어 맵 폼 경로를 쓸 수 없다.\n      범위 이름·소유 확장·선언 기본값은 `_meta.search_scopes` 에서 읽는다. 보관 기한은 사용 여부와 무관하게 쓰이므로(이미\n      저장된 검색어 파기) 꺼져 있어도 표를 보인다. 대상 행은 보유기간 핸들러 `search-history` 의 건수·명단·직권 실행이다\n      (탈퇴 카드와 같은 구성 — 명단은 검색어 대신 회원·범위·건수만).",
+            "id": "card_search_history",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-stack-item"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.privacy.search_history.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.privacy.search_history.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "toggle_search_history",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.privacy.search_history.enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.privacy.search_history.enabled_desc"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['privacy.search_history_enabled']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['privacy.search_history_enabled']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "privacy.search_history_enabled",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "search_history_auto_save_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "role": "note",
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0",
+                                                "aria-hidden": "true"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.privacy.search_history.auto_save_notice"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "search_history_scopes_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:admin.settings.privacy.search_history.scopes_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.privacy.search_history.scopes_desc"
+                                },
+                                {
+                                    "id": "search_history_scopes_empty",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!_local.form?._meta && (_local.form?.privacy?.search_history_scopes ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "text-hint mt-2"
+                                    },
+                                    "text": "$t:admin.settings.privacy.search_history.empty"
+                                },
+                                {
+                                    "id": "search_history_scope_list",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_local.form?.privacy?.search_history_scopes ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "mt-2 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "search_history_scope_row_{{idx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "_local.form?.privacy?.search_history_scopes ?? []",
+                                                "item_var": "row",
+                                                "index_var": "idx"
+                                            },
+                                            "props": {
+                                                "className": "px-4 py-3 flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "min-w-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-heading wrap-anywhere"
+                                                            },
+                                                            "text": "{{(_local.form?._meta?.search_scopes ?? []).find((s) => s.scope === row.scope)?.label ?? row.scope}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-hint wrap-anywhere"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.search_history.scope_meta|owner={{(_local.form?._meta?.search_scopes ?? []).find((s) => s.scope === row.scope)?.owner_label ?? ''}}|scope={{row.scope}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-4"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "props": {
+                                                                        "className": "form-label"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.search_history.max_count"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "이 범위 행의 보관 개수만 바꾼다 — 숫자로 바꿔 담는다(입력 이벤트 값은 문자열).",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.privacy.search_history_scopes": "{{(_local.form?.privacy?.search_history_scopes ?? []).map((r, i) => i === idx ? {...r, max_count: Number($event.target.value)} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "number",
+                                                                        "value": "{{row.max_count ?? ''}}",
+                                                                        "min": "{{_local?.form?._meta?.limits?.search_history_max_count_min ?? 1}}",
+                                                                        "max": "{{_local?.form?._meta?.limits?.search_history_max_count_max ?? 50}}",
+                                                                        "aria-label": "$t:admin.settings.privacy.search_history.max_count_aria|scope={{row.scope}}",
+                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                        "className": "input input-w-sm {{_local.errors?.['privacy.search_history_scopes.' + idx + '.max_count'] ? 'input-error' : ''}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_local.errors?.['privacy.search_history_scopes.' + idx + '.max_count']}}",
+                                                                    "props": {
+                                                                        "className": "form-error"
+                                                                    },
+                                                                    "text": "{{_local.errors?.['privacy.search_history_scopes.' + idx + '.max_count']?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Label",
+                                                                    "props": {
+                                                                        "className": "form-label"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.search_history.retention_days"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "이 범위 행의 보관 기한(일)만 바꾼다 — 빈 칸은 0(기한 없음)이 된다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.privacy.search_history_scopes": "{{(_local.form?.privacy?.search_history_scopes ?? []).map((r, i) => i === idx ? {...r, retention_days: Number($event.target.value)} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "number",
+                                                                        "value": "{{row.retention_days ?? 0}}",
+                                                                        "min": "0",
+                                                                        "max": "{{_local?.form?._meta?.limits?.privacy_retention_days_max ?? 3650}}",
+                                                                        "aria-label": "$t:admin.settings.privacy.search_history.retention_days_aria|scope={{row.scope}}",
+                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                        "className": "input input-w-sm {{_local.errors?.['privacy.search_history_scopes.' + idx + '.retention_days'] ? 'input-error' : ''}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-hint mt-1"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.search_history.retention_days_hint"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_local.errors?.['privacy.search_history_scopes.' + idx + '.retention_days']}}",
+                                                                    "props": {
+                                                                        "className": "form-error"
+                                                                    },
+                                                                    "text": "{{_local.errors?.['privacy.search_history_scopes.' + idx + '.retention_days']?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['privacy.search_history_scopes']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['privacy.search_history_scopes']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-2"
+                                    },
+                                    "text": "$t:admin.settings.privacy.search_history.retention_desc"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다",
+                            "id": "search_history_target_list_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{privacyPreview?.data?.retention?.['search-history'] || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}",
+                            "children": [
+                                {
+                                    "id": "search_history_target_list",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "rounded-lg border border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "search_history_target_row",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2 min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.targets.rows.search_history"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{privacyPreview?.data?.retention?.['search-history']?.count !== null && privacyPreview?.data?.retention?.['search-history']?.count !== undefined}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-yellow"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.search_history.target_count|count={{privacyPreview?.data?.retention?.['search-history']?.count ?? 0}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "view_search_history_targets",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{privacyPreview?.data?.retention?.['search-history']?.can_view_targets}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "보관 기한이 지난 최근 검색어 명단 — 탈퇴 카드와 같은 창을 목록 경로·제목만 바꿔 1쪽부터 다시 받아 연다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyTargets": "{{({ path: 'retention-targets/search-history', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyTargets.title": "$t:admin.settings.privacy.targets.title.search_history"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "privacyTargets"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_targets_modal"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-ghost"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.targets.view"
+                                                                },
+                                                                {
+                                                                    "id": "run_search_history",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{!!privacyManualRuns?.data?.targets?.['retention:search-history']}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "보관 기한 경과 검색어 지금 실행 — 확인 창을 먼저 열고 실행 시점 건수를 받아 채운다. 대기기간이 없는 대상이라\n                           생략 선택(`supportsSkip`)을 끈 채로 연다. 저장 전 변경이 있거나 접수된 작업이 아직 돌고 있으면 잠긴다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyRun": "{{({ key: 'retention:search-history', label: privacyManualRuns?.data?.targets?.['retention:search-history']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_run_modal"
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/admin/privacy/manual-runs/retention:search-history/preview",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "GET"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "global",
+                                                                                            "privacyRun.preview": "{{response.data}}",
+                                                                                            "privacyRun.loading": false
+                                                                                        }
+                                                                                    },
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "privacyRun.loading": false
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-outline",
+                                                                        "disabled": "{{!privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run || _local.hasChanges || privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.is_active}}"
+                                                                    },
+                                                                    "text": "$t:admin.settings.privacy.manual_run.run"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "search_history_manual_run_status",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run}}",
+                                                    "props": {
+                                                        "className": "text-hint mt-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.is_active}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status === 'completed'}}",
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.processed_count ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status === 'failed'}}",
+                                                            "props": {
+                                                                "className": "text-error-soft"
+                                                            },
+                                                            "text": "$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.error ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
                 }

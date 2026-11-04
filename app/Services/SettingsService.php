@@ -20,6 +20,7 @@ use App\Support\OpcacheStatus;
 use App\Support\PhpExtensionProbe;
 use App\Support\PhpExtensionRequirements;
 use App\Support\ProcessOutputEncoding;
+use App\Support\SearchScopes;
 use App\Support\SettingsVersion;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
@@ -721,6 +722,15 @@ class SettingsService
 
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
             $existingSettings = $this->configRepository->getCategory($tab);
+
+            // 최근 검색어 범위 행(7.1.5) — 화면에는 지금 선언된 범위만 나오므로, 끈 확장의 기존 행은 보존해 다시 켤 때
+            // 운영자 값이 돌아오게 한다. 형식 검증은 FormRequest 가 마쳤다.
+            if ($tab === 'privacy' && is_array($tabSettings[SearchScopes::SETTINGS_ROWS_KEY] ?? null)) {
+                $tabSettings[SearchScopes::SETTINGS_ROWS_KEY] = SearchScopes::mergeForSave(
+                    $tabSettings[SearchScopes::SETTINGS_ROWS_KEY],
+                    $existingSettings[SearchScopes::SETTINGS_ROWS_KEY] ?? []
+                );
+            }
             $mergedSettings = array_merge($existingSettings, $tabSettings);
 
             // 자산 URL 방식이 바뀌는지 저장 **전에** 판정한다 (이슈 #486).

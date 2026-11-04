@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-11-04
+
+### Added
+
+- 게시판 1.2.3 의 최근 검색어 범위 이름(`messages.search_history.scope_posts` 「投稿検索」)의 일본어 번역을 추가했습니다. 없으면 일본어 관리자 화면의 「최근 검색어」 카드에 범위 이름이 키 그대로 보입니다.
+
 ## [1.1.2] - 2026-11-01
 
 ### Added

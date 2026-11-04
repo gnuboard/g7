@@ -132,7 +132,11 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
 `{prefix}.before_prune`(보존일) / `{prefix}.after_prune`(보존일, 건수).
 **`--dry-run` 에서는 발행하지 않습니다** — 리허설에서 자기 리스너가 돌았다고 착각하지 않도록
 실제 처리 때만 발행합니다. 번들 핸들러의 접두사 전수는 아래 「보존 기간 자동 파기」 카탈로그에 있습니다.
-코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다.
+코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다. 코어 최근 검색어 보관 기한 핸들러(7.1.5)는
+`core.privacy.search_history` 이고, 인자가 보존일 대신 범위별 기한 맵(`array<범위 id, 일>`)입니다.
+
+최근 검색어 기록(7.1.5)은 `core.search_history.filter_keyword`(filter — 검색어·범위·회원, 빈 문자열이나 문자열이 아닌 값을 돌려주면
+기록하지 않음, 예: 금칙어)와 `core.search_history.after_record`(action — 기록한 행·회원)를 발행합니다.
 구현 예시·규약 표·검증 매트릭스는 [개인정보 보유기간 처리 가이드](../backend/privacy-retention.md)에 있습니다.
 
 ### 개인정보 조치 직권 실행 대상·알림 훅

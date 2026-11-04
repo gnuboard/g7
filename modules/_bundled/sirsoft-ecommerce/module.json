@@ -37,6 +37,12 @@
         "strategy": "global",
         "priority": 100
     },
+    "search_scopes": {
+        "products": {
+            "label": "sirsoft-ecommerce::messages.search_history.scope_products",
+            "max_count": 10
+        }
+    },
     "state_contracts": {
         "preferredCurrency": {
             "description": {

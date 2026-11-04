@@ -52,6 +52,7 @@
 9. [appendDataSource](actions-handlers-state.md#appenddatasource) - 데이터 소스 병합 (무한스크롤)
 10. [remount](actions-handlers-state.md#remount) - 컴포넌트 리마운트
     - `refreshConsent` (engine-v1.78.0) - 방문자 동의 스냅샷 다시 읽기 — 설명은 [g7core-api.md](g7core-api.md#방문자-동의-g7coreconsent)
+    - `recordSearchKeyword` (engine-v1.87.0) - 검색창 제출 검색어를 최근 검색어에 기록 — 설명은 [g7core-api.md](g7core-api.md#최근-검색어-g7coresearchhistory)
 11. [onSuccess/onError 후속 액션](actions-handlers-state.md#onsuccessonerror-후속-액션)
 12. [API 데이터 바인딩 규칙](actions-handlers-state.md#api-데이터-바인딩-규칙)
 13. [에러 핸들링 시스템](actions-handlers-state.md#에러-핸들링-시스템-errorhandling)

@@ -1394,6 +1394,11 @@
     "refresh_consent": {
       "label": "訪問者の同意状態を再読み込み"
     },
+    "record_search_keyword": {
+      "label": "最近の検索語に記録",
+      "param_scope": "検索範囲 (例: core.site)",
+      "param_keyword": "検索語"
+    },
     "emit_event": {
       "label": "コンポーネントイベントを送信",
       "param_event": "イベント名",

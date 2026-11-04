@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 79개 (루트: `src/components`).
+컴포넌트 80개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 38개 |
-| `composite` | 36개 |
+| `composite` | 37개 |
 | `layout` | 5개 |
 <!-- @generated:components END -->
 
@@ -255,6 +255,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 > }
 > ```
 | `SearchBar` | 검색 바 (자동완성 지원) | name, placeholder, value, showButton, suggestions, showSuggestions |
+| `RecentSearchCombobox` | 최근 검색어 펼침 목록을 가진 검색창 (1.3.1) — 머리글·모바일 서랍·통합검색 화면 | scope(기본 `core.site`), name, value, placeholder, ariaLabel, showButton, buttonText, showIcon, inputClassName, buttonClassName · 이벤트 `onSearch`(`$args[0]` = 다듬은 검색어) |
 | `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, icon, iconClassName, size, width, className, style |
 | `ConfirmDialog` | 확인/취소 다이얼로그 | isOpen, onClose, title, message, confirmText, cancelText, ... |
 | `Toast` | 토스트 알림 | toasts, position, duration |
@@ -262,6 +263,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 - `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다**(관리자 템플릿과 같은 규칙). 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안 드롭다운·메뉴는 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 키를 누른 순간(캡처 단계)의 펼침 여부로 판정하고, `aria-haspopup` 없는 펼침과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
 - **아이콘 단추와 상태 영역의 접근 이름**: `ThemeToggle` 단추는 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추는 `common.delete_notification`, `PageSkeleton` 상태 영역은 `common.loading` 을 이름으로 단다. 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
+- **최근 검색어 검색창 `RecentSearchCombobox` (1.3.1)**: 빈 칸에 초점을 두면 같은 범위(`scope`)의 최근 검색어가 펼쳐진다 — 항목별 삭제(× 단추 `search.history.delete`)·전체 삭제·자동 저장 끄기/켜기, 끈 상태에서는 목록 대신 안내(`search.history.auto_save_off_notice`). 목록·기록은 코어 엔진 `G7Core.useSearchHistory(scope)`(engine-v1.87.0, 코어 7.1.5)가 맡아 같은 범위의 검색창끼리 목록을 공유하고, 회원은 서버·비회원은 브라우저에 둔다. **기록은 검색창이 맡는다** — 제출(Enter·검색 단추·항목 선택)할 때 기록을 기다리지 않고 바로 `onSearch` 를 부르므로(회원 기록은 서버 응답을 기다리기 때문) 레이아웃은 `<on event="onSearch">` 에서 이동만 적고 `<record-search-keyword>` 를 같이 두지 않는다(이중 기록). `value`(주소의 q 등)는 보이기만 하고 기록하지 않는다. 엔진이 범위를 쓸 수 없다고 답하면(기능 꺼짐·미선언 범위·옛 엔진), 레이아웃 편집 모드(`editorAttrs`)·편집기 미리보기 화면(`_global.__isPreview`)이면 펼치지 않고 기록하지 않는 평범한 검색창이다. 접근성: 입력칸 `role="combobox"`·`aria-expanded`·`aria-controls`(펼쳤을 때)·`aria-activedescendant`, 목록 `listbox`/`option`(이름 = 검색어). 키보드 ↑/↓ 이동, Enter 고른 항목 또는 입력한 검색어, Esc 닫고 초점 유지, Delete 고른 항목 삭제. 항목·단추 누름 영역 44px. `Header` 는 데스크톱 검색칸을 이 컴포넌트로 그리고 범위는 `searchHistoryScope`(기본 `core.site`)로 받는다. 회귀 테스트: `src/components/composite/__tests__/RecentSearchCombobox.test.tsx`, `__tests__/components/HeaderRecentSearch.test.tsx`, `__tests__/layouts/user-base-mobile-search.test.tsx`, E2E `tests/Playwright/specs/recent-search-combobox.spec.ts`.
 - **화면 이동은 링크로 그린다**: 머리글 메뉴·로고·장바구니·회원 메뉴, 모바일 서랍, 꼬리말 링크, 프로필로 가는 회원 이름, 상품 카드, 페이지 번호(`pageHref`), 탭(`href`)은 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다. 보통 클릭(왼쪽 단추·수정키 없음)만 지금처럼 SPA 로 옮기고 나머지는 브라우저 기본 동작이다. 판정은 엔진 `G7Core.navigation.isPlainLeftClick`·`mergeQueryIntoHref` 에 맡긴다(`src/support/navigationLink.ts`). 레이아웃에서 직접 옮기는 자리는 `<a href="…">` + 경로 없는 `<navigate/>` 로 쓴다. 회귀 테스트: `src/components/composite/__tests__/NavigationLinks.test.tsx`.
 - **현재 쿼리를 합치는 링크는 주소를 구독한다 (1.2.2)**: 렌더할 때 `mergeQueryIntoHref` 로 href 를 만드는 링크(`A` 의 `mergeQuery`, `Pagination` 의 `pageHrefMergeQuery`, `ProductCard` 의 `preserveListQuery`, `TabNavigation` 의 `tabHrefMergeQuery`)는 `src/support/navigationLink.ts` 의 `useLocationSearch(enabled)` 를 부른다. 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고 링크 props 도 그대로라 엔진이 그 링크를 다시 그리지 않는다 — 구독하지 않으면 가운데 클릭·새 탭·주소 복사가 바꾸기 전 쿼리로 간다. 훅은 엔진 `G7Core.navigation.subscribeLocationSearch` 를 구독하고(없는 옛 엔진은 뒤로/앞으로만), 쿼리를 합치지 않는 링크는 `enabled=false` 로 구독하지 않는다. 같은 방식의 새 링크 컴포넌트도 이 훅을 부른다. 회귀 테스트: `src/components/composite/__tests__/NavigationLinks.locationSync.test.tsx`.
 - **입력칸 이름은 레이아웃이 단다**: 이 템플릿에는 칸 옆 제목을 이름으로 잇는 자동 연결이 없다. 입력칸·선택칸·체크박스는 보이는 제목의 문구 키를 `aria-label` 로 직접 달고(예: `aria-label="$t:mypage.profile.country"`), 체크박스와 옆 글자는 `<label>` 하나로 감싼다(글자를 눌러도 체크). 목록 줄 체크박스는 `common.select_item`(`{{name}}`), 줄 안 칸은 `common.row_cell`(`{{row}}`·`{{column}}`), 제목 없는 정렬·검색 대상 선택칸은 `common.sort_order`·`common.search_field`. 회귀 테스트: `__tests__/layouts/control-accessible-names.test.ts`(레이아웃 전수 이름 없는 칸 0), `src/components/basic/__tests__/Select.accessibleName.test.tsx`.

@@ -375,6 +375,16 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     params: [],
     build: { handler: 'refreshConsent' },
   },
+  // C21b 검색창 제출 검색어를 최근 검색어에 기록 (engine-v1.87.0) — 검색 이동(navigate) 앞에 둔다.
+  // 범위는 코어 `core.site` 또는 확장이 manifest search_scopes 로 선언한 `{확장 식별자}.{이름}`.
+  recordSearchKeyword: {
+    label: `$t:${L}.record_search_keyword.label`,
+    params: [
+      { key: 'scope', label: `$t:${L}.record_search_keyword.param_scope`, widget: 'text', required: true },
+      { key: 'keyword', label: `$t:${L}.record_search_keyword.param_keyword`, widget: 'data-chip', required: true },
+    ],
+    build: { handler: 'recordSearchKeyword', params: { scope: '{{scope}}', keyword: '{{keyword}}' } },
+  },
   // C22 서버에 보내고 결과 처리 — onSuccess/onError 는 친화 중첩 액션 빌더(action-list)로 편집.
   // 응답 후속 동작(결제 진입·상태 저장·이동 등)을 코드 없이 추가/순서/속성 편집한다.
   apiCall: {

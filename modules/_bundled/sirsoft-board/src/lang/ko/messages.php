@@ -658,4 +658,8 @@ return [
             'resubmit_done' => '재접수/특수 케이스 생성 완료: :count건',
         ],
     ],
+    // 최근 검색어 범위 이름 (module.json search_scopes.posts.label — 관리자 환경설정 > 개인정보 「최근 검색어」 카드)
+    'search_history' => [
+        'scope_posts' => '게시글 검색',
+    ],
 ];

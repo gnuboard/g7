@@ -677,6 +677,15 @@
       "label": "バッチ",
       "row": "横",
       "column": "縦"
+    },
+    "rsc_scope": {
+      "label": "検索範囲(最近の検索語)"
+    },
+    "rsc_button_text": {
+      "label": "検索ボタンの文字"
+    },
+    "hdr_search_history_scope": {
+      "label": "最近の検索語の範囲"
     }
   },
   "component": {
@@ -731,7 +740,8 @@
     "footer": "サイトフッター",
     "theme_toggle": "テーマ切り替え",
     "notification_center": "通知センター",
-    "visitor_counter": "訪問者カウンター"
+    "visitor_counter": "訪問者カウンター",
+    "recent_search_combobox": "最近の検索語付き検索ボックス"
   },
   "action": {
     "go_to_page": {

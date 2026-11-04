@@ -18,11 +18,9 @@ import React, { useState, useRef, useEffect, useId } from 'react';
 // 기본 컴포넌트 import
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
-import { Input } from '../basic/Input';
 import { Span } from '../basic/Span';
 import { Img } from '../basic/Img';
 import { Icon } from '../basic/Icon';
-import { Form } from '../basic/Form';
 import { Nav } from '../basic/Nav';
 import { Header as HeaderBasic } from '../basic/Header';
 import { Hr } from '../basic/Hr';
@@ -37,6 +35,9 @@ import { Avatar } from './Avatar';
 
 // SlotContainer — 헤더 통화 등 모듈 주입 UI 를 떙겨 렌더 (헤더는 주입 모듈을 모름)
 import { SlotContainer } from './SlotContainer';
+
+// RecentSearchCombobox — 최근 검색어 펼침 목록을 가진 검색창
+import { RecentSearchCombobox } from './RecentSearchCombobox';
 
 // NotificationCenter 컴포넌트 import
 import { NotificationCenter, type NotificationItem } from './NotificationCenter';
@@ -101,6 +102,11 @@ interface HeaderProps {
   shopEnabled?: boolean;
   /** 검색칸을 그리는가 — 레이아웃은 게시판·쇼핑몰·페이지 중 하나라도 켜져 있으면 true 를 넘긴다(검색 공급자가 없으면 숨김). 기본값 true */
   searchEnabled?: boolean;
+  /**
+   * 검색칸의 최근 검색어 범위 — 같은 범위를 쓰는 검색창(모바일 서랍·통합검색 화면)과 목록을 공유한다.
+   * 기본값 `core.site`(코어 통합검색). 엔진이 그 범위를 쓸 수 없다고 답하면 펼침 목록 없이 평범한 검색칸이다
+   */
+  searchHistoryScope?: string;
   /**
    * 봇 화면(seo-config header_nav)의 「쇼핑」 링크 주소(예: "/shop/products") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다).
    * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
@@ -190,6 +196,7 @@ const Header: React.FC<HeaderProps> = ({
   boardEnabled = true,
   shopEnabled = true,
   searchEnabled = true,
+  searchHistoryScope = 'core.site',
   className = '',
   editorAttrs,
   // 알림센터
@@ -212,7 +219,6 @@ const Header: React.FC<HeaderProps> = ({
   onNotificationDelete,
   onNotificationUnreadOnlyToggle,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMoreBoards, setShowMoreBoards] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -304,11 +310,9 @@ const Header: React.FC<HeaderProps> = ({
   const visibleBoards = navBoards.slice(0, maxVisibleBoards);
   const hiddenBoards = navBoards.slice(maxVisibleBoards);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
+  // 검색 — 최근 검색어 기록은 검색창이 기다리지 않고 맡고, 여기서는 통합검색 화면으로만 옮긴다
+  const handleSearch = (keyword: string) => {
+    navigate(`/search?q=${encodeURIComponent(keyword)}`);
   };
 
   const handleLogout = async () => {
@@ -421,21 +425,15 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* 검색바 (데스크톱 전용) — 검색 공급자가 하나도 없으면(searchEnabled=false) 숨긴다 */}
           {!isMobile && searchEnabled && (
-            <Form onSubmit={handleSearch} data-testid="header-search" className="flex basis-lg min-w-48 max-w-lg mx-8">
-              <Div className="relative w-full">
-                <Input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('common.search_placeholder')}
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <Icon
-                  name="search"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400"
-                />
-              </Div>
-            </Form>
+            <RecentSearchCombobox
+              data-testid="header-search"
+              scope={searchHistoryScope || 'core.site'}
+              name="q"
+              placeholder={t('common.search_placeholder')}
+              onSearch={handleSearch}
+              className="flex basis-lg min-w-48 max-w-lg mx-8"
+              inputClassName="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           )}
 
           {/* 우측 액션 버튼들 — 회원 이름만 줄어들 수 있고(최소 3rem) 나머지 단추는 제 폭을 지킨다. 줄어드는 몫은 로고와 이 묶음이

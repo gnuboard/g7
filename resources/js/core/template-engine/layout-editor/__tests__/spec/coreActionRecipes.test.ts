@@ -27,6 +27,8 @@ const EXPECTED_HANDLERS = [
   'scrollIntoView', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'loginPasswordChange', 'loginPasswordChangePostpone', 'logout', 'setLocale', 'emitEvent', 'apiCall',
   // 방문자 동의 스냅샷 다시 읽기 (engine-v1.78.0)
   'refreshConsent',
+  // 검색창 제출 검색어를 최근 검색어에 기록 (engine-v1.87.0)
+  'recordSearchKeyword',
   // C24~C27 제어흐름(C23 top-level if 는 엔진 처리 — 카탈로그 비포함) + C29 conditions
   'conditions', 'sequence', 'parallel', 'switch', 'suppress',
   // 결제 진입(requestPgPayment)은 코어 카탈로그에서 제외됨 — 결제는 커머스 도메인이라

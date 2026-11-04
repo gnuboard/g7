@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (613)
+- [코어](#코어) (622)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -462,6 +462,8 @@
 | `core.privacy.manual_run_targets` | filter | 1 |  |
 | `core.privacy.manual_run_validation_rules` | filter | 2 |  |
 | `core.privacy.retention_handlers` | filter | 1 |  |
+| `core.privacy.search_history.after_prune` | action | 2 |  |
+| `core.privacy.search_history.before_prune` | action | 1 |  |
 | `core.privacy.target_list_validation_rules` | filter | 2 |  |
 | `core.privacy.withdrawn_user.after_prune` | action | 2 |  |
 | `core.privacy.withdrawn_user.before_prune` | action | 1 |  |
@@ -511,6 +513,13 @@
 | `core.search.like_operators` | filter | 1 |  |
 | `core.search.results` | filter | 2 |  |
 | `core.search.validation_rules` | filter | 2 | 호환용 옛 이름 → `core.search.index_validation_rules` |
+| `core.search_history.after_record` | action | 2 |  |
+| `core.search_history.destroy_all_validation_rules` | filter | 2 |  |
+| `core.search_history.filter_keyword` | filter | 3 |  |
+| `core.search_history.index_validation_rules` | filter | 2 |  |
+| `core.search_history.merge_validation_rules` | filter | 2 |  |
+| `core.search_history.store_validation_rules` | filter | 2 |  |
+| `core.search_history.update_settings_validation_rules` | filter | 2 |  |
 | `core.seo.filter_context` | filter | 2 |  |
 | `core.seo.filter_meta` | filter | 2 |  |
 | `core.seo.filter_og_data` | filter | 2 |  |

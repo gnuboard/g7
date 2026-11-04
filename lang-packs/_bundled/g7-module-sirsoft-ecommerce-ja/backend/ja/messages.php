@@ -1700,4 +1700,8 @@ return [
             'purged' => '既存の配送ポリシー :count 件を削除しました。',
         ],
     ],
+    // 最近の検索語の範囲名 (module.json search_scopes.products.label)
+    'search_history' => [
+        'scope_products' => '商品検索',
+    ],
 ];

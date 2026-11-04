@@ -61,6 +61,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Contracts\Repositories\UserSearchHistoryRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
@@ -128,6 +129,7 @@ use App\Repositories\TemplateRepository;
 use App\Repositories\UserConsentRepository;
 use App\Repositories\UserPasswordHistoryRepository;
 use App\Repositories\UserRepository;
+use App\Repositories\UserSearchHistoryRepository;
 use App\Services\Analytics\ConversionRecorder as AnalyticsConversionRecorder;
 use App\Services\Analytics\DimensionRegistry as AnalyticsDimensionRegistry;
 use App\Services\Analytics\GoalRegistry as AnalyticsGoalRegistry;
@@ -266,6 +268,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(UserConsentRepositoryInterface::class, UserConsentRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(UserPasswordHistoryRepositoryInterface::class, UserPasswordHistoryRepository::class);
+        $this->app->bind(UserSearchHistoryRepositoryInterface::class, UserSearchHistoryRepository::class);
         $this->app->bind(NotificationDefinitionRepositoryInterface::class, NotificationDefinitionRepository::class);
         $this->app->bind(NotificationLogRepositoryInterface::class, NotificationLogRepository::class);
         // 알림 수신자별 발송 기록 — 재시도·재예약 시 이미 보낸 수신자 건너뛰기 (#139)

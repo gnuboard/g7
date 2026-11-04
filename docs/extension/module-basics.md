@@ -150,6 +150,11 @@
 연동 대상이 꺼진 사이트에서 이 모듈의 화면·응답이 그 대상으로 가는 링크·데이터를 내지 않게 하는 것은 이 모듈의 몫입니다 —
 서버는 활성 여부를 확인하고, 레이아웃은 `_global.activeModules` 로 가립니다([선택 연동](plugin-development.md#선택-연동-integrations)).
 
+### search_scopes 필드 (선택)
+
+자기 검색창을 가진 모듈은 `module.json` 의 `search_scopes` 로 최근 검색어 범위를 선언합니다(코어 7.1.5+, `getSearchScopes()` 로 자동 파싱).
+범위 id 는 `{모듈 식별자}.{이름}` 이고, 형식과 규칙은 [최근 검색어 범위](plugin-development.md#최근-검색어-범위-search_scopes)를 따릅니다.
+
 ### 자동 추론 메서드 (final - 오버라이드 불가)
 
 | 메서드 | 반환 타입 | 설명 |

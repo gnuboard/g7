@@ -10,6 +10,7 @@ use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\HookManager;
 use App\Extension\TemplateManager;
 use App\Models\Menu;
+use App\Support\CoreNecessaryStorage;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnnualNoticeListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
@@ -578,6 +579,16 @@ class Plugin extends AbstractPlugin
         $templates = app(TemplateManager::class);
         if (method_exists($templates, 'getActiveTemplatesNecessaryStorage')) {
             foreach ($templates->getActiveTemplatesNecessaryStorage() as $scope => $items) {
+                if (array_key_exists($scope, $empty) && is_array($items)) {
+                    $raw[$scope] = [...(is_array($raw[$scope] ?? null) ? $raw[$scope] : []), ...$items];
+                }
+            }
+        }
+
+        // 코어 엔진이 선언한 필수 키(예: 비회원 최근 검색어 `g7_search_history`) — 코어 7.1.5, 1.1.4.
+        // 클래스가 없는 옛 코어에서는 건너뛴다. 아래 형식 규칙을 똑같이 통과해야 받는다.
+        if (class_exists(CoreNecessaryStorage::class) && method_exists(CoreNecessaryStorage::class, 'keys')) {
+            foreach (CoreNecessaryStorage::keys() as $scope => $items) {
                 if (array_key_exists($scope, $empty) && is_array($items)) {
                     $raw[$scope] = [...(is_array($raw[$scope] ?? null) ? $raw[$scope] : []), ...$items];
                 }

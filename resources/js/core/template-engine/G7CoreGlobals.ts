@@ -34,6 +34,8 @@ import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
+import { SEARCH_HISTORY_CHANGED_EVENT, getSearchHistoryRuntime } from '../searchHistory';
+import { useSearchHistory } from '../searchHistory/useSearchHistory';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
@@ -719,6 +721,47 @@ function initConsentAPI(G7Core: any): void {
       return G7Core.componentEvent.on(CONSENT_CHANGED_EVENT, listener);
     },
   });
+}
+
+/**
+ * 최근 검색어 파사드·훅 초기화 — `G7Core.searchHistory` · `G7Core.useSearchHistory` (engine-v1.87.0)
+ *
+ * 검색창 컴포넌트가 범위(scope)별 최근 검색어를 읽고 고친다. 런타임은 코어 최근 검색어 런타임
+ * (`resources/js/core/searchHistory`) 하나이고 이 파사드는 그것을 감싸기만 한다. 런타임이 없는 화면(관리자)에서는
+ * 모든 범위가 `enabled: false` 이고 동작은 false 를 돌려준다.
+ *
+ * - `isEnabled(scope)` — 선언된 범위인지 (`G7Config.searchScopes`)
+ * - `getSnapshot(scope)` — 지금 상태 사본 `{scope, enabled, autoSave, items, maxCount, loading, source}`
+ * - `list(scope, {force?})` — 최근 검색어 읽기 (회원은 서버에서 받아 캐시)
+ * - `record(scope, keyword)` · `remove(scope, item|id|keyword)` · `clear(scope?)`
+ * - `getAutoSave()` · `setAutoSave(on)` — 사람 단위 자동 저장 (끄면 기록 멈춤·목록 감춤)
+ * - `subscribe(listener)` — 변경(`searchHistory:changed`, `{scope, reason}`)을 구독하고 **해제 함수**를 돌려준다.
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initSearchHistoryAPI(G7Core: any): void {
+  const disabled = (scope: string) => ({ scope, enabled: false, autoSave: true, items: [], maxCount: 0, loading: false, source: 'none' as const });
+
+  G7Core.searchHistory = Object.freeze({
+    isEnabled: (scope: string) => getSearchHistoryRuntime()?.isScopeAvailable(scope) ?? false,
+    getSnapshot: (scope: string) => getSearchHistoryRuntime()?.getSnapshot(scope) ?? disabled(scope),
+    list: async (scope: string, options?: { force?: boolean }) => {
+      const runtime = getSearchHistoryRuntime();
+      return runtime ? runtime.list(scope, options) : disabled(scope);
+    },
+    record: async (scope: string, keyword: unknown) => (await getSearchHistoryRuntime()?.record(scope, keyword)) ?? false,
+    remove: async (scope: string, target: any) => (await getSearchHistoryRuntime()?.remove(scope, target)) ?? false,
+    clear: async (scope?: string | null) => (await getSearchHistoryRuntime()?.clear(scope)) ?? false,
+    getAutoSave: () => getSearchHistoryRuntime()?.getAutoSave() ?? true,
+    setAutoSave: async (autoSave: boolean) => (await getSearchHistoryRuntime()?.setAutoSave(autoSave)) ?? false,
+    subscribe: (listener: (change: unknown) => void): (() => void) => {
+      if (typeof listener !== 'function') return () => {};
+      return G7Core.componentEvent.on(SEARCH_HISTORY_CHANGED_EVENT, listener);
+    },
+  });
+
+  // 템플릿 컴포넌트용 훅 — 같은 범위의 검색창끼리 목록을 공유한다
+  G7Core.useSearchHistory = useSearchHistory;
 }
 
 /**
@@ -3626,6 +3669,7 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
   initConsentAPI(G7Core);
+  initSearchHistoryAPI(G7Core);
   initStateContractsAPI(G7Core);
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
   initLayoutEditorStub(G7Core);
