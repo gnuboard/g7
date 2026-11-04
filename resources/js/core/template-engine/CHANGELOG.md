@@ -5,6 +5,16 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.87.1] - 2026-11-04
+
+### Changed
+
+- 브라우저 탭 제목 후보에 레이아웃 편집기 「검색 제목」(`meta.seo.title`)을 더한다 — 순서: 리소스 `meta_title` → 페이지 `seo_meta.title` → **`meta.seo.title`** → 확장 제목 틀(`_seo`) → `meta.seo.og.title` → 라우트 제목. 서버 `SeoMetaResolver::resolveLayoutSeoValue`(제목·설명)와 같은 자리다. 식(`{{…}}`)·다국어 배열을 받고 식 안에서 `_seo` 를 읽는다(`og.title` 과 같은 평가 경로를 `layoutValueTier` 로 함께 쓴다).
+
+배경: 편집기에서 저장한 「검색 제목」이 어디에서도 읽히지 않았다(공유 미리보기만). engine-v1.86.0 제목 규칙 도입 때부터 빠져 있었다. 번들 레이아웃·로컬·개발 서버 DB 에 이 값을 쓴 레이아웃은 0건이라 지금 화면 제목은 바뀌지 않는다.
+
+회귀 잠금: `routing/__tests__/DocumentTitle.parity.test.ts` 「레이아웃 편집기 「검색 제목」」 3건(고치기 전 2 실패 — og 제목·라우트 제목이 나옴), 서버 짝 `tests/Unit/Seo/SeoMetaResolverTest.php` 3건.
+
 ## [engine-v1.87.0] - 2026-11-04
 
 ### Added

@@ -1236,7 +1236,7 @@
       "og_locale": "Language",
       "og_extra": "Extra tags",
       "og_locked": "Set by an extension",
-      "og_intro": "Empty fields use the default set by the core/extension (source shown). Typing overrides it for this screen. When there is no resource title or extension title template, the OG title is also used for the search engine title and the visitor's browser tab title (do not include the site name — the core \"Title Suffix\" appends it).",
+      "og_intro": "Empty fields use the default set by the core/extension (source shown). Typing overrides it for this screen. The \"Search title\" above becomes this screen's search engine title and the visitor's browser tab title when the resource has no title of its own (ahead of extension title templates); when there is no resource title, search title or extension title template, the OG title is also used for the search engine title and the visitor's browser tab title (do not include the site name — the core \"Title Suffix\" appends it).",
       "og_source_core": "Built-in",
       "og_source_filter": "Extension",
       "og_source_inherited": "Shared layout",

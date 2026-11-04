@@ -11,11 +11,31 @@
 
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { ImageGallery } from '../ImageGallery';
+
+beforeAll(() => {
+  // jsdom 은 작업자마다 첫 getComputedStyle 호출에서 기본 스타일시트를 한 번 파싱한다(단독 실측 약 0.13초).
+  // 시험 장면과 무관한 환경 준비 비용이라 첫 시험의 제한 시간에 얹히지 않게 여기서 미리 치른다.
+  window.getComputedStyle(document.body).getPropertyValue('padding-left');
+});
 
 beforeEach(() => {
   (window as any).G7Core = { t: (key: string) => key };
+  // jsdom 은 배치를 계산하지 않아 documentElement.clientWidth 가 0 이다. 라이트박스는 열릴 때
+  // innerWidth(1024) − clientWidth 를 세로 스크롤바 폭으로 읽고, 0 보다 크면 body 아래 모든 요소에
+  // getComputedStyle 을 불러 position:fixed 요소를 찾는다. jsdom 의 getComputedStyle 은 요소마다
+  // 스타일 규칙 전체를 다시 맞춰 보므로 열기 한 번이 수백 ms CPU 를 쓰고, 기계가 바쁘면 5초를 넘었다.
+  // 스크롤바 없는 브라우저 화면(clientWidth = innerWidth)으로 맞춰 시험과 무관한 그 탐색을 건너뛴다.
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    get: () => window.innerWidth,
+  });
+});
+
+afterEach(() => {
+  // 인스턴스에 덧씌운 속성만 지워 Element.prototype 의 원래 getter 로 되돌린다.
+  delete (document.documentElement as any).clientWidth;
 });
 
 const images = [1, 2, 3, 4, 5].map((n) => ({ src: `https://example.com/${n}.jpg`, title: `사진 ${n}` }));

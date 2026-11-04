@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductNewRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductPopularRequest;
@@ -61,6 +62,11 @@ class ProductController extends PublicBaseController
                 $collection->toArray($request)
             );
         } catch (Exception $e) {
+            Log::error('products.index failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -92,6 +98,12 @@ class ProductController extends PublicBaseController
                 ProductListResource::collection($products)
             );
         } catch (Exception $e) {
+            Log::error('products.popular failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',
@@ -128,6 +140,13 @@ class ProductController extends PublicBaseController
                 ProductListResource::collection($products)
             );
         } catch (Exception $e) {
+            Log::error('products.related failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+                'product_id' => $product->id,
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',
@@ -158,6 +177,12 @@ class ProductController extends PublicBaseController
                 ProductListResource::collection($products)
             );
         } catch (Exception $e) {
+            Log::error('products.new failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',
@@ -198,6 +223,12 @@ class ProductController extends PublicBaseController
                 ProductListResource::collection($products)
             );
         } catch (Exception $e) {
+            Log::error('products.recent failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',
@@ -250,6 +281,13 @@ class ProductController extends PublicBaseController
                 new PublicProductResource($product)
             );
         } catch (Exception $e) {
+            Log::error('products.show failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+                'product_id' => $product?->id,
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',

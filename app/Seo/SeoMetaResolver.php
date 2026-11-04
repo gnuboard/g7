@@ -50,6 +50,7 @@ class SeoMetaResolver
             'tiers' => [
                 fn () => $this->getResourceMetaField($context, 'meta_title'),
                 fn () => $this->getPageSeoMetaField($context, 'title'),
+                fn () => $this->resolveLayoutSeoValue($seoConfig, 'title', $context),
                 fn () => $this->resolveTemplateTitle($seoConfig, $context, $moduleIdentifier, $pluginIdentifier),
                 fn () => $this->resolveLayoutMetaTitle($seoConfig, $context),
                 fn () => ($routeTitle !== null && $routeTitle !== '' && $routeTitle !== []) ? $this->safeEval($routeTitle, $context) : '',
@@ -164,6 +165,12 @@ class SeoMetaResolver
         $pageSeoDesc = $this->getPageSeoMetaField($context, 'description');
         if ($pageSeoDesc !== '') {
             return $pageSeoDesc;
+        }
+
+        // 레이아웃 편집기 「검색 설명」(meta.seo.description) — 그 화면 하나의 운영자 설정이라 확장 틀보다 앞선다
+        $layoutDesc = $this->resolveLayoutSeoValue($seoConfig, 'description', $context);
+        if ($layoutDesc !== '') {
+            return $this->stripHtml($layoutDesc);
         }
 
         // Tier 2: _seo context (SeoRenderer가 extensions 기반으로 주입)
@@ -445,6 +452,27 @@ class SeoMetaResolver
         }
 
         return preg_match('/^\s/u', $suffix) === 1 ? $suffix : ' '.$suffix;
+    }
+
+    /**
+     * 레이아웃 편집기 「검색 제목·설명」(meta.seo.title·description)을 해석합니다.
+     *
+     * 페이지 설정에서 저장한 값이다. 식(`{{…}}`)과 다국어 배열을 받고, 식 안에서 `_seo` 도 읽을 수 있다.
+     * 엔진 `DocumentTitle.computeTitleInput` 의 `layoutTitleTier` 와 같은 자리(자체 값 다음·확장 틀 앞)다.
+     *
+     * @param  array  $seoConfig  레이아웃 meta.seo 설정
+     * @param  string  $field  'title' 또는 'description'
+     * @param  array  $context  데이터 컨텍스트
+     * @return string 해석된 값 (없으면 빈 문자열)
+     */
+    private function resolveLayoutSeoValue(array $seoConfig, string $field, array $context): string
+    {
+        $value = $seoConfig[$field] ?? '';
+        if ($value === '' || $value === null || $value === []) {
+            return '';
+        }
+
+        return $this->safeEval($value, $context);
     }
 
     /**

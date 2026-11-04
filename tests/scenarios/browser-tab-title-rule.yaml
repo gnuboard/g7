@@ -58,5 +58,6 @@ effects:
 
 test_files:
   - tests/Unit/Seo/SeoTitleRuleParityTest.php
+  - tests/Unit/Seo/SeoMetaResolverTest.php
   - resources/js/core/routing/__tests__/DocumentTitle.parity.test.ts
   - resources/js/core/__tests__/TemplateApp.documentTitle.test.ts
