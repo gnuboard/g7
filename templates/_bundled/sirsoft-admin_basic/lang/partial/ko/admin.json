@@ -440,7 +440,8 @@
         "profile_memo": "프로필/메모",
         "activity_info": "활동정보",
         "consent_info": "동의이력",
-        "notifications_info": "알림함"
+        "notifications_info": "알림함",
+        "search_history_info": "최근 검색어"
       },
       "unlock": "잠금 해제",
       "unlock_success": "계정 잠금이 해제되었습니다.",
@@ -465,6 +466,15 @@
         "no": "아니오",
         "postponed_until": "연기 종료",
         "policy": "만료 개별 설정"
+      },
+      "search_history": {
+        "auto_save": "검색어 자동 저장",
+        "auto_save_on": "켜짐",
+        "auto_save_off": "꺼짐 — 새 검색어를 기록하지 않습니다",
+        "feature_off": "사이트에서 최근 검색어 기능을 끈 상태입니다. 저장돼 있던 검색어만 보입니다.",
+        "keywords": "검색어",
+        "count": "{{count}}건",
+        "empty": "저장된 검색어가 없습니다."
       }
     },
     "filter": {

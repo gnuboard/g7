@@ -11,6 +11,7 @@
 - 이커머스 1.3.4 의 회원 없이 등록한 후기(다른 쇼핑몰에서 옮겨 온 후기) 표시 「移行」(`admin/product_review.table.imported`)과 이관 후기 입력 오류 문구(`exceptions.imported_review_invalid_field` 「移行レビューの入力値が正しくありません」)의 일본어 번역을 추가했습니다.
 - 이커머스 1.3.4 의 환경설정 「상품 진열」 탭(`admin/settings.tabs.product_display` 「商品陳列」, `admin/settings.product_display.*` 관련 상품 순서·목록 유지 시간 11건)과 그 저장 검증 항목 이름 2건(`validation.attributes.product_display.*`)의 일본어 번역을 추가했습니다.
 - 이커머스 1.3.4 의 최근 검색어 범위 이름(`messages.search_history.scope_products` 「商品検索」)의 일본어 번역을 추가했습니다. 없으면 일본어 관리자 화면의 「최근 검색어」 카드에 범위 이름이 키 그대로 보입니다.
+- 회원 상세 「쇼핑 데이터」 탭의 최근 상품 검색어 문구(`admin.user_ecommerce_data.search_history`·`search_history_empty` 「最近の商品検索語」 등)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

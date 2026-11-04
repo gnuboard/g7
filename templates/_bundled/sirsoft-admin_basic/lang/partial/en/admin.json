@@ -448,7 +448,8 @@
         "profile_memo": "Profile/Memo",
         "activity_info": "Activity",
         "consent_info": "Consent",
-        "notifications_info": "Inbox"
+        "notifications_info": "Inbox",
+        "search_history_info": "Recent searches"
       },
       "unlock": "Unlock",
       "unlock_success": "The account lock has been released.",
@@ -473,6 +474,15 @@
         "no": "No",
         "postponed_until": "Postponed until",
         "policy": "Expiry setting"
+      },
+      "search_history": {
+        "auto_save": "Save search history",
+        "auto_save_on": "On",
+        "auto_save_off": "Off — new searches are not saved",
+        "feature_off": "Recent searches are turned off for this site. Only searches saved earlier are shown.",
+        "keywords": "Searches",
+        "count": "{{count}}",
+        "empty": "No saved searches."
       }
     },
     "filter": {

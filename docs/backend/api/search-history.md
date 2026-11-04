@@ -24,6 +24,7 @@
 - **자동 저장 끄기**: 회원 단위 하나(`users.search_history_auto_save`). 끄면 기록하지 않고(`recorded: false`) 목록을 비워 냅니다. 저장된 검색어는 지우지 않습니다.
 - **시간대**: `searched_at` 은 요청 회원 시간대의 ISO 8601, `searched_at_ms` 는 밀리초 시각(엔진이 비회원 목록과 같은 단위로 비교).
 - **요청 한도**: `/api/me` 묶음과 같은 사용자 요청 한도(`throttle:user`)를 씁니다.
+- **관리자 열람**: 운영자는 관리자 회원 상세 응답(`GET /api/admin/users/{user}`)의 `search_history` 로 회원의 검색어를 봅니다(회원 읽기 권한, 상세에만 — [users.md](users.md) 응답 필드). 코어 범위는 회원 상세 「최근 검색어」 구획, 모듈 범위는 그 모듈의 회원 탭(이커머스 「쇼핑 데이터」, 게시판 「게시글 검색어」)이 그립니다. 기능·자동 저장을 꺼도 저장된 검색어는 보이고, 꺼진 확장의 범위는 빠집니다.
 
 
 ### DELETE /api/me/search-history

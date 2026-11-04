@@ -378,6 +378,26 @@ class SearchScopes
     }
 
     /**
+     * 지금 선언된 범위를 화면 표시용으로 모읍니다 — 범위 id → 소유자 키·지금 언어 이름 (선언 순서).
+     *
+     * 관리자 회원 상세가 범위별 검색어를 묶어 보일 때 쓴다. 꺼진 확장의 범위는 선언이 없으므로 빠진다.
+     *
+     * @return array<string, array{owner: string, label: string}> 범위 id → 표시 정보
+     */
+    public static function labeled(): array
+    {
+        $labeled = [];
+        foreach (self::all() as $scope => $definition) {
+            $labeled[$scope] = [
+                'owner' => (string) $definition['owner'],
+                'label' => self::labelText($definition['label'] ?? null, $scope),
+            ];
+        }
+
+        return $labeled;
+    }
+
+    /**
      * 관리자 환경설정 응답의 `_meta.search_scopes` 를 만듭니다 (선언 순서).
      *
      * 소유 확장의 이름은 설치 기록(DB)에서 읽어야 해 호출자(서비스)가 해석기로 넘긴다 — 이 클래스는 DB 를 읽지 않는다.

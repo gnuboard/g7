@@ -21,6 +21,8 @@ API 요청 한 건마다 확장 정보를 다시 읽고 다시 조립하던 부�
 - 확장 기반 클래스에 `getSearchScopes()`(AbstractModule·AbstractPlugin)와 범위 집계 `App\Support\SearchScopes` 를 추가했습니다. 형식이 틀린 선언은 버리고 설치·활성화 결과에 경고(`search_scopes`)로 알립니다. 사용자 화면 셸(`window.G7Config`)에 범위별 보관 개수 `searchScopes` 를 싣습니다(기능을 끄면 빈 객체).
 - 코어가 쓰는 필수 브라우저 저장 키 선언 `App\Support\CoreNecessaryStorage::keys()` 를 추가했습니다(지금은 `g7_search_history`). 쿠키 동의 플러그인이 이 목록을 필수 저장 허용 목록에 합칩니다(sirsoft-gdpr 1.1.4).
 - 템플릿 엔진 engine-v1.87.0 — 내장 핸들러 `recordSearchKeyword`(`<record-search-keyword scope="…" keyword="{{…}}"/>`), 파사드 `G7Core.searchHistory`, 훅 `G7Core.useSearchHistory(scope)`. 확장 훅 `core.search_history.filter_keyword`(저장하지 않을 검색어 거르기)·`core.search_history.after_record`·`core.privacy.search_history.before_prune|after_prune`·요청 규칙 필터 `core.search_history.*_validation_rules` 를 추가했습니다.
+- 관리자 회원 상세에서 회원의 최근 검색어를 볼 수 있습니다. 상세 응답(`GET /api/admin/users/{user}`)에만 `search_history`(사이트 사용 여부·회원 자동 저장 여부·지금 선언된 범위별 검색어와 검색 일시, 최신순)를 싣고 목록 응답에는 싣지 않습니다. 코어 범위(`core.site`)는 회원 상세·수정 화면의 「최근 검색어」 구획에, 모듈이 선언한 범위는 그 모듈의 회원 탭에 보입니다. 사이트가 기능을 끄거나 회원이 자동 저장을 꺼도 저장돼 있던 검색어는 보이고, 확장을 끄면 그 범위는 빠집니다(검색어는 지우지 않음).
+- 관리자 화면도 브라우저 탭 제목이 화면마다 바뀝니다 — 「{화면 제목} - {사이트 이름} 관리자」(템플릿 엔진 engine-v1.88.0). 화면 제목은 관리자 레이아웃의 `meta.title`, 없으면 라우트 제목입니다. 관리자 셸이 사이트 이름과 언어별 접미사(`seo.admin_title_suffix`)를 `G7Config.seoTitle` 로 넘깁니다. 종전에는 어느 관리자 화면에서나 「{앱 이름} - Admin」 그대로라 탭 여러 개를 구분할 수 없었습니다.
 
 ### Changed
 

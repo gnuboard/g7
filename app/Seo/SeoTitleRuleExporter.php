@@ -56,6 +56,31 @@ class SeoTitleRuleExporter
     }
 
     /**
+     * 관리자 화면 탭 제목 계산 값을 만듭니다 — `{화면 제목} - {사이트 이름} 관리자`.
+     *
+     * 관리자 화면은 검색엔진 규칙(SEO 선언·확장 제목 틀·코어 접미사 설정)을 쓰지 않는다. 사이트 이름과 관리자 접미사
+     * (`seo.admin_title_suffix`)만 싣는다. 화면 안에서 언어를 바꿔도 다시 받지 않게 접미사는 지원 언어 전부의 맵이다.
+     * 결과는 관리자 셸 `admin.blade.php` 의 `window.G7Config.seoTitle` 로 들어간다.
+     *
+     * @param  array<int, string>  $locales  지원 언어
+     * @return array{suffix: array<string, string>, site_name: mixed} 엔진 부팅 값
+     */
+    public function exportForAdmin(array $locales): array
+    {
+        $suffix = [];
+        foreach ($locales as $locale) {
+            if (is_string($locale) && $locale !== '') {
+                $suffix[$locale] = (string) __('seo.admin_title_suffix', [], $locale);
+            }
+        }
+
+        return [
+            'suffix' => $suffix,
+            'site_name' => g7_core_settings('general.site_name', '') ?? '',
+        ];
+    }
+
+    /**
      * 확장 하나의 제목 계산 값을 만듭니다.
      *
      * @param  string  $type  'module' 또는 'plugin'

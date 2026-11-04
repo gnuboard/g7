@@ -256,6 +256,32 @@ class SearchHistoryService
     }
 
     /**
+     * 관리자 회원 상세에 보일 최근 검색어를 범위별로 모읍니다.
+     *
+     * 회원 정보 열람이라 사이트가 기능을 껐거나 회원이 자동 저장을 꺼도 **저장된 검색어는 그대로** 보인다 — 끄기는
+     * 기록을 멈출 뿐 지우지 않는다. 지금 선언된 범위만 싣는다: 확장을 끄면 그 범위는 빠지고 행은 남는다(환경설정
+     * 카드와 같은 규칙). 범위마다 설정 상한(50)까지 최신순이다.
+     *
+     * @param  User  $user  회원
+     * @return array{enabled: bool, auto_save: bool, scopes: array<string, array{owner: string, label: string, items: Collection<int, UserSearchHistory>}>} 범위별 검색어
+     */
+    public function overviewForAdmin(User $user): array
+    {
+        $scopes = [];
+        foreach (SearchScopes::labeled() as $scope => $display) {
+            $scopes[$scope] = $display + [
+                'items' => $this->histories->latestForUser((int) $user->getKey(), $scope, SearchScopes::maxCountLimit()),
+            ];
+        }
+
+        return [
+            'enabled' => SearchScopes::enabled(),
+            'auto_save' => $this->autoSave($user),
+            'scopes' => $scopes,
+        ];
+    }
+
+    /**
      * 관리자 환경설정 응답의 `_meta.search_scopes` 를 만듭니다 (소유 확장 이름은 설치 기록에서 읽는다).
      *
      * @return array<int, array{scope: string, owner: string, owner_label: string, label: string, default_max_count: int, default_retention_days: int}> 범위 메타 목록

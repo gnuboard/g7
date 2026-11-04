@@ -5,6 +5,14 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.88.0] - 2026-11-04
+
+### Added
+
+- 관리자 화면도 브라우저 탭 제목을 화면마다 바꾼다 — 「{화면 제목} - {사이트 이름} 관리자」(영어 `Admin`, 일본어 `管理画面`). 화면 제목은 레이아웃이 선언한 `meta.title`(식·`$t:` 허용), 없으면 라우트 제목이다. 검색엔진 규칙(SEO 선언·확장 제목 틀·코어 접미사 설정·사이트 첫 화면 규칙)은 관리자에 쓰지 않는다. 사이트 이름과 언어별 접미사는 관리자 셸이 `G7Config.seoTitle`(`SeoTitleRuleExporter::exportForAdmin`)로 넘긴다 — 값이 없는 옛 서버에서는 종전처럼 셸 제목을 둔다. 컨트롤러·화면 세대 판정(이동 시작 때 라우트 제목, 앞 화면의 늦은 데이터 무시)은 사용자 화면과 같다(`DocumentTitleOptions.mode`·`TitleComputeDeps.mode`).
+
+배경: engine-v1.86.0 이 탭 제목 컨트롤러를 사용자 템플릿에서만 켜, 관리자 화면은 어느 화면에서나 셸 제목 「{앱 이름} - Admin」 그대로였다(탭 여러 개를 열면 구분되지 않음). 발생 시점: engine-v1.86.0 설계 범위 밖(미구현). 회귀 잠금: `TemplateApp.documentTitle.test.ts` 관리자 4건 — 관리자 켜기 제거 변이 3 red, 관리자 후보 갈래 제거 변이 2 red.
+
 ## [engine-v1.87.1] - 2026-11-04
 
 ### Changed

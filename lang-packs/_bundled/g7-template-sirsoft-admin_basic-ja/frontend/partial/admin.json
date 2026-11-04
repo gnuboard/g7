@@ -415,7 +415,8 @@
         "profile_memo": "プロフィール/メモ",
         "activity_info": "アクティビティ情報",
         "consent_info": "同意履歴",
-        "notifications_info": "通知ボックス"
+        "notifications_info": "通知ボックス",
+        "search_history_info": "最近の検索語"
       },
       "unlock": "ロック解除",
       "unlock_success": "アカウントのロックを解除しました。",
@@ -441,6 +442,15 @@
         "no": "いいえ",
         "postponed_until": "延期終了",
         "policy": "有効期限の個別設定"
+      },
+      "search_history": {
+        "auto_save": "検索語の自動保存",
+        "auto_save_on": "オン",
+        "auto_save_off": "オフ — 新しい検索語は記録しません",
+        "feature_off": "サイトで最近の検索語機能がオフになっています。保存済みの検索語のみ表示します。",
+        "keywords": "検索語",
+        "count": "{{count}}件",
+        "empty": "保存された検索語はありません。"
       }
     },
     "bulk_status_change": "ステータス変更",

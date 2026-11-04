@@ -67,6 +67,8 @@
                 // 전역 상태 공개 계약 (코어 예약 + 활성 확장 선언) — G7Core.stateContracts 가 읽는다
                 'stateContracts' => (object) ($stateContracts ?? []),
                 'appConfig' => (object) ($appConfig ?? []),
+                // 브라우저 탭 제목 계산 값(사이트 이름 + 언어별 관리자 접미사) — 엔진 DocumentTitle 이 「{화면 제목} - {사이트 이름} 관리자」로 쓴다
+                'seoTitle' => $seoTitle ?? null,
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
                 // 미빌드 상태 대비 file_exists 가드.

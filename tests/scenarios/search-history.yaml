@@ -44,6 +44,7 @@ axes:
     - settings_rejects_invalid_rows
     - admin_card_layout
     - preview_write_blocked
+    - admin_user_detail
 
 effects:
   # 범위 선언·집계 (App\Support\SearchScopes)
@@ -106,6 +107,15 @@ effects:
   - admin_card_target_row_uses_search_history_handler
   - admin_card_i18n_keys_in_ko_en_ja
 
+  # 관리자 회원 조회 (상세 응답 `search_history` · 코어 구획 · 수정 화면 잠금)
+  - admin_detail_lists_keywords_per_scope_newest_first   # 범위 id 키, 최신순, 소유자·라벨 포함
+  - admin_list_omits_search_history                      # 목록 응답에는 싣지 않는다(행마다 조회 방지)
+  - admin_detail_shows_stored_rows_when_saving_is_off    # 기능 끔·자동 저장 끔이어도 저장된 검색어는 보인다
+  - admin_detail_includes_active_extension_scope         # 활성 확장 범위는 자기 키로
+  - admin_detail_omits_inactive_extension_scope_keeps_rows   # 끈 확장 범위는 빠지고 행은 남는다
+  - admin_detail_core_section_shows_core_scope_only      # 코어 구획은 core.site 만, 확장 범위는 확장 탭
+  - admin_detail_empty_scope_keeps_section               # 0건이어도 구획을 비우지 않는다
+  - admin_form_search_history_section_locked             # 수정 화면에도 같은 자리, 잠금
 
 test_files:
   # PHPUnit
@@ -120,6 +130,9 @@ test_files:
   - resources/js/core/searchHistory/__tests__/searchHistoryMemberStaleList.test.tsx
   - resources/js/core/searchHistory/__tests__/searchHistoryPreviewGuard.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-privacy-search-history.test.ts
+  - tests/Feature/Api/Admin/UserSearchHistoryDetailTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-detail-search-history.test.tsx
+  - tests/Playwright/specs/admin/admin-tab-title-and-member-search-history.spec.ts
 
 limitations:
   - "검색창 펼침 목록 UI(기본 템플릿 헤더·모바일 서랍·통합검색 화면)는 2단계다 — 이 매니페스트는 코어·엔진·관리자 카드까지만 잠근다."
