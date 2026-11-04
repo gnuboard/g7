@@ -1716,6 +1716,8 @@ class PluginManager implements PluginManagerInterface
             return $this->getPluginInfo($pluginName);
         }
 
+        $this->ensurePendingAndBundledLoaded();
+
         $metadata = $this->pendingPlugins[$pluginName] ?? $this->bundledPlugins[$pluginName] ?? null;
         if ($metadata === null) {
             return null;

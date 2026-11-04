@@ -9,7 +9,7 @@
 | 카테고리 | 문서 수 | 진입점 |
 |---|---:|---|
 | 백엔드 | 41 | [docs/backend/](docs/backend/) |
-| 프론트엔드 | 47 | [docs/frontend/](docs/frontend/) |
+| 프론트엔드 | 48 | [docs/frontend/](docs/frontend/) |
 | 확장 시스템 | 37 | [docs/extension/](docs/extension/) |
 | 공통 | 12 | [docs/](docs/) |
 

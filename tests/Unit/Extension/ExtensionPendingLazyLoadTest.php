@@ -195,4 +195,46 @@ class ExtensionPendingLazyLoadTest extends TestCase
         $this->assertSame([], $this->raw($manager, $property));
         $this->assertSame('2.0.0', $manager->{$getter}()['lazy-test']['version'] ?? null);
     }
+
+    /**
+     * 설치 판정용 manifest 조회 매니저 설정 — [클래스, 루트 경로 속성, 매니페스트 이름, load 메서드, 조회 메서드]
+     *
+     * @return array<string, array<int, string>> 데이터셋
+     */
+    public static function manifestInfoManagers(): array
+    {
+        return [
+            'module' => [ModuleManager::class, 'modulesPath', 'module.json', 'loadModules', 'getModuleManifestInfo'],
+            'plugin' => [PluginManager::class, 'pluginsPath', 'plugin.json', 'loadPlugins', 'getPluginManifestInfo'],
+        ];
+    }
+
+    /**
+     * 부팅 직후 설치 판정용 manifest 조회가 아직 읽지 않은 번들 메타를 먼저 읽습니다.
+     *
+     * 설치 창 미리보기·연쇄 설치는 새 요청에서 목록 조회 없이 이 조회부터 부른다. 지연 로딩 전 메모리 배열만 보면
+     * 미설치 번들 확장을 「없음」 으로 판정한다.
+     *
+     * @effects manifest_info_lookup_loads_pending_and_bundled_first
+     *
+     * @param  string  $class  매니저 클래스
+     * @param  string  $root  루트 경로 속성
+     * @param  string  $manifest  매니페스트 파일 이름
+     * @param  string  $load  load 메서드
+     * @param  string  $lookup  manifest 조회 메서드
+     * @return void 반환값 없음
+     */
+    #[Test]
+    #[DataProvider('manifestInfoManagers')]
+    public function 설치_판정_manifest_조회는_번들_메타를_먼저_읽는다(string $class, string $root, string $manifest, string $load, string $lookup): void
+    {
+        $this->writeBundled($manifest, '1.0.0');
+        $manager = $this->makeManager($class, $root);
+        $manager->{$load}();
+
+        $info = $manager->{$lookup}('lazy-test');
+
+        $this->assertNotNull($info, '부팅 직후에도 미설치 번들 확장의 manifest 정보를 찾아야 한다.');
+        $this->assertSame('1.0.0', $info['version'] ?? null);
+    }
 }

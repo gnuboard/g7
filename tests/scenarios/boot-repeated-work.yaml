@@ -42,6 +42,7 @@ effects:
   - pending_and_bundled_manifests_are_not_read_during_boot
   - pending_and_bundled_manifests_load_once_on_first_access
   - reloading_extensions_resets_lazy_state
+  - manifest_info_lookup_loads_pending_and_bundled_first
   # ── W4 비활성 확장 boot 부수효과 게이트 ──
   - inactive_extension_keeps_bindings_without_request_side_effects
   - side_effects_register_on_first_boot_after_activation

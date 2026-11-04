@@ -546,10 +546,12 @@ class AbstractPluginSettingsTest extends TestCase
 
         $this->assertIsArray($schema);
 
-        // Daum 우편번호 플러그인의 설정 스키마 필드 확인
-        $this->assertArrayHasKey('display_mode', $schema);
-        $this->assertEquals('enum', $schema['display_mode']['type']);
-        $this->assertEquals(['popup', 'layer'], $schema['display_mode']['options']);
+        // Daum 우편번호 플러그인의 설정 스키마 필드 확인 — 표시 방식은 1.2.0 부터 기기별 2칸(단일 display_mode 는 업그레이드 스텝이 PC 칸으로 옮김)
+        $this->assertArrayNotHasKey('display_mode', $schema);
+        $this->assertEquals('enum', $schema['display_mode_pc']['type']);
+        $this->assertEquals(['popup', 'layer', 'inline'], $schema['display_mode_pc']['options']);
+        $this->assertEquals('enum', $schema['display_mode_mobile']['type']);
+        $this->assertEquals(['inline', 'fullscreen'], $schema['display_mode_mobile']['options']);
 
         $this->assertArrayHasKey('popup_width', $schema);
         $this->assertEquals('integer', $schema['popup_width']['type']);

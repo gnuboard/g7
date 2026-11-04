@@ -1747,6 +1747,8 @@ class ModuleManager implements ModuleManagerInterface
             return $this->getModuleInfo($moduleName);
         }
 
+        $this->ensurePendingAndBundledLoaded();
+
         $isPending = isset($this->pendingModules[$moduleName]);
         $metadata = $this->pendingModules[$moduleName] ?? $this->bundledModules[$moduleName] ?? null;
         if ($metadata === null) {
