@@ -542,9 +542,10 @@ class SeoRenderer implements SeoRendererInterface
         $viewData = [
             'locale' => $locale,
             'title' => $meta['title'],
-            // filter 훅이 title 을 바꿨을 수 있으므로 최종 title 기준으로 접미사를 정규화한다
-            // (TrimStrings 로 선행 공백이 제거된 접미사 복원 + 빈 제목의 매달린 구분자 제거)
-            'titleSuffix' => SeoMetaResolver::composeTitleSuffix((string) ($meta['title'] ?? ''), (string) ($meta['titleSuffix'] ?? '')),
+            // filter 훅이 title 을 바꿨을 수 있으므로 최종 title 기준으로 접미사를 조립한다 — 사람 탭 제목(엔진
+            // DocumentTitle)과 같은 규칙(SeoTitleRule): TrimStrings 로 지워진 선행 공백 복원, 빈 제목의 매달린 구분자 제거,
+            // 제목이 이미 「구분자 + 사이트 이름」으로 끝나면 다시 붙이지 않음
+            'titleSuffix' => $this->composeTitleSuffix((string) ($meta['title'] ?? ''), $meta['titleSuffix'] ?? ''),
             'description' => $meta['description'],
             'keywords' => $meta['keywords'],
             'canonicalUrl' => $canonicalUrl,
@@ -596,6 +597,22 @@ class SeoRenderer implements SeoRendererInterface
     {
         // 유효 UTF-8 보장 — 깨진 바이트 제거(JSON 직렬화 안전). 산출물 내용은 그대로 둔다.
         return Utf8::scrub($html);
+    }
+
+    /**
+     * 최종 제목 뒤에 붙일 접미사를 제목 규칙(SeoTitleRule)으로 조립합니다.
+     *
+     * 접미사 원값이 비면 ` - {site_name}` 을 쓰고, 제목이 이미 접미사나 「구분자 + 사이트 이름」으로 끝나면 붙이지 않는다.
+     *
+     * @param  string  $title  filter 훅을 거친 최종 제목
+     * @param  mixed  $rawSuffix  접미사 원값 (filter 훅이 바꿨을 수 있음 — 다국어 배열 허용)
+     * @return string 제목 뒤에 이을 글자
+     */
+    private function composeTitleSuffix(string $title, mixed $rawSuffix): string
+    {
+        $siteName = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
+
+        return SeoTitleRule::composeSuffix($title, SeoTitleRule::assembleSuffix($this->resolveLocalizedValue($rawSuffix), $siteName), $siteName);
     }
 
     /**

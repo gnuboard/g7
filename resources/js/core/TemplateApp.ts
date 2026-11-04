@@ -9,6 +9,7 @@ import { createRoot as createReactRoot } from 'react-dom/client';
 import { Router } from './routing/Router';
 import type { Route } from './routing/Router';
 import { normalizePathname } from './routing/normalizePathname';
+import { documentTitle, type SeoTitlePayload } from './routing/DocumentTitle';
 import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { DataBindingEngine } from './template-engine/DataBindingEngine';
@@ -979,6 +980,11 @@ export class TemplateApp {
                 return;
             }
 
+            // 8.7 브라우저 탭 제목 — 사용자 템플릿은 검색엔진 제목과 같은 규칙으로 document.title 을 정한다 (@since engine-v1.86.0).
+            // 관리자 템플릿은 「{화면 제목} - {사이트 이름} 관리자」(@since engine-v1.88.0). 레이아웃 편집기는 위에서 돌아갔고,
+            // 사용자 템플릿이 편집 중 경로가 되면 isSuppressed 가 막는다.
+            this.configureDocumentTitle();
+
             // 9. 초기 라우트 처리
             this.router.navigateToCurrentPath();
 
@@ -1171,6 +1177,10 @@ export class TemplateApp {
 
         // 새 요청 ID 생성 (이전 요청 무시용)
         const routeChangeId = ++this.currentRouteChangeId;
+
+        // 브라우저 탭 제목 — 이동을 시작한 순간 새 라우트 제목(+접미사)으로 바꾸고 앞 화면 레이아웃과의 연결을 끊는다.
+        // 데이터를 받으면 bind/recompute 가 같은 규칙으로 바꾼다 — 앞 화면 제목이 남지 않는다 (@since engine-v1.86.0)
+        documentTitle.beginRoute(route);
 
         // 이 화면 처리가 대기열의 새 이동에 밀렸음을 알릴 약속 (@since engine-v1.82.0)
         {
@@ -1915,6 +1925,12 @@ export class TemplateApp {
             });
 
             logger.log('Initial render complete with blocking data');
+
+            // 브라우저 탭 제목 — 이 화면 레이아웃에 연결하고 지금 데이터로 계산한다. 이후 데이터 갱신(updateTemplateData)은
+            // 같은 레이아웃 객체일 때만 다시 계산한다 (@since engine-v1.86.0)
+            if (routeChangeId === this.currentRouteChangeId) {
+                documentTitle.bind(layoutData, getState().currentDataContext);
+            }
 
             // 새 화면이 그려졌다 — 받는 동안 걸어 둔 앞 화면 입력 잠금은 커밋 뒤에 푼다(renderTemplate 은 커밋 전에 돌아온다 — 바로
             // 풀면 커밋 전 앞 화면이 잠깐 다시 조작된다) (@since engine-v1.82.0)
@@ -3761,6 +3777,11 @@ export class TemplateApp {
                   )
                 : toTemplateEngineError(error);
 
+        // 브라우저 탭 제목 — 오류 화면 제목(+접미사). 경로 없음(404)은 handleRouteNotFound 가 이미 정했다 (@since engine-v1.86.0)
+        if (!(error instanceof Error && error.message.startsWith('Page not found:'))) {
+            documentTitle.showError(ErrorDisplay.text('core.errors.page_load_failed'));
+        }
+
         // 오류 화면이 #app 을 덮기 전에 React 루트를 내려놓는다 — 그대로 두면 지워진 노드에 토스트 등이
         // 다시 그려지며 NotFoundError 가 수백 건 쌓인다 (engine-v1.79.0)
         releaseTemplateRoot();
@@ -3864,6 +3885,9 @@ export class TemplateApp {
      */
     private async handleRouteNotFound(path: string): Promise<void> {
         logger.warn('Route not found:', path);
+
+        // 브라우저 탭 제목 — 템플릿의 404 화면 라우트 제목(+접미사), 없으면 사이트 이름 (@since engine-v1.86.0)
+        documentTitle.showError(this.notFoundTitle());
 
         // 경로 없음 화면 — 복원할 화면이 없으니 이 이동의 복원 정보를 버리고 스크롤 기억을 다시 켠다 (@since engine-v1.85.0)
         if (takeScrollRestoreTicket() !== null) {
@@ -4197,6 +4221,54 @@ export class TemplateApp {
             // 실패로 끝나도 기다리던 화면 전환을 묶어 두지 않는다 (engine-v1.79.0)
             this.releaseLocaleSwitchEngineReady(releaseEngineReady);
         }
+    }
+
+    /**
+     * 브라우저 탭 제목 컨트롤러를 켭니다.
+     *
+     * 사용자 템플릿은 검색엔진 제목과 같은 규칙, 관리자 템플릿은 레이아웃 화면 제목 → 라우트 제목에 관리자 접미사
+     * (`{화면 제목} - {사이트 이름} 관리자`, 셸이 언어별로 넘긴다 — engine-v1.88.0). 서버가 넘긴 제목 계산 값
+     * (`G7Config.seoTitle`)이 없으면 켜지 않는다 — 종전처럼 셸 제목이 남는다(옛 서버).
+     *
+     * @returns void
+     * @since engine-v1.86.0
+     */
+    private configureDocumentTitle(): void {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const isAdmin = this.config.templateType === 'admin';
+        const payload = (window as any).G7Config?.seoTitle as SeoTitlePayload | null | undefined;
+        documentTitle.configure({
+            payload,
+            mode: isAdmin ? 'admin' : 'user',
+            getLocale: () => this.config.locale ?? null,
+            translate: (text, context) => {
+                const state = getState();
+                if (!state.translationEngine || !state.translationContext) {
+                    return null;
+                }
+                return state.translationEngine.resolveTranslations(text, state.translationContext, context);
+            },
+            // 사용자 템플릿: 레이아웃 편집기(캔버스) 경로에서는 관리자 편집기 탭 제목을 바꾸지 않는다.
+            // 관리자 템플릿: 편집기 경로로 부팅하면 위 편집기 모드에서 이미 돌아가 이 컨트롤러가 켜지지 않는다.
+            isSuppressed: isAdmin ? undefined : () => checkLayoutEditorMode(window.location.pathname) !== null,
+        });
+    }
+
+    /**
+     * 경로 없음(404) 화면의 탭 제목 — 템플릿이 `/404` 라우트에 둔 제목.
+     *
+     * 코어에는 404 제목 번역 키가 없다(내장 문구는 문장형 안내다). 템플릿의 404 화면 라우트 제목을 쓰고, 없으면 빈 값
+     * (제목 규칙이 사이트 이름으로 채운다).
+     *
+     * @returns 제목 원값 (`$t:` 키 허용)
+     * @since engine-v1.86.0
+     */
+    private notFoundTitle(): string {
+        const title = this.router?.match('/404')?.route?.meta?.title;
+
+        return typeof title === 'string' ? title : '';
     }
 
     /**

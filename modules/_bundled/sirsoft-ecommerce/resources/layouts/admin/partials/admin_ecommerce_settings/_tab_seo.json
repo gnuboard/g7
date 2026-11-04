@@ -74,7 +74,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "seo.meta_category_title",
-                                        "placeholder": "{commerce_name} - {category_name}",
+                                        "placeholder": "{category_name}",
                                         "className": "{{_local.errors?.['seo.meta_category_title'] ? 'input input-error' : 'input'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
@@ -193,7 +193,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "seo.meta_search_title",
-                                        "placeholder": "{commerce_name} - {keyword_name}",
+                                        "placeholder": "{keyword_name}",
                                         "className": "{{_local.errors?.['seo.meta_search_title'] ? 'input input-error' : 'input'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
@@ -304,7 +304,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "seo.meta_product_title",
-                                        "placeholder": "{commerce_name} - {product_name}",
+                                        "placeholder": "{product_name}",
                                         "className": "{{_local.errors?.['seo.meta_product_title'] ? 'input input-error' : 'input'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }

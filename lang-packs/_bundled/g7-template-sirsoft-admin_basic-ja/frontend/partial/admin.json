@@ -1692,7 +1692,7 @@
       "meta_settings": "メタタグ設定",
       "meta_settings_desc": "検索エンジン最適化のためのメタタグを設定します。",
       "meta_title_suffix": "タイトルサフィックス",
-      "meta_title_suffix_hint": "すべてのページのタイトルの後に追加される文言です。 (例: ' | Gnuboard7')",
+      "meta_title_suffix_hint": "すべてのページのタイトル(検索エンジンのタイトルと訪問者のブラウザタブのタイトル)の後に追加される文言です。{site_name} はサイト名に置き換えられ、空の場合は ' - サイト名' を追加します。タイトルが既にサイト名で終わる場合は再度追加しません。 (例: ' | {site_name}')",
       "meta_description": "デフォルトメタ説明",
       "meta_description_placeholder": "サイトのデフォルトメタ説明を入力してください。",
       "meta_description_hint": "検索結果に表示される説明です。最大160文字を推奨します。",

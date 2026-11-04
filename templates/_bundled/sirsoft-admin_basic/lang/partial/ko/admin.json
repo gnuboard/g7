@@ -1692,7 +1692,7 @@
       "meta_settings": "메타 태그 설정",
       "meta_settings_desc": "검색엔진 최적화를 위한 메타 태그를 설정합니다.",
       "meta_title_suffix": "타이틀 접미사",
-      "meta_title_suffix_hint": "모든 페이지 타이틀 뒤에 붙는 문구입니다. (예: ' | 그누보드7')",
+      "meta_title_suffix_hint": "모든 페이지 제목(검색엔진 제목과 방문자 브라우저 탭 제목) 뒤에 붙는 문구입니다. {site_name} 자리에 사이트 이름이 들어가고, 비우면 ' - 사이트 이름' 을 붙입니다. 제목이 이미 사이트 이름으로 끝나면 다시 붙이지 않습니다. (예: ' | {site_name}')",
       "meta_description": "기본 메타 설명",
       "meta_description_placeholder": "사이트의 기본 메타 설명을 입력하세요.",
       "meta_description_hint": "검색 결과에 표시되는 설명입니다. 최대 160자를 권장합니다.",

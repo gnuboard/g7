@@ -5,6 +5,18 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.86.0] - 2026-11-04
+
+### Added
+
+- 브라우저 탭 제목(`routing/DocumentTitle.ts`) — 사용자 템플릿에서 `document.title` 을 검색엔진(봇) `<title>` 과 같은 규칙으로 정한다. 후보 순서: 리소스 `meta_title` → 페이지 `seo_meta.title` → 확장 제목 틀(`_seo.{page_type}.title` — `meta.seo.extensions` 의 `seoVariables()`·설정 틀을 서버 `SeoRenderer::resolveSeoContext` 와 같게 계산, 하위호환 모듈 틀 포함) → 평가한 `meta.seo.og.title` → 라우트 `meta.title`. 사이트 이름만 되풀이하는 후보는 건너뛰고, 사이트 이름은 코어 접미사(`seo.meta_title_suffix`, 비면 ` - {site_name}`, `{site_name}` 치환)로만 붙인다. 제목이 이미 접미사나 「구분자(` - `·` | `·` · `) + 사이트 이름」으로 끝나면 다시 붙이지 않는다. 사이트 첫 화면(`/`)은 사이트 이름만. 계산은 화면이 가진 데이터(`meta.seo.data_sources` 의 소스만, 레이아웃 순서)와 부팅 값 `G7Config.seoTitle`(서버 `SeoTitleRuleExporter`)로만 한다 — 이동마다 서버에 묻지 않는다. 서버 규칙 원본 `app/Seo/SeoTitleRule.php` 와 판정 사례 파일 `tests/fixtures/seo/title-rule-cases.json` 을 함께 쓴다.
+- 갱신 시점 — `handleRouteChange` 시작 즉시 라우트 제목(+접미사)을 쓰고 앞 화면 레이아웃과의 연결을 끊는다(`beginRoute`). 새 화면을 그린 뒤 그 레이아웃 객체에 연결하고(`bind`), `updateTemplateData` 끝에서 **연결한 레이아웃 객체일 때만** 다시 계산한다(`recompute` — 앞 화면의 늦은 데이터가 새 화면 제목을 덮지 않는다). 언어 전환은 재진입 경로로 다시 계산한다. 경로 없음(404)은 템플릿 `/404` 라우트 제목, 레이아웃 로드 실패는 「페이지 로딩 실패」(+접미사). 값이 바뀔 때만 쓴다.
+- 대상 — 사용자 템플릿만(관리자 템플릿은 종전대로 셸 제목). 레이아웃 편집기 경로(`/admin/layout-editor/*`)와 편집기 미리보기(`__preview__`)에서는 쓰지 않는다. `toggle_setting`(봇에게 SEO 화면을 줄지)은 보지 않는다. `G7Config.seoTitle` 이 없는 옛 서버에서는 켜지 않는다.
+
+배경: 사람 방문자의 탭 제목은 셸의 `config('app.name')`(사이트 이름) 그대로였고 봇만 SEO 제목을 받았다 — 엔진에 `document.title` 을 쓰는 코드가 처음부터 없었다. 함께 바꾼 서버 쪽(코어 7.1.5): 봇 `<title>` 도 같은 규칙(`SeoTitleRule`)으로 정해, 접미사를 비운 사이트에도 기본 접미사 ` - {사이트 이름}` 이 붙는다.
+
+회귀 잠금: `routing/__tests__/DocumentTitle.parity.test.ts`(37 — 서버 `tests/Unit/Seo/SeoTitleRuleParityTest.php` 와 같은 사례 파일) · `__tests__/TemplateApp.documentTitle.test.ts`(8 — 실 TemplateApp 화면 처리 + 실 renderTemplate·updateTemplateData: 이동 시작 라우트 제목·데이터 도착·앞 화면 늦은 데이터·언어 전환·첫 화면·404·편집기·관리자) — 수정 전 엔진(HEAD 작업 사본)에서 8 중 6 red(제목이 셸 제목 그대로), 「연결 끊기」 제거 변이에서 늦은 데이터 시험 red(「늦은 앞 화면 상품 - …」), 편집기 억제 제거 변이에서 편집기 시험 red. 매니페스트 `tests/scenarios/browser-tab-title-rule.yaml`
+
 ## [engine-v1.85.0] - 2026-11-03
 
 ### Added

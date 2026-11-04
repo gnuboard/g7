@@ -46,7 +46,7 @@ _단건 응답: `data` 객체의 필드._
 | language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙). `removed_default_currencies` 는 관리자가 삭제한 기본 제공 통화 코드 목록으로, 서버가 저장 시점에 도출해 기록한다 (관리자 응답 전용 — 공개 설정에는 노출되지 않음) |
 | order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 주문/결제 설정 (기본 PG·병합된 결제수단·은행/무통장 계좌·자동취소·장바구니 만료·현금영수증 발급 제공자·자진발급·배송비 과세 방식 등) |
 | shipping | object | `{"default_country":"KR","available_countries":[{"code":"K…` | 배송 설정 (기본 국가·배송 가능 국가·무료배송·DB 관리 배송사(carriers)·배송유형(types)·계산 API 후보 필드 포함) |
-| seo | object | `{"meta_category_title":"{commerce_name} - {category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
+| seo | object | `{"meta_category_title":"{category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
 | review_settings | object | `{"write_deadline_days":90,"max_images":5,"max_image_size_…` | 리뷰 정책 (작성 기한일·이미지 최대 개수·이미지 최대 용량 MB) |
 | product_display | object | `{"related_order":"random","related_cache_hours":24}` | 상품 진열 — 상품 상세 관련 상품(「이 상품은 어떠세요?」) 단계 안 순서·고른 목록 유지 시간 |
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
@@ -221,11 +221,11 @@ HTTP/1.1 200
             "...": "(8개 키 생략, 총 13개)"
         },
         "seo": {
-            "meta_category_title": "{commerce_name} - {category_name}",
+            "meta_category_title": "{category_name}",
             "meta_category_description": "",
-            "meta_search_title": "{commerce_name} - {keyword_name}",
+            "meta_search_title": "{keyword_name}",
             "meta_search_description": "",
-            "meta_product_title": "{commerce_name} - {product_name}",
+            "meta_product_title": "{product_name}",
             "...": "(7개 키 생략, 총 12개)"
         },
         "review_settings": {
@@ -847,7 +847,7 @@ _단건 응답: `data` 객체의 필드._
 | language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙). `removed_default_currencies` 는 관리자가 삭제한 기본 제공 통화 코드 목록으로, 서버가 저장 시점에 도출해 기록한다 (관리자 응답 전용 — 공개 설정에는 노출되지 않음) |
 | order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 주문/결제 설정 (기본 PG·병합된 결제수단·은행/무통장 계좌·자동취소·장바구니 만료·현금영수증 발급 제공자·자진발급·배송비 과세 방식 등) |
 | shipping | object | `{"default_country":"KR","available_countries":[{"code":"K…` | 배송 설정 (기본 국가·배송 가능 국가·무료배송·DB 관리 배송사(carriers)·배송유형(types)·계산 API 후보 필드 포함) |
-| seo | object | `{"meta_category_title":"{commerce_name} - {category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
+| seo | object | `{"meta_category_title":"{category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
 | review_settings | object | `{"write_deadline_days":90,"max_images":5,"max_image_size_…` | 리뷰 정책 (작성 기한일·이미지 최대 개수·이미지 최대 용량 MB) |
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 채널 설정 (채널 ID·활성 여부·정렬 순서) |
@@ -1019,11 +1019,11 @@ HTTP/1.1 200
             "...": "(8개 키 생략, 총 13개)"
         },
         "seo": {
-            "meta_category_title": "{commerce_name} - {category_name}",
+            "meta_category_title": "{category_name}",
             "meta_category_description": "",
-            "meta_search_title": "{commerce_name} - {keyword_name}",
+            "meta_search_title": "{keyword_name}",
             "meta_search_description": "",
-            "meta_product_title": "{commerce_name} - {product_name}",
+            "meta_product_title": "{product_name}",
             "...": "(7개 키 생략, 총 12개)"
         },
         "review_settings": {
@@ -1376,7 +1376,7 @@ _단건 응답: `data` 객체의 필드._
 | language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙). `removed_default_currencies` 는 관리자가 삭제한 기본 제공 통화 코드 목록으로, 서버가 저장 시점에 도출해 기록한다 (관리자 응답 전용 — 공개 설정에는 노출되지 않음) |
 | order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 주문/결제 설정 (기본 PG·병합된 결제수단·은행/무통장 계좌·자동취소·장바구니 만료·현금영수증 발급 제공자·자진발급·배송비 과세 방식 등) |
 | shipping | object | `{"default_country":"KR","available_countries":[{"code":"K…` | 배송 설정 (기본 국가·배송 가능 국가·무료배송·DB 관리 배송사(carriers)·배송유형(types)·계산 API 후보 필드 포함) |
-| seo | object | `{"meta_category_title":"{commerce_name} - {category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
+| seo | object | `{"meta_category_title":"{category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
 | review_settings | object | `{"write_deadline_days":90,"max_images":5,"max_image_size_…` | 리뷰 정책 (작성 기한일·이미지 최대 개수·이미지 최대 용량 MB) |
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 채널 설정 (채널 ID·활성 여부·정렬 순서) |
@@ -1544,11 +1544,11 @@ HTTP/1.1 200
             "...": "(2개 키 생략, 총 7개)"
         },
         "seo": {
-            "meta_category_title": "{commerce_name} - {category_name}",
+            "meta_category_title": "{category_name}",
             "meta_category_description": "",
-            "meta_search_title": "{commerce_name} - {keyword_name}",
+            "meta_search_title": "{keyword_name}",
             "meta_search_description": "",
-            "meta_product_title": "{commerce_name} - {product_name}",
+            "meta_product_title": "{product_name}",
             "...": "(7개 키 생략, 총 12개)"
         },
         "review_settings": {

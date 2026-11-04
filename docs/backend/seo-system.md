@@ -223,7 +223,8 @@ seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거�
 |------|------|--------|
 | OG `og:site_name` | `seo.og_default_site_name ?? general.site_name` (`SeoMetaResolver`) | `resolveLocalizedValue` ✅ |
 | JSON-LD `WebSite.name` / `{site_name}` 치환 | `_global.site_name` ← `general.site_name` (`SeoRenderer::buildGlobalContext`) | `resolveLocalizedValue` ✅ |
-| SPA `<title>` | `config('app.name')` ← `general.site_name` (`SettingsServiceProvider::applyAppConfig`) | `localizeSettingValue` ✅ |
+| SPA 첫 응답 `<title>` | `config('app.name')` ← `general.site_name` (`SettingsServiceProvider::applyAppConfig`) — 화면이 뜨면 엔진이 제목 규칙으로 바꾼다 | `localizeSettingValue` ✅ |
+| 제목 접미사 기본값·탭 제목 | `G7Config.seoTitle.site_name` ← `general.site_name` (`SeoTitleRuleExporter`) | 엔진 `pickLocalized` · 서버 `LocalizedValue::pick` ✅ |
 | canonical | URL 기반, site_name 미사용 (`seo.blade.php`) | N/A (무관) |
 
 > **OG 직접입력은 의도된 override**: `seo.og_default_site_name` 에 값을 입력하면 그 값이 우선하고, 비우면 `general.site_name` 을 따른다. admin SEO 탭의 OG 입력칸 라벨/안내가 이 "선택 재정의" 위상을 명시한다. 자동 동기화/칸 제거는 하지 않는다 (drift 는 명시적 override 로 허용).
@@ -309,32 +310,60 @@ seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거�
 - Partial에 meta.seo 정의 금지 (무시됨)
 - meta.seo 추가/변경 시 `UpdateLayoutContentRequest` 검증 규칙 동기화 필수
 
-## 3계층 캐스케이드 메타 해석
+## 화면 제목 규칙 (봇 `<title>` · 사람 브라우저 탭 공통)
+
+검색엔진(봇) `<title>` 과 사람 방문자의 브라우저 탭 제목(`document.title`)은 **한 규칙**으로 정합니다(코어 7.1.5, 템플릿 엔진 engine-v1.86.0).
+서버 원본은 `App\Seo\SeoTitleRule`(순수 함수 — `SeoMetaResolver`·`SeoRenderer` 가 사용), 화면 짝은 `resources/js/core/routing/DocumentTitle.ts`
+이고, 두 구현은 판정 사례 파일 `tests/fixtures/seo/title-rule-cases.json` 하나로 같은 답을 잠급니다(서버 `SeoTitleRuleParityTest` · 엔진
+`DocumentTitle.parity.test.ts`). 한쪽만 고치지 않습니다.
 
 ```
-우선순위: 리소스 개별 설정 > 모듈 설정 > 코어 설정 + 코어 suffix 항상 추가
-
-상품 상세 페이지 title 결정:
-1순위: 상품 meta_title 있으면 → 사용
-2순위: 모듈 meta_product_title 템플릿 → "{commerce_name} - {product_name}" 치환
-3순위: 코어 meta_description → fallback
-최종: + 코어 meta_title_suffix 항상 추가
+제목 후보 (앞에서부터 처음으로 비어 있지 않고 사이트 이름만이 아닌 값):
+1. 리소스 meta_title            — meta.seo.data_sources 소스의 data.meta_title (레이아웃 data_sources 순서)
+2. 페이지 seo_meta.title        — data.seo_meta.title
+3. meta.seo.title              — 레이아웃 편집기 페이지 설정 「검색 제목」 (식·다국어 허용, 7.1.5)
+4. 확장 제목 틀                 — _seo.{page_type}.title (extensions 의 seoVariables + seo.meta_{page_type}_title 치환)
+                                   · extensions 미선언이면 라우트 레이아웃 소속 확장의 같은 틀(하위호환)
+5. meta.seo.og.title            — 레이아웃 식 평가 결과 ($t: 키·{{식}} 허용)
+6. 라우트 meta.title            — routes.json
++ 접미사: 코어 seo.meta_title_suffix (비면 " - {site_name}", {site_name} 은 현재 언어 사이트 이름)
 ```
 
-| 페이지 | title 우선순위 | description 우선순위 |
-|--------|---------------|---------------------|
-| 상품 상세 | 상품 `meta_title` → 모듈 `meta_product_title` → 코어 | 상품 `meta_description` → 모듈 → 코어 |
-| 카테고리 | 카테고리 `meta_title` → 모듈 `meta_category_title` → 코어 | 카테고리 `meta_description` → 모듈 → 코어 |
-| 검색 결과 | 모듈 `meta_search_title` → 코어 | 모듈 `meta_search_description` → 코어 |
-| 페이지 | 페이지 `seo_meta.title` → 코어 | 페이지 `seo_meta.description` → 코어 |
-| 메인/게시판 | 코어 title (레이아웃 meta.title) | 코어 meta_description |
+| 규칙 | 내용 |
+|------|------|
+| 사이트 이름뿐인 후보 | 사이트 이름(`general.site_name`)이나 접미사에서 구분자를 뗀 이름과 같은 후보는 건너뜁니다(게시판 목록 기본 틀 `{site_name}` 등). 어느 단계든 같습니다 |
+| 접미사 중복 방지 | 제목이 이미 접미사로 끝나거나 「` - `·` \| `·` · `·` – `·` — ` + 사이트 이름」으로 끝나면 다시 붙이지 않습니다(옮겨 온 상품 meta_title 「상품명 - 사이트명」 등 — 데이터를 고치지 않아도 됨) |
+| 접미사 공백 | 저장값의 앞 공백이 지워졌어도(TrimStrings) 공백 하나를 복원해 잇습니다 |
+| 사이트 첫 화면(`/`) | 사이트 이름만(레이아웃 OG 제목·라우트 제목을 쓰지 않음) |
+| 후보가 모두 빔 | 접미사의 구분자를 뗀 값 = 사이트 이름. 사이트 이름도 접미사도 없으면 빈 값 |
+| 정리 | 각 후보는 태그 제거·HTML 엔티티 해제·공백 한 칸으로 정리합니다 |
+| `og:title` | 레이아웃 `og.title` → 고른 제목 → (제목이 비면) 사이트 이름 |
+| 편집기 「검색 제목·설명」 | 레이아웃 편집기 → 페이지 설정 → 검색엔진의 「제목」「설명」(`meta.seo.title`·`meta.seo.description`)은 그 화면의 기본 제목·설명입니다. 상품·게시글·페이지 자체 값이 있으면 그것이 앞서고, 확장 제목·설명 틀과 소셜 공유(og) 값보다는 앞섭니다. 설명 순서는 리소스 `meta_description` → 페이지 `seo_meta.description` → `meta.seo.description` → 확장 설명 틀 → `og.description` → 코어 설명 |
+| 확장 제목 틀 | 사이트 이름을 넣지 않습니다(접미사가 붙임). 다국어 값(`{ko, en, …}`)이면 현재 로케일 → 사이트 기본 언어 → 영어 |
 
-위 단계가 모두 비면 title 은 레이아웃 `meta.seo.og.title` → 라우트 `meta.title`(routes.json) 순으로 대신합니다. 그래서 SEO 제목 선언이 없는 화면(회원 프로필 등)도 「화면 제목 | 사이트 이름」 으로 나갑니다.
+| 페이지 | 기본 제목 (접미사 기본값일 때) |
+|--------|------|
+| 상품 상세 | 상품 `meta_title` → `{product_name}` → … 예: 「후드 티 - 사이트 이름」 |
+| 카테고리 / 검색 결과 / 쇼핑몰 메인 | `{category_name}` / `{keyword_name}` / `{commerce_name}` + 접미사 |
+| 게시판 목록 / 글 | `{board_name}` / `{board_name} - {post_title}` + 접미사 (게시판 모음 `{site_name}` 은 건너뛰어 라우트 제목) |
+| 페이지 | 페이지 `seo_meta.title` → OG 제목(페이지 제목) + 접미사 |
+| SEO 선언 없음·꺼짐 (장바구니·주문서·마이페이지·로그인 등) | 라우트 `meta.title` + 접미사 (봇은 SEO 화면을 받지 않음, 사람 탭만) |
 
-- **사이트 이름만 되풀이하는 제목은 버립니다.** 확장 제목 틀이 사이트 이름만 낸 경우(게시판 목록 기본값 `{site_name}` 등) 코어 접미사가 사이트 이름을 또 붙여 「사이트 이름 \| 사이트 이름」 이 되므로, 코어 사이트 이름(`general.site_name`)이나 접미사에서 구분자를 뗀 이름과 같은 제목은 화면 정보가 없는 것으로 보고 다음 단계로 넘깁니다. 대신할 제목이 없으면 사이트 이름만 한 번 나갑니다.
-- **제목 접미사(`seo.meta_title_suffix`)가 비면 사이트 이름이 제목이 됩니다.** 위 단계가 모두 비고 접미사도 비어 제목 전체가 빈 값이 되면, 지역화한 사이트 이름(`general.site_name`)을 제목으로 씁니다(og:title 도 따라갑니다). 접미사가 있는 사이트는 위 규칙대로 제목을 비우고 접미사만 남깁니다.
-- **확장 설정 제목·설명 틀은 다국어 값이어도 됩니다.** 모듈·플러그인 설정 `seo.meta_{page_type}_{title|description}` 을 `{ko, en, …}` 배열로 저장하면 현재 로케일 → 사이트 기본 언어 → 영어 순으로 고른 문자열을 씁니다.
-- **사이트 첫 화면(`/`)은 라우트 제목을 쓰지 않습니다.** 첫 화면은 사이트 이름 자체가 제목이라 「홈 \| 사이트 이름」 대신 사이트 이름만 나갑니다.
+### 사람 브라우저 탭 제목 (엔진)
+
+- 서버는 첫 응답 `<title>` 을 종전처럼 사이트 이름으로 둡니다(`app.blade.php`). 엔진이 화면을 그리며 바꿉니다.
+- 엔진은 이동마다 서버에 묻지 않습니다. 부팅 값 `window.G7Config.seoTitle`(`App\Seo\SeoTitleRuleExporter` — 코어 접미사·사이트 이름, 활성 확장의
+  `seoVariables()`·`seo.meta_{page_type}_{title|description}` 틀·`source: setting/core_setting` 변수 값만)과 화면 데이터로 계산합니다.
+  확장 공개 설정(`frontend_schema` expose)은 넓히지 않습니다.
+- 갱신 시점: 이동 시작 즉시 라우트 제목(+접미사) → 새 화면을 그린 뒤 그 레이아웃에 연결해 계산 → 데이터가 올 때마다 **연결한 레이아웃 객체일 때만**
+  다시 계산(앞 화면의 늦은 데이터가 덮지 않음) → 언어 전환 재진입에서 다시 계산. 404 는 템플릿 `/404` 라우트 제목.
+- 위 규칙은 사용자 템플릿에 적용합니다. 레이아웃 편집기(`/admin/layout-editor/*`)·편집기 미리보기(`__preview__`)는 탭 제목을 바꾸지 않습니다.
+- 관리자 템플릿(engine-v1.88.0)은 검색엔진 규칙을 쓰지 않고 「{화면 제목} - {사이트 이름} 관리자」입니다. 화면 제목은 관리자 레이아웃의
+  `meta.title`(식·`$t:` 허용), 없으면 라우트 제목입니다. 관리자 셸(`admin.blade.php`)이 `G7Config.seoTitle` 로 사이트 이름과 언어별 접미사
+  (`SeoTitleRuleExporter::exportForAdmin` — 코어 문구 `seo.admin_title_suffix`, 지원 언어 전부의 맵)를 넘깁니다. 갱신 시점·앞 화면 늦은 데이터
+  무시는 사용자 화면과 같습니다. 값이 없는 옛 서버에서는 셸 제목(`{앱 이름} - Admin`)을 그대로 둡니다.
+- `toggle_setting`(확장별 봇 SEO 토글)은 사람 탭 제목에 쓰지 않습니다 — 토글이 꺼져도 탭 제목은 같은 규칙입니다.
+
 - 편집기 봇 미리보기(`renderFromResolved` 직접 호출)는 URL 매핑을 거치지 않습니다. 대신 편집기가 보낸 레이아웃 전체 이름(`layout_name`)으로 그 레이아웃을 쓰는 라우트를 찾아 같은 라우트 제목 대체를 적용합니다(사이트 첫 화면 제외). 레이아웃 이름이 없는 편집(베이스·모달)은 라우트 제목 대체가 없습니다.
 
 ## 레이아웃 meta.seo 선언적 설정

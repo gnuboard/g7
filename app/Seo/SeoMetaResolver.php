@@ -40,24 +40,29 @@ class SeoMetaResolver
         $coreDescription = g7_core_settings('seo.meta_description') ?? '';
         $coreKeywords = g7_core_settings('seo.meta_keywords') ?? '';
 
-        // 페이지 유형별 타이틀/설명 결정
-        $title = $this->resolveTitle($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
+        // 제목 — 사람 화면의 브라우저 탭 제목(엔진 DocumentTitle)과 같은 규칙(SeoTitleRule)으로 정한다.
+        // 후보 순서: 리소스 meta_title → 페이지 seo_meta.title → 확장 제목 틀(_seo·하위호환 모듈 틀) →
+        // meta.seo.og.title → 라우트 meta.title. 사이트 이름만 되풀이하는 후보(게시판 목록 기본 틀 `{site_name}` 등)는
+        // 건너뛰고, 사이트 이름은 코어 접미사(비면 ` - {site_name}`)로만 붙인다. 사이트 첫 화면은 사이트 이름만 쓴다.
+        $siteName = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
+        $localizedSuffix = $this->resolveLocalizedValue($coreTitleSuffix);
+        $picked = SeoTitleRule::resolve([
+            'tiers' => [
+                fn () => $this->getResourceMetaField($context, 'meta_title'),
+                fn () => $this->getPageSeoMetaField($context, 'title'),
+                fn () => $this->resolveTemplateTitle($seoConfig, $context, $moduleIdentifier, $pluginIdentifier),
+                fn () => $this->resolveLayoutMetaTitle($seoConfig, $context),
+                fn () => ($routeTitle !== null && $routeTitle !== '' && $routeTitle !== []) ? $this->safeEval($routeTitle, $context) : '',
+            ],
+            'site_name' => $siteName,
+            'suffix' => $localizedSuffix,
+            'is_home' => data_get($context, 'route.path') === '/',
+        ]);
+        $title = $picked['title'];
+
         $description = $this->resolveDescription($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
         $keywords = $this->resolveKeywords($context, $moduleIdentifier);
 
-        // 사이트 이름만 되풀이하는 제목(게시판 목록 기본 틀 `{site_name}` 등)은 화면 정보가 없고
-        // 접미사가 사이트 이름을 이미 붙이므로 「사이트 이름 | 사이트 이름」 이 된다 — 다음 단계로 넘긴다
-        if ($title !== '' && $this->isSiteNameOnlyTitle($title, $coreTitleSuffix)) {
-            $title = '';
-        }
-
-        // fallback: 레이아웃 meta → 라우트 meta.title → 코어 설정
-        if ($title === '') {
-            $title = $this->resolveLayoutMetaTitle($seoConfig, $context);
-        }
-        if ($title === '' && $routeTitle !== null && $routeTitle !== '' && $routeTitle !== []) {
-            $title = $this->stripHtml($this->safeEval($routeTitle, $context));
-        }
         if ($description === '') {
             $description = $this->resolveLayoutMetaDescription($seoConfig, $context);
         }
@@ -68,22 +73,17 @@ class SeoMetaResolver
             $keywords = $coreKeywords;
         }
 
-        // 모든 제목 단계가 비었고 접미사도 비어 제목 전체가 빈 값이면 사이트 이름을 제목으로 쓴다.
-        // 위의 「사이트 이름뿐인 제목 비우기」는 접미사가 사이트 이름을 붙여 준다는 전제인데, 기본 설치는
-        // 접미사가 빈 값이라 봇 홈이 `<title></title>` 로 나갔다 (공개#154). 접미사가 있으면 종전과 같다.
-        if ($title === '' && self::composeTitleSuffix('', (string) $coreTitleSuffix) === '') {
-            $title = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
-        }
-
-        // 코어 title suffix 항상 추가
-        $titleSuffix = $coreTitleSuffix !== '' ? $coreTitleSuffix : '';
+        // 접미사 원값(현재 언어) — 기본값(` - {site_name}`)·`{site_name}` 치환·제목과 잇는 조립·중복 방지는 filter 훅 뒤
+        // 최종 제목 기준으로 SeoRenderer 가 SeoTitleRule::assembleSuffix + composeSuffix 로 한다(훅이 보는 값은 종전처럼 설정값).
+        $titleSuffix = $localizedSuffix;
 
         // null 방어 (OG 태그 string 타입힌트 충족)
         $title = $title ?? '';
         $description = $description ?? '';
 
         // OG / Twitter / Structured Data 배열 해석 (HTML 렌더 지연)
-        $og = $this->resolveOgData($seoConfig, $context, $title, $description);
+        // og:title 대체값 — 제목이 비면(사이트 첫 화면 등 사이트 이름이 접미사로만 붙는 화면) 사이트 이름
+        $og = $this->resolveOgData($seoConfig, $context, $title !== '' ? $title : $siteName, $description);
         $twitter = $this->resolveTwitterData($seoConfig, $context, $og);
         $structuredData = $this->resolveStructuredDataArray($seoConfig, $context);
 
@@ -111,49 +111,32 @@ class SeoMetaResolver
     }
 
     /**
-     * 타이틀을 3계층 캐스케이드로 해석합니다.
+     * 확장 제목 틀 후보를 해석합니다 (제목 규칙의 세 번째 후보).
+     *
+     * `_seo.{page_type}.title`(SeoRenderer 가 meta.seo.extensions 로 주입) → 하위호환 모듈/플러그인 틀
+     * (extensions 미선언 시 라우트 레이아웃 소속 확장의 `seo.meta_{page_type}_title`) 순이다.
      *
      * @param  array  $seoConfig  SEO 설정
      * @param  array  $context  데이터 컨텍스트
      * @param  string|null  $moduleIdentifier  모듈 식별자
      * @param  string|null  $pluginIdentifier  플러그인 식별자
-     * @param  array  $routeParams  라우트 파라미터
-     * @return string 해석된 타이틀
+     * @return string 해석된 제목 틀 (없으면 빈 문자열)
      */
-    private function resolveTitle(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier, array $routeParams): string
+    private function resolveTemplateTitle(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier): string
     {
-        // Tier 3: 리소스 개별 meta_title
-        $resourceTitle = $this->getResourceMetaField($context, 'meta_title');
-        if ($resourceTitle !== '') {
-            return $resourceTitle;
-        }
-
-        // Tier 3: 페이지 seo_meta.title (sirsoft-page)
-        $pageSeoTitle = $this->getPageSeoMetaField($context, 'title');
-        if ($pageSeoTitle !== '') {
-            return $pageSeoTitle;
-        }
-
-        // Tier 2: _seo context (SeoRenderer가 extensions 기반으로 주입)
         $pageType = $seoConfig['page_type'] ?? null;
         if ($pageType) {
             $seoTitle = data_get($context, "_seo.{$pageType}.title", '');
-            if ($seoTitle !== '') {
-                return $seoTitle;
+            if ($seoTitle !== '' && $seoTitle !== null) {
+                return $this->resolveLocalizedValue($seoTitle);
             }
         }
 
-        // Tier 2 하위호환: moduleIdentifier/pluginIdentifier 기반 (extensions 미선언 시)
         if ($moduleIdentifier) {
-            $templateTitle = $this->resolveModuleTemplate($moduleIdentifier, 'title', $seoConfig, $context);
-            if ($templateTitle !== '') {
-                return $templateTitle;
-            }
-        } elseif ($pluginIdentifier) {
-            $templateTitle = $this->resolvePluginTemplate($pluginIdentifier, 'title', $seoConfig, $context);
-            if ($templateTitle !== '') {
-                return $templateTitle;
-            }
+            return $this->resolveModuleTemplate($moduleIdentifier, 'title', $seoConfig, $context);
+        }
+        if ($pluginIdentifier) {
+            return $this->resolvePluginTemplate($pluginIdentifier, 'title', $seoConfig, $context);
         }
 
         return '';
@@ -462,30 +445,6 @@ class SeoMetaResolver
         }
 
         return preg_match('/^\s/u', $suffix) === 1 ? $suffix : ' '.$suffix;
-    }
-
-    /**
-     * 제목이 사이트 이름만 되풀이하는지 판정합니다.
-     *
-     * 코어 사이트 이름(`general.site_name`)이나 제목 접미사에서 구분자를 뗀 이름과 같으면
-     * 화면 정보가 없는 제목이다. 이런 제목에 접미사를 붙이면 사이트 이름이 두 번 나간다.
-     *
-     * @param  string  $title  해석된 제목
-     * @param  string  $suffix  코어 설정의 제목 접미사
-     * @return bool 사이트 이름만 되풀이하면 true
-     */
-    private function isSiteNameOnlyTitle(string $title, string $suffix): bool
-    {
-        $normalized = trim($title);
-        if ($normalized === '') {
-            return false;
-        }
-
-        $siteName = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
-        $suffixName = self::composeTitleSuffix('', $suffix);
-
-        return ($siteName !== '' && $normalized === $siteName)
-            || ($suffixName !== '' && $normalized === $suffixName);
     }
 
     /**

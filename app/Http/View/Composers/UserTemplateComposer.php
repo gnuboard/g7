@@ -14,6 +14,7 @@ use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
+use App\Seo\SeoTitleRuleExporter;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
@@ -162,5 +163,23 @@ class UserTemplateComposer
         // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
         $view->with('stateContracts', StateContracts::forFrontend());
         $view->with('consentInitial', $consentInitial);
+        // 브라우저 탭 제목 규칙 계산 값 — 엔진이 검색엔진 제목과 같은 규칙으로 document.title 을 정한다 (engine-v1.86.0)
+        $view->with('seoTitle', $this->collectSeoTitleRule());
+    }
+
+    /**
+     * 브라우저 탭 제목 규칙 계산 값을 모읍니다.
+     *
+     * 실패하면 null 을 돌려준다 — 엔진은 값이 없으면 탭 제목을 바꾸지 않는다(종전 동작: 사이트 이름).
+     *
+     * @return array<string, mixed>|null 제목 규칙 계산 값
+     */
+    private function collectSeoTitleRule(): ?array
+    {
+        try {
+            return app(SeoTitleRuleExporter::class)->export();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

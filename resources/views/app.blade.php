@@ -69,6 +69,8 @@
                 'appConfig' => (object) ($appConfig ?? []),
                 // 코어 동의 런타임 첫 값 (제공자 없음 none / 있음 unknown — 회원 판별 전이라 ready 를 싣지 않는다)
                 'consentInitial' => $consentInitial ?? null,
+                // 브라우저 탭 제목 규칙 계산 값 — 엔진 DocumentTitle 이 검색엔진 제목과 같은 규칙으로 document.title 을 정한다
+                'seoTitle' => $seoTitle ?? null,
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
                 // 미빌드 상태 대비 file_exists 가드.

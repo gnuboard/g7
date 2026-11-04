@@ -11,6 +11,9 @@
 - 이커머스 1.3.4 의 회원 없이 등록한 후기(다른 쇼핑몰에서 옮겨 온 후기) 표시 「移行」(`admin/product_review.table.imported`)과 이관 후기 입력 오류 문구(`exceptions.imported_review_invalid_field` 「移行レビューの入力値が正しくありません」)의 일본어 번역을 추가했습니다.
 - 이커머스 1.3.4 의 환경설정 「상품 진열」 탭(`admin/settings.tabs.product_display` 「商品陳列」, `admin/settings.product_display.*` 관련 상품 순서·목록 유지 시간 11건)과 그 저장 검증 항목 이름 2건(`validation.attributes.product_display.*`)의 일본어 번역을 추가했습니다.
 
+### Changed
+
+- 이커머스 1.3.4 환경설정 「SEO」 탭의 메타태그 설정 안내(`admin/settings.seo.meta_settings.description`) 일본어 문구에 「Title 은 검색엔진 제목과 방문자 브라우저 탭 제목에 함께 쓰이고 사이트 이름은 코어 「타이틀 접미사」로 붙는다」를 더했습니다.
 
 ## [1.2.2] - 2026-11-01
 

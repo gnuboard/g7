@@ -1716,7 +1716,7 @@
       "meta_settings": "Meta Tag Settings",
       "meta_settings_desc": "Configure meta tags for search engine optimization.",
       "meta_title_suffix": "Title Suffix",
-      "meta_title_suffix_hint": "Text appended to all page titles. (e.g., ' | Gnuboard7')",
+      "meta_title_suffix_hint": "Text appended to every page title (the search engine title and the visitor's browser tab title). {site_name} is replaced with the site name; when empty, ' - site name' is appended. It is not appended again when the title already ends with the site name. (e.g., ' | {site_name}')",
       "meta_description": "Default Meta Description",
       "meta_description_placeholder": "Enter the default meta description for your site.",
       "meta_description_hint": "Description shown in search results. Max 160 characters recommended.",
