@@ -39,5 +39,16 @@
       "title": "Under Maintenance",
       "message": "The system is under maintenance. Please try again later."
     }
+  },
+  "settings": {
+    "favicon": {
+      "label": "Favicon",
+      "hint": "Icon shown on the browser tab of admin screens while this template is active."
+    },
+    "sections": {
+      "branding": {
+        "label": "Branding"
+      }
+    }
   }
 }

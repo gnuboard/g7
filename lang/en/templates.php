@@ -418,4 +418,26 @@ return [
             'layout_name_max' => 'The layout name may not exceed 150 characters.',
         ],
     ],
+
+    // Template settings (#434)
+    'settings' => [
+        'updated' => 'Template settings saved.',
+        'reset' => 'Template settings were restored to defaults.',
+        'attributes' => [
+            'section' => 'settings section',
+        ],
+        'reset_failed' => 'Could not restore template settings to defaults: :error',
+        'warnings' => [
+            'owned_elsewhere' => 'Settings fields :fields of template ":template" share a name with a value the core or another extension already owns — read that value instead of storing it again.',
+        ],
+        'update_failed' => 'Failed to save template settings: :error',
+        'not_found' => 'This template has no settings screen.',
+        'errors' => [
+            'invalid_json' => 'The settings declaration (config/settings/defaults.json) of template ":template" is not valid JSON: :error',
+            'invalid_schema' => 'The settings declaration of template ":template" does not follow the contract: :errors',
+            'not_available' => 'Template ":template" is not installed or has no settings declaration.',
+            'save_failed' => 'Could not write the settings file.',
+            'override_not_allowed' => 'Template settings screens cannot be replaced through admin template overrides — edit them in the layout editor.',
+        ],
+    ],
 ];

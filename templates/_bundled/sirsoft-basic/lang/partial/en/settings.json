@@ -1,0 +1,90 @@
+{
+  "sections": {
+    "branding": {
+      "label": "Branding",
+      "hint": "Site icon, colors and logo. Empty fields use the site settings (or the defaults)."
+    },
+    "header": {
+      "label": "Header"
+    },
+    "footer": {
+      "label": "Footer"
+    },
+    "home": {
+      "label": "Home",
+      "hint": "Areas and counts on the home screen. An area stays hidden while its module is turned off."
+    }
+  },
+  "favicon": {
+    "label": "Favicon",
+    "hint": "Icon shown on the browser tab of user screens while this template is active."
+  },
+  "accent": {
+    "label": "Accent color",
+    "hint": "Color of buttons, links and notice boxes.",
+    "blue": "Blue (default)",
+    "indigo": "Indigo",
+    "violet": "Violet",
+    "green": "Green",
+    "teal": "Teal",
+    "orange": "Orange",
+    "rose": "Rose",
+    "slate": "Slate"
+  },
+  "color_scheme": {
+    "label": "Default color mode",
+    "hint": "Mode shown to first-time visitors. Visitors who already picked a mode (including this browser) keep their choice.",
+    "system": "Follow system",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "logo_dark": {
+    "label": "Dark mode logo",
+    "hint": "Logo used on dark screens. Leave empty to keep the site logo."
+  },
+  "header": {
+    "max_boards": {
+      "label": "Board menu items",
+      "hint": "Boards shown directly in the header. The rest go under More."
+    },
+    "show_theme_toggle": {
+      "label": "Show theme button"
+    },
+    "links": {
+      "label": "Shortcut links",
+      "hint": "Links placed after the board menu (up to 5).",
+      "item_label": "Name",
+      "item_url": "Address",
+      "item_new_tab": "Open in a new window"
+    }
+  },
+  "footer": {
+    "copyright": {
+      "label": "Copyright text",
+      "hint": "Leave empty to use the default (year and site name). Empty languages use the default language text."
+    },
+    "show_powered_by": {
+      "label": "Show Powered by Gnuboard7"
+    },
+    "social": {
+      "youtube": "YouTube",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "x": "X (Twitter)",
+      "github": "GitHub",
+      "discord": "Discord",
+      "blog": "Blog"
+    }
+  },
+  "home": {
+    "show_welcome": "Welcome card",
+    "show_stats": "Stat cards",
+    "show_feature_row": "Recent posts and popular boards",
+    "show_board_summaries": "Board summaries",
+    "show_shop_sections": "Popular and new products",
+    "product_count": {
+      "label": "Products",
+      "hint": "Products shown in each popular/new group."
+    }
+  }
+}

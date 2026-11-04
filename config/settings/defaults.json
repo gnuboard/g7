@@ -16,6 +16,7 @@
             "currency": "KRW",
             "maintenance_mode": false,
             "site_logo": [],
+            "site_favicon": [],
             "asset_url_mode": "extension"
         },
         "security": {
@@ -282,6 +283,8 @@
                 "timezone": { "type": "string", "sensitive": false },
                 "site_logo": { "type": "array", "sensitive": false, "transform": "attachments" },
                 "site_logo_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_logo", "transform": "first_image_url" },
+                "site_favicon": { "type": "array", "sensitive": false, "transform": "attachments" },
+                "site_favicon_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_favicon", "transform": "favicon_url" },
                 "asset_url_mode": { "type": "string", "sensitive": false }
             }
         },

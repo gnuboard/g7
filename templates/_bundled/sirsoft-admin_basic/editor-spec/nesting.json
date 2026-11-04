@@ -172,6 +172,7 @@
         "FilterGroup",
         "SortableMenuList",
         "DynamicFieldList",
+        "TemplateSettingsFields",
         "SectionHeader",
         "ThemeToggle",
         "NotificationCenter",
@@ -270,6 +271,7 @@
         "FilterGroup",
         "SortableMenuList",
         "DynamicFieldList",
+        "TemplateSettingsFields",
         "SectionHeader",
         "ThemeToggle",
         "NotificationCenter",
@@ -533,7 +535,8 @@
         "RichSelect",
         "IconSelect",
         "ChipCheckbox",
-        "DynamicFieldList"
+        "DynamicFieldList",
+        "TemplateSettingsFields"
       ]
     },
     "FormField": {

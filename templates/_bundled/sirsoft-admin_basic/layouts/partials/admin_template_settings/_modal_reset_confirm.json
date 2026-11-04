@@ -1,0 +1,163 @@
+{
+    "comment": "템플릿 설정 기본값 되돌리기 확인 창 (#434). 올린 파일도 지워지므로 되돌리기 전에 확인을 받는다.\n  되돌리면 설정을 다시 받아 폼을 서버 기본값으로 맞추고 이탈 경고 표시를 끈다.",
+    "meta": {
+        "is_partial": true,
+        "editor_label": "$t:admin.modal_label.admin_template_settings.reset_modal",
+        "description": "템플릿 설정 기본값 되돌리기 확인 모달"
+    },
+    "id": "template_settings_reset_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:core.template_settings.reset_title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:core.template_settings.reset_confirm"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isResettingTemplateSettings}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "id": "template_settings_reset_confirm_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isResettingTemplateSettings": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/templates/{{route.identifier}}/settings/reset",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isResettingTemplateSettings": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": false,
+                                                "errors": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:core.template_settings.reset_done"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "template_settings"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isResettingTemplateSettings": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:core.template_settings.reset_failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isResettingTemplateSettings}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isResettingTemplateSettings}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:core.template_settings.reset"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

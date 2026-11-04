@@ -1,0 +1,75 @@
+feature: 템플릿 환경설정 (선언 파일·설정 API·설정 화면 교차 등록·명령줄)
+
+description: |
+  #434. 템플릿은 PHP 클래스가 없어 `config/settings/defaults.json` 한 벌에서 기본값·검증·노출을 파생한다.
+  모듈 설정과 같은 섹션 구조(`_meta.categories`·섹션별 저장 파일·섹션/키 2단 노출·비밀값 암호화)이고,
+  직접 쓴 설정 화면이 없으면 켜진 관리자 템플릿의 공용 설정 화면(`admin_template_settings`)이 그린다.
+  설정 화면(`templates/{id}/settings/template_settings.g7.html`)은 코어가 켜진 관리자 템플릿에 `{id}.template_settings` 로 교차 등록하고,
+  `/admin/templates/{id}/settings` 라우트를 만든다. 보기는 core.templates.read, 저장은 core.templates.settings.
+
+  축: case — 검증하는 표면 하나씩(표면마다 입력 모양이 달라 교차곱 대신 표면 열거).
+
+axes:
+  case: [schema, service, api, registration, routes, cli, upgrade, activity_log, uninstall, browser_global_template_settings, settings_layout, plugin_settings_permission, editor_bound_value]
+
+effects:
+  - schema_declaration_parsed
+  - invalid_schema_rejected
+  - favicon_reserved_key_contract
+  - settings_read_merges_defaults
+  - attachments_scoped_to_template_collection
+  - removed_attachment_purged_after_commit
+  - omitted_attachment_key_untouched
+  - read_only_without_settings_permission
+  - settings_api_not_found_for_undeclared
+  - labels_resolved_for_locale
+  - settings_layout_registered_into_active_admin
+  - cross_rows_survive_admin_refresh
+  - rows_removed_on_uninstall
+  - settings_route_generated
+  - list_exposes_settings_route
+  - cli_get_set
+  - upgrade_registers_settings_layouts
+  - activity_logged
+  - uninstall_delete_data_purges_settings
+  - template_settings_exposed_to_global
+  - settings_layout_saves_template_settings
+  - sensitive_masked_and_hidden
+  - renamed_key_migrated
+  - standard_attributes_rendered
+  - settings_reset_to_defaults
+  - settings_save_failure_reported
+  - save_hooks_fired
+  - settings_version_bumped
+  - settings_mirror_refreshed
+  - template_field_upload_policy_applied
+  - settings_tabs_per_section
+  - plugin_settings_readable_with_view_permission
+  - template_settings_bound_text_shows_owner_notice
+  - field_type_controls_rendered
+  - multilingual_field_language_tabs
+  - admin_logo_prefers_template_setting
+  - accent_palette_defined_per_option
+  - home_sections_toggle_with_module_guard
+
+test_files:
+  - tests/Unit/Extension/Template/TemplateSettingsSchemaTest.php
+  - tests/Feature/Services/TemplateSettingsServiceTest.php
+  - tests/Feature/Api/Admin/TemplateSettingsControllerTest.php
+  - tests/Feature/Template/TemplateSettingsLayoutRegistrationTest.php
+  - tests/Feature/Attachment/TemplateSettingsUploadPolicyTest.php
+  - tests/Feature/View/TemplateHtmlAttributesTest.php
+  - tests/Feature/Console/Settings/SettingsTemplateScopeTest.php
+  - tests/Unit/Plugins/PluginSettingsLayoutPermissionTest.php
+  - resources/js/core/template-engine/layout-editor/__tests__/components/I18nTextField.templateSettings.test.tsx
+  - tests/Feature/Upgrades/Upgrade720RegisterTemplateSettingsLayoutsTest.php
+  - resources/js/core/__tests__/TemplateApp.templateSettings.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/template-settings-layout.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TemplateSettingsFields.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/TemplateSettingsProps.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/template-settings-bindings.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-branding-template-settings.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/accent-palette-css.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/accent-palette-css.test.ts
+  - tests/Playwright/specs/admin/template-settings-favicon.spec.ts
+  - tests/Playwright/specs/admin/template-settings-auto-screen.spec.ts

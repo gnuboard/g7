@@ -93,6 +93,7 @@ interface AttachmentRepositoryInterface
      * 순서 변경
      *
      * @param  array<int, array{id: int, order: int}>  $orderData  순서 데이터
+     * @return void 반환값 없음
      */
     public function reorder(array $orderData): void;
 
@@ -139,6 +140,16 @@ interface AttachmentRepositoryInterface
     public function getByCollection(string $collection): Collection;
 
     /**
+     * 컬렉션명 접두사로 첨부파일 조회 (attachmentable 없는 경우)
+     *
+     * 템플릿 삭제 시 그 템플릿 설정 첨부(`template_settings.{템플릿}.*`)를 한 번에 찾는 데 쓴다.
+     *
+     * @param  string  $prefix  컬렉션명 접두사 (LIKE 와일드카드는 이스케이프된다)
+     * @return Collection<int, Attachment>
+     */
+    public function getByCollectionPrefix(string $prefix): Collection;
+
+    /**
      * 미연결 첨부파일을 특정 엔티티에 연결합니다.
      *
      * @param  string  $collection  컬렉션명
@@ -155,6 +166,7 @@ interface AttachmentRepositoryInterface
      * @param  string  $attachmentableType  첨부 대상 타입
      * @param  int  $attachmentableId  첨부 대상 ID
      * @param  string  $collection  컬렉션명
+     * @return void 반환값 없음
      */
     public function reorderAfterDelete(string $attachmentableType, int $attachmentableId, string $collection): void;
 

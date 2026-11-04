@@ -279,12 +279,13 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "관리자 로고 = 템플릿 설정 branding.logo(관리자 전용 변형), 비우면 환경설정 사이트 로고 (#434)",
                                             "id": "logo_image",
                                             "type": "basic",
                                             "name": "Img",
-                                            "if": "{{_global.settings?.general?.site_logo_url}}",
+                                            "if": "{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
                                             "props": {
-                                                "src": "{{_global.settings?.general?.site_logo_url}}",
+                                                "src": "{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
                                                 "alt": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}",
                                                 "className": "logo_image"
                                             }
@@ -293,7 +294,7 @@
                                             "id": "app_name",
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{!_global.settings?.general?.site_logo_url}}",
+                                            "if": "{{!(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
                                             "props": {
                                                 "className": "text-primary font-bold text-xl truncate"
                                             },
@@ -1131,9 +1132,9 @@
                                                     "id": "mobile_logo_image",
                                                     "type": "basic",
                                                     "name": "Img",
-                                                    "if": "{{_global.settings?.general?.site_logo_url}}",
+                                                    "if": "{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
                                                     "props": {
-                                                        "src": "{{_global.settings?.general?.site_logo_url}}",
+                                                        "src": "{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
                                                         "alt": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}",
                                                         "className": "mobile_logo_image"
                                                     }
@@ -1141,7 +1142,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
-                                                    "if": "{{!_global.settings?.general?.site_logo_url}}",
+                                                    "if": "{{!(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}",
                                                     "props": {
                                                         "className": "text-primary font-bold text-lg leading-none truncate"
                                                     },

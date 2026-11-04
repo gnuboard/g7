@@ -568,6 +568,8 @@ class SeoRenderer implements SeoRendererInterface
             'extraHeadTags' => '',
             'extraBodyEnd' => '',
             'generatorTag' => g7_meta_generator_tag(),
+            // 파비콘 (#434) — 렌더 중인 사용자 템플릿의 설정 기준(SPA 셸과 같은 우선순위). 필터 훅 앞에 두어 확장이 바꿀 수 있다.
+            'faviconTags' => g7_favicon_tags('user', $templateIdentifier),
         ];
 
         // 8.1. 훅: 확장이 View 변수를 추가/수정할 수 있는 필터
@@ -894,6 +896,14 @@ class SeoRenderer implements SeoRendererInterface
         } catch (\Throwable $e) {
             Log::warning('[SEO] Failed to load plugin settings', ['error' => $e->getMessage()]);
             $global['plugins'] = [];
+        }
+
+        // templateSettings: 활성 사용자 템플릿 공개 설정 (#434) — SPA 셸의 `_global.templateSettings` 와 같은 값
+        try {
+            $global['templateSettings'] = app(\App\Services\TemplateSettingsService::class)->getActiveFrontendSettings('user');
+        } catch (\Throwable $e) {
+            Log::warning('[SEO] Failed to load template settings', ['error' => $e->getMessage()]);
+            $global['templateSettings'] = [];
         }
 
         // activeModules / activePlugins: 활성 확장 식별자 목록 — 사용자 화면의 G7Config.activeModules·activePlugins

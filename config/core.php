@@ -424,6 +424,8 @@ return [
                     ['identifier' => 'core.templates.activate', 'type' => 'admin', 'name' => ['ko' => '템플릿 활성화', 'en' => 'Activate Templates'], 'description' => ['ko' => '템플릿을 활성화/비활성화할 수 있습니다.', 'en' => 'Can activate/deactivate templates.'], 'order' => 3],
                     ['identifier' => 'core.templates.uninstall', 'type' => 'admin', 'name' => ['ko' => '템플릿 삭제', 'en' => 'Uninstall Templates'], 'description' => ['ko' => '템플릿을 삭제할 수 있습니다.', 'en' => 'Can uninstall templates.'], 'order' => 4],
                     ['identifier' => 'core.templates.layouts.edit', 'type' => 'admin', 'name' => ['ko' => '레이아웃 편집', 'en' => 'Edit Layouts'], 'description' => ['ko' => '템플릿 레이아웃을 편집할 수 있습니다.', 'en' => 'Can edit template layouts.'], 'order' => 5],
+                    // 템플릿 환경설정 저장 (#434) — 보기는 core.templates.read, 저장만 이 권한
+                    ['identifier' => 'core.templates.settings', 'type' => 'admin', 'name' => ['ko' => '템플릿 설정', 'en' => 'Configure Templates'], 'description' => ['ko' => '템플릿 환경설정을 저장합니다.', 'en' => 'Save template settings.'], 'order' => 6],
                 ],
             ],
             [

@@ -20,6 +20,7 @@ use App\Support\ConfigCacheHelper;
 use App\Support\EnvPriority;
 use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\Favicon\FaviconPolicy;
 use App\Support\OpcacheStatus;
 use App\Support\PhpExtensionProbe;
 use App\Support\PhpExtensionRequirements;
@@ -186,6 +187,9 @@ class SettingsService
 
         // 첨부파일 정보 추가 (general 카테고리에)
         $settings['general']['site_logo'] = $this->getSiteLogoAttachment();
+
+        // 사이트 파비콘 첨부 정보 (#434 — site_logo 와 동형, 저장값이 없던 옛 설치는 빈 배열)
+        $settings['general']['site_favicon'] = $this->getAttachmentListSetting('general.site_favicon');
 
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
@@ -530,6 +534,7 @@ class SettingsService
         return match ($transform) {
             'format_extensions' => $this->formatExtensions($sourceValue),
             'first_image_url' => $this->getFirstImageUrl($sourceValue),
+            'favicon_url' => $this->getFaviconUrl($sourceValue),
             default => $sourceValue,
         };
     }
@@ -677,6 +682,29 @@ class SettingsService
     }
 
     /**
+     * 파비콘 첨부 ID 배열에서 첫 유효 첨부의 파비콘 경로를 반환합니다 (#434).
+     *
+     * 이미지 판정(`is_image`)은 ico·svg 를 이미지로 보지 않으므로 파비콘은 파비콘 컬렉션·MIME 목록으로 따로 고른다.
+     * 경로도 일반 다운로드가 아니라 파비콘 전용 경로(`/api/favicon/{hash}`)다.
+     *
+     * @param  mixed  $attachmentIds  첨부파일 ID 배열
+     * @return string|null 파비콘 경로 또는 null
+     */
+    private function getFaviconUrl(mixed $attachmentIds): ?string
+    {
+        if (empty($attachmentIds) || ! is_array($attachmentIds)) {
+            return null;
+        }
+
+        $attachment = $this->attachmentRepository->findByIds($this->extractAttachmentIds($attachmentIds))->first(
+            fn ($attachment) => $attachment->collection === FaviconPolicy::CORE_COLLECTION
+                && FaviconPolicy::responseMime($attachment->mime_type) !== null
+        );
+
+        return $attachment === null ? null : FaviconPolicy::url((string) $attachment->hash);
+    }
+
+    /**
      * 환경설정 값을 저장합니다.
      *
      * @param  array  $settings  카테고리별 설정 데이터
@@ -733,6 +761,15 @@ class SettingsService
                 $tabSettings['site_logo'] = $this->resolveSiteLogoIds($tabSettings['site_logo']);
             }
 
+            // 사이트 파비콘(#434)도 site_logo 와 동형 — 제출하지 않은 저장은 기존값 유지, 뺀 첨부는 저장 성공 후 파기
+            $removedFaviconIds = [];
+
+            if ($tab === 'general' && is_array($tabSettings['site_favicon'] ?? null)) {
+                $removedFaviconIds = $this->resolveRemovedAttachmentIds('general', 'site_favicon', $tabSettings['site_favicon']);
+
+                $tabSettings['site_favicon'] = $this->resolveSubmittedAttachmentIds(FaviconPolicy::CORE_COLLECTION, $tabSettings['site_favicon']);
+            }
+
             // 사이트 기본 OG 이미지도 site_logo 와 동형으로 처리 (공개 이슈 #22)
             $removedOgImageIds = [];
 
@@ -773,6 +810,7 @@ class SettingsService
 
                 // 저장이 확정된 뒤에야 파일을 파기한다 (위 판정 시점 주석 참조).
                 $this->purgeSiteLogoAttachments($removedSiteLogoIds);
+                $this->purgeRemovedAttachments($removedFaviconIds, '사이트 파비콘');
                 $this->purgeRemovedAttachments($removedOgImageIds, '기본 OG 이미지');
 
                 // SEO 프리렌더 캐시에는 생성 시점의 자산 URL 이 그대로 구워져 있다.

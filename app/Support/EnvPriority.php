@@ -135,6 +135,7 @@ final class EnvPriority
         'general.currency' => 'env 대응 없음 (설정 전용 값)',
         'general.maintenance_mode' => 'env 대응 없음 — APP_MAINTENANCE_DRIVER 는 저장소 종류이고 점검 모드 on/off 가 아니다',
         'general.site_logo' => 'env 대응 없음 (첨부 id 배열)',
+        'general.site_favicon' => 'env 대응 없음 (첨부 id 배열)',
         'general.asset_url_mode' => 'env 대응 없음 (설정 전용 값)',
         'general.user_screen_url' => 'env 대응 없음 — 사용자 화면을 다른 주소에서 띄울 때의 설정 전용 값(비우면 general.site_url)',
         'mail.encryption' => 'config/mail.php 에 대응 키 없음 — Provider 가 쓰는 mail.mailers.smtp.encryption 은 env 유래가 아니다 (Laravel 12 의 env 대응 키는 MAIL_SCHEME → smtp.scheme 로 별개 축)',

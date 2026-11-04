@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotifi
 use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
+use App\Http\Controllers\Api\Admin\TemplateSettingsController as AdminTemplateSettingsController;
 use App\Http\Controllers\Api\Admin\PrivacyManualRunController as AdminPrivacyManualRunController;
 use App\Http\Controllers\Api\Admin\PrivacyTargetController as AdminPrivacyTargetController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
@@ -72,6 +73,7 @@ use App\Http\Controllers\Api\Public\CspReportController;
 use App\Http\Controllers\Api\Public\FrontendConfigController as PublicFrontendConfigController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
+use App\Http\Controllers\Api\Public\FaviconController as PublicFaviconController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
 use App\Http\Controllers\Api\Public\PublicExtensionIconController;
 use App\Http\Controllers\Api\Public\PublicLayoutController;
@@ -520,6 +522,11 @@ Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:
 Route::get('attachment/{hash}', [PublicAttachmentController::class, 'download'])
     ->where('hash', '[a-zA-Z0-9]{12}')
     ->name('api.attachment.download');
+
+// 업로드한 파비콘 (공개, #434) — 파비콘 컬렉션 첨부만 이미지로 내보낸다(그 밖은 404). 다운로드 경로와 같은 해시 형식.
+Route::get('favicon/{hash}', [PublicFaviconController::class, 'show'])
+    ->where('hash', '[a-zA-Z0-9]{12}')
+    ->name('api.favicon.show');
 
 // 통합 검색 API (공개 — Bearer 토큰이 있으면 회원으로 해석해 게시판별 열람 권한을
 // 검색 결과·available_boards 에 반영한다. 미들웨어가 없으면 $request->user() 가
@@ -1124,6 +1131,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('check-updates', [AdminTemplateController::class, 'checkUpdates'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.check-updates');
         Route::get('{identifier}/changelog', [AdminTemplateController::class, 'changelog'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.changelog');
         Route::get('{identifier}/license', [AdminTemplateController::class, 'license'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.license');
+
+        // 템플릿 환경설정 (#434) — 보기는 템플릿 조회 권한, 저장은 별도 권한(core.templates.settings)
+        Route::get('{identifier}/settings', [AdminTemplateSettingsController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.settings.show');
+        Route::put('{identifier}/settings', [AdminTemplateSettingsController::class, 'update'])->middleware('permission:admin,core.templates.settings')->name('api.admin.templates.settings.update');
+        Route::post('{identifier}/settings/reset', [AdminTemplateSettingsController::class, 'reset'])->middleware('permission:admin,core.templates.settings')->name('api.admin.templates.settings.reset');
+        Route::get('{identifier}/settings/layout', [AdminTemplateSettingsController::class, 'layout'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.settings.layout');
         Route::get('{templateName}/check-modified-layouts', [AdminTemplateController::class, 'checkModifiedLayouts'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.check-modified-layouts');
         Route::post('{templateName}/update', [AdminTemplateController::class, 'performUpdate'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.update');
         Route::get('{templateName}/uninstall-info', [AdminTemplateController::class, 'uninstallInfo'])->middleware('permission:admin,core.templates.uninstall')->name('api.admin.templates.uninstall-info');

@@ -169,15 +169,19 @@
         <on type="click">
           <navigate/>
         </on>
-        <div data-if="{{_global.settings?.general?.site_logo_url}}" class="min-w-0">
+        <!-- 다크 모드 로고(템플릿 설정 branding.logo_dark)가 있으면 어두운 화면에서는 그것만 보인다 -->
+        <div data-if="{{_global.settings?.general?.site_logo_url}}" class="min-w-0 {{_global.templateSettings?.branding?.logo_dark_url ? 'dark:hidden' : ''}}">
           <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" class="h-8 w-auto max-w-full object-contain object-left"/>
         </div>
-        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate">{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}</span>
+        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate {{_global.templateSettings?.branding?.logo_dark_url ? 'dark:hidden' : ''}}">{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}</span>
+        <div data-ref="mobile_header_logo_dark" data-if="{{!!_global.templateSettings?.branding?.logo_dark_url}}" class="hidden dark:block min-w-0">
+          <img src="{{_global.templateSettings?.branding?.logo_dark_url}}" alt="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" class="h-8 w-auto max-w-full object-contain object-left"/>
+        </div>
       </a>
       <!-- 모바일 헤더 우측 - 액션 버튼들 -->
       <div data-ref="mobile_header_right" class="flex items-center gap-1 shrink-0">
         <!-- 다크모드 전환 -->
-        <theme-toggle data-type="composite" data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
+        <theme-toggle data-type="composite" data-ref="mobile_theme_btn" data-if="{{_global.templateSettings?.header?.show_theme_toggle ?? true}}" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
         <!-- 알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니) -->
         <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
           <on event="onClose">
@@ -481,6 +485,26 @@
           <span>$t:user.nav.popular</span>
         </a>
       </div>
+      <!-- 메뉴 섹션 - 바로가기 (템플릿 설정 header.links). 링크가 없으면 제목까지 숨긴다.
+           사이트 안 경로는 서랍을 닫고 SPA 이동, 바깥 주소·새 창은 일반 링크(새 창이면 opener 를 끊는다) -->
+      <div data-ref="mobile_drawer_links_section" data-if="{{(_global.templateSettings?.header?.links ?? []).length > 0}}" class="px-4 pb-4">
+        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.shortcuts</div>
+        <div data-each="link in {{_global.templateSettings?.header?.links ?? []}}">
+          <a data-if="{{String(link.url ?? '').startsWith('/') &amp;&amp; !String(link.url ?? '').startsWith('//') &amp;&amp; !link.new_tab}}" href="{{link.url}}" class="w-full flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+            <on type="click">
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate/>
+              </sequence>
+            </on>
+            <span class="min-w-0 truncate">{{$localized(link.label)}}</span>
+          </a>
+          <a data-if="{{!(String(link.url ?? '').startsWith('/') &amp;&amp; !String(link.url ?? '').startsWith('//')) || !!link.new_tab}}" href="{{link.url}}" target="{{link.new_tab ? '_blank' : '_self'}}" rel="{{link.new_tab ? 'noopener noreferrer' : ''}}" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+            <span class="min-w-0 truncate">{{$localized(link.label)}}</span>
+            <icon data-if="{{!!link.new_tab}}" name="arrow-up-right-from-square" class="text-xs shrink-0"/>
+          </a>
+        </div>
+      </div>
       <!-- 메뉴 섹션 - 게시판 (제목 + 목록). 게시판 모듈이 꺼져 있으면 제목까지 통째로 숨긴다. -->
       <div data-ref="mobile_drawer_boards_section" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="px-4 pb-4">
         <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.boards</div>
@@ -602,7 +626,7 @@
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===
          shopProductsHref 는 봇 화면(seo-config header_nav)의 「쇼핑」 링크 전용이다 — 값과 글자가 섞인 attrs 패턴({shopBase}/products)을
          옛 코어(7.1.3 이하)의 봇 렌더가 치환하지 못해 완성된 주소 하나를 prop 으로 넘긴다. 컴포넌트는 이 prop 을 읽지 않는다. -->
-    <header data-type="composite" data-ref="desktop_header" registrationEnabled="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+    <header data-type="composite" data-ref="desktop_header" registrationEnabled="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}" logo="{{_global.settings?.general?.site_logo_url}}" logoDark="{{_global.templateSettings?.branding?.logo_dark_url ?? ''}}" showThemeToggle="{{_global.templateSettings?.header?.show_theme_toggle ?? true}}" extraLinks="{{_global.templateSettings?.header?.links ?? []}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" boards="{{boards.data ?? []}}" maxVisibleBoards="{{_global.templateSettings?.header?.max_boards ?? 5}}" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->
@@ -701,11 +725,15 @@
       </container>
     </div>
     <!-- === 푸터 (Footer 컴포넌트) === -->
-    <footer data-type="composite" data-ref="footer" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" pageEnabled="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}">
+    <footer data-type="composite" data-ref="footer" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" pageEnabled="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="{{$localized(_global.templateSettings?.footer?.copyright ?? {}) ?? ''}}" defaultCopyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" showPoweredBy="{{_global.templateSettings?.footer?.show_powered_by ?? true}}">
       <prop name="socialLinks">
-        <field name="github" value="{{_global.settings?.social?.github}}"/>
-        <field name="twitter" value="{{_global.settings?.social?.twitter}}"/>
-        <field name="discord" value="{{_global.settings?.social?.discord}}"/>
+        <field name="youtube" value="{{_global.templateSettings?.footer?.social_youtube ?? ''}}"/>
+        <field name="instagram" value="{{_global.templateSettings?.footer?.social_instagram ?? ''}}"/>
+        <field name="facebook" value="{{_global.templateSettings?.footer?.social_facebook ?? ''}}"/>
+        <field name="x" value="{{_global.templateSettings?.footer?.social_x ?? ''}}"/>
+        <field name="github" value="{{_global.templateSettings?.footer?.social_github ?? ''}}"/>
+        <field name="discord" value="{{_global.templateSettings?.footer?.social_discord ?? ''}}"/>
+        <field name="blog" value="{{_global.templateSettings?.footer?.social_blog ?? ''}}"/>
       </prop>
     </footer>
     <!-- === Extension Point: 모든 사용자 페이지 푸터 직후에 플러그인이 정보 영역을 노출할 수 있도록 공용 확장 지점 제공 === -->

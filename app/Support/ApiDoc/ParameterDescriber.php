@@ -281,6 +281,8 @@ class ParameterDescriber
         'site_url' => '사이트 기본 URL',
         'site_description' => '사이트 설명',
         'site_logo' => '사이트 로고 이미지',
+        'site_favicon' => '사이트 파비콘 첨부 ID 배열 (최대 1개 — ico·png·svg·gif·jpg·jpeg·webp)',
+        'og_image_default' => '사이트 기본 공유(OG) 이미지 첨부 ID 배열',
         'admin_email' => '관리자 이메일 주소',
         'currency' => '통화 코드 (ISO 4217 — 예: KRW)',
     ];

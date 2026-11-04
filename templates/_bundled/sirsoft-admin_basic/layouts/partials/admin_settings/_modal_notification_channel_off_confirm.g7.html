@@ -34,7 +34,7 @@
             <api-call :auth_required="true" target="/api/admin/settings" method="POST">
               <success>
                 <set-state target="$parent._local" :isSaving="false" :hasChanges="false"/>
-                <set-state target="global" settings="{{result.data.settings}}" uploadSettings="{{result.data.settings.upload}}" :notification_channel_off_modal="null"/>
+                <set-state target="global" settings="{{result.data.frontend_settings ?? result.data.settings}}" uploadSettings="{{(result.data.frontend_settings ?? result.data.settings).upload}}" :notification_channel_off_modal="null"/>
                 <toast type="success" message="$t:admin.settings.save_success"/>
                 <refetch-data-source dataSourceId="settings"/>
                 <close-modal target="modal_notification_channel_off_confirm"/>

@@ -49,12 +49,31 @@ const navigate = (path: string) => {
 };
 
 interface SocialLinks {
-  github?: string;
-  twitter?: string;
-  discord?: string;
-  facebook?: string;
+  youtube?: string;
   instagram?: string;
+  facebook?: string;
+  x?: string;
+  github?: string;
+  discord?: string;
+  blog?: string;
+  /** 옛 이름 — `x` 와 같은 아이콘 */
+  twitter?: string;
 }
+
+/**
+ * 소셜 링크 아이콘 — 상표 아이콘은 Font Awesome brands(`fab`) 묶음이라 스타일을 함께 준다.
+ * 블로그는 상표가 없어 일반(solid) 아이콘이다.
+ */
+const SOCIAL_ICONS: Record<keyof SocialLinks, { name: string; style: 'brands' | 'solid'; label: string }> = {
+  youtube: { name: 'youtube', style: 'brands', label: 'YouTube' },
+  instagram: { name: 'instagram', style: 'brands', label: 'Instagram' },
+  facebook: { name: 'facebook', style: 'brands', label: 'Facebook' },
+  x: { name: 'x-twitter', style: 'brands', label: 'X' },
+  twitter: { name: 'x-twitter', style: 'brands', label: 'X' },
+  github: { name: 'github', style: 'brands', label: 'GitHub' },
+  discord: { name: 'discord', style: 'brands', label: 'Discord' },
+  blog: { name: 'blog', style: 'solid', label: 'Blog' },
+};
 
 interface FooterLink {
   label: string;
@@ -71,10 +90,14 @@ interface FooterProps {
   siteName?: string;
   /** 사이트 설명 */
   siteDescription?: string;
-  /** 저작권 텍스트 */
+  /** 저작권 텍스트 — 운영자가 템플릿 설정(`footer.copyright`, 언어별)에 넣은 문구. 비면 기본 문구 */
   copyrightText?: string;
-  /** 소셜 미디어 링크 */
+  /** 기본 저작권 문구 — 번역 문구(`footer.copyright`). 운영자 문구가 없을 때 쓴다 */
+  defaultCopyrightText?: string;
+  /** 소셜 미디어 링크 — 템플릿 설정 `footer.social_*` (빈 값은 그리지 않는다) */
   socialLinks?: SocialLinks;
+  /** 「Powered by 그누보드7」 을 보일지 — 기본 true (템플릿 설정 `footer.show_powered_by`, #434) */
+  showPoweredBy?: boolean;
   /** 링크 그룹 (미지정 시 기본값 사용 — 직접 넘기면 아래 모듈 플래그와 무관하게 그대로 그린다) */
   linkGroups?: FooterLinkGroup[];
   /**
@@ -117,7 +140,9 @@ const Footer: React.FC<FooterProps> = ({
   siteName = '그누보드7',
   siteDescription,
   copyrightText,
+  defaultCopyrightText,
   socialLinks = {},
+  showPoweredBy = true,
   linkGroups,
   boardEnabled = true,
   pageEnabled = true,
@@ -174,15 +199,6 @@ const Footer: React.FC<FooterProps> = ({
 
   const groups = linkGroups || defaultLinkGroups;
 
-  // 소셜 아이콘 이름 매핑
-  const socialIconMap: Record<keyof SocialLinks, string> = {
-    github: 'github',
-    twitter: 'twitter',
-    discord: 'discord',
-    facebook: 'facebook',
-    instagram: 'instagram',
-  };
-
   return (
     <FooterBasic
       {...((editorAttrs ?? {}) as Record<string, never>)}
@@ -201,22 +217,24 @@ const Footer: React.FC<FooterProps> = ({
               <P className="mt-2 text-sm text-gray-600 dark:text-gray-400 break-words">{siteDescription}</P>
             )}
 
-            {/* 소셜 링크 */}
-            <Div className="mt-4 flex items-center gap-4">
-              {Object.entries(socialLinks).map(([type, url]) =>
-                url ? (
+            {/* 소셜 링크 — 아는 종류만, 값이 있는 것만 */}
+            <Div className="mt-4 flex flex-wrap items-center gap-4" data-testid="footer-social-links">
+              {Object.entries(socialLinks).map(([type, url]) => {
+                const icon = SOCIAL_ICONS[type as keyof SocialLinks];
+
+                return url && icon ? (
                   <A
                     key={type}
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    aria-label={type}
+                    aria-label={icon.label}
                   >
-                    <Icon name={socialIconMap[type as keyof SocialLinks]} className="w-5 h-5" />
+                    <Icon name={icon.name} iconStyle={icon.style} className="w-5 h-5" />
                   </A>
-                ) : null
-              )}
+                ) : null;
+              })}
             </Div>
           </Div>
 
@@ -250,11 +268,13 @@ const Footer: React.FC<FooterProps> = ({
         >
           {/* 저작권 줄은 「Powered by」 와 같은 flex 줄이라 줄어들 수 있게 하고 아무 데서나 줄을 바꾼다(#143). */}
           <P className="text-sm text-gray-500 dark:text-gray-400 min-w-0 wrap-anywhere">
-            {copyrightText || `© ${currentYear} ${siteName}. All rights reserved.`}
+            {copyrightText || defaultCopyrightText || `© ${currentYear} ${siteName}. All rights reserved.`}
           </P>
-          <P className="text-sm text-gray-500 dark:text-gray-400">
-            {t('footer.powered_by')}
-          </P>
+          {showPoweredBy && (
+            <P className="text-sm text-gray-500 dark:text-gray-400" data-testid="footer-powered-by">
+              {t('footer.powered_by')}
+            </P>
+          )}
         </Div>
       </Div>
     </FooterBasic>

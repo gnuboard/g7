@@ -70,9 +70,44 @@ interface User {
   is_admin?: boolean;
 }
 
+/** 운영자가 템플릿 설정에서 더한 헤더 링크 (#434) */
+export interface HeaderExtraLink {
+  /** 이름 — 언어별 맵(`{ko, en}`) 또는 문자열 */
+  label?: string | Record<string, string>;
+  /** 사이트 안 경로(`/…`) 또는 http(s) 주소 — 서버가 검증한 값 */
+  url?: string;
+  /** 새 창으로 열기 */
+  new_tab?: boolean;
+}
+
+/**
+ * 언어별 이름에서 현재 언어 값을 고릅니다 — 비었으면 다른 언어의 첫 값(기본 언어 대체는 서버·엔진과 같은 규칙).
+ *
+ * @param label 이름
+ * @param locale 현재 언어
+ * @returns 표시할 이름
+ */
+export const pickLocalizedLabel = (label: HeaderExtraLink['label'], locale: string): string => {
+  if (typeof label === 'string') {
+    return label;
+  }
+
+  if (!label || typeof label !== 'object') {
+    return '';
+  }
+
+  return label[locale] || Object.values(label).find((value) => typeof value === 'string' && value !== '') || '';
+};
+
 interface HeaderProps {
   /** 사이트 로고 URL */
   logo?: string;
+  /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`, #434) */
+  logoDark?: string;
+  /** 테마(라이트/다크) 단추를 보일지 — 기본 true (템플릿 설정 `header.show_theme_toggle`) */
+  showThemeToggle?: boolean;
+  /** 게시판 탭 뒤에 붙는 운영자 링크 — 템플릿 설정 `header.links` (최대 5) */
+  extraLinks?: HeaderExtraLink[];
   /** 사이트 이름 */
   siteName?: string;
   /** 현재 로그인된 사용자 */
@@ -181,6 +216,9 @@ interface HeaderProps {
  */
 const Header: React.FC<HeaderProps> = ({
   logo,
+  logoDark,
+  showThemeToggle = true,
+  extraLinks = [],
   siteName = '그누보드7',
   user,
   cartCount = 0,
@@ -420,11 +458,13 @@ const Header: React.FC<HeaderProps> = ({
               검색창은 32rem 을 기준 폭으로 잡고(basis-lg) 줄어드는 몫은 로고·회원 이름이 먼저 진다 — 이름 길이와 무관하게 검색창 폭이
               같다(#143). 종전에는 검색창이 남는 폭만 받아(flex-1) 이름이 길수록 좁아졌다(1024px 329→192·1280px 512→345 실측). */}
           <LinkButton href="/" onNavigate={() => navigate('/')} className="justify-start flex items-center gap-2 min-w-24 max-w-xs shrink-1000 cursor-pointer">
+            {/* 다크 로고가 있으면 어두운 화면에서는 그것만 보인다 — 밝은 화면은 사이트 로고(없으면 이름) */}
             {logo ? (
-              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
+              <Img src={logo} alt={siteName} className={`h-8 max-w-full object-contain object-left ${logoDark ? 'dark:hidden' : ''}`} />
             ) : (
-              <Span className="text-xl font-bold text-gray-900 dark:text-white truncate">{siteName}</Span>
+              <Span className={`text-xl font-bold text-gray-900 dark:text-white truncate ${logoDark ? 'dark:hidden' : ''}`}>{siteName}</Span>
             )}
+            {logoDark && <Img src={logoDark} alt={siteName} className="hidden dark:block h-8 max-w-full object-contain object-left" data-testid="header-logo-dark" />}
           </LinkButton>
 
           {/* 검색바 (데스크톱 전용) — 검색 공급자가 하나도 없으면(searchEnabled=false) 숨긴다 */}
@@ -449,12 +489,14 @@ const Header: React.FC<HeaderProps> = ({
           {/* 우측 액션 버튼들 — 회원 이름만 줄어들 수 있고(최소 3rem) 나머지 단추는 제 폭을 지킨다. 줄어드는 몫은 로고와 이 묶음이
               먼저 지고(shrink-1000) 검색창은 그 뒤에 준다. 묶음의 최소 폭은 안쪽 글의 최소 폭이라, 글이 든 단추는 줄바꿈하지 않는다(whitespace-nowrap). */}
           <Div className="flex items-center gap-2 shrink-1000">
-            {/* 다크모드 전환 */}
-            <ThemeToggle
-              autoText={t('common.theme.auto')}
-              lightText={t('common.theme.light')}
-              darkText={t('common.theme.dark')}
-            />
+            {/* 다크모드 전환 — 템플릿 설정에서 끌 수 있다 */}
+            {showThemeToggle && (
+              <ThemeToggle
+                autoText={t('common.theme.auto')}
+                lightText={t('common.theme.light')}
+                darkText={t('common.theme.dark')}
+              />
+            )}
 
             {/* 알림센터 드롭다운 — 로그인 사용자에게만 노출 */}
             {user?.uuid && (
@@ -719,6 +761,24 @@ const Header: React.FC<HeaderProps> = ({
                 <Span className="min-w-0 truncate">{board.name}</Span>
               </LinkButton>
             ))}
+
+            {/* 운영자 링크 (템플릿 설정) — 사이트 안 경로는 SPA 이동, 바깥 주소·새 창은 일반 링크 */}
+            {extraLinks.filter((link) => link?.url).map((link, index) => {
+              const label = pickLocalizedLabel(link.label, currentLocale);
+              const url = String(link.url);
+              const internal = url.startsWith('/') && !url.startsWith('//');
+
+              return internal && !link.new_tab ? (
+                <LinkButton key={`extra-${index}`} href={url} onNavigate={() => navigate(url)} className={`flex items-center max-w-xs ${getNavButtonClass(isActiveRoute(url))}`} data-testid="nav-extra-link" aria-current={isActiveRoute(url) ? 'page' : undefined}>
+                  <Span className="min-w-0 truncate">{label}</Span>
+                </LinkButton>
+              ) : (
+                <A key={`extra-${index}`} href={url} target={link.new_tab ? '_blank' : undefined} rel={link.new_tab ? 'noopener noreferrer' : undefined} className={`flex items-center gap-1 max-w-xs ${getNavButtonClass(false)}`} data-testid="nav-extra-link">
+                  <Span className="min-w-0 truncate">{label}</Span>
+                  {link.new_tab && <Icon name="arrow-up-right-from-square" className="w-3 h-3" />}
+                </A>
+              );
+            })}
 
             {/* 더보기 드롭다운 */}
             {hiddenBoards.length > 0 && (

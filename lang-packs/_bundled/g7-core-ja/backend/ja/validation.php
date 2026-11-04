@@ -537,6 +537,7 @@ return [
         'invalid' => '通知チャネル識別子が正しくありません。',
         'unavailable' => '利用できない通知チャネルです: \':value\'',
     ],
+    'safe_link' => ':attribute はサイト内のパス(/ で始まる)または http・https のアドレスである必要があります。',
     'translatable' => [
         'must_be_array' => '多言語フィールドは配列である必要があります。',
         'unsupported_language' => 'サポートされていない言語コード: \':lang\'',
@@ -1266,6 +1267,7 @@ return [
         'maintenance_mode' => 'メンテナンスモード',
         'asset_url_mode' => 'アセットURL方式',
         'site_logo' => 'サイトロゴ',
+        'site_favicon' => 'サイトファビコン',
         'og_image_default' => '既定の共有画像',
         'bot_user_agents' => 'ボット User-Agent 一覧',
         'bot_detection_enabled' => 'ボット検出の使用',

@@ -26,6 +26,7 @@ class SettingsGetCommand extends Command
         {key? : 설정 키 또는 범주 (생략하면 전체)}
         {--plugin= : 플러그인 설정 (플러그인 식별자)}
         {--module= : 모듈 설정 (모듈 식별자)}
+        {--template= : 템플릿 설정 (템플릿 식별자)}
         {--json : JSON 으로 출력}
         {--show-secrets : 민감 값을 가리지 않음}';
 
@@ -45,6 +46,7 @@ class SettingsGetCommand extends Command
                 $this->option('plugin') ?: null,
                 $this->option('module') ?: null,
                 $showSecrets,
+                $this->option('template') ?: null,
             );
         } catch (SettingsConsoleException $e) {
             $this->error('❌ '.$e->getMessage());

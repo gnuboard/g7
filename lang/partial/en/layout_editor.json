@@ -382,7 +382,9 @@
     "bound_value": {
       "notice": "Bound to data (filled automatically)",
       "replace": "Replace with a fixed value",
-      "restore": "Restore the data binding"
+      "restore": "Restore the data binding",
+      "template_settings_notice": "Linked to the template settings — change it under Admin > Templates > Settings of this template.",
+      "open_template_settings": "Open settings"
     }
   },
   "recipe": {

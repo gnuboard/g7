@@ -17,6 +17,9 @@ type Node = Record<string, any>;
 
 const LAYOUT_ROOT = path.resolve(__dirname, '../../layouts');
 const SHOP = "_global.activeModules?.includes('sirsoft-ecommerce') ?? true";
+// 템플릿 설정(#434) — 홈 상품 개수(`home.product_count`, 기본 8)와 상품 섹션 표시(`home.show_shop_sections`, 기본 켜짐)
+const PRODUCT_COUNT = '{{_global.templateSettings?.home?.product_count ?? 8}}';
+const SHOW_SHOP = '_global.templateSettings?.home?.show_shop_sections ?? true';
 
 const load = (rel: string): Node => JSON.parse(fs.readFileSync(path.join(LAYOUT_ROOT, `${rel}.json`), 'utf8'));
 
@@ -43,9 +46,11 @@ describe('홈 상품 섹션 (#822 D16)', () => {
     it.each(['popularProducts', 'newProducts'])('%s 는 쇼핑 목록 화면과 같은 endpoint 이고 쇼핑몰 가드·401/403/404 삼킴을 단다', (id) => {
         const ds = home.data_sources.find((d: Node) => d.id === id);
         const original = shopIndex.data_sources.find((d: Node) => d.id === id);
-        expect(ds.endpoint).toBe(original.endpoint);
-        expect(ds.endpoint).toMatch(/^\/api\/modules\/sirsoft-ecommerce\/products\/(popular|new)\?limit=8$/);
-        expect(ds.if).toBe(`{{${SHOP}}}`);
+        // 쇼핑 목록 화면과 같은 endpoint — 개수만 템플릿 설정을 따른다(기본 8 은 목록 화면 값과 같다)
+        expect(ds.endpoint).toBe(original.endpoint.replace('limit=8', `limit=${PRODUCT_COUNT}`));
+        expect(original.endpoint).toMatch(/^\/api\/modules\/sirsoft-ecommerce\/products\/(popular|new)\?limit=8$/);
+        // 섹션을 끄면 받지도 않는다(템플릿 설정 `home.show_shop_sections`)
+        expect(ds.if).toBe(`{{(${SHOP}) && (${SHOW_SHOP})}}`);
         expect(ds.fallback).toEqual({ data: [] });
         ['401', '403', '404'].forEach((code) => expect(ds.errorHandling?.[code]?.handler, code).toBe('suppress'));
     });
@@ -54,7 +59,7 @@ describe('홈 상품 섹션 (#822 D16)', () => {
     // @effects home_shop_sections
     it('상품 섹션은 쇼핑 목록 화면의 두 줄 조각을 그대로 include 하고 쇼핑몰 가드를 단다', () => {
         const section = nodes(home.slots.content).find((n) => n.id === 'home_shop_sections')!;
-        expect(section.if).toBe(`{{${SHOP}}}`);
+        expect(section.if).toBe(`{{(${SHOP}) && (${SHOW_SHOP})}}`);
         expect(nodes(section.children).map((n) => n.partial)).toEqual([
             'partials/shop/list/_popular_products.json',
             'partials/shop/list/_new_products.json',

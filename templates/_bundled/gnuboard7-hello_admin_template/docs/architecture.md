@@ -75,3 +75,18 @@ __tests__/layouts/     createLayoutTest() 기반 렌더링 테스트
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
+
+## 설정 예제 (템플릿 환경설정, 코어 7.2.0)
+
+이 템플릿은 템플릿 환경설정의 최소 예제(브랜딩 섹션의 파비콘 1칸)를 담고 있습니다.
+
+| 파일 | 역할 |
+| --- | --- |
+| `config/settings/defaults.json` | 섹션(`_meta.categories: ["branding"]`)·기본값(`branding.favicon: []`)·칸 선언(표준 키 `branding.favicon` — attachments, 1개, 파비콘 7형식)·화면 노출(`branding.favicon_url`) |
+| (설정 화면 없음) | 선언만 두면 켜진 관리자 템플릿의 공용 설정 화면이 그린다 — 직접 그리려면 `templates/{id}/settings/template_settings.g7.html` 을 `layouts/` 밖에 둔다 |
+| `lang/{ko,en}.json` 의 `settings.*` | 섹션·칸 라벨·안내 (`$t:settings.sections.branding.label`·`$t:settings.favicon.label`) |
+
+여기 정한 파비콘은 이 템플릿이 켜져 있을 때 관리자 화면 탭 아이콘으로 쓰이고, 비우면 환경설정 일반 탭의 파비콘(없으면 기본 아이콘)이 쓰입니다. 형식·확장 방법은 코어 문서 `docs/extension/template-settings.md` 를 봅니다.
+
+> 이 템플릿을 **관리자 템플릿으로 켜면** 설정 화면(플러그인 설정 화면도 같음)은 그릴 수 없습니다 — 컴포넌트가 최소 구성이기 때문입니다. 설정 화면은 다른 관리자 템플릿(예: sirsoft-admin_basic)이 켜져 있을 때 그 화면 안에 열립니다.
+

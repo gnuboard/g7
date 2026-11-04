@@ -21,7 +21,7 @@
   <data-source id="webhook_info" label_key="$t:sirsoft-tosspayments.editor.data_source.webhook_info" type="api" endpoint="/api/plugins/sirsoft-tosspayments/admin/webhook-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="webhookInfo"/>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
-    <permission>core.plugins.update</permission>
+    <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="pay-tosspayments-admin-page-content-responsive">

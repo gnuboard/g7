@@ -922,6 +922,26 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
+     * 템플릿 설정 화면 행을 조회합니다 (#434).
+     *
+     * @param  string  $ownerIdentifier  설정 화면을 가진 템플릿 식별자
+     * @param  int|null  $hostTemplateId  등록된 관리자 템플릿 ID (null 이면 전체)
+     * @return Collection 레이아웃 컬렉션
+     */
+    public function getTemplateSettingsLayouts(string $ownerIdentifier, ?int $hostTemplateId = null): Collection
+    {
+        $query = TemplateLayout::where('source_type', LayoutSourceType::Template)
+            ->where('source_identifier', $ownerIdentifier)
+            ->where('name', TemplateLayout::templateSettingsLayoutName($ownerIdentifier));
+
+        if ($hostTemplateId !== null) {
+            $query->where('template_id', $hostTemplateId);
+        }
+
+        return $query->get();
+    }
+
+    /**
      * 특정 소스 식별자의 레이아웃을 모두 삭제합니다.
      * soft deleted된 레코드를 포함하여 영구 삭제합니다.
      *

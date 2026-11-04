@@ -130,6 +130,7 @@
           : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true, href: '/admin/layout-editor/' + p.identifier, target: '_blank' } : null),
         actions: [
           { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },
+          { id: 'settings', label: p.abilities?.can_update_settings === true ? '$t:admin.templates.actions.settings' : '$t:admin.templates.actions.settings_read_only', iconName: p.abilities?.can_update_settings === true ? 'cog' : 'lock', href: p.settings_route, disabled: !p.has_settings || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status), disabledReason: !p.has_settings &amp;&amp; p.status !== 'uninstalled' ? '$t:admin.templates.actions.settings_unavailable' : null },
           { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },
           { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
           { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', href: '/admin/templates/' + p.identifier + '/language-packs', mergeQuery: true, disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },
@@ -216,6 +217,10 @@
           <!-- 카드 더보기 메뉴. 업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 두고,
                삭제는 창을 먼저 열고 안내 정보를 뒤이어 받는다. -->
           <switch>
+            <case when="settings">
+              <!-- audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동 — 목적지는 각 템플릿의 설정 화면(#434)으로, 템플릿 목록 클러스터 밖이다. -->
+              <navigate path="{{$args[1].settings_route}}" fallbackPath="/admin/templates"/>
+            </case>
             <case when="view_detail">
               <set-state target="global" selectedTemplate="{{$args[1]}}"/>
               <api-call :auth_required="true" target="/api/admin/templates/{{$args[1].identifier}}/changelog" method="GET">

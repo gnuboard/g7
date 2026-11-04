@@ -21,7 +21,7 @@
   <data-source id="vbank_info" label_key="$t:sirsoft-pay_kginicis.editor.data_source.vbank_info" type="api" endpoint="/api/plugins/sirsoft-pay_kginicis/admin/vbank-notify-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="vbankInfo"/>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
-    <permission>core.plugins.update</permission>
+    <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paykginicis:p-4 paykginicis:sm:p-6 paykginicis:lg:p-8 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900">

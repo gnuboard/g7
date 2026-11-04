@@ -5211,6 +5211,106 @@
         }
       }
     },
+    "template_settings": {
+      "data": {
+        "identifier": "sirsoft-basic",
+        "name": "Basic",
+        "type": "user",
+        "status": "active",
+        "is_active": true,
+        "settings": {
+          "branding": {
+            "favicon": [],
+            "accent": "blue",
+            "color_scheme_default": "system",
+            "logo_dark": [],
+            "favicon_url": null,
+            "logo_dark_url": null
+          },
+          "header": {
+            "max_boards": 5,
+            "show_theme_toggle": true,
+            "links": []
+          }
+        },
+        "sections": [
+          {
+            "key": "branding",
+            "label": "브랜딩",
+            "hint": null,
+            "fields": [
+              {
+                "key": "favicon",
+                "type": "attachments",
+                "label": "파비콘",
+                "hint": "이 템플릿이 켜져 있을 때 사용자 화면 브라우저 탭에 표시되는 아이콘입니다.",
+                "required": false,
+                "sensitive": false,
+                "collection": "template_settings.sirsoft-basic.branding.favicon",
+                "max_files": 1,
+                "max_size_kb": 1024,
+                "accept": ".ico,.png,.svg,.gif,.jpg,.jpeg,.webp"
+              },
+              {
+                "key": "accent",
+                "type": "enum",
+                "label": "포인트 색",
+                "hint": null,
+                "required": false,
+                "sensitive": false,
+                "options": [
+                  {
+                    "value": "blue",
+                    "label": "파랑(기본)"
+                  },
+                  {
+                    "value": "green",
+                    "label": "초록"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "header",
+            "label": "헤더",
+            "hint": null,
+            "fields": [
+              {
+                "key": "max_boards",
+                "type": "integer",
+                "label": "게시판 메뉴 개수",
+                "hint": null,
+                "required": false,
+                "sensitive": false,
+                "min": 0,
+                "max": 10
+              },
+              {
+                "key": "show_theme_toggle",
+                "type": "boolean",
+                "label": "화면 모드 버튼",
+                "hint": null,
+                "required": false,
+                "sensitive": false
+              }
+            ]
+          }
+        ],
+        "locales": {
+          "available": [
+            "ko",
+            "en",
+            "ja"
+          ],
+          "default": "ko"
+        },
+        "abilities": {
+          "can_update": true,
+          "can_reset": true
+        }
+      }
+    },
     "settings": {
       "data": {
         "general": {
@@ -5222,7 +5322,8 @@
           "language": "ko",
           "currency": "KRW",
           "maintenance_mode": false,
-          "site_logo": []
+          "site_logo": [],
+          "site_favicon": []
         },
         "security": {
           "force_https": false,

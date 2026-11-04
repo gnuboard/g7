@@ -55,5 +55,16 @@
             "title": "Under maintenance",
             "description": "We're briefly updating things to improve your experience."
         }
+    },
+    "settings": {
+        "favicon": {
+            "label": "Favicon",
+            "hint": "Icon shown on the browser tab of user screens while this template is active."
+        },
+        "sections": {
+            "branding": {
+                "label": "Branding"
+            }
+        }
     }
 }

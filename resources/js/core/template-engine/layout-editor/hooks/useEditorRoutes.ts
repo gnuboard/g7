@@ -182,6 +182,7 @@ function resolveEditorRouteExpressions(routes: RouteResponseItem[]): RouteRespon
       settings: g7Config?.settings ?? {},
       plugins: g7Config?.plugins ?? {},
       modules: g7Config?.modules ?? {},
+      templateSettings: g7Config?.templateSettings ?? {},
       appConfig: g7Config?.appConfig ?? {},
     },
   };

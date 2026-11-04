@@ -62,6 +62,11 @@ class CoreUpdateService
     public const UPDATE_REPORT_PREFIX = 'core_update_';
 
     /**
+     * 운영자 파비콘 보존 대상 경로 (base 상대, #434)
+     */
+    private const PUBLIC_FAVICON_PATH = 'public/favicon.ico';
+
+    /**
      * 리포트 이름을 판정하는 정규식 (캡처 1 = 시각 부분).
      *
      * 상태 어휘는 세 가지다 — 성공(`success`) · 실패(`failed`, 커맨드) ·
@@ -182,7 +187,7 @@ class CoreUpdateService
         // 조회 실패(`false`)가 0 — 1970년 — 으로 접혀 `time() - 0` 이 언제나 상한을 넘었고,
         // 방금 만든 잠금 파일이 「이전 실행이 비정상 종료했을 수 있다」는 경고를 남겼다.
         // 잘못된 경고는 운영자가 진짜 잔해를 볼 때 무시하게 만든다. 조회 실패는 판정
-        // 불가로 두고 나이 판정을 건너뛴다 (13차 G3 라운드).
+        // 불가로 두고 나이 판정을 건너뛴다.
         if (is_file($path)) {
             $modifiedAt = @filemtime($path);
 
@@ -299,7 +304,7 @@ class CoreUpdateService
      * 실패해도 업데이트 자체는 계속되므로 — 다른 파일은 이미 신 버전이라 여기서 세우면
      * 중간 상태가 남는다 — 사유가 운영자에게 **도달**해야 한다. 종전에는 갱신기가 실패를
      * 판정하고도 그 값을 두 호출부가 모두 버려, 화면에는 「완료」만 뜨고 보호 규칙은
-     * 구버전으로 남았다 (3차 G3 라운드 H4). 권한 경고와 같은 side-channel 규약이다.
+     * 구버전으로 남았다. 권한 경고와 같은 side-channel 규약이다.
      *
      * @var array<int, string>
      */
@@ -363,7 +368,7 @@ class CoreUpdateService
     /**
      * 루트 진입·보호 파일을 복사하되, 실패를 **예외가 아니라 경고**로 다룹니다.
      *
-     * 형제 파일 `.htaccess` 는 3·4차 라운드가 세운 계약을 갖는다 — 쓰기 실패를 예외로
+     * 형제 파일 `.htaccess` 는 같은 계약을 갖는다 — 쓰기 실패를 예외로
      * 터뜨리지 않고 결과 코드로 잡아 경고로 표시하고 업데이트는 계속한다(제품 결정).
      * 그런데 `index.php`·`web.config` 는 그 계약 밖에서 `FilePermissionHelper::copyFile()`
      * 로 곧장 떨어졌고, 그 헬퍼는 `void` 라 `File::copy()` 의 실패를 판정하지 않는다.
@@ -1506,6 +1511,13 @@ class CoreUpdateService
         // skipPaths 와 같은 경로 판정으로 copyDirectory 의 복사·removeOrphanItems 양쪽에서 건너뛴다.
         $skipPaths = array_values(array_filter(array_map(fn ($p) => $this->normalizeRelativePath((string) $p), UpdateReservedPaths::mergeInto($skipPaths))));
 
+        // 운영자가 직접 바꿔 둔 `public/favicon.ico` 는 덮지 않는다 (#434 D7). 이름 기준 excludes 에 넣으면
+        // 코어 번들 아이콘(`public/assets/core/favicon/favicon.ico`)까지 갱신이 막히므로 이 경로 하나만 건너뛴다.
+        // 비어 있는 파일(7.1 이하 기본값)은 운영자 파일이 아니므로 새 번들 아이콘으로 바뀐다.
+        if ($this->isOperatorFavicon($sourcePath) && ! in_array(self::PUBLIC_FAVICON_PATH, $skipPaths, true)) {
+            $skipPaths[] = self::PUBLIC_FAVICON_PATH;
+        }
+
         // 루트 진입·보호 파일 경고는 이 호출 단위로만 유효하다 (권한 경고와 같은 규약).
         $this->lastRootFileWarnings = [];
 
@@ -1851,7 +1863,7 @@ class CoreUpdateService
      * 풀고, 업데이트는 다른 것을 보존할 때 반드시 사이드카를 남긴다). 사이드카가 있는 조각은
      * 씨앗하지 않는다 — 씨앗하면 운영자 수정본이 「코어가 쓴 그대로」로 읽혀 다음 업데이트가 덮어쓴다.
      *
-     * 원장이 이미 있으면 **없는 키만 채우는 병합**이다 (17차 C-4) — 완전한 원장에는 아무것도
+     * 원장이 이미 있으면 **없는 키만 채우는 병합**이다 — 완전한 원장에는 아무것도
      * 더하지 않아 멱등이고, 부분 원장(선택 적용이 남긴)에는 빠진 조각을 채운다. 업그레이드 스텝은
      * 경로 C 규율로 같은 로직을 로컬에 갖는다 — 두 구현의 일치는 계약 테스트가 대조한다.
      *
@@ -1861,12 +1873,12 @@ class CoreUpdateService
     public function seedDeployFragmentLedger(string $projectRoot): array
     {
         // 이 호출의 경고만 반영한다 — 소비처(`core:deploy-ledger-seed`)가 반환값의 `[]` 만으로는
-        // 「완전한 원장(정상)」과 「원장 쓰기 실패」를 구분할 수 없어, 경고 통로로 실패를 가른다 (17차 B-1).
+        // 「완전한 원장(정상)」과 「원장 쓰기 실패」를 구분할 수 없어, 경고 통로로 실패를 가른다.
         $this->lastRootFileWarnings = [];
 
         $ledgerPath = $this->deployFragmentLedgerPath();
 
-        // 원장이 있어도 조기 반환하지 않는다 — **원장에 없는 키만 채우는 병합**이다 (17차 C-4).
+        // 원장이 있어도 조기 반환하지 않는다 — **원장에 없는 키만 채우는 병합**이다.
         //
         // `applyDeployFragments()` 는 세 지점(선택 적용에서 제외·소스 읽기 실패·복사 검증 실패)에서
         // `continue` 로 빠지며 그 조각을 원장에 넣지 않는다. 그러면 이후 **부분 원장**이 디스크에
@@ -1995,6 +2007,28 @@ class CoreUpdateService
         }
 
         return $out;
+    }
+
+    /**
+     * 사이트의 `public/favicon.ico` 가 운영자가 직접 넣은 파일인지 판정합니다 (#434 D7).
+     *
+     * 비어 있지 않고 이번 배포본의 같은 파일과 내용이 다르면 운영자 파일이다. 비어 있는 파일(7.1 이하 기본값)이나
+     * 배포본과 같은 파일은 운영자 파일이 아니므로 평소대로 갱신한다.
+     *
+     * @param  string  $sourcePath  배포본 루트 (_pending 추출본)
+     * @return bool 보존해야 하면 true
+     */
+    private function isOperatorFavicon(string $sourcePath): bool
+    {
+        $current = base_path(self::PUBLIC_FAVICON_PATH);
+
+        if (! is_file($current) || (int) @filesize($current) === 0) {
+            return false;
+        }
+
+        $incoming = $sourcePath.DIRECTORY_SEPARATOR.self::PUBLIC_FAVICON_PATH;
+
+        return ! is_file($incoming) || @md5_file($current) !== @md5_file($incoming);
     }
 
     /**

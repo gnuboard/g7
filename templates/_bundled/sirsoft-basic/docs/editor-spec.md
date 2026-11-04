@@ -38,7 +38,7 @@
 | `nesting.containers` | 자식을 담을 수 있는 컴포넌트와 그 허용 규칙 | 14 | `editor-spec/nesting.json` |
 | `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 66 | `editor-spec/sampleData.json` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 1 | `editor-spec/sampleData.json` |
-| `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 7 | `editor-spec/sampleGlobal.json` |
+| `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 8 | `editor-spec/sampleGlobal.json` |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 47 | `editor-spec/states.json` |
 | `stateLabels` | 상태값 친화 명칭 카탈로그 | 7 | `editor-spec/stateLabels.json` |
 | `actionRecipes` | 친화 명칭 → 액션 JSON 레시피 | 21 | `editor-spec/actionRecipes.json` |

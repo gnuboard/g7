@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (652)
+- [코어](#코어) (661)
 - [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -591,6 +591,15 @@
 | `core.template_layout_attachment.filter_upload_file` | filter | 1 |  |
 | `core.template_layout_attachment.list_validation_rules` | filter | 2 |  |
 | `core.template_layout_attachment.upload_validation_rules` | filter | 2 |  |
+| `core.template_settings.after_delete` | action | 1 |  |
+| `core.template_settings.after_reset` | action | 3 |  |
+| `core.template_settings.after_save` | action | 3 |  |
+| `core.template_settings.before_delete` | action | 1 |  |
+| `core.template_settings.before_reset` | action | 2 |  |
+| `core.template_settings.before_save` | action | 2 |  |
+| `core.template_settings.filter_save_data` | filter | 2 |  |
+| `core.template_settings.reset_validation_rules` | filter | 3 |  |
+| `core.template_settings.update_validation_rules` | filter | 3 |  |
 | `core.templates.activated` | action | 1 |  |
 | `core.templates.after_activate` | action | 1 |  |
 | `core.templates.after_check_updates` | action | 1 |  |

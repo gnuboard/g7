@@ -22,6 +22,7 @@ use App\Privacy\PrivacyRetentionManager;
 use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
 use App\Services\ExtensionStaticCacheService;
+use App\Services\FaviconService;
 use App\Services\OutboundProxyTester;
 use App\Services\PasswordExpiryService;
 use App\Services\Queue\QueueWorkerRegistry;
@@ -105,7 +106,23 @@ class SettingsController extends AdminBaseController
             'consent_selection' => $consent->selection()->toArray(),
             'queue_connection_options' => $this->queueWorkerRegistry->registrableConnections(),
             'csp' => $this->buildCspMeta(),
+            // 파비콘 우선순위 안내(#434) — 일반 탭 파비콘 칸 아래 「현재 ○○ 화면은 △△ 템플릿 설정의 파비콘이 우선 적용됩니다」
+            'favicon' => $this->buildFaviconMeta(),
         ];
+    }
+
+    /**
+     * 파비콘 우선순위 요약 — 해석 실패(템플릿 행 없음 등)는 안내를 숨기는 null 로 (#434).
+     *
+     * @return array<string, mixed>|null 화면 종류별 요약
+     */
+    private function buildFaviconMeta(): ?array
+    {
+        try {
+            return app(FaviconService::class)->describe();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
@@ -187,6 +204,9 @@ class SettingsController extends AdminBaseController
 
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,
+                    // 전역 상태(`_global.settings`)용 공개 설정 — 계산 필드(site_logo_url·site_favicon_url)가 실려 있다.
+                    // 화면이 저장 직후 `settings`(관리자 형태, 계산 필드 없음)로 전역을 덮으면 상단 로고가 새로고침 전까지 사라졌다(#434 S-3).
+                    'frontend_settings' => $this->settingsService->getFrontendSettings(),
                 ]);
             } else {
                 return $this->error('settings.save_failed');

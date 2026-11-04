@@ -384,6 +384,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.privacy_officer_email' => ['nullable', 'email', 'max:255'],
             'basic_info.mail_order_number' => ['nullable', 'string', 'max:100'],
             'basic_info.telecom_number' => ['nullable', 'string', 'max:100'],
+            // 푸터 사업자 정보 표시 (#434 — 쇼핑몰이 사용자 템플릿 user_global_footer 자리에 그린다, 기본 켜짐)
+            'basic_info.footer_business_info_enabled' => ['nullable', 'boolean'],
             // 공개 자산 디스크 — 빈 값은 코어 공개 자산 디스크 설정을 따른다.
             // 선택지가 코어 카탈로그 + 플러그인 훅 등록 디스크로 동적이라 정적 in 불가 —
             // 코어 SaveSettingsRequest 와 동일하게 카탈로그 조회 closure 로 검증한다.
@@ -1696,7 +1698,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // `nullable` 이 아니라 `sometimes` 다. 소비처 `ClaimReasonService::syncReasons()` 가
             // `?? true` 라 저장된 null 이 **true** 로 뒤집히고, 운영자가 내려 둔 사유가 저장
             // 한 번에 구매자 선택지로 되살아난다 — 무너지는 방향이 "끈 것을 켜진 것으로" 라
-            // 형제 `claim.*` 불리언 3축과 같은 강도로 맞춘다(8차 N3 와 동일 판정).
+            // 형제 `claim.*` 불리언 3축과 같은 강도로 맞춘다.
             // 키 부재까지 거절한다 (`required_with`). `sometimes` 는 null 만 막고, 키를 빼면 소비처의
             // `?? true` 가 내려 둔 사유를 켜진 채 되살린다 — 같은 파일의 `complete_defaults` 와 같은 강도.
             "{$key}.*.is_user_selectable" => ["required_with:{$key}", 'boolean'],

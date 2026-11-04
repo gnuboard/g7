@@ -51,6 +51,9 @@ class TemplateResource extends BaseApiResource
             'dependencies_met' => $this->areDependenciesMet(),
             'icon_url' => $this->getValue('icon_url'),
             'icon_source' => $this->getValue('icon_source', 'none'),
+            // 템플릿 환경설정 화면 유무·경로 (#434) — 카드 더보기의 「설정」 이 읽는다(플러그인 목록과 같은 필드)
+            'has_settings' => (bool) $this->getValue('has_settings', false),
+            'settings_route' => $this->getValue('settings_route'),
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
@@ -108,6 +111,7 @@ class TemplateResource extends BaseApiResource
             'can_activate' => 'core.templates.activate',
             'can_uninstall' => 'core.templates.uninstall',
             'can_edit_layouts' => 'core.templates.layouts.edit',
+            'can_update_settings' => 'core.templates.settings',
         ];
     }
 

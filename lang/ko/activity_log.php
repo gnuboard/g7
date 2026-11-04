@@ -315,6 +315,8 @@ return [
         // 플러그인 설정
         'plugin_settings_save' => '플러그인 설정 저장 (:plugin_name)',
         'plugin_settings_reset' => '플러그인 설정 초기화 (:plugin_name)',
+        'template_settings_save' => '템플릿 설정 저장 (:template_name)',
+        'template_settings_reset' => '템플릿 설정 기본값 되돌리기 (:template_name)',
 
         // 템플릿 관리
         'template_index' => '템플릿 목록 조회',

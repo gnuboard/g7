@@ -91,7 +91,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고 첨부). site_logo 는 SettingsService 가 별도 주입한 첨부 정보 |
+| general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고·사이트 파비콘 첨부). site_logo·site_favicon 은 SettingsService 가 별도 주입한 첨부 정보(업로더 초기 파일). 공개 계산 필드 `site_logo_url`·`site_favicon_url` 은 이 관리자 응답에는 없고 저장 응답 `frontend_settings`·셸 `G7Config.settings` 에 있다 |
 | security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다. 콘텐츠 보안 정책 2키(`csp_mode` 기본 `off`·`csp_extra_script_hosts` 기본 `[]`, #158)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.csp_*` 행 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질) |
@@ -116,6 +116,7 @@ _단건 응답: `data` 객체의 필드._
 | _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
 | _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (#139) |
 | _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.daumcdn.net"]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(#158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트 |
+| _meta.favicon | object\|null | `{"user":{"source":"template","template_identifier":"sirsoft-basic","template_name":"Basic","settings_route":"/admin/templates/sirsoft-basic/settings"},"admin":{…}}` | 화면 종류별(사용자·관리자) 현재 파비콘 계층(`template`·`core`·`custom_ico`·`bundled`)과 활성 템플릿·설정 화면 경로 — 일반 탭 파비콘 칸 아래 「○○ 템플릿 설정의 파비콘이 우선 적용됩니다」 안내용 (#434). 해석 실패 시 null |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -238,6 +239,7 @@ HTTP/1.1 200
 | system.cron_min_interval | body | integer | 아니오 | min 0, max 1440 | 웹 크론 최소 호출 간격(분). 간격 미만 호출은 실행 없이 정상 응답하고, 그 사이 시각은 다음 유효 호출의 소급 창이 덮는다 (0 = 제한 없음) |
 | system.cron_visit_fallback | body | boolean | 아니오 | — | 방문자 접속 시 예약 작업 실행 여부. 기본 꺼짐 — 켜면 방문이 없는 사이트에서는 예약도 돌지 않는다 |
 | general.site_logo | body | array | 아니오 | — | 사이트 로고 이미지 |
+| general.site_favicon | body | array | 아니오 | max 1, 항목: `site_favicon` 컬렉션에 존재하는 첨부 ID | 사이트 파비콘(브라우저 탭 아이콘) 첨부 ID 배열 — ico·png·svg·gif·jpg·jpeg·webp, 1MB 이하. 보내지 않으면 기존 값 유지, 빈 배열이면 지우고 첨부를 저장 뒤 파기. 활성 템플릿 설정의 파비콘이 있으면 그것이 우선한다(`_meta.favicon`) |
 | mail.mailer | body | string | 아니오 | — | 메일 발송 드라이버 (smtp/mailgun/ses) |
 | mail.host | body | string | 아니오 | max 255 | 호스트 주소 |
 | mail.port | body | integer | 아니오 | min 1, max 65535 | 포트 번호 |
@@ -604,6 +606,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | settings | object | `{"general":{...},"security":{...},"available_drivers":{...}}` | 저장 직후 다시 조회한 전체 설정 집계. 구조는 `GET /api/admin/settings` 의 `data` 와 동일 (general/security/mail/upload/seo/advanced/cache/debug/drivers/core_update/geoip/notifications/identity + `available_drivers`) |
+| frontend_settings | object | `{"general":{"site_logo_url":"/api/attachment/…","site_favicon_url":null,…},…}` | 셸 `G7Config.settings` 와 같은 공개 설정(노출 필드 + 계산 필드 `general.site_logo_url`·`general.site_favicon_url`) — 화면은 저장 뒤 전역 설정을 이것으로 바꿔 새로고침 없이 상단 로고·파비콘 주소를 유지한다 |
 
 **응답 예시**
 
@@ -678,6 +681,10 @@ _단건 응답: `data` 객체의 필드._
 **설명**
 
 통합 환경설정 화면에서 한 탭의 설정을 일괄 저장합니다. `_tab` 으로 활성 탭을 지정하면 해당 탭의 필드만 필수 검증되고 다른 탭 필드는 nullable 로 처리되므로, 탭 단위로 부분 저장할 수 있습니다. 저장 성공 시 응답 `data.settings` 에 갱신된 전체 설정과 `available_drivers` 를 함께 반환하여, 프론트엔드가 새로고침 없이 전역 상태를 갱신할 수 있습니다. 검증 실패 시 422, 그 외 오류 시 500 을 반환합니다.
+
+**공개 설정 동봉(#434)** 저장 응답에는 `data.settings`(관리자 형태) 외에 `data.frontend_settings`(셸 `G7Config.settings` 와 같은 공개 설정 — 계산 필드 `general.site_logo_url`·`general.site_favicon_url` 포함)가 함께 실린다. 화면은 저장 직후 전역 설정(`_global.settings`)을 이 값으로 바꾼다 — 관리자 형태로 바꾸면 계산 필드가 없어 상단 로고가 새로고침 전까지 사라졌다. 일반 탭의 `general.site_favicon` 은 첨부 ID 배열(최대 1개, `site_favicon` 컬렉션에 실재하는 첨부만)이며, 제출하지 않으면 기존 값을 유지하고 빠진 첨부는 저장 성공 뒤 파기한다.
+
+**파비콘 우선순위·서빙(#434)** 브라우저 탭 아이콘은 화면 종류마다 위 계층부터 고른다 — ① 그 화면 종류의 활성 템플릿 설정 `branding.favicon`(사용자 화면 = 활성 사용자 템플릿, 관리자 화면 = 활성 관리자 템플릿) ② 이 API 의 `general.site_favicon` ③ 기본 아이콘(운영자가 `public/favicon.ico` 를 직접 바꿔 두었으면 그것 하나, 아니면 코어 번들 `public/assets/core/favicon/` 의 ico·svg·apple-touch 3종). 첨부 행이 지워졌거나 형식이 목록(ico·png·svg·gif·jpeg·webp) 밖이면 다음 계층으로 내려간다. 지금 어느 계층이 쓰이는지는 조회 응답 `_meta.favicon` 이 알린다. 업로드한 파비콘은 공개 경로 `GET /api/favicon/{hash}`([첨부 API](attachment.md))로만 나간다 — 파비콘 컬렉션 첨부만, 형식별 `Content-Type`·`X-Content-Type-Options: nosniff`·1년 `immutable` 캐시(교체하면 새 첨부라 주소가 바뀜), svg 는 스크립트를 막는 CSP. 오류·점검·DB 접속 오류 화면과 설치 마법사는 DB 를 보지 않으므로 ③ 만 쓴다. 코어 업데이트는 운영자가 넣은 `public/favicon.ico` 를 덮지 않는다([코어 업데이트](../core-update-system.md)). 템플릿 쪽 형식은 [템플릿 환경설정](../../extension/template-settings.md).
 
 
 ### GET /api/admin/settings/privacy-preview

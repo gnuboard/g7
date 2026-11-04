@@ -587,6 +587,7 @@ return [
     ],
 
     // 다국어 필드 검증 메시지
+    'safe_link' => ':attribute 은(는) 사이트 안 경로(/로 시작) 또는 http·https 주소여야 합니다.',
     'translatable' => [
         'must_be_array' => '다국어 필드는 배열이어야 합니다.',
         'unsupported_language' => "지원되지 않는 언어 코드입니다: ':lang'",
@@ -1500,6 +1501,7 @@ return [
         'maintenance_mode' => '점검 모드',
         'asset_url_mode' => '자산 주소 방식',
         'site_logo' => '사이트 로고',
+        'site_favicon' => '사이트 파비콘',
         'og_image_default' => '기본 공유 이미지',
         // SEO 설정 (추가)
         'bot_user_agents' => '봇 User-Agent 목록',

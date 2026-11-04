@@ -36,6 +36,7 @@
             "privacy_officer_email": "",
             "mail_order_number": "",
             "telecom_number": "",
+            "footer_business_info_enabled": true,
             "public_asset_disk": "",
             "export_retention_days": 7
         },
@@ -643,7 +644,7 @@
     "frontend_schema": {
         "basic_info": {
             "expose": true,
-            "_comment": "route_path, no_route만 프론트엔드(user-side routes.json, _user_base.json)에서 참조",
+            "_comment": "route_path·no_route 는 사용자 라우트, 법정 사업자 표시 항목(상호·대표·주소·연락처·사업자번호·통신판매업·개인정보 보호책임자)과 footer_business_info_enabled 는 푸터 사업자 정보 조각(user_global_footer)이 읽는다. 업종·업태·공개 자산 디스크·보관 기간은 비공개",
             "fields": {
                 "shop_name": {
                     "expose": false
@@ -655,13 +656,13 @@
                     "expose": true
                 },
                 "company_name": {
-                    "expose": false
+                    "expose": true
                 },
                 "business_number": {
-                    "expose": false
+                    "expose": true
                 },
                 "ceo_name": {
-                    "expose": false
+                    "expose": true
                 },
                 "business_type": {
                     "expose": false
@@ -670,34 +671,37 @@
                     "expose": false
                 },
                 "zipcode": {
-                    "expose": false
+                    "expose": true
                 },
                 "base_address": {
-                    "expose": false
+                    "expose": true
                 },
                 "detail_address": {
-                    "expose": false
+                    "expose": true
                 },
                 "phone": {
-                    "expose": false
+                    "expose": true
                 },
                 "fax": {
-                    "expose": false
+                    "expose": true
                 },
                 "email": {
-                    "expose": false
+                    "expose": true
                 },
                 "privacy_officer": {
-                    "expose": false
+                    "expose": true
                 },
                 "privacy_officer_email": {
-                    "expose": false
+                    "expose": true
                 },
                 "mail_order_number": {
-                    "expose": false
+                    "expose": true
                 },
                 "telecom_number": {
-                    "expose": false
+                    "expose": true
+                },
+                "footer_business_info_enabled": {
+                    "expose": true
                 },
                 "public_asset_disk": {
                     "expose": false

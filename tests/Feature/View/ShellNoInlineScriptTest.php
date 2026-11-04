@@ -38,6 +38,8 @@ class ShellNoInlineScriptTest extends TestCase
         'colorScheme', 'extensionCssOverrides', 'extensionClassPrefixes', 'customRoutes',
         // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값(#609)
         'basePath',
+        // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`(#434)
+        'templateSettings',
     ];
 
     /**
@@ -51,6 +53,8 @@ class ShellNoInlineScriptTest extends TestCase
         'colorScheme', 'extensionCssOverrides', 'extensionClassPrefixes', 'customRoutes',
         // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값(#609)
         'basePath',
+        // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`(#434)
+        'templateSettings',
     ];
 
     /**

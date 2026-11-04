@@ -15,6 +15,20 @@ import { HeroTextPositionPad } from '../../components/composite/HeroTextPosition
 import { textMotion, textVars, percent } from '../../support/text';
 import { swiperState } from '../swiperMock';
 
+// jsdom 25 에는 PointerEvent 가 없어 fireEvent.pointer* 가 일반 Event 로 나가고 clientX·pointerId 가 사라진다 —
+// 끌어 옮기기 시험이 좌표를 받도록 MouseEvent 위에 pointerId 만 더한 대역을 둔다(브라우저에는 원래 있다).
+if (typeof window.PointerEvent === 'undefined') {
+    class PointerEventStub extends MouseEvent {
+        readonly pointerId: number;
+
+        constructor(type: string, init: PointerEventInit = {}) {
+            super(type, init);
+            this.pointerId = init.pointerId ?? 0;
+        }
+    }
+    (window as unknown as { PointerEvent: typeof PointerEventStub }).PointerEvent = PointerEventStub;
+}
+
 vi.mock('swiper/react', () => import('../swiperMock'));
 vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
 

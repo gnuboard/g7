@@ -12,9 +12,32 @@ interface User {
     avatar?: string;
     is_admin?: boolean;
 }
+/** 운영자가 템플릿 설정에서 더한 헤더 링크 (#434) */
+export interface HeaderExtraLink {
+    /** 이름 — 언어별 맵(`{ko, en}`) 또는 문자열 */
+    label?: string | Record<string, string>;
+    /** 사이트 안 경로(`/…`) 또는 http(s) 주소 — 서버가 검증한 값 */
+    url?: string;
+    /** 새 창으로 열기 */
+    new_tab?: boolean;
+}
+/**
+ * 언어별 이름에서 현재 언어 값을 고릅니다 — 비었으면 다른 언어의 첫 값(기본 언어 대체는 서버·엔진과 같은 규칙).
+ *
+ * @param label 이름
+ * @param locale 현재 언어
+ * @returns 표시할 이름
+ */
+export declare const pickLocalizedLabel: (label: HeaderExtraLink["label"], locale: string) => string;
 interface HeaderProps {
     /** 사이트 로고 URL */
     logo?: string;
+    /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`, #434) */
+    logoDark?: string;
+    /** 테마(라이트/다크) 단추를 보일지 — 기본 true (템플릿 설정 `header.show_theme_toggle`) */
+    showThemeToggle?: boolean;
+    /** 게시판 탭 뒤에 붙는 운영자 링크 — 템플릿 설정 `header.links` (최대 5) */
+    extraLinks?: HeaderExtraLink[];
     /** 사이트 이름 */
     siteName?: string;
     /** 현재 로그인된 사용자 */

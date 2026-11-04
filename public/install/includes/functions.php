@@ -24,6 +24,27 @@ require_once __DIR__.'/env-value.php';
  * 이 정의가 살아남아 프레임워크 코드(Blade 컴파일 결과 등)의 호출을 받는다.
  * 문자열이 아닌 값(Htmlable·Enum·Stringable)에서 TypeError 가 나지 않아야 한다.
  */
+if (! function_exists('installer_favicon_tags')) {
+    /**
+     * 설치 마법사 화면의 파비콘 `<link>` 태그 (#434).
+     *
+     * 설치기는 Laravel 밖이라 코어 헬퍼(`g7_favicon_tags_static()`)를 쓸 수 없다. 설치 전에는 DB·설정이 없으므로
+     * 코어 번들 아이콘만 링크한다. 설치기는 `{public 기준}/install` 에 있으므로 번들 아이콘은 그 부모 기준이다
+     * (문서 루트가 public 이든 프로젝트 루트든 같은 규칙).
+     *
+     * @return string `<link>` 태그 HTML (속성값 이스케이프)
+     */
+    function installer_favicon_tags(): string
+    {
+        $base = defined('INSTALLER_BASE_URL') ? rtrim(str_replace('\\', '/', dirname((string) INSTALLER_BASE_URL)), '/') : '';
+        $dir = $base.'/assets/core/favicon/';
+
+        return '<link rel="icon" sizes="32x32" href="'.htmlspecialchars($dir.'favicon.ico', ENT_QUOTES).'">'
+            .'<link rel="icon" type="image/svg+xml" href="'.htmlspecialchars($dir.'favicon.svg', ENT_QUOTES).'">'
+            .'<link rel="apple-touch-icon" href="'.htmlspecialchars($dir.'apple-touch-icon.png', ENT_QUOTES).'">';
+    }
+}
+
 if (! function_exists('e')) {
     function e($value, $doubleEncode = true): string
     {
@@ -170,7 +191,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
                 $unparseable += $expanded['unparseable'];
 
                 // 전개 출력에 **새 롤 부여**(중첩 롤)가 남아 있으면 확인을 단정하지 않는다
-                // (22차 N-8) — 서버의 USING 이 롤 그래프를 재귀 전개하는지는 버전마다 다를 수
+                // — 서버의 USING 이 롤 그래프를 재귀 전개하는지는 버전마다 다를 수
                 // 있고, 전개되지 않은 롤의 권한을 조용히 놓치는 것보다 「확인 불가」 경고가 옳다.
                 if (array_diff($expanded['roles'], $collected['roles']) !== []) {
                     $rolesUnexpanded = true;
@@ -186,7 +207,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
         // 「부족」과 「확인 불가」의 구분 (제품 결정 §16.26.4 #2 — 확인 불가는 경고 후 진행 허용).
         // 전개하지 못한 롤이나 해석하지 못한 행이 **하나라도** 남아 있으면 판정을 단정하지
         // 않는다 — missing 이 비어 있어도 그 행이 REVOKE 변형(권한을 빼는 문장)일 수 있다
-        // (21차 N2 파생 — 종전에는 missing 이 비면 unparseable 을 무시해, 해석 못 한 회수가
+        // (종전에는 missing 이 비면 unparseable 을 무시해, 해석 못 한 회수가
         // 초록으로 지나갔다). missing 을 비워 돌려주는 이유: 게이트가 `!has_all && missing`
         // 으로 차단하므로, 확인 불가 상태에서 missing 이 차 있으면 소비부가 갱신을 놓쳐도
         // 거짓 차단으로 샌다.
@@ -221,7 +242,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
  * 해석하지 못한 줄은 개수만 세어 돌려준다: 그 줄에 권한이 있을 수도 있으므로, 호출자는
  * 부족 판정을 「확인 불가」로 강등하는 근거로 쓴다.
  *
- * 회수의 범위 규칙 (22차 N-7 명문화): 대상이 이 DB 를 **덮는** 회수(`*.*`·`db`.*)만 차감하고,
+ * 회수의 범위 규칙: 대상이 이 DB 를 **덮는** 회수(`*.*`·`db`.*)만 차감하고,
  * 그 안에서는 컬럼 단위 회수까지 보수적으로 뺀다. 대상이 더 좁은 회수(단일 테이블·타 DB)는
  * 차감하지 않는다 — 설치는 새 테이블을 만들므로 기존 테이블 한 개의 회수는 판정과 무관하다.
  *
@@ -241,7 +262,7 @@ function installerCollectGrantedPrivileges(array $grants, string $database, arra
         $grant = trim((string) $grant);
 
         // partial_revokes(MySQL 8.0.16+) — SHOW GRANTS 는 REVOKE 행으로 회수분을 낸다.
-        // 이 행을 해석 불가로 뭉개면 회수된 권한이 초록으로 지나간다 (21차 N2).
+        // 이 행을 해석 불가로 뭉개면 회수된 권한이 초록으로 지나간다.
         if (stripos($grant, 'REVOKE ') === 0) {
             if (preg_match('/^REVOKE\s+(.+?)\s+ON\s+(.+?)\s+FROM\s/is', $grant, $m) === 1) {
                 $covers = installerGrantTargetCoversDatabase($m[2], $database);
@@ -324,7 +345,7 @@ function installerCollectGrantedPrivileges(array $grants, string $database, arra
 
         // ON 절이 없는 GRANT … TO … 는 롤 부여다. MySQL 8 은 롤을 인용해 출력하고
         // (`` `r`@`%` ``), MariaDB 는 **인용 없이** 출력한다(`GRANT app_rw TO 'u'@'%'`) —
-        // 무인용 식별자도 롤로 신뢰해야 MariaDB 롤 계정에서 전개가 성립한다 (21차 N3).
+        // 무인용 식별자도 롤로 신뢰해야 MariaDB 롤 계정에서 전개가 성립한다.
         // 토큰은 USING 재조회에 원문 그대로 쓴다.
         if (preg_match('/^GRANT\s+(.+?)\s+TO\s/is', $grant, $m) === 1) {
             foreach (explode(',', $m[1]) as $roleToken) {
@@ -337,7 +358,7 @@ function installerCollectGrantedPrivileges(array $grants, string $database, arra
                     '/^(?:`[^`]+`|\'[^\']+\'|"[^"]+")(?:@(?:`[^`]+`|\'[^\']+\'|"[^"]+"|[A-Za-z0-9_$%.\-]+))?$/',
                     $roleToken
                 ) === 1;
-                // 호스트 꼬리도 닫힌 문자 집합으로 제한한다 (22차 N-6) — 토큰은 USING 재조회에
+                // 호스트 꼬리도 닫힌 문자 집합으로 제한한다 — 토큰은 USING 재조회에
                 // 문자열 보간되므로, 신뢰 근거(서버 자신의 출력)에 더해 형태로도 닫는다.
                 $isBareIdentifier = preg_match('/^[A-Za-z0-9_$]+(?:@[A-Za-z0-9_$%.\-]+)?$/', $roleToken) === 1;
 
@@ -428,7 +449,7 @@ function installerGrantTargetCoversDatabase(string $target, string $database): ?
         return null;
     }
 
-    // 객체 부분이 `*` 인 부여만 DB 를 덮는다 (21차 N1) — `db`.`tbl`(테이블)·`db`.proc
+    // 객체 부분이 `*` 인 부여만 DB 를 덮는다 — `db`.`tbl`(테이블)·`db`.proc
     // (루틴) 스코프 부여는 새 테이블 생성·다른 테이블 접근을 주지 않으므로, 이것을 DB
     // 전체로 접으면 #4 가 막으려던 실패(권한 정상 화면 통과 후 db_migrate 1142)가
     // 다른 부여 형태로 재개방된다. 객체 부분이 없으면 해석 불가다.
@@ -623,11 +644,11 @@ function logInstallationError(string $message, ?Throwable $exception = null): vo
 
     $logMessage .= "\n".str_repeat('-', 80)."\n\n";
 
-    // 로그 파일에 기록 — 쓰지 못하면 최후 폴백 채널로 넘긴다 (19차 F9).
+    // 로그 파일에 기록 — 쓰지 못하면 최후 폴백 채널로 넘긴다.
     //
     // 이 함수만 쓰는 정보가 있다 — 예외의 클래스·파일·줄·스택트레이스는 진행 기록에 실리지
     // 않는다. `storage/logs` 를 만들지도 쓰지도 못하는 환경에서 반환값을 버리면 그 진단이
-    // **통째로** 사라진다. 같은 파일의 형제 로거는 18차 #A8 로 이미 폴백을 갖췄고 이 지점만
+    // **통째로** 사라진다. 같은 파일의 형제 로거는 이미 폴백을 갖췄고 이 지점만
     // 남아 있었다.
     if (@file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX) === false && function_exists('installerErrorLog')) {
         installerErrorLog('[installer] '.str_replace("\n", ' | ', trim($logMessage)));
@@ -649,7 +670,7 @@ function detectBrowserLanguage(): ?string
     $acceptLanguage = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
 
     // 지원 언어 목록
-    $supportedLanguages = array_keys(SUPPORTED_LANGUAGES);   // 목록 SSoT 는 config.php 의 상수 (11차 #C7)
+    $supportedLanguages = array_keys(SUPPORTED_LANGUAGES);   // 목록 SSoT 는 config.php 의 상수
 
     // Accept-Language 헤더 파싱 (예: "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
     $languages = [];
@@ -834,7 +855,7 @@ function handleLanguageChange(string $lang): void
     $_SESSION['g7_locale'] = $lang;
 
     // state.json에도 저장 (다른 브라우저에서 재개 지원 + 설치 완료 후 본체 전달).
-    // 저장 실패를 무음 폐기하지 않는다 (22차 #22-7, 17차 #C2 규율) — 실패가 무음이면
+    // 저장 실패를 무음 폐기하지 않는다 — 실패가 무음이면
     // 그 순간부터 화면(세션)과 워커 로그·설치본 기본 언어(state)가 서로 다른 언어를 쓴다.
     $state = getInstallationState();
     $state['g7_locale'] = $lang;
@@ -927,7 +948,7 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
 
     // 네 값 모두 HTML 텍스트·속성 자리에 실린다(인라인 `<script>` 없음, #158) — 그래서 모두
     // htmlspecialchars(ENT_QUOTES)를 지난다. `$redirectUrl` 은 meta refresh 의 content 속성과
-    // `<a href>` 두 곳에 실리므로 따옴표까지 닫아야 속성 탈출이 막힌다 (17차 A-6 의 취지).
+    // `<a href>` 두 곳에 실리므로 따옴표까지 닫아야 속성 탈출이 막힌다.
     $lang = htmlspecialchars(getCurrentLanguage());
     $title = htmlspecialchars($title);
     $message = htmlspecialchars($message, ENT_QUOTES);
@@ -939,6 +960,7 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     echo '<meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>'.$title.'</title>';
+    echo installer_favicon_tags();
     // 스크립트 없이 안내 + 3초 뒤 meta refresh 이동 — 종전 alert + location 인라인 스크립트는 웹서버가
     // `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 흰 화면에 머물렀다(#158).
     echo '<meta http-equiv="refresh" content="3;url='.$redirectUrl.'">';
@@ -969,7 +991,7 @@ function showStepFileNotFoundError(int $currentStep): void
     echo '<h1 class="installer-title">';
     echo '<span class="error-icon">';
     // 제목 텍스트(lang('error'))가 이미 상태를 말하므로 아이콘은 보조기술에서 감춘다 —
-    // getSvgIcon() 의 결과 아이콘 3종과 같은 처리다 (9차 #L33 · 12차 #B32).
+    // getSvgIcon() 의 결과 아이콘 3종과 같은 처리다.
     echo '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">';
     echo '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />';
     echo '</svg>';
@@ -1010,7 +1032,7 @@ function getDatabaseFieldHash(array $config, string $prefix): string
  * 뷰가 `'<?= lang('key') ?>'` 처럼 값을 직접 보간하면, 그 값에 작은따옴표·`</script>`·개행이
  * 하나만 들어와도 스크립트 전체가 깨진다 — 번역 문구는 언제든 바뀌는 값이라 그 상태는
  * 「지금은 무해」일 뿐이다. HEX 4플래그로 `<`·`>`·`&`·`'`·`"` 를 전부 이스케이프하므로
- * HTML 텍스트 자리에 그대로 넣어도 안전하다 (9차 #L36).
+ * HTML 텍스트 자리에 그대로 넣어도 안전하다.
  *
  * @param  string  $value  심을 문자열
  * @return string 따옴표를 포함한 JS 문자열 리터럴
@@ -1033,7 +1055,7 @@ function getSvgIcon(string $type): string
 {
     $icons = [
         // 결과 아이콘 셋은 같은 자리(결과 섹션 제목 옆)에 들어간다 — 접근성 처리도 형제끼리
-        // 같아야 한다. 제목 텍스트가 이미 상태를 말하므로 아이콘은 보조기술에서 감춘다 (9차 #L33).
+        // 같아야 한다. 제목 텍스트가 이미 상태를 말하므로 아이콘은 보조기술에서 감춘다.
         'success' => '<svg class="result-icon result-icon-success" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <circle class="result-icon-circle" cx="26" cy="26" r="25" fill="none"/>
                 <path class="result-icon-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
@@ -1052,7 +1074,7 @@ function getSvgIcon(string $type): string
             </svg>',
 
         /*
-         * Step 3 카드용 글리프 (11차 #B12).
+         * Step 3 카드용 글리프.
          *
          * 이 다섯 키는 호출부 19곳이 부르는데 정의가 없어 `?:` 폴백이 **항상** 발화했고,
          * 결과적으로 카드마다 이모지(✨ ⚙ 📦 ◉ ✓)가 그려졌다 — 승인 시안 W2 에 없는 모양이고
@@ -1376,7 +1398,7 @@ if (! function_exists('installerDirectoryIsWritable')) {
 
         // 고유 이름은 차단 가능한 `uniqid()` 가 아니라 원시 함수 폴백을 갖춘 SSoT 로 만든다 —
         // 이 함수는 요구사항 화면의 디렉토리 권한 점검 경로라, 여기서 죽으면 첫 화면이 백지다.
-        // 접두사는 정리 주체 둘(노출 점검 스윕 · 코어 프루너)이 같은 상수로 본다 (13차 G3 W1-6).
+        // 접두사는 정리 주체 둘(노출 점검 스윕 · 코어 프루너)이 같은 상수로 본다.
         $probe = rtrim($path, '/\\').DIRECTORY_SEPARATOR.INSTALLER_WRITE_PROBE_PREFIX.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES);
 
         $handle = @fopen($probe, 'wb');
@@ -1546,10 +1568,10 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
     //
     // 아래 `catch (Exception)` 은 이 경우를 잡지 못한다. PHP 8 은 `disable_functions` 로 막힌
     // 함수를 함수 테이블에서 **제거**하므로 호출은 `Error` 이고, `@` 는 진단 억제일 뿐이다.
-    // 가드가 없으면 요구사항 화면이 통째로 뜨지 않는다 (13차 환경#1 과 같은 유형).
+    // 가드가 없으면 요구사항 화면이 통째로 뜨지 않는다.
     //
     // 판정은 인스톨러 SSoT(`installerHasFunction`)를 경유한다 — 종전 주석의 「순환 의존」
-    // 근거는 사실이 아니다(같은 파일이 SSoT 를 네 곳에서 직접 부른다). 7차 G3 라운드 D-14.
+    // 근거는 사실이 아니다(같은 파일이 SSoT 를 네 곳에서 직접 부른다).
     if (! installerHasFunction('scandir')) {
         return $failedPaths;
     }
@@ -1585,8 +1607,7 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
         // 하위 디렉토리 수에 비례해 파일시스템 왕복이 늘어난다 — 형제 축(노출 점검)은
         // 상한을 갖는데 이 축만 없었고, `storage/` 처럼 운영 중 하위가 불어나는 트리를
         // 훑으면 요구사항 화면이 그만큼 느려진다. 상한에 닿으면 판정을 **멈추고**
-        // 그때까지의 결과를 돌려준다 — 「권한 없음」을 지어내지 않는 방향이다
-        // (22차 G3 라운드 D5).
+        // 그때까지의 결과를 돌려준다 — 「권한 없음」을 지어내지 않는 방향이다.
         if (installerWriteProbeBudgetExhausted()) {
             return $failedPaths;
         }
@@ -2125,7 +2146,7 @@ function installerFtpCreateFileGuide(string $source, string $target): array
 }
 
 /**
- * 권한 수정 명령어 판정 본체 — OS 를 **인자로** 받는다 (11차 #D16).
+ * 권한 수정 명령어 판정 본체 — OS 를 **인자로** 받는다.
  *
  * `isWindows()` 를 함수 안에서 직접 부르면 그 프로세스의 OS 분기 하나만 평가된다 —
  * Windows 에서 돌리면 `chmod` 분기가, Linux 에서 돌리면 `icacls` 분기가 한 번도 실행되지
@@ -2184,14 +2205,14 @@ function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = '
         $stmt = $pdo->query('SHOW TABLES');
         $tables = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
     } catch (PDOException $e) {
-        // 「조회하지 못했다」와 「빈 DB」는 다른 사실이다 (19차 S-9).
+        // 「조회하지 못했다」와 「빈 DB」는 다른 사실이다.
         //
         // 종전에는 둘 다 `severity: 'empty'` + `has_tables: false` 로 나가서, 화면은 초록
         // 「연결 성공」만 그리고 백업 안내·동의 체크박스를 감췄다. 기존 테이블이 실재해도
         // `db_cleanup` 이 요구되지 않아, 설치 중반 마이그레이션 단계에서야 충돌로 멈춘다.
         //
         // `check_failed` 로 그 구분을 실어 보낸다. 원문은 싣지 않는다 — 이 응답은 화면으로
-        // 나가고 PDO 메시지에는 접속 좌표가 섞인다 (13차 보안#9 와 같은 규칙). 로그로만 남긴다.
+        // 나가고 PDO 메시지에는 접속 좌표가 섞인다. 로그로만 남긴다.
         if (function_exists('logInstallationError')) {
             logInstallationError('checkExistingTables failed', $e);
         }
@@ -2339,7 +2360,7 @@ if (! function_exists('filterTablesByPrefix')) {
 
 if (! function_exists('installerDiscardOutputBuffers')) {
     /**
-     * 열려 있는 출력 버퍼를 전부 닫는다 — 진행 보장 포함 (17차 #B7).
+     * 열려 있는 출력 버퍼를 전부 닫는다 — 진행 보장 포함.
      *
      * 종전 형태 `while (ob_get_level() > 0) { ob_end_clean(); }` 는 탈출 조건이 **레벨 감소**에만
      * 달려 있다. 삭제할 수 없는 버퍼(SAPI·확장이 연 버퍼)가 하나라도 있으면 `ob_end_clean()` 이
@@ -2383,7 +2404,7 @@ if (! function_exists('installerErrorLog')) {
      * 아니다** — 이 파일은 최상단에서 `App\Support\ExecutionEnvironment` 를 `use` 하고
      * 네 곳에서 직접 부르며, 모든 진입점이 `execution-mode.php` 를 이 파일보다 **먼저**
      * 읽는다. 그 SSoT 자신이 로드 실패를 `function_exists` 폴백으로 흡수하므로 「끌어오면
-     * 위험하다」는 전제도 성립하지 않는다 (7차 G3 라운드 D-14).
+     * 위험하다」는 전제도 성립하지 않는다.
      *
      * @param  string  $message  기록할 메시지
      */
@@ -2403,7 +2424,7 @@ if (! defined('INSTALLER_TMP_INFIX')) {
      *
      * 접미사 패턴(`INSTALLER_TMP_SUFFIX_PATTERN`)만 SSoT 로 잠그고 이 조각은 상태 파일·
      * 런타임 파일·코어 프루너(`RootHtaccessUpdater::TEMP_INFIX`) 세 곳 리터럴이었다 —
-     * 한쪽이 갈리면 그 스윕의 모집단이 조용히 0 이 된다 (14차 G3 W2-4). 인스톨러 두 곳은
+     * 한쪽이 갈리면 그 스윕의 모집단이 조용히 0 이 된다. 인스톨러 두 곳은
      * 이 상수를 가리키고, 코어 상수와의 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다.
      */
     define('INSTALLER_TMP_INFIX', '.tmp.');
@@ -2416,7 +2437,7 @@ if (! defined('INSTALLER_TMP_SUFFIX_BYTES')) {
      * 이름을 **만드는 쪽**(상태 파일 · 런타임 파일)과 **지우는 쪽**(각 스윕 · 코어 프루너)이
      * 같은 값을 봐야 한다. 종전에는 파일마다 판정 패턴을 리터럴로 들고 있었고, 런타임 쪽이
      * `{8}` 로 갈려 생성 이름(16진 16자)이 영원히 매치되지 않았다 — 스윕 모집단이 0 인 채
-     * 오류도 경고도 없었다 (13차 G3 W1-1). 그래서 생성 규칙 곁에 한 번만 적는다.
+     * 오류도 경고도 없었다. 그래서 생성 규칙 곁에 한 번만 적는다.
      */
     define('INSTALLER_TMP_SUFFIX_BYTES', 8);
 }
@@ -2434,7 +2455,7 @@ if (! defined('INSTALLER_TMP_SUFFIX_PATTERN')) {
 
 if (! defined('INSTALLER_WRITE_PROBE_BUDGET')) {
     /**
-     * 한 요청에서 수행할 쓰기 실측 프로브의 **총량 상한** (D5 · 22차 G3 라운드).
+     * 한 요청에서 수행할 쓰기 실측 프로브의 **총량 상한**.
      *
      * 최상위 대상은 12개 안팎으로 고정이지만 재귀 하위(`checkSubdirectoriesRecursive`)는
      * 운영 중 불어난다. 프로브 하나가 파일 생성 + 쓰기 + 삭제이므로 그 비용이 요구사항
@@ -2450,7 +2471,7 @@ if (! defined('INSTALLER_WRITE_PROBE_PREFIX')) {
      * 쓰기 가능 실측 프로브(`installerDirectoryIsWritable`)의 파일 이름 접두사.
      *
      * 만든 직후 지우지만 fopen 과 unlink 사이에서 프로세스가 죽으면 남는다 — 정리 스윕
-     * (`exposure-check.php`)과 코어 프루너(`StorageLeftoverPruneService`)가 이 값을 본다 (13차 G3 W1-6).
+     * (`exposure-check.php`)과 코어 프루너(`StorageLeftoverPruneService`)가 이 값을 본다.
      */
     define('INSTALLER_WRITE_PROBE_PREFIX', '.installer-write-probe-');
 }

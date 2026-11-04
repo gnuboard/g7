@@ -30,7 +30,8 @@
         "shop": "Shop",
         "products": "Products",
         "cart": "Cart",
-        "mypage": "My Page"
+        "mypage": "My Page",
+        "shortcuts": "Shortcuts"
     },
     "footer": {
         "info": "Info",

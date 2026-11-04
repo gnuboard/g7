@@ -93,6 +93,7 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 |------|------|
 | [template-basics.md](template-basics.md) | Admin/User 템플릿, 메타데이터, 버전 히스토리 |
 | [template-routing.md](template-routing.md) | 라우트 정의, 언어 파일 경로 규칙 |
+| [template-settings.md](template-settings.md) | 템플릿 환경설정(defaults.json·설정 화면)·파비콘 우선순위 |
 | [template-security.md](template-security.md) | API 서빙, 파일 확장자 화이트리스트 |
 | [template-caching.md](template-caching.md) | 캐시 계층, 무효화 전략 |
 | [template-commands.md](template-commands.md) | Artisan 커맨드 (install, activate) |

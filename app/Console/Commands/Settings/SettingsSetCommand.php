@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * 설정 값 하나를 서버 터미널에서 지정한다 — 관리자 화면 「저장」과 같은 검증·같은 저장 경로.
  *
- * 키는 설정 파일과 같은 `범주.항목`(코어·모듈) 또는 플러그인 설정 키다. 민감 값(비밀번호·비밀 키·토큰)은
+ * 키는 설정 파일과 같은 `범주.항목`(코어·모듈) 또는 플러그인·템플릿 설정 키다. 민감 값(비밀번호·비밀 키·토큰)은
  * 명령줄 인자로 받지 않는다(프로세스 목록·셸 기록에 남는다) — 환경변수 G7_SETTING_VALUE, --value-file, 숨김 입력만.
  * 문자열 값은 현재 값의 형태(참/거짓·정수·실수)로 바꿔 검증에 넘긴다. 배열·객체는 --json-value 로 통째로 준다.
  */
@@ -30,6 +30,7 @@ class SettingsSetCommand extends Command
         {value? : 새 값 (민감 값은 받지 않음 — G7_SETTING_VALUE·--value-file·숨김 입력)}
         {--plugin= : 플러그인 설정 (플러그인 식별자)}
         {--module= : 모듈 설정 (모듈 식별자)}
+        {--template= : 템플릿 설정 (템플릿 식별자 — 첨부 키는 조회만)}
         {--value-file= : 값을 담은 파일 (끝 개행 하나만 제거)}
         {--json-value : 값을 JSON 으로 해석 (배열·객체 — 통째로 교체)}';
 
@@ -44,7 +45,8 @@ class SettingsSetCommand extends Command
         $key = (string) $this->argument('key');
         $plugin = $this->option('plugin') ?: null;
         $module = $this->option('module') ?: null;
-        $sensitive = $service->isSensitive($key, $plugin, $module);
+        $template = $this->option('template') ?: null;
+        $sensitive = $service->isSensitive($key, $plugin, $module, $template);
 
         try {
             $raw = $this->resolveRawValue($key, $sensitive);
@@ -54,9 +56,9 @@ class SettingsSetCommand extends Command
 
             $value = $this->option('json-value')
                 ? $this->decodeJson($raw)
-                : $this->castLike($raw, $service->currentValue($key, $plugin, $module));
+                : $this->castLike($raw, $service->currentValue($key, $plugin, $module, $template));
 
-            $result = $service->set($key, $value, $plugin, $module);
+            $result = $service->set($key, $value, $plugin, $module, $template);
         } catch (SettingsConsoleException $e) {
             $this->error('❌ '.$e->getMessage());
 
@@ -81,7 +83,7 @@ class SettingsSetCommand extends Command
             $this->line('   '.__('settings.console.cli.array_replaced'));
         }
         // 설정 캐시 파일은 코어 저장만 다시 만든다 — 플러그인·모듈 저장은 설정 미러를 갱신하고 설정 버전을 올린다(화면 저장과 같다).
-        if ($plugin === null && $module === null) {
+        if ($plugin === null && $module === null && $template === null) {
             $this->line('   '.__('settings.console.cli.cache_rebuilt'));
         }
 

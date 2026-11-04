@@ -104,9 +104,11 @@ describe('환경설정 저장 — 지연 업로더 신호 짝 (#639 ⑨)', () =>
 
     // @scenario surface=admin_settings_save, uploader=deferred
     // @effects every_deferred_uploader_receives_its_trigger_on_save
-    it('기본 공유 이미지 신호는 로고 신호 바로 다음에 보낸다 (설정 저장 요청보다 먼저)', () => {
+    it('업로드 신호는 로고 → 파비콘(#434) → 기본 공유 이미지 순으로 이어서 보낸다 (설정 저장 요청보다 먼저)', () => {
         const emitted = saveButtonEmits();
+        const logo = emitted.indexOf('upload:site_logo');
 
-        expect(emitted.indexOf('upload:og_image_default')).toBe(emitted.indexOf('upload:site_logo') + 1);
+        expect(emitted.indexOf('upload:site_favicon')).toBe(logo + 1);
+        expect(emitted.indexOf('upload:og_image_default')).toBe(logo + 2);
     });
 });

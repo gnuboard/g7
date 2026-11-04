@@ -1,0 +1,90 @@
+{
+  "sections": {
+    "branding": {
+      "label": "ブランディング",
+      "hint": "サイトのアイコン・色・ロゴ。空欄は環境設定の値(なければ既定値)を使います。"
+    },
+    "header": {
+      "label": "ヘッダー"
+    },
+    "footer": {
+      "label": "フッター"
+    },
+    "home": {
+      "label": "ホーム",
+      "hint": "ホーム画面に表示する領域と件数です。該当モジュールがオフの間は表示されません。"
+    }
+  },
+  "favicon": {
+    "label": "ファビコン",
+    "hint": "このテンプレートが有効なとき、ユーザー画面のブラウザタブに表示されるアイコンです。"
+  },
+  "accent": {
+    "label": "アクセントカラー",
+    "hint": "ボタン・リンク・案内ボックスの色です。",
+    "blue": "青(既定)",
+    "indigo": "藍",
+    "violet": "紫",
+    "green": "緑",
+    "teal": "青緑",
+    "orange": "オレンジ",
+    "rose": "ローズ",
+    "slate": "グレー"
+  },
+  "color_scheme": {
+    "label": "既定の表示モード",
+    "hint": "初めて訪れた人に表示するモードです。すでにモードを選んだ訪問者(このブラウザを含む)はその値を使います。",
+    "system": "システム設定に従う",
+    "light": "ライト",
+    "dark": "ダーク"
+  },
+  "logo_dark": {
+    "label": "ダークモード用ロゴ",
+    "hint": "暗い画面で使うロゴです。空欄なら環境設定のサイトロゴをそのまま使います。"
+  },
+  "header": {
+    "max_boards": {
+      "label": "掲示板メニューの数",
+      "hint": "ヘッダーに直接表示する掲示板の数です。残りは「もっと見る」に入ります。"
+    },
+    "show_theme_toggle": {
+      "label": "テーマボタンを表示"
+    },
+    "links": {
+      "label": "ショートカットリンク",
+      "hint": "掲示板メニューの後ろに付くリンクです(最大5件)。",
+      "item_label": "名前",
+      "item_url": "アドレス",
+      "item_new_tab": "新しいウィンドウで開く"
+    }
+  },
+  "footer": {
+    "copyright": {
+      "label": "著作権表示",
+      "hint": "空欄なら「© 年 サイト名」を使います。空欄の言語は既定言語の文言を使います。"
+    },
+    "show_powered_by": {
+      "label": "「Powered by Gnuboard7」を表示"
+    },
+    "social": {
+      "youtube": "YouTube",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "x": "X(Twitter)",
+      "github": "GitHub",
+      "discord": "Discord",
+      "blog": "ブログ"
+    }
+  },
+  "home": {
+    "show_welcome": "ウェルカムカード",
+    "show_stats": "統計カード",
+    "show_feature_row": "最近の投稿・人気掲示板",
+    "show_board_summaries": "掲示板の要約",
+    "show_shop_sections": "人気商品・新商品",
+    "product_count": {
+      "label": "商品数",
+      "hint": "人気商品・新商品のまとまりごとに表示する商品数です。"
+    }
+  }
+}

@@ -259,7 +259,7 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 | 발행 훅 | 622개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 236개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 51개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 17개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 레이아웃 확장 | 18개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 13개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -390,8 +390,8 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 743개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 302개 | `vitest.config.ts` |
+| PHPUnit | 744개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 303개 | `vitest.config.ts` |
 | Playwright | 83개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 425개 | `tests/scenarios` |
 

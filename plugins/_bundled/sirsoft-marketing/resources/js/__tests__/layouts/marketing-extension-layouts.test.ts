@@ -115,10 +115,14 @@ function findActions(node: any, handlerName: string): any[] {
 describe('user-marketing-register.json', () => {
     const layout = registerLayout as any;
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('target_layout이 auth/register이다', () => {
         expect(layout.target_layout).toBe('auth/register');
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('marketing_settings data_source가 정의되어 있다', () => {
         const ds = layout.data_sources?.find((d: any) => d.id === 'marketing_settings');
         expect(ds).toBeDefined();
@@ -126,6 +130,8 @@ describe('user-marketing-register.json', () => {
         expect(ds.auth_required).toBe(false);
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('marketing_consent_enabled 조건부 렌더링 if 조건이 있다', () => {
         const section = findById(layout, 'register_marketing_consent_section');
         expect(section).not.toBeNull();
@@ -135,6 +141,8 @@ describe('user-marketing-register.json', () => {
         expect(divWithIf[0].if).toContain('marketing_settings?.data?.marketing_consent_enabled === true');
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('약관 보기 버튼이 marketing_consent_terms_slug_set 조건으로 감싸져 있다', () => {
         const section = findById(layout, 'register_marketing_consent_section');
         const viewBtns = findAllRecursive(section, (n) =>
@@ -144,6 +152,8 @@ describe('user-marketing-register.json', () => {
         expect(viewBtns[0].if).toContain('terms_slug_set === true');
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('channels iteration이 item_var를 사용한다', () => {
         const section = findById(layout, 'register_marketing_consent_section');
         const iterNodes = findAllRecursive(section, (n) => n.iteration?.item_var !== undefined);
@@ -154,6 +164,8 @@ describe('user-marketing-register.json', () => {
         }
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('channels iteration source에 fallback이 있다', () => {
         const section = findById(layout, 'register_marketing_consent_section');
         const iterNodes = findAllRecursive(section, (n) => n.iteration?.source !== undefined);
@@ -162,6 +174,8 @@ describe('user-marketing-register.json', () => {
         }
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('marketing_consent 체크박스 change 액션이 Object.assign 패턴을 사용한다', () => {
         const section = findById(layout, 'register_marketing_consent_section');
         const setStateActions = findActions(section, 'setState');
@@ -174,6 +188,8 @@ describe('user-marketing-register.json', () => {
         expect(masterSetState.params.registerForm).toContain('_local.registerForm');
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('third_party_consent_enabled 조건부 렌더링이 있다', () => {
         const section = findById(layout, 'register_marketing_consent_section');
         const divWithIf = findAllRecursive(section, (n) =>
@@ -182,6 +198,8 @@ describe('user-marketing-register.json', () => {
         expect(divWithIf.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('info_disclosure_enabled 조건부 렌더링이 있다', () => {
         const section = findById(layout, 'register_marketing_consent_section');
         const divWithIf = findAllRecursive(section, (n) =>
@@ -190,6 +208,8 @@ describe('user-marketing-register.json', () => {
         expect(divWithIf.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('apiCall onSuccess에서 $response 없이 response.data를 사용한다', () => {
         const apiCalls = findActions(layout, 'apiCall');
         for (const action of apiCalls) {
@@ -204,6 +224,8 @@ describe('user-marketing-register.json', () => {
         }
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('marketing_terms_modal이 modals에 정의되어 있다', () => {
         const modals = layout.modals;
         expect(Array.isArray(modals)).toBe(true);
@@ -212,12 +234,16 @@ describe('user-marketing-register.json', () => {
         expect(modal.name).toBe('Modal');
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('모달 닫기 버튼이 closeModal 핸들러를 사용한다', () => {
         const modals = layout.modals;
         const closeActions = findActions(modals, 'closeModal');
         expect(closeActions.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('다국어 키가 sirsoft-marketing 네임스페이스를 사용한다', () => {
         const texts = collectTexts(layout);
         for (const text of texts) {
@@ -225,6 +251,8 @@ describe('user-marketing-register.json', () => {
         }
     });
 
+    // @scenario layout=register
+    // @effects extension_layout_contract_holds
     it('다크모드 클래스가 bg-white 단독 사용 없이 사용된다', () => {
         const classNames = collectClassNames(layout);
         for (const cls of classNames) {
@@ -242,15 +270,21 @@ describe('user-marketing-register.json', () => {
 describe('user-marketing-profile.json', () => {
     const layout = profileLayout as any;
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('target_layout이 mypage/profile-edit이다', () => {
         expect(layout.target_layout).toBe('mypage/profile-edit');
     });
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('marketing_settings data_source가 정의되어 있다', () => {
         const ds = layout.data_sources?.find((d: any) => d.id === 'marketing_settings');
         expect(ds).toBeDefined();
     });
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('_local.profileEditForm?.marketing_consent_enabled 조건부 렌더링이 있다', () => {
         const conditionals = findAllRecursive(layout, (n) =>
             typeof n.if === 'string' && n.if.includes('marketing_consent_enabled')
@@ -258,6 +292,8 @@ describe('user-marketing-profile.json', () => {
         expect(conditionals.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('channels iteration이 item_var를 사용한다', () => {
         const iterNodes = findAllRecursive(layout, (n) => n.iteration?.item_var !== undefined);
         expect(iterNodes.length).toBeGreaterThan(0);
@@ -266,6 +302,8 @@ describe('user-marketing-profile.json', () => {
         }
     });
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('약관 보기 버튼이 terms_slug_set 조건으로 표시된다', () => {
         const viewBtns = findAllRecursive(layout, (n) =>
             n.name === 'Button' && typeof n.if === 'string' && n.if.includes('terms_slug_set')
@@ -273,6 +311,8 @@ describe('user-marketing-profile.json', () => {
         expect(viewBtns.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('apiCall onSuccess에서 marketingTermsPageData 상태를 global에 저장한다', () => {
         const apiCalls = findActions(layout, 'apiCall');
         let found = false;
@@ -287,6 +327,8 @@ describe('user-marketing-profile.json', () => {
         expect(found).toBe(true);
     });
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('marketing_terms_modal이 modals에 정의되어 있다', () => {
         const modals = layout.modals;
         expect(Array.isArray(modals)).toBe(true);
@@ -294,6 +336,8 @@ describe('user-marketing-profile.json', () => {
         expect(modal).toBeDefined();
     });
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('다국어 키가 sirsoft-marketing 네임스페이스를 사용한다', () => {
         const texts = collectTexts(layout);
         for (const text of texts) {
@@ -301,6 +345,8 @@ describe('user-marketing-profile.json', () => {
         }
     });
 
+    // @scenario layout=profile
+    // @effects extension_layout_contract_holds
     it('다크모드 클래스가 bg-white 단독 사용 없이 사용된다', () => {
         const classNames = collectClassNames(layout);
         for (const cls of classNames) {
@@ -318,10 +364,14 @@ describe('user-marketing-profile.json', () => {
 describe('user-marketing-profile-view.json', () => {
     const layout = profileViewLayout as any;
 
+    // @scenario layout=profile_view
+    // @effects extension_layout_contract_holds
     it('target_layout이 mypage/profile이다', () => {
         expect(layout.target_layout).toBe('mypage/profile');
     });
 
+    // @scenario layout=profile_view
+    // @effects extension_layout_contract_holds
     it('marketing_consent_enabled 조건부 렌더링이 있다', () => {
         const conditionals = findAllRecursive(layout, (n) =>
             typeof n.if === 'string' && n.if.includes('marketing_consent_enabled')
@@ -329,11 +379,15 @@ describe('user-marketing-profile-view.json', () => {
         expect(conditionals.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=profile_view
+    // @effects extension_layout_contract_holds
     it('channels iteration이 있고 item_var를 사용한다', () => {
         const iterNodes = findAllRecursive(layout, (n) => n.iteration?.item_var !== undefined);
         expect(iterNodes.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=profile_view
+    // @effects extension_layout_contract_holds
     it('다국어 키가 sirsoft-marketing 네임스페이스를 사용한다', () => {
         const texts = collectTexts(layout);
         for (const text of texts) {
@@ -349,16 +403,22 @@ describe('user-marketing-profile-view.json', () => {
 describe('user-marketing-form.json', () => {
     const layout = formLayout as any;
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('target_layout이 admin_user_form이다', () => {
         expect(layout.target_layout).toBe('admin_user_form');
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('marketing_settings data_source가 정의되어 있다', () => {
         const ds = layout.data_sources?.find((d: any) => d.id === 'marketing_settings');
         expect(ds).toBeDefined();
         expect(ds.auth_required).toBe(true);
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('marketing_consent_enabled 조건부 렌더링이 있다', () => {
         const conditionals = findAllRecursive(layout, (n) =>
             typeof n.if === 'string' && n.if.includes('marketing_consent_enabled')
@@ -366,6 +426,8 @@ describe('user-marketing-form.json', () => {
         expect(conditionals.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('모든 Button에 type 속성이 명시되어 있다', () => {
         const buttons = findAllRecursive(layout, (n) => n.name === 'Button');
         for (const btn of buttons) {
@@ -373,6 +435,8 @@ describe('user-marketing-form.json', () => {
         }
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('약관 보기 버튼이 terms_slug_set 조건으로 표시된다', () => {
         const viewBtns = findAllRecursive(layout, (n) =>
             n.name === 'Button' && typeof n.if === 'string' && n.if.includes('terms_slug_set')
@@ -380,6 +444,8 @@ describe('user-marketing-form.json', () => {
         expect(viewBtns.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('apiCall onSuccess에서 marketingTermsPageData를 global 상태에 저장한다', () => {
         const apiCalls = findActions(layout, 'apiCall');
         let found = false;
@@ -396,6 +462,8 @@ describe('user-marketing-form.json', () => {
         expect(found).toBe(true);
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('marketing_terms_modal이 modals에 정의되어 있다', () => {
         const modals = layout.modals;
         expect(Array.isArray(modals)).toBe(true);
@@ -403,6 +471,8 @@ describe('user-marketing-form.json', () => {
         expect(modal).toBeDefined();
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('channels iteration이 있고 item_var를 사용한다', () => {
         const iterNodes = findAllRecursive(layout, (n) => n.iteration?.item_var !== undefined);
         expect(iterNodes.length).toBeGreaterThan(0);
@@ -411,6 +481,8 @@ describe('user-marketing-form.json', () => {
         }
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('다국어 키가 sirsoft-marketing 또는 admin 네임스페이스를 사용한다', () => {
         const texts = collectTexts(layout);
         for (const text of texts) {
@@ -418,6 +490,8 @@ describe('user-marketing-form.json', () => {
         }
     });
 
+    // @scenario layout=form
+    // @effects extension_layout_contract_holds
     it('다크모드 클래스가 bg-white 단독 사용 없이 사용된다', () => {
         const classNames = collectClassNames(layout);
         for (const cls of classNames) {
@@ -435,10 +509,14 @@ describe('user-marketing-form.json', () => {
 describe('user-marketing-detail.json', () => {
     const layout = detailLayout as any;
 
+    // @scenario layout=detail
+    // @effects extension_layout_contract_holds
     it('target_layout이 admin_user_detail이다', () => {
         expect(layout.target_layout).toBe('admin_user_detail');
     });
 
+    // @scenario layout=detail
+    // @effects extension_layout_contract_holds
     it('marketing_consent_enabled 조건부 렌더링이 있다', () => {
         const conditionals = findAllRecursive(layout, (n) =>
             typeof n.if === 'string' && n.if.includes('marketing_consent_enabled')
@@ -446,6 +524,8 @@ describe('user-marketing-detail.json', () => {
         expect(conditionals.length).toBeGreaterThan(0);
     });
 
+    // @scenario layout=detail
+    // @effects extension_layout_contract_holds
     it('channels iteration이 있고 item_var를 사용한다', () => {
         const iterNodes = findAllRecursive(layout, (n) => n.iteration?.item_var !== undefined);
         expect(iterNodes.length).toBeGreaterThan(0);
@@ -454,6 +534,8 @@ describe('user-marketing-detail.json', () => {
         }
     });
 
+    // @scenario layout=detail
+    // @effects extension_layout_contract_holds
     it('다국어 키가 sirsoft-marketing 또는 admin 네임스페이스를 사용한다', () => {
         const texts = collectTexts(layout);
         for (const text of texts) {
@@ -461,6 +543,8 @@ describe('user-marketing-detail.json', () => {
         }
     });
 
+    // @scenario layout=detail
+    // @effects extension_layout_contract_holds
     it('다크모드 클래스가 bg-white 단독 사용 없이 사용된다', () => {
         const classNames = collectClassNames(layout);
         for (const cls of classNames) {
@@ -478,20 +562,28 @@ describe('user-marketing-detail.json', () => {
 describe('plugin_settings.json', () => {
     const layout = pluginSettingsLayout as any;
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('layout_name이 plugin_settings이다', () => {
         expect(layout.layout_name).toBe('plugin_settings');
     });
 
-    it('permissions에 core.plugins.update가 있다', () => {
-        expect(layout.permissions).toContain('core.plugins.update');
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
+    it('permissions는 보기 권한(core.plugins.read)이다 — 수정 권한이 없으면 읽기 전용으로 연다(#434 W18)', () => {
+        expect(layout.permissions).toEqual(['core.plugins.read']);
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('settings data_source가 정의되어 있다', () => {
         const ds = layout.data_sources?.find((d: any) => d.id === 'settings');
         expect(ds).toBeDefined();
         expect(ds.auth_required).toBe(true);
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('settings data_source onSuccess에서 form.channels를 local 상태에 저장한다', () => {
         const ds = layout.data_sources?.find((d: any) => d.id === 'settings');
         // `onSuccess` 는 콜백 배열이고 그 안의 제어 핸들러가 하위 액션을 담는다 —
@@ -503,6 +595,8 @@ describe('plugin_settings.json', () => {
         expect(localSetState).toBeDefined();
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('settings data_source onSuccess에서 channels를 global 상태에 저장한다', () => {
         const ds = layout.data_sources?.find((d: any) => d.id === 'settings');
         // `onSuccess` 는 콜백 배열이고 그 안의 제어 핸들러가 하위 액션을 담는다 —
@@ -514,6 +608,8 @@ describe('plugin_settings.json', () => {
         expect(globalSetState).toBeDefined();
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('channel_edit_modal이 modals에 정의되어 있다', () => {
         const modals = layout.modals;
         expect(modals).toBeDefined();
@@ -527,6 +623,8 @@ describe('plugin_settings.json', () => {
         }
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('channel_edit_modal이 closeOnBackdropClick: false를 사용한다', () => {
         const modals = layout.modals;
         const editModal = typeof modals === 'object' && !Array.isArray(modals)
@@ -535,6 +633,8 @@ describe('plugin_settings.json', () => {
         expect(editModal?.props?.closeOnBackdropClick).toBe(false);
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('채널 PUT API 저장 액션이 있다', () => {
         const apiCalls = findActions(layout, 'apiCall');
         const putChannels = apiCalls.find((a: any) =>
@@ -543,6 +643,8 @@ describe('plugin_settings.json', () => {
         expect(putChannels).toBeDefined();
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('채널 삭제 버튼이 apiCall 없이 setState로만 채널을 제거한다', () => {
         // 삭제 버튼: trash 아이콘을 가진 Button의 actions
         const deleteButtons = findAllRecursive(layout, (n: any) =>
@@ -569,6 +671,8 @@ describe('plugin_settings.json', () => {
         expect(channelFilter).toBeDefined();
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('채널 삭제 버튼이 hasChanges를 true로 설정한다', () => {
         const deleteButtons = findAllRecursive(layout, (n: any) =>
             n.name === 'Button' &&
@@ -585,6 +689,8 @@ describe('plugin_settings.json', () => {
         expect(hasChangesSet).toBeDefined();
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('저장 버튼이 channels API를 먼저 호출한 후 settings API를 호출한다', () => {
         // save_button은 slots.content 내부에 있으므로 slots에서 탐색
         const slotsContent = layout.slots?.content ?? [];
@@ -612,6 +718,8 @@ describe('plugin_settings.json', () => {
         expect(settingsApi).toBeDefined();
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('채널 검증 실패 시 channel_deactivate_modal이 열린다', () => {
         const slotsContent = layout.slots?.content ?? [];
         let saveBtn: any = null;
@@ -637,6 +745,8 @@ describe('plugin_settings.json', () => {
         expect(deactivateModal).toBeDefined();
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('channel_deactivate_modal 확인 버튼이 apiCall 없이 setState로만 동작한다', () => {
         const modals = layout.modals;
         const deactivateModal = typeof modals === 'object' && !Array.isArray(modals)
@@ -657,6 +767,8 @@ describe('plugin_settings.json', () => {
         expect(channelRestore).toBeDefined();
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('모든 Button에 type 속성이 명시되어 있다', () => {
         const buttons = findAllRecursive(layout, (n) => n.name === 'Button');
         for (const btn of buttons) {
@@ -664,6 +776,8 @@ describe('plugin_settings.json', () => {
         }
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('다국어 키가 sirsoft-marketing 또는 admin 네임스페이스를 사용한다', () => {
         const texts = collectTexts(layout);
         for (const text of texts) {
@@ -671,6 +785,8 @@ describe('plugin_settings.json', () => {
         }
     });
 
+    // @scenario layout=plugin_settings
+    // @effects extension_layout_contract_holds
     it('다크모드 클래스가 bg-white 단독 사용 없이 사용된다', () => {
         const classNames = collectClassNames(layout);
         for (const cls of classNames) {

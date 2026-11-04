@@ -167,6 +167,16 @@
             <span data-if="{{_local.errors?.['basic_info.telecom_number']}}" class="ecommerce-form-error">{{_local.errors?.['basic_info.telecom_number']?.[0] ?? ''}}</span>
           </div>
         </div>
+        <!-- 푸터 사업자 정보 표시 (#434) — 켜면 이 모듈이 사용자 템플릿의 공용 자리(user_global_footer)에 위 값을 그린다(전자상거래법 첫 화면 표시).
+             어느 사용자 템플릿이든 그 자리만 있으면 같다. 기본 켜짐 — 값이 비어 있으면 그리지 않는다 -->
+        <div data-ref="field_footer_business_info_enabled" class="ecommerce-form-group ecommerce:mt-4">
+          <div class="ecommerce-flex-center ecommerce:justify-between ecommerce:gap-4">
+            <label class="ecommerce-form-label ecommerce:mb-0">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display</label>
+            <toggle data-type="composite" name="basic_info.footer_business_info_enabled" value="{{_local.form?.basic_info?.footer_business_info_enabled ?? true}}" ariaLabel="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+          <p class="ecommerce-form-hint ecommerce:mt-1">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display_help</p>
+          <span data-if="{{_local.errors?.['basic_info.footer_business_info_enabled']}}" class="ecommerce-form-error">{{_local.errors?.['basic_info.footer_business_info_enabled']?.[0] ?? ''}}</span>
+        </div>
       </div>
     </div>
     <div data-ref="public_asset_storage_card" class="ecommerce-admin-card">

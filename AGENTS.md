@@ -10,7 +10,7 @@
 |---|---:|---|
 | 백엔드 | 44 | [docs/backend/](docs/backend/) |
 | 프론트엔드 | 47 | [docs/frontend/](docs/frontend/) |
-| 확장 시스템 | 38 | [docs/extension/](docs/extension/) |
+| 확장 시스템 | 39 | [docs/extension/](docs/extension/) |
 | 공통 | 13 | [docs/](docs/) |
 
 전체 목록·작업 유형별 필수 문서·API 레퍼런스·확장 개발자 문서: [docs/README.md](docs/README.md)

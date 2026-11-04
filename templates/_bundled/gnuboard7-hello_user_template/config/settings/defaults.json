@@ -1,0 +1,48 @@
+{
+    "_meta": {
+        "version": "2.0.0",
+        "description": "Hello 사용자 템플릿 환경설정 (설정 예제)",
+        "categories": [
+            "branding"
+        ]
+    },
+    "sections": {
+        "branding": {
+            "label": "$t:settings.sections.branding.label"
+        }
+    },
+    "defaults": {
+        "branding": {
+            "favicon": []
+        }
+    },
+    "schema": {
+        "branding": {
+            "favicon": {
+                "type": "attachments",
+                "max_files": 1,
+                "accept": [
+                    "ico",
+                    "png",
+                    "svg",
+                    "gif",
+                    "jpg",
+                    "jpeg",
+                    "webp"
+                ],
+                "label": "$t:settings.favicon.label",
+                "hint": "$t:settings.favicon.hint"
+            }
+        }
+    },
+    "frontend_schema": {
+        "branding": {
+            "expose": true,
+            "fields": {
+                "favicon_url": {
+                    "expose": true
+                }
+            }
+        }
+    }
+}

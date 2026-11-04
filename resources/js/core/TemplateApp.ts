@@ -526,6 +526,13 @@ export class TemplateApp {
                 logger.log('Loaded module settings from G7Config:', Object.keys(g7Config.modules));
             }
 
+            // 활성 템플릿 공개 설정 로드 (engine-v1.87.0, #434) — 이 화면 종류(사용자·관리자)의 활성 템플릿 하나의
+            // `frontend_schema` 노출값(평면 객체). `_global.plugins` 대칭. 키가 없는 옛 코어에서는 만들지 않는다.
+            if (g7Config.templateSettings && typeof g7Config.templateSettings === 'object') {
+                this.globalState.templateSettings = g7Config.templateSettings;
+                logger.log('Loaded template settings from G7Config:', Object.keys(g7Config.templateSettings));
+            }
+
             // 앱 config 로드 (config() 기반 설정값)
             if (g7Config.appConfig) {
                 this.globalState.appConfig = g7Config.appConfig;
@@ -3646,7 +3653,7 @@ export class TemplateApp {
             const templateId = this.config.templateId || '';
             // 인증 타입 판정은 **라우트 기준 경로**로 한다 — 하위 폴더 배치에서
             // `location.pathname` 은 `/g7/admin/…` 이라 `/admin` 접두 검사가 거짓이
-            // 되고, 관리자 화면의 세션 만료가 사용자 로그인으로 흘러간다 (12차 G3).
+            // 되고, 관리자 화면의 세션 만료가 사용자 로그인으로 흘러간다.
             // 복귀 주소는 브라우저가 그대로 열 값이므로 벗기지 않은 원본을 쓴다.
             const pathname = stripBasePrefix(window.location.pathname);
             const authType: AuthType =
@@ -5207,11 +5214,10 @@ export class TemplateApp {
         //
         // 히스토리에 싣는 값은 브라우저가 보는 주소이므로 접두사를 붙인다 — 형제
         // `ActionDispatcher.handleReplaceUrl`(withBasePrefix) · `Router.executeNavigation`
-        // 과 같은 규칙이다. 12차가 그 둘을 고칠 때 이 한 곳이 빠져 있었고, 목록 화면의
+        // 과 같은 규칙이다. 그 둘을 고칠 때 이 한 곳이 빠져 있었고, 목록 화면의
         // 검색·정렬·페이지 이동(`navigate` + `replace: true`)이 전부 이 경로라 하위 폴더
         // 배치에서 주소창만 마운트 밖으로 교체됐다(새로고침·북마크 시 다른 사이트가
-        // 열린다). `withBasePrefix` 는 멱등이라 이미 붙은 값이 와도 안전하다
-        // (14차 G3 라운드).
+        // 열린다). `withBasePrefix` 는 멱등이라 이미 붙은 값이 와도 안전하다.
         window.history.replaceState(null, '', withBasePrefix(newPath));
         // 주소를 읽어 href 를 만드는 `:mergeQuery` 링크가 props 변화 없이도 다시 그려지게 알린다 (engine-v1.82.1)
         notifyLocationReplaced();

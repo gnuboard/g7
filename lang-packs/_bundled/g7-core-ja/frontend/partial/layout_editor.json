@@ -348,7 +348,9 @@
     "bound_value": {
       "notice": "データ連携の値です（自動で入ります）",
       "replace": "直接指定に変更",
-      "restore": "データ連携に戻す"
+      "restore": "データ連携に戻す",
+      "template_settings_notice": "テンプレート設定に連結された値です — 管理 > テンプレート > このテンプレートの「設定」で変更します。",
+      "open_template_settings": "設定を開く"
     }
   },
   "recipe": {

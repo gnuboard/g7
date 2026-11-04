@@ -418,4 +418,26 @@ return [
             'layout_name_max' => '레이아웃 이름은 최대 150자까지 허용됩니다.',
         ],
     ],
+
+    // 템플릿 환경설정 (#434)
+    'settings' => [
+        'updated' => '템플릿 설정을 저장했습니다.',
+        'reset' => '템플릿 설정을 기본값으로 되돌렸습니다.',
+        'attributes' => [
+            'section' => '설정 섹션',
+        ],
+        'reset_failed' => '템플릿 설정을 기본값으로 되돌리지 못했습니다: :error',
+        'warnings' => [
+            'owned_elsewhere' => '템플릿 ":template" 의 설정 칸 :fields 은(는) 코어·다른 확장이 이미 가진 값과 이름이 같습니다 — 그 값을 읽어 쓰고 다시 저장하지 마세요.',
+        ],
+        'update_failed' => '템플릿 설정 저장에 실패했습니다: :error',
+        'not_found' => '설정 화면이 없는 템플릿입니다.',
+        'errors' => [
+            'invalid_json' => '템플릿 ":template" 의 설정 선언(config/settings/defaults.json)이 올바른 JSON 이 아닙니다: :error',
+            'invalid_schema' => '템플릿 ":template" 의 설정 선언이 규약에 맞지 않습니다: :errors',
+            'not_available' => '템플릿 ":template" 은 설치되지 않았거나 설정 선언이 없습니다.',
+            'save_failed' => '설정 파일을 쓰지 못했습니다.',
+            'override_not_allowed' => '템플릿 설정 화면은 관리자 템플릿 덮기(overrides)로 바꿀 수 없습니다 — 레이아웃 편집기에서 고치세요.',
+        ],
+    ],
 ];

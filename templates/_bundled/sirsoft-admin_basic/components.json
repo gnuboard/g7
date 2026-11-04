@@ -5105,6 +5105,22 @@
         }
       },
       {
+        "name": "TemplateSettingsFields",
+        "type": "composite",
+        "description": "템플릿 설정 공용 화면의 칸 그리기 — 조회 응답의 섹션 서술대로 섹션 카드·칸 종류별 입력(언어별 문구·목록·첨부 포함)을 그리고 폼 전체를 onChange 로 올린다 (#434)",
+        "path": "src/components/composite/TemplateSettingsFields.tsx",
+        "props": {
+          "sections": { "type": "array", "required": false, "default": "[]", "description": "섹션 서술 (조회 응답 data.sections)" },
+          "value": { "type": "object", "required": false, "description": "현재 값 (섹션 중첩)" },
+          "errors": { "type": "object", "required": false, "description": "서버 검증 오류 {경로: [문구]}" },
+          "disabled": { "type": "boolean", "required": false, "default": "false", "description": "읽기 전용" },
+          "uploadTriggerEvent": { "type": "string", "required": false, "default": "upload:template_settings", "description": "첨부 칸 업로드 신호 이름" },
+          "onChange": { "type": "function", "required": false, "description": "값 변경 시 폼 전체 (next) => void" },
+          "onDirty": { "type": "function", "required": false, "description": "파일만 고른 상태 등 저장 버튼을 풀어 줄 때" },
+          "onUploadError": { "type": "function", "required": false, "description": "업로드 실패 문구 (message) => void" }
+        }
+      },
+      {
         "name": "MultilingualTabPanel",
         "type": "composite",
         "description": "다국어 탭 패널 - DynamicFieldList 등 다국어 컬럼을 포함하는 컴포넌트에서 로케일 제어용",

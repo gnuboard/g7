@@ -88,6 +88,17 @@ return [
             'report' => false,
         ],
 
+        // 템플릿 환경설정(`{id}/settings/setting.json`) — 템플릿은 PHP 인스턴스가 없어 코어가 이 디스크로 직접 읽고 쓴다(#434).
+        // 템플릿 디렉토리 밖에 두므로 템플릿 업데이트·삭제가 운영자 설정을 지우지 않는다.
+        'templates' => [
+            'driver' => 'local-safe',
+            'allow_relative_path_traversal' => false,
+            'root' => storage_path($extensionStorageRoot.'/templates'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
         'attachments' => [
             'driver' => 'local-safe',
             'allow_relative_path_traversal' => false,
@@ -177,8 +188,8 @@ return [
         // 종전에는 이 자리만 리터럴이라, 운영자가 위 `disks.public.root` 를 옮긴 사이트에서
         // `storage:link` 가 **옛 위치**를 가리키는 링크를 만들었다. 그러면 파일을 쓰는 쪽과
         // 서빙하는 쪽(`PublicStorageService::rootPath()`)은 새 루트를 보는데 링크만 옛 트리를
-        // 가리켜, 공개 자산이 오류도 로그도 없이 전부 404 가 된다 — 코어 복구기가 22·23차에
-        // 걸쳐 닫은 것과 **같은 결함의 세 번째 출처**였다 (23차 G3 라운드 D23-3).
+        // 가리켜, 공개 자산이 오류도 로그도 없이 전부 404 가 된다 — 코어 복구기가 앞서
+        // 닫은 것과 **같은 결함의 세 번째 출처**였다.
         public_path('storage') => $publicDiskRoot,
     ],
 

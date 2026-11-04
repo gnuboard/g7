@@ -1,0 +1,288 @@
+{
+    "_meta": {
+        "version": "2.0.0",
+        "description": "Basic 사용자 템플릿 환경설정",
+        "categories": [
+            "branding",
+            "header",
+            "footer",
+            "home"
+        ]
+    },
+    "sections": {
+        "branding": {
+            "label": "$t:settings.sections.branding.label",
+            "hint": "$t:settings.sections.branding.hint"
+        },
+        "header": {
+            "label": "$t:settings.sections.header.label"
+        },
+        "footer": {
+            "label": "$t:settings.sections.footer.label"
+        },
+        "home": {
+            "label": "$t:settings.sections.home.label",
+            "hint": "$t:settings.sections.home.hint"
+        }
+    },
+    "defaults": {
+        "branding": {
+            "favicon": [],
+            "accent": "blue",
+            "color_scheme_default": "system",
+            "logo_dark": []
+        },
+        "header": {
+            "max_boards": 5,
+            "show_theme_toggle": true,
+            "links": []
+        },
+        "footer": {
+            "copyright": {},
+            "show_powered_by": true,
+            "social_youtube": "",
+            "social_instagram": "",
+            "social_facebook": "",
+            "social_x": "",
+            "social_github": "",
+            "social_discord": "",
+            "social_blog": ""
+        },
+        "home": {
+            "show_welcome": true,
+            "show_stats": true,
+            "show_feature_row": true,
+            "show_board_summaries": true,
+            "show_shop_sections": true,
+            "product_count": 8
+        }
+    },
+    "schema": {
+        "branding": {
+            "favicon": {
+                "type": "attachments",
+                "max_files": 1,
+                "accept": [
+                    "ico",
+                    "png",
+                    "svg",
+                    "gif",
+                    "jpg",
+                    "jpeg",
+                    "webp"
+                ],
+                "label": "$t:settings.favicon.label",
+                "hint": "$t:settings.favicon.hint"
+            },
+            "accent": {
+                "type": "enum",
+                "options": [
+                    {
+                        "value": "blue",
+                        "label": "$t:settings.accent.blue"
+                    },
+                    {
+                        "value": "indigo",
+                        "label": "$t:settings.accent.indigo"
+                    },
+                    {
+                        "value": "violet",
+                        "label": "$t:settings.accent.violet"
+                    },
+                    {
+                        "value": "green",
+                        "label": "$t:settings.accent.green"
+                    },
+                    {
+                        "value": "teal",
+                        "label": "$t:settings.accent.teal"
+                    },
+                    {
+                        "value": "orange",
+                        "label": "$t:settings.accent.orange"
+                    },
+                    {
+                        "value": "rose",
+                        "label": "$t:settings.accent.rose"
+                    },
+                    {
+                        "value": "slate",
+                        "label": "$t:settings.accent.slate"
+                    }
+                ],
+                "label": "$t:settings.accent.label",
+                "hint": "$t:settings.accent.hint"
+            },
+            "color_scheme_default": {
+                "type": "enum",
+                "options": [
+                    {
+                        "value": "system",
+                        "label": "$t:settings.color_scheme.system"
+                    },
+                    {
+                        "value": "light",
+                        "label": "$t:settings.color_scheme.light"
+                    },
+                    {
+                        "value": "dark",
+                        "label": "$t:settings.color_scheme.dark"
+                    }
+                ],
+                "label": "$t:settings.color_scheme.label",
+                "hint": "$t:settings.color_scheme.hint"
+            },
+            "logo_dark": {
+                "type": "image",
+                "max_files": 1,
+                "max_size_kb": 2048,
+                "label": "$t:settings.logo_dark.label",
+                "hint": "$t:settings.logo_dark.hint"
+            }
+        },
+        "header": {
+            "max_boards": {
+                "type": "integer",
+                "min": 1,
+                "max": 10,
+                "required": true,
+                "label": "$t:settings.header.max_boards.label",
+                "hint": "$t:settings.header.max_boards.hint"
+            },
+            "show_theme_toggle": {
+                "type": "boolean",
+                "label": "$t:settings.header.show_theme_toggle.label"
+            },
+            "links": {
+                "type": "list",
+                "max_items": 5,
+                "label": "$t:settings.header.links.label",
+                "hint": "$t:settings.header.links.hint",
+                "item_fields": {
+                    "label": {
+                        "type": "multilingual",
+                        "required": true,
+                        "max_length": 30,
+                        "label": "$t:settings.header.links.item_label"
+                    },
+                    "url": {
+                        "type": "link",
+                        "required": true,
+                        "label": "$t:settings.header.links.item_url",
+                        "placeholder": "/boards/free"
+                    },
+                    "new_tab": {
+                        "type": "boolean",
+                        "label": "$t:settings.header.links.item_new_tab"
+                    }
+                }
+            }
+        },
+        "footer": {
+            "copyright": {
+                "type": "multilingual",
+                "max_length": 200,
+                "label": "$t:settings.footer.copyright.label",
+                "hint": "$t:settings.footer.copyright.hint"
+            },
+            "show_powered_by": {
+                "type": "boolean",
+                "label": "$t:settings.footer.show_powered_by.label"
+            },
+            "social_youtube": {
+                "type": "url",
+                "label": "$t:settings.footer.social.youtube",
+                "placeholder": "https://"
+            },
+            "social_instagram": {
+                "type": "url",
+                "label": "$t:settings.footer.social.instagram",
+                "placeholder": "https://"
+            },
+            "social_facebook": {
+                "type": "url",
+                "label": "$t:settings.footer.social.facebook",
+                "placeholder": "https://"
+            },
+            "social_x": {
+                "type": "url",
+                "label": "$t:settings.footer.social.x",
+                "placeholder": "https://"
+            },
+            "social_github": {
+                "type": "url",
+                "label": "$t:settings.footer.social.github",
+                "placeholder": "https://"
+            },
+            "social_discord": {
+                "type": "url",
+                "label": "$t:settings.footer.social.discord",
+                "placeholder": "https://"
+            },
+            "social_blog": {
+                "type": "url",
+                "label": "$t:settings.footer.social.blog",
+                "placeholder": "https://"
+            }
+        },
+        "home": {
+            "show_welcome": {
+                "type": "boolean",
+                "label": "$t:settings.home.show_welcome"
+            },
+            "show_stats": {
+                "type": "boolean",
+                "label": "$t:settings.home.show_stats"
+            },
+            "show_feature_row": {
+                "type": "boolean",
+                "label": "$t:settings.home.show_feature_row"
+            },
+            "show_board_summaries": {
+                "type": "boolean",
+                "label": "$t:settings.home.show_board_summaries"
+            },
+            "show_shop_sections": {
+                "type": "boolean",
+                "label": "$t:settings.home.show_shop_sections"
+            },
+            "product_count": {
+                "type": "integer",
+                "min": 4,
+                "max": 24,
+                "step": 4,
+                "required": true,
+                "label": "$t:settings.home.product_count.label",
+                "hint": "$t:settings.home.product_count.hint"
+            }
+        }
+    },
+    "frontend_schema": {
+        "branding": {
+            "expose": true,
+            "fields": {
+                "favicon_url": {
+                    "expose": true
+                },
+                "accent": {
+                    "expose": true
+                },
+                "color_scheme_default": {
+                    "expose": true
+                },
+                "logo_dark_url": {
+                    "expose": true
+                }
+            }
+        },
+        "header": {
+            "expose": true
+        },
+        "footer": {
+            "expose": true
+        },
+        "home": {
+            "expose": true
+        }
+    }
+}

@@ -1,0 +1,139 @@
+{
+    "comment": "템플릿 설정 — 저장하지 않은 변경이 있을 때 다른 섹션 탭으로 옮기기 전에 묻는 창 (#434). 저장은 지금 탭 섹션만 보내므로 옮기면 고친 값은\n  저장되지 않는다. 옮기기로 하면 설정을 다시 받아 폼을 저장된 값으로 돌린다(코어 환경설정의 같은 창과 같은 순서).",
+    "meta": {
+        "is_partial": true,
+        "editor_label": "$t:admin.modal_label.admin_template_settings.unsaved_tab_modal",
+        "description": "템플릿 설정 미저장 변경 탭 전환 확인 모달"
+    },
+    "id": "modal_template_settings_unsaved_tab",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:core.template_settings.unsaved_tab_title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:core.template_settings.unsaved_tab_message"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "id": "template_settings_unsaved_tab_stay",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "머무르기 — 옮기려던 탭을 지우고 창만 닫는다(고친 값과 「변경 있음」은 그대로)",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingTemplateSettingsTab": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "modal_template_settings_unsaved_tab"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:core.template_settings.unsaved_tab_stay"
+                        }
+                    ]
+                },
+                {
+                    "id": "template_settings_unsaved_tab_leave",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "저장하지 않고 옮기기 — 화면 상태는 여는 쪽 문맥(`$parent._local`)과 전역 미러 두 자리에 같은 값을 쓴다(한쪽만 지우면 옮긴 뒤 첫 입력에\n               옛 값이 되살아난다 — 코어 환경설정 같은 창의 실측 C7). `$parent` 는 창을 닫기 전에 쓴다. 그다음 주소를 바꾸고 설정을 다시 받는다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "_local.errors": null,
+                                        "_local.hasChanges": false,
+                                        "_local.activeTab": "{{_global.pendingTemplateSettingsTab}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local",
+                                        "errors": null,
+                                        "hasChanges": false,
+                                        "activeTab": "{{_global.pendingTemplateSettingsTab}}"
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "modal_template_settings_unsaved_tab"
+                                },
+                                {
+                                    "handler": "replaceUrl",
+                                    "params": {
+                                        "path": "/admin/templates/{{route.identifier}}/settings",
+                                        "query": {
+                                            "tab": "{{_global.pendingTemplateSettingsTab}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingTemplateSettingsTab": null
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "template_settings"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-orange-700 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-800 dark:hover:bg-orange-800"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:core.template_settings.unsaved_tab_leave"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

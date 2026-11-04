@@ -384,4 +384,24 @@ return [
         'invalid' => '❌ --layout-source は auto または json である必要があります。(入力値: :value)',
         'json_notice' => '⚠️  レイアウトインストールソースを JSON に強制的に変換します — ペア .json がある .g7.html は無視されます。',
     ],
+    'settings' => [
+        'updated' => 'テンプレート設定を保存しました。',
+        'reset' => 'テンプレート設定を既定値に戻しました。',
+        'attributes' => [
+            'section' => '設定セクション',
+        ],
+        'reset_failed' => 'テンプレート設定を既定値に戻せませんでした: :error',
+        'warnings' => [
+            'owned_elsewhere' => 'テンプレート「:template」の設定項目 :fields は、コアや他の拡張機能が既に持つ値と名前が同じです — その値を読み込んで使い、再度保存しないでください。',
+        ],
+        'update_failed' => 'テンプレート設定の保存に失敗しました: :error',
+        'not_found' => '設定画面のないテンプレートです。',
+        'errors' => [
+            'invalid_json' => 'テンプレート「:template」の設定宣言(config/settings/defaults.json)が正しい JSON ではありません: :error',
+            'invalid_schema' => 'テンプレート「:template」の設定宣言が規約に合っていません: :errors',
+            'not_available' => 'テンプレート「:template」はインストールされていないか、設定宣言がありません。',
+            'save_failed' => '設定ファイルを書き込めませんでした。',
+            'override_not_allowed' => 'テンプレート設定画面は管理テンプレートの上書き(overrides)では変更できません — レイアウトエディターで編集してください。',
+        ],
+    ],
 ];

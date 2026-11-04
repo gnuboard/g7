@@ -1,0 +1,565 @@
+{
+    "comment": "템플릿 설정 공용 화면 (#434) — 설정 화면을 직접 쓰지 않은 템플릿은 이 화면이 그 템플릿 선언(`config/settings/defaults.json`)대로 그린다.\n     코어가 `/admin/templates/{id}/settings` 라우트를 이 레이아웃으로 만든다(직접 쓴 화면 `{id}.template_settings` 가 있으면 그쪽).\n     섹션 카드·칸은 조회 응답의 `sections` 서술을 합성 컴포넌트 TemplateSettingsFields 가 그리고, 이 레이아웃은 화면 틀(제목·안내·\n     읽기 전용·섹션 탭·오류 요약·저장 바·기본값 되돌리기·이탈 경고)을 맡는다. 보기는 템플릿 조회 권한, 저장·되돌리기는 「템플릿 설정」 권한.\n     섹션은 모듈·코어 환경설정처럼 탭 하나씩이다 — 주소 `?tab=섹션` 으로 바로 열리고, 저장은 지금 탭 섹션만 보낸다(서버는 보낸 섹션만 합친다).\n     지금 탭(activeSection)은 주소·탭 줄이 고른 섹션이고, 그 섹션이 이 템플릿에 없으면(다른 템플릿 주소를 그대로 쓴 경우 등) 첫 섹션이다.\n     e2e:allow 템플릿 설정 공용 화면 — tests/Playwright/specs/admin/template-settings-favicon.spec.ts + Playwright MCP 실측(이력 문서 매트릭스)",
+    "version": "1.0.0",
+    "layout_name": "admin_template_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
+        "title": "$t:core.template_settings.page_title_short"
+    },
+    "data_sources": [
+        {
+            "id": "template_settings",
+            "label_key": "$t:editor.data_source.template_settings",
+            "type": "api",
+            "endpoint": "/api/admin/templates/{{route.identifier}}/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "initLocal": {
+                "form": "{{data?.settings ?? null}}"
+            },
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼으로 저장되지 않게 본문 오류 화면. 다시 받기 실패는 받아 둔 값을 두고 알린다",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 응답의 settings 를 폼 값(_local.form)으로 넣는다"
+        }
+    ],
+    "computed": {
+        "isReadOnly": "{{template_settings?.data?.abilities?.can_update !== true}}",
+        "activeSection": "{{(template_settings?.data?.sections ?? []).some(s => s.key === _local.activeTab) ? _local.activeTab : (template_settings?.data?.sections?.[0]?.key ?? null)}}"
+    },
+    "permissions": [
+        "core.templates.read"
+    ],
+    "transition_overlay": {
+        "target": "template_settings_tab_content",
+        "fallback_target": "right_content_area",
+        "wait_for": [
+            "template_settings"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "activeTab": "{{query.tab ?? null}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "template_settings_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content-responsive"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:core.template_settings.page_title|name={{template_settings?.data?.name ?? route.identifier ?? ''}}",
+                            "description": "$t:core.template_settings.description",
+                            "backPath": "/admin/templates",
+                            "backLabel": "$t:core.template_settings.back_to_list"
+                        }
+                    },
+                    {
+                        "comment": "저장한 값이 화면에 어떻게 보이는지 바로 볼 수 있게 — 켜진 템플릿만(꺼진 템플릿 값은 화면에 나오지 않는다)",
+                        "id": "view_site_row",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{template_settings?.data?.is_active === true}}",
+                        "props": {
+                            "className": "flex justify-end mb-3"
+                        },
+                        "children": [
+                            {
+                                "id": "view_site_link",
+                                "type": "basic",
+                                "name": "A",
+                                "props": {
+                                    "href": "{{template_settings?.data?.type === 'admin' ? '/admin' : '/'}}",
+                                    "target": "_blank",
+                                    "rel": "noopener noreferrer",
+                                    "className": "inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrow-up-right-from-square",
+                                            "className": "text-xs"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{template_settings?.data?.type === 'admin' ? '$t:core.template_settings.view_admin' : '$t:core.template_settings.view_site'}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "inactive_notice",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{template_settings?.data?.is_active === false}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-info"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "circle-info",
+                                            "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-info-soft"
+                                        },
+                                        "text": "$t:core.template_settings.inactive_notice"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!!template_settings?.data && _computed.isReadOnly}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "lock",
+                                            "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-warning-soft"
+                                        },
+                                        "text": "$t:core.template_settings.read_only"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "섹션 탭 — 섹션이 하나뿐이어도 탭 줄을 둔다(다른 환경설정 화면과 같은 모양). 저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다(저장은 지금 탭 섹션만 보내므로\n           다른 탭으로 옮기면 고친 값이 저장되지 않는다 — 말없이 사라지지 않게). 탭을 옮겨도 설정을 다시 받지 않고 주소만 바꾼다",
+                        "id": "tab_navigation",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "conditions",
+                                "conditions": [
+                                    {
+                                        "if": "{{_local.hasChanges === true && $args[0] !== _computed.activeSection}}",
+                                        "then": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "pendingTemplateSettingsTab": "{{$args[0]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "modal_template_settings_unsaved_tab"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "then": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "activeTab": "{{$args[0]}}",
+                                                        "errors": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "replaceUrl",
+                                                    "params": {
+                                                        "path": "/admin/templates/{{route.identifier}}/settings",
+                                                        "query": {
+                                                            "tab": "{{$args[0]}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "className": "sticky-tab-nav-responsive",
+                            "activeTabId": "{{_computed.activeSection}}",
+                            "variant": "default",
+                            "tabs": "{{(template_settings?.data?.sections ?? []).map(s => ({ id: s.key, label: s.label, href: '/admin/templates/' + route.identifier + '/settings?tab=' + s.key }))}}"
+                        }
+                    },
+                    {
+                        "comment": "탭 본문 — 다른 환경설정 화면과 같은 틀(tab-content)이라 탭 줄과 첫 카드 사이 여백이 같다",
+                        "id": "template_settings_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "comment": "저장 실패 요약 — 칸이 많아 아래쪽 칸의 오류를 놓치지 않게 맨 위에 모은다(칸 아래 문구도 함께 보인다)",
+                                "id": "error_summary",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!_local.errors && Object.keys(_local.errors).length > 0}}",
+                                "props": {
+                                    "role": "alert",
+                                    "className": "alert-danger"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "triangle-exclamation",
+                                                    "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "font-medium text-red-700 dark:text-red-300"
+                                                        },
+                                                        "text": "$t:core.template_settings.error_summary"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Ul",
+                                                        "props": {
+                                                            "className": "mt-1 list-disc ps-5 text-sm text-red-700 dark:text-red-300"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "iteration": {
+                                                                    "source": "Object.values(_local.errors ?? {}).map(m => Array.isArray(m) ? m[0] : m)",
+                                                                    "item_var": "message"
+                                                                },
+                                                                "text": "{{message}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "template_settings_fields",
+                                "type": "composite",
+                                "name": "TemplateSettingsFields",
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "event": "onChange",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "hasChanges": true,
+                                            "form": "{{$args[0]}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "파일만 고른 상태 — 올리기는 저장 때 — 저장 버튼만 풀어 준다",
+                                        "type": "change",
+                                        "event": "onDirty",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "hasChanges": true
+                                        }
+                                    },
+                                    {
+                                        "comment": "업로드 실패 — 서버 문구(형식·크기·SVG 안전 검사)를 그대로 띄운다",
+                                        "type": "custom",
+                                        "event": "onUploadError",
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{$args[0]}}"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "sections": "{{(template_settings?.data?.sections ?? []).filter(s => s.key === _computed.activeSection)}}",
+                                    "value": "{{_local.form ?? {}}}",
+                                    "errors": "{{_local.errors ?? {}}}",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "uploadTriggerEvent": "upload:template_settings"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!!template_settings?.data && !_computed.isReadOnly}}",
+                        "props": {
+                            "className": "sticky-footer-buttons"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "A",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "bypassLeaveGuard": true
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "href": "/admin/templates",
+                                    "className": "button btn btn-secondary"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "reset_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{template_settings?.data?.abilities?.can_reset === true}}",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "template_settings_reset_modal"
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_local.isSaving}}",
+                                    "className": "btn btn-secondary"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:core.template_settings.reset"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "설정 저장 — 먼저 고른 파일을 올리라는 신호를 보내고(칸마다 업로더가 받아 올린 뒤 폼 값을 바꾼다, 신호는 업로더 전부를 기다린다)\n                 지금 탭 섹션의 폼 값만 보낸다(다른 섹션 저장값은 서버가 그대로 둔다). 성공하면 설정을 다시 받아 서버가 정규화한 값으로 화면을 맞춘다. 탭 아이콘·색은 다음 화면 로드부터 바뀐다.",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "emitEvent",
+                                                "params": {
+                                                    "event": "upload:template_settings"
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": true,
+                                                    "errors": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/templates/{{route.identifier}}/settings",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "PUT",
+                                                    "body": "{{Object.fromEntries([[_computed.activeSection, (_local.form ?? {})[_computed.activeSection] ?? {}]])}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "hasChanges": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:core.template_settings.saved"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "template_settings"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "errors": "{{error.errors}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:core.template_settings.save_failed'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_local.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:core.template_settings.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_template_settings/_modal_reset_confirm.json"
+        },
+        {
+            "partial": "partials/admin_template_settings/_modal_unsaved_tab_switch.json"
+        }
+    ]
+}

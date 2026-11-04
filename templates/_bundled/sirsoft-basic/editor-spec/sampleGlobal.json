@@ -28,6 +28,38 @@
       "public_summary_enabled": true
     }
   },
+  "templateSettings": {
+    "branding": {
+      "favicon_url": null,
+      "accent": "blue",
+      "color_scheme_default": "system",
+      "logo_dark_url": null
+    },
+    "header": {
+      "max_boards": 5,
+      "show_theme_toggle": true,
+      "links": []
+    },
+    "footer": {
+      "copyright": {},
+      "show_powered_by": true,
+      "social_youtube": "",
+      "social_instagram": "",
+      "social_facebook": "",
+      "social_x": "",
+      "social_github": "",
+      "social_discord": "",
+      "social_blog": ""
+    },
+    "home": {
+      "show_welcome": true,
+      "show_stats": true,
+      "show_feature_row": true,
+      "show_board_summaries": true,
+      "show_shop_sections": true,
+      "product_count": 8
+    }
+  },
   "site": {
     "name": "샘플 사이트"
   },

@@ -66,6 +66,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 켜진 관리자 템플릿이 그 화면(직접 쓴 화면 또는 공용 화면)을 그릴 수 있을 때 true |
+| settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (`has_settings` 가 false 면 null) |
 | stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.4` | 감지된 최신 배포 버전 |
@@ -77,7 +79,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | deactivated_reason | null | `null` | 비활성화 사유: manual(사용자 수동) \| incompatible_core(코어 버전 호환성) \| null(active) |
 | deactivated_at | null | `null` | deactivated 일시 |
 | incompatible_required_version | null | `null` | 요구 코어 버전 미충족 시 필요한 버전 (호환되면 null) |
-| abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":t…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+| abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":t…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반). `can_update_settings` 는 템플릿 환경설정 저장 권한(`core.templates.settings`) — 없으면 목록 「설정」 메뉴가 자물쇠·「읽기 전용」으로 보인다 |
 
 **응답 예시**
 
@@ -434,6 +436,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장이 모두 활성·버전 충족인지 여부 |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 켜진 관리자 템플릿이 그 화면(직접 쓴 화면 또는 공용 화면)을 그릴 수 있을 때 true |
+| settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (`has_settings` 가 false 면 null) |
 | update_source | string\|null | `null` | 업데이트 감지 출처 (`github` \| `bundled` \| null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
@@ -94981,6 +94985,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 | file_version | string\|null | `1.0.0` | 설치된 파일의 manifest 버전 |
 | type | string | `admin` | 템플릿 타입 (`admin` \| `user`) |
 | status | string | `active` | 템플릿 상태 |
+| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 (목록 응답과 같은 판정) |
+| settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (없으면 null) |
 | description | string | `그누보드7 기본 관리자 템플릿` | 템플릿 설명 (현재 로케일 값) |
 | github_url | string\|null | `null` | GitHub 저장소 URL |
 | github_changelog_url | string\|null | `null` | GitHub 변경 내역 URL |
@@ -95069,6 +95075,271 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 **설명** 특정 템플릿의 상세 정보를 조회합니다(TemplateService::getTemplateInfo). 목록보다 상세한 필드(toDetailArray)와 함께 지원 언어팩 정보를 주입해 반환하며, 템플릿이 없으면 404를 반환합니다. `core.templates.read` 권한이 필요합니다.
 
 **권한 값(7.1.0)** 상세 응답에도 행 목록과 같은 `abilities` 가 실린다 — 상세 창이 목록 행을 담던 전역을 이 응답으로 덮어써도 권한 값이 남는다.
+
+### GET /api/admin/templates/{identifier}/settings
+<!-- @generated:start:api.admin.templates.settings.show -->
+- **라우트명**: `api.admin.templates.settings.show`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateSettingsController@show`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 템플릿 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/admin/templates/{identifier}/settings HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 템플릿 환경설정 화면이 읽는 값과 칸 서술._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-admin_basic` | 템플릿 식별자 |
+| name | string | `Admin Basic` | 현재 로케일의 템플릿 이름 |
+| type | string | `admin` | 템플릿 종류 (`user`·`admin`) |
+| status | string | `active` | 설치 상태 |
+| is_active | boolean | `true` | 켜져 있는지 — 꺼진 템플릿의 값은 켜진 뒤 적용된다 |
+| settings | object | `{"branding": {"favicon": [], "accent": "blue", …}}` | 섹션별 현재 설정 — 선언 기본값 위에 저장값을 병합. 첨부·이미지 칸은 첨부 객체 목록(업로더 초기 파일), 계산 키 `{칸}_url`(예 `branding.favicon_url`) 포함, 비밀값(`sensitive`)은 가려서 보낸다 |
+| sections | array | `[{"key": "branding", "label": "브랜딩", "fields": […]}]` | 섹션(화면의 탭) 순서대로 칸 서술 — 칸마다 `key`·`type`·`label`·`hint`·`placeholder`·`required`·`sensitive`, 종류별로 `options`(`{value,label}`)·`min`·`max`·`step`·`max_length`·`max_items`·`item_fields`·`visible_if`, 첨부·이미지 칸은 `collection`(`template_settings.{식별자}.{섹션}.{칸}`)·`max_files`·`max_size_kb`·`accept`. 라벨·안내는 현재 로케일로 풀어 싣는다 |
+| locales | object | `{"available": ["ko", "en", "ja"], "default": "ko"}` | 언어별 문구 칸의 탭 — 사이트 활성 언어와 기본 언어(비운 언어는 기본 언어로 표시) |
+| effective_favicon | object | `{"source": "bundled", "url": "…"}` | 이 템플릿이 켜져 있을 때 실제로 쓰일 파비콘 계층(`template`·`core`·`custom_ico`·`bundled`)과 첫 링크 주소 |
+| abilities.can_update | boolean | `true` | 저장 권한(`core.templates.settings`) 보유 여부 — false 면 화면이 읽기 전용 |
+| abilities.can_reset | boolean | `true` | 기본값으로 되돌리기 가능 여부 — 저장 권한과 같다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "identifier": "sirsoft-admin_basic",
+        "name": "Admin Basic",
+        "type": "admin",
+        "status": "active",
+        "is_active": true,
+        "settings": {
+            "branding": {
+                "favicon": [],
+                "accent": "blue",
+                "color_scheme_default": "system",
+                "logo": [],
+                "favicon_url": null,
+                "logo_url": null
+            }
+        },
+        "sections": [
+            {
+                "key": "branding",
+                "label": "브랜딩",
+                "hint": "관리자 화면의 아이콘·색·로고. 비운 칸은 환경설정 값(없으면 기본값)을 씁니다.",
+                "fields": [
+                    {
+                        "key": "favicon",
+                        "type": "attachments",
+                        "label": "파비콘",
+                        "hint": "이 템플릿이 켜져 있을 때 관리자 화면 브라우저 탭에 표시되는 아이콘입니다.",
+                        "placeholder": null,
+                        "required": false,
+                        "sensitive": false,
+                        "collection": "template_settings.sirsoft-admin_basic.branding.favicon",
+                        "max_files": 1,
+                        "max_size_kb": 1024,
+                        "accept": ".ico,.png,.svg,.gif,.jpg,.jpeg,.webp"
+                    },
+                    {
+                        "key": "accent",
+                        "type": "enum",
+                        "label": "포인트 색",
+                        "hint": "버튼·링크·안내 상자의 색입니다.",
+                        "placeholder": null,
+                        "required": false,
+                        "sensitive": false,
+                        "options": [
+                            { "value": "blue", "label": "파랑(기본)" },
+                            { "value": "green", "label": "초록" }
+                        ]
+                    },
+                    {
+                        "key": "logo",
+                        "type": "image",
+                        "label": "관리자 로고",
+                        "hint": "관리자 사이드바에 쓸 로고입니다. 비우면 환경설정 사이트 로고를 씁니다.",
+                        "placeholder": null,
+                        "required": false,
+                        "sensitive": false,
+                        "collection": "template_settings.sirsoft-admin_basic.branding.logo",
+                        "max_files": 1,
+                        "max_size_kb": 2048,
+                        "accept": ".png,.jpg,.jpeg,.webp,.gif"
+                    }
+                ]
+            }
+        ],
+        "locales": {
+            "available": ["ko", "en", "ja"],
+            "default": "ko"
+        },
+        "effective_favicon": {
+            "source": "bundled",
+            "url": "/assets/core/favicon/favicon.ico?v=1793720460"
+        },
+        "abilities": {
+            "can_update": true,
+            "can_reset": true
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 404 | Not Found | 설치되지 않았거나 설정 선언(섹션 1개 이상)이 없는 템플릿 (`templates.settings.not_found`) |
+
+<!-- @generated:end -->
+
+**설명** 템플릿 환경설정(#434)을 조회합니다. 템플릿의 `config/settings/defaults.json` 선언(섹션·칸·기본값·노출)을 기준으로 섹션별 저장 파일(`templates` 디스크 `{식별자}/settings/{섹션}.json`)을 병합한 값을 돌려줍니다. 설치돼 있으면 꺼진 템플릿도 조회·저장할 수 있습니다(값은 켜진 뒤 적용). 라벨이 `$t:키` 면 그 템플릿의 프론트 언어 데이터(활성 언어팩 포함, 꺼진 템플릿도 포함)로 현재 로케일 문자열을 풀어 싣습니다 — 사용자 템플릿 언어 파일은 관리자 화면에 로드되지 않기 때문입니다. 보기는 `core.templates.read`, 저장·되돌리기 가능 여부는 `abilities.can_update`·`can_reset`(`core.templates.settings`)으로 알립니다. 형식 전체는 [템플릿 환경설정](../../extension/template-settings.md).
+
+### PUT /api/admin/templates/{identifier}/settings
+<!-- @generated:start:api.admin.templates.settings.update -->
+- **라우트명**: `api.admin.templates.settings.update`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateSettingsController@update`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.settings`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 템플릿 식별자 |
+| {섹션}.{칸} | body | 선언 타입 | 선언의 `required` | 선언의 `options`·`min`·`max` 등 | 보낸 섹션만 저장되고 보내지 않은 섹션·칸은 저장값을 유지한다. 첨부·이미지 칸은 첨부 ID 배열(첨부 객체 배열도 받아 ID 로 바꾼다), 언어별 문구 칸은 `{"ko": "…", "en": "…"}`, 목록 칸은 행 객체 배열, 링크 칸은 `/` 로 시작하는 경로 또는 http·https 주소 |
+
+**요청 예시**
+
+```http
+PUT /api/admin/templates/{identifier}/settings HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{"branding": {"accent": "green", "color_scheme_default": "dark"}}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 저장 후 다시 조회한 값 — 조회 응답과 같은 모양(`identifier`·`name`·`type`·`status`·`is_active`·`settings`·`sections`·`locales`·`effective_favicon`·`abilities`)._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.settings`)이 없는 경우 |
+| 404 | Not Found | 설치되지 않았거나 설정 선언이 없는 템플릿 (`templates.settings.not_found`) |
+| 422 | Unprocessable Entity | 선언 검증 실패 — 칸 종류·범위·선택지, 링크 칸의 `javascript:`·`data:` 주소, 목록 칸 최대 행 수(`max_items`), 첨부·이미지 칸은 그 칸 컬렉션에 실재하는 ID 만(이미지 칸은 이미지 형식만)·최대 개수(`max_files`). 오류 키는 `{섹션}.{칸}` |
+| 500 | Server Error | 설정 파일 쓰기 실패 (`templates.settings.update_failed`) |
+<!-- @generated:end -->
+
+**설명** 템플릿 환경설정을 저장합니다. 검증 규칙은 선언의 칸 종류(`string`·`text`·`integer`·`boolean`·`enum`·`url`·`link`·`email`·`color`·`multilingual`·`list`·`attachments`·`image`)에서 만들어지고, 확장은 필터 훅 `core.template_settings.update_validation_rules` 로 규칙을 더할 수 있습니다. 검증을 통과한 선언 칸만 섹션 파일에 병합 저장하며 계산 키(`{칸}_url`)·`abilities` 는 저장하지 않고, 비밀값(`sensitive`)은 암호화해 저장합니다(가린 값 그대로 보내면 기존 값 유지). 첨부 칸에서 빠진 첨부는 **저장이 성공한 뒤** 파일까지 파기합니다. 저장 훅은 `core.template_settings.before_save` → `filter_save_data` → `after_save` 순이며, 저장 뒤 검색엔진용 화면 캐시를 비우고 활동 로그(`template_settings.save`)를 남깁니다. 탭 아이콘(파비콘)·`<html>` 표준 속성은 다음 화면 로드부터 바뀝니다.
+
+### POST /api/admin/templates/{identifier}/settings/reset
+<!-- @generated:start:api.admin.templates.settings.reset -->
+- **라우트명**: `api.admin.templates.settings.reset`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateSettingsController@reset`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.settings`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 템플릿 식별자 |
+| section | body | string | 아니오 | 선언된 섹션 키 | 되돌릴 섹션 하나 — 없으면 전체 |
+
+**요청 예시**
+
+```http
+POST /api/admin/templates/{identifier}/settings/reset HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{"section": "header"}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 되돌린 뒤 다시 조회한 값 — 조회 응답과 같은 모양._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.settings`)이 없는 경우 |
+| 404 | Not Found | 설치되지 않았거나 설정 선언이 없는 템플릿 (`templates.settings.not_found`) |
+| 422 | Unprocessable Entity | `section` 이 선언에 없는 섹션 |
+| 500 | Server Error | 설정 파일 삭제 실패 (`templates.settings.reset_failed`) |
+<!-- @generated:end -->
+
+**설명** 템플릿 환경설정을 선언 기본값으로 되돌립니다. 그 섹션(또는 전체)의 저장 파일을 지우고 그 섹션 첨부 칸의 첨부를 파일까지 파기한 뒤 설정 미러·버전을 갱신합니다. 훅은 `core.template_settings.before_reset` → `after_reset`(+ 필터 `reset_validation_rules`)이며, 검색엔진용 화면 캐시를 비우고 활동 로그(`template_settings.reset`)를 남깁니다. 관리자 화면의 「기본값으로」 단추는 본문 없이(전체) 부릅니다.
+
+### GET /api/admin/templates/{identifier}/settings/layout
+<!-- @generated:start:api.admin.templates.settings.layout -->
+- **라우트명**: `api.admin.templates.settings.layout`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\TemplateSettingsController@layout`
+- **인증/권한**: `auth:sanctum` + `permission:core.templates.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | — | 대상 템플릿 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/admin/templates/{identifier}/settings/layout HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: 템플릿이 직접 쓴 설정 화면 레이아웃 JSON(sanitize 적용)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| layout_name | string | `template_settings` | 레이아웃 이름 |
+| extends | string | `_admin_base` | 상속하는 베이스 레이아웃 |
+| data_sources | array | `[{"id": "template_settings", …}]` | 설정 조회 데이터소스 |
+| slots | object | `{"content": [...]}` | 화면 본문 |
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
+| 404 | Not Found | 설치되지 않은 템플릿, 또는 직접 쓴 설정 화면이 없는 템플릿(공용 설정 화면을 쓰는 템플릿 — 번들 4종 포함) (`templates.settings.not_found`) |
+
+<!-- @generated:end -->
+
+**설명** 템플릿이 직접 쓴 설정 화면 레이아웃(`templates/{id}/settings/template_settings.g7.html` 을 컴파일한 JSON, 없으면 짝 `.json`)을 돌려줍니다. 그런 화면을 둔 템플릿은 켜진 관리자 템플릿에 `{식별자}.template_settings` 로 등록돼(설치·업데이트·관리자 템플릿 활성화 때) 그 화면으로 그려지고, 두지 않은 템플릿은 켜진 관리자 템플릿의 공용 설정 화면(`admin_template_settings`)이 응답 `sections` 로 칸을 그립니다. 이 엔드포인트는 원본 확인용입니다.
 
 ### GET /api/admin/templates/{templateName}/check-modified-layouts
 <!-- @generated:start:api.admin.templates.check-modified-layouts -->

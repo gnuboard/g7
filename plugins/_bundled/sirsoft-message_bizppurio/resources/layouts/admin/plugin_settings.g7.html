@@ -56,7 +56,7 @@
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <computed name="isMessagingReadOnly">{{settings?.data?.abilities?.can_update !== true || report_url?.data?.abilities?.can_manage_messaging !== true}}</computed>
   <permissions>
-    <permission>core.plugins.update</permission>
+    <permission>core.plugins.read</permission>
   </permissions>
   <init>
     <refetch-data-source if="{{(query.tab ?? 'connection') === 'templates'}}" dataSourceId="bizppurio_templates_list"/>

@@ -1703,7 +1703,8 @@
     "queue_pending": "キュー待機 Job",
     "queue_failed": "キュー失敗 Job",
     "queue_logs": "キュー処理記録",
-    "coreSchedules": "コアの予約タスク一覧"
+    "coreSchedules": "コアの予約タスク一覧",
+    "template_settings": "テンプレート設定"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

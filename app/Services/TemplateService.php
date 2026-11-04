@@ -18,9 +18,11 @@ use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Template\TemplateSettingsSchema;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ResolvesLanguageFragments;
 use App\Models\Template;
+use App\Models\TemplateLayout;
 use App\Rules\AllowedTemplateFileType;
 use App\Services\Concerns\ResolvesExtensionAssetType;
 use App\Services\Concerns\SecuresExtensionAssetPath;
@@ -770,7 +772,7 @@ class TemplateService
         // `base_path()` 가 돌려준 `/` 구간과 섞여 `templates/x\dist/js/a.js` 같은 혼합
         // 경로가 되고, 그 값을 그대로 돌려받는 소비처·계약 테스트가 어긋난다.
         // 봉쇄 판정(`extensionAssetPathIsContained`)은 `realpath()` 로 정규화한 뒤
-        // 비교하므로 이 자리의 구분자에 영향받지 않는다 (14차 G3 라운드).
+        // 비교하므로 이 자리의 구분자에 영향받지 않는다.
         $basePath = str_starts_with($safePath, CustomAssets::DIRECTORY.'/')
             ? base_path("templates/{$identifier}")
             : base_path("templates/{$identifier}/dist");
@@ -790,7 +792,7 @@ class TemplateService
         // 기준 안인지 재확인한다. 형제 둘(모듈·플러그인)은 이 계층을 갖는데 이 통로만
         // 문자열 정제 하나로 서빙하고 있었다. trait 독블록은 그 반대로 적혀 있었고,
         // 이 파일의 옛 주석이 근거로 삼던 「FormRequest 의 realpath 검사」는 요청 규칙
-        // 축이라 서비스를 직접 부르는 호출부에는 걸리지 않는다 (11차 G3 라운드).
+        // 축이라 서비스를 직접 부르는 호출부에는 걸리지 않는다.
         if (! $this->extensionAssetPathIsContained($filePath, $basePath)) {
             return [
                 'success' => false,
@@ -868,9 +870,10 @@ class TemplateService
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $locale  로케일 (ko, en 등)
+     * @param  bool  $includeInactive  설치된 꺼진 템플릿도 허용할지 (관리자 화면이 그 템플릿 문구를 읽을 때 — 공개 응답은 켜진 템플릿만)
      * @return array{success: bool, langPath: string|null, error: string|null}
      */
-    public function getLanguageFilePath(string $identifier, string $locale): array
+    public function getLanguageFilePath(string $identifier, string $locale, bool $includeInactive = false): array
     {
         // 1. 로케일 형식 검증 — 언어팩 설치 규칙(BCP 47, 20자 이하)과 같은 기준
         if (! LocaleTag::isValid($locale)) {
@@ -883,7 +886,7 @@ class TemplateService
 
         // 2. 템플릿 DB 조회 및 활성화 여부 확인
         $template = $this->templateRepository->findByIdentifier($identifier);
-        if (! $template || $template->status !== ExtensionStatus::Active->value) {
+        if (! $template || (! $includeInactive && $template->status !== ExtensionStatus::Active->value)) {
             return [
                 'success' => false,
                 'langPath' => null,
@@ -962,12 +965,13 @@ class TemplateService
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $locale  로케일 (ko, en 등)
+     * @param  bool  $includeInactive  설치된 꺼진 템플릿도 허용할지 (getLanguageFilePath 와 같다)
      * @return array{success: bool, data: array|null, error: string|null}
      */
-    public function getLanguageDataWithModules(string $identifier, string $locale): array
+    public function getLanguageDataWithModules(string $identifier, string $locale, bool $includeInactive = false): array
     {
         // 1. 템플릿 다국어 파일 경로 조회
-        $result = $this->getLanguageFilePath($identifier, $locale);
+        $result = $this->getLanguageFilePath($identifier, $locale, $includeInactive);
 
         if (! $result['success']) {
             return [
@@ -1302,10 +1306,16 @@ class TemplateService
             return $route;
         }, $templateRoutesData['routes'] ?? []);
 
+        // 8.5. 템플릿 설정 화면 라우트도 admin 템플릿에만 (#434) — 설치된 모든 템플릿(꺼진 것 포함)
+        $templateSettingsRoutes = ($templateType === 'admin')
+            ? $this->loadTemplateSettingsRoutesData()
+            : [];
+
         $mergedRoutes = array_merge(
             $templateRoutes,
             $moduleRoutes,
-            $pluginRoutes
+            $pluginRoutes,
+            $templateSettingsRoutes
         );
 
         // 9.5. `requires` — 필요한 모듈·플러그인이 모두 켜져 있지 않은 라우트는 내지 않는다.
@@ -1597,8 +1607,11 @@ class TemplateService
         $pluginRoutes = ($templateType === 'admin')
             ? $this->loadActivePluginsRoutesData(true)
             : [];
+        $templateSettingsRoutes = ($templateType === 'admin')
+            ? $this->loadTemplateSettingsRoutesData()
+            : [];
 
-        $mergedRoutes = array_merge($templateRoutes, $moduleRoutes, $pluginRoutes);
+        $mergedRoutes = array_merge($templateRoutes, $moduleRoutes, $pluginRoutes, $templateSettingsRoutes);
 
         // 5. 시스템 라우트 주입 필터 (getRoutesDataWithModules 와 동일 확장점).
         $mergedRoutes = HookManager::applyFilters(
@@ -2154,6 +2167,46 @@ class TemplateService
                     'source' => ['kind' => 'plugin', 'identifier' => $pluginIdentifier],
                 ];
             }
+        }
+
+        return $routes;
+    }
+
+    /**
+     * 템플릿 설정 화면 라우트를 만듭니다 (#434) — 플러그인 설정 라우트 자동 생성과 같은 모양.
+     *
+     * 설치된 템플릿 중 설정 칸을 선언한 것마다 `(*)/admin/templates/{id}/settings` 꼴(앞의 별표는 마운트 와일드카드) →
+     * 템플릿이 직접 쓴 화면이 있으면 `{id}.template_settings`(활성 관리자 템플릿에 교차 등록된 행), 없으면 활성 관리자
+     * 템플릿의 공용 설정 화면 `admin_template_settings`. 그릴 화면이 없으면 라우트를 만들지 않는다. 보기 권한은 템플릿 조회다.
+     *
+     * @return array<int, array<string, mixed>> 라우트 목록
+     */
+    private function loadTemplateSettingsRoutesData(): array
+    {
+        $routes = [];
+        $settingsService = app(TemplateSettingsService::class);
+
+        foreach ($this->templateRepository->getAllKeyedByIdentifier() as $identifier => $record) {
+            $identifier = (string) $identifier;
+            $layout = $settingsService->screenLayoutName($identifier);
+
+            if ($layout === null) {
+                continue;
+            }
+
+            $routes[] = [
+                'path' => '*/admin/templates/'.$identifier.'/settings',
+                'layout' => $layout,
+                'auth_required' => true,
+                'params' => [
+                    'identifier' => $identifier,
+                ],
+                'meta' => [
+                    'title' => '$t:core.template_settings.page_title_short',
+                    'permission' => 'core.templates.read',
+                ],
+                'source' => ['kind' => 'template', 'identifier' => $identifier],
+            ];
         }
 
         return $routes;

@@ -64,5 +64,8 @@
   },
   "claim": {
     "$partial": "partial/claim.json"
+  },
+  "settings": {
+    "$partial": "partial/settings.json"
   }
 }

@@ -417,11 +417,12 @@
                             },
                             "children": [
                                 {
+                                    "comment": "다크 모드 로고(템플릿 설정 branding.logo_dark)가 있으면 어두운 화면에서는 그것만 보인다",
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{_global.settings?.general?.site_logo_url}}",
                                     "props": {
-                                        "className": "min-w-0"
+                                        "className": "min-w-0 {{_global.templateSettings?.branding?.logo_dark_url ? 'dark:hidden' : ''}}"
                                     },
                                     "children": [
                                         {
@@ -440,9 +441,29 @@
                                     "name": "Span",
                                     "if": "{{!_global.settings?.general?.site_logo_url}}",
                                     "props": {
-                                        "className": "text-lg font-bold text-gray-900 dark:text-white truncate"
+                                        "className": "text-lg font-bold text-gray-900 dark:text-white truncate {{_global.templateSettings?.branding?.logo_dark_url ? 'dark:hidden' : ''}}"
                                     },
                                     "text": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}"
+                                },
+                                {
+                                    "id": "mobile_header_logo_dark",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_global.templateSettings?.branding?.logo_dark_url}}",
+                                    "props": {
+                                        "className": "hidden dark:block min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Img",
+                                            "props": {
+                                                "src": "{{_global.templateSettings?.branding?.logo_dark_url}}",
+                                                "alt": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
+                                                "className": "h-8 w-auto max-w-full object-contain object-left"
+                                            }
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -460,6 +481,7 @@
                                     "id": "mobile_theme_btn",
                                     "type": "composite",
                                     "name": "ThemeToggle",
+                                    "if": "{{_global.templateSettings?.header?.show_theme_toggle ?? true}}",
                                     "props": {
                                         "autoText": "$t:common.theme.auto",
                                         "lightText": "$t:common.theme.light",
@@ -1634,6 +1656,103 @@
                             ]
                         },
                         {
+                            "comment": "메뉴 섹션 - 바로가기 (템플릿 설정 header.links). 링크가 없으면 제목까지 숨긴다.\n           사이트 안 경로는 서랍을 닫고 SPA 이동, 바깥 주소·새 창은 일반 링크(새 창이면 opener 를 끊는다)",
+                            "id": "mobile_drawer_links_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_global.templateSettings?.header?.links ?? []).length > 0}}",
+                            "props": {
+                                "className": "px-4 pb-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3"
+                                    },
+                                    "text": "$t:user.nav.shortcuts"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{_global.templateSettings?.header?.links ?? []}}",
+                                        "item_var": "link"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{String(link.url ?? '').startsWith('/') && !String(link.url ?? '').startsWith('//') && !link.new_tab}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "mobileMenuOpen": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "navigate"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "{{link.url}}",
+                                                "className": "w-full flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "min-w-0 truncate"
+                                                    },
+                                                    "text": "{{$localized(link.label)}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{!(String(link.url ?? '').startsWith('/') && !String(link.url ?? '').startsWith('//')) || !!link.new_tab}}",
+                                            "props": {
+                                                "href": "{{link.url}}",
+                                                "target": "{{link.new_tab ? '_blank' : '_self'}}",
+                                                "rel": "{{link.new_tab ? 'noopener noreferrer' : ''}}",
+                                                "className": "w-full flex items-center justify-between gap-2 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "min-w-0 truncate"
+                                                    },
+                                                    "text": "{{$localized(link.label)}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{!!link.new_tab}}",
+                                                    "props": {
+                                                        "name": "arrow-up-right-from-square",
+                                                        "className": "text-xs shrink-0"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
                             "comment": "메뉴 섹션 - 게시판 (제목 + 목록). 게시판 모듈이 꺼져 있으면 제목까지 통째로 숨긴다.",
                             "id": "mobile_drawer_boards_section",
                             "type": "basic",
@@ -2367,6 +2486,9 @@
                     "props": {
                         "registrationEnabled": "{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}",
                         "logo": "{{_global.settings?.general?.site_logo_url}}",
+                        "logoDark": "{{_global.templateSettings?.branding?.logo_dark_url ?? ''}}",
+                        "showThemeToggle": "{{_global.templateSettings?.header?.show_theme_toggle ?? true}}",
+                        "extraLinks": "{{_global.templateSettings?.header?.links ?? []}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                         "user": "{{_global.currentUser}}",
                         "cartCount": "{{_global.cartCount ?? 0}}",
@@ -2374,7 +2496,7 @@
                         "shopBase": "{{_global.shopBase ?? '/shop'}}",
                         "shopProductsHref": "{{_global.shopBase ?? '/shop'}}/products",
                         "boards": "{{boards.data ?? []}}",
-                        "maxVisibleBoards": 5,
+                        "maxVisibleBoards": "{{_global.templateSettings?.header?.max_boards ?? 5}}",
                         "boardEnabled": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
                         "shopEnabled": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                         "searchEnabled": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}",
@@ -2438,11 +2560,17 @@
                         "pageEnabled": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                         "siteDescription": "{{_global.settings?.general?.site_description ?? ''}}",
-                        "copyrightText": "$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
+                        "copyrightText": "{{$localized(_global.templateSettings?.footer?.copyright ?? {}) ?? ''}}",
+                        "defaultCopyrightText": "$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
+                        "showPoweredBy": "{{_global.templateSettings?.footer?.show_powered_by ?? true}}",
                         "socialLinks": {
-                            "github": "{{_global.settings?.social?.github}}",
-                            "twitter": "{{_global.settings?.social?.twitter}}",
-                            "discord": "{{_global.settings?.social?.discord}}"
+                            "youtube": "{{_global.templateSettings?.footer?.social_youtube ?? ''}}",
+                            "instagram": "{{_global.templateSettings?.footer?.social_instagram ?? ''}}",
+                            "facebook": "{{_global.templateSettings?.footer?.social_facebook ?? ''}}",
+                            "x": "{{_global.templateSettings?.footer?.social_x ?? ''}}",
+                            "github": "{{_global.templateSettings?.footer?.social_github ?? ''}}",
+                            "discord": "{{_global.templateSettings?.footer?.social_discord ?? ''}}",
+                            "blog": "{{_global.templateSettings?.footer?.social_blog ?? ''}}"
                         }
                     }
                 },

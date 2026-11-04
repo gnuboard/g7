@@ -433,6 +433,8 @@ activity_log.description.{entity}_{verb}
 | `activity_log.description.user_delete` | 사용자 삭제 |
 | `activity_log.description.role_create` | 역할 생성 |
 | `activity_log.description.settings_save` | 설정 저장 |
+| `activity_log.description.template_settings_save` | 템플릿 환경설정 저장 — 훅 `core.template_settings.after_save`, 액션 `template_settings.save`, 속성 `identifier`·`keys`(저장한 섹션) (#434) |
+| `activity_log.description.template_settings_reset` | 템플릿 환경설정 기본값 되돌리기 — 훅 `core.template_settings.after_reset`, 액션 `template_settings.reset`, 속성 `identifier`·`section`(전체면 null) (#434) |
 
 lang 파일 위치: `lang/ko/activity_log.php`, `lang/en/activity_log.php`
 

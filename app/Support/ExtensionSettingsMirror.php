@@ -7,6 +7,7 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Repositories\JsonConfigRepository;
 use App\Services\PluginSettingsService;
+use App\Services\TemplateSettingsService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 
@@ -148,6 +149,55 @@ class ExtensionSettingsMirror
     public function refreshPlugin(string $identifier): void
     {
         Config::set('g7_settings.plugins.'.$identifier, $this->resolvePluginSettings($identifier));
+    }
+
+    /**
+     * 이미 채운 템플릿 설정 미러를 다시 채웁니다 (#434).
+     *
+     * 템플릿 미러는 부팅 때 채우지 않는다 — 템플릿 설정을 읽는 서버 코드는 드물어(파비콘 head) 요청마다 파일을
+     * 읽을 이유가 없다. `g7_template_settings()` 가 처음 읽을 때 채우고, 상주 프로세스 갱신은 채운 항목만 다시 읽는다.
+     *
+     * @return void
+     */
+    public function refreshAllTemplates(): void
+    {
+        foreach (array_keys((array) Config::get('g7_settings.templates', [])) as $identifier) {
+            $this->refreshTemplate((string) $identifier);
+        }
+    }
+
+    /**
+     * 템플릿 하나의 설정 미러를 다시 채웁니다.
+     *
+     * @param  string  $identifier  템플릿 식별자 (예: sirsoft-basic)
+     * @return void
+     */
+    public function refreshTemplate(string $identifier): void
+    {
+        Config::set('g7_settings.templates.'.$identifier, $this->resolveTemplateSettings($identifier));
+    }
+
+    /**
+     * 템플릿 설정 서비스에서 미러에 담을 값을 만듭니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return array<string, mixed> 미러 값 (비밀값 제외)
+     */
+    private function resolveTemplateSettings(string $identifier): array
+    {
+        try {
+            $service = app(TemplateSettingsService::class);
+            $service->clearCache($identifier);
+            $settings = $service->get($identifier);
+            $schema = $service->schema($identifier);
+
+            // 비밀값(sensitive) 칸은 미러에 싣지 않는다 — 모듈·플러그인 미러와 같다(필요한 코드는 서비스로 읽는다)
+            return is_array($settings) && $schema !== null ? $service->withoutSensitive($schema, $settings) : [];
+        } catch (\Throwable $e) {
+            Log::warning("템플릿 환경설정 로딩 실패: {$identifier}", ['error' => $e->getMessage()]);
+
+            return [];
+        }
     }
 
     /**
