@@ -123,8 +123,8 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     page.height = finalHomeHeight;
     userScrollTo(homeY);
 
-    router.navigate('/shop/products/P0000DTB');
-    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+    router.navigate('/shop/products/sample-product-1');
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
 
     traverseTo('/');
     // 이전 화면(상세)이 남은 채 생긴 스크롤 — 홈의 기억을 덮으면 안 된다
@@ -155,8 +155,8 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     page.height = 5000;
     userScrollTo(1200);
 
-    router.navigate('/shop/products/P0000DTB');
-    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+    router.navigate('/shop/products/sample-product-1');
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
     await new Promise((r) => setTimeout(r, 150));
 
     expect(scrollToSpy).not.toHaveBeenCalled();
@@ -174,8 +174,8 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     });
     page.height = 5000;
     userScrollTo(3000);
-    router.navigate('/shop/products/P0000DTB');
-    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+    router.navigate('/shop/products/sample-product-1');
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
     page.y = 0;
 
     traverseTo('/');
@@ -192,8 +192,8 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     subscribeScreen(router, () => { page.height = 2000; }, { timeout_ms: 400 });
     page.height = 5000;
     userScrollTo(3000);
-    router.navigate('/shop/products/P0000DTB');
-    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+    router.navigate('/shop/products/sample-product-1');
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
 
     traverseTo('/');
 
@@ -327,8 +327,8 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     }, { mode: '#list' });
     page.height = 5000;
     userScrollTo(900);
-    router.navigate('/shop/products/P0000DTB');
-    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+    router.navigate('/shop/products/sample-product-1');
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
 
     traverseTo('/');
 
@@ -348,8 +348,8 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     setActiveScrollContainers(['#admin-main']);
     panel.scrollTop = 1234;
 
-    router.navigate('/shop/products/P0000DTB');
-    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+    router.navigate('/shop/products/sample-product-1');
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
     panel.scrollTop = 0;
 
     traverseTo('/');
@@ -363,8 +363,8 @@ describe('Router 뒤로/앞으로 가기·새로고침 스크롤 복원', () => 
     subscribeScreen(router, () => { page.height = 5000; });
     page.height = 5000;
     userScrollTo(2000);
-    router.navigate('/shop/products/P0000DTB');
-    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+    router.navigate('/shop/products/sample-product-1');
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
     page.y = 0;
     setScrollMemoryDisabled(true);
     scrollToSpy.mockClear();

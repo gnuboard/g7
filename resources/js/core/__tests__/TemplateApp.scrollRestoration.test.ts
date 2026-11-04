@@ -112,8 +112,8 @@ async function boot(templateConfig: Record<string, any> = {}): Promise<void> {
 
 /** 홈 → 상품 상세 → 뒤로. 이전 화면이 남은 채 생긴 스크롤 이벤트도 흉내 낸다 */
 async function toProductAndBack(): Promise<void> {
-    app.getRouter().navigate('/shop/products/P0000DTB');
-    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+    app.getRouter().navigate('/shop/products/sample-product-1');
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
     await tick(50);
     page.y = 0;
     traverseTo('/');
@@ -234,8 +234,8 @@ describe('TemplateApp 뒤로 가기 스크롤 복원 (engine-v1.85.0)', () => {
         userScrollTo(3000);
 
         // 처음 기억(t0) → 500초 뒤 돌아옴(스냅샷 20개 사용)
-        app.getRouter().navigate('/shop/products/P0000DTB');
-        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+        app.getRouter().navigate('/shop/products/sample-product-1');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
         await tick(50);
         offsetMs = 500_000;
         traverseTo('/');
@@ -246,8 +246,8 @@ describe('TemplateApp 뒤로 가기 스크롤 복원 (engine-v1.85.0)', () => {
         await toProductAndBack();
         await tick(50);
         offsetMs = 700_000;
-        app.getRouter().navigate('/shop/products/P0000DTC');
-        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTC'));
+        app.getRouter().navigate('/shop/products/sample-product-2');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-2'));
         await tick(50);
         traverseTo('/');
         await tick(fetchDelayMs + 300);
@@ -265,8 +265,8 @@ describe('TemplateApp 뒤로 가기 스크롤 복원 (engine-v1.85.0)', () => {
         app.globalState.infiniteScroll = { currentPage: 2, hasMore: true };
         userScrollTo(8000);
 
-        app.getRouter().navigate('/shop/products/P0000DTB');
-        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+        app.getRouter().navigate('/shop/products/sample-product-1');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
         // 다른 화면이 같은 키를 1로 초기화
         app.globalState.infiniteScroll = { currentPage: 1, hasMore: true };
         await tick(50);
@@ -302,8 +302,8 @@ describe('TemplateApp 뒤로 가기 스크롤 복원 (engine-v1.85.0)', () => {
         const { AuthManager } = await import('../auth/AuthManager');
         const spy = vi.spyOn(AuthManager.getInstance(), 'getUser');
         spy.mockReturnValue(null);
-        app.getRouter().navigate('/shop/products/P0000DTB');
-        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/P0000DTB'));
+        app.getRouter().navigate('/shop/products/sample-product-1');
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/shop/products/sample-product-1'));
         spy.mockReturnValue({ id: 999 } as any);
         await tick(50);
         traverseTo('/');
