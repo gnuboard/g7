@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,8 +17,6 @@ use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
 use Symfony\Component\Filesystem\Path;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 배너 파일(이미지·영상) 서비스 — 업로드·교체·파일 삭제·공개 서빙·고아 임시 파일 정리.
@@ -112,7 +111,7 @@ class BannerImageService
                 'hash' => $hash,
                 'disk' => $this->storage->getDisk(),
                 'path' => $path,
-                'original_name' => mb_substr($file->getClientOriginalName(), 0, 255),
+                'original_name' => mb_substr(UploadedFileName::original($file), 0, 255),
                 'mime' => $mime,
                 'size' => (int) $file->getSize(),
                 'width' => $width,
@@ -264,73 +263,57 @@ class BannerImageService
     }
 
     /**
-     * 이미지·영상을 공개 응답으로 내보냅니다 — 저장 전 미리보기를 위해 임시 업로드도 해시로 내보낸다(해시 64자는 추측할 수 없다).
+     * 이미지·영상의 공개 서빙 정보를 반환합니다 — 저장 전 미리보기를 위해 임시 업로드도 해시로 내보낸다(해시 64자는 추측할 수 없다).
+     *
+     * 응답 계약(ETag·304 재검증·`Cache-Control`·`nosniff`)은 컨트롤러가 코어 파일 서빙 헬퍼로 입힌다. 여기서는 무엇을
+     * 내보낼지만 정한다 — 로컬 디스크의 영상은 범위 요청(Range → 206)을 받는 파일 응답이 필요해 절대 경로(`file`)를,
+     * 그 밖(이미지, 원격 디스크 영상)은 스토리지 스트림과 메타(`response`·`etag_source`·`mime_type`·`last_modified`)를 준다.
+     * iOS Safari 는 범위 요청을 받지 않는 영상을 재생하지 않는다.
+     *
+     * 이미지는 래스터만 인라인이고 그 밖은 내려받기다(`InlineMediaPolicy`). 영상은 업로드 때 내용으로 판정한 MP4·WEBM 만
+     * 인라인으로 재생하고 그 외 유형은 내려받기 유형으로 낸다.
      *
      * @param  string  $hash  공개 해시
-     * @return StreamedResponse|BinaryFileResponse|null 파일 응답 (없으면 null)
+     * @return array<string, mixed>|null `['file' => 절대 경로, 'mime_type' => …]` 또는 스트림 메타 (없으면 null)
      */
-    public function publicResponse(string $hash): StreamedResponse|BinaryFileResponse|null
+    public function publicServing(string $hash): ?array
     {
         $image = $this->images->findByHash($hash);
         if ($image === null) {
             return null;
         }
 
-        if ($image->kind === MediaKind::Video->value) {
-            return $this->videoResponse($image);
+        $video = $image->kind === MediaKind::Video->value;
+        $mime = $video
+            ? (in_array($image->mime, self::INLINE_VIDEO_MIME_TYPES, true) ? $image->mime : 'application/octet-stream')
+            : (string) $image->mime;
+
+        if ($video && ($local = $this->localPath($image)) !== null) {
+            return ['file' => $local, 'mime_type' => $mime];
         }
 
-        $response = $this->storage->response(self::CATEGORY, $image->path, $image->original_name, [
-            'Content-Type' => $image->mime,
-            // 해시가 바뀌지 않는 한 내용도 바뀌지 않는다(교체하면 새 해시)
-            'Cache-Control' => 'public, max-age=31536000, immutable',
-        ]);
-
+        $response = $this->storage->response(self::CATEGORY, $image->path, $image->original_name, ['Content-Type' => $mime]);
         if ($response === null) {
-            Log::warning('히어로섹션 배너 이미지 파일 없음', ['image_id' => $image->id, 'path' => $image->path]);
+            Log::warning($video ? '히어로섹션 배너 영상 파일 없음' : '히어로섹션 배너 이미지 파일 없음', ['image_id' => $image->id, 'path' => $image->path]);
 
             return null;
         }
 
-        // 인라인은 래스터 이미지만, 그 외는 다운로드 + nosniff
-        InlineMediaPolicy::harden($response, $image->mime, $image->original_name);
-
-        return $response;
-    }
-
-    /**
-     * 영상을 내보냅니다 — 로컬 디스크면 범위 요청(Range → 206)을 받는 파일 응답으로 낸다. iOS Safari 는 범위 요청을 받지 않는
-     * 영상을 재생하지 않고, 다른 브라우저도 건너뛰기·이어 받기를 범위 요청으로 한다. 원격 디스크는 스트림으로 낸다.
-     *
-     * 형식은 업로드 때 내용으로 판정한 MP4·WEBM 뿐이라 인라인으로 재생하되, 내용 추측(nosniff)은 막는다.
-     *
-     * @param  BannerImage  $video  영상 행
-     * @return StreamedResponse|BinaryFileResponse|null 영상 응답 (파일이 없으면 null)
-     */
-    private function videoResponse(BannerImage $video): StreamedResponse|BinaryFileResponse|null
-    {
-        $mime = in_array($video->mime, self::INLINE_VIDEO_MIME_TYPES, true) ? $video->mime : 'application/octet-stream';
-        $cache = 'public, max-age=31536000, immutable';
-
-        $local = $this->localPath($video);
-        if ($local !== null) {
-            $response = new BinaryFileResponse($local, 200, ['Content-Type' => $mime], true, null, false, true);
-            $response->headers->set('Cache-Control', $cache);
-            $response->headers->set('X-Content-Type-Options', 'nosniff');
-
-            return $response;
+        if (! $video) {
+            // 인라인은 래스터 이미지만, 그 외는 다운로드 + nosniff
+            InlineMediaPolicy::harden($response, $mime, $image->original_name);
         }
 
-        $response = $this->storage->response(self::CATEGORY, $video->path, $video->original_name, [
-            'Content-Type' => $mime,
-            'Cache-Control' => $cache,
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
-        if ($response === null) {
-            Log::warning('히어로섹션 배너 영상 파일 없음', ['image_id' => $video->id, 'path' => $video->path]);
-        }
+        // 파일 내용은 올린 때 정해진다 — 배너에 붙이거나 떼어도(updated_at) 바뀌지 않는다
+        $modifiedAt = $image->created_at?->getTimestamp();
 
-        return $response;
+        return [
+            'response' => $response,
+            // 해시가 바뀌지 않는 한 내용도 바뀌지 않는다(교체하면 새 해시) — 행 메타로 검증자를 만든다
+            'etag_source' => implode('|', [$image->hash, $image->path, (string) $image->size, (string) $modifiedAt]),
+            'mime_type' => $mime,
+            'last_modified' => $modifiedAt,
+        ];
     }
 
     /**

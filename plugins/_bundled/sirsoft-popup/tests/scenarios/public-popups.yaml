@@ -10,6 +10,7 @@ description: |
 
 axes:
   surface:
+    - image_follows_core_file_serving_contract
     - returns_active_only_in_sort_order
     - excludes_inactive_scheduled_ended
     - start_boundary_just_before_excluded
@@ -43,6 +44,7 @@ axes:
     - site_timezone_boundary_consistent
 
 effects:
+  - file_serving_contract_matches_core
   - public_payload_localized
   - cache_never_outlives_period_boundary
   - inline_media_policy_applied

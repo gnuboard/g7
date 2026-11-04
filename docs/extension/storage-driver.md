@@ -208,6 +208,7 @@ Service 생성자에서 `StorageInterface`를 타입힌트하면 자동으로 �
 namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 
 class AttachmentService
@@ -240,7 +241,8 @@ class AttachmentService
         return $this->repository->create($slug, [
             'post_id' => $postId,
             'path' => $path,
-            'original_filename' => $file->getClientOriginalName(),
+            // 브라우저가 바꿔 보낸 따옴표(%22)와 줄바꿈(%0D, %0A)을 되돌린 원래 이름
+            'original_filename' => UploadedFileName::original($file),
             'disk' => $disk,
             'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(),
@@ -342,6 +344,7 @@ $this->storage->put('backups', 'backup-2024-01-19.sql', $backupData);
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Intervention\Image\Facades\Image;
 
@@ -377,7 +380,8 @@ class CategoryImageService
             'path' => $path,
             'thumbnail_path' => $thumbnailPath,
             'disk' => $disk,
-            'original_filename' => $file->getClientOriginalName(),
+            // 브라우저가 바꿔 보낸 따옴표(%22)와 줄바꿈(%0D, %0A)을 되돌린 원래 이름
+            'original_filename' => UploadedFileName::original($file),
             'width' => getimagesize($file->getRealPath())[0],
             'height' => getimagesize($file->getRealPath())[1],
         ]);
@@ -511,7 +515,8 @@ namespace Modules\Sirsoft\Board\Http\Controllers\Api;
 
 use App\Http\Controllers\BaseApiController;
 use App\Contracts\Extension\StorageInterface;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends BaseApiController
 {
@@ -523,7 +528,7 @@ class AttachmentController extends BaseApiController
     /**
      * 첨부파일 다운로드
      */
-    public function download(string $slug, int $id): Response
+    public function download(string $slug, int $id): StreamedResponse|JsonResponse
     {
         $attachment = $this->attachmentService->getById($slug, $id);
 
@@ -534,13 +539,12 @@ class AttachmentController extends BaseApiController
             return response()->json(['message' => '파일을 찾을 수 없습니다.'], 404);
         }
 
-        // 파일 내용 가져오기
-        $content = $this->storage->get('attachments', $attachment->path);
-
-        // 다운로드 응답
-        return response($content, 200)
-            ->header('Content-Type', $attachment->mime_type)
-            ->header('Content-Disposition', 'attachment; filename="' . $attachment->original_filename . '"');
+        // 다운로드 응답 — Content-Disposition 을 직접 만들지 않는다. 원래 이름에는 따옴표나 줄바꿈이 들어 있을 수 있어
+        // 문자열로 이어 붙이면 머리글이 깨진다. 스토리지 download() 가 filename* 인코딩과 ASCII 대체 이름을 만든다.
+        // (검증자, nosniff 같은 응답 계약은 아래 「파일 서빙 응답은 코어 헬퍼를 지난다」를 따른다.)
+        return $this->storage->download('attachments', $attachment->path, $attachment->original_filename, [
+            'Content-Type' => $attachment->mime_type,
+        ]);
     }
 }
 ```

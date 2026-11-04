@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Popup\Tests\Feature\Admin;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Testing\TestResponse;
+use Plugins\Sirsoft\Popup\Http\Requests\Admin\StorePopupRequest;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 
@@ -275,6 +276,40 @@ class PopupOverlayTest extends PluginTestCase
         $this->assertStringContainsString('PC 글 상자 2 글', $errors['overlays.pc.1.text'][0]);
         $this->assertStringContainsString('모바일 글 상자 1', $errors['overlays.mobile.0'][0]);
         $this->assertStringContainsString('오른쪽 밖으로', $errors['overlays.mobile.0'][0]);
+    }
+
+    /**
+     * 글 상자 바탕(색·진하기) 오류도 칸 이름을 사람 말로 쓰고 상자 순번을 채운다 — 번역 키나 `:position` 이 그대로 나오지 않는다.
+     * 필드 이름 표 전체(ko·en)에도 번역되지 않은 키가 없어야 한다.
+     *
+     * @scenario surface=error_names_box_background_parts
+     *
+     * @effects validation_messages_fully_translated
+     *
+     * @return void 반환값 없음
+     */
+    public function test_error_names_box_background_parts(): void
+    {
+        $cases = [
+            'ko' => ['PC 글 상자 1 바탕 색', 'PC 글 상자 1 바탕 진하기'],
+            'en' => ['PC text box 1 background color', 'PC text box 1 background strength'],
+        ];
+        foreach ($cases as $locale => [$color, $opacity]) {
+            $errors = $this->withHeader('Accept-Language', $locale)
+                ->store(['pc' => [$this->box(['bg' => ['opacity' => 120]])]])
+                ->assertStatus(422)->json('errors');
+
+            $this->assertStringContainsString($color, $errors['overlays.pc.0.bg.color'][0], $locale);
+            $this->assertStringContainsString($opacity, $errors['overlays.pc.0.bg.opacity'][0], $locale);
+            foreach (['overlays.pc.0.bg.color', 'overlays.pc.0.bg.opacity'] as $key) {
+                $this->assertStringNotContainsString('sirsoft-popup::', $errors[$key][0], "{$locale} {$key}");
+                $this->assertStringNotContainsString(':position', $errors[$key][0], "{$locale} {$key}");
+            }
+
+            app()->setLocale($locale);
+            $untranslated = array_filter((new StorePopupRequest)->attributes(), fn (string $name) => str_contains($name, 'sirsoft-popup::'));
+            $this->assertSame([], $untranslated, $locale);
+        }
     }
 
     /**

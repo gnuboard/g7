@@ -113,6 +113,8 @@ return [
             'not_found' => '언어팩을 찾을 수 없습니다: :identifier',
             'confirm' => '언어팩 \':identifier\' 을(를) 제거하시겠습니까?',
             'cancelled' => '취소되었습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 언어팩 \':identifier\' 을(를) 제거하지 않았습니다.',
+            'confirm_unavailable_hint' => 'cron, CI, 원격 명령처럼 확인 없이 제거해야 하면 --force 옵션을 붙여 다시 실행하세요. 예: php artisan language-pack:uninstall :identifier --force',
             'done' => '언어팩 제거 완료: :identifier',
             'failed' => '언어팩 제거 실패: :error',
         ],

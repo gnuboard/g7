@@ -107,6 +107,8 @@ effects:
   - installer_seeds_app_url_with_the_mount_prefix
   - installer_scripts_never_request_a_root_relative_literal
   - requirements_failure_reason_reaches_the_screen
+  - requirements_recheck_does_not_resubmit_the_post
+  - browser_requirements_recheck_reopens_with_get   # 실제 설치 화면에서 서버 게이트가 거부한 POST 화면의 [다시 검증]을 누르면 같은 주소를 GET 으로 다시 열고, POST 재전송·확인 창이 없다 (E2E)
   # 상태 스키마·조회 응답 필드 집합 (10차 #G5 — 선언만 돼 있고 마커가 0 이던 파일)
   - installer_state_schema_preserves_language_packs
   - installer_client_failure_fields_cover_screen_keys
@@ -380,6 +382,10 @@ effects:
   - progress_log_has_a_screen_cap_and_says_so
   - stepwise_command_output_is_written_in_one_batch
   - stepwise_reports_progress_while_a_task_takes_long
+  - stepwise_progress_names_the_task_being_run
+  - stepwise_progress_line_switches_when_request_starts   # 요청을 보내는 순간 경과 줄이 이번 단계 이름(0초)으로 바뀐다. 한 주기를 기다리면 직전 단계 줄이 1~4초 남는다
+  - browser_stepwise_progress_line_switches_when_request_starts   # 실제 단계별 설치에서 단계 요청을 보낸 뒤 300ms 에 경과 줄이 이미 그 요청의 진행 중 행 이름이다(직전 단계 줄이 남지 않는다) (E2E)
+  - browser_stepwise_install_progress_follows_the_running_task   # 실제 단계별 설치를 끝까지 돌리는 동안 경과 표시가 바뀔 때마다 그 순간의 진행 중 행 이름이고, 진행 중 행은 하나, 확장 단계 현재 작업 이름은 목록 행 이름과 같다 (E2E)
   - installation_log_rotates_before_it_grows_unbounded
   - installation_log_partial_write_is_reported_as_failure   # 진행 기록이 일부만 쓰이면(디스크 가득) 실패로 보고한다
   # D4 현장 발견 — 상태 파일 원자 교체가 짧은 핸들 경합(Windows)에서 조용히 유실되던 자리.
@@ -432,6 +438,7 @@ effects:
   - polling_response_pads_past_fcgid_buffer_before_flush   # 폴링 응답 뒤 flush 앞에 64KB 를 넘는 공백 채움을 내보낸다
   - polling_response_content_length_counts_json_only   # Content-Length 는 채움을 뺀 응답 JSON 바이트 수만 싣는다
   - installer_already_applied_judgment_recognizes_every_core_message   # 코어 다국어 표의 「이미 설치, 활성」 문구 전수가 성공 판정을 통과한다
+  - installer_already_applied_judgment_ignores_terminal_color_codes   # 하위 명령이 터미널 색 코드를 붙여도 「이미 활성화」 확인으로 본다(이어 하기가 끝난 활성화를 실패로 읽지 않는다)
   - sse_directly_written_frames_have_client_listeners   # 방출기를 거치지 않고 직접 쓴 SSE 프레임에도 화면 리스너가 있다
   - seed_rollback_reports_reverted_only_when_it_reverted   # 시드 롤백은 실제로 되돌렸을 때만 되돌렸다고 답하고 호출부는 그때만 마커를 지운다
   - finalize_leaves_no_dead_session_write   # 설치 마무리 함수에 응답에 반영되지 않는 현재 단계 세션 쓰기가 없다
@@ -475,6 +482,7 @@ effects:
   - installer_card_collapse_syncs_aria_on_both_paths   # 진행 카드가 완료, 실패 화면에서 접히고 펼쳐질 때도 aria-expanded 가 따라온다
   - installer_card_header_is_inert_while_running   # 설치 중 진행 카드 헤더는 비활성임이 키보드와 보조기술에 전달된다
   - installer_current_task_shows_intra_task_progress   # 현재 작업 줄이 한 단계 안의 부분 진행을 덧붙이고 단계가 바뀌면 버린다
+  - installer_current_task_names_the_extension_once   # 서버 단계 이름이 확장을 이미 담고 있으면 확장 이름과 식별자를 다시 붙이지 않는다
   - requirements_failure_detail_omits_empty_status_text   # 요구사항 실패의 진단 상세가 빈 statusText 로 끝나지 않는다
   # 609 docblock 정리 — SourceGateHygieneTest 의 메서드별 마킹이 쓰는 효과 중 이 원장에 없던 것.
   - source_gate_population_meets_derived_floor   # 게이트 위생 검사의 모집단이 인스톨러 테스트 실재 수에서 도출한 하한 이상이다
@@ -614,6 +622,7 @@ test_files:
   - resources/js/installer/__tests__/installation-monitor-worker-superseded.test.ts
   - resources/js/installer/__tests__/installer-step3-cli-gate.test.ts
   - resources/js/installer/__tests__/installer-ui-state.test.ts
+  - tests/Playwright/specs/rehearsal/installer-web-wizard.spec.ts
 
 # 화면(W1~W3 라이트/다크 · Step 3 선택란 · Step 5 라디오 고정 · 새로고침 재개 · 건너뛰기 버튼)은
 # P0 격리 환경(http://localhost:8090, disable_functions 프로필) 브라우저 실측으로 판정한다 —

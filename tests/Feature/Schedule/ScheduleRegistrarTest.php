@@ -210,7 +210,7 @@ class ScheduleRegistrarTest extends TestCase
     {
         $row = $this->row();
         $dispatcher = Mockery::mock(ScheduleDispatcher::class);
-        $dispatcher->shouldReceive('dispatch')->once()->with($row->id, ScheduleTriggerType::Scheduled)->andReturnNull();
+        $dispatcher->shouldReceive('dispatch')->once()->with($row->id, ScheduleTriggerType::Scheduled, null)->andReturnNull();
         $this->app->instance(ScheduleDispatcher::class, $dispatcher);
 
         $events = $this->register();

@@ -55,7 +55,7 @@ import {
 import { trackPageState } from '../devtools/editorTrackers';
 import type { EditorStateItemSpec } from '../spec/specTypes';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../../../support/scriptSrcPolicy';
-import { convertToCurrentMode } from '../../../support/assetUrl';
+import { convertToCurrentMode, withBasePrefix } from '../../../support/assetUrl';
 import { buildModalEditParentContext, modalEditParentContext } from '../utils/modalEditParentContext';
 import { rescanPreviewMediaIsolation } from '../hooks/usePreviewMediaIsolation';
 import { PREVIEW_FRAME_CLASS, PREVIEW_VW_VAR } from '../utils/previewMediaIsolation/constants';
@@ -644,7 +644,8 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
       // 표식(`data-g7le-canvas-script`)은 레이아웃이 적은 원래 주소로 두어 같은 레이아웃의 재평가가 찾게 한다.
       // 이미 실린 태그는 id 와 함께 주소(두 형태)로도 찾는다 — 편집기 플러그인의 자체 로더처럼 다른 id 로 같은
       // 본체를 먼저 실은 경우 한 번 더 실으면 UMD 가 두 번 실행되어 첫 실행이 채운 전역을 덮는다.
-      const loadSrc = entry.src.startsWith('/') ? convertToCurrentMode(entry.src) : entry.src;
+      // 사이트 마운트 접두사도 런타임과 같이 붙인다(멱등) — 하위 폴더 설치에서 확장자 방식이면 빠뜨린 주소가 사이트 밖이다.
+      const loadSrc = entry.src.startsWith('/') ? convertToCurrentMode(withBasePrefix(entry.src)) : entry.src;
       const sel = [
         entry.id ? `script#${CSS.escape(entry.id)}` : null,
         `script[data-g7le-canvas-script="${entry.src}"]`,

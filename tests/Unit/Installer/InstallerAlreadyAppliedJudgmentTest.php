@@ -119,6 +119,30 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
     }
 
     /**
+     * 하위 명령이 터미널 색 코드를 붙여 내보내도 「이미 활성화」 확인으로 본다.
+     *
+     * 터미널 설치에서 하위 artisan 은 출력이 파일이어도 색을 켤 수 있다(Windows 에서 TERM 이 xterm 이면
+     * Symfony 콘솔이 색을 켠다). 그러면 문장 끝 마침표 뒤에 색 해제 코드가 붙어 줄 끝 앵커가 빗나가고,
+     * 잠금을 잃어 완료 표시를 못 남긴 활성화 단계를 이어 하기가 다시 돌릴 때마다 「이미 활성화된
+     * 템플릿입니다」로 영구 실패했다. 색 코드는 벗기되, 문장 중간 판정 규칙은 그대로 지킨다.
+     *
+     * @scenario task=user_template, task_outcome=done, locale=ko, locale=en
+     *
+     * @effects installer_already_applied_judgment_ignores_terminal_color_codes
+     *
+     * @return void 반환값 없음
+     */
+    public function test_terminal_color_codes_do_not_hide_already_applied_message(): void
+    {
+        $this->assertTrue(installerOutputConfirmsAlreadyApplied("\e[37;41m❌ 이미 활성화된 템플릿입니다.\e[39;49m"));
+        $this->assertTrue(installerOutputConfirmsAlreadyApplied("noise\n\e[33m⚠️  Module \"sirsoft-board\" is already installed.\e[39m\n"));
+        $this->assertFalse(
+            installerOutputConfirmsAlreadyApplied("\e[31mDependency \"x\" is already installed at version 1.2, but this module requires ^2.0. Aborting.\e[39m"),
+            '색 코드를 벗겨도 문장 중간의 구는 성공 확인이 아니다'
+        );
+    }
+
+    /**
      * 다국어 표를 재귀로 내려가며 키 경로가 already_installed 나 already_active 로 끝나는 문자열 문구만 모은다.
      *
      * @param  array<string, mixed>  $table  훑을 다국어 표 (중첩 배열)

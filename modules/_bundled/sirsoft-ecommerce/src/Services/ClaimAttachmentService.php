@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -695,7 +696,7 @@ class ClaimAttachmentService
                 'path' => $path,
                 // 컬럼 폭(255·100)을 넘는 값이 오면 저장이 통째로 실패해 방금 올린 파일이 고아가 된다.
                 // 표시용 값이므로 잘라서 싣고, 파일 자체는 UUID 이름으로 저장돼 있어 영향이 없다.
-                'original_name' => Str::limit((string) $file->getClientOriginalName(), 250, '…'),
+                'original_name' => Str::limit(UploadedFileName::original($file), 250, '…'),
                 'mime_type' => Str::limit((string) $file->getMimeType(), 97, '…'),
                 'size' => $file->getSize(),
                 'width' => $width,

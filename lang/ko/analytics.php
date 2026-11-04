@@ -346,6 +346,8 @@ return [
             'option_required' => '--mask-octets 또는 --hash 중 하나는 지정해야 합니다.',
             'confirm' => '이미 쌓인 방문 기록을 되돌릴 수 없게 바꿉니다. 진행할까요?',
             'cancelled' => '취소했습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 익명화를 하지 않았습니다. (방문 기록은 바뀌지 않았습니다)',
+            'confirm_unavailable_hint' => 'cron, CI, 원격 명령처럼 확인 없이 진행해야 하면 --force 옵션을 붙여 다시 실행하세요. 예: php artisan analytics:anonymize --mask-octets=2 --force',
             'failed' => '소급 익명화 실패: :error',
             'done' => '방문 :count건을 익명화했습니다.',
         ],
@@ -383,6 +385,8 @@ return [
             'confirm_option_required' => '전체 삭제는 --confirm 을 붙여야 실행됩니다. 되돌릴 수 없습니다.',
             'confirm' => '방문자 통계 기록과 집계를 모두 지웁니다. 되돌릴 수 없습니다. 진행할까요?',
             'cancelled' => '취소했습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 방문자 통계를 지우지 않았습니다. --confirm 은 이 확인을 대신하지 않습니다.',
+            'confirm_unavailable_hint' => '이 명령은 지우기 전에 터미널에서 직접 확인해야 하며, 확인 없이 지우는 방법은 제공하지 않습니다. 서버 터미널에서 php artisan analytics:purge --confirm 을 실행하고 질문에 답하세요.',
             'headers' => [
                 'target' => '대상',
                 'deleted' => '삭제',
@@ -396,6 +400,8 @@ return [
             'not_installed' => ':type :identifier 는 설치되어 있지 않습니다. 데이터를 남기고 제거한 확장이면 그대로 진행하고, 식별자를 잘못 적었다면 취소하세요.',
             'confirm' => ':type :identifier 의 방문자 통계 전환·차원 집계를 지웁니다. 되돌릴 수 없습니다. 진행할까요?',
             'cancelled' => '취소했습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 :type :identifier 의 통계를 지우지 않았습니다. --confirm 은 이 확인을 대신하지 않습니다.',
+            'confirm_unavailable_hint' => '이 명령은 지우기 전에 터미널에서 직접 확인해야 하며, 확인 없이 지우는 방법은 제공하지 않습니다. 서버 터미널에서 php artisan analytics:purge-extension :type :identifier --confirm 을 실행하고 질문에 답하세요.',
             'failed' => '정리에 실패했습니다. 진단 화면의 실행 이력과 애플리케이션 로그에서 사유를 확인하세요.',
             'headers' => [
                 'target' => '대상',

@@ -11,6 +11,7 @@
 4. 입력 크기에 비례해 커지는 메모리는 PHP 기본 한계 안에서 잰다
 5. 통화 단위는 설정이 정한다 / 보조 통화 줄
 6. 콘솔 명령 출력은 번역 키로 쓴다
+7. 업로드 파일의 원래 이름은 코어 도우미로 읽는다
 ```
 
 > 원본: 이 규칙들은 2026-09-10 까지 루트 AGENTS.md 「CRITICAL RULES」 에 있었다. 제목·표는 그대로 옮겼고 앵커는 바뀌지 않았다. 색인: [docs/rules/README.md](README.md)
@@ -218,6 +219,18 @@ Artisan 명령과 그 명령이 돌리는 시더(`module:install`·`db:seed`)가
 예외: `Log::*` 운영 로그, 주석, `$signature`·`$description`(명령 설명), 시드가 DB 에 넣는 데이터 값, 다른 프로그램이 파싱하는 고정 형식 줄. 마지막 경우는 위반 지점 직전 5줄 안에 `audit:allow console-output-hardcoded-korean reason: …` 표식과 사유를 남긴다.
 
 자동 검증이 출력 메서드 인자 안의 한국어 리터럴을 검출한다. 한국어를 변수에 담았다가 출력하는 경로는 정적으로 잡히지 않으므로 리뷰에서 본다. 모듈 명령의 같은 규칙: [module-commands.md](../extension/module-commands.md).
+
+## 업로드 파일의 원래 이름은 코어 도우미로 읽는다
+
+브라우저는 multipart/form-data 의 파일 이름에서 큰따옴표를 `%22`, CR 을 `%0D`, LF 를 `%0A` 로 바꿔 보낸다(HTML 표준의 form-data 인코딩). `getClientOriginalName()` 은 그 값을 그대로 돌려주므로, 저장하면 `견적 "최종".pdf` 가 `견적 %22최종%22.pdf` 로 남고 목록과 내려받은 파일 이름에도 그대로 보인다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `$file->getClientOriginalName()` 을 저장하거나 화면, 오류 문구, 디스크 파일 이름에 쓰기 | `App\Support\UploadedFileName::original($file)` — 브라우저가 바꾼 세 가지만 되돌린다 |
+
+적용 범위는 코어와 번들 모듈, 플러그인, 템플릿의 업로드 지점 전부다. 이미 저장된 이름은 바꾸지 않는다. 되돌린 CR, LF 는 이름에 남지만, 내려받기 머리글은 스토리지 `download()`/`response()` 가 `filename*` 를 퍼센트 인코딩하고 ASCII 대체 이름에서 제어 문자를 지우므로 줄바꿈이 실리지 않는다. 머리글을 손으로 이어 붙이지 않는다.
+
+예외: 이름을 저장하지 않고 외부 API 의 multipart 요청에 다시 실어 보내는 자리. HTTP 클라이언트(Guzzle)는 `filename` 의 따옴표와 줄바꿈을 이스케이프하지 않으므로, 되돌린 이름을 넣으면 나가는 요청의 머리글이 깨진다. 그 자리는 브라우저 인코딩 그대로 보내고 호출 줄 또는 바로 윗줄에 `// audit:allow uploaded-file-name-via-helper <사유>` 표식을 단다. 자동 검증이 주석 밖의 `getClientOriginalName()` 호출을 검출한다.
 
 ## Listener 데이터 접근
 

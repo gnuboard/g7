@@ -134,4 +134,31 @@ describe('요구사항 검사 실패 사유', () => {
       'checkRequirements 가 다시 statusText 를 쓴다 — HTTP/2 에서 빈 문자열이라 사유가 사라진다',
     ).toBe(false);
   });
+
+  // @scenario failure_kind=unexpected_exception
+  // @effects requirements_recheck_does_not_resubmit_the_post
+  it('[다시 검증]은 직전 POST 를 다시 보내지 않고 같은 주소를 GET 으로 다시 연다', () => {
+    // 2단계 오류(노출됨 차단, 요구사항 재검사 실패)는 POST 응답 화면에 그려진다. 그 화면에서
+    // reload() 를 부르면 브라우저가 POST 를 다시 보내 「양식 다시 제출」 확인 창이 뜨고,
+    // 서버는 차단 기록을 한 줄 더 남긴다.
+    const src = readFileSync(INSTALLER_SOURCE, 'utf8');
+    const open = src.indexOf('function recheckRequirements');
+
+    expect(open, 'recheckRequirements 가 없다').toBeGreaterThan(-1);
+
+    const close = src.indexOf('\n    }', open);
+    const body = src.slice(src.indexOf('{', open) + 1, close);
+    const calls: string[] = [];
+    const location = {
+      href: 'https://example.test/install/?step=2#requirements',
+      reload: () => calls.push('reload'),
+      replace: (url: string) => calls.push(`replace:${url}`),
+      assign: (url: string) => calls.push(`assign:${url}`),
+    };
+
+    // eslint-disable-next-line no-new-func
+    new Function('window', body)({ location });
+
+    expect(calls).toEqual(['replace:https://example.test/install/?step=2']);
+  });
 });

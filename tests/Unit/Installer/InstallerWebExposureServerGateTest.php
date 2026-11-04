@@ -107,12 +107,16 @@ class InstallerWebExposureServerGateTest extends TestCase
         $_POST = ['proceed' => '1', 'web_exposure_verdict' => 'exposed'];
         $error = null;
 
-        handleStep2Post($error);
+        handleStep2Post('ko', $error);
 
-        $this->assertSame('error_web_exposure_blocked', $error, '노출됨 판정의 POST 가 오류 없이 통과한다');
+        // 번역 키 원문이 아니라 현재 언어 문구여야 한다 — 핸들러가 번역 테이블을 싣지 않으면
+        // 화면 오류와 설치 기록이 `error_web_exposure_blocked` 같은 키로 나간다.
+        $ko = require dirname(__DIR__, 3).'/public/install/lang/ko.php';
+        $this->assertSame($ko['error_web_exposure_blocked'], $error, '노출됨 판정의 POST 가 현재 언어 오류 문구를 받지 못한다');
 
         $log = (string) @file_get_contents(BASE_PATH.'/storage/logs/installation.log');
-        $this->assertStringContainsString('log_web_exposure_blocked', $log, '서버측 차단이 설치 로그에 남지 않는다');
+        $this->assertStringContainsString($ko['log_web_exposure_blocked'], $log, '서버측 차단이 설치 로그에 읽을 수 있는 문구로 남지 않는다');
+        $this->assertStringNotContainsString('log_web_exposure_blocked', $log, '설치 로그에 번역 키 원문이 남았다');
     }
 
     /**
@@ -191,9 +195,14 @@ class InstallerWebExposureServerGateTest extends TestCase
         $this->assertStringContainsString('updateStepStatus(2, 3)', $body, '진행 경로가 사라졌다');
         $this->assertStringContainsString('redirectToStep(3)', $body, '진행 경로가 사라졌다');
         $this->assertMatchesRegularExpression(
-            '/2\s*=>\s*handleStep2Post\(\$error\)/',
+            '/2\s*=>\s*handleStep2Post\(\$currentLang,\s*\$error\)/',
             $this->functionBody($handler, 'handlePostRequest'),
-            '디스패치가 Step 2 핸들러에 $error 를 넘기지 않는다'
+            '디스패치가 Step 2 핸들러에 현재 언어와 $error 를 넘기지 않는다'
+        );
+        $this->assertMatchesRegularExpression(
+            '/\$translations\s*=\s*loadTranslations\(\$currentLang\)/',
+            $body,
+            'Step 2 핸들러가 번역 테이블을 싣지 않는다 — 통과 기록(log_web_exposure_verdict)도 키 원문으로 남는다'
         );
 
         $view = $this->sourceWithoutComments($root.'/public/install/views/2-requirements.php');

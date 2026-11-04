@@ -877,7 +877,7 @@
                                             ]
                                         },
                                         {
-                                            "comment": "실행 이력 (A-5). 위의 '마지막 실행'은 직전 1회만 담고 다음 호출에 덮이므로, 지난 실행을 되짚으려면 누적 목록이 따로 있어야 한다. 서버가 코드 예약 이력을 시각 역순으로 내려보낸다.",
+                                            "comment": "실행 이력 (A-5). 위의 '마지막 실행'은 직전 1회만 담고 다음 호출에 덮이므로, 지난 실행을 되짚으려면 누적 목록이 따로 있어야 한다. 서버가 스케줄 관리에 등록된 작업과 코드 예약의 이력을 시각 역순으로 함께 내려보내고, 작업 이름은 스케줄 관리 화면과 같은 표시 명칭으로 준다. 큐로 보낸 작업은 워커가 끝내기 전까지 실행 중으로 남으므로 성공·실패·실행 중 세 갈래로 그린다.",
                                             "id": "cron_history_block",
                                             "type": "basic",
                                             "name": "Div",
@@ -961,12 +961,13 @@
                                                                     "text": "{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.settings.system.cron_history_duration', { seconds: entry.duration ?? 0 })}}"
                                                                 },
                                                                 {
+                                                                    "id": "cron_history_status_{{$hidx}}",
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "{{entry.status === 'failed' ? 'text-xs text-red-600 dark:text-red-400 whitespace-nowrap' : 'text-xs text-green-600 dark:text-green-400 whitespace-nowrap'}}"
+                                                                        "className": "{{entry.status === 'failed' ? 'text-xs text-red-600 dark:text-red-400 whitespace-nowrap' : (entry.status === 'running' ? 'text-xs text-yellow-600 dark:text-yellow-400 whitespace-nowrap' : 'text-xs text-green-600 dark:text-green-400 whitespace-nowrap')}}"
                                                                     },
-                                                                    "text": "{{entry.status === 'failed' ? '$t:admin.settings.system.cron_history_failed' : '$t:admin.settings.system.cron_history_success'}}"
+                                                                    "text": "{{entry.status === 'failed' ? '$t:admin.settings.system.cron_history_failed' : (entry.status === 'running' ? '$t:admin.schedules.result.running' : '$t:admin.settings.system.cron_history_success')}}"
                                                                 }
                                                             ]
                                                         }

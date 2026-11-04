@@ -39,7 +39,16 @@ class CoreUpdateRunState
     /** 증분 적용 목록 사이드카 파일 이름 (상태 JSON 에 싣기에는 커질 수 있다). */
     public const APPLY_LIST_FILENAME = 'web-run-apply-list.json';
 
-    /** 점유 심박이 이 초를 넘겨 끊기면 비정상 종료로 보고 회수한다. */
+    /** 적용 대상 산출 진행분 사이드카 파일 이름 (나눠 처리하는 단계의 중간 결과). */
+    public const PLAN_PROGRESS_FILENAME = 'web-run-plan-progress.json';
+
+    /**
+     * 점유가 만료 창을 선언하지 않았을 때(구 상태 파일, 실행 제한 없음) 쓰는 기본 창.
+     *
+     * 단계 요청은 자기 요청 수명 + 여유를 점유에 선언한다(`CoreUpdateTimeBudget`). 이 값은
+     * 그 선언이 없을 때만 쓴다 — 고정 15분을 모든 점유에 적용하면, 300초 제한에 죽은
+     * 요청의 점유가 10분 넘게 남아 그동안 사이트가 점검 모드에 갇힌다.
+     */
     public const CLAIM_STALE_SECONDS = 900;
 
     /** 진행 기록으로 보관하는 최대 줄 수 (오래된 줄부터 버린다). */
@@ -60,6 +69,9 @@ class CoreUpdateRunState
 
     /** @var bool 직전 쓰기가 실패했는지 */
     private bool $persistFailed = false;
+
+    /** @var array<string, mixed>|null 직전 `claim()` 이 만료로 회수한 이전 점유 */
+    private ?array $reclaimed = null;
 
     /**
      * @param  string|null  $path  상태 파일 경로 (테스트 주입용)
@@ -89,6 +101,16 @@ class CoreUpdateRunState
     public function applyListPath(): string
     {
         return dirname($this->path).DIRECTORY_SEPARATOR.self::APPLY_LIST_FILENAME;
+    }
+
+    /**
+     * 적용 대상 산출 진행분 사이드카 경로.
+     *
+     * @return string 절대 경로
+     */
+    public function planProgressPath(): string
+    {
+        return dirname($this->path).DIRECTORY_SEPARATOR.self::PLAN_PROGRESS_FILENAME;
     }
 
     /**
@@ -208,6 +230,7 @@ class CoreUpdateRunState
         $now = CarbonImmutable::now()->toIso8601String();
 
         $this->storeApplyList(null);
+        $this->storePlanProgress(null);
 
         $this->write([
             'run_id' => $runId,
@@ -285,13 +308,27 @@ class CoreUpdateRunState
         }
 
         $logs = is_array($state['logs'] ?? null) ? $state['logs'] : [];
+        // 누적 순번 — 줄 상한에서 앞쪽이 잘려도 계속 는다(화면이 같은 단계 안의 진행을 판정하는 근거).
+        $sequence = (int) ($state['log_seq'] ?? count($logs)) + 1;
         $logs[] = '['.CarbonImmutable::now()->format('H:i:s').'] '.$message;
 
         if (count($logs) > self::MAX_LOG_LINES) {
             $logs = array_slice($logs, -self::MAX_LOG_LINES);
         }
 
-        $this->patch(['logs' => $logs]);
+        $this->patch(['logs' => $logs, 'log_seq' => $sequence]);
+    }
+
+    /**
+     * 진행 기록의 누적 순번 — 지금까지 남긴 줄 수(줄 상한으로 잘린 줄 포함).
+     *
+     * @return int 순번
+     */
+    public function logSequence(): int
+    {
+        $state = $this->read();
+
+        return (int) ($state['log_seq'] ?? count(is_array($state['logs'] ?? null) ? $state['logs'] : []));
     }
 
     /**
@@ -350,7 +387,7 @@ class CoreUpdateRunState
         }
 
         File::ensureDirectoryExists(dirname($path), 0755, true);
-        File::put($path, (string) json_encode(array_values($applyList), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        $this->writeAtomically($path, (string) json_encode(array_values($applyList), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -372,16 +409,63 @@ class CoreUpdateRunState
     }
 
     /**
+     * 적용 대상 산출의 진행분을 씁니다 (나눠 처리하는 동안의 커서와 중간 결과).
+     *
+     * @param  array<string, mixed>|null  $progress  진행분 (null 이면 파일 삭제)
+     * @return void 반환값 없음
+     */
+    public function storePlanProgress(?array $progress): void
+    {
+        $path = $this->planProgressPath();
+
+        if ($progress === null) {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+
+            return;
+        }
+
+        File::ensureDirectoryExists(dirname($path), 0755, true);
+        $this->writeAtomically($path, (string) json_encode($progress, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * 적용 대상 산출의 진행분을 읽습니다.
+     *
+     * @return array<string, mixed>|null 없거나 읽을 수 없으면 null (처음부터 산출)
+     */
+    public function loadPlanProgress(): ?array
+    {
+        $path = $this->planProgressPath();
+
+        if (! is_file($path)) {
+            return null;
+        }
+
+        $decoded = json_decode((string) @file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /**
      * 실행 점유를 시도합니다.
      *
      * 같은 토큰이 이미 보유 중이면 재획득으로 본다 — 브라우저가 순차 호출하는 정상
-     * 경로다. 다른 토큰이 보유 중이면 심박이 끊긴 지 오래됐을 때만 회수한다.
+     * 경로다. 다른 토큰이 보유 중이면 그 점유가 **스스로 선언한 만료 창**을 넘겼을 때만
+     * 회수한다. 창을 선언하지 않은 점유(구 상태 파일)는 `CLAIM_STALE_SECONDS` 를 쓴다.
+     *
+     * 회수한 이전 점유는 `lastReclaimedClaim()` 으로 읽는다 — 그 점유가 단계를 돌리던
+     * 중이었다면 그 요청은 실패도 성공도 기록하지 못하고 죽은 것이다.
      *
      * @param  string  $token  이 요청의 점유 토큰
+     * @param  string|null  $step  이 요청이 수행할 단계 값 (되돌리기는 `rollback`)
+     * @param  int|null  $staleAfterSeconds  이 점유의 만료 창(초) — 요청 수명 + 여유
      * @return bool 점유 성공 여부
      */
-    public function claim(string $token): bool
+    public function claim(string $token, ?string $step = null, ?int $staleAfterSeconds = null): bool
     {
+        $this->reclaimed = null;
         $state = $this->read();
 
         if ($state === []) {
@@ -391,25 +475,104 @@ class CoreUpdateRunState
         $claim = is_array($state['claim'] ?? null) ? $state['claim'] : null;
 
         if ($claim !== null && ($claim['token'] ?? null) !== $token) {
-            $heartbeat = $this->parseTime($claim['heartbeat_at'] ?? null);
-
-            // 심박 시각을 읽을 수 없으면 **보유 중으로 본다** — 판정 불능을 「오래됨」으로
-            // 접으면 진행 중인 다른 요청의 점유를 빼앗는다 (fail-closed).
-            if ($heartbeat === null) {
+            if (! $this->claimIsStale($claim)) {
                 return false;
             }
 
-            if ($heartbeat->diffInSeconds(CarbonImmutable::now(), true) < self::CLAIM_STALE_SECONDS) {
-                return false;
-            }
+            $this->reclaimed = $claim;
         }
+
+        $now = CarbonImmutable::now()->toIso8601String();
 
         $this->patch(['claim' => [
             'token' => $token,
-            'heartbeat_at' => CarbonImmutable::now()->toIso8601String(),
+            'heartbeat_at' => $now,
+            'started_at' => $now,
+            'step' => $step,
+            'stale_after' => $staleAfterSeconds !== null && $staleAfterSeconds > 0 ? $staleAfterSeconds : null,
         ]]);
 
         return true;
+    }
+
+    /**
+     * 직전 `claim()` 이 만료로 회수한 이전 점유.
+     *
+     * @return array<string, mixed>|null 회수하지 않았으면 null
+     */
+    public function lastReclaimedClaim(): ?array
+    {
+        return $this->reclaimed;
+    }
+
+    /**
+     * 지금 점유 상태를 화면용으로 요약합니다.
+     *
+     * 화면은 이 값으로 「서버가 아직 그 단계를 돌리는 중」인지 판정해, 응답이 끊긴 뒤에도
+     * 같은 단계를 겹쳐 부르지 않고 점유가 풀릴 때까지 기다린다.
+     *
+     * @return array{held: bool, step: string|null, started_at: string|null, stale_after: int}|null 점유가 없으면 null
+     */
+    public function claimSummary(): ?array
+    {
+        $claim = $this->read()['claim'] ?? null;
+
+        if (! is_array($claim)) {
+            return null;
+        }
+
+        return [
+            'held' => ! $this->claimIsStale($claim),
+            'step' => is_string($claim['step'] ?? null) ? $claim['step'] : null,
+            'started_at' => is_string($claim['started_at'] ?? null) ? $claim['started_at'] : ($claim['heartbeat_at'] ?? null),
+            'stale_after' => $this->claimStaleSeconds($claim),
+        ];
+    }
+
+    /**
+     * 점유 토큰이 지금 보유자인지 확인합니다.
+     *
+     * @param  string  $token  점유 토큰
+     * @return bool 보유 중이면 true
+     */
+    public function holdsClaim(string $token): bool
+    {
+        $claim = $this->read()['claim'] ?? null;
+
+        return is_array($claim) && ($claim['token'] ?? null) === $token;
+    }
+
+    /**
+     * 점유가 만료 창을 넘겼는지 판정합니다.
+     *
+     * 심박 시각을 읽을 수 없으면 **보유 중으로 본다** — 판정 불능을 「오래됨」으로 접으면
+     * 진행 중인 다른 요청의 점유를 빼앗는다 (fail-closed).
+     *
+     * @param  array<string, mixed>  $claim  점유 기록
+     * @return bool 만료됐으면 true
+     */
+    private function claimIsStale(array $claim): bool
+    {
+        $heartbeat = $this->parseTime($claim['heartbeat_at'] ?? null);
+
+        if ($heartbeat === null) {
+            return false;
+        }
+
+        return $heartbeat->diffInSeconds(CarbonImmutable::now(), true) >= $this->claimStaleSeconds($claim);
+    }
+
+    /**
+     * 점유의 만료 창(초).
+     *
+     * @param  array<string, mixed>  $claim  점유 기록
+     * @return int 초
+     */
+    private function claimStaleSeconds(array $claim): int
+    {
+        $declared = $claim['stale_after'] ?? null;
+
+        return is_int($declared) && $declared > 0 ? $declared : self::CLAIM_STALE_SECONDS;
     }
 
     /**
@@ -444,9 +607,14 @@ class CoreUpdateRunState
     {
         $this->state = [];
 
-        foreach ([$this->path, $this->applyListPath()] as $path) {
+        foreach ([$this->path, $this->applyListPath(), $this->planProgressPath()] as $path) {
             if (is_file($path)) {
                 @unlink($path);
+            }
+
+            // 교체 직전에 끊긴 요청이 남긴 임시 파일도 함께 걷는다.
+            foreach (glob($path.'.tmp.*') ?: [] as $leftover) {
+                @unlink($leftover);
             }
         }
     }
@@ -537,7 +705,7 @@ class CoreUpdateRunState
 
         $encoded = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-        if ($encoded === false || File::put($this->path, $encoded) === false) {
+        if ($encoded === false || ! $this->writeAtomically($this->path, $encoded)) {
             $this->persistFailed = true;
             Log::error('웹 코어 업데이트 진행 상태를 저장하지 못했습니다.', ['path' => $this->path]);
 
@@ -545,6 +713,62 @@ class CoreUpdateRunState
         }
 
         $this->persistFailed = false;
+    }
+
+    /**
+     * 파일을 원자적으로 교체합니다 — 같은 폴더의 임시 파일에 다 쓴 뒤 이름을 바꾼다.
+     *
+     * 직접 덮어쓰면 쓰는 도중에 요청이 끊길 때(시간 초과·프로세스 종료) 반쪽 JSON 이 남고, 다음 요청이 그것을 읽지
+     * 못해 진행 지점(나눠 이어 가던 커서)을 잃는다. 이름 바꾸기는 같은 폴더 안에서 한 번에 일어나므로 읽는 쪽은 언제나
+     * 이전 내용이나 새 내용 전체를 본다. 부분 쓰기(디스크 부족)는 실패로 본다.
+     *
+     * Windows 는 다른 요청이 같은 파일을 읽는 순간 이름 바꾸기가 거부될 수 있어 잠시 뒤 다시 시도하고, 그래도 안 되면
+     * 직접 덮어쓴다 — 진행 지점을 아예 못 남기는 것보다 낫다.
+     *
+     * @param  string  $path  대상 파일
+     * @param  string  $content  전체 내용
+     * @return bool 저장했으면 true
+     */
+    private function writeAtomically(string $path, string $content): bool
+    {
+        $directory = dirname($path);
+
+        if (! is_dir($directory)) {
+            File::ensureDirectoryExists($directory, 0755, true);
+        }
+
+        $tempPath = $path.'.tmp.'.bin2hex(random_bytes(6));
+        $written = @file_put_contents($tempPath, $content);
+
+        if ($written === false || $written !== strlen($content)) {
+            @unlink($tempPath);
+
+            return false;
+        }
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            if ($this->replaceFile($tempPath, $path)) {
+                return true;
+            }
+
+            usleep(50_000);
+        }
+
+        @unlink($tempPath);
+
+        return File::put($path, $content) === strlen($content);
+    }
+
+    /**
+     * 임시 파일을 대상 자리로 옮깁니다 (원자적 교체의 마지막 한 걸음 — 시험이 끊김을 흉내 내려고 바꿔 끼운다).
+     *
+     * @param  string  $tempPath  임시 파일
+     * @param  string  $path  대상 파일
+     * @return bool 옮겼으면 true
+     */
+    protected function replaceFile(string $tempPath, string $path): bool
+    {
+        return @rename($tempPath, $path);
     }
 
     /**

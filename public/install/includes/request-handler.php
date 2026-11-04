@@ -164,10 +164,15 @@ function installerNormalizeWebExposureVerdict($verdict): string
  * 요구사항 전체 판정(CLI 버전 확인 등 외부 호출 포함)보다 싸고, 노출됨 차단 기록이 요구사항 결과에
  * 가려지지 않는다. 판정 통과 기록은 두 게이트를 모두 지난 뒤 단계를 넘어가는 시점에 한 줄 남긴다.
  *
+ * @param  string  $currentLang  현재 언어
  * @param  string|null  &$error  화면에 표시할 오류 (참조) — 요구사항 미충족·노출됨 판정이면 여기 실리고 단계는 넘어가지 않는다
  */
-function handleStep2Post(?string &$error = null): void
+function handleStep2Post(string $currentLang, ?string &$error = null): void
 {
+    // lang() 은 전역 번역 테이블을 읽는다 — 싣지 않으면 화면 오류와 설치 기록(판정 기록 포함)이 번역 키 원문으로 남는다.
+    global $translations;
+    $translations = loadTranslations($currentLang);
+
     if (isset($_POST['proceed'])) {
         // 1) 웹 노출 점검 게이트 (웹 전용)
         $verdict = installerNormalizeWebExposureVerdict($_POST['web_exposure_verdict'] ?? null);
@@ -373,7 +378,7 @@ function handlePostRequest(int $currentStep, string $currentLang, array &$formDa
     match ($currentStep) {
         0 => handleStep0Post(),
         1 => handleStep1Post($currentLang, $error),
-        2 => handleStep2Post($error),
+        2 => handleStep2Post($currentLang, $error),
         3 => handleStep3Post($currentLang, $formData, $errors),
         default => null
     };

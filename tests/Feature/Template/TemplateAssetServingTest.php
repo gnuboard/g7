@@ -1262,4 +1262,69 @@ class TemplateAssetServingTest extends TestCase
     {
         return $this->testTemplatePath;
     }
+
+    /**
+     * CSS 자산 응답도 JS 와 같은 파일 응답 계약을 싣는다 — 형식 추측 금지, 따옴표 ETag, 규격 형태 재검증.
+     *
+     * CSS 는 상대 참조를 치환해 내보내느라 파일 응답 헬퍼를 지나지 않고 응답을 직접 만들었다. 그 바람에
+     * 같은 통로의 JS 에는 있는 `X-Content-Type-Options: nosniff` 가 없었고, ETag 가 따옴표 없이 나가
+     * 브라우저가 돌려보내는 규격 형태(`If-None-Match: "…"`)로는 304 가 되지 않아 매번 전문을 받았다.
+     *
+     * @scenario case=caching
+     *
+     * @effects css_asset_carries_the_file_response_contract
+     *
+     * @return void 반환값 없음
+     */
+    public function test_css_asset_carries_the_file_response_contract(): void
+    {
+        $cssPath = $this->testTemplatePath.'/css/components.css';
+        mkdir(dirname($cssPath), 0755, true);
+        file_put_contents($cssPath, 'body { color: red; }');
+
+        $response = $this->get($this->assetUrl('css/components.css'));
+
+        $response->assertOk();
+        $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'), 'CSS 응답에 형식 추측 금지 헤더가 없다.');
+
+        $etag = (string) $response->headers->get('ETag');
+        $this->assertMatchesRegularExpression('/^"[a-f0-9]{32}"$/', $etag, 'CSS 응답의 ETag 가 규격 형태(큰따옴표)가 아니다: '.$etag);
+
+        $revalidated = $this->withHeaders(['If-None-Match' => $etag])->get($this->assetUrl('css/components.css'));
+
+        $revalidated->assertStatus(304);
+        $this->assertSame($etag, $revalidated->headers->get('ETag'));
+        $this->assertSame('nosniff', $revalidated->headers->get('X-Content-Type-Options'), '304 에도 200 이 실은 헤더가 있어야 한다.');
+    }
+
+    /**
+     * 운영 환경에서 CSS 자산은 **버전이 실린 주소에만** immutable 이다.
+     *
+     * 버전 없는 CSS 주소에 immutable 을 붙이면 확장을 업데이트해도 방문자 브라우저가 1년간 옛 CSS 를 쓴다.
+     * JS 와 이미지는 이 판정을 이미 지나는데 CSS 통로만 운영 분기가 immutable 고정이었다.
+     *
+     * @scenario case=caching
+     *
+     * @effects css_asset_is_immutable_only_when_the_url_carries_a_version
+     *
+     * @return void 반환값 없음
+     */
+    public function test_css_asset_is_immutable_only_when_the_url_carries_a_version(): void
+    {
+        app()['env'] = 'production';
+
+        $cssPath = $this->testTemplatePath.'/css/components.css';
+        mkdir(dirname($cssPath), 0755, true);
+        file_put_contents($cssPath, 'body { color: red; }');
+
+        $unversioned = (string) $this->get($this->assetUrl('css/components.css'))->headers->get('Cache-Control');
+
+        $this->assertStringNotContainsString('immutable', $unversioned, '버전 없는 CSS 주소에 immutable 이 붙었다: '.$unversioned);
+        $this->assertStringContainsString('must-revalidate', $unversioned);
+
+        $versioned = (string) $this->get($this->assetUrl('css/components.css').'?v=1.2.3')->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('immutable', $versioned, '버전이 실린 CSS 주소는 재확인이 필요 없다: '.$versioned);
+        $this->assertStringContainsString('max-age=31536000', $versioned);
+    }
 }

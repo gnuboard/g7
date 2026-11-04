@@ -42,12 +42,14 @@ effects:
   - trailing_slash_path_redirects_301_to_canonical
   - double_slash_path_redirects_301_collapsed
   - canonical_path_redirect_skipped_when_not_applicable
+  - canonical_path_redirect_skips_root_directory_delegation
   - canonical_path_middleware_ordered_before_analytics_and_seo
   - resolver_normalizes_trailing_slash
   - seo_render_and_cache_key_use_canonical_path
   - resolver_maps_url_to_layout_for_seo
   - resolver_identifies_extension_of_layout
   - resolver_skips_auth_and_guest_routes_for_seo
+  - resolver_skips_system_routes_for_seo
   - resolver_returns_null_when_routes_unavailable
   - resolver_resolves_route_path_expressions
 

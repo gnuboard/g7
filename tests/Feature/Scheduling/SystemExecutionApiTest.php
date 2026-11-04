@@ -10,6 +10,7 @@ use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Schedule as ScheduleModel;
 use App\Models\User;
 use App\Scheduling\ScheduleRunner;
 use App\Scheduling\ScheduleRunState;
@@ -547,6 +548,116 @@ class SystemExecutionApiTest extends TestCase
                 $label.' 시각이 사이트 시간대가 아니다: '.$value
             );
             $this->assertStringStartsWith('2026-09-02T09:10:00', (string) $value);
+        }
+    }
+
+    /**
+     * [지금 실행] 응답의 시각도 사이트 시간대로 나간다.
+     *
+     * 화면은 이 응답을 「마지막 실행」 줄에 바로 그린다. 상태 조회의 `last_run` 만 사이트 시간대로 옮기고
+     * 이 응답은 표준시(UTC)로 두면, 누른 직후에만 9시간 어긋난 시각이 보이고 새로고침하면 바뀐다.
+     *
+     * @scenario caller=panel, actor_permission=settings_update, vector=browser_run_now
+     *
+     * @effects run_now_times_use_the_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_run_now_times_are_returned_in_the_site_timezone(): void
+    {
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+
+        $response = $this->asAdmin(['core.settings.read', 'core.settings.update'])
+            ->postJson('/api/admin/settings/system/cron/run');
+
+        $response->assertOk();
+
+        foreach (['started_at', 'finished_at'] as $field) {
+            $value = (string) $response->json('data.'.$field);
+
+            $this->assertNotSame('', $value, $field.' 가 응답에 없다 — 이 검사가 공허해진다.');
+            $this->assertStringEndsWith('+09:00', $value, $field.' 시각이 사이트 시간대가 아니다: '.$value);
+        }
+    }
+
+    /**
+     * 실행 이력은 스케줄 관리에 등록된 작업을 그 화면의 표시 명칭으로 싣고, 같은 실행의 짝 기록은 싣지 않는다.
+     *
+     * 7.2.0 부터 예약 작업은 대부분 `schedules` 행이고 실행기가 행 기준 이력을 남긴다. 예전 판 웹 러너는 같은
+     * 실행에 `schedule:{id}` 이름의 코드 이력을 하나 더 남겼고, 화면은 그 코드 이력만 보여 줘 모든 줄이 내부
+     * 식별자였다. 이름은 스케줄 관리 목록과 같은 표시 명칭(지금 언어)이어야 한다.
+     *
+     * @scenario caller=panel, actor_permission=settings_read, event_kind=callback_event
+     *
+     * @effects recent_history_names_registered_schedules_by_their_display_label
+     *
+     * @return void 반환값 없음
+     */
+    public function test_recent_history_names_registered_schedules_by_their_display_label(): void
+    {
+        $schedule = ScheduleModel::factory()->create([
+            'name' => 'sitemap-generate',
+            'label' => ['ko' => '사이트맵 생성', 'en' => 'Generate sitemap'],
+            'expression' => '0 2 * * *',
+        ]);
+
+        $at = CarbonImmutable::parse('2026-11-01T01:46:50+00:00');
+        $histories = app(ScheduleHistoryRepositoryInterface::class);
+
+        $histories->create([
+            'schedule_id' => $schedule->id,
+            'started_at' => $at,
+            'ended_at' => $at->addSecond(),
+            'duration' => 1,
+            'status' => ScheduleResultStatus::Success,
+            'exit_code' => 0,
+            'trigger_type' => ScheduleTriggerType::Scheduled,
+        ]);
+
+        // 예전 판 웹 러너가 같은 실행에 남긴 짝 기록
+        $histories->create([
+            'source' => ScheduleRunner::HISTORY_SOURCE,
+            'schedule_id' => null,
+            'event_key' => 'legacy-pair',
+            'event_name' => 'schedule:'.$schedule->id,
+            'event_expression' => '0 2 * * *',
+            'started_at' => $at,
+            'ended_at' => $at->addSecond(),
+            'duration' => 1,
+            'status' => ScheduleResultStatus::Success,
+            'exit_code' => 0,
+            'trigger_type' => ScheduleTriggerType::Scheduled,
+        ]);
+
+        // 코드로 등록된 예약은 실행 시점 스냅샷 이름 그대로
+        $histories->create([
+            'source' => ScheduleRunner::HISTORY_SOURCE,
+            'schedule_id' => null,
+            'event_key' => 'code-event',
+            'event_name' => 'seo:prune-stats',
+            'event_expression' => '30 4 * * *',
+            'started_at' => $at->subMinute(),
+            'ended_at' => $at->subMinute(),
+            'duration' => 0,
+            'status' => ScheduleResultStatus::Success,
+            'exit_code' => 0,
+            'trigger_type' => ScheduleTriggerType::Scheduled,
+        ]);
+
+        foreach (['en' => 'Generate sitemap', 'ko' => '사이트맵 생성'] as $locale => $label) {
+            // 한 테스트 안의 두 요청이 앞 요청의 인증 사용자(그 언어)를 물려받지 않게 가드를 비운다.
+            $this->app['auth']->forgetGuards();
+            $request = $this->asAdmin(['core.settings.read']);
+            User::query()->latest('id')->firstOrFail()->update(['language' => $locale]);
+
+            $rows = $request->getJson('/api/admin/settings/system/status')
+                ->assertOk()
+                ->json('data.cron.recent_history');
+
+            $names = array_column($rows, 'name');
+
+            $this->assertSame([$label, 'seo:prune-stats'], $names, $locale.' 실행 이력 이름이 표시 명칭이 아니거나 짝 기록이 섞였다: '.json_encode($names, JSON_UNESCAPED_UNICODE));
+            $this->assertSame('0 2 * * *', $rows[0]['expression']);
         }
     }
 }

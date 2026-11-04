@@ -59,6 +59,7 @@ effects:
   - declaration_collects_only_seo_enabled_public_layouts
   - declaration_empty_without_active_template_or_routes
   - declaration_skips_layout_that_fails_to_load
+  - declaration_skips_system_routes_without_layout_read
   - declaration_grouped_by_owning_extension
   - module_screen_served_to_bot_with_cache_hit
 

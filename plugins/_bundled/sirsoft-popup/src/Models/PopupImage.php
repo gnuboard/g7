@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Popup\Models;
 
+use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -72,10 +73,13 @@ class PopupImage extends Model
     /**
      * 공개 이미지 주소를 반환합니다.
      *
+     * 화면이 `<img src>`·`<video src>` 에 그대로 넣는 주소라 사이트 마운트 접두사를 붙인다 — 하위 폴더 설치(`/g7/`)에서
+     * 접두사가 없으면 사이트 밖을 부른다(라우트는 접두사 없이 등록되고 접두사는 여기서 붙는다).
+     *
      * @return string 공개 이미지 경로
      */
     public function publicUrl(): string
     {
-        return '/api/plugins/sirsoft-popup/images/'.$this->hash;
+        return AssetUrl::sitePath('/api/plugins/sirsoft-popup/images/'.$this->hash);
     }
 }

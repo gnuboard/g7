@@ -165,8 +165,27 @@ if (strcasecmp(substr($g7ScriptDir, -7), '/public') === 0) {
 // `Alias` 마운트의 접두사 복원). 그래서 여기서 `SCRIPT_NAME` 을 읽으면 하위 폴더 설치에서도 목적지가
 // 사이트 안(`/g7sub/install`)에 머문다. 그 정규화는 요청 경로에서 잘라 온 값을 쓸 수 있으므로 앞의
 // 슬래시를 하나로 접는다 — `//host/install` 은 브라우저가 다른 호스트로 읽는다.
+//
+// 이미 설치 화면 주소로 온 요청이 여기 닿았다면 웹 서버가 그 주소를 설치 화면 폴더로 넘기지 못한 것이다
+// (문서 루트 배치에서 `.htaccess` 를 읽지 않거나 nginx·Caddy·IIS 에 배치 조각을 넣지 않은 서버). 그때 또
+// 같은 곳으로 보내면 끝없는 302 가 되어 브라우저가 멈추고 웹 노출 점검에도 닿지 못한다 — 무엇을 고칠지
+// 알리고 끝낸다. 표준 배치에서는 설치 화면 폴더가 실재해 웹 서버가 직접 내어주므로 이 분기에 오지 않는다.
 if (! $isInstalled) {
     $installUrl = '/'.ltrim(rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/').'/install', '/');
+    $g7InstallLoop = isset($_SERVER['REQUEST_URI']) && rtrim(rawurldecode((string) parse_url((string) $_SERVER['REQUEST_URI'], PHP_URL_PATH)), '/') === $installUrl;
+    if ($g7InstallLoop) {
+        http_response_code(503);
+        header('Content-Type: text/plain; charset=UTF-8');
+        header('X-Content-Type-Options: nosniff');
+        $g7InstallerPage = substr($installUrl, 0, -strlen('/install')).'/public/install/';
+        echo "The web server did not apply this layout's delegation and protection rules, so {$installUrl} cannot reach the installer.\n";
+        echo "Apache: allow .htaccess (AllowOverride All). nginx, Caddy: add the snippet in deploy/ to the server configuration and reload. IIS: use web.config.\n";
+        echo "The installer's web exposure check at {$g7InstallerPage} shows what is exposed and how to protect it. See INSTALL.md (Method 7).\n\n";
+        echo "웹 서버가 이 배치의 위임, 보호 규칙을 적용하지 않아 {$installUrl} 이 설치 화면으로 가지 못합니다.\n";
+        echo "Apache 는 .htaccess 를 읽도록(AllowOverride All), nginx, Caddy 는 deploy/ 폴더의 설정 조각을 서버 설정에 넣고 다시 읽혀 주세요. IIS 는 web.config 를 씁니다.\n";
+        echo "설치 화면의 웹 노출 점검({$g7InstallerPage})이 무엇이 열려 있는지와 막는 방법을 보여 줍니다. 자세한 내용은 INSTALL.md 「방법 7」.\n";
+        exit;
+    }
     header('Location: '.$installUrl, true, 302);
     exit;
 }

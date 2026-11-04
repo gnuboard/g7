@@ -309,6 +309,27 @@ function linkProps(banner: HeroBanner): { href: string; target?: string; rel?: s
 }
 
 /**
+ * 배너의 이미지·영상 주소(대표 이미지·모바일 이미지·영상 파일)에 사이트 마운트 접두사를 붙입니다.
+ *
+ * `<img src>`·`<source srcset>`·`<video src|poster>` 는 라우터를 거치지 않고 브라우저가 그대로 받는 주소라, 하위 폴더 설치
+ * (`https://host/g7/`)에서 접두사가 없으면 사이트 밖을 부른다. 서버도 접두사를 붙여 내지만, 붙이기 전에 담긴 공개 캐시와
+ * 다른 확장이 필터로 넣은 값이 있으므로 여기서도 붙인다(`sitePath` 는 멱등이고 바깥 주소는 그대로 둔다).
+ *
+ * @param banner 배너
+ * @returns 주소를 고친 배너 (고칠 것이 없으면 같은 객체)
+ */
+function withSiteMedia(banner: HeroBanner): HeroBanner {
+  const fix = <T extends { url?: string } | null | undefined>(media: T): T => (media && typeof media.url === 'string' && sitePath(media.url) !== media.url
+    ? { ...media, url: sitePath(media.url) }
+    : media);
+  const images = banner.images ? { pc: fix(banner.images.pc), mobile: fix(banner.images.mobile) } : banner.images;
+  const videos = banner.videos ? { pc: fix(banner.videos.pc), mobile: fix(banner.videos.mobile) } : banner.videos;
+  const same = images?.pc === banner.images?.pc && images?.mobile === banner.images?.mobile
+    && videos?.pc === banner.videos?.pc && videos?.mobile === banner.videos?.mobile;
+  return same ? banner : { ...banner, images, videos };
+}
+
+/**
  * 히어로섹션 슬라이더 — 사용자 템플릿 확장점(`home_hero`·`shop_hero`)에 끼워지는 플러그인 소유 컴포넌트.
  *
  * 넘김(전환 효과 slide·fade·cube·flip·coverflow·creative·none, 자동 재생, 무한 반복, 손가락 넘기기, PC 마우스 끌기)은
@@ -328,7 +349,7 @@ function linkProps(banner: HeroBanner): { href: string; target?: string; rel?: s
  * 템플릿은 자기 오버라이드 폴더(템플릿 루트 기준 src/components/overrides/sirsoft-hero_section/)의 HeroSlider.tsx 로 이 컴포넌트를 대체할 수 있다(같은 props).
  */
 export const HeroSlider: React.FC<HeroSliderProps> = ({
-  banners = [],
+  banners: givenBanners = [],
   settings = {},
   position,
   forceDevice,
@@ -342,6 +363,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   id,
   editorAttrs,
 }) => {
+  const banners = useMemo(() => givenBanners.map(withSiteMedia), [givenBanners]);
   const count = banners.length;
   // Swiper CSS 가 실리기 전에는 장들이 세로로 쌓였다가 펴지며 아래 본문을 밀어내므로 같은 자리의 스켈레톤을 둔다
   const stylesReady = useSwiperStyles();

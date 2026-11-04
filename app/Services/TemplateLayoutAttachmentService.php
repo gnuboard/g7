@@ -10,6 +10,7 @@ use App\Models\TemplateLayoutAttachment;
 use App\Services\Concerns\ResolvesRowStorage;
 use App\Support\ImageResizer;
 use App\Support\PublicAssetDisk;
+use App\Support\UploadedFileName;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -99,7 +100,7 @@ class TemplateLayoutAttachmentService
             'layout_name' => $layoutName,
             'disk' => $disk,
             'path' => $relativePath,
-            'original_name' => $file->getClientOriginalName(),
+            'original_name' => UploadedFileName::original($file),
             'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(),
             'created_by' => Auth::id(),

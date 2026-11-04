@@ -408,6 +408,87 @@ class AssetUrlTest extends TestCase
     }
 
     /**
+     * 하위 폴더 설치에서 정적 게시본 URL 은 사이트 마운트 접두사를 갖는다.
+     *
+     * 게시 트리는 사이트의 `public/` 아래(`/g7/build/ext/{v}/…`)에 있다. 접두사 없이
+     * `/build/ext/{v}/…` 를 내면 그 요청은 문서 루트(사이트 밖)로 나가 404 가 되고,
+     * `<link>`·`<script>` 태그 자산(아이콘 글꼴·글꼴·컴포넌트 번들·병합 번들)이 전부 빠진다.
+     * 같은 함수의 API 분기는 이미 `basePrefix()` 를 붙이고 있어, 정적 게시가 켜지는 운영
+     * 환경에서만 두 분기의 규칙이 갈렸다. 게이트 값(`staticExtBase()`)은 버전 비교에 쓰이므로
+     * 접두사 없는 형태를 유지한다.
+     *
+     * @scenario base_path=subpath, asset_url_mode=extension
+     *
+     * @effects static_publish_urls_carry_the_site_base_prefix
+     *
+     * @return void 반환값 없음
+     */
+    public function test_하위_폴더_설치의_정적_게시_url_은_마운트_접두사를_갖는다(): void
+    {
+        try {
+            Cache::put('g7:core:ext.cache_version', 424242);
+            app()['env'] = 'production';
+            $this->publishFixture(424242, [
+                'templates/sirsoft-basic/assets/css/components.css',
+                'templates/sirsoft-basic/assets/js/components.iife.js',
+                'bundles/modules.js',
+                'bundles/plugins.css',
+                'modules/sirsoft-page/assets/custom/custom.css',
+                'plugins/sirsoft-gdpr/assets/custom/custom.js',
+            ]);
+            AssetUrl::forceBasePrefix('/g7');
+            AssetUrl::resetStaticExtBaseMemo();
+
+            // 게이트 값은 버전 비교용 — 접두사 없는 형태 그대로
+            $this->assertSame('/build/ext/424242', AssetUrl::staticExtBase());
+
+            $this->assertSame(
+                '/g7/build/ext/424242/templates/sirsoft-basic/assets/css/components.css',
+                AssetUrl::templateAsset('sirsoft-basic', 'css/components.css', 424242)
+            );
+            $this->assertSame(
+                '/g7/build/ext/424242/templates/sirsoft-basic/assets/js/components.iife.js',
+                AssetUrl::templateAsset('sirsoft-basic', 'js/components.iife.js', 424242)
+            );
+            $this->assertSame(
+                '/g7/build/ext/424242/bundles/modules.js',
+                AssetUrl::extensionBundle('modules', 'js', 424242)
+            );
+            $this->assertSame(
+                '/g7/build/ext/424242/bundles/plugins.css',
+                AssetUrl::extensionBundle('plugins', 'css', 424242)
+            );
+            $this->assertSame(
+                '/g7/build/ext/424242/modules/sirsoft-page/assets/custom/custom.css',
+                AssetUrl::moduleAsset('sirsoft-page', 'custom/custom.css', 424242, allowStatic: true)
+            );
+            $this->assertSame(
+                '/g7/build/ext/424242/plugins/sirsoft-gdpr/assets/custom/custom.js',
+                AssetUrl::pluginAsset('sirsoft-gdpr', 'custom/custom.js', 424242, allowStatic: true)
+            );
+
+            // 게시본에 없는 파일은 종전대로 API 분기 — 그 분기도 같은 접두사
+            $this->assertSame(
+                '/g7/api/modules/bundle.css?v=424242',
+                AssetUrl::extensionBundle('modules', 'css', 424242)
+            );
+
+            // 루트 설치(접두사 빈 값)는 종전 문자열과 바이트 동일
+            AssetUrl::forceBasePrefix('');
+            $this->assertSame(
+                '/build/ext/424242/templates/sirsoft-basic/assets/css/components.css',
+                AssetUrl::templateAsset('sirsoft-basic', 'css/components.css', 424242)
+            );
+            $this->assertSame(
+                '/build/ext/424242/bundles/modules.js',
+                AssetUrl::extensionBundle('modules', 'js', 424242)
+            );
+        } finally {
+            $this->cleanupStaticFixture();
+        }
+    }
+
+    /**
      * 현재 게시 버전과 다른 `$version` 을 요구하는 호출은 정적 분기를 타지 않는다.
      *
      * 정적 경로는 항상 현재 게시본을 가리키므로, 다른 버전을 명시한 호출에 현재본을
@@ -861,7 +942,7 @@ class AssetUrlTest extends TestCase
         $this->assertSame('/other', $request->getBaseUrl(), '요청 픽스처가 접두사를 싣지 않았다');
         app()->instance('request', $request);
 
-        Log::shouldReceive('warning')
+        Log::shouldReceive('error')
             ->once()
             ->withArgs(fn (string $message, array $context) => str_contains($message, 'APP_URL')
                 && $context['request_base_path'] === '/other'
@@ -923,7 +1004,7 @@ class AssetUrlTest extends TestCase
             'PHP_SELF' => '/other/index.php',
         ];
 
-        Log::shouldReceive('warning')->twice();
+        Log::shouldReceive('error')->twice();
 
         app()->instance('env', 'production');
         try {
@@ -968,6 +1049,7 @@ class AssetUrlTest extends TestCase
             'PHP_SELF' => '/other/index.php',
         ]));
 
+        Log::shouldReceive('error')->never();
         Log::shouldReceive('warning')->never();
 
         app()->instance('env', 'production');
@@ -976,6 +1058,60 @@ class AssetUrlTest extends TestCase
         } finally {
             app()->instance('env', 'testing');
         }
+    }
+
+    /**
+     * 주소 설정 불일치 진단은 **출하 기본 로그 레벨(`error`)** 에서도 실제 로그 파일에 남는다.
+     *
+     * 설치가 쓰는 기본값은 `LOG_LEVEL=error` 이고 환경설정 드라이버 탭의 로그 레벨도 `error` 다.
+     * 진단을 `warning` 으로 남기면 그 기본 설치에서는 한 줄도 기록되지 않는다 — 운영자가
+     * 메일·PG 복귀·사이트맵 주소가 사이트 밖을 가리키는 원인을 볼 통로가 사라진다. 형제 진단
+     * (요청 없는 문맥의 오리진 미해결)도 같은 레벨이어야 한다. 파사드 가짜가 아니라 레벨 필터를
+     * 가진 실제 채널로 잰다.
+     *
+     * @scenario base_path=subpath, navigation_direction=request
+     *
+     * @effects address_mismatch_diagnostics_survive_the_shipped_log_level
+     *
+     * @return void 반환값 없음
+     */
+    public function test_주소_불일치_진단은_출하_기본_로그_레벨에서도_기록된다(): void
+    {
+        $logFile = $this->isolatedPublicPath.'/diag-'.uniqid().'.log';
+        config([
+            'logging.channels.asseturl_diag' => ['driver' => 'single', 'path' => $logFile, 'level' => 'error'],
+            'logging.default' => 'asseturl_diag',
+        ]);
+        Log::forgetChannel('asseturl_diag');
+
+        $this->resetOriginUnresolvableWarned();
+        app()->instance('env', 'production');
+        try {
+            // ① 웹 요청의 마운트(/g7)와 사이트 주소 설정의 경로(/other)가 다르다
+            config(['app.url' => 'http://127.0.0.1:8722/other']);
+            app()->instance('request', Request::create('http://127.0.0.1:8722/g7/board/free', 'GET', [], [], [], [
+                'SCRIPT_FILENAME' => '/var/www/g7/public/index.php',
+                'SCRIPT_NAME' => '/g7/index.php',
+                'PHP_SELF' => '/g7/index.php',
+            ]));
+            $this->assertSame('/g7', AssetUrl::basePrefix());
+
+            // ② 요청 없는 문맥 + scheme·host 없는 APP_URL
+            app()->forgetInstance('request');
+            config(['app.url' => '/g7']);
+            $this->assertSame('/api/x', AssetUrl::absolute('/api/x'));
+        } finally {
+            app()->instance('env', 'testing');
+            app()->forgetInstance('request');
+            Log::forgetChannel('asseturl_diag');
+        }
+
+        $written = is_file($logFile) ? (string) file_get_contents($logFile) : '';
+        $this->assertStringContainsString('[AssetUrl] 요청의 마운트 위치와 APP_URL 이 다르다', $written, '기본 레벨에서 불일치 진단이 버려졌다');
+        $this->assertStringContainsString('"request_base_path":"/g7"', $written);
+        $this->assertStringContainsString('"configured_base_path":"/other"', $written);
+        $this->assertStringContainsString('[AssetUrl] 절대 주소의 오리진을 알 수 없다', $written, '기본 레벨에서 오리진 미해결 진단이 버려졌다');
+        $this->assertSame(1, substr_count($written, '요청의 마운트 위치와 APP_URL 이 다르다'), '요청당 1회 상한');
     }
 
     /**
@@ -1035,7 +1171,7 @@ class AssetUrlTest extends TestCase
         app()->forgetInstance('request');
         $this->assertFalse(app()->bound('request'), '요청 바인딩이 남아 있으면 요청 없는 문맥이 재현되지 않는다');
 
-        Log::shouldReceive('warning')
+        Log::shouldReceive('error')
             ->once()
             ->withArgs(fn (string $message, array $context) => str_contains($message, '오리진')
                 && $context['path'] === '/api/x');
@@ -1076,7 +1212,7 @@ class AssetUrlTest extends TestCase
         $this->assertSame('http://other-host', $request->getSchemeAndHttpHost());
         app()->instance('request', $request);
 
-        Log::shouldReceive('warning')
+        Log::shouldReceive('error')
             ->once()
             ->withArgs(fn (string $message, array $context) => $context['configured_origin'] === 'https://example.com'
                 && $context['request_origin'] === 'http://other-host'

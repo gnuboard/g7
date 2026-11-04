@@ -379,6 +379,8 @@ return [
             'prune_blocked_hint' => '先に beta.6 のアップグレードステップを実行して manifest を事後作成してから再試行してください。',
             'confirm_prune' => '上記の候補をアクティブディレクトリからクリーンアップしますか?',
             'cancelled' => 'キャンセルしました。',
+            'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、残存ファイルを整理しませんでした。(ファイルは削除されていません)',
+            'confirm_unavailable_hint' => 'このコマンドには確認なしで整理するオプションはありません。サーバーの端末で php artisan hotfix:rollback-stale-files --prune を実行し、質問に答えてください。--prune なしで実行すると診断のみ行います。',
             'done' => 'クリーンアップ完了: ファイル :files 個、ディレクトリ :dirs 個を削除。保護 :protected 件、symlink スキップ :symlinks 件、失敗 :failed 件。',
             'log_path' => 'ログ: :path',
         ],

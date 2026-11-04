@@ -65,7 +65,7 @@ _단건 응답: `data` 객체의 필드 (`PopupImageResource`). 팝업 상세의
 | id | integer | `1` | 이미지 ID. 등록·수정 저장 때 `pc_image_id`/`mobile_image_id` 로 보냅니다 |
 | hash | string | `{hash}` | 공개 주소용 64자 영숫자 해시 |
 | device | string | `pc` | 이미지 기기(`pc`, `mobile`) |
-| url | string | `/api/plugins/sirsoft-popup/images/{hash}` | 공개 이미지 주소(사이트 상대 경로). 저장 전에도 미리보기에 쓸 수 있습니다 |
+| url | string | `/api/plugins/sirsoft-popup/images/{hash}` | 공개 이미지 주소(사이트 상대 경로, 사이트 마운트 접두사 포함 — 하위 폴더 설치(`/g7/`)면 `/g7/api/plugins/…`). 저장 전에도 미리보기에 쓸 수 있습니다 |
 | download_url | string | `/api/plugins/sirsoft-popup/images/{hash}` | `url` 과 같은 값. 관리자 파일 업로더 컴포넌트가 기대하는 첨부 모양을 맞추려고 함께 싣습니다 |
 | original_filename | string | `banner.png` | 업로드 때의 원본 파일명(최대 255자) |
 | mime_type | string | `image/png` | 이미지 MIME |

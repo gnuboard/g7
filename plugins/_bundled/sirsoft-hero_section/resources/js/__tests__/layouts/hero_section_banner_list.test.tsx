@@ -6,6 +6,8 @@
  *
  * @vitest-environment node
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import list from '../../../layouts/admin/hero_section_banner_list.json';
 import ko from '../../../lang/ko.json';
@@ -55,6 +57,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_row_readiness_flags
+  // @scenario surface=list_badge_names_language
   it('제목 칸에 제작 상태를 보인다 — 모바일 이미지 없음(PC 이미지 사용), 버튼 문구만 있고 주소 없음, 제목이 빈 사이트 언어', () => {
     const grid = findById(list, 'hero_banner_datagrid')!;
     // 표 행마다 반복되는 배지는 id 가 없어야 한다(행마다 같은 HTML id 가 생긴다) — 문구 키로 찾는다
@@ -69,7 +72,11 @@ describe('히어로섹션 목록 화면', () => {
     const missing = badge('locale_missing');
     for (const node of [mobile, button, missing]) expect(node.id).toBeUndefined();
     // 표 칸은 행 문맥 없이 먼저 번역되므로 반복 변수를 넘기는 번역은 지연 번역이어야 한다(아니면 언어 이름이 비어 보인다)
-    expect(missing.text).toBe('$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{locale.toUpperCase()}}');
+    // 언어는 언어 탭과 같은 이름으로(이름이 없으면 코드) — @scenario surface=list_badge_names_language
+    expect(missing.text).toBe("$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{_global.appConfig?.localeNames?.[locale] ?? locale.toUpperCase()}}");
+    const lang = (missing.text as string).match(/lang=\{\{(.*)\}\}$/)![1];
+    expect(Function('_global', 'locale', `return (${lang})`)({ appConfig: { localeNames: { en: 'English' } } }, 'en')).toBe('English');
+    expect(Function('_global', 'locale', `return (${lang})`)({ appConfig: { localeNames: { en: 'English' } } }, 'ja')).toBe('JA');
     expect((ko as any).admin.list.badge.locale_missing).toContain('{{lang}}');
     expect((en as any).admin.list.badge.locale_missing).toContain('{{lang}}');
     const source = missing.iteration.source;
@@ -293,6 +300,26 @@ describe('히어로섹션 목록 화면', () => {
     for (const field of ['description', 'button_text', 'image_alt']) {
       expect(banners).toContain(`${field}: $localized(b.${field})`);
     }
+  });
+
+  // @scenario surface=list_preview_localizes_all_multilingual_fields
+  // @effects preview_survives_multilingual_fields
+  it('미리보기 응답(관리자 상세 모양)의 다국어 칸은 서버 검증이 다루는 칸 전부(머리글 포함)가 글자로 바뀌어 넘어간다', () => {
+    // 칸 목록은 서버 검증의 다국어 칸 목록에서 읽는다 — 칸이 늘면 이 시험이 매핑 누락을 잡는다
+    const rules = readFileSync(resolve(__dirname, '../../../../src/Http/Requests/Concerns/BannerFieldRules.php'), 'utf8');
+    const fields = [...(rules.match(/\$translatableFields\s*=\s*\[([^\]]*)\]/)?.[1] ?? '').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    expect(fields).toContain('eyebrow');
+    const expression = (findById(list, 'hero_preview')!.props.banners as string).slice(2, -2);
+    const localizedStub = (value: unknown) => (value && typeof value === 'object' ? (value as Record<string, string>).ko ?? '' : value);
+    const detail = Object.fromEntries(fields.map((field) => [field, { ko: `${field} 한국어`, en: `${field} en` }]));
+    const mapped = Function('preview', '$localized', `return (${expression})`)(
+      { data: { data: [{ id: 2, title_localized: 'title 한국어', ...detail }] } },
+      localizedStub,
+    ) as Record<string, unknown>[];
+    for (const field of fields) {
+      expect(typeof mapped[0][field], field).toBe('string');
+    }
+    expect(mapped[0].eyebrow).toBe('eyebrow 한국어');
   });
 
   // @scenario surface=preview_frame_slot_inside_device_viewport

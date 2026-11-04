@@ -44,6 +44,7 @@ axes:
     - body_html_sanitized_on_store
     - body_html_sanitized_flag_in_response
     - body_emptied_by_sanitize_rejected
+    - body_emptied_message_names_language
     - period_site_timezone_stored_utc
     - admin_period_display_in_site_timezone
     - update_detects_changes_for_log
@@ -82,6 +83,7 @@ effects:
   - hooks_dispatched
   - files_created_or_removed
   - response_shape_with_abilities
+  - validation_messages_name_languages
 
 test_files:
   - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupControllerTest.php

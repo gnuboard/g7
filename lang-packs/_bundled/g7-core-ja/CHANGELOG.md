@@ -8,6 +8,7 @@
 
 ### Added
 
+- 관리자 화면 코어 업데이트가 긴 단계를 여러 요청으로 나눠 이어 갈 때와 요청 시간 제한으로 끊겨 되돌릴 때의 진행 기록 문구(`settings.core_update.web.*` 19개, 끊김 사유 문구는 결과 안내와 분리)의 일본어 번역을 추가했습니다.
 - 7.1.x 화면으로 만든 옛 템플릿에서 비밀번호 없는 회원이 정보 수정 진입 확인과 비밀번호 첫 설정을 마칠 때 보이는 안내(`core.compat.*`)의 일본어 번역을 추가했습니다.
 - 운영자가 발송 수단을 켜서 만든 빈 알림 템플릿을 내용 없이 켤 때의 거절 안내(받는 사람 먼저, 본문 먼저) 일본어 번역을 추가했습니다.
 - 본인 확인 시작 요청의 「시작한 화면 범위」 항목 이름 일본어 번역을 추가했습니다(`validation.attributes.scope`).
@@ -50,9 +51,11 @@
 - 관리자 화면에서 코어를 업데이트하는 웹 동선의 일본어 번역을 추가했습니다 (`settings.core_update.web.*` 65건) — 단계 이름 12개, 진행 기록, 사전 점검 실패 사유, 되돌리기 결과(소유권 복원 실패 안내 포함), 수동 ZIP 안내를 포함합니다.
 - 서버 명령이 차단된 환경에서 Composer 실행이 불가능함을 알리는 문구의 일본어 번역을 추가했습니다 (`settings.core_update.composer_unavailable`, `vendor.composer_unavailable`).
 - 코어 업데이트 실행·성공·실패 활동 기록 문구의 일본어 번역을 추가했습니다 (`activity_log.description.core_update_*` 3건과 동작 라벨 3건).
+- 명령줄 코어 업데이트(`php artisan core:update`), 확장 업데이트, 제거 명령(`module:`, `plugin:`, `template:` 의 `update`, `uninstall`, `language-pack:uninstall`), 되돌릴 수 없는 운영 명령(`analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`, `settings:migrate-to-json`)이 확인 질문에 답할 수 없는 실행에서 작업을 시작하지 않을 때 내는 사유와 다시 실행 안내(`settings.core_update.console.confirm_unavailable`, `confirm_unavailable_hint`, `modules`, `plugins`, `templates` 의 `commands.update.*`, `commands.uninstall.*`, `language_packs.commands.uninstall.*`, `analytics.console.anonymize.*`, `purge.*`, `purge_extension.*`, `common.console.hotfix_rollback_stale_files.*`, `settings.console.migrate_to_json.*` 의 같은 이름 키)의 일본어 번역을 추가했습니다.
 
 ### Changed
 
+- `g7:asset-url-mode` 의 마운트 접두사 안내 문구 3건(두 값의 출처, 오류 로그로 남는다는 안내)을 갱신했습니다.
 - 스케줄 관리의 검증 문구·항목 이름을 화면 용어에 맞췄습니다 — 「識別子」「タスク名」「制限時間」「有効状態」「最近の実行結果」, 작업 유형 표기 「Artisan」「Shell」「URL」「Job」, 복제 → 「コピー」.
 - 루트 보호 규칙 파일 쓰기 실패 안내를 「임시 파일은 대상 파일의 디렉토리에 만들며, 심볼릭 링크면 링크 대상의 권한」으로 원인 범위를 넓힌 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_write_failed`).
 - 코어 업데이트가 루트 보호 파일의 관리 블록 마커를 찾지 못했을 때의 안내를 「마커를 찾지 못했다(지워졌거나 형태가 바뀌었다)」로 정정한 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_preserved`).

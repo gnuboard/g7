@@ -388,4 +388,33 @@ class SitemapStaticRoutesTest extends TestCase
 
         $this->assertGreaterThanOrEqual(7, $checked, '대조한 고정 경로가 너무 적습니다');
     }
+
+    /**
+     * 하위 폴더 설치의 사이트맵 홈 loc 는 마운트 루트의 끝 슬래시 형태이고, 그 밖 화면은 끝 슬래시가 없다.
+     *
+     * 접힌 `…/g7` 은 웹서버가 `…/g7/` 로 301 을 돌려보낸다 — 봇 화면 canonical 과 같은 정본을 싣는다.
+     *
+     * @scenario static=declared_home, case=core_only
+     *
+     * @effects subfolder_home_loc_keeps_the_mount_root_slash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_subfolder_home_loc_keeps_the_mount_root_slash(): void
+    {
+        Config::set('app.url', 'https://example.com/g7');
+        Config::set('g7_settings.core.general.user_screen_url', '');
+
+        $document = simplexml_load_string($this->generator([])->generate());
+        $this->assertNotFalse($document);
+
+        $locs = [];
+        foreach ($document->url as $url) {
+            $locs[] = (string) $url->loc;
+        }
+
+        $this->assertContains('https://example.com/g7/', $locs, '하위 폴더 홈이 마운트 루트 정본으로 실리지 않았다: '.implode(', ', $locs));
+        $this->assertNotContains('https://example.com/g7', $locs, '접힌 마운트 루트는 웹서버가 301 로 돌려보내는 주소다');
+        $this->assertContains('https://example.com/g7/search', $locs);
+    }
 }

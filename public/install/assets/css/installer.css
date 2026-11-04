@@ -2646,6 +2646,8 @@ hr {
   border-radius: var(--border-radius-sm);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
+  /* 주소 끝의 공백 없는 난수 경로가 좁은 화면에서 카드 밖으로 나가 페이지를 가로로 밀지 않게 끊는다. */
+  overflow-wrap: anywhere;
 }
 
 /* 판정 불능 카드의 「직접 열어 볼 주소」 링크 — 경고 배경 위라 기본 링크색으로는 AA 미달
@@ -2653,6 +2655,7 @@ hr {
 .exposure-address-list a {
   color: var(--exposure-link-text);
   text-decoration: underline;
+  overflow-wrap: anywhere;
 }
 
 /* 권한 안내 무쉘 판본 (W7) — FTP 조작 절차와 쉘 명령을 두 벌로 낸다.

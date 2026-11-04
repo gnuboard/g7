@@ -95,6 +95,7 @@ public/build/ext/{cache_version}/
 - **태그 계층 런타임 복구**: 브라우저에 캐시된 구 HTML 이 GC 된 구버전 정적 자산을 참조하는 등 서빙 시점 404 는, 자산 URL 자가 복구 파샬이 `/build/ext/{v}/…` → 종전 `/api/…` URL 로 1회 역변환한다. `/build/core/**` 는 실물 정적 파일이라 변환 대상이 아니다. 확장 병합 번들(`ModuleAssetLoader`)도 동일 규칙 — 정적 번들 URL 은 1회만 시도하고 미스 시 종전 API URL 에서 기존 재시도 예산을 이어간다 (같은 정적 URL 재시도는 게시본 소실을 복구하지 못한다).
 - **SEO(봇) 렌더는 정적 URL 을 쓰지 않는다**: 봇 HTML 은 `seo.page.*` 캐시(키에 cache_version 미포함, TTL 수시간)에 박제되는데 게시 디렉토리는 GC 대상이고 SEO HTML 에는 자가 복구 파샬이 없다. `AssetUrl::templateAsset(..., allowStatic: false)` 로 무버전 API URL 을 고정한다 — 생성한 URL 이 정적 게시 GC 보다 오래 사는 저장소에 남는 호출부는 모두 이 원칙을 따른다.
 - **비프로덕션(dev)에서는 정적 URL 을 방출하지 않는다** — dev 는 파일 수정 즉시 반영이 우선이며, 게시 자체도 트리거되지 않는다.
+- **하위 주소 설치에서는 정적 URL 도 사이트 마운트 접두사를 갖는다** (`https://host/g7/` 이면 `/g7/build/ext/{v}/…`). 게시 트리가 사이트의 `public/` 아래에 있기 때문이다. 접두사는 URL 을 만드는 마지막 단계에서 붙인다 — 서버 태그 URL 은 `AssetUrl::basePrefix()`, 프론트 fetch 는 `extStaticUrl()` 의 `withBasePrefix()`. 게이트 값(`AssetUrl::staticExtBase()`, 프론트 `G7Config.staticBase`)은 버전 비교에 쓰이므로 접두사 없는 `/build/ext/{v}` 그대로다. 런타임 역변환(`staticToLegacy`)도 접두사를 벗겨 판정하고 결과 `/api/…` 에 다시 붙인다.
 
 ## 4. 트리거와 수명주기
 

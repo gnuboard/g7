@@ -63,6 +63,7 @@ effects:
   - sitemap_failures_are_reported_and_generation_continues
   # ── 번들 실물 (SitemapStaticRoutesTest) ──
   - bundled_home_in_sitemap
+  - subfolder_home_loc_keeps_the_mount_root_slash
   - seo_disabled_layouts_excluded
   - board_routes_follow_module_and_dedupe
   - search_route_follows_toggle

@@ -7,6 +7,7 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
+use App\Extension\HookManager;
 use App\Seo\TemplateRouteResolver;
 use App\Services\TemplateService;
 use Illuminate\Support\Facades\Config;
@@ -653,6 +654,38 @@ class TemplateRouteResolverTest extends TestCase
 
         $this->assertNull($resolver->resolve('/mypage'), 'resolve()는 auth_required 를 SEO 비대상으로 스킵');
         $this->assertTrue($resolver->routeExists('/mypage', 'user'), 'routeExists()는 존재로 인정');
+    }
+
+    /**
+     * 코어 시스템 라우트(미리보기)는 봇 렌더 대상으로 매핑하지 않지만 등록 경로로는 인정합니다.
+     *
+     * 시스템 라우트의 레이아웃(`__preview__`)은 저장된 레이아웃이 아니라 봇 렌더가 읽으면 늘 실패해
+     * 오류 로그만 남긴다. 판정 표식은 코어가 실제로 덧붙이는 라우트(`core.routes.filter_merged`)에서 읽는다.
+     *
+     * @scenario template_type=user, route_registration=registered_dynamic, bot=bot
+     *
+     * @effects resolver_skips_system_routes_for_seo, registered_dynamic_path_returns_200
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resolve_skips_core_system_route_but_route_exists_keeps_it(): void
+    {
+        $systemRoutes = HookManager::applyFilters('core.routes.filter_merged', [], 'user', 'sirsoft-user_basic');
+        $this->assertNotEmpty($systemRoutes, '코어가 사용자 템플릿에 시스템 라우트를 덧붙인다');
+
+        $routes = array_merge($this->getDefaultRoutes(), $systemRoutes);
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-user_basic'], $routes);
+
+        $this->assertNull($resolver->resolve('/preview/abc123'), '시스템 라우트는 봇 렌더 대상이 아니다');
+        $this->assertTrue($resolver->routeExists('/preview/abc123', 'user'), '등록 경로로는 그대로 인정한다(404 아님)');
+
+        // 일반 동적 라우트는 그대로 매핑된다
+        $this->assertSame('sirsoft-ecommerce.shop/show', $resolver->resolve('/shop/products/7')['storedLayoutName'] ?? null);
+
+        foreach ($systemRoutes as $route) {
+            $this->assertTrue(TemplateRouteResolver::isSystemRoute($route), '코어가 덧붙인 라우트는 시스템 라우트로 판정된다');
+        }
+        $this->assertFalse(TemplateRouteResolver::isSystemRoute(['path' => '/about', 'layout' => 'pages/about', 'meta' => []]));
     }
 
     /**

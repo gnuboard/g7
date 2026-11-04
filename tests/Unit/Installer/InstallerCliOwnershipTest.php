@@ -263,6 +263,53 @@ class InstallerCliOwnershipTest extends TestCase
     }
 
     /**
+     * 오래 걸린 단계 뒤에도 터미널 설치는 자기 잠금을 잃지 않는다.
+     *
+     * 설치 상태를 읽는 단일 지점은 「선언 예산을 넘긴 점유자」를 죽은 워커로 보고 실패로 승격한다. 그 판정은
+     * 자기 자신을 제외하는데, 터미널 설치는 잠금을 잡고도 자기 워커 ID 를 알리지 않아 자기 상태 읽기가 자기
+     * 잠금을 지웠다 — 심장박동 없이 15초를 넘긴 단계(템플릿 활성화 등)가 끝나는 순간 「다른 설치 작업이 잠금을
+     * 넘겨받아 이 설치를 멈춥니다」로 끝나고, 그 단계의 완료 표시가 남지 않았다. 알린 워커 ID 는 하위 명령
+     * 실행 직전 점유 시간 연장에도 쓰인다(다른 창의 상태 조회가 살아 있는 터미널 설치를 끊지 않게).
+     *
+     * @effects cli_worker_lock_survives_long_blocking_task
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cli_worker_keeps_its_lock_after_a_long_blocking_task(): void
+    {
+        $this->writeInstallerState(['installation_status' => 'running', 'generation' => 1, 'current_step' => 5, 'owner_kind' => 'cli', 'owner_hash' => str_repeat('c', 64)]);
+
+        // 단계 하나가 심장박동 없이 오래 막힌 것을 시각으로 재현한다 — 잠금을 잡은 지 2분, 마지막 심장박동 1분 전.
+        $prelude = <<<'PHP'
+            function runInstallationTasks(): void {
+                $s = getInstallationState();
+                $GLOBALS['__declared'] = installerCurrentWorkerId();
+                $s['worker_started_at'] = time() - 120;
+                $s['last_heartbeat'] = time() - 60;
+                saveInstallationState($s);
+                getProgressEmitter()->emit('log', ['message' => 'after a long blocking task']);
+                $after = getInstallationState();
+                $GLOBALS['__lock_after'] = $after['active_worker_id'] ?? null;
+                $GLOBALS['__status_after'] = $after['installation_status'] ?? null;
+                $after['installation_status'] = 'failed';
+                saveInstallationState($after);
+            }
+            PHP;
+
+        $run = $this->runCliCode(
+            '$code = g7_cli_execute(new G7CliOutput(true), ["ok" => true, "warning" => null], null, null);'
+            .'echo "__RESULT__=".json_encode(["code" => $code, "declared" => $GLOBALS["__declared"] ?? null, "lock_after" => $GLOBALS["__lock_after"] ?? null, "status_after" => $GLOBALS["__status_after"] ?? null]);',
+            $prelude
+        );
+
+        $this->assertIsArray($run['result'], '잠금을 잃고 종료 5 로 끝났다: '.$run['raw']);
+        $this->assertSame(1, $run['result']['code'], $run['raw']);
+        $this->assertNotNull($run['result']['declared'], '터미널 설치가 자기 워커 ID 를 알리지 않았다');
+        $this->assertSame($run['result']['declared'], $run['result']['lock_after'], '자기 상태 읽기가 자기 잠금을 지웠다');
+        $this->assertSame('running', $run['result']['status_after'], '살아 있는 터미널 설치가 죽은 워커로 승격됐다');
+    }
+
+    /**
      * 터미널 소유 설치는 브라우저 복구 토큰으로 가져갈 수 없다 — reclaim 403.
      *
      * @effects reclaim_refused_for_cli_owned_installation

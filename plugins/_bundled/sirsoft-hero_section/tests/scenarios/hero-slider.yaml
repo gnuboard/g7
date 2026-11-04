@@ -46,6 +46,8 @@ axes:
     - images_have_dimensions_and_aspect_ratio
     - aspect_ratio_falls_back_to_recommended
     - preview_renders_device_frame
+    - preview_banners_text_coerced_to_string
+    - preview_recovers_after_render_error
     - swiper_pagination_and_arrows
     - swiper_extra_effects
     - loading_skeleton_until_response
@@ -54,6 +56,7 @@ axes:
 effects:
   - accessible_carousel_semantics
   - responsive_image_switch
+  - preview_survives_multilingual_fields
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx

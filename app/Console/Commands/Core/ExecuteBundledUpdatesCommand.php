@@ -302,7 +302,7 @@ class ExecuteBundledUpdatesCommand extends Command
      * @param  array{type: string, identifier: string, strategy: string|null}  $item  항목
      * @return array<string, mixed> 매니페스트
      */
-    private static function manifestForItem(array $item): array
+    public static function manifestForItem(array $item): array
     {
         $manifest = ['modules' => [], 'plugins' => [], 'templates' => [], 'lang_packs' => [], 'rebuild_search_index' => false];
         $key = array_search($item['type'], self::MANIFEST_TYPES, true);

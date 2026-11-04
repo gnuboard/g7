@@ -113,6 +113,8 @@ return [
             'not_found' => 'Language pack not found: :identifier',
             'confirm' => 'Uninstall language pack \':identifier\'?',
             'cancelled' => 'Cancelled.',
+            'confirm_unavailable' => 'Language pack \':identifier\' was not uninstalled because this run cannot answer the confirmation prompt (no terminal, or --no-interaction).',
+            'confirm_unavailable_hint' => 'To uninstall without confirmation from cron, CI or a remote command, run it again with the --force option. Example: php artisan language-pack:uninstall :identifier --force',
             'done' => 'Language pack uninstalled: :identifier',
             'failed' => 'Failed to uninstall language pack: :error',
         ],

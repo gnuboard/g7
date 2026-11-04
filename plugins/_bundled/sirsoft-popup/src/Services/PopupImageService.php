@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,6 @@ use Plugins\Sirsoft\Popup\Exceptions\PopupImageUploadException;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
 use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 팝업 이미지 서비스 — 업로드·교체·파일 삭제·공개 서빙·고아 임시 이미지 정리.
@@ -100,7 +100,7 @@ class PopupImageService
                 'hash' => $hash,
                 'disk' => $this->storage->getDisk(),
                 'path' => $path,
-                'original_name' => mb_substr($file->getClientOriginalName(), 0, 255),
+                'original_name' => mb_substr(UploadedFileName::original($file), 0, 255),
                 'mime' => $mime,
                 'size' => (int) $file->getSize(),
                 'width' => $width,
@@ -329,12 +329,16 @@ class PopupImageService
     }
 
     /**
-     * 이미지를 공개 응답으로 내보냅니다 — 저장 전 미리보기를 위해 임시 업로드도 해시로 내보낸다(해시 64자는 추측할 수 없다).
+     * 이미지의 공개 서빙 정보를 반환합니다 — 저장 전 미리보기를 위해 임시 업로드도 해시로 내보낸다(해시 64자는 추측할 수 없다).
+     *
+     * 응답 계약(ETag·304 재검증·`Cache-Control`·`nosniff`)은 컨트롤러가 코어 파일 서빙 헬퍼로 입힌다. 여기서는 스토리지
+     * 스트림과 그 메타(`response`·`etag_source`·`mime_type`·`last_modified`)만 만든다. 인라인은 래스터 이미지만이고 그 밖은
+     * 내려받기다(`InlineMediaPolicy`).
      *
      * @param  string  $hash  공개 해시
-     * @return StreamedResponse|null 이미지 응답 (없으면 null)
+     * @return array<string, mixed>|null 스트림 메타 (없으면 null)
      */
-    public function publicResponse(string $hash): ?StreamedResponse
+    public function publicServing(string $hash): ?array
     {
         $image = $this->images->findByHash($hash);
         if ($image === null) {
@@ -343,8 +347,6 @@ class PopupImageService
 
         $response = $this->storage->response(self::CATEGORY, $image->path, $image->original_name, [
             'Content-Type' => $image->mime,
-            // 해시가 바뀌지 않는 한 내용도 바뀌지 않는다(교체하면 새 해시)
-            'Cache-Control' => 'public, max-age=31536000, immutable',
         ]);
 
         if ($response === null) {
@@ -356,7 +358,16 @@ class PopupImageService
         // 인라인은 래스터 이미지만, 그 외는 다운로드 + nosniff
         InlineMediaPolicy::harden($response, $image->mime, $image->original_name);
 
-        return $response;
+        // 파일 내용은 올린 때 정해진다 — 팝업에 붙이거나 떼어도(updated_at) 바뀌지 않는다
+        $modifiedAt = $image->created_at?->getTimestamp();
+
+        return [
+            'response' => $response,
+            // 해시가 바뀌지 않는 한 내용도 바뀌지 않는다(교체하면 새 해시) — 행 메타로 검증자를 만든다
+            'etag_source' => implode('|', [$image->hash, $image->path, (string) $image->size, (string) $modifiedAt]),
+            'mime_type' => (string) $image->mime,
+            'last_modified' => $modifiedAt,
+        ];
     }
 
     /**

@@ -371,6 +371,12 @@ Accept: application/json
 더블클릭 등으로 두 요청이 겹치면 뒤에 온 요청이 409 를 받는다. 진행 상태는 그대로
 남으므로 잠시 뒤 다시 호출하면 이어진다.
 
+이 요청은 서버의 요청 수명만큼 걸릴 수 있다. 호출하는 쪽은 상태 응답의
+`time_budget.client_wait_seconds` 만큼 기다려야 하고, 응답이 끊기면 `GET status` 로
+`run.claim.held` 가 풀릴 때까지 기다린 뒤 다시 부른다. 단계가 요청 시간 제한으로 끊기면 서버가
+그 단계를 실패로 기록하고 다음 호출이 되돌린다. 적용 대상 산출처럼 나눠 처리하는 단계는 같은
+`next_step` 으로 여러 번 응답한다.
+
 ---
 
 ### POST /api/admin/core-update/dismiss

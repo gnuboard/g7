@@ -6,6 +6,7 @@ use App\Execution\CommandRunnerResolver;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\SystemExecutionService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * 관리자 — 실행 방식·예약 작업 화면(W5)의 서버 표면.
@@ -108,13 +109,14 @@ class SystemExecutionController extends AdminBaseController
      *
      * 최소 호출 간격은 적용하지 않는다 — 그 제한은 외부의 과다 호출을 막기 위한
      * 것이고, 이 경로는 권한을 확인한 운영자의 명시적 행동이다.
+     * 누른 관리자는 실행 이력의 실행자로 남는다(스케줄 관리 화면의 [실행]과 같다).
      *
      * @return JsonResponse 실행 요약 JSON 응답
      */
     public function runSchedule(): JsonResponse
     {
         try {
-            return $this->success('schedule.cron.completed', $this->service->runNow());
+            return $this->success('schedule.cron.completed', $this->service->runNow(Auth::id()));
         } catch (\Throwable $e) {
             return $this->error('schedule.cron.run_failed', 500, $e->getMessage());
         }

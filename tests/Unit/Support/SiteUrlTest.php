@@ -394,4 +394,40 @@ class SiteUrlTest extends TestCase
         $this->assertSame(SiteUrl::absolute('/p?x=1'), SeoUrl::absolute('/p?x=1'));
         $this->assertSame(SiteUrl::origin(), SeoUrl::origin());
     }
+
+    /**
+     * 정본 화면 주소는 하위 폴더 마운트 루트만 끝 슬래시를 갖고, 루트 설치의 홈은 종전과 같다.
+     *
+     * 하위 폴더의 마운트 루트(`…/g7`)는 웹서버에게 폴더라 끝 슬래시 형태(`…/g7/`)로 301 을 돌려보낸다.
+     * 검색엔진에 알리는 정본이 접힌 형태면 그 주소마다 이동을 한 번 거친다.
+     *
+     * @scenario host_header=canonical, sink=site_url_helper
+     *
+     * @effects canonical_screen_url_keeps_only_the_mount_root_slash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_canonical_screen_form_keeps_only_the_mount_root_slash(): void
+    {
+        config(['app.url' => 'https://shop.example.test/g7']);
+
+        $this->assertSame('https://shop.example.test/g7/', SiteUrl::canonicalScreenForm('https://shop.example.test/g7'));
+        $this->assertSame('https://shop.example.test/g7/', SiteUrl::canonicalScreenForm('https://shop.example.test/g7/'));
+        $this->assertSame('https://shop.example.test/g7/?locale=en', SiteUrl::canonicalScreenForm('https://shop.example.test/g7?locale=en'));
+        $this->assertSame('https://shop.example.test/g7/board/free', SiteUrl::canonicalScreenForm('https://shop.example.test/g7/board/free/'));
+        $this->assertSame('https://shop.example.test/g7x', SiteUrl::canonicalScreenForm('https://shop.example.test/g7x'), '접두사 경계 밖 경로는 마운트 루트가 아니다');
+        $this->assertSame('https://shop.example.test/g7/', SeoUrl::canonical('/'));
+        $this->assertSame('https://shop.example.test/g7/', SeoUrl::canonical('/g7'));
+        $this->assertSame('https://shop.example.test/g7/products/1', SeoUrl::canonical('/products/1'));
+
+        // 사이트 주소와 다른 베이스(사용자 화면 URL)로 만든 주소는 그 베이스의 마운트로 판정한다
+        $this->assertSame('https://user.example.test/app/', SiteUrl::canonicalScreenForm('https://user.example.test/app', 'https://user.example.test/app/'));
+
+        // 루트 설치 — 홈 정본은 종전과 같이 끝 슬래시 없는 사이트 주소다
+        config(['app.url' => 'https://shop.example.test']);
+
+        $this->assertSame('https://shop.example.test', SiteUrl::canonicalScreenForm('https://shop.example.test/'));
+        $this->assertSame('https://shop.example.test', SeoUrl::canonical('/'));
+        $this->assertSame('https://shop.example.test/products/1', SeoUrl::canonical('/products/1/'));
+    }
 }

@@ -226,6 +226,12 @@ class AssetUrl
     /**
      * 태그 계층 자산의 정적 게시 URL 을 반환합니다 (파일 존재 확인 포함).
      *
+     * 반환 URL 에는 사이트 마운트 접두사(`basePrefix()`)를 붙인다. 게시 트리는 사이트의
+     * `public/` 아래에 있으므로 하위 폴더 설치에서 `/build/ext/{v}/…` 는 문서 루트(사이트 밖)를
+     * 가리켜 404 가 된다 — 같은 생성기의 API 분기는 이미 접두사를 붙이고 있어 정적 게시가 켜지는
+     * 운영 환경에서만 두 분기가 갈렸다. 게이트 값 `staticExtBase()` 는 버전 비교와 프론트
+     * `staticBase` 에 쓰이므로 접두사 없는 형태로 둔다(프론트 `extStaticUrl()` 이 같은 규칙으로 붙인다).
+     *
      * @param  string  $relative  게시 트리 상대 경로
      * @return string|null 정적 URL 또는 null (게이트 미통과)
      */
@@ -237,7 +243,7 @@ class AssetUrl
             return null;
         }
 
-        return $base.'/'.$relative;
+        return self::basePrefix().$base.'/'.$relative;
     }
 
     /**
@@ -292,6 +298,10 @@ class AssetUrl
      * 요청이 없어 요청 속성에 표시를 둘 수 없으므로 프로세스 정적 플래그로 억제한다 — 장수
      * 워커에서 매 잡마다 같은 경고를 쏟지 않게 한다. 테스트 프로세스는 제외한다.
      *
+     * 레벨은 `error` 다 — 설치가 쓰는 기본 로그 레벨이 `error` 라 `warning` 은 기본 설치에서
+     * 한 줄도 기록되지 않는다. 주소가 사이트 밖을 가리키는 운영 오류이고 1회 상한이 있어
+     * 로그를 채우지 않는다.
+     *
      * @param  string  $path  절대화하려던 경로
      * @return void 반환값 없음
      */
@@ -303,7 +313,7 @@ class AssetUrl
 
         self::$originUnresolvableWarned = true;
 
-        Log::warning('[AssetUrl] 절대 주소의 오리진을 알 수 없다 — APP_URL 에 scheme·host 가 없고 요청도 없다(큐·콘솔). 경로만 반환한다', [
+        Log::error('[AssetUrl] 절대 주소의 오리진을 알 수 없다 — APP_URL 에 scheme·host 가 없고 요청도 없다(큐·콘솔). 경로만 반환한다', [
             'path' => $path,
             'app_url' => (string) config('app.url'),
             'hint' => 'APP_URL 을 https://호스트 형태로 설정하면 큐·콘솔이 만드는 메일·사이트맵 주소가 절대 주소가 된다',
@@ -541,6 +551,10 @@ class AssetUrl
      * 테스트 프로세스는 제외한다 — 케이스마다 요청·설정을 임의로 만들어 불일치가 흔하고,
      * `Log` 파사드 기대를 가진 테스트에서 예기치 않은 호출이 된다.
      *
+     * 레벨은 `error` 다 — 설치가 쓰는 기본 로그 레벨(`LOG_LEVEL=error`, 환경설정 드라이버 탭
+     * 기본값)에서 `warning` 은 버려져, 운영자가 이 진단을 볼 통로가 사실상 없었다. 주소가 사이트
+     * 밖을 가리키는 운영 오류이고 요청당 1회 상한이 있어 로그를 채우지 않는다.
+     *
      * @param  Request  $request  현재 요청
      * @param  string  $fromRequest  요청이 실어 온 접두사
      * @return void 반환값 없음
@@ -567,7 +581,7 @@ class AssetUrl
 
         $request->attributes->set(self::PREFIX_MISMATCH_WARNED_ATTRIBUTE, true);
 
-        Log::warning('[AssetUrl] 요청의 마운트 위치와 APP_URL 이 다르다 — 큐·콘솔이 만드는 주소(PG 복귀·메일·사이트맵)가 사이트 밖을 가리킨다', [
+        Log::error('[AssetUrl] 요청의 마운트 위치와 APP_URL 이 다르다 — 큐·콘솔이 만드는 주소(PG 복귀·메일·사이트맵)가 사이트 밖을 가리킨다', [
             'request_base_path' => $fromRequest,
             'configured_base_path' => $configuredBasePath,
             'request_origin' => $requestOrigin,

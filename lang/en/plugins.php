@@ -217,6 +217,8 @@ return [
             ],
             'confirm_question' => 'Do you really want to delete?',
             'aborted' => 'Plugin uninstallation cancelled.',
+            'confirm_unavailable' => 'Plugin ":plugin" was not uninstalled because this run cannot answer the confirmation prompt (no terminal, or --no-interaction).',
+            'confirm_unavailable_hint' => 'To uninstall without confirmation from cron, CI or a remote command, run it again with the --force option. Example: php artisan plugin:uninstall :plugin --force',
             'not_installed' => 'Plugin ":plugin" is not installed.',
             // `plugin:uninstall` --delete-data warning
             'delete_data_warning' => '--delete-data: migrations will be rolled back and the settings file will be deleted as well.',
@@ -253,6 +255,8 @@ return [
             'update_source' => 'Update source: :source',
             'confirm_question' => 'Do you want to proceed with the update?',
             'aborted' => 'Update cancelled.',
+            'confirm_unavailable' => 'The update of plugin ":plugin" was not started because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). (The plugin was not changed.)',
+            'confirm_unavailable_hint' => 'To proceed without confirmation from cron, CI or a remote command, run it again with the --force option. --force also skips the version comparison and re-applies the same version. Example: php artisan plugin:update :plugin --force',
             'backup_restored' => 'Previous version has been restored from backup.',
             'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
             'layout_strategy' => 'Layout strategy: :strategy',

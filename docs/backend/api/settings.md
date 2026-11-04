@@ -2045,7 +2045,9 @@ HTTP/1.1 200
 
 관리자 화면의 [지금 실행] 이 부르는 경로다. 공개 웹 크론 주소와 **같은 러너**를 돌리되, 최소 호출 간격은 적용하지 않는다 — 그 제한은 외부의 과다 호출을 막기 위한 것이고, 이 경로는 권한을 확인한 운영자의 명시적 행동이기 때문이다.
 
-응답의 `data` 는 공개 웹 크론과 같은 실행 요약(`due`/`executed`/`failed`/`skipped`/`truncated`/`events`)이다. 필드 뜻은 `GET /api/system/cron/run` 항목을 참조한다.
+응답의 `data` 는 공개 웹 크론과 같은 실행 요약(`due`/`executed`/`failed`/`skipped`/`truncated`/`events`)이다. 필드 뜻은 `GET /api/system/cron/run` 항목을 참조한다. 다만 `started_at`·`finished_at` 은 `GET /api/admin/settings/system/status` 의 `cron.last_run` 과 같이 사이트 시간대로 나간다 — 화면이 이 응답을 「마지막 실행」 줄에 바로 그리므로, 새로고침 전후의 시각이 같아야 한다.
+
+이 경로로 돈 실행은 이력에 `trigger_type=manual` 과 누른 관리자(`triggered_by`)로 남는다. 스케줄 관리에 등록된 작업도 같다 — 실행기가 남기는 행 이력에 같은 계기와 실행자가 실린다. 실행기가 실패로 마감한 작업은 요약의 `failed` 로 센다.
 
 
 ### POST /api/admin/settings/system/detect
@@ -2289,14 +2291,14 @@ HTTP/1.1 200
 | cron.last_executed_at | string\|null | 예약이 마지막으로 **실행된** 시각. 최소 간격에 걸려 되돌아간 호출은 여기에 실리지 않는다 |
 | cron.stale | boolean | 미실행 경고 발화 여부 (마지막 실행 이후 `stale_after_days` 경과) |
 | cron.stale_after_days | integer | 경고 발화 기준 일수 |
-| cron.recent_history | array | 코드로 등록된 예약의 최근 실행 이력 (시각 역순, 최대 20건). `last_run` 은 직전 1회만 담고 다음 호출에 덮이므로 지난 실행은 이 목록으로만 되짚을 수 있다 |
-| cron.recent_history[].name | string\|null | 예약 표시명 (실행 시점 스냅샷) |
-| cron.recent_history[].expression | string\|null | 실행 주기 (실행 시점 스냅샷) |
-| cron.recent_history[].status | string\|null | `success` / `failed` |
-| cron.recent_history[].trigger_type | string\|null | `scheduled`(주기 도래) / `manual`(화면의 [지금 실행]) |
+| cron.recent_history | array | 예약 작업의 최근 실행 이력 (시각 역순, 최대 20건). 스케줄 관리에 등록된 작업(실행기가 남긴 행 이력)과 코드로 등록된 예약의 이력을 함께 싣는다. 예전 판 웹 러너가 DB 스케줄 이벤트에 짝으로 남긴 기록(이름 `schedule:{id}`)은 같은 실행의 중복이라 싣지 않는다. `last_run` 은 직전 1회만 담고 다음 호출에 덮이므로 지난 실행은 이 목록으로만 되짚을 수 있다 |
+| cron.recent_history[].name | string\|null | 예약 표시명. 스케줄 관리에 등록된 작업은 그 화면과 같은 표시 명칭(지금 언어 → 기본 언어 → 식별자), 코드 예약은 실행 시점 스냅샷 |
+| cron.recent_history[].expression | string\|null | 실행 주기 (코드 예약은 실행 시점 스냅샷, 등록된 작업은 지금 주기) |
+| cron.recent_history[].status | string\|null | `success` / `failed` / `running`(큐로 보낸 작업이 아직 도는 중) |
+| cron.recent_history[].trigger_type | string\|null | `scheduled`(주기 도래) / `manual`(화면의 [지금 실행]·스케줄 관리의 [실행]) |
 | cron.recent_history[].started_at | string\|null | 실행 시작 시각 (ISO 8601) |
 | cron.recent_history[].duration | integer\|null | 소요 시간(초) |
-| cron.recent_history[].error_output | string\|null | 실패 사유 (성공이면 null) |
+| cron.recent_history[].error_output | string\|null | 실패 사유 앞 500자 (성공이면 null) |
 | cron.state_persist_failed | boolean | 실행 상태 파일 쓰기 실패 여부. `true` 면 점검 시각이 남지 않아 다음 호출의 소급 창이 상한까지 열리고 창 안의 예약이 매 호출 전부 다시 실행된다 |
 
 

@@ -67,6 +67,11 @@ class TemplateRouteResolver
                 continue;
             }
 
+            // 코어 시스템 라우트(미리보기 등) 제외 — 저장된 레이아웃이 없어 렌더하면 읽기 실패 오류만 남는다
+            if (self::isSystemRoute($route)) {
+                continue;
+            }
+
             $routePath = $route['path'] ?? '';
             $routePath = $this->resolveRoutePath($routePath);
 
@@ -87,6 +92,22 @@ class TemplateRouteResolver
         }
 
         return null;
+    }
+
+    /**
+     * 코어가 모든 템플릿 라우트에 덧붙이는 시스템 라우트인지 판정합니다.
+     *
+     * 시스템 라우트(예: 미리보기 `/preview/:token`, 레이아웃 `__preview__`)는 `meta.is_system_route` 로
+     * 표시되며, 레이아웃이 저장된 레이아웃이 아니라 프런트엔드가 별도 API 로 불러온다. 봇 렌더·SEO 선언
+     * 수집처럼 저장된 레이아웃을 읽는 경로는 이 라우트를 읽기 전에 걸러야 한다. 경로 존재 판정
+     * ({@see routeExists()})에는 그대로 남긴다.
+     *
+     * @param  array  $route  병합 routes 의 라우트 항목
+     * @return bool 시스템 라우트면 true
+     */
+    public static function isSystemRoute(array $route): bool
+    {
+        return ($route['meta']['is_system_route'] ?? false) === true;
     }
 
     /**

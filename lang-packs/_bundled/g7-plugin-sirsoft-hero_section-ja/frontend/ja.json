@@ -86,7 +86,8 @@
       "mobile": "モバイル",
       "empty": "配信中のバナーがありません。",
       "open_site": "サイトで表示",
-      "empty_with_counts": "現在表示中のバナーがありません。(予約 {{scheduled}}件 · 非表示 {{inactive}}件 · 終了 {{ended}}件)"
+      "empty_with_counts": "現在表示中のバナーがありません。(予約 {{scheduled}}件 · 非表示 {{inactive}}件 · 終了 {{ended}}件)",
+      "render_failed": "プレビューを表示できませんでした。バナーの文言を確認してから、もう一度開いてください。"
     },
     "slider": {
       "title": "スライダー設定",
@@ -231,7 +232,7 @@
         "size_mismatch": "アップロードされた画像は {{width}}×{{height}} です。推奨サイズ({{recommended}})と異なるため、画面によっては切り取られて表示される可能性があります。"
       },
       "link_url": "移動するアドレス",
-      "link_url_placeholder": "/shop または https://example.com",
+      "link_url_placeholder": "/shop/products または https://example.com",
       "link_url_hint": "サイト内パス(/で始まる)またはhttp(s)アドレスのみ使用できます。",
       "link_new_window": "新しいウィンドウで開く",
       "period": {

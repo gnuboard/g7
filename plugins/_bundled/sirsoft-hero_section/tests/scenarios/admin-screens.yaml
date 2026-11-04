@@ -18,6 +18,11 @@ axes:
     - list_selection_cleared_on_tab_or_filter_change
     - list_slider_settings_save_and_error
     - list_preview_empty_message
+    - list_preview_localizes_all_multilingual_fields
+    - list_preview_error_contained_and_recovers_on_tab
+    - list_badge_names_language
+    - form_preview_language_names
+    - form_link_example_path_exists
     - reorder_modal_loads_position_items
     - reorder_up_down_buttons_and_edges
     - reorder_save_disabled_when_unchanged
@@ -38,8 +43,12 @@ effects:
   - accessible_names_present
   - navigation_uses_links
   - abilities_gate_actions
+  - preview_survives_multilingual_fields
+  - languages_named_like_tabs
+  - preview_error_stays_in_preview
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/plugin_settings.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/admin-preview-locale.spec.ts

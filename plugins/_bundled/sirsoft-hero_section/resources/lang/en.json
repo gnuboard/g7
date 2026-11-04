@@ -86,7 +86,8 @@
             "mobile": "Mobile",
             "empty": "No banners are showing.",
             "open_site": "View on site",
-            "empty_with_counts": "No banners are showing right now. ({{scheduled}} scheduled · {{inactive}} hidden · {{ended}} ended)"
+            "empty_with_counts": "No banners are showing right now. ({{scheduled}} scheduled · {{inactive}} hidden · {{ended}} ended)",
+            "render_failed": "The preview could not be displayed. Check the banner text and open it again."
         },
         "slider": {
             "title": "Slider settings",
@@ -236,7 +237,7 @@
                 "size_mismatch": "The uploaded image is {{width}}×{{height}}. It differs from the recommended size ({{recommended}}) and may be cropped on some screens."
             },
             "link_url": "Link URL",
-            "link_url_placeholder": "/shop or https://example.com",
+            "link_url_placeholder": "/shop/products or https://example.com",
             "link_url_hint": "Only site paths (starting with /) or http(s) URLs are allowed.",
             "link_new_window": "Open in new window",
             "period": {

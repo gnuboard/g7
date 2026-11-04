@@ -2,6 +2,7 @@
 
 namespace App\CoreUpdate;
 
+use App\Extension\Helpers\StorageLinkHelper;
 use App\Services\CoreUpdateService;
 use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\File;
@@ -36,10 +37,63 @@ class CoreUpdatePreflight
     /** 크기 추정을 위해 훑는 최대 항목 수 (대형 트리에서 진단이 요청 시간을 먹지 않도록). */
     public const SIZE_SCAN_LIMIT = 40000;
 
+    /** 쓰기 시험 파일 이름 접두사 (판정 직후 지운다). */
+    public const WRITE_PROBE_PREFIX = '.g7-write-probe-';
+
+    /** 하위 항목 훑기 시간 가운데 쓰기 가능성 훑기가 쓰는 비율 (나머지는 크기 추정). */
+    public const WRITABLE_SCAN_SHARE = 0.6;
+
+    /** 훑기 시간을 정한 시각 (몫을 나누는 기준). null 이면 시간 제한 없음. */
+    private ?float $scanStartedAt = null;
+
+    /**
+     * 하위 항목 훑기에 쓸 시간(초). null 이면 항목 수 상한만 적용한다.
+     *
+     * 항목 수 상한(`SIZE_SCAN_LIMIT`)만으로는 요청 시간을 지키지 못한다 — 항목 하나를
+     * 재는 비용이 서버마다 수십 배 다르다(Windows 에서는 같은 상한을 훑는 데 수 분이
+     * 걸리기도 한다). 이 훑기의 목적은 전수 확인이 아니라 명백한 차단을 착수 전에
+     * 드러내는 것이므로, 시간이 다하면 거기까지의 판정으로 멈춘다.
+     */
+    private ?float $scanSeconds = null;
+
+    /** @var bool 직전 진단에서 훑기가 시간 제한으로 중간에 멈췄는지 */
+    private bool $scanTruncated = false;
+
     /**
      * @param  CoreUpdateService  $service  코어 업데이트 서비스 (요구사항·경로 검증 소유)
+     * @param  \Closure|null  $clock  현재 시각(초, 부동소수) 공급자 — 테스트 주입용
      */
-    public function __construct(private readonly CoreUpdateService $service) {}
+    public function __construct(
+        private readonly CoreUpdateService $service,
+        private readonly ?\Closure $clock = null,
+    ) {}
+
+    /**
+     * 하위 항목 훑기에 쓸 시간을 정합니다 (지금부터 센다).
+     *
+     * 쓰기 가능성 훑기가 앞쪽 6할, 크기 추정이 나머지를 쓴다 — 한쪽이 시간을 다 쓰면
+     * 다른 쪽이 0 으로 판정해 여유 공간 검사가 사실상 꺼진다.
+     *
+     * @param  float|null  $seconds  쓸 시간(초). null 이면 시간 제한 없이 항목 수 상한만 쓴다
+     * @return static 같은 인스턴스
+     */
+    public function limitScanTime(?float $seconds): static
+    {
+        $this->scanStartedAt = $seconds === null ? null : $this->now();
+        $this->scanSeconds = $seconds === null ? null : max(0.0, $seconds);
+
+        return $this;
+    }
+
+    /**
+     * 직전 진단의 하위 항목 훑기가 시간 제한으로 중간에 멈췄는지.
+     *
+     * @return bool 멈췄으면 true
+     */
+    public function scanWasTruncated(): bool
+    {
+        return $this->scanTruncated;
+    }
 
     /**
      * 사전 진단을 수행합니다.
@@ -58,6 +112,7 @@ class CoreUpdatePreflight
     public function run(bool $requiresArchiveExtraction = true, bool $deep = true): array
     {
         $errors = [];
+        $this->scanTruncated = false;
 
         $requirements = $requiresArchiveExtraction
             ? $this->service->checkSystemRequirements()
@@ -111,8 +166,11 @@ class CoreUpdatePreflight
      * 항목은 **부모 디렉토리**의 쓰기 가능성으로 판정한다 — 신 버전이 새로 만드는 파일이
      * 그 자리에 놓이기 때문이다.
      *
+     * 링크·정션은 검사하지 않는다 — 업데이트·백업·되돌리기는 링크를 따라가 덮지 않고
+     * 링크째 다루므로, 링크 대상의 쓰기 가능성은 이 진단의 질문이 아니다.
+     *
      * @param  bool  $deep  하위 항목까지 훑을지 (착수 화면 요약은 얕게 본다 — 아래 사유)
-     * @return array{ok: bool, blocked: list<string>, checked: int} 판정 결과
+     * @return array{ok: bool, blocked: list<string>, checked: int, truncated: bool} 판정 결과
      */
     public function checkWritableTargets(bool $deep = true): array
     {
@@ -123,23 +181,28 @@ class CoreUpdatePreflight
         // 곱해져(현재 40여 개) 「진단이 요청 시간을 먹지 않게 한다」는 상한의 목적이
         // 사라진다 — 이 진단은 착수 화면이 열릴 때마다 도는 경로다.
         $budget = self::SIZE_SCAN_LIMIT;
+        $deadline = $this->deadlineAt(self::WRITABLE_SCAN_SHARE);
 
         foreach ($this->writableCandidates() as $relative) {
             $checked++;
             $path = base_path($relative);
 
+            if (StorageLinkHelper::isLinkOrJunction($path)) {
+                continue;
+            }
+
             if (! file_exists($path)) {
                 // 신 버전이 새로 만드는 항목 — 그 자리를 만들 수 있는지는 부모가 정한다.
                 $parent = dirname($path);
 
-                if (is_dir($parent) && ! is_writable($parent)) {
+                if (is_dir($parent) && ! $this->isWritablePath($parent)) {
                     $blocked[] = $relative;
                 }
 
                 continue;
             }
 
-            if (! is_writable($path)) {
+            if (! $this->isWritablePath($path)) {
                 $blocked[] = $relative;
 
                 continue;
@@ -148,7 +211,7 @@ class CoreUpdatePreflight
             // 디렉토리는 그 안의 항목이 교체되므로 자기 자신의 쓰기 비트만으로는 부족하다 —
             // 3-way 적용이 실제로 건드리는 것은 **하위 파일**이다.
             if ($deep && is_dir($path)) {
-                $unwritableChild = $this->firstUnwritableChild($path, $budget);
+                $unwritableChild = $this->firstUnwritableChild($path, $budget, $deadline);
 
                 if ($unwritableChild !== null) {
                     $blocked[] = $unwritableChild;
@@ -156,7 +219,12 @@ class CoreUpdatePreflight
             }
         }
 
-        return ['ok' => $blocked === [], 'blocked' => array_values(array_unique($blocked)), 'checked' => $checked];
+        return [
+            'ok' => $blocked === [],
+            'blocked' => array_values(array_unique($blocked)),
+            'checked' => $checked,
+            'truncated' => $this->scanTruncated,
+        ];
     }
 
     /**
@@ -187,7 +255,7 @@ class CoreUpdatePreflight
             return ['measurable' => true, 'free_bytes' => (int) $free, 'required_bytes' => null, 'ok' => true];
         }
 
-        $required = (int) ceil($this->estimateTreeSize() * self::DISK_SAFETY_FACTOR);
+        $required = (int) ceil($this->estimateTreeSize($this->deadlineAt(1.0)) * self::DISK_SAFETY_FACTOR);
 
         return [
             'measurable' => true,
@@ -202,7 +270,7 @@ class CoreUpdatePreflight
      *
      * @return list<string> base_path() 상대 경로
      */
-    private function writableCandidates(): array
+    protected function writableCandidates(): array
     {
         $targets = array_values(array_filter(array_map(
             static fn ($t): string => trim((string) $t),
@@ -231,14 +299,16 @@ class CoreUpdatePreflight
     /**
      * 디렉토리 하위에서 쓰기 불가한 첫 항목을 찾습니다.
      *
-     * 전수 순회는 대형 트리(`public/build`·`resources`)에서 요청 시간을 먹으므로 상한을
-     * 둔다. 목적은 「전부 확인했다」가 아니라 **명백한 차단을 착수 전에 드러내는 것**이다.
+     * 전수 순회는 대형 트리(`public/build`·`resources`)에서 요청 시간을 먹으므로 항목 수와
+     * 시간 두 가지 상한을 둔다. 목적은 「전부 확인했다」가 아니라 **명백한 차단을 착수
+     * 전에 드러내는 것**이다.
      *
      * @param  string  $directory  검사할 디렉토리 절대 경로
      * @param  int  $budget  남은 순회 예산 (후보 전체가 공유 — 참조로 감소한다)
+     * @param  float|null  $deadline  훑기 마감 시각 (null 이면 항목 수 상한만)
      * @return string|null 쓰기 불가 항목의 상대 경로 (없으면 null)
      */
-    private function firstUnwritableChild(string $directory, int &$budget): ?string
+    private function firstUnwritableChild(string $directory, int &$budget, ?float $deadline = null): ?string
     {
         $base = base_path().DIRECTORY_SEPARATOR;
 
@@ -247,7 +317,15 @@ class CoreUpdatePreflight
                 return null;
             }
 
-            if (! is_writable($path)) {
+            if ($deadline !== null && $this->now() >= $deadline) {
+                // 남은 후보도 훑지 않는다 — 예산을 비워 다음 후보가 곧바로 멈추게 한다.
+                $this->scanTruncated = true;
+                $budget = 0;
+
+                return null;
+            }
+
+            if (! $this->isWritablePath($path)) {
                 return str_replace($base, '', $path);
             }
         }
@@ -258,15 +336,20 @@ class CoreUpdatePreflight
     /**
      * 현재 트리의 대략적인 크기를 잽니다 (여유 공간 요구량 산정용).
      *
+     * @param  float|null  $deadline  훑기 마감 시각 (null 이면 항목 수 상한만)
      * @return int 바이트 (상한까지만 훑은 근사값)
      */
-    private function estimateTreeSize(): int
+    private function estimateTreeSize(?float $deadline = null): int
     {
         $total = 0;
         $scanned = 0;
 
         foreach ($this->writableCandidates() as $relative) {
             $path = base_path($relative);
+
+            if (StorageLinkHelper::isLinkOrJunction($path)) {
+                continue;
+            }
 
             if (is_file($path)) {
                 $total += (int) @filesize($path);
@@ -283,6 +366,12 @@ class CoreUpdatePreflight
                     return $total;
                 }
 
+                if ($deadline !== null && $this->now() >= $deadline) {
+                    $this->scanTruncated = true;
+
+                    return $total;
+                }
+
                 if (is_file($child)) {
                     $total += (int) @filesize($child);
                 }
@@ -293,7 +382,13 @@ class CoreUpdatePreflight
     }
 
     /**
-     * 디렉토리를 재귀 순회합니다 (제외 목록 존중).
+     * 디렉토리를 재귀 순회합니다 (제외 목록 존중, 링크·정션 제외).
+     *
+     * 링크·정션은 내놓지도 따라 들어가지도 않는다. 업데이트·백업·되돌리기는 링크를 링크째
+     * 다루므로 그 대상의 쓰기 가능성은 이 진단의 질문이 아니다. 대상까지 재면 Windows 에서
+     * 설치가 만든 `public/storage` 정션(`is_writable()` 이 거짓으로 나온다)을 「쓰기 권한
+     * 없음」으로 막고, 백업 안에 링크째 보존된 같은 정션까지 함께 지목한다 — 운영자가
+     * 권한을 바꿔도 풀리지 않는 차단이다.
      *
      * @param  string  $directory  시작 디렉토리
      * @return \Generator<int, string> 절대 경로
@@ -322,12 +417,76 @@ class CoreUpdatePreflight
                 continue;
             }
 
+            if (StorageLinkHelper::isLinkOrJunction($path)) {
+                continue;
+            }
+
             yield $path;
 
-            if (is_dir($path) && ! is_link($path)) {
+            if (is_dir($path)) {
                 yield from $this->walk($path);
             }
         }
+    }
+
+    /**
+     * 경로에 쓸 수 있는지 판정합니다.
+     *
+     * 디렉토리는 `is_writable()` 이 거짓이면 **실제로 파일을 하나 만들어 본다.** Windows 의
+     * `is_writable()` 은 읽기 전용 속성이 붙은 폴더에서 거짓을 내지만 그 안에 파일을 만드는
+     * 데는 지장이 없다 — 거짓 판정을 그대로 믿으면 운영자에게 「권한을 바꾸라」는 풀리지
+     * 않는 조치를 준다. 시험은 거짓 판정이 난 디렉토리에서만 하므로 정상 서버에는 추가
+     * 비용이 없다. 파일은 시험하지 않는다 — 덮어쓰기를 시험하려면 내용을 건드려야 한다.
+     *
+     * @param  string  $path  절대 경로
+     * @return bool 쓸 수 있으면 true
+     */
+    private function isWritablePath(string $path): bool
+    {
+        if (is_writable($path)) {
+            return true;
+        }
+
+        if (! is_dir($path)) {
+            return false;
+        }
+
+        $probe = rtrim($path, '/\\').DIRECTORY_SEPARATOR.self::WRITE_PROBE_PREFIX.bin2hex(random_bytes(4));
+        $handle = @fopen($probe, 'x');
+
+        if ($handle === false) {
+            return false;
+        }
+
+        fclose($handle);
+        @unlink($probe);
+
+        return true;
+    }
+
+    /**
+     * 훑기 시간 가운데 지정 비율까지 쓴 시점.
+     *
+     * @param  float  $share  비율 (0~1)
+     * @return float|null 마감 시각 (시간 제한이 없으면 null)
+     */
+    private function deadlineAt(float $share): ?float
+    {
+        if ($this->scanStartedAt === null || $this->scanSeconds === null) {
+            return null;
+        }
+
+        return $this->scanStartedAt + $this->scanSeconds * max(0.0, min(1.0, $share));
+    }
+
+    /**
+     * 현재 시각(초).
+     *
+     * @return float 시계 값
+     */
+    private function now(): float
+    {
+        return $this->clock !== null ? (float) ($this->clock)() : microtime(true);
     }
 
     /**

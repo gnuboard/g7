@@ -53,6 +53,15 @@ class CoreUpdatePipelineParityTest extends TestCase
         // 콘솔이 실패·성공 로그 파일 이름을 만드는 자리. 웹은 같은 사실을 진행 기록과
         // 실패 리포트 경로(`generateFailureReport()` 반환값)로 화면에 나른다.
         'updateReportPath' => '콘솔 로그 파일 이름 도출 전용 — 웹은 리포트 경로를 응답에 싣는다',
+
+        // 웹은 한 요청의 시간 몫 안에서 멈추는 커서 판을 부른다. 명령줄의 아래 메서드는 같은 커서 판을
+        // 멈춤 없이 부르는 래퍼라 하는 일이 같다(백업·복원), 또는 같은 안전 해제를 쓴다(내려받기·ZIP 추출).
+        'createBackup' => '웹은 createBackupChunk() — createBackup() 은 같은 함수를 멈춤 없이 부르는 래퍼',
+        'restoreFromBackup' => '웹은 restoreFromBackupChunk() — restoreFromBackup() 은 같은 함수를 멈춤 없이 부르는 래퍼',
+        'downloadUpdate' => '웹은 fetchReleaseArchive() + extractArchiveChunk() 로 내려받기와 풀기를 다른 요청에서 한다',
+        'extractZipToPending' => '웹은 extractArchiveChunk() — 같은 SafeArchiveExtractor 안전 해제를 항목 순번 커서로 나눈다',
+        'restoreOwnership' => '웹은 restoreOwnershipChunk() — restoreOwnership() 은 같은 함수를 멈춤 없이 부르는 래퍼',
+        'getLastPermissionWarnings' => '웹은 restoreOwnershipChunk() 결과의 warnings 를 읽는다 — 요청을 넘어 진행분에 실려 온다',
     ];
 
     /**
@@ -234,7 +243,7 @@ class CoreUpdatePipelineParityTest extends TestCase
         $rollback = $this->methodBody($source, 'performRollback');
 
         $this->assertStringContainsString(
-            'restoreOwnershipSnapshot()',
+            'restoreOwnershipSnapshot($shouldPause)',
             $rollback,
             '되돌린 사이트가 쓰기 권한을 잃은 채 남으면 되돌리기의 목적이 성립하지 않는다 (§7 R29).',
         );
@@ -248,7 +257,7 @@ class CoreUpdatePipelineParityTest extends TestCase
 
         // 성공 경로도 같은 지점을 지난다 — 한쪽만 두면 사본이 갈린다.
         $this->assertStringContainsString(
-            'restoreOwnershipSnapshot()',
+            'restoreOwnershipSnapshot($shouldPause)',
             $this->methodBody($source, 'stepFinalize'),
         );
 

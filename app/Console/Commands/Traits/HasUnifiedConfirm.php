@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Traits;
 
 use App\Console\Helpers\ConsoleConfirm;
+use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\StreamableInputInterface;
 
 /**
@@ -14,6 +15,8 @@ use Symfony\Component\Console\Input\StreamableInputInterface;
  *
  * - `--no-interaction` 시: $default 즉시 반환
  * - 응답을 받을 수 없는 실행(콘솔 없는 STDIN) 시: $default 즉시 반환
+ *   (기본값 「아니오」가 곧 작업 취소인 확인은 `canAnswerConfirmation()` 으로 먼저 갈라
+ *   `refuseUnanswerableConfirmation()` 으로 실패를 알린다 — 취소가 종료 코드 0 으로 끝나면 자동화가 성공으로 읽는다)
  * - empty 입력 시: $default 반환
  * - yes/y → true, no/n → false (대소문자 무시)
  * - 그 외 입력: "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문
@@ -29,7 +32,7 @@ trait HasUnifiedConfirm
      */
     protected function unifiedConfirm(string $question, bool $default = false): bool
     {
-        if (! $this->input->isInteractive() || ! $this->canPromptForAnswer()) {
+        if (! $this->canAnswerConfirmation()) {
             return $default;
         }
 
@@ -49,6 +52,35 @@ trait HasUnifiedConfirm
 
             $this->warn('  '.__('common.console.console_confirm.invalid_answer'));
         }
+    }
+
+    /**
+     * 이 실행이 확인 질문에 답을 받을 수 있는지 판정합니다 — 답할 수 없는 실행 판정의 단일 지점.
+     *
+     * `--no-interaction` 이거나 입력이 콘솔이 아닌 실행(cron, CI, 원격 명령)은 답할 수 없다. `unifiedConfirm()` 은 그런
+     * 실행에서 묻지 않고 기본값을 돌려준다. 업데이트, 제거처럼 기본값 「아니오」가 곧 작업 취소인 확인은 이 판정으로 먼저
+     * 갈라 `refuseUnanswerableConfirmation()` 으로 끝낸다. 대화형에서 운영자가 직접 답한 「아니오」는 의도한 취소라 그대로 둔다.
+     *
+     * @return bool 답을 받을 수 있으면 true
+     */
+    protected function canAnswerConfirmation(): bool
+    {
+        return $this->input->isInteractive() && $this->canPromptForAnswer();
+    }
+
+    /**
+     * 확인에 답할 수 없어 작업을 시작하지 않았음을 알리고 실패 종료 코드를 돌려줍니다.
+     *
+     * @param  string  $reason  시작하지 않은 사유 (오류로 출력)
+     * @param  string  $hint  확인 없이 진행하는 방법 안내
+     * @return int Command::FAILURE
+     */
+    protected function refuseUnanswerableConfirmation(string $reason, string $hint): int
+    {
+        $this->error($reason);
+        $this->line($hint);
+
+        return Command::FAILURE;
     }
 
     /**

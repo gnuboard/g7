@@ -57,6 +57,13 @@ class ExtensionManager
     private static ?array $registeredAutoloadState = null;
 
     /**
+     * 설치 도중 늦게 등록한 확장 PSR-4 매핑 — 보조 로더({@see loadLateRegisteredExtensionClass()})가 쓴다.
+     *
+     * @var array<string, array<int, string>> 네임스페이스 접두사(끝 `\` 포함) → 디렉터리 절대 경로 목록
+     */
+    private static array $lateRegisteredPsr4 = [];
+
+    /**
      * 확장 관리자를 생성합니다.
      *
      * @param  ModuleRepositoryInterface  $moduleRepository  설치된 모듈 조회 리포지토리
@@ -1218,6 +1225,13 @@ PHP;
      * 설치 시점에는 autoload-extensions.php가 아직 갱신되지 않으므로,
      * 시더 실행 전에 해당 확장의 네임스페이스를 Composer ClassLoader에 등록해야 합니다.
      *
+     * 같은 매핑을 보조 로더에도 둔다. Composer ClassLoader 는 한 번 찾지 못한 클래스를 기억해 두고(이후
+     * `addPsr4()` 로 매핑을 더해도 그 클래스는 다시 찾지 않는다), 설치 전부터 활성 디렉토리가 있던 확장은
+     * 부팅 등록기(`ModuleServiceProvider::providerClassesIn()`)가 매핑 없이 프로바이더
+     * 클래스를 한 번 찾아본다. 앞 설치가 남긴 폴더 위에 다시 설치하면 그 「없음」 기억 때문에 프로바이더를
+     * 선등록하지 못해 시더가 저장소 인터페이스를 해석하지 못했다. 보조 로더는 Composer 로더가 놓친 클래스만
+     * 받으므로 정상 경로의 해석 순서는 바뀌지 않는다.
+     *
      * @param  string  $type  확장 타입 ('modules' 또는 'plugins')
      * @param  string  $dirName  확장 디렉토리명 (예: 'sirsoft-ecommerce')
      * @return void 반환값 없음
@@ -1245,6 +1259,58 @@ PHP;
                 $absolutePath = base_path("{$type}/{$dirName}/{$p}");
                 if (is_dir($absolutePath)) {
                     $loader->addPsr4($namespace, $absolutePath);
+                    self::rememberLateRegisteredPsr4((string) $namespace, $absolutePath);
+                }
+            }
+        }
+    }
+
+    /**
+     * 늦게 등록한 PSR-4 매핑을 보조 로더에 기록합니다 (보조 로더는 프로세스당 한 번 등록).
+     *
+     * @param  string  $namespace  네임스페이스 접두사
+     * @param  string  $absolutePath  디렉터리 절대 경로
+     * @return void 반환값 없음
+     */
+    private static function rememberLateRegisteredPsr4(string $namespace, string $absolutePath): void
+    {
+        $prefix = rtrim($namespace, '\\').'\\';
+        $directory = rtrim($absolutePath, '/\\');
+
+        if (self::$lateRegisteredPsr4 === []) {
+            spl_autoload_register([self::class, 'loadLateRegisteredExtensionClass']);
+        }
+
+        if (! in_array($directory, self::$lateRegisteredPsr4[$prefix] ?? [], true)) {
+            self::$lateRegisteredPsr4[$prefix][] = $directory;
+        }
+
+        // 긴 접두사부터 본다 — `…\Database\Seeders\` 가 `…\` 보다 먼저 맞아야 Composer 와 같은 파일을 고른다
+        uksort(self::$lateRegisteredPsr4, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+    }
+
+    /**
+     * Composer 로더가 찾지 못한 확장 클래스를 늦게 등록한 PSR-4 매핑으로 읽습니다 (보조 로더).
+     *
+     * @internal `spl_autoload_register()` 가 부르는 콜백이라 공개한다 — 확장 코드가 직접 부르지 않는다.
+     *
+     * @param  string  $class  클래스 전체 이름
+     * @return void 반환값 없음
+     */
+    public static function loadLateRegisteredExtensionClass(string $class): void
+    {
+        foreach (self::$lateRegisteredPsr4 as $prefix => $directories) {
+            if (! str_starts_with($class, $prefix)) {
+                continue;
+            }
+
+            $relative = str_replace('\\', DIRECTORY_SEPARATOR, substr($class, strlen($prefix))).'.php';
+            foreach ($directories as $directory) {
+                $file = $directory.DIRECTORY_SEPARATOR.$relative;
+                if (is_file($file)) {
+                    require_once $file;
+
+                    return;
                 }
             }
         }

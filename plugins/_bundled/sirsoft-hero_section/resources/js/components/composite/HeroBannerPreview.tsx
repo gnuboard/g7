@@ -24,6 +24,8 @@ export interface HeroBannerPreviewProps {
   /** 콘텐츠 언어·사이트 기본 언어 */
   locale?: string;
   defaultLocale?: string;
+  /** 언어 코드 => 언어 이름(언어 탭과 같은 표시 이름). 없거나 빠진 언어는 코드 대문자로 보인다. */
+  localeNames?: Record<string, string> | null;
   /** 실제로 바뀐 문구 언어를 편집 화면에 알립니다. */
   onContentLocaleChange?: (locale: string) => void;
   /** 위치 설정 */
@@ -190,8 +192,52 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   </Div>;
 }
 
+/** 배너 문구 칸 — 저장은 언어별 객체이고, 슬라이더는 고른 한 언어의 글자만 그린다. */
+const TEXT_FIELDS = ['title', 'eyebrow', 'description', 'button_text', 'image_alt'] as const;
+
+/**
+ * 넘겨받은 배너의 문구 칸이 언어별 객체(관리자 상세 모양)로 남아 있으면 화면 언어로 골라 글자로 바꾼다.
+ * 레이아웃이 칸 하나를 빠뜨려도 객체를 React 자식으로 그려 미리보기 전체가 깨지지 않게 한다.
+ */
+function textOnly(banners: HeroBanner[], locale: string, defaultLocale: string): HeroBanner[] {
+  return banners.map((banner) => {
+    const loose = banner as unknown as Record<string, unknown>;
+    const objects = TEXT_FIELDS.filter((key) => loose[key] !== null && typeof loose[key] === 'object');
+    if (objects.length === 0) return banner;
+    const lang = locale || (typeof document !== 'undefined' ? document.documentElement.lang : '');
+    return { ...banner, ...Object.fromEntries(objects.map((key) => [key, localized(loose[key] as Record<string, string>, lang, defaultLocale)])) } as HeroBanner;
+  });
+}
+
+/**
+ * 미리보기 안에서 난 렌더 오류를 이 자리에서 받는다 — 바깥 오류 경계는 같은 노드에서 다시 그리지 않아, 위치 탭을 옮겨도
+ * 깨진 채 남는다. `resetKey`(위치·배너 내용)가 바뀌면 다시 그려 본다.
+ */
+class PreviewBoundary extends React.Component<{ resetKey: string; children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: unknown): void {
+    const logger = (window as any).G7Core?.createLogger?.('Plugin:sirsoft-hero_section') ?? console;
+    logger.error('HeroBannerPreview 렌더 실패', error);
+  }
+
+  componentDidUpdate(prev: { resetKey: string }): void {
+    if (this.state.failed && prev.resetKey !== this.props.resetKey) this.setState({ failed: false });
+  }
+
+  render(): React.ReactNode {
+    if (!this.state.failed) return this.props.children;
+    const P = basic('P', 'p');
+    return <P className="hs-preview__empty" role="status" data-hs-preview-error="">{translate('admin.preview.render_failed')}</P>;
+  }
+}
+
 /** 실제 PC 1366px·모바일 390px 미리보기. 확대 창은 Escape로 닫히고 포커스를 돌려줍니다. */
-export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = [], draft, locale = '', defaultLocale = '', onContentLocaleChange, settings, device = 'pc', emptyText = '', className = '', frame = null, position = '', onTextPositionChange }) => {
+export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = [], draft, locale = '', defaultLocale = '', localeNames = null, onContentLocaleChange, settings, device = 'pc', emptyText = '', className = '', frame = null, position = '', onTextPositionChange }) => {
   const slotFrame = position ? frame?.positions?.[position] ?? null : null;
   const chain = slotFrame?.chain;
   const contentBox = slotFrame?.content ?? null;
@@ -226,7 +272,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
     // 미디어는 고른 종류의 것만 — 종류를 바꿔도 화면에 남은 영상·주소가 미리보기에 섞이지 않게
     youtube_id: draft.media_type === 'youtube' ? youtubeIdFromUrl(draft.youtube_url) : null,
     videos: draft.media_type === 'video' ? draft.videos ?? null : null,
-  } as HeroBanner] : []) : banners;
+  } as HeroBanner] : []) : textOnly(banners, locale, defaultLocale);
   const fallback = draft && ['title', 'eyebrow', 'description', 'button_text', 'image_alt'].some((key) => {
     const value = draft[key as 'title'];
     return !value?.[locale]?.trim() && !!localized(value, locale, defaultLocale);
@@ -260,9 +306,13 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
   const Div = basic('Div', 'div');
   const P = basic('P', 'p');
   const Button = basic('Button', 'button');
+  // 오류 뒤 다시 그려 볼 조건 — 위치를 옮기거나 배너·기기가 바뀌면
+  const resetKey = `${position}|${device}|${JSON.stringify(items)}`;
   return <Div className={`hs-preview hs-preview--${device} ${className}`.trim()} data-device={device}>
     {items.length === 0 ? <P className="hs-preview__empty">{emptyText}</P> : <>
-      <Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onOverflow={draft ? setOverflow : undefined} onTextMove={onTextMove} replay={replay} />
+      <PreviewBoundary resetKey={resetKey}>
+        <Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onOverflow={draft ? setOverflow : undefined} onTextMove={onTextMove} replay={replay} />
+      </PreviewBoundary>
       {onTextMove && <P className="hs-form-hint hs-preview__hint" data-hint="text-drag">{translate('admin.form.text_layout.drag_hint')}</P>}
       {animated && <Button type="button" className="hs-preview__expand" data-hs-action="replay" onClick={() => setReplay((value) => value + 1)}>{translate('admin.form.text_layout.replay')}</Button>}
       {draft && overflow && <P className="hs-form-hint hs-preview__hint" data-hint="text-overflow" role="status">{translate(overflow === 'alone' ? 'admin.form.preview.text_overflow' : 'admin.form.preview.text_overflow_controls', { device: device.toUpperCase() })}</P>}
@@ -274,12 +324,12 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
           : translate('admin.form.preview.contrast_tip_dark', { option: translate('admin.form.presentation.light') })}
       </P>}
       <Button ref={opener} type="button" className="hs-preview__expand" onClick={() => setExpanded(true)}>{translate('admin.form.preview.expand')}</Button>
-      {fallback && <P className="hs-form-hint hs-preview__fallback">{translate('admin.form.preview.fallback', { locale: defaultLocale.toUpperCase() })}</P>}
+      {fallback && <P className="hs-form-hint hs-preview__fallback">{translate('admin.form.preview.fallback', { locale: localeNames?.[defaultLocale] || defaultLocale.toUpperCase() })}</P>}
       {expanded && React.createElement('dialog', {
         ref: dialog, className: 'hs-preview__dialog', 'aria-label': translate('admin.form.preview.expand'),
         onCancel: (event: Event) => { event.preventDefault(); close(); }, onClose: close,
         onKeyDownCapture: (event: React.KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); } },
-      }, <><Button type="button" className="hs-preview__expand" onClick={close}>{translate('admin.form.preview.close')}</Button><Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onTextMove={onTextMove} replay={replay} /></>)}
+      }, <><Button type="button" className="hs-preview__expand" onClick={close}>{translate('admin.form.preview.close')}</Button><PreviewBoundary resetKey={resetKey}><Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onTextMove={onTextMove} replay={replay} /></PreviewBoundary></>)}
     </>}
   </Div>;
 };

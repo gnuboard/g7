@@ -35,11 +35,55 @@ const DISMISS_URL = '/api/admin/core-update/dismiss';
 /**
  * 반복 호출 상한.
  *
- * 정상 흐름은 단계 수(12) + 되돌리기 1 이면 끝난다. 업그레이드 스텝 핸드오프가 같은
- * 단계를 다시 요구할 수 있어 여유를 두되, **무한 루프가 되지는 않게** 상한을 둔다 —
- * 서버도 같은 사유로 핸드오프 이어받기에 상한이 있다.
+ * 정상 흐름은 단계 수(12) + 되돌리기 1 이면 끝난다. 업그레이드 스텝 핸드오프와, 요청
+ * 시간 제한 안에 끝나지 않는 단계(ZIP 추출 · 백업 · 적용 대상 산출 · 번들 확장 한 항목씩 ·
+ * 되돌리기 · 정리)의 나눠 이어 가기가 같은 단계를 다시 요구한다. 실행 시간 30초 서버에서
+ * 수백 번이 될 수 있어 여유를 크게 두되, **무한 루프가 되지는 않게** 상한을 둔다 — 서버의
+ * 나눠 이어 가기는 매 요청이 적어도 한 항목을 진행하고, 단계마다 따로 상한이 있다.
  */
-const MAX_ADVANCES = 60;
+const MAX_ADVANCES = 1000;
+
+/**
+ * 서버가 대기 시간을 알려 주지 않았을 때 단계 요청 응답을 기다리는 시간(밀리초).
+ *
+ * 화면 API 기본 제한(30초)으로 단계를 부르면, 그보다 긴 단계는 서버가 계속 도는데
+ * 화면만 끊겨 멈춘다. 서버는 상태 응답의 `time_budget.client_wait_seconds` 로 자기
+ * 요청 수명 + 여유를 알려 주고, 이 값은 그것이 없을 때(구 서버)만 쓴다.
+ */
+const DEFAULT_CLIENT_WAIT_MS = 330_000;
+
+/** 응답이 끊긴 뒤 서버가 그 단계를 아직 돌리는지 다시 읽는 간격(밀리초). */
+const RECOVERY_POLL_MS = 5_000;
+
+/**
+ * 진행 없이 연달아 실패해도 스스로 다시 부르는 최대 횟수.
+ *
+ * 응답이 끊겨도 서버의 진행은 그대로라 다시 부르면 이어진다. 다만 서버가 계속 같은
+ * 자리에서 실패를 돌려주면(설정 오류 등) 무한히 부르지 않고 멈춰 [이어서 진행] 을 둔다.
+ * 「진행」은 진행 표식(`progressMarkerOf`)이 바뀐 것으로 판정한다 — 갱신 시각은 쓰지 않는다. 서버는
+ * 점유와 해제만으로도 실행 기록을 고쳐 갱신 시각을 바꾸므로, 그것을 진행으로 읽으면 같은 자리 실패가
+ * 매번 「진행 있음」이 되어 상한까지 쉬지 않고 반복한다.
+ */
+const MAX_CONSECUTIVE_FAILURES = 5;
+
+/** 다시 불러도 결과가 같은 응답 코드 — 권한·입력 문제라 기다려도 풀리지 않는다. */
+const NON_RECOVERABLE_STATUSES = [400, 401, 403, 404, 405, 419, 422];
+
+/**
+ * 기다리기 함수 (테스트가 바꿔 끼운다).
+ *
+ * @param ms 기다릴 밀리초
+ */
+let sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 기다리기 함수를 바꿔 끼운다 (테스트 전용).
+ *
+ * @param fn 대체 함수 (null 이면 기본값으로 되돌린다)
+ */
+export function __setCoreUpdateSleepForTests(fn: ((ms: number) => Promise<void>) | null): void {
+    sleep = fn ?? ((ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms)));
+}
 
 /** 아직 더 진행할 것이 남은 상태 값. */
 const ACTIVE_STATUSES = ['running', 'rolling_back'];
@@ -171,11 +215,91 @@ export async function refreshCoreUpdateStatusHandler(): Promise<any> {
 }
 
 /**
+ * 단계 요청 응답을 기다릴 시간(밀리초).
+ *
+ * @param status 마지막으로 읽은 상태
+ * @returns 밀리초
+ */
+function clientWaitMs(status: any): number {
+    const seconds = Number(status?.time_budget?.client_wait_seconds);
+
+    return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : DEFAULT_CLIENT_WAIT_MS;
+}
+
+/**
+ * 실행이 실제로 앞으로 갔는지 비교할 표식.
+ *
+ * 상태 · 다음 단계 · 완료 단계 수 · 진행 기록 누적 순번(`log_seq`, 없는 구 서버는 줄 수)으로 만든다. 나눠 이어
+ * 가는 단계는 같은 단계에 머물지만 조각마다 진행 기록이 한 줄씩 늘어 표식이 바뀐다. 점유·해제는 이 넷 어느 것도
+ * 바꾸지 않는다.
+ *
+ * @param status 상태 페이로드
+ * @returns 표식 문자열
+ */
+function progressMarkerOf(status: any): string {
+    const run = status?.run ?? null;
+
+    return JSON.stringify([
+        run?.status ?? null,
+        run?.next_step ?? null,
+        run?.completed_count ?? null,
+        // 진행 기록은 상한(서버 500줄)에서 앞쪽이 잘려 줄 수가 멈춘다 — 잘림과 무관한 누적 순번을 먼저 쓴다.
+        typeof run?.log_seq === 'number' ? run.log_seq : (Array.isArray(run?.logs) ? run.logs.length : null),
+    ]);
+}
+
+/**
+ * 응답 코드를 꺼낸다.
+ *
+ * @param error 예외
+ * @returns 응답 코드 (응답이 없었으면 null)
+ */
+function statusCodeOf(error: any): number | null {
+    const code = error?.response?.status ?? error?.status;
+
+    return typeof code === 'number' ? code : null;
+}
+
+/**
+ * 서버가 그 단계를 아직 돌리는 동안 기다렸다가 최신 상태를 돌려준다.
+ *
+ * 응답이 끊긴 것(시간 초과·네트워크·게이트웨이 오류)은 서버의 단계가 실패했다는 뜻이
+ * 아니다 — 서버는 그 요청을 계속 처리하고 있을 수 있다. 그때 곧바로 다시 부르면 점유
+ * 충돌(409)만 나므로, 점유가 풀리거나 만료 창이 지날 때까지 상태를 다시 읽으며 기다린다.
+ * 만료 창이 지나면 서버의 다음 요청이 그 점유를 회수해 실패로 기록하고 되돌린다.
+ *
+ * @param previous 실패 직전에 알던 상태
+ * @returns 최신 상태 (끝내 읽지 못했으면 null)
+ */
+async function waitUntilStepReleased(previous: any): Promise<any> {
+    const limitMs = clientWaitMs(previous) + RECOVERY_POLL_MS;
+    let waited = 0;
+    let latest: any = null;
+
+    while (waited <= limitMs) {
+        latest = await refreshCoreUpdateStatusHandler();
+
+        if (latest !== null && (! isActive(latest) || latest?.run?.claim?.held !== true)) {
+            return latest;
+        }
+
+        await sleep(RECOVERY_POLL_MS);
+        waited += RECOVERY_POLL_MS;
+    }
+
+    return latest;
+}
+
+/**
  * 남은 단계를 끝까지 수행한다.
  *
  * 한 단계가 실패하면 서버가 **되돌리기 대기** 상태로 전이하므로, 이 반복은 되돌리기가
  * 끝날 때까지 계속 돈다 — 운영자가 버튼을 한 번 더 누르게 하지 않는 것이 D10 의
  * 「조작 없이 자동」이다.
+ *
+ * 단계 요청은 서버 요청 수명만큼 기다린다. 그래도 응답이 끊기면(프록시 응답 제한, 통신
+ * 끊김) 멈추지 않고 서버 상태를 다시 읽어, 그 단계가 끝나거나 점유가 풀린 뒤 스스로 다시
+ * 부른다 — 화면을 새로 열었을 때의 자동 이어받기와 같은 경로다.
  *
  * @param initial 이미 알고 있는 상태 (없으면 먼저 조회)
  * @returns 마지막 상태
@@ -183,19 +307,48 @@ export async function refreshCoreUpdateStatusHandler(): Promise<any> {
 async function drive(initial?: any): Promise<any> {
     const G7Core = (window as any).G7Core;
     let status = initial ?? (await refreshCoreUpdateStatusHandler());
+    let failures = 0;
 
     for (let i = 0; i < MAX_ADVANCES && isActive(status); i++) {
         try {
-            status = unwrap(await G7Core.api.post(ADVANCE_URL, {}));
+            status = unwrap(await G7Core.api.post(ADVANCE_URL, {}, { timeout: clientWaitMs(status) }));
             publish(status);
+            failures = 0;
         } catch (error) {
-            // 단계 호출 자체가 실패했다(네트워크·409 점유·500). 서버의 진행 상태는
-            // 그대로 남아 있으므로 마지막으로 읽은 상태를 화면에 두고 멈춘다 —
-            // 운영자가 [이어서 진행] 으로 같은 지점부터 다시 부를 수 있다.
-            logger.error('코어 업데이트 단계 수행 실패', error);
-            G7Core?.toast?.error?.(messageOf(error));
+            const code = statusCodeOf(error);
 
-            return await refreshCoreUpdateStatusHandler();
+            if (code !== null && NON_RECOVERABLE_STATUSES.includes(code)) {
+                // 권한·입력 문제는 기다려도 풀리지 않는다 — 사유를 보이고 멈춘다.
+                logger.error('코어 업데이트 단계 수행 실패', error);
+                G7Core?.toast?.error?.(messageOf(error));
+
+                return await refreshCoreUpdateStatusHandler();
+            }
+
+            logger.warn('코어 업데이트 단계 응답이 끊겼습니다 — 서버 진행을 확인한 뒤 이어서 부릅니다.', error);
+
+            // 실패 뒤에는 한 번 쉰다 — 점유가 이미 풀린 실패(동시에 도는 명령줄 업데이트의 409, 예기치 못한 500)는
+            // 아래 대기가 곧바로 돌아오므로, 쉬지 않으면 같은 요청을 쉼 없이 되풀이한다.
+            await sleep(RECOVERY_POLL_MS);
+
+            const before = progressMarkerOf(status);
+            const latest = await waitUntilStepReleased(status);
+
+            if (latest !== null) {
+                failures = progressMarkerOf(latest) !== before ? 0 : failures + 1;
+                status = latest;
+            } else {
+                failures++;
+            }
+
+            if (failures >= MAX_CONSECUTIVE_FAILURES) {
+                // 서버의 진행 상태는 그대로 남아 있으므로 마지막으로 읽은 상태를 화면에 두고
+                // 멈춘다 — 운영자가 [이어서 진행] 으로 같은 지점부터 다시 부를 수 있다.
+                logger.error('코어 업데이트 단계 수행 실패', error);
+                G7Core?.toast?.error?.(messageOf(error));
+
+                return latest ?? status;
+            }
         }
     }
 

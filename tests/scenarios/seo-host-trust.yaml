@@ -35,6 +35,7 @@ effects:
   - tls_verification_skipped_only_for_loopback_origin
   - datasource_timeout_is_configurable
   - rendered_urls_use_site_origin
+  - mount_root_canonical_keeps_the_trailing_slash
   - site_url_parity_with_laravel_url
   - cache_key_namespaced_by_site_origin
   - forged_host_render_does_not_poison_cached_page

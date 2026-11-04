@@ -110,7 +110,12 @@ php artisan template:deactivate [vendor-template]
 php artisan template:uninstall [vendor-template]
 ```
 
+**옵션**:
+- `--force`: 확인 질문 없이 삭제
+- `--delete-data`: 「데이터도 삭제」를 선택한 것으로 제거 (활동 로그, 제거 구독 확장에 전달)
+
 **기능**:
+- 확인 질문 (`--force` 미사용 시). 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 삭제하지 않은 사유와 `--force` 안내를 출력하고 종료 코드 1, 터미널에서 「아니오」를 답하면 종료 코드 0
 - 템플릿 데이터 삭제 (`templates`, `template_layouts`)
 - 의존성 있는 템플릿 확인 후 경고
 - 캐시 전체 무효화
@@ -167,7 +172,7 @@ php artisan template:update [identifier] [--layout-strategy=overwrite] [--force]
 - 레이아웃 전략 검증 (`overwrite` | `keep` 외 FAILURE)
 - 업데이트 가용 여부 확인 (없으면 info + SUCCESS, `--force` 시 무시하고 진행)
 - `overwrite` 전략 시 덮어쓸 운영자 수정 화면 목록 경고 (`hasModifiedLayouts()`)
-- 확인 프롬프트 → 업데이트 실행
+- 확인 프롬프트 → 업데이트 실행 (`--force` 면 묻지 않음. 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 시작하지 않은 사유와 `--force` 안내를 출력하고 종료 코드 1, 터미널에서 「아니오」를 답하면 종료 코드 0)
 - `keep` 전략이면 「레이아웃 처리 결과 (수정 유지)」 표 + 요약 한 줄
 - 템플릿이 비활성이면 레이아웃 행은 두고 새 버전 원본만 기준으로 저장 → 활성화할 때 병합
 - 실패 시 백업 복원 안내

@@ -198,4 +198,72 @@ class InstallerRecoveryTokenTest extends TestCase
         $this->assertSame(429, $locked['status'], $locked['raw']);
         $this->assertSame(hash('sha256', str_repeat('2', 64)), $this->readInstallerState()['owner_hash']);
     }
+
+    /**
+     * 단계별 실행 중인 설치를 되찾으면 되찾은 세션이 단계별 실행 토큰을 이어받는다.
+     *
+     * 단계별 실행은 브라우저가 다음 단계를 불러야만 진행한다. 토큰은 설치를 시작한 세션에만 화면으로 나가므로,
+     * 되찾기가 소유 해시만 바꾸면 되찾은 창은 이어 갈 수도 멈출 수도 없고 설치는 영영 그 자리에 남는다.
+     * 토큰은 회전한다 — 닫힌 줄 알았던 이전 창이 살아 있어도 두 창이 함께 진행하지 못하게 한다.
+     * 틀린 토큰으로는 아무것도 옮겨지지 않고, 다른 비밀값(DB 비밀번호 등)은 그대로 남는다.
+     *
+     * @effects recovery_reclaim_transfers_stepwise_control
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reclaim_transfers_stepwise_control_to_reclaiming_session(): void
+    {
+        require_once dirname(__DIR__, 3).'/public/install/includes/execution-mode.php';
+
+        $this->makeInstallerTempBase();
+        $recovery = str_repeat('ef', 16);
+        $oldToken = str_repeat('a', 32);
+        $oldOwner = str_repeat('b', 32);
+        $this->writeInstallerState([
+            'installation_status' => 'running',
+            'installation_mode' => 'stepwise',
+            'current_step' => 5,
+            'owner_hash' => hash('sha256', str_repeat('3', 64)),
+            'recovery_hash' => hash('sha256', $recovery),
+            'generation' => 2,
+        ]);
+        $this->writeInstallerRuntimeFile([
+            'db' => ['write' => ['password' => 'kept-secret']],
+            'installer' => ['stepwise_token' => $oldToken, 'session_owner' => $oldOwner],
+        ]);
+
+        $spec = [
+            'get' => ['action' => 'reclaim'],
+            'session_id' => 'otherbrowser',
+            'session' => ['csrf_token' => 'tok'],
+            'headers' => ['HTTP_X_CSRF_TOKEN' => 'tok'],
+            'post' => ['recovery_token' => str_repeat('0', 32)],
+        ];
+
+        $wrong = $this->runInstallerEndpoint('state-management.php', $spec);
+        $this->assertSame(403, $wrong['status'], $wrong['raw']);
+        $this->assertSame(
+            ['stepwise_token' => $oldToken, 'session_owner' => $oldOwner],
+            $this->readInstallerRuntimeFile()['installer'] ?? null,
+            '틀린 토큰으로는 단계별 실행 권한이 옮겨지지 않는다'
+        );
+
+        $spec['post']['recovery_token'] = installer_format_recovery_token($recovery);
+        $ok = $this->runInstallerEndpoint('state-management.php', $spec);
+        $this->assertSame(200, $ok['status'], $ok['raw']);
+
+        $runtime = $this->readInstallerRuntimeFile();
+        $this->assertTrue(
+            installerSessionOwnsStepwiseInstall($ok['session'], $runtime),
+            '되찾은 세션이 단계별 실행 토큰을 화면으로 받을 수 있어야 한다(설치 화면이 이 판정으로 토큰을 싣는다)'
+        );
+        $this->assertNotSame($oldOwner, $runtime['installer']['session_owner']);
+        $this->assertSame(32, strlen((string) ($runtime['installer']['stepwise_token'] ?? '')));
+        $this->assertNotSame($oldToken, $runtime['installer']['stepwise_token'], '이전 창의 단계별 실행 토큰은 무효가 된다');
+        $this->assertSame('kept-secret', $runtime['db']['write']['password'] ?? null, '다른 비밀값은 그대로');
+
+        // 단계별 실행이 아닌 설치에는 옮길 것이 없다
+        $this->assertNull(installerTransferStepwiseOwnership(['installation_mode' => 'sse', 'installation_status' => 'running'], $runtime));
+        $this->assertNull(installerTransferStepwiseOwnership(['installation_mode' => 'stepwise', 'installation_status' => 'running'], ['db' => []]));
+    }
 }

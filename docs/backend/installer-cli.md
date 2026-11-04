@@ -43,6 +43,7 @@
 - `--reset-state` 는 이 소유 판정을 통과한 뒤에만 지운다 — 웹 소유 state 는 `--takeover` 와 같은 규칙을 거친다.
 - PHP·Composer 경로를 주지 않으면 웹 Step 3 와 같이 탐지한다(`installer_detect_php_binaries()`): 기본 `php` 를 쓸 수 없을 때만 찾은 첫 PHP, Composer 는 PATH 의 `composer` 가 아닌 찾은 경로(`composer.phar`).
 - 같은 사이트의 터미널 설치 동시 실행은 `storage/installer/cli.lock`(flock)으로 막는다(종료 5). 워커 잠금은 웹과 같은 `acquireWorkerLock()`.
+- 잠금을 얻은 입구는 곧바로 `installerCurrentWorkerId($workerId)` 로 자기 워커 ID 를 알린다(웹 `run-task.php`·`install-worker.php`·`install-process.php`, 터미널 `cli/install-flow.php`). 알리지 않으면 상태를 읽을 때마다 도는 「예산을 넘긴 점유자 = 죽은 워커」 승격이 자기 잠금을 지워, 심장박동 없이 오래 걸린 단계가 끝나는 순간 「다른 설치 작업이 잠금을 넘겨받았다」로 멈춘다. 하위 명령 직전의 점유 시간 연장(`extendWorkerStaleWindow()`)도 이 값으로 자기 잠금을 찾는다. 새 입구를 만들면 같은 배선을 둔다.
 
 ## JSON 출력 (`--output=json`)
 

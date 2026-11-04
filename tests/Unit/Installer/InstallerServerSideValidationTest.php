@@ -142,7 +142,7 @@ class InstallerServerSideValidationTest extends TestCase
             $GLOBALS['translations'] = loadTranslations('ko');
             $_POST = ['proceed' => '1'];
             $error = null;
-            handleStep2Post($error);
+            handleStep2Post('ko', $error);
             echo json_encode(['error' => $error]);
             PHP, ['session' => []]);
 

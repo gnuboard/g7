@@ -346,6 +346,8 @@ return [
             'option_required' => 'Either --mask-octets or --hash must be specified.',
             'confirm' => 'This irreversibly changes the visit records already collected. Continue?',
             'cancelled' => 'Cancelled.',
+            'confirm_unavailable' => 'Anonymization was not run because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). (The visit records were not changed.)',
+            'confirm_unavailable_hint' => 'To proceed without confirmation from cron, CI or a remote command, run it again with the --force option. Example: php artisan analytics:anonymize --mask-octets=2 --force',
             'failed' => 'Retroactive anonymization failed: :error',
             'done' => 'Anonymized :count visits.',
         ],
@@ -383,6 +385,8 @@ return [
             'confirm_option_required' => 'A full purge runs only with --confirm. This cannot be undone.',
             'confirm' => 'This deletes all visitor statistics records and aggregates. This cannot be undone. Continue?',
             'cancelled' => 'Cancelled.',
+            'confirm_unavailable' => 'The visitor statistics were not deleted because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). --confirm does not stand in for this confirmation.',
+            'confirm_unavailable_hint' => 'This command must be confirmed directly in a terminal before it deletes anything, and there is no way to delete without that confirmation. Run php artisan analytics:purge --confirm in a server terminal and answer the prompt.',
             'headers' => [
                 'target' => 'Target',
                 'deleted' => 'Deleted',
@@ -396,6 +400,8 @@ return [
             'not_installed' => ':type :identifier is not installed. If it was uninstalled with its data kept, continue; if the identifier is mistyped, cancel.',
             'confirm' => 'This deletes the visitor statistics conversions and dimension aggregates of :type :identifier. This cannot be undone. Continue?',
             'cancelled' => 'Cancelled.',
+            'confirm_unavailable' => 'The statistics of :type :identifier were not deleted because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). --confirm does not stand in for this confirmation.',
+            'confirm_unavailable_hint' => 'This command must be confirmed directly in a terminal before it deletes anything, and there is no way to delete without that confirmation. Run php artisan analytics:purge-extension :type :identifier --confirm in a server terminal and answer the prompt.',
             'failed' => 'The purge failed. Check the run history on the diagnostics screen and the application log for the reason.',
             'headers' => [
                 'target' => 'Target',

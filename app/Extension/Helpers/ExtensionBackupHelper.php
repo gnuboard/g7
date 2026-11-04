@@ -51,8 +51,12 @@ class ExtensionBackupHelper
         foreach ([$backupRoot, $backupTypeDir] as $dir) {
             File::ensureDirectoryExists($dir, 0775);
             FilePermissionHelper::inheritOwnershipFromParent($dir);
-            FilePermissionHelper::syncGroupWritability($dir);
         }
+
+        // 그룹 쓰기는 부모 체인(extension_backups → {type})만 맞춘다 — 옛 확장 백업 전체를 재귀로 훑으면 백업이
+        // 쌓일수록 확장 업데이트 한 건(코어 업데이트의 번들 확장 단계는 한 요청에 한 항목)이 길어진다. 옛 백업의 정상화는
+        // 코어 업데이트 마무리의 소유권 복원이 맡는다.
+        FilePermissionHelper::promoteGroupWritableChain($backupRoot, $backupTypeDir);
 
         // 파일별 복사로 진행 상세 보고
         self::copyDirectoryWithProgress($sourcePath, $backupPath, $sourcePath, $onProgress);

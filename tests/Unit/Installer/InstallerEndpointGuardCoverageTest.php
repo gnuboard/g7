@@ -383,6 +383,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             ['api/run-task.php', 'installerCurrentWorkerId(', '태스크 본문이 자기 lock 창을 늘리지 못한다', null],
             ['api/install-worker.php', 'installerCurrentWorkerId(', '오래 도는 태스크가 stale 로 판정돼 겹쳐 돈다', null],
             ['api/install-process.php', 'installerCurrentWorkerId(', '오래 도는 태스크가 stale 로 판정돼 겹쳐 돈다', null],
+            ['includes/cli/install-flow.php', 'installerCurrentWorkerId(', '터미널 설치가 자기 자신을 죽은 워커로 승격해 잠금을 잃고 멈춘다', 'g7_cli_execute'],
             ['api/state-management.php', 'installerApplyAbortedState(', '중단 후 죽은 워커의 점유가 남아 [계속 진행]이 거짓 busy 로 막힌다', null],
             ['includes/artisan-executor.php', 'extendWorkerStaleWindow(', 'exec() 블로킹 구간에 heartbeat 가 멈춰 살아 있는 요청을 다른 요청이 탈취한다', 'installerRunArtisanSubprocess'],
             // 감지 본문은 웹·터미널 공유 파일(includes/requirements.php)로 옮겨졌다 — 엔드포인트가 그

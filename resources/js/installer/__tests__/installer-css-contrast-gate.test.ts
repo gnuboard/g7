@@ -235,3 +235,20 @@ describe('인스톨러 CSS — 경고·오류 카드 위 문자의 AA 대비 (�
     expect(contrast('#ef4444', '#f9fafb')).toBeCloseTo(3.6, 1);
   });
 });
+
+describe('인스톨러 CSS — 노출 주소 목록의 좁은 화면 줄바꿈', () => {
+  /**
+   * 노출 주소에는 공백 없는 32자 난수 경로(`storage/installer/exposure-probe-…`)가 붙는다.
+   * 줄바꿈 규칙이 없으면 390px 화면에서 그 한 줄이 카드와 화면 밖으로 나가 페이지 전체가
+   * 가로로 밀린다(실측 scrollWidth 486). 확인된 주소(`code`)와 직접 열어 볼 주소(`a`) 둘 다 본다.
+   *
+   * @scenario exposure_probe=exposed
+   *
+   * @effects installer_exposure_address_wraps_in_narrow_viewport
+   */
+  it.each(['.exposure-address-list code', '.exposure-address-list a'])('%s 는 긴 주소를 칸 안에서 끊는다', (selector) => {
+    const block = blockOf(stripComments(readFileSync(CSS_PATH, 'utf8')), selector);
+
+    expect(block, `${selector} 에 overflow-wrap: anywhere 가 없다`).toMatch(/overflow-wrap:\s*anywhere\s*;/);
+  });
+});

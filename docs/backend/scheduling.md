@@ -251,8 +251,9 @@ $lastTick = app(\App\Services\Schedule\ScheduleHeartbeat::class)->lastTick(); //
 | `ScheduleDispatcher::dispatch($schedule, $trigger, $userId)` | 행 하나를 실행하는 단일 진입점 |
 | `DatabaseScheduleRunner::runDue(CarbonInterface $now): list<string>` | 그 시각에 due 인 `schedule:` 이벤트만 실행하고 실행한 이벤트 이름을 돌려준다. 조건·점검 모드·한 서버 실행 규칙은 `schedule:run` 과 같다. 30초 주기 행은 호출 1회에 1번 |
 | `ScheduleRegistrar::isManaged(Event $event): bool` | 이벤트 이름이 `schedule:` 로 시작하면 true — 이 이벤트의 이력은 실행기가 남기므로 러너는 따로 기록하지 않는다 |
+| `ScheduleRunContext::within($trigger, $userId, $callback)` | 등록기 콜백에 실행 계기·실행자를 넘기고 실행기 결과(이력·거부 예외)를 돌려받는 문맥. 밖에서는 예약 실행·실행자 없음. 결과는 `ScheduleRunContext::outcome()` |
 
-Laravel 스케줄러 이벤트 전체를 돌리는 러너라면 `runDue()` 를 함께 부르지 않습니다(이중 실행).
+Laravel 스케줄러 이벤트 전체를 돌리는 러너라면 `runDue()` 를 함께 부르지 않습니다(이중 실행). 웹 크론 러너(`App\Scheduling\ScheduleRunner`)가 그런 러너입니다 — `schedule:` 이벤트에는 자기 이력을 남기지 않고, 관리자의 [지금 실행]이면 `ScheduleRunContext` 로 수동 실행과 누른 관리자를 실행기까지 넘기며, 실행기가 실패로 마감한 작업을 요약의 실패로 셉니다.
 
 ---
 

@@ -555,6 +555,8 @@ $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], 
 
 **정본 주소(canonical · `og:url` · `hreflang` · 사이트맵 `<loc>`)도 같은 규칙이다.** 같은 페이지의 `og:image` 와 정본 주소가 서로 다른 오리진을 가리키면, TLS 를 앞단에서 끝내는 프록시(요청은 `http` 로 도착)나 내부 호스트명으로 도착하는 크롤러 요청에서 **한 페이지 안의 두 절대 주소가 서로 다른 오리진**을 가리키고, 사이트맵은 콘솔(`seo:generate-sitemap`)이 만들었는지 웹 요청이 만들었는지에 따라 오리진이 달라진다. 크롤러는 그것을 오류 없이 다른 사이트로 색인한다. `SeoRenderer`(canonical·og:url·hreflang)와 `SitemapGenerator`(정적 라우트·기여자 `url` → `loc`)는 사이트 주소 기준으로 만들며, 입력은 접두사 없는 요청 경로(`$request->getPathInfo()`)라 접두사는 한 번만 실린다. 기여자가 `loc` 을 직접 만들 때도 `url()` 이 아니라 `SiteUrl::absolute()` 를 쓴다 (아래 유즈케이스).
 
+정본 주소의 끝 슬래시는 화면 주소 규칙을 따른다 — 하위 폴더 설치의 **마운트 루트만** 끝 슬래시 형태(`https://host/g7/`, 로케일이면 `https://host/g7/?locale=en`)이고, 그 밖의 화면은 끝 슬래시가 없다. 웹서버가 폴더 주소 `…/g7` 을 `…/g7/` 로 301 하므로 접힌 형태를 정본으로 알리면 검색엔진이 그 주소마다 이동을 거치고, 엔진이 주소창에 두는 정본과도 갈린다. 루트 설치의 홈은 `https://host`(끝 슬래시 없음) 그대로다. `SeoRenderer` 는 `SeoUrl::canonical()`, `SitemapGenerator` 의 정적 라우트는 `SiteUrl::canonicalScreenForm()` 으로 이 형태를 만든다. `_global.site_url` 은 경로를 이어 붙이는 기준값이라 끝 슬래시 없는 사이트 주소 그대로다.
+
 같은 규칙을 지나는 서버측 절대 주소가 넷 더 있다 — 어느 하나라도 `url()` 이면 그 주소만 요청 호스트를 싣고, 접두사를 이미 품은 값에는 접두사가 한 번 더 실린다.
 
 | 지점 | 주소 | 어긋나면 |
@@ -816,6 +818,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 **정적 화면 포함 조건**: 사용자 템플릿 라우트 중 아래를 모두 만족하는 화면만 사이트맵에 정적 항목으로 싣습니다. 봇 화면(SEO HTML)을 내는 기준과 같습니다.
 
 - 로그인 필요(`auth_required`)·비로그인 전용(`guest_only`) 화면이 아니고 레이아웃이 지정돼 있다.
+- 코어가 모든 템플릿에 덧붙이는 시스템 라우트(`meta.is_system_route: true`, 예: 미리보기 `*/preview/:token` 의 `__preview__`)가 아니다. 시스템 라우트는 저장된 레이아웃이 없어 SEO 선언 수집과 봇 렌더가 레이아웃을 읽기 전에 거른다(`TemplateRouteResolver::isSystemRoute()`). 경로 존재 판정(404)에는 그대로 남는다.
 - 경로에 동적 파라미터(`:id`)나 템플릿 표현식(`{{...}}`)이 없다. 앞의 `*/`(언어 접두사 자리)는 떼고, 끝·연속 슬래시는 정리한 정규형(`*/board//free/` → `/board/free`)으로 싣는다 — 끝·연속 슬래시 주소는 정규형으로 301 이동하기 때문이다.
 - 병합 레이아웃(부모 `extends` 반영)의 `meta.seo.enabled` 가 `true` 다. SEO 블록이 없는 화면(오류 화면·본인인증 화면처럼 `_user_base` 의 기본값을 그대로 쓰는 화면 포함)은 싣지 않는다.
 - `meta.seo.toggle_setting` 이 켜져 있다(예: 쇼핑몰 「검색 결과 SEO」를 끄면 `/search` 가 빠진다).

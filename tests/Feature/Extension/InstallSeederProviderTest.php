@@ -6,6 +6,8 @@ use App\Extension\Exceptions\ExtensionSeederFailedException;
 use App\Extension\HookCacheManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Providers\ModuleServiceProvider;
+use App\Providers\PluginServiceProvider;
 use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -32,7 +34,13 @@ class InstallSeederProviderTest extends TestCase
 {
     private const ID = 'zztest-seedprov';
 
-    protected array $requiredExtensions = ['modules/zztest-seedprov', 'plugins/zztest-seedprov'];
+    /** 앞 설치가 남긴 활성 폴더 재현용 식별자 — 이 시험 밖에서 클래스가 읽힌 적이 없어야 해서 따로 둔다 */
+    private const LEFTOVER_ID = 'zztest-leftover';
+
+    protected array $requiredExtensions = [
+        'modules/zztest-seedprov', 'plugins/zztest-seedprov',
+        'modules/zztest-leftover', 'plugins/zztest-leftover',
+    ];
 
     /**
      * 픽스처를 _pending 으로 복사하고 훅 캐시 굽기를 막습니다.
@@ -70,6 +78,7 @@ class InstallSeederProviderTest extends TestCase
 
         foreach (['modules', 'plugins'] as $type) {
             $this->cleanupExtension($type);
+            $this->cleanupExtension($type, self::LEFTOVER_ID);
         }
 
         parent::tearDown();
@@ -288,31 +297,102 @@ class InstallSeederProviderTest extends TestCase
     }
 
     /**
-     * 픽스처 확장의 활성·_pending 디렉터리, 스토리지, DB 행·테이블·마이그레이션 기록을 지웁니다.
+     * 앞 설치가 남긴 활성 폴더가 부팅 전부터 있던 모듈도 설치 시더가 프로바이더 저장소 바인딩을 해석한다.
+     *
+     * 기존 설치가 감지된 DB 에 다시 설치하면 `modules/` 에 앞 설치의 활성 폴더가 남아 있다. 그 모듈은 아직 설치
+     * 전이라 확장 오토로드 매핑이 없는데, 부팅 등록기가 그 폴더의 프로바이더 클래스를 한 번 찾아본다. Composer
+     * 오토로더는 그 「없음」을 기억하므로 설치가 매핑을 등록한 뒤에도 같은 클래스를 다시 찾지 않았고, 선등록이
+     * 프로바이더를 못 찾아 시더가 저장소 인터페이스를 해석하지 못했다(설치 실패, 재시도해도 같은 자리).
+     *
+     * @scenario extension_type=module, seeder_outcome=ok, prior_install=leftover_directory
+     *
+     * @effects leftover_directory_install_resolves_provider_binding
+     *
+     * @return void 반환값 없음
+     */
+    public function test_module_install_over_leftover_active_directory_resolves_provider_binding(): void
+    {
+        $this->placeLeftoverActiveDirectory('modules');
+        $provider = 'Modules\\Zztest\\Leftover\\Providers\\LeftoverServiceProvider';
+        $this->assertFalse(class_exists($provider, false), '전제: 프로바이더 클래스가 이 시험 전에 읽히면 재현되지 않는다');
+
+        // 부팅 등록기가 매핑 없는 폴더를 훑는 장면 — 클래스를 찾지 못하고, 오토로더가 그 사실을 기억한다
+        $this->assertSame([], ModuleServiceProvider::providerClassesIn(base_path('modules/'.self::LEFTOVER_ID)));
+
+        $this->assertTrue(app(ModuleManager::class)->installModule(self::LEFTOVER_ID));
+
+        $this->assertSame(1, DB::table('zztest_leftover_probes')->count(), '시더가 만든 기본 데이터가 있어야 한다');
+    }
+
+    /**
+     * 앞 설치가 남긴 플러그인 활성 폴더도 같은 규칙으로 설치된다.
+     *
+     * @scenario extension_type=plugin, seeder_outcome=ok, prior_install=leftover_directory
+     *
+     * @effects leftover_directory_install_resolves_provider_binding
+     *
+     * @return void 반환값 없음
+     */
+    public function test_plugin_install_over_leftover_active_directory_resolves_provider_binding(): void
+    {
+        $this->placeLeftoverActiveDirectory('plugins');
+        $provider = 'Plugins\\Zztest\\Leftover\\Providers\\LeftoverServiceProvider';
+        $this->assertFalse(class_exists($provider, false), '전제: 프로바이더 클래스가 이 시험 전에 읽히면 재현되지 않는다');
+
+        $this->assertSame([], PluginServiceProvider::providerClassesIn(base_path('plugins/'.self::LEFTOVER_ID)));
+
+        $this->assertTrue(app(PluginManager::class)->installPlugin(self::LEFTOVER_ID));
+
+        $this->assertSame(1, DB::table('zztest_leftover_plugin_probes')->count());
+    }
+
+    /**
+     * 시험 픽스처를 다른 식별자로 바꿔 활성 디렉터리에 바로 둡니다 — 앞 설치가 남긴 폴더(설치 전, 매핑 없음) 재현.
      *
      * @param  string  $type  확장 유형 (modules | plugins)
      * @return void 반환값 없음
      */
-    private function cleanupExtension(string $type): void
+    private function placeLeftoverActiveDirectory(string $type): void
     {
-        foreach ([base_path("{$type}/".self::ID), base_path("{$type}/_pending/".self::ID)] as $dir) {
+        $source = base_path("tests/Fixtures/Extension/SeederProvider/{$type}/".self::ID);
+        $target = base_path("{$type}/".self::LEFTOVER_ID);
+
+        foreach (File::allFiles($source) as $file) {
+            $relative = str_replace(['Seedprov', 'seedprov'], ['Leftover', 'leftover'], $file->getRelativePathname());
+            $content = str_replace(['Seedprov', 'seedprov', 'SEEDPROV'], ['Leftover', 'leftover', 'LEFTOVER'], $file->getContents());
+            File::ensureDirectoryExists(dirname($target.DIRECTORY_SEPARATOR.$relative));
+            File::put($target.DIRECTORY_SEPARATOR.$relative, $content);
+        }
+    }
+
+    /**
+     * 픽스처 확장의 활성·_pending 디렉터리, 스토리지, DB 행·테이블·마이그레이션 기록을 지웁니다.
+     *
+     * @param  string  $type  확장 유형 (modules | plugins)
+     * @param  string  $id  픽스처 식별자
+     * @return void 반환값 없음
+     */
+    private function cleanupExtension(string $type, string $id = self::ID): void
+    {
+        foreach ([base_path("{$type}/".$id), base_path("{$type}/_pending/".$id)] as $dir) {
             if (File::isDirectory($dir)) {
                 File::deleteDirectory($dir);
             }
         }
 
-        $storage = $type === 'modules' ? ExtensionStoragePath::module(self::ID) : ExtensionStoragePath::plugin(self::ID);
+        $storage = $type === 'modules' ? ExtensionStoragePath::module($id) : ExtensionStoragePath::plugin($id);
         if (File::isDirectory($storage)) {
             File::deleteDirectory($storage);
         }
 
-        $table = $type === 'modules' ? 'zztest_seedprov_probes' : 'zztest_seedprov_plugin_probes';
+        $tableStem = str_replace('-', '_', $id);
+        $table = $type === 'modules' ? $tableStem.'_probes' : $tableStem.'_plugin_probes';
         Schema::dropIfExists($table);
         DB::table('migrations')->where('migration', 'like', '%create_'.$table.'_table')->delete();
-        DB::table($type)->where('identifier', self::ID)->delete();
-        $permissionIds = DB::table('permissions')->where('extension_identifier', self::ID)->pluck('id');
+        DB::table($type)->where('identifier', $id)->delete();
+        $permissionIds = DB::table('permissions')->where('extension_identifier', $id)->pluck('id');
         DB::table('role_permissions')->whereIn('permission_id', $permissionIds)->delete();
-        DB::table('permissions')->where('extension_identifier', self::ID)->delete();
-        DB::table('menus')->where('extension_identifier', self::ID)->delete();
+        DB::table('permissions')->where('extension_identifier', $id)->delete();
+        DB::table('menus')->where('extension_identifier', $id)->delete();
     }
 }

@@ -274,6 +274,14 @@
                 url = url.slice(origin.length);
             }
 
+            // 하위 폴더 마운트 배치에서는 서버가 `/g7/build/ext/{v}/…` 를 렌더한다. 접두사를
+            // 벗겨 판정하고 결과에 다시 붙인다(toExtensionless 와 같은 규칙) — 벗기지 않으면 그
+            // 실패를 몰라보고, 붙이지 않으면 복구 주소가 사이트 밖을 가리켜 또 404 가 된다.
+            var basePath = normalizeBasePath(BASE_PATH);
+            if (basePath && (url === basePath || url.indexOf(basePath + '/') === 0)) {
+                url = url.slice(basePath.length);
+            }
+
             var match = url.match(/^\/build\/ext\/(\d+)\/(.+)$/);
             if (!match) return null;
 
@@ -285,17 +293,17 @@
             if (extensionAsset) {
                 // audit:allow asset-url-builder-required reason: 코어 번들 로드 전 셸 복구기 —
                 // import 불가라 규칙 사본을 직접 조립한다. 드리프트는 assetUrlRecovery.test.ts 대조가 잠근다.
-                return '/api/' + extensionAsset[1] + '/assets/' + extensionAsset[2] + '/' + extensionAsset[3] + '?v=' + version;
+                return basePath + '/api/' + extensionAsset[1] + '/assets/' + extensionAsset[2] + '/' + extensionAsset[3] + '?v=' + version;
             }
 
             var bundle = rest.match(/^bundles\/(modules|plugins)\.(js|css)$/);
             if (bundle) {
-                return '/api/' + bundle[1] + '/bundle.' + bundle[2] + '?v=' + version;
+                return basePath + '/api/' + bundle[1] + '/bundle.' + bundle[2] + '?v=' + version;
             }
 
             var templateFetch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([A-Za-z0-9-]+)\.json)$/);
             if (templateFetch) {
-                return '/api/templates/' + templateFetch[1] + '/' +
+                return basePath + '/api/templates/' + templateFetch[1] + '/' +
                     templateFetch[2].replace(/\.json$/, '') + '.json?v=' + version;
             }
 

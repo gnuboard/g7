@@ -444,6 +444,106 @@ describe('StepwiseMonitor', () => {
   });
 
   /**
+   * 경과 표시와 장시간 안내는 **지금 요청이 돌리는 단계**를 대야 한다. 단계별 실행은 한 요청이
+   * 태스크 하나를 끝낸 뒤 그 태스크의 `task_start`·`task_complete` 를 함께 돌려주므로, 그 이름을
+   * 다음 요청에 그대로 쓰면 언제나 직전에 끝난 단계를 가리킨다(실측: 「패키지 관리자 확인 실행 중
+   * (43초 경과)」 동안 서버는 vendor 추출과 마이그레이션을 하고 있었다). 요청을 보내기 전에
+   * 화면이 다음 단계를 정해 주면 그 이름을 쓴다.
+   *
+   * @effects stepwise_progress_names_the_task_being_run
+   */
+  it('경과 표시는 직전에 끝난 단계가 아니라 이번 요청이 돌리는 단계를 댄다', async () => {
+    const responses = [
+      { outcome: 'task_done', events: [
+        { event: 'task_start', data: { task: 'composer_check', name: '패키지 관리자 확인' } },
+        { event: 'task_complete', data: { task: 'composer_check' } },
+      ], state: {} },
+      { outcome: 'completed', events: [], state: { status: 'completed' } },
+    ];
+    let release: (() => void) | null = null;
+    let call = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        const body = responses[Math.min(call, responses.length - 1)];
+        call += 1;
+        if (call === 2) {
+          await new Promise<void>((resolve) => { release = resolve; });
+        }
+
+        return { status: 200, ok: true, json: async () => body } as unknown as Response;
+      }),
+    );
+
+    const planned = ['패키지 관리자 확인', '필수 패키지 설치'];
+    const asked: number[] = [];
+    const ticks: Array<string | null> = [];
+    const { calls, callbacks } = collector();
+    const monitor = new monitors.StepwiseMonitor(
+      {
+        ...callbacks,
+        resolveNextTask: () => { asked.push(call); return planned[asked.length - 1] ?? null; },
+        onProgressTick: (_elapsed: number, name: string | null) => { ticks.push(name); },
+      },
+      { runTaskUrl: '/run-task', token: 't', busyRetryMs: 1, taskGapMs: 0, progressTickMs: 10, longTaskNoticeMs: 0 },
+    );
+
+    monitor.start();
+    await vi.waitFor(() => expect(release).not.toBeNull());
+    ticks.length = 0;
+    await vi.waitFor(() => expect(ticks.length).toBeGreaterThanOrEqual(2));
+
+    expect(asked, '요청마다 보내기 전에 다음 단계를 묻지 않는다').toEqual([0, 1]);
+    expect(new Set(ticks), '두 번째 요청 동안 직전에 끝난 단계 이름을 댄다').toEqual(new Set(['필수 패키지 설치']));
+
+    release!();
+    await vi.waitFor(() => expect(calls.onComplete).toBeDefined());
+  });
+
+  /**
+   * 경과 줄은 요청을 **보내는 순간** 이번 단계 이름으로 바뀌어야 한다. 첫 표시를 한 주기(1초) 뒤로
+   * 미루면 그동안 직전 단계의 「… 실행 중 (24초 경과)」가 그대로 남는다(실측: 단계가 바뀐 25번 모두
+   * 1~4초 남았고, 가장 긴 경우 2.5초 동안 다른 단계 4개가 지나갔다).
+   *
+   * @effects stepwise_progress_line_switches_when_request_starts
+   */
+  it('요청을 보내는 순간 경과 줄을 이번 단계 이름(0초)으로 바꾼다', async () => {
+    let release: (() => void) | null = null;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        await new Promise<void>((resolve) => { release = resolve; });
+
+        return {
+          status: 200,
+          ok: true,
+          json: async () => ({ outcome: 'completed', events: [], state: { status: 'completed' } }),
+        } as unknown as Response;
+      }),
+    );
+
+    const ticks: Array<[number, string | null]> = [];
+    const { calls, callbacks } = collector();
+    const monitor = new monitors.StepwiseMonitor(
+      {
+        ...callbacks,
+        resolveNextTask: () => '필수 패키지 설치',
+        onProgressTick: (elapsed: number, name: string | null) => { ticks.push([elapsed, name]); },
+      },
+      // 주기를 길게 두어 「주기를 기다린 첫 표시」와 「보내는 순간의 표시」를 가른다
+      { runTaskUrl: '/run-task', token: 't', busyRetryMs: 1, taskGapMs: 0, progressTickMs: 60000, longTaskNoticeMs: 0 },
+    );
+
+    monitor.start();
+    await vi.waitFor(() => expect(release).not.toBeNull());
+
+    expect(ticks, '요청을 보냈는데 경과 줄이 한 주기 동안 직전 단계에 머문다').toEqual([[0, '필수 패키지 설치']]);
+
+    release!();
+    await vi.waitFor(() => expect(calls.onComplete).toBeDefined());
+  });
+
+  /**
    * 로그 파일이 회전하면 서버가 알려 주는 총 줄 수가 **작아진다** (D2 L11). 이전 offset 을
    * 그대로 들고 있으면 서버는 「이미 봤다」로 읽어 회전 뒤의 줄을 한 줄도 싣지 않는다.
    *

@@ -376,7 +376,7 @@ class ZipBootstrapFlowTest extends TestCase
         $this->makePayloadZip($site.'/g7-9.9.9.zip');
         $this->issueToken($site);
 
-        foreach (['', '1', '000000000', 'abcdef'] as $bad) {
+        foreach (['1', '000000000', 'abcdef'] as $bad) {
             // 직전 실패가 건 지수 지연을 지워 시도 횟수 축만 잰다 (시간 경과 모사).
             $state = $this->readState($site);
             $state['locked_until'] = 0;
@@ -387,6 +387,99 @@ class ZipBootstrapFlowTest extends TestCase
             $this->assertFalse($result['json']['ok'], '잘못된 번호가 통과했다: '.$bad);
             $this->assertFileDoesNotExist($site.'/artisan', '거부된 요청이 파일을 썼다');
         }
+    }
+
+    /**
+     * 번호를 넣지 않은 요청은 오입력으로 세지 않고 번호를 넣으라고만 알린다.
+     *
+     * 브라우저를 닫았다 다시 열면 번호가 새로 만들어지는데, 운영자는 진행 표시와 [이어서 풀기] 를 보고
+     * 번호 칸을 비운 채 누르기 쉽다. 그것을 오입력으로 세면 남은 횟수가 줄고 지연이 걸리며 다섯 번이면
+     * 번호가 또 바뀌고 잠긴다. 빈 값은 대입 시도가 아니므로 세지 않아도 방어가 약해지지 않는다.
+     * 숫자가 아닌 문자만 넣은 값(숫자만 남기면 빈 값)도 같다. 파일은 쓰지 않는다.
+     *
+     * @scenario archive=g7_payload, token=invalid, entry=resume
+     *
+     * @effects zip_bootstrap_empty_number_is_not_counted_as_attempt
+     *
+     * @return void 반환값 없음
+     */
+    public function test_번호를_비운_요청은_오입력으로_세지_않는다(): void
+    {
+        $site = $this->makeSite();
+        $this->makePayloadZip($site.'/g7-9.9.9.zip');
+        $this->issueToken($site);
+
+        foreach (['', '   ', 'abcdef'] as $empty) {
+            $result = $this->call($site, ['action' => 'extract', 'token' => $empty]);
+
+            $this->assertIsArray($result['json'], $result['raw']);
+            $this->assertFalse($result['json']['ok'], '빈 번호가 통과했다');
+            $this->assertSame('token_required', (string) ($result['json']['code'] ?? ''), $result['raw']);
+            $this->assertArrayNotHasKey('retry_after', $result['json'], '빈 번호에 지연이 걸렸다');
+        }
+
+        $state = $this->readState($site);
+        $this->assertSame(0, (int) $state['attempts'], '빈 번호가 오입력 횟수를 늘렸다');
+        $this->assertSame(0, (int) $state['locked_until'], '빈 번호가 잠금을 걸었다');
+        $this->assertFileDoesNotExist($site.'/artisan', '거부된 요청이 파일을 썼다');
+    }
+
+    /**
+     * 세션이 무효가 된 탭이 번호 없이 보내 `token_required` 를 받으면 세션을 버리고 번호 칸을 다시 보인다.
+     *
+     * 세션 키를 가진 탭은 번호 칸을 숨긴 채 세션만 보낸다. 서버에서 그 세션이 무효가 되면(번호 재발급, 해제
+     * 완료 뒤 상태 초기화) 빈 번호 요청이 되어 `token_required` 가 오는데, 화면이 그 코드에서 세션을 지우지
+     * 않으면 번호 칸이 숨겨진 채 같은 요청만 되풀이해 운영자가 번호를 넣을 길이 없다.
+     *
+     * @scenario archive=g7_payload, token=session, entry=resume
+     *
+     * @effects zip_bootstrap_empty_number_is_not_counted_as_attempt
+     *
+     * @return void 반환값 없음
+     */
+    public function test_세션이_무효가_된_탭은_번호_칸을_다시_보인다(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 3).'/g7-setup.php');
+        $this->assertSame(1, preg_match("~if \(data\.code === 'token_reissued'[^)]*\) \{(.*?)\n                \}~s", $source, $m), '인증 실패 코드 처리 분기를 찾지 못했다');
+
+        $this->assertStringContainsString("'token_required'", $m[0], '번호 없이 보낸 요청의 실패(token_required)에서 세션을 버리지 않는다 — 번호 칸이 숨겨진 채 남는다');
+        $this->assertStringContainsString("removeItem('g7_setup_session')", $m[1], '세션 키를 지우지 않는다');
+        $this->assertStringContainsString("tokenField.style.display = ''", $m[1], '숨긴 번호 칸을 다시 보이지 않는다');
+    }
+
+    /**
+     * 임시 보호 규칙이 `mod_access_compat` 이 없는 Apache 2.4 에서도 번호, 상태 파일을 막는다.
+     *
+     * 종전 규칙은 `Order`/`Deny` 하나만 써서, 그 하위호환 모듈이 없는 서버에서는 두 파일이 200 으로
+     * 열렸다(실측: 번호 6자리가 그대로 읽힘). 루트 `.htaccess` 와 같은 방식으로 경로 판정은
+     * `RedirectMatch 403`(mod_alias, FileInfo 등급)을 쓰고, mod_alias 가 없을 때만 `Order`/`Deny` 로 물러선다.
+     *
+     * @scenario archive=g7_payload, token=valid, entry=fresh
+     *
+     * @effects zip_bootstrap_guard_blocks_number_file_without_access_compat
+     *
+     * @return void 반환값 없음
+     */
+    public function test_임시_보호_규칙은_access_compat_없이도_번호_파일을_막는다(): void
+    {
+        $site = $this->makeSite();
+        $this->makePayloadZip($site.'/g7-9.9.9.zip');
+        $this->issueToken($site);
+
+        $rules = (string) file_get_contents($site.'/.htaccess');
+
+        $this->assertMatchesRegularExpression(
+            '~<IfModule mod_alias\.c>\s*'.preg_quote('RedirectMatch 403 (?i)/g7-setup-(token\.txt|state\.json)$', '~').'\s*</IfModule>~',
+            $rules,
+            '번호, 상태 파일 경로를 mod_alias 로 막는 규칙이 없다 — mod_access_compat 없는 Apache 에서 열린다'
+        );
+        $this->assertMatchesRegularExpression('~<IfModule !mod_alias\.c>.*Deny from all.*</IfModule>~s', $rules, 'mod_alias 가 없을 때의 대체 규칙이 없다');
+        $this->assertStringNotContainsString('Require', $rules, 'Require 는 AuthConfig 등급이라 제한 호스팅에서 500 이 된다');
+
+        $pattern = '~'.str_replace('~', '\~', substr((string) strstr($rules, '(?i)'), 4, strpos((string) strstr($rules, '(?i)'), '$') - 3)).'~i';
+        $this->assertSame(1, preg_match($pattern, '/g7/g7-setup-token.txt'));
+        $this->assertSame(1, preg_match($pattern, '/G7-SETUP-STATE.JSON'));
+        $this->assertSame(0, preg_match($pattern, '/g7/g7-setup.php'), '부트스트랩 자신까지 막는다');
     }
 
     /**
