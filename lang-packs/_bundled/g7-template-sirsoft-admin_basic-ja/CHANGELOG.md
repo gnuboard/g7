@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-11-04
+
+### Added
+
+- 관리자 기본 템플릿 1.1.5 의 레이아웃 편집기 상태 이름 「상품 진열 탭」(`editor.state.tab.product_display` 「商品陳列タブ」)의 일본어 번역을 추가했습니다.
+
+
 ## [1.1.3] - 2026-11-01
 
 ### Added

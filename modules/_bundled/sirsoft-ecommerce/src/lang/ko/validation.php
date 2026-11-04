@@ -1445,6 +1445,10 @@ return [
         'review_settings.max_images' => '리뷰 이미지 최대 개수',
         'review_settings.max_image_size_mb' => '리뷰 이미지 최대 용량(MB)',
 
+        // 상품 진열 설정
+        'product_display.related_order' => '관련 상품 순서',
+        'product_display.related_cache_hours' => '관련 상품 목록 유지 시간',
+
         // 클레임 설정
         'claim.exchange_reasons' => '교환 사유',
         'claim.exchange_reasons.*.code' => '교환 사유 코드',

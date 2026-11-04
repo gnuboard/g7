@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use App\Search\SearchPagePolicy;
 use App\Support\LocalizedValue;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
+use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OptionHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
@@ -57,6 +59,13 @@ class ProductService
      * 커서(키셋) 경계로 쓸 수 있는 실제 컬럼 선언
      */
     public const SEARCH_CURSOR_COLUMNS = ['created_at', 'selling_price'];
+
+    /**
+     * 관련 상품 ID 캐시 태그 — 순서·만료 설정을 바꾸면 이 태그로 한꺼번에 비운다.
+     *
+     * @var string
+     */
+    public const RELATED_CACHE_TAG = 'sirsoft-ecommerce.related_products';
 
     /**
      * 시스템 기본통화 코드 조회
@@ -161,6 +170,36 @@ class ProductService
         HookManager::doAction('sirsoft-ecommerce.product.after_popular_list', $products);
 
         return $products;
+    }
+
+    /**
+     * 관련 상품(상품 상세 「이 상품은 어떠세요?」)을 조회합니다.
+     *
+     * 대표 분류 → 그 상위 분류 → … 단계로 채우고, 단계 안 순서는 환경설정 `product_display.related_order`
+     * (기본 무작위)를 따른다. 고른 ID 는 `product_display.related_cache_hours`(기본 24시간, 0 이면 캐시 안 함) 동안
+     * 코어 캐시 드라이버에 둔다 — 무작위여도 그 사이에는 같은 목록이다. 상품 정보는 캐시하지 않고 매번 읽으므로
+     * 그 사이 숨긴 상품은 빠지고 가격·재고는 지금 값이다.
+     *
+     * @param  Product  $product  기준 상품
+     * @param  int  $limit  최대 개수
+     * @return Collection<int, Product> 관련 상품 컬렉션
+     */
+    public function getRelatedProducts(Product $product, int $limit = 8): Collection
+    {
+        $order = RelatedProductOrder::fromSetting(g7_module_settings('sirsoft-ecommerce', 'product_display.related_order', RelatedProductOrder::RANDOM->value));
+        $hours = max(0, (int) g7_module_settings('sirsoft-ecommerce', 'product_display.related_cache_hours', 24));
+
+        $resolve = fn () => $this->repository->getRelatedProductIds($product, $order, $limit);
+        $ids = $hours > 0
+            ? app(CacheInterface::class)->remember(
+                sprintf('related_products.%d.%s.%d', $product->id, $order->value, $limit),
+                $resolve,
+                $hours * 3600,
+                [self::RELATED_CACHE_TAG]
+            )
+            : $resolve();
+
+        return $this->repository->findByIds($ids);
     }
 
     /**

@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.5] - 2026-11-04
+
+### Added
+
+- 레이아웃 편집기 「상태」 고르개에 쇼핑몰 환경설정 「상품 진열」 탭을 여는 상태 이름(`editor.state.tab.product_display` 「상품 진열 탭」)을 더했습니다(이커머스 1.3.4 의 새 탭).
+
+
 ## [1.1.4] - 2026-11-01
 
 ### Added

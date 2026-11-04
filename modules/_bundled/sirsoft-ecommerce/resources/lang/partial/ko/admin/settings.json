@@ -15,6 +15,7 @@
     "claim": "클레임",
     "shipping": "배송설정",
     "review_settings": "리뷰 설정",
+    "product_display": "상품 진열",
     "notification_definitions": "알림 설정",
     "identity_policies": "본인인증 정책",
     "mileage": "마일리지",
@@ -626,6 +627,19 @@
     "images_unit": "장",
     "max_image_size_mb_label": "이미지 최대 용량",
     "max_image_size_mb_hint": "업로드 가능한 이미지 파일의 최대 용량"
+  },
+  "product_display": {
+    "title": "관련 상품",
+    "description": "상품 상세 아래 「이 상품은 어떠세요?」 목록을 정합니다. 대표 분류 상품을 먼저, 모자라면 그 상위 분류 상품으로 채웁니다(최대 8개).",
+    "order_label": "같은 단계 안 순서",
+    "order_hint": "대표 분류·상위 분류 등 같은 단계 안에서 상품을 늘어놓는 순서입니다.",
+    "order_random": "무작위",
+    "order_sales": "판매 많은 순",
+    "order_reviews": "리뷰 많은 순",
+    "order_latest": "최신 등록 순",
+    "cache_hours_label": "목록 유지 시간",
+    "hours_unit": "시간",
+    "cache_hours_hint": "한 번 고른 목록을 이 시간 동안 그대로 보여 줍니다(무작위도 이 동안은 같은 목록). 0 이면 볼 때마다 새로 고릅니다. 저장하면 지금 골라 둔 목록은 비웁니다."
   },
   "notification_definitions": {
     "title": "알림 설정",

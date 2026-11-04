@@ -30,7 +30,7 @@
     "integrations": {
         "modules": {
             "sirsoft-board": ">=1.2.1",
-            "sirsoft-ecommerce": ">=1.3.0",
+            "sirsoft-ecommerce": ">=1.3.4",
             "sirsoft-page": ">=1.2.0"
         },
         "plugins": {

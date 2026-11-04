@@ -10,6 +10,7 @@
             "shipping",
             "seo",
             "review_settings",
+            "product_display",
             "inquiry",
             "notifications",
             "mileage",
@@ -541,6 +542,10 @@
             "write_deadline_days": 90,
             "max_images": 5,
             "max_image_size_mb": 10
+        },
+        "product_display": {
+            "related_order": "random",
+            "related_cache_hours": 24
         },
         "inquiry": {
             "board_slug": null

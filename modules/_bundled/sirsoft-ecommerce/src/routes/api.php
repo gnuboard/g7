@@ -95,6 +95,7 @@ Route::prefix('categories')->group(function () {
 // GET /api/modules/sirsoft-ecommerce/products/new - 신상품 조회
 // GET /api/modules/sirsoft-ecommerce/products/recent - 최근 본 상품 조회
 // GET /api/modules/sirsoft-ecommerce/products/{id} - 공개 상품 상세 조회
+// GET /api/modules/sirsoft-ecommerce/products/{id}/related - 관련 상품 조회
 Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirsoft-ecommerce.user-products.read'])->group(function () {
     Route::get('/', [PublicProductController::class, 'index'])
         ->name('products.index');
@@ -114,6 +115,11 @@ Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirs
     Route::get('/{product}', [PublicProductController::class, 'show'])
         ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.show');
+
+    // 관련 상품(상품 상세 「이 상품은 어떠세요?」) — 대표 분류 → 상위 분류 단계, 순서·캐시는 환경설정
+    Route::get('/{product}/related', [PublicProductController::class, 'related'])
+        ->where('product', '[0-9A-Za-z_-]+')
+        ->name('products.related');
 
     Route::get('/{product}/downloadable-coupons', [PublicCouponController::class, 'downloadableCoupons'])
         ->where('product', '[0-9A-Za-z_-]+')

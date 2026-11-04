@@ -45,6 +45,8 @@ class PublicProductResource extends BaseApiResource
                 'id' => $cat->id,
                 'name' => $cat->name,
                 'name_localized' => $cat->getLocalizedName(),
+                // 분류 화면 주소({shop}/category/{slug})를 만들 때 쓴다 — 상세 위 분류명을 그 분류로 잇는 링크
+                'slug' => $cat->slug,
                 'breadcrumb' => $cat->getLocalizedBreadcrumbString(),
                 'path' => $cat->path,
                 'is_primary' => $cat->pivot->is_primary,

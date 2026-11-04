@@ -477,6 +477,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `RefundPriorityEnum` | `string` | 2 | `pg_first`, `points_first` |
 | `RefundSourceTypeEnum` | `string` | 5 | `cancel`, `return`, `exchange`, `direct`, `admin` |
 | `RefundStatusEnum` | `string` | 7 | `requested`, `approved`, `processing`, `on_hold`, `completed`, `rejected`, `withdrawn` |
+| `RelatedProductOrder` | `string` | 4 | `random`, `sales`, `reviews`, `latest` |
 | `ReturnStatusEnum` | `string` | 11 | `requested`, `payment_pending`, `paid`, `approved`, `on_hold`, `rejected`, `collection_ready`, `collecting`, `외 3개` |
 | `ReviewStatus` | `string` | 2 | `visible`, `hidden` |
 | `SearchPresetTargetScreen` | `string` | 4 | `products`, `orders`, `customers`, `claims` |

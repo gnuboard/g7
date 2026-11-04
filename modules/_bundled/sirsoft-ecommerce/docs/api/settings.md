@@ -48,6 +48,7 @@ _단건 응답: `data` 객체의 필드._
 | shipping | object | `{"default_country":"KR","available_countries":[{"code":"K…` | 배송 설정 (기본 국가·배송 가능 국가·무료배송·DB 관리 배송사(carriers)·배송유형(types)·계산 API 후보 필드 포함) |
 | seo | object | `{"meta_category_title":"{commerce_name} - {category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
 | review_settings | object | `{"write_deadline_days":90,"max_images":5,"max_image_size_…` | 리뷰 정책 (작성 기한일·이미지 최대 개수·이미지 최대 용량 MB) |
+| product_display | object | `{"related_order":"random","related_cache_hours":24}` | 상품 진열 — 상품 상세 관련 상품(「이 상품은 어떠세요?」) 단계 안 순서·고른 목록 유지 시간 |
 | inquiry | object | `{"board_slug":"inquiry"}` | 문의 연동 설정 (문의 게시판 slug) |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 채널 설정 (채널 ID·활성 여부·정렬 순서) |
 | mileage | object | `{"enabled":false,"default_earn_rate":1,"earn_trigger":"co…` | 마일리지 설정 (사용 여부·기본 적립률·적립 트리거·통화별 규칙·소멸/소멸 알림·실제 활성 알림 채널 포함) |
@@ -511,7 +512,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| _tab | body | string | 아니오 | `basic_info`, `language_currency`, `seo`, `order_settings`, `claim`, `shipping`, `review_settings`, `notification_definitions`, `notifications`, `inquiry`, `mileage`, `privacy_retention` | 저장할 설정 탭(카테고리) 지정 (탭별 부분 저장 식별용) |
+| _tab | body | string | 아니오 | `basic_info`, `language_currency`, `seo`, `order_settings`, `claim`, `shipping`, `review_settings`, `product_display`, `notification_definitions`, `notifications`, `inquiry`, `mileage`, `privacy_retention` | 저장할 설정 탭(카테고리) 지정 (탭별 부분 저장 식별용) |
 | notifications | body | array | 아니오 | — | 알림 채널 설정 배열 (채널 ID·활성 여부·정렬 순서) |
 | notifications.channels | body | array | 아니오 | — | 알림 채널 목록. 항목별 `id`(문자열, max 50, 필수), `is_active`(boolean, 필수), `sort_order`(integer, min 0) |
 | basic_info | body | array | 아니오 | — | 쇼핑몰 기본 정보 섹션 (쇼핑몰명·라우트 경로·상호·사업자번호·주소·연락처 등) |
@@ -614,6 +615,9 @@ HTTP/1.1 200
 | claim.exchange_reasons | body | array | 아니오 | — | 교환 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
 | claim.return_reasons | body | array | 아니오 | — | 반품 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
 | claim.refund_reasons | body | array | 아니오 | — | 환불(취소) 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
+| product_display | body | array | 아니오 | — | 상품 진열 섹션 (관련 상품 순서·목록 유지 시간). 저장하면 골라 둔 관련 상품 목록 캐시를 비운다 |
+| product_display.related_order | body | string | 아니오 | `random`, `sales`, `reviews`, `latest` | 관련 상품 단계 안 순서 (기본 random) |
+| product_display.related_cache_hours | body | integer | 아니오 | min 0, max 720 | 고른 관련 상품 목록 유지 시간(시간). 0 이면 볼 때마다 새로 고른다 |
 | review_settings | body | array | 아니오 | — | 리뷰 정책 섹션 (작성 기한일·이미지 최대 개수·이미지 최대 용량 MB) |
 | review_settings.write_deadline_days | body | integer | 아니오 | min 1, max 365 | 구매 확정 후 리뷰를 작성할 수 있는 기간(일) |
 | review_settings.max_images | body | integer | 아니오 | min 0, max 20 | 리뷰 1건당 첨부 가능한 이미지 수 (0 = 이미지 첨부 불가) |

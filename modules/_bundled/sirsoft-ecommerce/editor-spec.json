@@ -3841,6 +3841,10 @@
             "max_images": 5,
             "max_image_size_mb": 10
           },
+          "product_display": {
+            "related_order": "random",
+            "related_cache_hours": 24
+          },
           "inquiry": {
             "board_slug": null
           },
@@ -9291,6 +9295,18 @@
               },
               "global": {
                 "activeEcommerceSettingsTab": "review_settings"
+              }
+            }
+          },
+          {
+            "id": "tab_product_display",
+            "label": "$t:editor.state.tab.product_display",
+            "initialState": {
+              "query": {
+                "tab": "product_display"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "product_display"
               }
             }
           },
