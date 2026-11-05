@@ -9,6 +9,8 @@
   "delete": "Delete",
   "deleting": "Deleting...",
   "change": "Change",
+  "add_language": "Add language",
+  "remove_language": "Remove {{language}}",
   "edit": "Edit",
   "create": "Create",
   "search": "Search",

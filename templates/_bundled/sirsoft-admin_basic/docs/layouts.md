@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 206개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 203개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `(root)` | 43개 |
+| `(root)` | 42개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 156개 |
+| `partials` | 154개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -54,7 +54,6 @@
 | `admin_template_language_packs` | `(root)` | 화면 | `admin_language_pack_list` |
 | `admin_template_layout_edit` | `(root)` | 화면 | `_admin_base` |
 | `admin_template_list` | `(root)` | 화면 | `_admin_base` |
-| `admin_template_settings` | `(root)` | 화면 | `_admin_base` |
 | `admin_user_detail` | `(root)` | 화면 | `_admin_base` |
 | `admin_user_form` | `(root)` | 화면 | `_admin_base` |
 | `admin_user_list` | `(root)` | 화면 | `_admin_base` |
@@ -214,8 +213,6 @@
 | `_modal_update` | `partials` | partial | - |
 | `_tab_admin` | `partials` | partial | - |
 | `_tab_user` | `partials` | partial | - |
-| `_modal_reset_confirm` | `partials` | partial | - |
-| `_modal_unsaved_tab_switch` | `partials` | partial | - |
 | `_modal_bulk_roles` | `partials` | partial | - |
 | `_partial_filter_section` | `partials` | partial | - |
 | `_content_section` | `partials` | partial | - |
@@ -727,10 +724,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_refresh_layouts.g7.html
 │   │       ├── _modal_reactivate_language_packs.g7.html
 │   │       └── _drawer_manifest_preview.g7.html
-│   ├── admin_template_settings.g7.html (템플릿 환경설정 공용 화면 — 선언 `config/settings/defaults.json` 의 섹션을 탭으로 그린다. 섹션별 저장·`?tab=` 주소)
-│   │   └── partials/admin_template_settings/
-│   │       ├── _modal_reset_confirm.g7.html (「기본값으로」 되돌리기 확인 창)
-│   │       └── _modal_unsaved_tab_switch.g7.html (저장하지 않은 변경이 있는 채 다른 섹션 탭을 누르면 여는 확인 창)
+│   ├── ../settings/template_settings.g7.html (이 템플릿 설정 화면 — `layouts/` 밖. 코어가 켜진 관리자 템플릿마다 `sirsoft-admin_basic.template_settings` 로 교차 등록, 화면은 설정 묶음 부품 `sirsoft-admin_basic.TemplateSettingsScreen`)
 │   └── admin_template_layout_edit.g7.html (레이아웃 편집기)
 │       └── partials/admin_template_layout_edit/
 │           ├── _modal_version_history.g7.html

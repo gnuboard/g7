@@ -35,7 +35,44 @@
         "header": {
             "max_boards": 5,
             "show_theme_toggle": true,
-            "links": []
+            "menu": [
+                {
+                    "id": "home",
+                    "kind": "home",
+                    "label": {},
+                    "is_active": true,
+                    "visibility": "all",
+                    "roles": [],
+                    "children": []
+                },
+                {
+                    "id": "popular",
+                    "kind": "popular",
+                    "label": {},
+                    "is_active": true,
+                    "visibility": "all",
+                    "roles": [],
+                    "children": []
+                },
+                {
+                    "id": "shop",
+                    "kind": "shop",
+                    "label": {},
+                    "is_active": true,
+                    "visibility": "all",
+                    "roles": [],
+                    "children": []
+                },
+                {
+                    "id": "boards",
+                    "kind": "boards",
+                    "label": {},
+                    "is_active": true,
+                    "visibility": "all",
+                    "roles": [],
+                    "children": []
+                }
+            ]
         },
         "footer": {
             "copyright": {},
@@ -153,27 +190,28 @@
                 "type": "boolean",
                 "label": "$t:settings.header.show_theme_toggle.label"
             },
-            "links": {
-                "type": "list",
-                "max_items": 5,
-                "label": "$t:settings.header.links.label",
-                "hint": "$t:settings.header.links.hint",
-                "item_fields": {
-                    "label": {
-                        "type": "multilingual",
-                        "required": true,
-                        "max_length": 30,
-                        "label": "$t:settings.header.links.item_label"
+            "menu": {
+                "type": "menu",
+                "max_items": 30,
+                "max_depth": 2,
+                "label": "$t:settings.header.menu.label",
+                "hint": "$t:settings.header.menu.hint",
+                "auto_items": {
+                    "home": {
+                        "label": "$t:settings.header.menu.auto.home.label",
+                        "hint": "$t:settings.header.menu.auto.home.hint"
                     },
-                    "url": {
-                        "type": "link",
-                        "required": true,
-                        "label": "$t:settings.header.links.item_url",
-                        "placeholder": "/boards/free"
+                    "popular": {
+                        "label": "$t:settings.header.menu.auto.popular.label",
+                        "hint": "$t:settings.header.menu.auto.popular.hint"
                     },
-                    "new_tab": {
-                        "type": "boolean",
-                        "label": "$t:settings.header.links.item_new_tab"
+                    "shop": {
+                        "label": "$t:settings.header.menu.auto.shop.label",
+                        "hint": "$t:settings.header.menu.auto.shop.hint"
+                    },
+                    "boards": {
+                        "label": "$t:settings.header.menu.auto.boards.label",
+                        "hint": "$t:settings.header.menu.auto.boards.hint"
                     }
                 }
             }

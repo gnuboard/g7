@@ -12,7 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-const css = fs.readFileSync(path.resolve(__dirname, '../../styles/main.css'), 'utf8');
+const css = fs.readFileSync(path.resolve(__dirname, '../../styles/semantic.css'), 'utf8');
 
 /**
  * 640px 이하 미디어쿼리 블록 본문들을 돌려준다.

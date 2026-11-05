@@ -8,7 +8,8 @@
 
 ### Added
 
-- 템플릿 환경설정 예제(브랜딩 섹션의 파비콘 1칸)를 추가했습니다 — `config/settings/defaults.json` 선언만으로 관리자 템플릿의 공용 설정 화면이 열리는 최소 예입니다.
+- 템플릿이 자기 설정 화면을 공급하는 가장 작은 예제를 추가했습니다 — 화면 레이아웃(`settings/template_settings.g7.html`), 화면 부품(`src/settings/TemplateSettingsScreen.tsx`, 파비콘 1칸·업로더·저장 결과·확인 창), 묶음 빌드(`vite.settings.config.ts`), 부품 매니페스트(`components.settings.json`). 어느 관리자 템플릿이 켜져 있든 이 화면이 뜹니다.
+- 템플릿 환경설정 예제(브랜딩 섹션의 파비콘 1칸)를 추가했습니다 — `config/settings/defaults.json` 선언의 최소 예입니다.
 - 이 템플릿의 스타일시트(`dist/css/components.css`)를 싣습니다. 지금은 Hello 모듈 메모 카드 대체본의 모양만 담습니다.
 - 확장 CSS 덮기 파일 예시를 넣었습니다. 템플릿이 확장 CSS 를 고치지 않고 확장 화면 모양을 바꾸는 최소 사례로, Hello 모듈 메모 목록(`/memos`)의 쪽 제목 색을 바꿉니다.
   - `template.json` 의 `extension_css_overrides` 에 대상 확장과 버전 범위(`^0.3`)를 적습니다. 모듈이 꺼져 있거나 버전이 맞지 않으면 실리지 않고 모듈 원래 모양으로 그려집니다.

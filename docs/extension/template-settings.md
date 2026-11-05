@@ -8,7 +8,7 @@
 
 ```text
 1. templates/{id}/config/settings/defaults.json — 섹션·기본값·칸·노출 선언 (모듈 설정과 같은 섹션 구조, PHP 클래스 없음)
-2. 선언만 하면 켜진 관리자 템플릿의 공용 설정 화면이 그린다 — 직접 쓴 화면(templates/{id}/settings/template_settings.g7.html)이 있으면 그것이 우선
+2. 설정 화면은 템플릿이 공급한다 — 화면 레이아웃(`templates/{id}/settings/template_settings.g7.html`) + 화면 부품 묶음(`templates/{id}/dist/settings/settings.iife.js`·`settings.css`). 어느 관리자 템플릿이 켜져 있든 그 템플릿 부품으로 그리고, 켜진 관리자 템플릿은 덮어쓸 수 있다(플러그인 화면과 같은 방식)
 3. 보기 = core.templates.read, 저장·기본값 되돌리기 = core.templates.settings
 4. 읽기: 레이아웃 {{_global.templateSettings?.섹션?.키 ?? 기본값}} · 서버 g7_template_settings('id', '섹션.키') · 명령줄 settings:get --template
 5. 코어·모듈이 이미 가진 값(사이트 이름·로고·사업자 정보 등)은 템플릿 설정으로 다시 저장하지 않는다 — §8
@@ -39,7 +39,7 @@
 | 구성 | 위치 | 비고 |
 | --- | --- | --- |
 | 선언 | `templates/{id}/config/settings/defaults.json` | 없으면 설정 기능 없음 |
-| 설정 화면 | 선언만 두면 켜진 관리자 템플릿의 공용 화면. 직접 쓰려면 `templates/{id}/settings/template_settings.g7.html` | 직접 쓴 화면이 우선 |
+| 설정 화면 | 템플릿이 공급 — `templates/{id}/settings/template_settings.g7.html` + `src/settings/*` 부품 묶음 + `components.settings.json` | 공용 화면 없음. 화면을 공급하지 않으면 「설정」 잠김 |
 | 저장 값 | `storage/app/templates/{id}/settings/{섹션}.json` (섹션별 파일) | 템플릿 디렉토리 밖이라 업데이트가 지우지 않는다. 첫 저장 때 생긴다 |
 
 설치된 템플릿이면 **꺼져 있어도** 설정할 수 있습니다(값은 켜진 뒤 적용). 저장하지 않은 칸은 선언 기본값으로 읽히므로, 운영자가 설정을 건드리지 않으면 화면은 템플릿 원래 모습 그대로입니다.
@@ -57,7 +57,7 @@
     },
     "defaults": {
         "branding": { "favicon": [], "accent": "blue" },
-        "header": { "max_boards": 5, "links": [] }
+        "header": { "max_boards": 5, "menu": [{ "id": "home", "kind": "home" }, { "id": "boards", "kind": "boards" }] }
     },
     "schema": {
         "branding": {
@@ -66,11 +66,11 @@
         },
         "header": {
             "max_boards": { "type": "integer", "min": 1, "max": 10, "required": true, "label": "$t:settings.header.max_boards.label" },
-            "links": {
-                "type": "list", "max_items": 5, "label": "$t:settings.header.links.label",
-                "item_fields": {
-                    "label": { "type": "multilingual", "required": true, "max_length": 30, "label": "$t:settings.header.links.item_label" },
-                    "url": { "type": "link", "required": true, "label": "$t:settings.header.links.item_url" }
+            "menu": {
+                "type": "menu", "max_items": 30, "max_depth": 2, "label": "$t:settings.header.menu.label",
+                "auto_items": {
+                    "home": { "label": "$t:settings.header.menu.auto.home.label" },
+                    "boards": { "label": "$t:settings.header.menu.auto.boards.label", "hint": "$t:settings.header.menu.auto.boards.hint" }
                 }
             }
         }
@@ -120,8 +120,54 @@
 | `email` | 이메일 | 입력 | email |
 | `multilingual` | 언어별 맵 `{"ko": "…", "en": "…"}` | 언어 탭 | 언어마다 `max_length`. 비운 언어는 화면에서 기본 언어 문구로 보인다(`$localized`) |
 | `list` | 행 목록 | 행 추가·삭제·위아래 이동, `max_items`(기본 20) | 행 칸은 `item_fields`(첨부·중첩 목록 불가) |
+| `menu` | 메뉴 항목 트리(2단까지) | 관리자 메뉴 관리와 같은 두 판 — 끌어서 놓는 트리 + 항목 편집 판(§3-1) | 구조·자동 항목 1회·깊이·전체 수·주소 안전성(§3-1) |
 | `attachments` | 첨부 ID 목록 | 파일 올리기(저장 때 업로드) | 그 칸 컬렉션의 첨부만, `max_files` |
 | `image` | 첨부 ID 목록(이미지) | 파일 올리기 | 이미지만(`png·jpg·jpeg·webp·gif` 기본, `accept` 로 좁힘), `max_size_kb`. 계산 키 `{키}_url` 로 공개 주소를 준다 |
+
+### 3-1. 메뉴 칸 (`menu`)
+
+사용자 화면 헤더 메뉴처럼 **운영자가 끌어서 놓아 짜는 메뉴**입니다. 편집기는 이 칸을 선언한 템플릿이 자기 설정 화면 부품으로 공급합니다(번들 sirsoft-basic 의 `TemplateMenuField` 가 예 — 관리자 메뉴 관리와 같은 두 판) — 왼쪽은 끌어서 놓는 트리(가로로 오른쪽으로 끌면 바로 위 링크의 하위 메뉴, 왼쪽으로 끌면 상위로), 오른쪽은 고른 항목의 편집 판(이름·주소·새 창·보이는 대상·사용). 끌기 없이도 같은 일을 하는 위로·아래로·하위로·상위로 단추가 있습니다.
+
+| 선언 키 | 설명 |
+| --- | --- |
+| `max_items` | 하위 메뉴까지 합친 전체 항목 수(기본 30, 1~100) |
+| `max_depth` | `1`(한 줄) 또는 `2`(하위 메뉴 1단, 기본) |
+| `auto_items` | 템플릿이 그 자리에 무엇을 그릴지 아는 **자동 항목** — `{키: {label, hint}}`. 키 `link` 는 예약. 예: 게시판 전체(새 게시판이 자동으로 붙음)·홈·쇼핑 |
+
+값은 항목 배열입니다.
+
+```json
+[
+    { "id": "home", "kind": "home" },
+    { "id": "m1", "kind": "link", "label": { "ko": "커뮤니티", "en": "Community" }, "url": "", "children": [
+        { "id": "m2", "kind": "link", "label": { "ko": "공지" }, "url": "/board/notice" },
+        { "id": "boards", "kind": "boards" }
+    ] },
+    { "id": "m3", "kind": "link", "label": { "ko": "VIP 전용관" }, "url": "/page/vip", "new_tab": false, "visibility": "roles", "roles": ["vip"], "is_active": true }
+]
+```
+
+| 항목 키 | 설명 |
+| --- | --- |
+| `id` | 편집기가 만든 식별값(`[A-Za-z0-9_-]{1,40}`, 메뉴 안에서 중복 불가) |
+| `kind` | `link`(운영자가 적은 주소) 또는 선언한 자동 항목 키. 자동 항목은 메뉴 전체에 **한 번만**, 하위 메뉴를 갖지 못한다 |
+| `label` | 다국어 이름. 링크는 필수, 자동 항목은 비우면 템플릿 기본 이름 |
+| `url`·`new_tab` | 링크만. 사이트 안 경로(`/…`) 또는 http·https 주소(`link` 칸과 같은 검증). **하위 메뉴가 있는 상위 링크만 비워 둘 수 있다** |
+| `visibility`·`roles` | 보이는 대상 — `all`(모두)·`members`(회원만)·`guests`(비회원만)·`roles`(특정 역할, `roles` 에 역할 식별자 1개 이상). 비회원은 역할 `guest` 로 본다 |
+| `is_active` | `false` 면 숨김(편집기에는 「꺼짐」으로 남는다) |
+| `children` | 하위 메뉴(`max_depth` 2 일 때, 링크만 부모) |
+
+저장 검증 오류는 **그 항목 위치**(`header.menu.2`, `header.menu.0.children.1`, `header.menu.0.url`)에 달리고, 편집기는 그 줄에 표시를 붙입니다.
+
+> **보이기는 메뉴 안내일 뿐 접근 제어가 아닙니다.** 메뉴 값은 화면 설정(`_global.templateSettings`)에 실려 모든 방문자에게 내려갑니다. 회원·역할 전용 페이지는 그 페이지 쪽 권한으로 막으세요.
+
+**레이아웃에서 그리기** — 보이기 조건은 한 곳에서 걸러 헤더·모바일 메뉴·검색엔진용 화면이 같은 값을 쓰게 합니다. sirsoft-basic 은 `_user_base` 계산값으로 거릅니다.
+
+```html
+<computed name="siteMenu">{{(_global.templateSettings?.header?.menu ?? []).filter(i => i.is_active !== false &amp;&amp; ((i.visibility ?? 'all') === 'all' || (i.visibility === 'members' &amp;&amp; !!_global.currentUser?.uuid) || (i.visibility === 'guests' &amp;&amp; !_global.currentUser?.uuid) || (i.visibility === 'roles' &amp;&amp; (i.roles ?? []).some(r => _global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest')))).map(i => ({...i, children: (i.children ?? []).filter(/* 같은 조건 */)}))}}</computed>
+```
+
+검색엔진용 화면 매핑(`seo-config.json`)은 1단 순회만 하므로, 계산값을 `flatMap` 으로 펴서 `{href, label}` 목록을 따로 넘깁니다(sirsoft-basic 의 `seoMenuLinks`).
 
 첨부 칸(`attachments`·`image`)의 컬렉션은 `template_settings.{id}.{섹션}.{키}` 입니다. 업로드 때 선언 `accept`(전역 허용 목록과의 교집합)·`max_size_kb` 를 서버가 검사하고, 저장 때 그 컬렉션에 실재하는 ID 만 받습니다(다른 템플릿·코어 로고 첨부를 끌어올 수 없음). 선언에 없는 칸 컬렉션은 업로드를 받지 않습니다.
 
@@ -153,27 +199,66 @@
 
 ## 5. 설정 화면
 
-**선언만 두면 됩니다.** 켜진 관리자 템플릿이 공용 설정 화면(`admin_template_settings` — 번들 sirsoft-admin_basic 이 제공)을 가지면, 코어가 `/admin/templates/{id}/settings` 를 그 화면으로 만들고 조회 응답의 `sections` 서술대로 섹션마다 탭 하나씩 칸을 그립니다(섹션이 하나여도 탭 줄이 나온다). 주소 `?tab=섹션` 으로 그 탭이 바로 열리고(없는 섹션이면 첫 섹션), 저장은 지금 탭 섹션만 보냅니다(서버는 보낸 섹션만 합치고 다른 섹션 저장값은 그대로 둔다). 저장하지 않은 변경이 있으면 다른 탭으로 옮기기 전에 확인 창이 뜹니다. 섹션·칸 라벨은 템플릿이 꺼져 있어도 그 템플릿 언어 파일로 풀고, 지금 로케일 번역이 없으면 대체 로케일(`app.fallback_locale`) 문구를 씁니다. 공용 화면에는 읽기 전용 배너, 비활성 안내, 저장 실패 요약, 「기본값으로」(확인 창), 「사용자 화면에서 보기」, 이탈 경고가 들어 있습니다.
+설정 화면은 **템플릿이 공급합니다** — 모듈·플러그인이 자기 화면과 부품을 공급하고 켜진 템플릿이 그것을 덮어쓸 수 있는 것과 같은 구조입니다. 관리자 템플릿에 기대지 않으므로, 부품이 몇 개뿐인 관리자 템플릿이 켜져 있어도 설정 화면이 뜹니다. 관리자 템플릿이 그려 주는 공용 화면은 없습니다 — 화면을 공급하지 않은 템플릿은 목록 「설정」이 잠깁니다.
 
-화면을 직접 그리고 싶으면 `templates/{id}/settings/template_settings.g7.html` 을 **`layouts/` 밖**에 둡니다(`layouts/` 안이면 그 템플릿 자기 화면으로도 등록돼 사용자 템플릿에 관리자 화면이 섞인다). 직접 쓴 화면은 켜진 관리자 템플릿에 `{id}.template_settings` 로 교차 등록되고, 운영자는 레이아웃 편집기로 고칠 수 있습니다. 관리자 템플릿의 `layouts/overrides/` 로는 덮을 수 없습니다(건너뛰고 경고).
+### 5-1. 템플릿이 공급하는 것
+
+| 파일 | 역할 |
+| --- | --- |
+| `templates/{id}/settings/template_settings.g7.html` (+ 짝 `.json`) | 화면 레이아웃. **`layouts/` 밖**에 둔다(안이면 그 템플릿 자기 화면으로도 등록돼 사용자 템플릿에 관리자 화면이 섞인다). 코어가 켜진 관리자 템플릿마다 `{id}.template_settings` 로 교차 등록하고 `/admin/templates/{id}/settings` 라우트를 만든다. 운영자는 레이아웃 편집기로 고칠 수 있다 |
+| `templates/{id}/dist/settings/settings.iife.js`·`settings.css` | 화면 부품 묶음(규약 경로 고정). 관리자 화면을 열 때 코어가 설치된 템플릿(꺼진 것 포함) 묶음을 플러그인 묶음 뒤에 함께 싣는다. 꺼진 템플릿도 이 두 파일만은 내려 준다. 부품은 `G7Core.getComponentRegistry().registerExtensionComponent('{id}.이름', …)` 으로 등록한다 |
+| `components.settings.json` | 화면 부품 매니페스트(확장 매니페스트 형식 — `identifier: {id}`). 레이아웃 검사·편집기가 `{id}.이름` 부품을 알고, 관리자 템플릿이 `overrides` 로 덮어쓸 대상이 된다. `lang` 에 부품이 쓰는 프론트 언어 묶음(최상위 키, 기본 `["settings"]`)을 적는다 |
+
+- **CSS 는 다른 관리자 화면 위에 실린다** — 화면 초기화(preflight)·`body` 같은 전역 규칙을 싣지 말고 화면 뿌리 클래스 안으로 범위를 좁힌다(번들 예: sirsoft-basic `.sirsoft-basic-settings`, hello `.hello-settings`). 켜진 관리자 템플릿이 그 템플릿 자신이면 코어가 CSS 를 싣지 않는다(이미 같은 규칙이 있다).
+- **문구** — 관리자 화면 번역에 설치된 템플릿마다 `lang` 묶음이 `{id}.{묶음}` 으로 감싸여 실린다(언어팩 오버레이 포함). 부품은 `{id}.키` 를 먼저 찾고 없으면 그대로의 키로 찾는다(번들 예: `templates/_bundled/sirsoft-admin_basic/src/utils/translate.ts`·`templates/_bundled/sirsoft-basic/src/support/translate.ts` 의 `translate`, 묶음 진입에서 `setTranslationNamespace(id)`). 화면 공통 문구는 코어 `core.template_settings.*` 를 쓴다. 섹션·칸 라벨은 서버가 그 템플릿 언어 파일로 풀어 조회 응답에 싣는다.
+- **관리자 템플릿 부품에 기대지 않는다** — 레이아웃은 모든 관리자 템플릿에 있는 기본 부품(`Div`)과 자기 부품만 쓰고, 토스트·모달·탭 줄 대신 부품이 저장 결과·확인 창·탭을 직접 그린다. 레이아웃은 `_admin_base` 의 `content` 슬롯에 들어간다.
+
+빌드는 Vite 라이브러리 모드가 IIFE 진입을 하나만 받으므로 본 부품 묶음과 따로 한다 — 번들 4종은 `vite.settings.config.ts` 를 두고 `npm run build` 에서 잇는다(`{type}:build` 가 그대로 둘 다 굽는다).
 
 ```html
 <layout name="template_settings" version="1.0.0" extends="_admin_base">
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:core.template_settings.page_title_short"/>
   <data-source id="template_settings" type="api" endpoint="/api/admin/templates/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
     <init-local>
       <field name="form" value="{{data?.settings ?? null}}"/>
     </init-local>
   </data-source>
   <computed name="isReadOnly">{{template_settings?.data?.abilities?.can_update !== true}}</computed>
-  …
+  <slot name="content">
+    <div data-ref="template_settings_content">
+      <acme-shop.template-settings-screen data-type="composite" data-ref="template_settings_screen" data="{{template_settings?.data ?? null}}" value="{{_local.form ?? {}}}" activeSection="{{_local.activeTab ?? null}}" readOnly="{{_computed.isReadOnly}}" uploadTriggerEvent="upload:template_settings">
+        <on type="change" event="onChange">
+          <set-state target="local" :hasChanges="true" form="{{$args[0]}}"/>
+        </on>
+        <on type="custom" event="onSave">
+          <sequence>
+            <emit-event event="upload:template_settings"/>
+            <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/settings" method="PUT" body="{{Object.fromEntries([[_local.activeTab, (_local.form ?? {})[_local.activeTab] ?? {}]])}}">
+              <success>
+                <set-state target="local" :hasChanges="false"/>
+                <refetch-data-source dataSourceId="template_settings"/>
+              </success>
+            </api-call>
+          </sequence>
+        </on>
+      </acme-shop.template-settings-screen>
+    </div>
+  </slot>
 </layout>
 ```
 
 - 조회 응답(`data`): `settings`(섹션 중첩 현재 값 — 첨부 칸은 첨부 객체 목록, 비밀값은 마스크), `sections`(섹션·칸 서술: 종류·라벨·안내·선택지 라벨·제약·컬렉션·허용 형식), `locales`(활성 언어·기본 언어), `is_active`, `abilities.can_update`·`can_reset`.
-- 저장은 `PUT …/settings` 에 섹션 중첩 `_local.form` 을 보냅니다. 업로더는 `autoUpload=false` 로 두고 저장 전 `emit-event` 로 올립니다(신호를 받는 업로더 전부가 끝날 때까지 기다린다).
-- 화면 공통 문구는 코어 프론트 언어 `core.template_settings.*` 를 씁니다 — 어느 관리자 템플릿에서나 로드됩니다.
+- 저장은 `PUT …/settings` 에 지금 탭 섹션만 보낸다(서버는 보낸 섹션만 합친다). 업로더는 `autoUpload=false` 로 두고 저장 전 `emit-event` 로 올린다(신호를 받는 업로더 전부가 끝날 때까지 기다린다).
+- 화면 부품이 받는 값·이벤트의 번들 공통 약속(`data`·`value`·`errors`·`activeSection`·`readOnly`·`dirty`·`saving`·`resetting`·`status` / `onChange`·`onDirty`·`onTabChange(섹션, 버렸는가)`·`onSave`·`onReset`·`onBack`·`onUploadError`)은 번들 4종 `components.settings.json` 에 있다. 제3자 템플릿은 hello 템플릿 2종(파비콘 1칸 최소 예제)을 본뜬다.
 
-목록(`/admin/templates`) 카드 더보기의 「설정」은 설정 화면을 그릴 수 있을 때만 열립니다(선언이 있고, 직접 쓴 화면 또는 공용 화면이 있음). 그렇지 않으면 흐리게 잠기고 사유(「설정 항목이 없거나 지금 관리자 템플릿이 설정 화면을 지원하지 않습니다」)를 함께 보입니다. 보기 권한만 있는 관리자(`core.templates.settings` 없음)에게는 자물쇠 아이콘과 「설정 (읽기 전용)」으로 보여, 들어가기 전에 읽기 전용임을 압니다.
+### 5-2. 관리자 템플릿이 덮어쓰기
+
+| 대상 | 방법 |
+| --- | --- |
+| 화면 레이아웃 | 켜진 관리자 템플릿에 `layouts/overrides/{id}/template_settings.g7.html`(또는 `.json`). 교차 등록이 템플릿 원본 대신 이 파일을 쓴다 — 행 소유(`source_identifier`)는 화면을 공급한 템플릿 그대로라 삭제·판정이 덮어쓰기와 무관하다. 파일을 지우고 레이아웃을 새로 고치면 원본으로 돌아간다 |
+| 화면 부품 | 관리자 템플릿 `components.json` 의 `overrides` 에 `target: "{id}"`, `name: "TemplateSettingsScreen"`(버전 조건은 그 템플릿 `components.settings.json` 의 `version`). 관리자 템플릿 부품이 그 좌표에 먼저 들어앉아, 나중에 실리는 템플릿 묶음이 덮지 못한다 |
+
+목록(`/admin/templates`) 카드 더보기의 「설정」은 선언이 있고 템플릿이 설정 화면을 공급할 때만 열립니다. 그렇지 않으면 흐리게 잠기고 사유(「설정 항목이 없거나 이 템플릿이 설정 화면을 제공하지 않습니다」)를 함께 보입니다. 보기 권한만 있는 관리자(`core.templates.settings` 없음)에게는 자물쇠 아이콘과 「설정 (읽기 전용)」으로 보여, 들어가기 전에 읽기 전용임을 압니다.
 
 ---
 
@@ -184,7 +269,8 @@
 | 보기 | `core.templates.read` | `GET /api/admin/templates/{id}/settings` |
 | 저장 | `core.templates.settings` (「템플릿 설정」) | `PUT /api/admin/templates/{id}/settings` |
 | 기본값으로 되돌리기 | `core.templates.settings` | `POST /api/admin/templates/{id}/settings/reset` — 본문 `section` 이 있으면 그 섹션만 |
-| 직접 쓴 화면 원본 | `core.templates.read` | `GET /api/admin/templates/{id}/settings/layout` (공용 화면을 쓰는 템플릿은 404) |
+| 설정 화면 원본 | `core.templates.read` | `GET /api/admin/templates/{id}/settings/layout` (화면을 공급하지 않은 템플릿은 404) |
+| 설정 화면 부품 묶음 | 공개 | `GET /api/templates/assets/{id}/settings/settings.iife.js`·`settings.css` — 설치된 템플릿이면 꺼져 있어도 이 두 파일만 내준다 |
 
 목록·상세 응답의 각 템플릿에 `has_settings`·`settings_route` 가 실리고, 목록 abilities 에 `can_update_settings` 가 있습니다.
 
@@ -245,7 +331,8 @@
 
 ## 10. 알려진 한계
 
-- `gnuboard7-hello_admin_template` 처럼 컴포넌트가 최소 구성인 관리자 템플릿이 켜져 있으면 공용 설정 화면이 없어 「설정」이 열리지 않습니다(직접 쓴 화면도 그 템플릿 컴포넌트로 그려야 한다 — 플러그인 설정 화면과 같은 한계).
+- 설정 화면 부품 묶음은 관리자 화면을 열 때마다 설치된 템플릿 수만큼 함께 실립니다(플러그인 묶음과 같음). 묶음이 큰 템플릿은 관리자 화면 첫 로드가 그만큼 늘어납니다 — 부품은 그 템플릿이 실제로 선언한 칸 종류만 담습니다.
+- 같은 칸 종류(예: 메뉴)를 쓰는 템플릿은 그 편집기를 각자 공급합니다(코어 공용 부품 없음).
 - 탭 아이콘·색·첫 모드는 저장 뒤 **다음 화면 로드부터** 바뀝니다(SPA 이동은 `<head>` 를 다시 읽지 않음).
 - 화면 모드 저장값(`g7_color_scheme`)은 관리자·사용자 화면이 같이 씁니다. 그래서 운영자 브라우저처럼 이미 모드를 고른 브라우저에는 「기본 화면 모드」가 적용되지 않습니다.
 

@@ -66,7 +66,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
-| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 켜진 관리자 템플릿이 그 화면(직접 쓴 화면 또는 공용 화면)을 그릴 수 있을 때 true |
+| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 템플릿이 설정 화면(`settings/template_settings.*`)을 공급할 때 true |
 | settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (`has_settings` 가 false 면 null) |
 | stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
@@ -436,7 +436,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장이 모두 활성·버전 충족인지 여부 |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
-| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 켜진 관리자 템플릿이 그 화면(직접 쓴 화면 또는 공용 화면)을 그릴 수 있을 때 true |
+| has_settings | boolean | `true` | 템플릿 환경설정 화면을 열 수 있는지 — 선언(섹션 1개 이상)이 있고 템플릿이 설정 화면(`settings/template_settings.*`)을 공급할 때 true |
 | settings_route | string|null | `/admin/templates/sirsoft-admin_basic/settings` | 템플릿 환경설정 화면 주소 (`has_settings` 가 false 면 null) |
 | update_source | string\|null | `null` | 업데이트 감지 출처 (`github` \| `bundled` \| null) |
 | latest_version | string\|null | `null` | 감지된 최신 배포 버전 |
@@ -95253,7 +95253,9 @@ _단건 응답: 저장 후 다시 조회한 값 — 조회 응답과 같은 모�
 | 500 | Server Error | 설정 파일 쓰기 실패 (`templates.settings.update_failed`) |
 <!-- @generated:end -->
 
-**설명** 템플릿 환경설정을 저장합니다. 검증 규칙은 선언의 칸 종류(`string`·`text`·`integer`·`boolean`·`enum`·`url`·`link`·`email`·`color`·`multilingual`·`list`·`attachments`·`image`)에서 만들어지고, 확장은 필터 훅 `core.template_settings.update_validation_rules` 로 규칙을 더할 수 있습니다. 검증을 통과한 선언 칸만 섹션 파일에 병합 저장하며 계산 키(`{칸}_url`)·`abilities` 는 저장하지 않고, 비밀값(`sensitive`)은 암호화해 저장합니다(가린 값 그대로 보내면 기존 값 유지). 첨부 칸에서 빠진 첨부는 **저장이 성공한 뒤** 파일까지 파기합니다. 저장 훅은 `core.template_settings.before_save` → `filter_save_data` → `after_save` 순이며, 저장 뒤 검색엔진용 화면 캐시를 비우고 활동 로그(`template_settings.save`)를 남깁니다. 탭 아이콘(파비콘)·`<html>` 표준 속성은 다음 화면 로드부터 바뀝니다.
+**설명** 템플릿 환경설정을 저장합니다. 검증 규칙은 선언의 칸 종류(`string`·`text`·`integer`·`boolean`·`enum`·`url`·`link`·`email`·`color`·`multilingual`·`list`·`attachments`·`image`·`menu`)에서 만들어지고, 확장은 필터 훅 `core.template_settings.update_validation_rules` 로 규칙을 더할 수 있습니다. 검증을 통과한 선언 칸만 섹션 파일에 병합 저장하며 계산 키(`{칸}_url`)·`abilities` 는 저장하지 않고, 비밀값(`sensitive`)은 암호화해 저장합니다(가린 값 그대로 보내면 기존 값 유지). 첨부 칸에서 빠진 첨부는 **저장이 성공한 뒤** 파일까지 파기합니다. 저장 훅은 `core.template_settings.before_save` → `filter_save_data` → `after_save` 순이며, 저장 뒤 검색엔진용 화면 캐시를 비우고 활동 로그(`template_settings.save`)를 남깁니다. 탭 아이콘(파비콘)·`<html>` 표준 속성은 다음 화면 로드부터 바뀝니다.
+
+메뉴 칸(`menu`)은 항목 트리(`{id, kind, label, url, new_tab, is_active, visibility, roles, children}`, 2단까지)를 받습니다. 항목 칸 검증(주소 안전성·실재하는 역할 식별자·이름 길이) 뒤에 구조 검사(종류별 필수 — 링크는 이름, 하위 메뉴가 없으면 주소 / 자동 항목은 한 번만·하위 메뉴 없음 / 깊이 / 하위 포함 전체 수 / id 형식·중복)를 해, 오류를 **그 항목 위치**(`header.menu.2`, `header.menu.0.children.1`, `header.menu.0.url`)에 답니다. 저장값은 알려진 키만 남기고, 자동 항목의 주소·새 창과 「특정 역할」이 아닐 때의 역할 목록은 버립니다. 조회 응답의 칸 서술에는 `max_items`·`max_depth`·`auto_items[{key, label, hint}]` 가 실립니다.
 
 ### POST /api/admin/templates/{identifier}/settings/reset
 <!-- @generated:start:api.admin.templates.settings.reset -->
@@ -95335,11 +95337,11 @@ _단건 응답: 템플릿이 직접 쓴 설정 화면 레이아웃 JSON(sanitize
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.read`)이 없는 경우 |
-| 404 | Not Found | 설치되지 않은 템플릿, 또는 직접 쓴 설정 화면이 없는 템플릿(공용 설정 화면을 쓰는 템플릿 — 번들 4종 포함) (`templates.settings.not_found`) |
+| 404 | Not Found | 설치되지 않은 템플릿, 또는 설정 화면을 공급하지 않은 템플릿 (`templates.settings.not_found`) |
 
 <!-- @generated:end -->
 
-**설명** 템플릿이 직접 쓴 설정 화면 레이아웃(`templates/{id}/settings/template_settings.g7.html` 을 컴파일한 JSON, 없으면 짝 `.json`)을 돌려줍니다. 그런 화면을 둔 템플릿은 켜진 관리자 템플릿에 `{식별자}.template_settings` 로 등록돼(설치·업데이트·관리자 템플릿 활성화 때) 그 화면으로 그려지고, 두지 않은 템플릿은 켜진 관리자 템플릿의 공용 설정 화면(`admin_template_settings`)이 응답 `sections` 로 칸을 그립니다. 이 엔드포인트는 원본 확인용입니다.
+**설명** 템플릿이 직접 쓴 설정 화면 레이아웃(`templates/{id}/settings/template_settings.g7.html` 을 컴파일한 JSON, 없으면 짝 `.json`)을 돌려줍니다. 그런 화면을 둔 템플릿은 켜진 관리자 템플릿에 `{식별자}.template_settings` 로 등록돼(설치·업데이트·관리자 템플릿 활성화 때) 그 화면으로 그려집니다 — 켜진 관리자 템플릿이 `layouts/overrides/{식별자}/template_settings.*` 를 두면 그 파일로 등록됩니다. 화면은 그 템플릿 부품 묶음(`templates/{id}/dist/settings/settings.iife.js`·`settings.css`, 관리자 화면이 설치된 템플릿마다 싣는다)으로 그립니다. 공용 화면은 없어, 화면을 두지 않은 템플릿은 404 이고 설정 라우트도 없습니다. 이 엔드포인트는 원본 확인용입니다.
 
 ### GET /api/admin/templates/{templateName}/check-modified-layouts
 <!-- @generated:start:api.admin.templates.check-modified-layouts -->

@@ -2,6 +2,7 @@
 
 namespace App\Support\LayoutMarkup;
 
+use App\Extension\Template\TemplateSettingsSchema;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -78,13 +79,16 @@ final class MarkupCompileContextResolver
      *
      * @param  array<int, string>  $moduleIdentifiers  설치된 모듈 식별자
      * @param  array<int, string>  $pluginIdentifiers  설치된 플러그인 식별자
+     * @param  array<int, string>  $templateIdentifiers  설치된 템플릿 식별자 — 템플릿이 공급한 설정 화면 부품 매니페스트
+     *                                                    (`components.settings.json`, 확장 매니페스트 형식)를 읽는다 (#434)
      * @return array<int, ComponentManifest> 읽은 확장 매니페스트
      */
-    public function extensionManifests(array $moduleIdentifiers, array $pluginIdentifiers): array
+    public function extensionManifests(array $moduleIdentifiers, array $pluginIdentifiers, array $templateIdentifiers = []): array
     {
         $paths = array_merge(
             array_map(static fn (string $id): string => "modules/{$id}/components.json", $moduleIdentifiers),
             array_map(static fn (string $id): string => "plugins/{$id}/components.json", $pluginIdentifiers),
+            array_map(static fn (string $id): string => TemplateSettingsSchema::componentsManifestPath($id), $templateIdentifiers),
         );
 
         $manifests = [];

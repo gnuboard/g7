@@ -180,7 +180,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `Header` | 사이트 헤더 (로고, 네비게이션, 검색, 사용자 메뉴) | siteName, boardEnabled, shopEnabled, searchEnabled |
+| `Header` | 사이트 헤더 (로고, 네비게이션, 검색, 사용자 메뉴). 탭 줄은 `menu`(템플릿 설정 `header.menu` 를 `_user_base` 계산값 `siteMenu` 로 거른 값) 순서대로 그리고, 하위 메뉴가 있는 링크는 펼침 메뉴(Esc·바깥 누르기로 닫힘), 자동 항목 `home`·`popular`·`shop`·`boards` 는 그 자리에서 편다 | siteName, menu, boards, maxVisibleBoards, boardEnabled, shopEnabled, searchEnabled, seoMenuLinks(봇 화면 전용) |
 | `Footer` | 사이트 푸터 (저작권, 링크, 소셜) | siteName, boardEnabled, pageEnabled |
 | `MobileNav` | 모바일 네비게이션 드로어 — 번들 레이아웃은 쓰지 않는다(모바일 서랍은 `_user_base` 레이아웃 노드). 상점 링크가 `/shop` 고정이고 모듈 활성 props 가 없다 | - |
 
@@ -290,6 +290,21 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `Grid` | Grid 레이아웃 | cols, gap |
 | `SectionLayout` | 섹션 레이아웃 (제목, 부제목, 패딩) | title, subtitle, padding, background |
 | `ThreeColumnLayout` | 3단 레이아웃 (좌/중/우) | leftWidth, centerWidth, rightWidth, gap |
+
+---
+
+### 템플릿 설정 화면 부품
+
+관리자 화면의 이 템플릿 설정 화면은 `src/settings/` 부품이 그린다. 본 부품 묶음과 따로 `dist/settings/*` 로 빌드해 `sirsoft-basic.TemplateSettingsScreen` 으로 등록하고, 매니페스트는 `components.settings.json` 이다(어느 관리자 템플릿에서나 뜨게 — `docs/extension/template-settings.md` §5).
+
+| 부품 | 설명 |
+| --- | --- |
+| `TemplateSettingsScreen` | 머리·안내·섹션 탭·저장 결과·칸·저장 바·확인 창 |
+| `TemplateSettingsFields` | 칸 종류별 입력. 첨부 칸은 이 템플릿 업로더를 관리자 첨부 API 로 쓴다 |
+| `TemplateMenuField` | `menu` 칸 편집기 — 관리자 메뉴 관리와 같은 두 판: 끌어서 놓는 2단 트리(가로로 끌어 하위로·상위로) + 항목 편집 판(이름·주소·새 창·보이는 대상·사용). 트리 계산은 `templateMenuTree.ts` |
+| `parts/*` | 토글·라디오·여러 언어 입력 — 설정 화면 전용 |
+
+의미 클래스는 `templates/_bundled/sirsoft-basic/src/styles/settings-semantic.css` 에 있고 화면 뿌리 `.sirsoft-basic-settings` 안에서만 적용된다.
 
 ---
 

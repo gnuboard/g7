@@ -1005,6 +1005,7 @@ export class TemplateApp {
             // bundleUrls 부재 시 개별 로딩 폴백 (회귀 안전)
             if (!bundleUrls) {
                 await this.loadExtensionAssetsIndividually();
+                await moduleAssetLoader.loadTemplateSettingsBundles();
                 await moduleAssetLoader.loadExtensionCssOverrides();
                 await moduleAssetLoader.loadCustomAssets();
 
@@ -1014,6 +1015,9 @@ export class TemplateApp {
             // 모듈 번들 → 플러그인 번들 순서 (gdpr 는 플러그인 번들 내 최상단)
             await moduleAssetLoader.loadBundle('module', bundleUrls.moduleJs, bundleUrls.moduleCss);
             await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
+
+            // 템플릿이 공급한 설정 화면 부품 묶음 — 관리자 화면만 서버가 목록을 싣는다(#434, engine-v1.87.0)
+            await moduleAssetLoader.loadTemplateSettingsBundles();
 
             // 템플릿의 확장 CSS 덮기 파일은 확장 번들 뒤에 붙인다 — 같은 특이도의 확장 규칙을
             // 나중에 와서 덮는다(engine-v1.87.0). 운영자 자산보다는 앞이다.

@@ -147,8 +147,10 @@ describe('상속원(_user_base) — 매 화면 부르는 모듈 데이터소스�
         expect(byId(tree, 'mobile_drawer_wishlist_link').if).toBe(guard(SHOP));
         expect(byId(tree, 'mobile_drawer_guest_order_link').if).toBe(guard(SHOP));
         expect(byId(tree, 'mobile_drawer_shop_section').if).toBe(guard(SHOP));
-        expect(byId(tree, 'mobile_drawer_popular_link').if).toBe(guard(BOARD));
-        expect(byId(tree, 'mobile_drawer_boards_section').if).toBe(guard(BOARD));
+        // 인기글·게시판 묶음은 헤더 메뉴(템플릿 설정 header.menu) 반복 안의 자동 항목이다 — 줄마다 종류 조건과 게시판 가드를 함께 단다
+        const menuNodes = nodes(tree).filter((n) => /^mobile_drawer_(popular_link|boards_section)_/.test(String(n.id ?? '')));
+        expect(menuNodes.length).toBeGreaterThanOrEqual(4);
+        menuNodes.forEach((n) => expect(String(n.if), String(n.id)).toContain(BOARD));
         expect(byId(tree, 'mobile_drawer_info_section').if).toBe(guard(PAGE));
         // 검색 공급자(게시판·쇼핑몰·페이지)가 모두 꺼졌을 때만 서랍 검색칸을 숨긴다(D12)
         expect(byId(tree, 'mobile_drawer_search').if).toBe(`{{(${BOARD}) || (${SHOP}) || (${PAGE})}}`);
@@ -222,9 +224,10 @@ describe('seo-config — 봇 화면의 머리글·꼬리말 링크', () => {
     // @scenario surface=user_base_header
     // @effects header_footer_module_props
     it('머리글 인기글·쇼핑 링크는 모듈 props 로 가리고, 없으면(keep 된 옛 레이아웃) 늘 있는 maxVisibleBoards 로 넘어가 보인다', () => {
-        expect(header.find((f) => f.attrs?.href === '/boards/popular')?.if).toBe('{boardEnabled|maxVisibleBoards}');
+        // 새 레이아웃은 seoLegacyNav="false" 로 이 고정 링크를 끄고 헤더 메뉴(seoMenuLinks)를 낸다 — keep 된 옛 레이아웃은 그 prop 이 없어 종전대로
+        expect(header.find((f) => f.attrs?.href === '/boards/popular')?.if).toBe('{seoLegacyNav|boardEnabled|maxVisibleBoards}');
         const shop = header.find((f) => f.content === '$t:nav.shop')!;
-        expect(shop.if).toBe('{shopEnabled|maxVisibleBoards}');
+        expect(shop.if).toBe('{seoLegacyNav|shopEnabled|maxVisibleBoards}');
         // 섞인 패턴은 옛 코어 봇 렌더가 중괄호째 내보낸다 — 완성된 주소 prop 하나만 쓴다
         expect(shop.attrs.href).toBe('{shopProductsHref}');
     });

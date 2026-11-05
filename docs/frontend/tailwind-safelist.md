@@ -11,7 +11,7 @@ Tailwind CSS는 빌드 시 사용된 클래스만 포함합니다. JSON 레이�
 ```text
 1. Tailwind는 빌드 시 사용된 클래스만 CSS에 포함
 2. JSON 레이아웃의 클래스는 소스코드 스캔에서 누락됨
-3. 동적 클래스는 main.css의 @utility safelist에 등록 필수
+3. 동적 클래스는 템플릿 CSS 의 safelist에 등록 필수 (sirsoft-admin_basic 은 `semantic.css` — `main.css` 가 가져온다)
 4. 등록 전 기존 safelist 또는 사용 중인 클래스 확인
 5. 빌드 후 적용 확인 필수
 6. **`@import` 는 `@plugin`·`@config` 보다 먼저** — 뒤에 두면 그 파일이 통째로 사라진다 (§7)
@@ -96,7 +96,7 @@ grep "\.w-32" templates/sirsoft-admin_basic/dist/css/components.css
 ### 파일 위치
 
 ```
-templates/sirsoft-admin_basic/src/styles/main.css
+templates/sirsoft-admin_basic/src/styles/semantic.css   # main.css 가 @import — 템플릿 설정 화면 묶음도 같은 파일을 쓴다
 ```
 
 ### 구조
@@ -130,7 +130,7 @@ templates/sirsoft-admin_basic/src/styles/main.css
 
 ```bash
 # safelist 확인
-grep -n "원하는클래스" templates/sirsoft-admin_basic/src/styles/main.css
+grep -n "원하는클래스" templates/sirsoft-admin_basic/src/styles/semantic.css
 
 # TSX 파일에서 사용 여부 확인
 grep -r "원하는클래스" templates/sirsoft-admin_basic/src/components/
@@ -171,7 +171,7 @@ JSON 레이아웃에서 새 Tailwind 클래스 사용 시:
 ```
 □ 1. 기존 safelist에 해당 클래스가 있는지 확인
 □ 2. TSX/CSS 파일에서 이미 사용 중인지 확인
-□ 3. 없으면 main.css safelist에 추가 (용도 주석 포함)
+□ 3. 없으면 safelist에 추가 (용도 주석 포함 — sirsoft-admin_basic 은 semantic.css)
 □ 4. 템플릿 빌드 실행
 □ 5. 브라우저에서 적용 확인
 ```

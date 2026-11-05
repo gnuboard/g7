@@ -29,8 +29,7 @@
         "shop": "쇼핑",
         "products": "상품",
         "cart": "장바구니",
-        "mypage": "마이페이지",
-        "shortcuts": "바로가기"
+        "mypage": "마이페이지"
     },
     "footer": {
         "info": "정보",

@@ -38,7 +38,44 @@
     "header": {
       "max_boards": 5,
       "show_theme_toggle": true,
-      "links": []
+      "menu": [
+        {
+          "id": "home",
+          "kind": "home",
+          "label": {},
+          "is_active": true,
+          "visibility": "all",
+          "roles": [],
+          "children": []
+        },
+        {
+          "id": "popular",
+          "kind": "popular",
+          "label": {},
+          "is_active": true,
+          "visibility": "all",
+          "roles": [],
+          "children": []
+        },
+        {
+          "id": "shop",
+          "kind": "shop",
+          "label": {},
+          "is_active": true,
+          "visibility": "all",
+          "roles": [],
+          "children": []
+        },
+        {
+          "id": "boards",
+          "kind": "boards",
+          "label": {},
+          "is_active": true,
+          "visibility": "all",
+          "roles": [],
+          "children": []
+        }
+      ]
     },
     "footer": {
       "copyright": {},

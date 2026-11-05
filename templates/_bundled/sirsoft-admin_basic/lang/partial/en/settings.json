@@ -31,5 +31,15 @@
     "system": "Follow system",
     "light": "Light",
     "dark": "Dark"
+  },
+  "screen": {
+    "fields": {
+      "row_title": "Item {{number}}",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "remove_item": "Remove",
+      "add_item": "Add ({{current}}/{{max}})",
+      "max_items_reached": "Up to {{max}} items."
+    }
   }
 }

@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 135개 (루트: `src/components`).
+컴포넌트 134개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 89개 |
+| `composite` | 88개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
 | `shared` | 1개 |
@@ -656,6 +656,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `CategoryTree` | 계층형 카테고리 트리 (체크박스 선택) | data, expandedIds, selectedIds, searchKeyword, showProductCount, ... |
 | `MenuAccessTree` | 역할이 접근할 관리자 메뉴 체크 트리 (하위 선택 시 상위 자동, 상위 해제 시 하위 해제) | data, value, onChange, disabled, lockedAll, installedModules, installedPlugins |
 | `SortableMenuList` | 드래그앤드롭 계층형 메뉴 목록 (선택 모드·행별 역할 배지) | items, selectedId, onSelect, onOrderChange, onToggleStatus, selectionMode, selectedIds, onSelectionChange, roleOptions, ... |
+| 템플릿 설정 화면 부품 | `src/settings/` — 설정 화면 묶음(`dist/settings/*`)으로 따로 빌드해 `sirsoft-admin_basic.TemplateSettingsScreen` 으로 등록한다. 본 부품 묶음·`components.json` 에는 없고 매니페스트는 `components.settings.json` 이다. 다른 관리자 템플릿에서도 뜨므로 의미 클래스를 `templates/_bundled/sirsoft-admin_basic/src/styles/semantic.css` 로 가져가고 문구는 `utils/translate` 로 찾는다 | data, value, errors, activeSection, readOnly, dirty, saving, resetting, status, uploadTriggerEvent + 이벤트 |
 | `SortableMenuItem` | 개별 드래그 가능 메뉴 아이템 | item, isSelected, isExpanded, level, onClick, ... |
 | `IconButton` | 아이콘 버튼 (글자 없으면 ariaLabel → 아이콘별 기본 이름을 aria-label·title 로) | iconName, label, ariaLabel, onClick, variant, size, ... |
 | `Accordion` | 아코디언 (접기/펼치기) | defaultOpen, isOpen, onToggle, style, disabled |

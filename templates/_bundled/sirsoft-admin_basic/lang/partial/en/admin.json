@@ -3209,7 +3209,7 @@
       "view_detail": "Details",
       "settings": "Settings",
       "settings_read_only": "Settings (read-only)",
-      "settings_unavailable": "No settings, or the active admin template does not support the settings screen",
+      "settings_unavailable": "No settings, or this template does not provide a settings screen",
       "refresh_layouts": "Refresh Layouts",
       "edit_layouts": "Edit Layouts",
       "edit_code": "Edit Code",
@@ -4902,11 +4902,7 @@
       "subject_delete_modal": "Delete data subject records confirm",
       "row_trend_modal": "Item trend"
     },
-    "lifecycle_warnings_modal": "Extension operation warnings window",
-    "admin_template_settings": {
-      "reset_modal": "Restore template settings defaults",
-      "unsaved_tab_modal": "Template settings unsaved tab switch confirmation"
-    }
+    "lifecycle_warnings_modal": "Extension operation warnings window"
   },
   "brand_name": "Gnuboard7",
   "default_user_name": "Administrator",
@@ -4968,13 +4964,5 @@
         "seeder": "Seeder"
       }
     }
-  },
-  "template_settings_fields": {
-    "row_title": "Item {{number}}",
-    "move_up": "Move up",
-    "move_down": "Move down",
-    "remove_item": "Remove",
-    "add_item": "Add ({{current}}/{{max}})",
-    "max_items_reached": "Up to {{max}} items."
   }
 }

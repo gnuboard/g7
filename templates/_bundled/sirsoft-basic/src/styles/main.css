@@ -58,6 +58,7 @@
 @source not "../../dist/css";
 @source not "../../dist/src";
 @source not "../../dist/index.d.ts";
+@source not "../../dist/settings";
 
 /*
  * Icon 크기 임의값.

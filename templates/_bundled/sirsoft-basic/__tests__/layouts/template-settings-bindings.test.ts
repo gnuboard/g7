@@ -47,21 +47,24 @@ describe('_user_base — 헤더·푸터 (#434)', () => {
 
     // @scenario case=settings_layout
     // @effects template_settings_exposed_to_global
-    it('데스크톱 헤더는 게시판 개수·테마 단추·운영자 링크·다크 로고를 템플릿 설정에서 기본값과 함께 받는다', () => {
+    it('데스크톱 헤더는 게시판 개수·테마 단추·메뉴·다크 로고를 템플릿 설정에서 기본값과 함께 받는다', () => {
         expect(header.props.maxVisibleBoards).toBe(`{{${TS}?.header?.max_boards ?? 5}}`);
         expect(header.props.showThemeToggle).toBe(`{{${TS}?.header?.show_theme_toggle ?? true}}`);
-        expect(header.props.extraLinks).toBe(`{{${TS}?.header?.links ?? []}}`);
+        // 메뉴는 보이기 조건을 거른 계산값 하나를 헤더·서랍·봇 화면이 함께 쓴다
+        expect(header.props.menu).toBe('{{_computed.siteMenu}}');
+        expect(base.computed.siteMenu).toContain(`${TS}?.header?.menu ??`);
         expect(header.props.logoDark).toBe(`{{${TS}?.branding?.logo_dark_url ?? ''}}`);
     });
 
     // @scenario case=settings_layout
     // @effects template_settings_exposed_to_global
-    it('모바일 테마 단추·서랍 바로가기·모바일 다크 로고도 같은 값을 본다', () => {
+    it('모바일 테마 단추·서랍 메뉴·모바일 다크 로고도 같은 값을 본다', () => {
         expect(all.find((n) => n.id === 'mobile_theme_btn')!.if).toBe(`{{${TS}?.header?.show_theme_toggle ?? true}}`);
-        expect(all.find((n) => n.id === 'mobile_drawer_links_section')!.if).toBe(`{{(${TS}?.header?.links ?? []).length > 0}}`);
+        const menuSection = all.find((n) => n.id === 'mobile_drawer_menu_section')!;
+        expect(JSON.stringify(menuSection)).toContain('_computed.siteMenu');
         expect(all.find((n) => n.id === 'mobile_header_logo_dark')!.if).toBe(`{{!!${TS}?.branding?.logo_dark_url}}`);
         // 새 창 링크는 opener 를 끊는다
-        expect(JSON.stringify(all.find((n) => n.id === 'mobile_drawer_links_section'))).toContain('noopener noreferrer');
+        expect(JSON.stringify(menuSection)).toContain('noopener noreferrer');
     });
 
     // @scenario case=settings_layout
@@ -141,13 +144,15 @@ describe('선언·편집기 샘플·봇 화면이 같은 이름을 쓴다 (#434)
 
     // @scenario case=settings_layout
     // @effects template_settings_exposed_to_global
-    it('편집기 샘플에 기본값이 있고, 봇 화면 헤더가 운영자 링크를 그린다', () => {
+    it('편집기 샘플에 기본값이 있고, 봇 화면 헤더가 메뉴 링크를 그린다', () => {
         const sample = read('editor-spec/sampleGlobal.json');
         expect(sample.templateSettings.header.max_boards).toBe(declaration.defaults.header.max_boards);
         expect(sample.templateSettings.home.product_count).toBe(declaration.defaults.home.product_count);
+        expect(sample.templateSettings.header.menu).toEqual(declaration.defaults.header.menu);
 
         const seo = read('seo-config.json');
-        expect(JSON.stringify(seo.render_modes.header_nav)).toContain('"iterate":"extraLinks"');
+        expect(JSON.stringify(seo.render_modes.header_nav)).toContain('"iterate":"seoMenuLinks"');
+        expect(nodes(base).find((n) => n.name === 'Header')!.props.seoMenuLinks).toContain('_computed.siteMenu');
         expect(JSON.stringify(seo.render_modes.footer_nav)).toContain('{socialLinks.youtube}');
     });
 });

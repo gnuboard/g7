@@ -45,17 +45,32 @@
   "header": {
     "max_boards": {
       "label": "게시판 메뉴 개수",
-      "hint": "상단에 바로 보일 게시판 수입니다. 나머지는 「더보기」에 들어갑니다."
+      "hint": "「게시판 전체(자동)」이 상위 메뉴에 있을 때 바로 보일 게시판 수입니다. 나머지는 「더보기」에 들어갑니다."
     },
     "show_theme_toggle": {
       "label": "테마 버튼 보이기"
     },
-    "links": {
-      "label": "바로가기 링크",
-      "hint": "게시판 메뉴 뒤에 붙는 링크입니다(최대 5개).",
-      "item_label": "이름",
-      "item_url": "주소",
-      "item_new_tab": "새 창으로 열기"
+    "menu": {
+      "label": "헤더 메뉴",
+      "hint": "상단 메뉴와 모바일 메뉴에 그대로 쓰입니다. 끌어서 순서를 바꾸고, 오른쪽으로 끌면 하위 메뉴(펼침 메뉴)가 됩니다.",
+      "auto": {
+        "home": {
+          "label": "홈",
+          "hint": "사이트 첫 화면으로 가는 링크입니다."
+        },
+        "popular": {
+          "label": "인기글",
+          "hint": "인기 게시글 모음입니다. 게시판 모듈이 꺼져 있으면 보이지 않습니다."
+        },
+        "shop": {
+          "label": "쇼핑",
+          "hint": "상품 목록입니다. 쇼핑몰 모듈이 꺼져 있으면 보이지 않습니다."
+        },
+        "boards": {
+          "label": "게시판 전체(자동)",
+          "hint": "게시판을 만들면 여기에 자동으로 붙습니다. 상위 메뉴에 두면 「게시판 메뉴 개수」만큼 보이고 나머지는 「더보기」로, 하위 메뉴에 두면 그 메뉴를 펼쳤을 때 모두 보입니다."
+        }
+      }
     }
   },
   "footer": {
@@ -85,6 +100,50 @@
     "product_count": {
       "label": "상품 개수",
       "hint": "인기 상품·신상품 묶음마다 보일 상품 수입니다."
+    }
+  },
+  "screen": {
+    "fields": {
+      "row_title": "{{number}}번째",
+      "move_up": "위로",
+      "move_down": "아래로",
+      "remove_item": "삭제",
+      "add_item": "추가 ({{current}}/{{max}})",
+      "max_items_reached": "최대 {{max}}개까지 넣을 수 있습니다."
+    },
+    "menu": {
+      "add_link": "링크 추가",
+      "add_child": "하위 메뉴 추가",
+      "auto_used": "이미 메뉴에 있습니다",
+      "count": "{{current}} / {{max}}",
+      "empty": "메뉴가 비어 있습니다. 「링크 추가」로 시작하세요.",
+      "drag_handle": "{{name}} 끌어서 옮기기",
+      "drag_hint": "손잡이를 끌어 순서를 바꿉니다. 오른쪽으로 끌면 바로 위 메뉴의 하위 메뉴가 되고, 왼쪽으로 끌면 다시 상위로 나옵니다.",
+      "select_hint": "왼쪽에서 항목을 고르면 여기서 고칠 수 있습니다.",
+      "untitled": "(이름 없음)",
+      "badge_auto": "자동",
+      "badge_child": "하위 메뉴",
+      "badge_inactive": "꺼짐",
+      "has_error": "고칠 내용이 있습니다",
+      "label": "메뉴 이름",
+      "auto_label_hint": "비워 두면 기본 이름을 씁니다.",
+      "url": "이동할 주소",
+      "url_hint": "사이트 안 경로(/board/notice) 또는 전체 주소(https://…). 하위 메뉴가 있는 상위 메뉴는 비워 둘 수 있습니다.",
+      "new_tab": "새 창으로 열기",
+      "visibility": "보이는 대상",
+      "visibility_all": "모두",
+      "visibility_members": "회원만",
+      "visibility_guests": "비회원만",
+      "visibility_roles": "특정 역할만",
+      "visibility_hint": "메뉴 항목을 숨길 뿐 그 페이지 접근을 막지는 않습니다.",
+      "roles_unavailable": "고를 수 있는 역할이 없습니다.",
+      "is_active": "이 항목 보이기",
+      "indent": "하위 메뉴로",
+      "outdent": "상위로 꺼내기",
+      "delete": "삭제",
+      "delete_confirm": "이 항목을 삭제할까요?",
+      "delete_confirm_children": "하위 메뉴 {{count}}개도 함께 삭제됩니다. 삭제할까요?",
+      "cancel": "취소"
     }
   }
 }

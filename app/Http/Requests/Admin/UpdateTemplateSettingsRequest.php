@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Extension\HookManager;
+use App\Extension\Template\TemplateMenu;
 use App\Extension\Template\TemplateSettingsSchema;
 use App\Helpers\InlineMediaPolicy;
 use App\Models\Attachment;
@@ -133,6 +134,12 @@ class UpdateTemplateSettingsRequest extends FormRequest
                     $rules[$path.'.*.'.$itemKey] = array_merge($itemPresence, $this->valueRules($itemField));
                 }
                 break;
+
+            case 'menu':
+                // 칸 단위 규칙만 여기 — 종류별 필수·자동 항목 1회·깊이·전체 수·id 중복은 after() 가 항목 위치에 단다
+                $rules[$path] = array_merge($presence, ['array']);
+                $rules = array_merge($rules, TemplateMenu::itemRules($path, $field));
+                break;
         }
 
         return $rules;
@@ -193,6 +200,38 @@ class UpdateTemplateSettingsRequest extends FormRequest
         }
 
         return $attributes;
+    }
+
+    /**
+     * 칸 규칙 뒤에 도는 검사 — 메뉴 칸의 구조 위반을 그 항목 위치(`섹션.키.2.children.0`)에 단다.
+     *
+     * 편집기는 오류 위치로 어느 항목을 고칠지 표시하므로, 칸 전체 하나로 뭉치지 않는다.
+     *
+     * @return array<int, callable> 후속 검사
+     */
+    public function after(): array
+    {
+        return [
+            function ($validator): void {
+                $schema = $this->schema();
+
+                if ($schema === null) {
+                    return;
+                }
+
+                foreach ($schema->flatFields() as $path => $field) {
+                    if ($field['type'] !== 'menu' || ! Arr::has($this->all(), $path) || Arr::get($this->all(), $path) === null) {
+                        continue;
+                    }
+
+                    foreach (TemplateMenu::messages($path, Arr::get($this->all(), $path), $field) as $attribute => $messages) {
+                        foreach ($messages as $message) {
+                            $validator->errors()->add($attribute, $message);
+                        }
+                    }
+                }
+            },
+        ];
     }
 
     /**

@@ -10,10 +10,11 @@ import type { EditorAttrs } from '../../types';
 import { getSiteLocale } from '../../support/siteLocale';
 import { getLocaleDisplayName } from '../../support/localeName';
 import { findAdjacentLabel } from '../../hooks/useAdjacentLabel';
+import { translate } from '../../utils/translate';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
-  (window as any).G7Core?.t?.(key, params) ?? key;
+  translate(key, params) ?? key;
 
 /**
  * 라벨 요소의 글자를 접근 이름으로 쓸 모양으로 다듬습니다 — 공백을 하나로 줄이고 끝의 필수 표시(`*`)를 뗀다.
@@ -37,7 +38,7 @@ const getLocaleNameByCode = (code: string): string => getLocaleDisplayName(code)
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
+  const translated = translate(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
 };
 

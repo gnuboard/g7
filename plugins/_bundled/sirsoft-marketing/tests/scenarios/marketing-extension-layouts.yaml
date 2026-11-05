@@ -8,12 +8,12 @@ description: |
 
 axes:
   layout:
-    - register         # user-marketing-register.json
-    - profile          # user-marketing-profile.json
-    - profile_view     # user-marketing-profile-view.json
-    - form             # user-marketing-form.json
-    - detail           # user-marketing-detail.json
-    - plugin_settings  # plugin_settings.json
+    - register         # user-marketing-register.g7.html
+    - profile          # user-marketing-profile.g7.html
+    - profile_view     # user-marketing-profile-view.g7.html
+    - form             # user-marketing-form.g7.html
+    - detail           # user-marketing-detail.g7.html
+    - plugin_settings  # plugin_settings.g7.html
 
 effects:
   - extension_layout_contract_holds   # 레이아웃별 구조 계약이 성립한다

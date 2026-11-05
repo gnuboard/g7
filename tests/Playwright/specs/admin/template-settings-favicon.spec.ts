@@ -34,7 +34,7 @@ test('#434 - 템플릿 목록 「설정」 으로 설정 화면에 들어간다'
   const text = await page.locator('#template_settings_content').innerText();
   expect(text).not.toContain('$t:');
   expect(text).not.toContain('template_settings.');
-  await expect(page.locator('#footer_buttons')).toBeVisible();
+  await expect(page.getByTestId('template-settings-footer')).toBeVisible();
 
   expect(consoleErrors).toEqual([]);
 });
@@ -46,8 +46,8 @@ test('#434 - 보기 권한만 있으면 읽기 전용이다', async ({ page }) =
   await authenticatePage(page, issueScopedToken('core.templates.read'));
 
   await page.goto('/admin/templates/sirsoft-basic/settings');
-  await expect(page.locator('#read_only_banner')).toBeVisible({ timeout: 20_000 });
-  await expect(page.locator('#footer_buttons')).toHaveCount(0);
+  await expect(page.getByTestId('template-settings-read-only')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('template-settings-footer')).toHaveCount(0);
 });
 
 // @scenario case=settings_layout

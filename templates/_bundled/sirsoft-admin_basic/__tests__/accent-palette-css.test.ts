@@ -25,7 +25,7 @@ const ROOT = (() => {
 })();
 
 const declaration = JSON.parse(fs.readFileSync(path.join(ROOT, 'config/settings/defaults.json'), 'utf-8'));
-const source = fs.readFileSync(path.join(ROOT, 'src/styles/main.css'), 'utf-8');
+const source = fs.readFileSync(path.join(ROOT, 'src/styles/semantic.css'), 'utf-8');
 const built = fs.readFileSync(path.join(ROOT, 'dist/css/components.css'), 'utf-8');
 
 const SHADES = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
@@ -71,7 +71,7 @@ describe('포인트 색 팔레트 CSS — sirsoft-admin_basic (#434)', () => {
 
     // @scenario case=settings_layout
     // @effects template_settings_exposed_to_global, accent_palette_defined_per_option
-    it('기본이 아닌 선택지마다 src/styles/main.css 에 파랑 변수 11단을 바꾸는 규칙이 하나씩 있다', () => {
+    it('기본이 아닌 선택지마다 src/styles/semantic.css 에 파랑 변수 11단을 바꾸는 규칙이 하나씩 있다', () => {
         expect(overrides.length).toBeGreaterThan(0);
         for (const value of overrides) {
             const bodies = ruleBodies(source, value);

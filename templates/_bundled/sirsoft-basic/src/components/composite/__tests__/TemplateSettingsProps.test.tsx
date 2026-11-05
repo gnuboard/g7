@@ -3,7 +3,7 @@
  * @file TemplateSettingsProps.test.tsx
  * @description 템플릿 설정(#434)이 넘기는 props 가 실제 Header·Footer·ThemeToggle 출력에 반영되는지 잠근다.
  *
- * - Header: 다크 로고(어두운 화면 전용 img), 테마 단추 끄기, 운영자 링크(언어별 이름·사이트 안 경로·새 창)
+ * - Header: 다크 로고(어두운 화면 전용 img), 테마 단추 끄기, 메뉴 링크(언어별 이름·사이트 안 경로·새 창)
  * - Footer: 소셜 링크 7종(상표 아이콘 묶음), 「Powered by」 끄기, 운영자 저작권 문구 → 없으면 기본 문구
  * - 기본 화면 모드: 저장값이 없으면 `<html data-g7-color-scheme-default>` 를 따른다
  *
@@ -79,20 +79,20 @@ describe('Header — 템플릿 설정 props (#434)', () => {
 
   // @scenario case=settings_layout
   // @effects template_settings_exposed_to_global
-  it('운영자 링크 — 현재 언어 이름, 사이트 안 경로는 SPA 이동, 새 창은 opener 를 끊는다', () => {
+  it('메뉴 링크 — 현재 언어 이름, 사이트 안 경로는 SPA 이동, 새 창은 opener 를 끊고, 주소 없는 링크는 그리지 않는다', () => {
     render(
       <Header
         siteName="사이트"
         currentLocale="en"
-        extraLinks={[
-          { label: { ko: '공지', en: 'Notice' }, url: '/board/notice' },
-          { label: { ko: '외부만' }, url: 'https://example.com', new_tab: true },
-          { label: 'x', url: '' },
+        menu={[
+          { id: 'a', kind: 'link', label: { ko: '공지', en: 'Notice' }, url: '/board/notice' },
+          { id: 'b', kind: 'link', label: { ko: '외부만' }, url: 'https://example.com', new_tab: true },
+          { id: 'c', kind: 'link', label: 'x', url: '' },
         ]}
       />,
     );
 
-    const links = screen.getAllByTestId('nav-extra-link');
+    const links = screen.getAllByTestId('nav-menu-link');
     expect(links).toHaveLength(2);
     expect(links[0].textContent).toBe('Notice');
     expect(links[0].getAttribute('href')).toContain('/board/notice');

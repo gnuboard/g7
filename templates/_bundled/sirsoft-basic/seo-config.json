@@ -61,13 +61,14 @@
                 {
                     "tag": "nav",
                     "children": [
-                        { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home" },
-                        { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular", "if": "{boardEnabled|maxVisibleBoards}" },
-                        { "tag": "a", "attrs": { "href": "{shopProductsHref}" }, "content": "$t:nav.shop", "if": "{shopEnabled|maxVisibleBoards}" }
+                        { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home", "if": "{seoLegacyNav|maxVisibleBoards}" },
+                        { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular", "if": "{seoLegacyNav|boardEnabled|maxVisibleBoards}" },
+                        { "tag": "a", "attrs": { "href": "{shopProductsHref}" }, "content": "$t:nav.shop", "if": "{seoLegacyNav|shopEnabled|maxVisibleBoards}" }
                     ]
                 },
                 {
                     "tag": "nav",
+                    "if": "{seoLegacyNav|maxVisibleBoards}",
                     "iterate": "boards",
                     "item_tag": "a",
                     "item_content": "{name}",
@@ -75,10 +76,10 @@
                 },
                 {
                     "tag": "nav",
-                    "iterate": "extraLinks",
+                    "iterate": "seoMenuLinks",
                     "item_tag": "a",
-                    "item_content": "{label.ko|label.en|label.ja|label}",
-                    "item_attrs": { "href": "{url}" }
+                    "item_content": "{label}",
+                    "item_attrs": { "href": "{href}" }
                 }
             ]
         },

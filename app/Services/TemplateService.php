@@ -745,10 +745,15 @@ class TemplateService
      */
     public function getAssetFilePath(string $identifier, string $path): array
     {
-        // 1. 활성화된 템플릿 확인
+        // 1. 활성화된 템플릿 확인 — 설정 화면 부품 묶음(규약 경로 두 파일)만은 꺼진 템플릿도 내준다.
+        //    관리자 화면이 설치된 템플릿 설정 화면을 그 템플릿 부품으로 그리기 때문이다 (#434 D30)
         $template = $this->templateRepository->findByIdentifier($identifier);
+        $servable = $template && (
+            $template->status === ExtensionStatus::Active->value
+            || ($template->status === ExtensionStatus::Inactive->value && TemplateSettingsSchema::isSettingsAssetPath($path))
+        );
 
-        if (! $template || $template->status !== ExtensionStatus::Active->value) {
+        if (! $servable) {
             return [
                 'success' => false,
                 'filePath' => null,
@@ -1032,11 +1037,58 @@ class TemplateService
             $locale
         );
 
+        // 8. 관리자 화면 응답이면 설치된 템플릿(꺼진 것 포함)이 공급한 설정 화면 문구를 `{템플릿id}.{묶음}` 으로 감싸 싣는다 (#434 D28).
+        //    설정 화면 부품은 그 템플릿 것이고 어느 관리자 템플릿이 켜져 있든 떠야 하므로, 문구도 모듈·플러그인처럼
+        //    식별자로 감싸 관리자 응답에 합친다(그 템플릿 언어팩 오버레이 포함). 꺼진 템플릿 문구 조회
+        //    (`$includeInactive`)는 이 단계를 건너뛴다 — 설정 라벨 조회가 다시 이 단계를 부르지 않게.
+        if (! $includeInactive && $this->templateRepository->findByIdentifier($identifier)?->type === 'admin') {
+            $mergedData = $this->deepMergeLanguageData($mergedData, $this->loadTemplateSettingsLanguageData($locale));
+        }
+
         return [
             'success' => true,
             'data' => $mergedData,
             'error' => null,
         ];
+    }
+
+    /**
+     * 설치된 템플릿이 공급한 설정 화면 문구를 모읍니다 — 설정 화면(`settings/template_settings.*`)이 있는 템플릿의
+     * 프론트 언어 중 부품 매니페스트가 밝힌 묶음(기본 `settings`)을 `{템플릿id}.{묶음}` 으로 감싼다 (#434).
+     *
+     * @param  string  $locale  로케일
+     * @return array<string, array<string, mixed>> 템플릿 식별자 => 감싼 문구
+     */
+    private function loadTemplateSettingsLanguageData(string $locale): array
+    {
+        $wrapped = [];
+
+        foreach ($this->templateRepository->getAllKeyedByIdentifier() as $identifier => $template) {
+            $identifier = (string) $identifier;
+
+            if (! in_array($template->status, [ExtensionStatus::Active->value, ExtensionStatus::Inactive->value], true)
+                || TemplateSettingsSchema::layoutPath($identifier) === null) {
+                continue;
+            }
+
+            try {
+                $result = $this->getLanguageDataWithModules($identifier, $locale, includeInactive: true);
+            } catch (\Throwable $e) {
+                Log::warning('템플릿 설정 화면 문구 로딩 실패 — 그 템플릿만 건너뜀', ['template' => $identifier, 'error' => $e->getMessage()]);
+
+                continue;
+            }
+
+            foreach (TemplateSettingsSchema::settingsLangGroups($identifier) as $group) {
+                $data = $result['data'][$group] ?? null;
+
+                if (is_array($data) && $data !== []) {
+                    $wrapped[$identifier][$group] = $data;
+                }
+            }
+        }
+
+        return $wrapped;
     }
 
     /**
@@ -2176,8 +2228,8 @@ class TemplateService
      * 템플릿 설정 화면 라우트를 만듭니다 (#434) — 플러그인 설정 라우트 자동 생성과 같은 모양.
      *
      * 설치된 템플릿 중 설정 칸을 선언한 것마다 `(*)/admin/templates/{id}/settings` 꼴(앞의 별표는 마운트 와일드카드) →
-     * 템플릿이 직접 쓴 화면이 있으면 `{id}.template_settings`(활성 관리자 템플릿에 교차 등록된 행), 없으면 활성 관리자
-     * 템플릿의 공용 설정 화면 `admin_template_settings`. 그릴 화면이 없으면 라우트를 만들지 않는다. 보기 권한은 템플릿 조회다.
+     * 템플릿이 공급한 화면 `{id}.template_settings`(활성 관리자 템플릿에 교차 등록된 행). 공용 화면은 없다 — 화면을 공급하지
+     * 않은 템플릿은 라우트를 만들지 않는다(#434 D32). 보기 권한은 템플릿 조회다.
      *
      * @return array<int, array<string, mixed>> 라우트 목록
      */

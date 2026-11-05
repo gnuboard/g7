@@ -1,5 +1,5 @@
 {
-    "comment": "공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다.",
+    "comment": "공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다.\n     계산값 siteMenu — 템플릿 설정 header.menu(#434)에서 꺼진 항목·꺼진 모듈의 자동 항목·보이지 않을 대상(회원만·비회원만·특정 역할)을 거른 메뉴.\n     헤더·모바일 드로어·봇 화면이 모두 이 값을 쓴다(따로 판정하면 셋이 어긋난다). 비회원은 역할 guest 로 본다. 보이기는 메뉴 안내일 뿐 접근 제어가 아니다.",
     "version": "1.0.0",
     "layout_name": "_user_base",
     "meta": {
@@ -199,6 +199,9 @@
             "comment": "알림 실시간 수신 — 서버가 밀어주는 순간 배지와 목록을 다시 받고 토스트를 띄운다. 자기 채널(uuid)이라 로그인 상태에서만 붙는다."
         }
     ],
+    "computed": {
+        "siteMenu": "{{(_global.templateSettings?.header?.menu ?? [{id: 'home', kind: 'home'}, {id: 'popular', kind: 'popular'}, {id: 'shop', kind: 'shop'}, {id: 'boards', kind: 'boards'}]).filter(i => i && i.is_active !== false && (i.kind !== 'shop' || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) && ((i.kind !== 'boards' && i.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) && ((i.visibility ?? 'all') === 'all' || (i.visibility === 'members' && !!_global.currentUser?.uuid) || (i.visibility === 'guests' && !_global.currentUser?.uuid) || (i.visibility === 'roles' && (i.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest'))))).map(i => ({...i, children: (i.children ?? []).filter(c => c && c.is_active !== false && (c.kind !== 'shop' || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) && ((c.kind !== 'boards' && c.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) && ((c.visibility ?? 'all') === 'all' || (c.visibility === 'members' && !!_global.currentUser?.uuid) || (c.visibility === 'guests' && !_global.currentUser?.uuid) || (c.visibility === 'roles' && (c.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest')))))})).filter(i => i.kind !== 'link' || !!i.url || i.children.length > 0)}}"
+    },
     "globalHeaders": [
         {
             "pattern": "/api/modules/sirsoft-ecommerce/*",
@@ -1553,7 +1556,8 @@
                             ]
                         },
                         {
-                            "comment": "메뉴 섹션 - 홈",
+                            "comment": "메뉴 섹션 — 템플릿 설정 header.menu 를 거른 계산값(siteMenu) 순서대로 그린다. 자동 항목(홈·인기글·쇼핑·게시판 전체)은 이 자리에서\n           펴고, 하위 메뉴가 있는 상위 메뉴는 눌러 접었다 편다(한 번에 하나 — mobileMenuExpandedId). 사이트 안 경로는 드로어를 닫고 SPA 이동, 바깥 주소·새 창은 일반 링크.",
+                            "id": "mobile_drawer_menu_section",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -1562,228 +1566,19 @@
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "A",
-                                    "actions": [
-                                        {
-                                            "comment": "홈으로 — 드로어를 닫고 이동한다.",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "mobileMenuOpen": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "href": "/",
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "home",
-                                                "size": "md"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:user.nav.home"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "id": "mobile_drawer_popular_link",
-                                    "type": "basic",
-                                    "name": "A",
-                                    "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
-                                    "actions": [
-                                        {
-                                            "comment": "인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다.",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "mobileMenuOpen": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/boards/popular"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "href": "/boards/popular",
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "flame",
-                                                "size": "md",
-                                                "className": "text-orange-600 dark:text-orange-500"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:user.nav.popular"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "comment": "메뉴 섹션 - 바로가기 (템플릿 설정 header.links). 링크가 없으면 제목까지 숨긴다.\n           사이트 안 경로는 서랍을 닫고 SPA 이동, 바깥 주소·새 창은 일반 링크(새 창이면 opener 를 끊는다)",
-                            "id": "mobile_drawer_links_section",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{(_global.templateSettings?.header?.links ?? []).length > 0}}",
-                            "props": {
-                                "className": "px-4 pb-4"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3"
-                                    },
-                                    "text": "$t:user.nav.shortcuts"
-                                },
-                                {
-                                    "type": "basic",
                                     "name": "Div",
                                     "iteration": {
-                                        "source": "{{_global.templateSettings?.header?.links ?? []}}",
-                                        "item_var": "link"
+                                        "source": "{{_computed.siteMenu ?? []}}",
+                                        "item_var": "item",
+                                        "index_var": "itemIndex"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "A",
-                                            "if": "{{String(link.url ?? '').startsWith('/') && !String(link.url ?? '').startsWith('//') && !link.new_tab}}",
+                                            "if": "{{item.kind === 'home'}}",
                                             "actions": [
                                                 {
-                                                    "type": "click",
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "mobileMenuOpen": false
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "navigate"
-                                                        }
-                                                    ]
-                                                }
-                                            ],
-                                            "props": {
-                                                "href": "{{link.url}}",
-                                                "className": "w-full flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "min-w-0 truncate"
-                                                    },
-                                                    "text": "{{$localized(link.label)}}"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "A",
-                                            "if": "{{!(String(link.url ?? '').startsWith('/') && !String(link.url ?? '').startsWith('//')) || !!link.new_tab}}",
-                                            "props": {
-                                                "href": "{{link.url}}",
-                                                "target": "{{link.new_tab ? '_blank' : '_self'}}",
-                                                "rel": "{{link.new_tab ? 'noopener noreferrer' : ''}}",
-                                                "className": "w-full flex items-center justify-between gap-2 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "min-w-0 truncate"
-                                                    },
-                                                    "text": "{{$localized(link.label)}}"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Icon",
-                                                    "if": "{{!!link.new_tab}}",
-                                                    "props": {
-                                                        "name": "arrow-up-right-from-square",
-                                                        "className": "text-xs shrink-0"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "comment": "메뉴 섹션 - 게시판 (제목 + 목록). 게시판 모듈이 꺼져 있으면 제목까지 통째로 숨긴다.",
-                            "id": "mobile_drawer_boards_section",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
-                            "props": {
-                                "className": "px-4 pb-4"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3"
-                                    },
-                                    "text": "$t:user.nav.boards"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "iteration": {
-                                        "source": "{{boards.data ?? []}}",
-                                        "item_var": "board"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "A",
-                                            "actions": [
-                                                {
-                                                    "comment": "그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록).",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1797,33 +1592,693 @@
                                                         {
                                                             "handler": "navigate",
                                                             "params": {
-                                                                "path": "/board/{{board.slug}}"
+                                                                "path": "/"
                                                             }
                                                         }
                                                     ]
                                                 }
                                             ],
                                             "props": {
-                                                "href": "/board/{{board.slug}}",
-                                                "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                "href": "/",
+                                                "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
-                                                    "name": "Span",
+                                                    "name": "Icon",
                                                     "props": {
-                                                        "className": "min-w-0 truncate"
-                                                    },
-                                                    "text": "{{board.name}}"
+                                                        "name": "home",
+                                                        "size": "md"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
-                                                    "if": "{{board.post_count > 0}}",
+                                                    "text": "{{$localized(item.label) || $t('user.nav.home')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "mobile_drawer_popular_link_{{itemIndex}}",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{item.kind === 'popular' && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "mobileMenuOpen": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "/boards/popular"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "/boards/popular",
+                                                "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
                                                     "props": {
-                                                        "className": "text-xs text-gray-600 dark:text-gray-300 shrink-0"
+                                                        "name": "flame",
+                                                        "size": "md",
+                                                        "className": "text-orange-600 dark:text-orange-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{$localized(item.label) || $t('user.nav.popular')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{item.kind === 'shop' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "mobileMenuOpen": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "{{_global.shopBase}}/products"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "{{_global.shopBase}}/products",
+                                                "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "shopping-bag",
+                                                        "size": "md"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{$localized(item.label) || $t('user.nav.shop')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "mobile_drawer_boards_section_{{itemIndex}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{item.kind === 'boards' && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-2 mb-2 px-3"
                                                     },
-                                                    "text": "{{board.post_count}}"
+                                                    "text": "{{$localized(item.label) || $t('user.nav.boards')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{boards.data ?? []}}",
+                                                        "item_var": "board"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록).",
+                                                                    "type": "click",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "mobileMenuOpen": false
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "navigate",
+                                                                            "params": {
+                                                                                "path": "/board/{{board.slug}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "href": "/board/{{board.slug}}",
+                                                                "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "min-w-0 truncate"
+                                                                    },
+                                                                    "text": "{{board.name}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{board.post_count > 0}}",
+                                                                    "props": {
+                                                                        "className": "text-xs text-gray-600 dark:text-gray-300 shrink-0"
+                                                                    },
+                                                                    "text": "{{board.post_count}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{item.kind === 'link' && (item.children ?? []).length === 0}}",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "A",
+                                                    "if": "{{String(item.url ?? '').startsWith('/') && !String(item.url ?? '').startsWith('//') && !item.new_tab}}",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "mobileMenuOpen": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "navigate"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "href": "{{item.url}}",
+                                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "min-w-0 truncate"
+                                                            },
+                                                            "text": "{{$localized(item.label)}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "A",
+                                                    "if": "{{!(String(item.url ?? '').startsWith('/') && !String(item.url ?? '').startsWith('//')) || !!item.new_tab}}",
+                                                    "props": {
+                                                        "href": "{{item.url}}",
+                                                        "target": "{{item.new_tab ? '_blank' : '_self'}}",
+                                                        "rel": "{{item.new_tab ? 'noopener noreferrer' : ''}}",
+                                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "min-w-0 truncate"
+                                                            },
+                                                            "text": "{{$localized(item.label)}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!!item.new_tab}}",
+                                                            "props": {
+                                                                "name": "arrow-up-right-from-square",
+                                                                "className": "text-xs shrink-0"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "mobile_drawer_menu_group_{{itemIndex}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{item.kind === 'link' && (item.children ?? []).length > 0}}",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "하위 메뉴 접기/펴기 — 다른 묶음이 열려 있으면 그것을 닫고 이것을 연다.",
+                                                            "type": "click",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "mobileMenuExpandedId": "{{_global.mobileMenuExpandedId === item.id ? null : item.id}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "aria-expanded": "{{_global.mobileMenuExpandedId === item.id}}",
+                                                        "className": "w-full flex items-center justify-between gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "min-w-0 truncate font-medium"
+                                                            },
+                                                            "text": "{{$localized(item.label)}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "{{_global.mobileMenuExpandedId === item.id ? 'chevron-up' : 'chevron-down'}}",
+                                                                "className": "text-xs shrink-0"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{_global.mobileMenuExpandedId === item.id}}",
+                                                    "props": {
+                                                        "className": "pb-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{!!item.url}}",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "A",
+                                                                    "if": "{{String(item.url ?? '').startsWith('/') && !String(item.url ?? '').startsWith('//') && !item.new_tab}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "mobileMenuOpen": false
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "navigate"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "href": "{{item.url}}",
+                                                                        "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "min-w-0 truncate"
+                                                                            },
+                                                                            "text": "{{$localized(item.label)}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "A",
+                                                                    "if": "{{!(String(item.url ?? '').startsWith('/') && !String(item.url ?? '').startsWith('//')) || !!item.new_tab}}",
+                                                                    "props": {
+                                                                        "href": "{{item.url}}",
+                                                                        "target": "{{item.new_tab ? '_blank' : '_self'}}",
+                                                                        "rel": "{{item.new_tab ? 'noopener noreferrer' : ''}}",
+                                                                        "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "min-w-0 truncate"
+                                                                            },
+                                                                            "text": "{{$localized(item.label)}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "if": "{{!!item.new_tab}}",
+                                                                            "props": {
+                                                                                "name": "arrow-up-right-from-square",
+                                                                                "className": "text-xs shrink-0"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "{{item.children ?? []}}",
+                                                                "item_var": "child",
+                                                                "index_var": "childIndex"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "A",
+                                                                    "if": "{{child.kind === 'home'}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "mobileMenuOpen": false
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "/"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "href": "/",
+                                                                        "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "home",
+                                                                                "size": "md"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{$localized(child.label) || $t('user.nav.home')}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "id": "mobile_drawer_popular_link_{{itemIndex}}_{{childIndex}}",
+                                                                    "type": "basic",
+                                                                    "name": "A",
+                                                                    "if": "{{child.kind === 'popular' && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "mobileMenuOpen": false
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "/boards/popular"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "href": "/boards/popular",
+                                                                        "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "flame",
+                                                                                "size": "md",
+                                                                                "className": "text-orange-600 dark:text-orange-500"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{$localized(child.label) || $t('user.nav.popular')}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "A",
+                                                                    "if": "{{child.kind === 'shop' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "mobileMenuOpen": false
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "{{_global.shopBase}}/products"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "href": "{{_global.shopBase}}/products",
+                                                                        "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "shopping-bag",
+                                                                                "size": "md"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "{{$localized(child.label) || $t('user.nav.shop')}}"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "id": "mobile_drawer_boards_section_{{itemIndex}}_{{childIndex}}",
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{child.kind === 'boards' && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "iteration": {
+                                                                                "source": "{{boards.data ?? []}}",
+                                                                                "item_var": "board"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "A",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "comment": "그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록).",
+                                                                                            "type": "click",
+                                                                                            "handler": "sequence",
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "handler": "setState",
+                                                                                                    "params": {
+                                                                                                        "target": "global",
+                                                                                                        "mobileMenuOpen": false
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "navigate",
+                                                                                                    "params": {
+                                                                                                        "path": "/board/{{board.slug}}"
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    ],
+                                                                                    "props": {
+                                                                                        "href": "/board/{{board.slug}}",
+                                                                                        "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                                    },
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "props": {
+                                                                                                "className": "min-w-0 truncate"
+                                                                                            },
+                                                                                            "text": "{{board.name}}"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "if": "{{board.post_count > 0}}",
+                                                                                            "props": {
+                                                                                                "className": "text-xs text-gray-600 dark:text-gray-300 shrink-0"
+                                                                                            },
+                                                                                            "text": "{{board.post_count}}"
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{child.kind === 'link'}}",
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "A",
+                                                                            "if": "{{String(child.url ?? '').startsWith('/') && !String(child.url ?? '').startsWith('//') && !child.new_tab}}",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "sequence",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "mobileMenuOpen": false
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "navigate"
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ],
+                                                                            "props": {
+                                                                                "href": "{{child.url}}",
+                                                                                "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "min-w-0 truncate"
+                                                                                    },
+                                                                                    "text": "{{$localized(child.label)}}"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "A",
+                                                                            "if": "{{!(String(child.url ?? '').startsWith('/') && !String(child.url ?? '').startsWith('//')) || !!child.new_tab}}",
+                                                                            "props": {
+                                                                                "href": "{{child.url}}",
+                                                                                "target": "{{child.new_tab ? '_blank' : '_self'}}",
+                                                                                "rel": "{{child.new_tab ? 'noopener noreferrer' : ''}}",
+                                                                                "className": "w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "min-w-0 truncate"
+                                                                                    },
+                                                                                    "text": "{{$localized(child.label)}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Icon",
+                                                                                    "if": "{{!!child.new_tab}}",
+                                                                                    "props": {
+                                                                                        "name": "arrow-up-right-from-square",
+                                                                                        "className": "text-xs shrink-0"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -1832,7 +2287,7 @@
                             ]
                         },
                         {
-                            "comment": "메뉴 섹션 - 쇼핑. 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
+                            "comment": "메뉴 섹션 - 쇼핑 도구(장바구니). 상품 목록 링크는 위 메뉴의 쇼핑 항목이 맡는다. 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
                             "id": "mobile_drawer_shop_section",
                             "type": "basic",
                             "name": "Div",
@@ -1841,59 +2296,6 @@
                                 "className": "px-4 pb-4 border-b border-gray-200 dark:border-gray-700"
                             },
                             "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3"
-                                    },
-                                    "text": "$t:user.nav.shop"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "A",
-                                    "actions": [
-                                        {
-                                            "comment": "상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다.",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "mobileMenuOpen": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "{{_global.shopBase}}/products"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "href": "{{_global.shopBase}}/products",
-                                        "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "shopping-bag",
-                                                "size": "md"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:user.nav.products"
-                                        }
-                                    ]
-                                },
                                 {
                                     "type": "basic",
                                     "name": "A",
@@ -2488,7 +2890,9 @@
                         "logo": "{{_global.settings?.general?.site_logo_url}}",
                         "logoDark": "{{_global.templateSettings?.branding?.logo_dark_url ?? ''}}",
                         "showThemeToggle": "{{_global.templateSettings?.header?.show_theme_toggle ?? true}}",
-                        "extraLinks": "{{_global.templateSettings?.header?.links ?? []}}",
+                        "menu": "{{_computed.siteMenu}}",
+                        "seoLegacyNav": "false",
+                        "seoMenuLinks": "{{(_computed.siteMenu ?? []).flatMap(i => [i].concat(i.children ?? [])).flatMap(i => i.kind === 'link' ? (i.url ? [{href: i.url, label: $localized(i.label)}] : []) : i.kind === 'home' ? [{href: '/', label: $t('user.nav.home')}] : i.kind === 'popular' ? [{href: '/boards/popular', label: $t('user.nav.popular')}] : i.kind === 'shop' ? [{href: (_global.shopBase ?? '/shop') + '/products', label: $t('user.nav.shop')}] : i.kind === 'boards' ? (boards?.data ?? []).map(b => ({href: '/board/' + b.slug, label: b.name})) : [])}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                         "user": "{{_global.currentUser}}",
                         "cartCount": "{{_global.cartCount ?? 0}}",

@@ -269,5 +269,3 @@ export type { DonutChartProps, DonutChartDataItem } from './DonutChart';
 export { LineChart } from './LineChart';
 export type { LineChartProps, LineChartDataset } from './LineChart';
 
-export { TemplateSettingsFields } from './TemplateSettingsFields';
-export type { TemplateSettingsFieldsProps, TemplateSettingSection, TemplateSettingField, TemplateSettingsValue } from './TemplateSettingsFields';

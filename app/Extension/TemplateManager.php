@@ -1959,7 +1959,11 @@ class TemplateManager implements TemplateManagerInterface
      * `{소유}.template_settings` 행을 keep 규칙으로 동기화한다(운영자가 레이아웃 편집기로 고친 부분은 보존) —
      * 설치된 템플릿이면 꺼져 있어도 등록한다(꺼진 템플릿도 미리 설정해 둘 수 있다).
      *
-     * 한 템플릿의 화면이 깨져도 설치·활성화 전체를 되돌리지 않는다 — 로그·수명주기 경고로 알리고 0 을 돌려준다.
+     * 관리자 템플릿이 `layouts/overrides/{템플릿id}/template_settings.*` 로 그 화면을 덮어썼으면 그 관리자 템플릿 행은
+     * 덮어쓴 파일로 만든다(플러그인·모듈 화면 덮어쓰기와 같은 자리). 행 소유(`source_identifier`)는 화면을 공급한
+     * 템플릿 그대로라 설정 화면 판정·삭제가 덮어쓰기와 무관하게 맞는다. 덮어쓰기는 템플릿이 화면을 공급할 때만 쓰인다.
+     *
+     * 한 템플릿의 화면이 깨져도 설치·활성화 전체를 되돌리지 않는다 — 로그·수명주기 경고로 알리고 그 행만 건너뛴다.
      *
      * @param  string  $identifier  설정 화면을 가진 템플릿 식별자
      * @param  string|null  $onlyAdminTemplate  이 관리자 템플릿에만 등록 (null 이면 활성 관리자 템플릿 전부)
@@ -1982,29 +1986,23 @@ class TemplateManager implements TemplateManagerInterface
             return 0;
         }
 
-        try {
-            $data = preg_match('/\.g7\.html$/i', $source) === 1
-                ? $this->compileMarkupLayoutFile($source)
-                : $this->decodeLayoutJson((string) File::get($source));
-
-            if (! is_array($data) || $data === []) {
-                throw new \RuntimeException(__('templates.settings.errors.invalid_json', ['template' => $identifier, 'error' => basename($source)]));
-            }
-        } catch (\Throwable $e) {
-            Log::error('템플릿 설정 화면 레이아웃 컴파일 실패 — 그 템플릿 설정 화면만 등록하지 않음', [
-                'template' => $identifier,
-                'file' => $source,
-                'error' => $e->getMessage(),
-            ]);
-            LifecycleWarnings::current()->add('layout_register', basename($source), $e->getMessage());
-
-            return 0;
-        }
-
         $name = TemplateLayout::templateSettingsLayoutName($identifier);
+        $compiled = [];
         $count = 0;
 
         foreach ($hosts as $host) {
+            $file = TemplateSettingsSchema::overrideLayoutPath((string) $host->identifier, $identifier) ?? $source;
+
+            if (! array_key_exists($file, $compiled)) {
+                $compiled[$file] = $this->compileSettingsLayoutFile($identifier, $file);
+            }
+
+            $data = $compiled[$file];
+
+            if ($data === null) {
+                continue;
+            }
+
             try {
                 $entry = $this->layoutSynchronizer()->syncLayout(
                     [
@@ -2038,17 +2036,50 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
+     * 설정 화면 레이아웃 파일(템플릿 원본 또는 관리자 템플릿 덮어쓰기)을 읽습니다 — 깨졌으면 로그·수명주기 경고 후 null.
+     *
+     * @param  string  $identifier  설정 화면을 공급한 템플릿 식별자
+     * @param  string  $file  레이아웃 파일 경로
+     * @return array<string, mixed>|null 레이아웃 데이터
+     */
+    private function compileSettingsLayoutFile(string $identifier, string $file): ?array
+    {
+        try {
+            $data = preg_match('/\.g7\.html$/i', $file) === 1
+                ? $this->compileMarkupLayoutFile($file)
+                : $this->decodeLayoutJson((string) File::get($file));
+
+            if (! is_array($data) || $data === []) {
+                throw new \RuntimeException(__('templates.settings.errors.invalid_json', ['template' => $identifier, 'error' => basename($file)]));
+            }
+
+            return $data;
+        } catch (\Throwable $e) {
+            Log::error('템플릿 설정 화면 레이아웃 컴파일 실패 — 그 화면만 등록하지 않음', [
+                'template' => $identifier,
+                'file' => $file,
+                'error' => $e->getMessage(),
+            ]);
+            LifecycleWarnings::current()->add('layout_register', basename($file), $e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
      * 설치된 모든 템플릿의 설정 화면을 한 관리자 템플릿에 등록합니다 — 관리자 템플릿을 켤 때 (#434).
      *
      * @param  string  $adminTemplateIdentifier  켜진 관리자 템플릿 식별자
+     * @param  LayoutSyncMode  $mode  동기화 모드 (활성화는 Keep, 레이아웃 새로 고침은 그 새로 고침의 전략)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return int 등록한 행 수
      */
-    public function registerSettingsLayoutsForAllInstalled(string $adminTemplateIdentifier): int
+    public function registerSettingsLayoutsForAllInstalled(string $adminTemplateIdentifier, LayoutSyncMode $mode = LayoutSyncMode::Keep, ?LayoutSyncReport $report = null): int
     {
         $count = 0;
 
         foreach ($this->templateRepository->getAllKeyedByIdentifier() as $identifier => $record) {
-            $count += $this->registerSettingsLayout((string) $identifier, $adminTemplateIdentifier);
+            $count += $this->registerSettingsLayout((string) $identifier, $adminTemplateIdentifier, $mode, $report);
         }
 
         return $count;
@@ -2172,11 +2203,9 @@ class TemplateManager implements TemplateManagerInterface
                     $layoutData = $validatedLayout['data'];
                     $layoutName = $validatedLayout['layout_name'];
 
-                    // 템플릿 설정 화면(`{id}.template_settings`)은 덮지 않는다 — 같은 행 키를 쓰는 교차 등록 행의 소유자
-                    // (source_identifier)가 뒤집혀 설정 화면 판정이 깨진다. 설정 화면 수정 경로는 레이아웃 편집기 하나다 (#434)
+                    // 템플릿 설정 화면(`{id}.template_settings`) 덮어쓰기는 설정 화면 교차 등록이 맡는다({@see registerSettingsLayout()}) —
+                    // 여기서 같은 행 키로 쓰면 교차 등록 행의 소유자(source_identifier)가 이 관리자 템플릿으로 뒤집혀 설정 화면 판정이 깨진다 (#434)
                     if (str_ends_with((string) $layoutName, '.'.TemplateLayout::TEMPLATE_SETTINGS_SUFFIX)) {
-                        LifecycleWarnings::current()->add('layout_override_register', (string) $layoutName, __('templates.settings.errors.override_not_allowed'));
-
                         continue;
                     }
 
@@ -2745,6 +2774,12 @@ class TemplateManager implements TemplateManagerInterface
         // 자기 설정 화면 재등록 (#434) — 관리자 템플릿의 자기 행 동기화는 source_identifier 가 빈 행만 보므로
         // 다른 템플릿이 이 관리자 템플릿에 등록한 설정 화면 행은 건드리지 않는다.
         $this->syncSettingsLayout($identifier, $mode, $report);
+
+        // 켜진 관리자 템플릿이면 설치된 템플릿 설정 화면을 이 관리자 템플릿에 다시 등록한다 — 이 관리자 템플릿의
+        // `layouts/overrides/{템플릿id}/template_settings.*` 덮어쓰기가 더해지거나 빠진 것을 반영한다 (#434 D28)
+        if ($template->type === 'admin' && $template->status === ExtensionStatus::Active->value) {
+            $this->registerSettingsLayoutsForAllInstalled($identifier, $mode, $report);
+        }
 
         // 캐시 무효화
         $this->clearTemplateCache($identifier);

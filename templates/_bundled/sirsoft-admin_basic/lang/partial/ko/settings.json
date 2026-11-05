@@ -31,5 +31,15 @@
     "system": "시스템 설정 따르기",
     "light": "라이트",
     "dark": "다크"
+  },
+  "screen": {
+    "fields": {
+      "row_title": "{{number}}번째",
+      "move_up": "위로",
+      "move_down": "아래로",
+      "remove_item": "삭제",
+      "add_item": "추가 ({{current}}/{{max}})",
+      "max_items_reached": "최대 {{max}}개까지 넣을 수 있습니다."
+    }
   }
 }

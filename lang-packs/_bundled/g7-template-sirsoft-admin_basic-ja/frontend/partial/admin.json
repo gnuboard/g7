@@ -3167,7 +3167,7 @@
       "view_detail": "詳細情報",
       "settings": "設定",
       "settings_read_only": "設定(読み取り専用)",
-      "settings_unavailable": "設定項目がないか、現在の管理者テンプレートが設定画面に対応していません",
+      "settings_unavailable": "設定項目がないか、このテンプレートが設定画面を提供していません",
       "refresh_layouts": "レイアウト更新",
       "edit_layouts": "レイアウト編集",
       "preview_manifest": "マニフェストプレビュー",
@@ -4070,11 +4070,7 @@
       "subject_delete_modal": "情報主体記録削除確認",
       "row_trend_modal": "項目の推移"
     },
-    "lifecycle_warnings_modal": "拡張機能の操作警告ウィンドウ",
-    "admin_template_settings": {
-      "reset_modal": "テンプレート設定を既定値に戻す",
-      "unsaved_tab_modal": "テンプレート設定の未保存タブ切替確認"
-    }
+    "lifecycle_warnings_modal": "拡張機能の操作警告ウィンドウ"
   },
   "member_notification": {
     "page_title": "会員通知ボックス",
@@ -4905,13 +4901,5 @@
         "seeder": "初期データ作成"
       }
     }
-  },
-  "template_settings_fields": {
-    "row_title": "{{number}}件目",
-    "move_up": "上へ",
-    "move_down": "下へ",
-    "remove_item": "削除",
-    "add_item": "追加 ({{current}}/{{max}})",
-    "max_items_reached": "最大{{max}}件まで追加できます。"
   }
 }

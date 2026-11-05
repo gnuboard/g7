@@ -31,5 +31,15 @@
     "system": "システム設定に従う",
     "light": "ライト",
     "dark": "ダーク"
+  },
+  "screen": {
+    "fields": {
+      "row_title": "{{number}}件目",
+      "move_up": "上へ",
+      "move_down": "下へ",
+      "remove_item": "削除",
+      "add_item": "追加 ({{current}}/{{max}})",
+      "max_items_reached": "最大{{max}}件まで追加できます。"
+    }
   }
 }

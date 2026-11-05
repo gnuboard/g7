@@ -49,6 +49,13 @@
       "branding": {
         "label": "Branding"
       }
+    },
+    "screen": {
+      "choose_file": "Choose file",
+      "remove_file": "Remove",
+      "picked_file": "Selected: {{name}} (uploaded when you save)",
+      "upload_failed": "Could not upload the file.",
+      "unsupported_field": "This screen cannot draw this field type."
     }
   }
 }

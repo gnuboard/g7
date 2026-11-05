@@ -152,6 +152,7 @@ class TemplateSettingsLayoutRegistrationTest extends TestCase
      * @scenario case=routes
      *
      * @effects settings_route_generated
+     * @effects no_supplied_screen_means_no_route
      *
      * @return void 반환값 없음
      */
@@ -170,19 +171,20 @@ class TemplateSettingsLayoutRegistrationTest extends TestCase
         $this->assertNotNull($route, '설정 화면 라우트가 있어야 한다');
         $this->assertSame('qa434-user.template_settings', $route['layout']);
         $this->assertSame('core.templates.read', $route['meta']['permission']);
-        $this->assertNull($routes->firstWhere('path', '*/admin/templates/qa434-nolayout/settings'), '직접 쓴 화면도, 관리자 템플릿의 공용 화면도 없으면 라우트가 없다');
+        $this->assertNull($routes->firstWhere('path', '*/admin/templates/qa434-nolayout/settings'), '설정 화면을 공급하지 않은 템플릿은 라우트가 없다');
 
-        // 켜진 관리자 템플릿이 공용 설정 화면을 가지면 직접 쓴 화면이 없는 템플릿도 그 화면으로 열린다
+        // 공용 화면은 없다(#434 D32) — 켜진 관리자 템플릿에 옛 공용 화면 레이아웃이 남아 있어도 그 화면으로 열지 않는다
+        File::ensureDirectoryExists(base_path('templates/qa434-host/layouts'));
         File::put(base_path('templates/qa434-host/layouts/admin_template_settings.json'), json_encode(['version' => '1.0.0', 'layout_name' => 'admin_template_settings', 'components' => []]));
         app(TemplateSettingsService::class)->clearCache();
 
         $routes = collect(app(TemplateService::class)->getRoutesDataWithModules('qa434-host')['data']['routes'] ?? []);
-        $this->assertSame('admin_template_settings', $routes->firstWhere('path', '*/admin/templates/qa434-nolayout/settings')['layout'] ?? null);
-        $this->assertSame('qa434-user.template_settings', $routes->firstWhere('path', '*/admin/templates/qa434-user/settings')['layout'] ?? null, '직접 쓴 화면이 우선');
+        $this->assertNull($routes->firstWhere('path', '*/admin/templates/qa434-nolayout/settings'));
+        $this->assertSame('qa434-user.template_settings', $routes->firstWhere('path', '*/admin/templates/qa434-user/settings')['layout'] ?? null);
 
         $info = app(TemplateManager::class)->getTemplateInfo('qa434-nolayout');
-        $this->assertTrue($info['has_settings'], '상세 응답에도 설정 진입 필드가 있다');
-        $this->assertSame('/admin/templates/qa434-nolayout/settings', $info['settings_route']);
+        $this->assertFalse($info['has_settings'], '목록 「설정」 은 잠긴다');
+        $this->assertNull($info['settings_route']);
     }
 
     /**
@@ -237,23 +239,26 @@ class TemplateSettingsLayoutRegistrationTest extends TestCase
     }
 
     /**
-     * 관리자 템플릿의 덮기(overrides) 파일은 설정 화면 행을 바꾸지 못한다 — 건너뛰고 경고한다.
+     * 켜진 관리자 템플릿이 `layouts/overrides/{템플릿id}/template_settings.*` 로 그 템플릿 설정 화면을 덮어쓴다 —
+     * 행 소유(source_identifier)는 화면을 공급한 템플릿 그대로이고, 덮어쓰기 파일을 지우고 새로 고치면 원본으로 돌아간다 (#434 D28).
      *
      * @scenario case=registration
      *
+     * @effects admin_override_replaces_settings_screen
      * @effects cross_rows_survive_admin_refresh
      *
      * @return void 반환값 없음
      */
-    public function test_override_cannot_replace_settings_screen(): void
+    public function test_admin_override_replaces_settings_screen(): void
     {
         $host = $this->makeHost();
         $this->makeSettingsTemplate('qa434-user', 'user', 'inactive');
         $manager = app(TemplateManager::class);
         $manager->registerSettingsLayoutsForAllInstalled('qa434-host');
 
-        File::ensureDirectoryExists(base_path('templates/qa434-host/layouts/overrides/qa434-user'));
-        File::put(base_path('templates/qa434-host/layouts/overrides/qa434-user/template_settings.json'), json_encode([
+        $overrideDir = base_path('templates/qa434-host/layouts/overrides/qa434-user');
+        File::ensureDirectoryExists($overrideDir);
+        File::put($overrideDir.'/template_settings.json', json_encode([
             'version' => '1.0.0', 'layout_name' => 'qa434-user.template_settings', 'extends' => '_admin_base',
             'slots' => ['content' => [['id' => 'qa434_override', 'type' => 'basic', 'name' => 'Div', 'props' => []]]],
         ]));
@@ -261,8 +266,100 @@ class TemplateSettingsLayoutRegistrationTest extends TestCase
         $manager->refreshTemplateLayouts('qa434-host', true);
 
         $row = TemplateLayout::where('template_id', $host->id)->where('name', 'qa434-user.template_settings')->first();
-        $this->assertSame('qa434-user', $row->source_identifier, '소유자가 관리자 템플릿 덮기로 뒤집히지 않는다');
-        $this->assertStringNotContainsString('qa434_override', json_encode($row->content));
+        $this->assertSame('qa434-user', $row->source_identifier, '소유자는 화면을 공급한 템플릿 그대로');
+        $this->assertTrue($row->isTemplateSettingsLayout());
+        $this->assertStringContainsString('qa434_override', json_encode($row->content), '관리자 템플릿 덮어쓰기 파일로 그린다');
+        $this->assertSame(1, TemplateLayout::where('template_id', $host->id)->where('name', 'qa434-user.template_settings')->count(), '행은 하나 — 덮기 행이 따로 생기지 않는다');
+
+        File::deleteDirectory(base_path('templates/qa434-host/layouts/overrides'));
+        $manager->refreshTemplateLayouts('qa434-host', true);
+
+        $row->refresh();
+        $this->assertStringNotContainsString('qa434_override', json_encode($row->content), '덮어쓰기를 지우면 템플릿 원본으로 돌아간다');
+        $this->assertStringContainsString('qa434_root', json_encode($row->content));
+    }
+
+    /**
+     * 설정 화면 부품 묶음은 꺼진 템플릿도 규약 경로 두 파일만 내주고, 관리자 화면 설정에 설치 템플릿 묶음 주소가 실린다 (#434 D30).
+     *
+     * @scenario case=settings_bundle_load
+     *
+     * @effects settings_assets_served_for_inactive_template
+     * @effects settings_bundles_loaded_on_admin
+     *
+     * @return void 반환값 없음
+     */
+    public function test_settings_bundle_served_for_installed_templates(): void
+    {
+        $this->makeHost();
+        $this->makeSettingsTemplate('qa434-user', 'user', 'inactive');
+        $dist = base_path('templates/qa434-user/dist');
+        File::ensureDirectoryExists($dist.'/settings');
+        File::ensureDirectoryExists($dist.'/js');
+        File::put($dist.'/settings/settings.iife.js', 'window.__qa434 = 1;');
+        File::put($dist.'/settings/settings.css', '.qa434{}');
+        File::put($dist.'/js/components.iife.js', 'window.__qa434_main = 1;');
+
+        $service = app(TemplateService::class);
+        $this->assertTrue($service->getAssetFilePath('qa434-user', 'settings/settings.iife.js')['success'], '꺼진 템플릿도 설정 묶음은 내준다');
+        $this->assertTrue($service->getAssetFilePath('qa434-user', 'settings/settings.css')['success']);
+        $this->assertSame('template_not_found', $service->getAssetFilePath('qa434-user', 'js/components.iife.js')['error'], '규약 밖 파일은 켜진 템플릿만');
+        $this->assertSame('template_not_found', $service->getAssetFilePath('qa434-user', 'settings/../js/components.iife.js')['error'], '경로를 돌려 써도 규약 경로가 아니면 막는다');
+
+        $bundles = collect(app(TemplateSettingsService::class)->settingsAssetUrls(7));
+        $user = $bundles->firstWhere('identifier', 'qa434-user');
+        $this->assertNotNull($user);
+        $this->assertStringContainsString('qa434-user', $user['js']);
+        $this->assertStringContainsString('settings/settings.iife.js', $user['js']);
+        $this->assertStringContainsString('settings/settings.css', $user['css']);
+        $this->assertNull($bundles->firstWhere('identifier', 'qa434-host'), '묶음을 빌드하지 않은 템플릿은 싣지 않는다');
+
+        // 관리자 화면 뷰 컴포저가 같은 목록을 싣는다
+        $captured = [];
+        $view = \Mockery::mock(\Illuminate\View\View::class);
+        $view->shouldReceive('with')->andReturnUsing(function (string $key, $value) use (&$captured, $view) {
+            $captured[$key] = $value;
+
+            return $view;
+        });
+        app(\App\Http\View\Composers\TemplateComposer::class)->compose($view);
+        $this->assertSame('qa434-user', collect($captured['templateSettingsAssets'] ?? [])->firstWhere('identifier', 'qa434-user')['identifier'] ?? null);
+    }
+
+    /**
+     * 관리자 템플릿 번역 응답에 설치 템플릿의 설정 화면 문구가 `{템플릿id}.{묶음}` 으로 감싸여 실린다 — 부품 매니페스트 `lang` 의 묶음만 (#434 D28).
+     *
+     * @scenario case=settings_bundle_load
+     *
+     * @effects settings_strings_wrapped_for_admin
+     *
+     * @return void 반환값 없음
+     */
+    public function test_admin_language_wraps_template_settings_strings(): void
+    {
+        $this->makeHost();
+        $this->makeSettingsTemplate('qa434-user', 'user', 'inactive');
+        File::ensureDirectoryExists(base_path('templates/qa434-host/lang'));
+        File::put(base_path('templates/qa434-host/lang/ko.json'), json_encode(['admin' => ['title' => 'host']]));
+        File::ensureDirectoryExists(base_path('templates/qa434-user/lang'));
+        File::put(base_path('templates/qa434-user/lang/ko.json'), json_encode([
+            'settings' => ['screen' => ['choose_file' => '파일 고르기 434']],
+            'common' => ['ok' => '확인 434'],
+            'user' => ['big' => '싣지 않는 묶음'],
+        ], JSON_UNESCAPED_UNICODE));
+        File::put(base_path('templates/qa434-user/components.settings.json'), json_encode([
+            'identifier' => 'qa434-user', 'version' => '1.0.0', 'lang' => ['settings', 'common'],
+            'components' => ['basic' => [], 'composite' => [], 'layout' => []],
+        ]));
+
+        $data = app(TemplateService::class)->getLanguageDataWithModules('qa434-host', 'ko')['data'];
+
+        $this->assertSame('파일 고르기 434', $data['qa434-user']['settings']['screen']['choose_file'] ?? null);
+        $this->assertSame('확인 434', $data['qa434-user']['common']['ok'] ?? null);
+        $this->assertArrayNotHasKey('user', $data['qa434-user'], '매니페스트가 밝히지 않은 묶음은 싣지 않는다');
+
+        $userData = app(TemplateService::class)->getLanguageDataWithModules('qa434-user', 'ko', includeInactive: true)['data'];
+        $this->assertArrayNotHasKey('qa434-user', $userData, '사용자 템플릿 응답·꺼진 템플릿 조회에는 감싸 싣지 않는다');
     }
 
     /**

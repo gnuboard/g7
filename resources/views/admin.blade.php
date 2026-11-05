@@ -74,6 +74,8 @@
                 'moduleAssets' => $moduleAssets ?? [],
                 'pluginAssets' => $pluginAssets ?? [],
                 'bundleUrls' => $bundleUrls ?? null,
+                // 설치된 템플릿(꺼진 것 포함)이 공급한 설정 화면 부품 묶음 — 관리자 화면만 플러그인 묶음 뒤에 싣는다 (#434)
+                'templateSettingsAssets' => $templateSettingsAssets ?? [],
                 'customAssets' => $customAssets ?? [],
                 // 템플릿 다크 방식 선언 — 엔진이 `<html data-g7-color-scheme>` 중립 표식으로 옮긴다(확장 CSS 는 표식만 본다)
                 'colorScheme' => $colorScheme ?? ['strategy' => 'none'],

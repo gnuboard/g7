@@ -39,7 +39,7 @@ final class TemplateSettingsSchema
      *
      * @var array<int, string>
      */
-    public const TYPES = ['string', 'text', 'integer', 'boolean', 'enum', 'url', 'link', 'email', 'color', 'multilingual', 'list', 'attachments', 'image'];
+    public const TYPES = ['string', 'text', 'integer', 'boolean', 'enum', 'url', 'link', 'email', 'color', 'multilingual', 'list', 'attachments', 'image', 'menu'];
 
     /**
      * 목록(list) 행 안에 둘 수 있는 칸 종류 — 첨부·중첩 목록은 행 안에 둘 수 없다
@@ -61,6 +61,11 @@ final class TemplateSettingsSchema
      * @var array<int, string>
      */
     public const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+
+    /**
+     * 설정 화면 부품 묶음 규약 경로(`dist/` 상대) — 템플릿이 자기 설정 화면 부품을 공급하는 자리 (#434 D28).
+     */
+    public const SETTINGS_ASSETS = ['js' => 'settings/settings.iife.js', 'css' => 'settings/settings.css'];
 
     /**
      * 표준 키 — 코어가 읽는 칸
@@ -127,8 +132,8 @@ final class TemplateSettingsSchema
     }
 
     /**
-     * 템플릿이 직접 쓴 설정 화면 레이아웃 소스 경로를 돌려줍니다 — `.g7.html` 이 있으면 그것, 없으면 짝 `.json`,
-     * 둘 다 없으면 null(그때는 켜진 관리자 템플릿의 공용 설정 화면이 그린다).
+     * 템플릿이 공급한 설정 화면 레이아웃 소스 경로를 돌려줍니다 — `.g7.html` 이 있으면 그것, 없으면 짝 `.json`,
+     * 둘 다 없으면 null(그 템플릿은 설정 화면이 없어 목록 「설정」이 잠긴다 — 공용 화면은 없다).
      *
      * 템플릿 자기 `layouts/` 밖(`settings/`)에 둔다. `layouts/` 안이면 그 템플릿의 자기 화면으로도 등록돼
      * 사용자 템플릿에 관리자 화면이 섞인다.
@@ -139,8 +144,105 @@ final class TemplateSettingsSchema
      */
     public static function layoutPath(string $identifier, ?string $templateRoot = null): ?string
     {
-        $dir = rtrim($templateRoot ?? base_path('templates'.DIRECTORY_SEPARATOR.$identifier), '/\\').DIRECTORY_SEPARATOR.'settings';
+        return self::firstLayoutFile(rtrim($templateRoot ?? base_path('templates'.DIRECTORY_SEPARATOR.$identifier), '/\\').DIRECTORY_SEPARATOR.'settings');
+    }
 
+    /**
+     * 관리자 템플릿이 다른 템플릿 설정 화면을 덮어쓴 레이아웃 경로를 돌려줍니다 — 없으면 null.
+     *
+     * 플러그인·모듈 화면 덮어쓰기와 같은 자리(`layouts/overrides/{템플릿id}/`)다. 교차 등록은 이 파일이 있으면
+     * 템플릿 원본 대신 이 파일을 쓴다 — 행 소유(`source_identifier`)는 설정 화면을 공급한 템플릿 그대로다.
+     *
+     * @param  string  $adminTemplate  덮어쓰는 관리자 템플릿 식별자
+     * @param  string  $identifier  설정 화면을 공급한 템플릿 식별자
+     * @return string|null 덮어쓴 레이아웃 소스 경로
+     */
+    public static function overrideLayoutPath(string $adminTemplate, string $identifier): ?string
+    {
+        return self::firstLayoutFile(base_path('templates'.DIRECTORY_SEPARATOR.$adminTemplate.DIRECTORY_SEPARATOR.'layouts'.DIRECTORY_SEPARATOR.'overrides'.DIRECTORY_SEPARATOR.$identifier));
+    }
+
+    /**
+     * 템플릿이 공급한 설정 화면 부품 묶음 중 실제로 빌드된 파일의 `dist/` 상대 경로를 돌려줍니다.
+     *
+     * 규약 경로는 고정이다(`templates/{id}/dist/settings/settings.iife.js`·`templates/{id}/dist/settings/settings.css`). 관리자 화면이 설치된 템플릿
+     * (꺼진 것 포함) 묶음을 플러그인 묶음처럼 싣는다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  string|null  $templateRoot  템플릿 디렉토리
+     * @return array{js?: string, css?: string} 종류 => `dist/` 상대 경로
+     */
+    public static function settingsAssets(string $identifier, ?string $templateRoot = null): array
+    {
+        $dist = rtrim($templateRoot ?? base_path('templates'.DIRECTORY_SEPARATOR.$identifier), '/\\').DIRECTORY_SEPARATOR.'dist';
+        $assets = [];
+
+        foreach (self::SETTINGS_ASSETS as $kind => $relative) {
+            if (File::isFile($dist.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative))) {
+                $assets[$kind] = $relative;
+            }
+        }
+
+        return $assets;
+    }
+
+    /**
+     * `dist/` 상대 경로가 설정 화면 부품 묶음 규약 경로인지 판정합니다 — 꺼진 템플릿 파일 제공을 이 두 파일로 한정한다.
+     *
+     * @param  string  $relativePath  `dist/` 상대 경로
+     * @return bool 규약 경로이면 true
+     */
+    public static function isSettingsAssetPath(string $relativePath): bool
+    {
+        return in_array(ltrim(str_replace('\\', '/', $relativePath), '/'), self::SETTINGS_ASSETS, true);
+    }
+
+    /**
+     * 템플릿이 공급한 설정 화면 부품 매니페스트 경로 — 확장 매니페스트 형식(`identifier`)이라 레이아웃 검사·관리자 템플릿
+     * 부품 덮어쓰기(`overrides.target`)가 그 템플릿 부품을 안다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return string 상대 경로 (`base_path` 기준)
+     */
+    public static function componentsManifestPath(string $identifier): string
+    {
+        return "templates/{$identifier}/components.settings.json";
+    }
+
+    /**
+     * 템플릿 설정 화면 부품이 쓰는 프론트 언어 묶음(최상위 키) 목록 — 부품 매니페스트 `lang`, 없으면 `["settings"]`.
+     *
+     * 관리자 화면은 이 묶음만 `{템플릿id}.{묶음}` 으로 감싸 싣는다(템플릿 문구 전체를 싣지 않는다). 부품은 문구를
+     * `{템플릿id}.{키}` 로 먼저 찾고 없으면 그대로의 키로 찾는다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return array<int, string> 언어 묶음 키
+     */
+    public static function settingsLangGroups(string $identifier): array
+    {
+        $path = base_path(self::componentsManifestPath($identifier));
+        $declared = null;
+
+        if (File::isFile($path)) {
+            $manifest = json_decode((string) File::get($path), true);
+            $declared = is_array($manifest) ? ($manifest['lang'] ?? null) : null;
+        }
+
+        $groups = is_array($declared)
+            ? array_values(array_unique(array_filter($declared, static fn ($group): bool => is_string($group) && preg_match('/^[a-z0-9_-]{1,64}$/', $group) === 1)))
+            : [];
+
+        return $groups === [] ? ['settings'] : $groups;
+    }
+
+    /**
+     * 디렉토리에서 설정 화면 레이아웃 파일(`.g7.html` 우선, 짝 `.json`)을 찾습니다.
+     *
+     * @param  string  $dir  찾을 디렉토리
+     * @return string|null 파일 경로
+     */
+    private static function firstLayoutFile(string $dir): ?string
+    {
         foreach (['template_settings.g7.html', 'template_settings.json'] as $file) {
             $candidate = $dir.DIRECTORY_SEPARATOR.$file;
 
@@ -283,7 +385,7 @@ final class TemplateSettingsSchema
             'integer' => null,
             'boolean' => false,
             'multilingual' => [],
-            'list', 'attachments', 'image' => [],
+            'list', 'attachments', 'image', 'menu' => [],
             default => '',
         };
     }
@@ -431,6 +533,10 @@ final class TemplateSettingsSchema
                     $errors = array_merge($errors, self::validateField("{$path}.item_fields.{$itemKey}", $itemField, true));
                 }
             }
+        }
+
+        if ($type === 'menu') {
+            $errors = array_merge($errors, TemplateMenu::declarationErrors($path, $field));
         }
 
         if (($field['sensitive'] ?? false) === true && ! in_array($type, ['string', 'text'], true)) {
@@ -584,6 +690,7 @@ final class TemplateSettingsSchema
             'enum' => in_array($value, self::optionValues($field), true),
             'multilingual' => is_array($value) && array_filter($value, fn ($v) => ! is_string($v)) === [],
             'list', 'attachments', 'image' => is_array($value) && array_is_list($value),
+            'menu' => TemplateMenu::structureErrors($value, $field) === [],
             default => is_string($value),
         };
     }

@@ -5,14 +5,17 @@ namespace App\Services;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\ExtensionStatus;
 use App\Extension\HookManager;
 use App\Extension\Storage\CoreStorageDriver;
+use App\Extension\Template\TemplateMenu;
 use App\Extension\Template\TemplateSettingsSchema;
 use App\Helpers\InlineMediaPolicy;
 use App\Http\Resources\AttachmentResource;
 use App\Models\Attachment;
 use App\Models\Template;
 use App\Models\TemplateLayout;
+use App\Support\AssetUrl;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\Favicon\FaviconPolicy;
 use App\Support\LayoutMarkup\EmptyMap;
@@ -49,19 +52,9 @@ class TemplateSettingsService
     use FiltersFrontendSchema;
 
     /**
-     * 공용 설정 화면 레이아웃 이름 — 켜진 관리자 템플릿이 자기 레이아웃으로 둔다
-     */
-    public const AUTO_SCREEN_LAYOUT = 'admin_template_settings';
-
-    /**
      * 저장 디스크
      */
     private const DISK = 'templates';
-
-    /**
-     * 요청 내 공용 설정 화면 유무 캐시
-     */
-    private ?bool $autoScreen = null;
 
     /**
      * 요청 내 설정 캐시 (identifier => settings, 비밀값 복호화 상태)
@@ -130,8 +123,8 @@ class TemplateSettingsService
     }
 
     /**
-     * 템플릿이 설정을 갖는지 판정합니다 — 칸이 하나 이상 선언돼 있으면 설정 화면이 있다
-     * (직접 쓴 화면이 없으면 켜진 관리자 템플릿의 공용 설정 화면이 그린다).
+     * 템플릿이 설정을 갖는지 판정합니다 — 칸이 하나 이상 선언돼 있으면 설정이 있다
+     * (화면은 템플릿이 따로 공급한다 — {@see screenLayoutName()}).
      *
      * @param  string  $identifier  템플릿 식별자
      * @return bool 설정이 있으면 true
@@ -142,8 +135,11 @@ class TemplateSettingsService
     }
 
     /**
-     * 설정 화면 레이아웃 이름 — 템플릿이 직접 쓴 화면이 있으면 그것(`{id}.template_settings`, 교차 등록 행),
-     * 없으면 켜진 관리자 템플릿의 공용 설정 화면(`admin_template_settings`). 둘 다 없거나 설정이 없으면 null.
+     * 설정 화면 레이아웃 이름 — 템플릿이 공급한 화면(`settings/template_settings.*`)이 있으면 `{id}.template_settings`
+     * (켜진 관리자 템플릿마다 교차 등록한 행), 화면이나 설정이 없으면 null.
+     *
+     * 공용 화면은 없다(#434 D32) — 화면을 그리는 부품이 관리자 템플릿 것이면 다른 관리자 템플릿에서 깨지므로,
+     * 템플릿이 자기 화면과 부품 묶음(`dist/settings/*`)을 함께 공급한다.
      *
      * @param  string  $identifier  템플릿 식별자
      * @return string|null 레이아웃 이름
@@ -154,11 +150,9 @@ class TemplateSettingsService
             return null;
         }
 
-        if (TemplateSettingsSchema::layoutPath($identifier) !== null) {
-            return TemplateLayout::templateSettingsLayoutName($identifier);
-        }
-
-        return $this->autoScreenAvailable() ? self::AUTO_SCREEN_LAYOUT : null;
+        return TemplateSettingsSchema::layoutPath($identifier) !== null
+            ? TemplateLayout::templateSettingsLayoutName($identifier)
+            : null;
     }
 
     /**
@@ -173,21 +167,44 @@ class TemplateSettingsService
     }
 
     /**
-     * 켜진 관리자 템플릿이 공용 설정 화면 레이아웃을 갖는지 판정합니다(요청 내 캐시).
+     * 관리자 화면이 실을 설정 화면 부품 묶음 주소 — 설치된 템플릿(꺼진 것 포함) 중 묶음을 빌드해 둔 것 (#434 D30).
      *
-     * @return bool 있으면 true
+     * 플러그인 묶음처럼 관리자 화면을 열 때 함께 싣는다. 꺼진 템플릿 파일은 이 두 규약 경로만 내준다
+     * ({@see TemplateService::getAssetFilePath()}).
+     *
+     * @param  int|string|null  $version  캐시 무효화 버전
+     * @return array<int, array{identifier: string, js?: string, css?: string}> 템플릿별 묶음 주소
      */
-    public function autoScreenAvailable(): bool
+    public function settingsAssetUrls(int|string|null $version): array
     {
-        if ($this->autoScreen === null) {
-            $admin = $this->templateRepository->findActiveByType('admin');
-            $layouts = $admin === null ? null : base_path('templates'.DIRECTORY_SEPARATOR.$admin->identifier.DIRECTORY_SEPARATOR.'layouts'.DIRECTORY_SEPARATOR);
+        $bundles = [];
 
-            $this->autoScreen = $layouts !== null
-                && (File::exists($layouts.self::AUTO_SCREEN_LAYOUT.'.g7.html') || File::exists($layouts.self::AUTO_SCREEN_LAYOUT.'.json'));
+        foreach ($this->templateRepository->getAllKeyedByIdentifier() as $identifier => $template) {
+            if (! in_array($template->status, [ExtensionStatus::Active->value, ExtensionStatus::Inactive->value], true)) {
+                continue;
+            }
+
+            $assets = TemplateSettingsSchema::settingsAssets((string) $identifier);
+
+            // 켜진 관리자 템플릿은 자기 화면 CSS 가 이미 실려 있다 — 같은 규칙을 두 번 싣지 않는다
+            if ($template->type === 'admin' && $template->status === ExtensionStatus::Active->value) {
+                unset($assets['css']);
+            }
+
+            if ($assets === []) {
+                continue;
+            }
+
+            $bundle = ['identifier' => (string) $identifier];
+
+            foreach ($assets as $kind => $relative) {
+                $bundle[$kind] = AssetUrl::templateAsset((string) $identifier, $relative, $version);
+            }
+
+            $bundles[] = $bundle;
         }
 
-        return $this->autoScreen;
+        return $bundles;
     }
 
     /**
@@ -671,6 +688,10 @@ class TemplateSettingsService
             $descriptor['accept'] = implode(',', array_map(fn ($ext) => '.'.$ext, $schema->acceptedExtensions($path)));
         }
 
+        if ($field['type'] === 'menu') {
+            $descriptor = array_merge($descriptor, TemplateMenu::describe($field, fn ($value) => $this->translate($identifier, $value)));
+        }
+
         if ($field['type'] === 'list') {
             $descriptor['item_fields'] = [];
 
@@ -754,7 +775,6 @@ class TemplateSettingsService
             $this->settingsCache = [];
             $this->schemaCache = [];
             $this->languageCache = [];
-            $this->autoScreen = null;
 
             return;
         }
@@ -939,6 +959,7 @@ class TemplateSettingsService
                 fn ($row) => is_array($row) ? $this->normalizeRow((array) ($field['item_fields'] ?? []), $row) : $row,
                 $value
             )) : $value,
+            'menu' => TemplateMenu::normalize($value, $field),
             default => $value,
         };
     }

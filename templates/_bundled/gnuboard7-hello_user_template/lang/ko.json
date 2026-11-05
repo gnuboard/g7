@@ -65,6 +65,13 @@
             "branding": {
                 "label": "브랜딩"
             }
+        },
+        "screen": {
+            "choose_file": "파일 고르기",
+            "remove_file": "지우기",
+            "picked_file": "고른 파일: {{name}} (저장하면 올립니다)",
+            "upload_failed": "파일을 올리지 못했습니다.",
+            "unsupported_field": "이 화면은 이 칸 종류를 그리지 못합니다."
         }
     }
 }

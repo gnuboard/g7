@@ -86,7 +86,9 @@ __tests__/layouts/     createLayoutTest() + API 모킹 기반 렌더링 테스�
 | 파일 | 역할 |
 | --- | --- |
 | `config/settings/defaults.json` | 섹션(`_meta.categories: ["branding"]`)·기본값(`branding.favicon: []`)·칸 선언(표준 키 `branding.favicon` — attachments, 1개, 파비콘 7형식)·화면 노출(`branding.favicon_url`) |
-| (설정 화면 없음) | 선언만 두면 켜진 관리자 템플릿의 공용 설정 화면이 그린다 — 직접 그리려면 `templates/{id}/settings/template_settings.g7.html` 을 `layouts/` 밖에 둔다 |
+| `settings/template_settings.g7.html` | 설정 화면 레이아웃 — `layouts/` 밖에 둔다. 코어가 켜진 관리자 템플릿마다 `{id}.template_settings` 로 교차 등록한다. 받기·저장·되돌리기·주소 바꾸기를 맡고 화면은 부품 하나가 그린다 |
+| `src/settings/*` · `src/styles/settings.css` · `vite.settings.config.ts` | 화면 부품 묶음 — `dist/settings/settings.iife.js`·`settings.css` 로 구워 코어가 관리자 화면에 싣는다. 어느 관리자 템플릿에서나 뜨도록 관리자 템플릿 부품을 쓰지 않고, CSS 는 뿌리 `.hello-settings` 안으로 좁힌다 |
+| `components.settings.json` | 부품 매니페스트 — 레이아웃 검사가 `{id}.TemplateSettingsScreen` 을 알고, 관리자 템플릿이 `overrides` 로 덮어쓸 수 있다. `lang` 은 관리자 화면에 실을 언어 묶음 |
 | `lang/{ko,en}.json` 의 `settings.*` | 섹션·칸 라벨·안내 (`$t:settings.sections.branding.label`·`$t:settings.favicon.label`) |
 
 여기 정한 파비콘은 이 템플릿이 켜져 있을 때 사용자 화면 탭 아이콘으로 쓰이고, 비우면 환경설정 일반 탭의 파비콘(없으면 기본 아이콘)이 쓰입니다. 형식·확장 방법은 코어 문서 `docs/extension/template-settings.md` 를 봅니다.

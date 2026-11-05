@@ -763,6 +763,8 @@ _user_base.g7.html (베이스 레이아웃)
     └── maintenance.g7.html (점검 중)
 ```
 
+관리자 화면의 이 템플릿 설정 화면은 레이아웃 트리 밖 `templates/_bundled/sirsoft-basic/settings/template_settings.g7.html` 이다 — 코어가 켜진 관리자 템플릿마다 `sirsoft-basic.template_settings` 로 교차 등록하고, 화면은 설정 묶음 부품 `sirsoft-basic.TemplateSettingsScreen` 이 그린다([components.md](components.md) 「템플릿 설정 화면 부품」).
+
 ---
 
 ### 카테고리별 가이드

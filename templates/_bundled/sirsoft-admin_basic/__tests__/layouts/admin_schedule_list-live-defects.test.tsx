@@ -230,7 +230,7 @@ describe('D10 — 좁은 화면에서 탭 바가 본문 안쪽 여백과 같은 
         expect(String(root.props?.className).split(/\s+/)).toContain('admin-page-content-responsive-fluid');
         const wrapper = collect(mainLayout, (n) => n.id === 'tab_navigation_wrapper')[0];
         expect(String(wrapper.props?.className).split(/\s+/)).toContain('sticky-tab-nav-responsive');
-        const css = require('fs').readFileSync(require('path').resolve(__dirname, '../../src/styles/main.css'), 'utf8');
+        const css = require('fs').readFileSync(require('path').resolve(__dirname, '../../src/styles/semantic.css'), 'utf8');
         const rule = (name: string) => (css.match(new RegExp('\\.' + name + ' \\{([^}]*)\\}')) ?? [])[1] ?? '';
         expect(rule('admin-page-content-responsive-fluid')).toMatch(/p-4 sm:p-6 lg:p-8/);
         expect(rule('sticky-tab-nav-responsive')).toMatch(/-mx-4 sm:-mx-6 lg:-mx-8/);
