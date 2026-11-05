@@ -96,6 +96,7 @@ class CoreUpdateCommand extends Command
         $phpPreflightDone = false;
 
         $log = function (string $message) use (&$logEntries) {
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             $logEntries[] = '['.date('H:i:s').'] '.$message;
         };
 
@@ -1464,6 +1465,7 @@ class CoreUpdateCommand extends Command
      */
     private function saveUpdateLog(array $entries, string $fromVersion, string $toVersion, bool $success): void
     {
+        // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
         $timestamp = date('Ymd_His');
         $status = $success ? 'success' : 'failed';
         $logPath = storage_path("logs/core_update_{$status}_{$timestamp}.log");
@@ -1471,6 +1473,7 @@ class CoreUpdateCommand extends Command
         $header = implode("\n", [
             '=== 그누보드7 코어 업데이트 로그 ===',
             '상태: '.($success ? '성공' : '실패'),
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             '날짜: '.date('Y-m-d H:i:s'),
             "시작 버전: {$fromVersion}",
             "대상 버전: {$toVersion}",

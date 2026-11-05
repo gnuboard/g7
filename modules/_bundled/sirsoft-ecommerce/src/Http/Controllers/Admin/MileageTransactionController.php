@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
@@ -124,7 +123,8 @@ class MileageTransactionController extends AdminBaseController
             $transaction = $this->mileageService->updateAdminTransaction(
                 $id,
                 $touchMemo ? ($data['memo'] ?? null) : null,
-                $touchExpiry && ! empty($data['expires_at']) ? Carbon::parse($data['expires_at']) : null,
+                // 입력값 해석(날짜만이면 사이트 기준 그날 끝)은 수동 지급과 같은 규칙으로 Service 가 한다.
+                $touchExpiry && ! empty($data['expires_at']) ? (string) $data['expires_at'] : null,
                 $touchMemo,
                 $touchExpiry,
             );

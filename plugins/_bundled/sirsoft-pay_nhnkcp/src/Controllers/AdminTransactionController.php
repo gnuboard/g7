@@ -7,8 +7,10 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\TimezoneHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PluginSettingsService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
@@ -120,7 +122,8 @@ class AdminTransactionController extends AdminBaseController
             'payment_status_variant' => $paymentStatus?->variant(),
             'cancelled_amount' => $cancelledAmount,
             'cancelled_amount_formatted' => ecommerce_format_price($cancelledAmount, $baseCurrency),
-            'cancelled_at' => $payment->cancelled_at,
+            // 화면 값 — DB UTC 원문을 보는 사람 시간대로
+            'cancelled_at' => $this->toViewerDateTime($payment->cancelled_at ?? null),
             'cancel_history' => $this->decodeJsonArray($payment->cancel_history ?? null),
             'refund_number' => $refund->refund_number ?? null,
             'refund_status' => $refundStatus?->value ?? ($refund->refund_status ?? null),
@@ -128,7 +131,7 @@ class AdminTransactionController extends AdminBaseController
             'refund_status_variant' => $refundStatus?->variant(),
             'refund_amount' => $refundAmount,
             'refund_amount_formatted' => ecommerce_format_price($refundAmount, $baseCurrency),
-            'refunded_at' => $refund->refunded_at ?? null,
+            'refunded_at' => $this->toViewerDateTime($refund->refunded_at ?? null),
             'refund_pg_transaction_id' => $refund->pg_transaction_id ?? null,
             '_base_pay_method_label' => $display['payment_method_label'],
             '_embedded_pg_provider' => $display['embedded_pg_provider'],
@@ -136,6 +139,25 @@ class AdminTransactionController extends AdminBaseController
             '_pay_method_label' => $display['payment_method_display_label'],
             'payment_method_display_label' => $display['payment_method_display_label'],
         ]);
+    }
+
+    /**
+     * DB 의 UTC 일시 문자열을 보는 사람 시간대 표시 문자열로 바꿉니다.
+     *
+     * @param  mixed  $value  UTC 일시 문자열 (DB 원문)
+     * @return string|null 표시용 일시 (값이 없거나 해석할 수 없으면 null)
+     */
+    private function toViewerDateTime(mixed $value): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        try {
+            return TimezoneHelper::toUserDateTimeString(Carbon::parse($value, 'UTC'));
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

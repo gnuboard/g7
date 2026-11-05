@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-11-05
+
+### Fixed
+
+- 미사용 이미지 정리 명령의 미리보기(`--dry-run`) 표에 찍는 업로드 시각이 UTC 로 보이던 것을 사이트 시간대로 고쳤습니다.
+
 ## [1.1.2] - 2026-11-01
 
 ### Fixed

@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Search\SearchPagePolicy;
 use App\Support\LocalizedValue;
 use App\Support\Query\BoundedCount;
@@ -1662,8 +1663,9 @@ class ProductService
             'brand_id' => $product->brand_id,
             'category_ids' => $product->categories->pluck('id')->toArray(),
             'primary_category_id' => $product->categories->where('pivot.is_primary', true)->first()?->id,
-            'created_at' => $product->created_at->format('Y-m-d H:i:s'),
-            'updated_at' => $product->updated_at->format('Y-m-d H:i:s'),
+            // 화면 값 — 보는 사람 시간대 (상품 수정·복사 화면)
+            'created_at' => TimezoneHelper::toUserDateTimeString($product->created_at),
+            'updated_at' => TimezoneHelper::toUserDateTimeString($product->updated_at),
 
             'list_price' => $product->list_price,
             'selling_price' => $product->selling_price,
@@ -1751,7 +1753,9 @@ class ProductService
 
             'label_assignments' => $product->labelAssignments?->map(fn ($la) => [
                 'label_id' => $la->label_id,
+                // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
                 'start_date' => $la->start_date?->format('Y-m-d'),
+                // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
                 'end_date' => $la->end_date?->format('Y-m-d'),
             ])->toArray() ?? [],
 

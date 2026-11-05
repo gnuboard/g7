@@ -7,7 +7,9 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\TimezoneHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -104,6 +106,14 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
         $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
         $escrowDelivery = $meta['escrow_delivery'] ?? null;
+        // 등록 시각은 UTC 로 저장돼 있다 — 결제조회 화면에는 보는 사람 시간대로 바꿔 내보낸다(저장값은 그대로)
+        if (is_array($escrowDelivery) && is_string($escrowDelivery['registered_at'] ?? null) && $escrowDelivery['registered_at'] !== '') {
+            try {
+                $escrowDelivery['registered_at'] = TimezoneHelper::toUserDateTimeString(Carbon::parse($escrowDelivery['registered_at'], 'UTC'));
+            } catch (\Throwable) {
+                // 해석할 수 없는 값은 원문 그대로 둔다
+            }
+        }
 
         return ResponseHelper::success('common.success', [
             'has_escrow_payment' => true,
@@ -167,6 +177,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
             $courierName = self::COURIER_CODES[$deliCorp];
             $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
             $meta['escrow_delivery'] = [
+                // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
                 'registered_at' => now()->toDateTimeString(),
                 'deli_numb' => $deliNumb,
                 'deli_corp' => $deliCorp,

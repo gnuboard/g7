@@ -1,5 +1,5 @@
 {
-    "comment": "알림 설정 '비즈뿌리오' 통합 탭의 각 알림 행 하단 상태 요약(제품 결정 2026-08-23 — 버튼 없음, 조작은 코어 [편집] 모달로 일원화). activeChannel==='alimtalk'(통합 탭 정체성)일 때만 노출. 요약 데이터는 bizppurioTemplates(편집 모달 섹션 조각이 싣는 데이터소스, GET templates/map)에서 def.type 으로 읽는다. 1줄: 알림톡 승인 2단 배지 + 신청/동기화일 + 발송 사용 여부 / 2줄: 문자(SMS) 대체·단독 사용 여부 + 본문 미리보기.",
+    "comment": "알림 설정 '비즈뿌리오' 통합 탭의 각 알림 행 하단 상태 요약(제품 결정 2026-08-23 — 버튼 없음, 조작은 코어 [편집] 모달로 일원화). activeChannel==='alimtalk'(통합 탭 정체성)일 때만 노출. 요약 데이터는 bizppurioTemplates(편집 모달 섹션 조각이 싣는 데이터소스, GET templates/map)에서 def.type 으로 읽는다. 1줄: 알림톡 승인 2단 배지 + 신청/동기화일 + 발송 사용 여부 / 2줄: 문자(SMS) 대체·단독 사용 여부 + 본문 미리보기.\n     e2e:allow #160 — 신청·동기화 날짜 바인딩만 서버가 만든 *_date_formatted(보는 사람 날짜)로 교체했다. 대체 검증: PHPUnit 응답 단언(BizppurioTemplateControllerTest) + Chrome MCP 매트릭스 S21 실측(이 행 하단의 신청·동기화 날짜). 알림톡 검수가 실제 카카오 채널·비즈뿌리오 계정을 거쳐 Playwright E2E 로 재현할 수 없다.",
     "extension_point": "notification_definition_row_footer",
     "priority": 320,
     "components": [
@@ -62,20 +62,20 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at}}",
+                            "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at_date_formatted}}",
                             "props": {
                                 "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
-                            "text": "$t:sirsoft-message_bizppurio.template.row.requested_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at ?? '').slice(5, 10)}}"
+                            "text": "$t:sirsoft-message_bizppurio.template.row.requested_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at_date_formatted ?? '').slice(5)}}"
                         },
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at}}",
+                            "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at_date_formatted}}",
                             "props": {
                                 "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
-                            "text": "$t:sirsoft-message_bizppurio.template.row.synced_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at ?? '').slice(5, 10)}}"
+                            "text": "$t:sirsoft-message_bizppurio.template.row.synced_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at_date_formatted ?? '').slice(5)}}"
                         },
                         {
                             "type": "basic",

@@ -54,6 +54,7 @@ effects:
   - regular_user_does_not_see_post_action_logs
   - manager_sees_blind_reason_in_comment_action_logs
   - regular_user_does_not_see_comment_action_logs
+  - action_log_time_uses_viewer_timezone          # 처리 이력 시각(UTC 저장)은 보는 사람 시간대로 표시(#160)
   - comment_counts_update_immediately_without_queue_worker
   - multiple_comments_accumulate_count
   - comment_delete_decrements_counts_immediately

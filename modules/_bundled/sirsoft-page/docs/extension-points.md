@@ -9,11 +9,11 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:308` |
-| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:436` |
-| `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:222` |
-| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:300` |
-| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:432` |
+| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:310` |
+| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:438` |
+| `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:223` |
+| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:302` |
+| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:434` |
 | `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:173` |
 | `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:175` |
 | `sirsoft-page.page.after_create` | action | — | `src/Services/PageService.php:106` |
@@ -93,6 +93,10 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 
 리스너에서 `Model::query()` · `DB::table()` · `$row->save()` 를 직접 부르지 않습니다 — 데이터
 접근은 Repository 인터페이스 주입으로만 합니다.
+
+통합 검색 결과의 `published_at` 은 **보는 사람 시간대의 날짜**(`Y-m-d`)입니다. 검색은 웹 요청이라
+`TimezoneHelper::toUserDateString()` 으로 만들며, DB 의 UTC 값을 그대로 자르면 한국 시간 새벽에
+발행한 페이지가 전날로 보입니다.
 <!-- @intent END -->
 
 ## 훅 리스너

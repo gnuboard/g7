@@ -466,6 +466,10 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 (7.1.0 부터 본인인증·관리자 2단계 인증 메일도 이 토글을 따릅니다). 창은 부모 화면 `_local` 을 읽지 못하므로 저장할 채널
 목록을 `_global.notification_channel_off_modal.channels` 에 담아 넘기고, [취소] 는 `$parent._local.form.notifications.channels`
 의 메일 항목을 켜짐으로 되돌립니다.
+
+고급 탭의 GeoIP 「최근 갱신」 칸은 `advanced.geoip_last_updated_at_formatted`(서버가 보는 사람 시간대로 만든 문자열)를
+씁니다. 저장값(`geoip_last_updated_at`)은 ISO8601 원문이라 그대로 보이면 오프셋이 붙은 UTC 시각이 됩니다. [갱신] 성공
+응답의 `last_updated_at_formatted` 로 같은 칸을 다시 채웁니다.
 <!-- @intent END -->
 
 ## 확장 오버라이드

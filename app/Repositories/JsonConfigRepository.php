@@ -394,6 +394,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
         $this->assertZipAvailable();
         $this->ensureBackupDirectoryExists();
 
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $timestamp = now()->format('Y-m-d_His');
         $backupName = "backup_{$timestamp}.zip";
         $backupPath = self::BACKUP_DIR.'/'.$backupName;

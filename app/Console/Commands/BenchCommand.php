@@ -386,6 +386,7 @@ class BenchCommand extends Command
 
         $path = $given !== ''
             ? $given
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             : storage_path(self::REPORT_DIR.'/bench-'.now()->format('Ymd-His').'.md');
 
         $directory = dirname($path);

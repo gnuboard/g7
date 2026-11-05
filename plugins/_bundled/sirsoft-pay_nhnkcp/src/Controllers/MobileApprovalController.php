@@ -298,12 +298,14 @@ class MobileApprovalController
      */
     private function buildVbankExpireFields(?Order $order, array $settings): array
     {
+        // KCP 가상계좌 입금기한(vcnt_expire_term)은 KCP 규격상 한국 시간 일수·시각이다
         $due = $order?->payment?->vbank_due_at?->copy()->setTimezone('Asia/Seoul');
 
         if ($due !== null) {
             $days = (int) Carbon::now()->setTimezone('Asia/Seoul')->startOfDay()->diffInDays($due->copy()->startOfDay(), false);
 
             if ($days >= 1) {
+                // audit:allow datetime-display-user-timezone reason: PG 규격값(KCP vcnt_expire_term) — Asia/Seoul 고정
                 return ['vcnt_expire_term' => (string) $days, 'vcnt_expire_term_time' => $due->format('His')];
             }
         }

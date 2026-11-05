@@ -10,13 +10,13 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `core.module_settings.after_save` | action | — | `src/Http/Controllers/Admin/BoardSettingsController.php:181` |
-| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:613` |
-| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:982` |
-| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:230` 외 1곳 |
-| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:801` |
-| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:205` |
-| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:592` |
-| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:796` |
+| `sirsoft-board.attachment.after_delete` | action | — | `src/Services/AttachmentService.php:615` |
+| `sirsoft-board.attachment.after_download` | action | — | `src/Services/AttachmentService.php:984` |
+| `sirsoft-board.attachment.after_link` | action | — | `src/Services/AttachmentService.php:231` 외 1곳 |
+| `sirsoft-board.attachment.after_reorder` | action | — | `src/Services/AttachmentService.php:803` |
+| `sirsoft-board.attachment.after_upload` | action | — | `src/Services/AttachmentService.php:206` |
+| `sirsoft-board.attachment.before_delete` | action | — | `src/Services/AttachmentService.php:594` |
+| `sirsoft-board.attachment.before_reorder` | action | — | `src/Services/AttachmentService.php:798` |
 | `sirsoft-board.attachment.before_upload` | action | — | `src/Services/AttachmentService.php:130` |
 | `sirsoft-board.attachment.filter_upload_file` | filter | — | `src/Services/AttachmentService.php:133` |
 | `sirsoft-board.attachment.reorder_validation_rules` | filter | — | `src/Http/Requests/ReorderAttachmentsRequest.php:40` |
@@ -146,23 +146,23 @@
 | `sirsoft-board.reaction.before_react` | action | — | `src/Services/ReactionService.php:385` |
 | `sirsoft-board.reaction.before_user_list` | action | — | `src/Services/ReactionService.php:195` |
 | `sirsoft-board.reaction.filter_user_list_result` | filter | — | `src/Services/ReactionService.php:199` |
-| `sirsoft-board.report.after_blind_content` | action | — | `src/Services/ReportService.php:730` |
+| `sirsoft-board.report.after_blind_content` | action | — | `src/Services/ReportService.php:731` |
 | `sirsoft-board.report.after_bulk_update_status` | action | — | `src/Services/ReportService.php:493` |
-| `sirsoft-board.report.after_cancel` | action | — | `src/Services/ReportService.php:1648` |
+| `sirsoft-board.report.after_cancel` | action | — | `src/Services/ReportService.php:1649` |
 | `sirsoft-board.report.after_create` | action | — | `src/Services/ReportService.php:297` |
-| `sirsoft-board.report.after_delete` | action | — | `src/Services/ReportService.php:556` |
-| `sirsoft-board.report.after_delete_content` | action | — | `src/Services/ReportService.php:903` |
-| `sirsoft-board.report.after_restore_content` | action | — | `src/Services/ReportService.php:693` |
+| `sirsoft-board.report.after_delete` | action | — | `src/Services/ReportService.php:557` |
+| `sirsoft-board.report.after_delete_content` | action | — | `src/Services/ReportService.php:904` |
+| `sirsoft-board.report.after_restore_content` | action | — | `src/Services/ReportService.php:694` |
 | `sirsoft-board.report.after_update_status` | action | — | `src/Services/ReportService.php:370` |
-| `sirsoft-board.report.after_user_list` | action | — | `src/Services/ReportService.php:1584` |
+| `sirsoft-board.report.after_user_list` | action | — | `src/Services/ReportService.php:1585` |
 | `sirsoft-board.report.before_bulk_update_status` | action | — | `src/Services/ReportService.php:386` |
-| `sirsoft-board.report.before_cancel` | action | — | `src/Services/ReportService.php:1622` |
+| `sirsoft-board.report.before_cancel` | action | — | `src/Services/ReportService.php:1623` |
 | `sirsoft-board.report.before_create` | action | — | `src/Services/ReportService.php:201` |
-| `sirsoft-board.report.before_delete` | action | — | `src/Services/ReportService.php:551` |
+| `sirsoft-board.report.before_delete` | action | — | `src/Services/ReportService.php:552` |
 | `sirsoft-board.report.before_update_status` | action | — | `src/Services/ReportService.php:325` |
-| `sirsoft-board.report.before_user_list` | action | — | `src/Services/ReportService.php:1578` |
+| `sirsoft-board.report.before_user_list` | action | — | `src/Services/ReportService.php:1579` |
 | `sirsoft-board.report.filter_create_data` | filter | — | `src/Services/ReportService.php:225` |
-| `sirsoft-board.report.filter_user_list_result` | filter | — | `src/Services/ReportService.php:1582` |
+| `sirsoft-board.report.filter_user_list_result` | filter | — | `src/Services/ReportService.php:1583` |
 | `sirsoft-board.roles.after_create` | action | — | `src/Services/BoardService.php:682` |
 | `sirsoft-board.roles.after_delete` | action | — | `src/Services/BoardService.php:870` |
 | `sirsoft-board.scrap.after_toggle` | action | — | `src/Services/PostScrapService.php:77` 외 4곳 |

@@ -1,0 +1,20 @@
+feature: KG이니시스 관리자 결제조회·에스크로 화면 값의 시간대 (#160)
+
+description: |
+  - 결제조회 패널의 조회 시각(_inquiry_at), 해외 결제 로컬 대체 시각(_auth_date), 가상계좌 기한(_vbank_expire_date)은
+    보는 사람 시간대로 낸다. 국내 가상계좌 기한도 Asia/Seoul 고정이 아니라 보는 사람 시간대다.
+  - 일본 편의점 결제기한·승인 시각·입금 시각은 PG 가 준 일본 시각 그대로 두고 (JST) 를 붙인다(D11). 카드 해외결제 시각은 PG 시간대 사양 미확인이라 그대로 둔다.
+  - 에스크로 배송등록·구매확인 시각은 UTC 로 저장하고, 화면 응답에서만 보는 사람 시간대로 바꾼다.
+  - 배송등록일(invoiceDay)은 PG 업무 날짜라 한국 시간으로 만든다(D7).
+
+axes:
+  surface: [cbt_local_transaction, cbt_cvs_pg_times, cbt_payment_term_parse, domestic_vbank_expire, escrow_meta, invoice_day]
+
+effects:
+  - kginicis_admin_times_use_viewer_timezone
+  - cbt_cvs_pg_times_marked_jst
+  - cbt_payment_term_read_in_japan_time
+  - invoice_day_uses_korea_time
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/KginicisDisplayTimezoneTest.php

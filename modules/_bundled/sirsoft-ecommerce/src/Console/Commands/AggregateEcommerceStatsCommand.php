@@ -94,6 +94,7 @@ class AggregateEcommerceStatsCommand extends Command
         $preview = [];
 
         for ($i = 0; $i < self::AGGREGATE_DAYS; $i++) {
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $today->subDays($i)->toDateString();
             $preview[] = [
                 $date,

@@ -36,7 +36,7 @@
 | lock_state | query | string | 아니오 | `all`, `locked`, `unlocked` | 계정 잠금 (locked = 영구 잠금 또는 해제 시각이 미래) |
 | start_date | query | date | 아니오 | — | 가입일 시작 (그날 0시부터) |
 | end_date | query | date | 아니오 | ≥ start_date | 가입일 종료 (그날 끝까지 포함) |
-| date_filter | query | string | 아니오 | `all`, `week`, `month`, `custom` | 가입 기간 프리셋 (all: 전체, week: 최근 1주, month: 최근 1개월, custom: start_date/end_date 로 직접 지정) |
+| date_filter | query | string | 아니오 | `all`, `week`, `month`, `custom` | 가입 기간 프리셋 (all: 전체, week: 최근 1주, month: 최근 1개월, custom: start_date/end_date 로 직접 지정). week·month 의 기본 기간은 보는 사람 시간대의 오늘로 끝난다 |
 | last_login_start | query | date | 아니오 | — | 최근 로그인 시작 |
 | last_login_end | query | date | 아니오 | ≥ last_login_start | 최근 로그인 종료 |
 | never_logged_in | query | boolean | 아니오 | `true`, `false`, `1`, `0` | 로그인 이력이 없는 회원만 (참이면 최근 로그인 기간은 무시) |

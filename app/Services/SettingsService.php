@@ -10,6 +10,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
+use App\Helpers\TimezoneHelper;
 use App\Http\Resources\AttachmentResource;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\Queue\QueueWorkerRegistry;
@@ -22,6 +23,7 @@ use App\Support\PhpExtensionRequirements;
 use App\Support\ProcessOutputEncoding;
 use App\Support\SearchScopes;
 use App\Support\SettingsVersion;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -186,7 +188,30 @@ class SettingsService
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
+        // GeoIP 최근 갱신 — 저장값은 ISO8601 그대로, 화면 표시용 문자열은 보는 사람 시간대.
+        // 저장 경로(saveAdvancedSettings)는 스키마에 없는 이 키를 버린다.
+        $settings['advanced']['geoip_last_updated_at_formatted'] = $this->formatIsoForViewer($settings['advanced']['geoip_last_updated_at'] ?? null);
+
         return $this->overlayEnvLockedValues($settings);
+    }
+
+    /**
+     * 저장된 ISO8601 시각을 보는 사람 시간대 표시 문자열로 바꿉니다.
+     *
+     * @param  mixed  $iso  저장된 ISO8601 시각
+     * @return string|null 표시용 일시 (값이 없거나 해석할 수 없으면 null)
+     */
+    private function formatIsoForViewer(mixed $iso): ?string
+    {
+        if (! is_string($iso) || $iso === '') {
+            return null;
+        }
+
+        try {
+            return TimezoneHelper::toUserDateTimeString(Carbon::parse($iso));
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -1358,6 +1383,7 @@ class SettingsService
             self::SYSTEM_INFO_CACHE_TTL
         );
 
+        // audit:allow datetime-display-user-timezone reason: 서버 시각 진단값 — 의도된 서버 기준
         $info['server_time'] = now()->format('Y-m-d H:i:s');
 
         return $info;

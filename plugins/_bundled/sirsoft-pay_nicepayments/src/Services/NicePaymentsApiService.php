@@ -428,6 +428,8 @@ class NicePaymentsApiService
      */
     public function generateEdiDate(): string
     {
+        // EdiDate 는 PG 통신값이다 — 나이스페이 사양의 시간대 확인 전까지 서버 시각 그대로 둔다(D7)
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         return preg_replace('/[^0-9]/', '', now()->format('Y-m-d H:i:s')) ?? now()->format('YmdHis');
     }
 

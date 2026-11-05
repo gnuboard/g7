@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Console\Commands;
 
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use Illuminate\Console\Command;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 
@@ -90,7 +91,8 @@ class NotifyExpiringMileageCommand extends Command
                 $user,
                 (float) $balance->expiring_soon,
                 $balance->currency,
-                $balance->expiring_date?->toDateString() ?? '',
+                // 알림 변수(expires_date) — 사이트 날짜. UTC 날짜면 저녁 소멸분이 하루 당겨져 안내된다.
+                TimezoneHelper::toSiteDateString($balance->expiring_date) ?? '',
                 (float) $balance->available,
             );
             $sent++;

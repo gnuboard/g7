@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-11-05
+
+### Fixed
+
+- 환율 갱신 실패 메일의 제목에 사이트명 대신 `{app_name}` 글자가 그대로 나가던 문제를 고쳤습니다. 알림 편집 화면의 변수 목록에도 수신자 이름(`{name}`)과 사이트 이름(`{app_name}`)을 보입니다.
+
 ## [1.0.1] - 2026-10-21
 
 ### Changed

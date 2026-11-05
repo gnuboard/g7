@@ -546,7 +546,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 게시글 수정(PUT
 | updated_at | string | `2026-07-08 10:41:34` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록(항목별 created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체. board 관계 미로드 시 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보. 쓰기 응답에서는 계산하지 않아 null. |
 | parent | null | `null` | 원글 객체 (parent 관계 파생) |
@@ -898,7 +898,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-08 15:01:43` | 최종 수정 일시 |
 | deleted_at | string | `2026-07-08 15:01:43` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[{"action":"delete","reason":null,"admin_name":"API 문서 샘플…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[{"action":"delete","reason":null,"admin_name":"API 문서 샘플…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
@@ -1060,7 +1060,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | object | `{"slug":"apidoc-sample-board","name":"API 문서 샘플 게시판","typ…` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | object | `{"prev":null,"next":null}` | 이전/다음 게시글 이동 정보. `prev`·`next` 키에 인접 게시글 요약(없으면 null)이 담기며, 상세 로드 시 함께 계산됩니다. |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
@@ -1323,7 +1323,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
@@ -1484,7 +1484,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-07-08 15:01:44` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | ip_address | string\|null | `127.0.0.1` | 요청/행위가 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | board | null | `null` | 소속 게시판 정보 객체(슬러그·이름·유형·댓글/답글/신고 사용 여부·조회수 표시·최대 답글/댓글 깊이·신고 사유 목록). board 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보(`prev`·`next`). 상세 로드 시 계산되며, 쓰기 응답처럼 인접 게시글을 계산하지 않은 경우 null. |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
@@ -1653,7 +1653,7 @@ _단건 응답: `data` 객체의 필드 (`PostResource` — 복원된 게시글.
 | updated_at | string | `2026-07-08 15:01:45` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (복원 후 null) |
 | ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[{"action":"restore","reason":null,"admin_name":"API 문서 샘플 사용자","created_at":"2026-07-08 06:01:45"}]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
+| action_logs | array | `[{"action":"restore","reason":null,"admin_name":"API 문서 샘플 사용자","created_at":"2026-07-08 06:01:45"}]` | 블라인드/복원/삭제 처리 이력 목록(항목별 created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출. |
 | board | null | `null` | 소속 게시판 정보 객체 (관계 미로드 시 null) |
 | navigation | null | `null` | 이전/다음 게시글 이동 정보 (쓰기 응답은 미계산 → null) |
 | parent | null | `null` | 원글 객체 (parent 관계 파생) |
@@ -1806,7 +1806,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource`)._
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
 | ip_address | string\|null | `127.0.0.1` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) (보유기간이 지나 파기되면 null — 게시판 개인정보 보유기간, 이슈 #636) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록(항목별 created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
 | is_already_reported | boolean | `false` | 현재 사용자가 이미 신고한 댓글인지 여부 |
@@ -1981,7 +1981,7 @@ _단건 응답: `data` 객체의 필드 (`CommentResource` — 댓글 생성/블
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | 상위 게시글/댓글 삭제로 연쇄 삭제된 댓글인지 여부 |
 | ip_address | null | `null` | 작성 요청이 발생한 IP 주소 (권한자에게만 노출) |
-| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록. `admin.manage` 권한 보유자에게만 노출. |
+| action_logs | array | `[]` | 블라인드/복원/삭제 처리 이력 목록(항목별 created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | 비회원 작성 댓글 여부 |
 | is_already_reported | boolean | `false` | 현재 사용자가 이미 신고한 댓글인지 여부 |
@@ -2103,7 +2103,7 @@ _단건 응답: `data` 객체의 필드._
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
 | is_cascade_deleted | boolean | `false` | cascade deleted 여부 |
 | ip_address | null | `null` | 요청/행위가 발생한 IP 주소 |
-| action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
+| action_logs | array | `[{"action":"blind","reason":"실측 예시값","admin_name":"API 문서…` | 블라인드/복원/삭제 등 처리 이력 목록(항목별 action·reason·admin_name·created_at — created_at 은 보는 사람 시간대 `Y-m-d H:i:s`). `admin.manage` 권한 보유자에게만 노출되며, 민감 필드(admin_id·ip_address)는 제외됩니다. 비권한자에게는 null. |
 | is_author | boolean | `true` | 현재 사용자가 작성자인지 여부 — 회원 댓글만 판정한다(비회원 댓글은 누가 보든 `false`, 로그인하지 않은 방문자도 비회원 댓글의 작성자가 아니다) |
 | is_guest_comment | boolean | `false` | guest comment 여부 |
 | is_already_reported | boolean | `false` | already reported 여부 |

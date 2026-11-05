@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\VerificationKginicis\Tests\Feature\Controllers;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityRecordRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
 
@@ -20,11 +21,29 @@ class MyInicisIdentityShowControllerTest extends PluginTestCase
 {
     private const ENDPOINT = '/api/plugins/sirsoft-verification_kginicis/me/identity/inicis';
 
+    /**
+     * 비인증 요청은 401 이다.
+     *
+     * @scenario case=unauthenticated
+     *
+     * @effects unauthenticated_request_is_rejected
+     *
+     * @return void 반환값 없음
+     */
     public function test_unauthenticated_request_returns_401(): void
     {
         $this->getJson(self::ENDPOINT)->assertStatus(401);
     }
 
+    /**
+     * 본인확인 기록이 없는 회원은 data=null 을 받는다.
+     *
+     * @scenario case=no_record
+     *
+     * @effects user_without_record_receives_null_data
+     *
+     * @return void 반환값 없음
+     */
     public function test_authenticated_user_without_record_returns_data_null(): void
     {
         $user = User::factory()->create();
@@ -36,6 +55,15 @@ class MyInicisIdentityShowControllerTest extends PluginTestCase
             ->assertJsonPath('data', null);
     }
 
+    /**
+     * 본인확인 기록이 있는 회원은 가려진 PII 를 받는다.
+     *
+     * @scenario case=masked_pii
+     *
+     * @effects verified_user_receives_masked_fields
+     *
+     * @return void 반환값 없음
+     */
     public function test_authenticated_user_with_record_returns_masked_pii(): void
     {
         $user = User::factory()->create();
@@ -70,6 +98,15 @@ class MyInicisIdentityShowControllerTest extends PluginTestCase
         $this->assertNotEmpty($data['verified_at']);
     }
 
+    /**
+     * 재인증 시각이 최초 인증 시각보다 우선하고, 보는 사람 시간대로 표시된다.
+     *
+     * @scenario case=re_verified_precedence
+     *
+     * @effects verified_at_uses_viewer_timezone
+     *
+     * @return void 반환값 없음
+     */
     public function test_re_verified_at_takes_precedence_over_verified_at(): void
     {
         $user = User::factory()->create();
@@ -84,15 +121,25 @@ class MyInicisIdentityShowControllerTest extends PluginTestCase
             'di_hash' => hash('sha256', 'DI'),
             'is_foreigner' => false,
             'is_adult' => true,
-            'verified_at' => now()->subDays(10),
-            're_verified_at' => now(),
+            'verified_at' => Carbon::parse('2026-10-24 16:00:00', 'UTC'),
+            // UTC 11-03 16:00 = 서울 11-04 01:00 — 실행 시각과 무관하게 고정(UTC 15~24시 실패 시한폭탄 제거)
+            're_verified_at' => Carbon::parse('2026-11-03 16:00:00', 'UTC'),
         ]);
 
-        $data = $this->getJson(self::ENDPOINT)->json('data');
-        $today = now()->format('Y-m-d');
-        $this->assertStringStartsWith($today, $data['verified_at']);
+        $data = $this->withHeader('X-Timezone', 'Asia/Seoul')->getJson(self::ENDPOINT)->json('data');
+        // 재인증 시각이 우선하고, 보는 사람 시간대로 표시된다(#160)
+        $this->assertSame('2026-11-04 01:00:00', $data['verified_at']);
     }
 
+    /**
+     * 응답에 평문 PII·DI·CI 가 새지 않는다.
+     *
+     * @scenario case=no_raw_leak
+     *
+     * @effects response_excludes_identity_identifiers
+     *
+     * @return void 반환값 없음
+     */
     public function test_response_does_not_leak_raw_pii_or_di_or_ci_hashes(): void
     {
         $user = User::factory()->create();

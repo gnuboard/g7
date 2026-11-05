@@ -715,9 +715,13 @@ class KcpIdentityProvider implements IdentityVerificationInterface
         }
 
         try {
-            $birth = Carbon::createFromFormat('Ymd', $birthday)->startOfDay();
+            // 한국 법상 나이 — 생일과 오늘을 모두 한국 시간 날짜로 센다(서버 UTC 날짜면 한국 0~9시 생일자가 하루 늦게 성인이 된다).
+            // audit:allow datetime-display-user-timezone reason: 한국 법상 나이 — Asia/Seoul 고정(D10)
+            $birth = Carbon::createFromFormat('Ymd', $birthday, 'Asia/Seoul')->startOfDay();
+            // audit:allow datetime-display-user-timezone reason: 한국 법상 나이 — Asia/Seoul 고정(D10)
+            $age = (int) floor($birth->diffInYears(Carbon::now('Asia/Seoul')->startOfDay()));
 
-            return $birth->age >= self::ADULT_AGE;
+            return $age >= self::ADULT_AGE;
         } catch (\Throwable $e) {
             Log::warning('KCP 본인확인: 생년월일 파싱 실패', ['error' => $e->getMessage()]);
 
@@ -821,6 +825,7 @@ class KcpIdentityProvider implements IdentityVerificationInterface
      */
     protected function generateOrdrIdxx(): string
     {
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         return 'G7'.Carbon::now()->format('YmdHis').strtoupper(Str::random(12));
     }
 

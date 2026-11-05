@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Services;
 
+use Carbon\CarbonImmutable;
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\Client\PendingRequest;
@@ -572,6 +573,7 @@ class KgInicisApiService
         $msg ??= __('sirsoft-pay_kginicis::messages.refund.admin_cancel_reason');
         $type = $cancelPrice === null ? 'Refund' : 'PartialRefund';
         $paymethod = 'CBT';
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = $this->resolveServerIp();
 
@@ -710,6 +712,7 @@ class KgInicisApiService
     {
         $mid = ($overrideMid !== null && $overrideMid !== '') ? $overrideMid : $this->mid;
         $type = 'inquiry';
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -787,6 +790,7 @@ class KgInicisApiService
     ): array {
         $msg ??= __('sirsoft-pay_kginicis::messages.refund.admin_cancel_reason');
         $type = $cancelPrice === null ? 'refund' : 'partialRefund';
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -905,6 +909,7 @@ class KgInicisApiService
     public function registerEscrowDelivery(array $data): array
     {
         $type = 'Dlv';
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -927,7 +932,9 @@ class KgInicisApiService
             'exCode' => $data['exCode'],
             'exName' => $data['exName'],
             'charge' => $data['charge'] ?? 'SH',
-            'invoiceDay' => $data['invoiceDay'] ?? date('Y-m-d H:i:s'),
+            // 배송등록일은 PG 업무 날짜 — 한국 시간(D7)
+            // audit:allow datetime-display-user-timezone reason: PG 업무 날짜(invoiceDay) — Asia/Seoul 고정(D7)
+            'invoiceDay' => $data['invoiceDay'] ?? CarbonImmutable::now('Asia/Seoul')->format('Y-m-d H:i:s'),
             'sendName' => $data['sendName'] ?? '',
             'sendTel' => $data['sendTel'] ?? '',
             'sendPost' => $data['sendPost'] ?? '',
@@ -974,6 +981,7 @@ class KgInicisApiService
     public function denyConfirmEscrow(array $data): array
     {
         $type = 'Dncf';
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -1033,6 +1041,7 @@ class KgInicisApiService
     public function issueCashReceipt(array $data): array
     {
         $type = 'receipt';
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -1098,6 +1107,7 @@ class KgInicisApiService
     {
         $msg ??= __('sirsoft-pay_kginicis::messages.cash_receipt.cancel_reason');
         $type = 'refund';
+        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 

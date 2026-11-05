@@ -41,11 +41,11 @@ Authorization: Bearer {token}
 | 필드 | 타입 | 예시 | 설명 |
 | --- | --- | --- | --- |
 | `method` | string | `NHN KCP 휴대폰 본인확인` | 인증 수단 표시명 (요청 로케일로 번역) |
-| `verified_at` | string\|null | `2026-07-28 14:32:09` | 최종 인증 시각. 재인증 시 그 시각으로 갱신 |
+| `verified_at` | string\|null | `2026-07-28 14:32:09` | 최종 인증 시각 — 보는 사람 시간대(`Y-m-d H:i:s`). 재인증 시 그 시각으로 갱신 |
 | `name_masked` | string | `홍*동` | 실명 마스킹 (성과 끝 글자만 노출). 두 글자 이름은 `김*`, 한 글자 이름은 가릴 자리가 없어 원문 그대로 |
 | `birthday_masked` | string | `1990-**-**` | 생년월일 마스킹 (연도만 노출). 생년월일 미수신 시 빈 문자열 |
 | `phone_masked` | string | `010-****-5678` | 휴대폰 마스킹 (앞 3자리 + 뒤 4자리) |
-| `is_adult` | boolean | `true` | 생년월일 기준 만 19세 이상 여부 |
+| `is_adult` | boolean | `true` | 생년월일 기준 만 19세 이상 여부 (한국 법상 나이라 한국 시간 날짜로 센다) |
 | `is_adult_known` | boolean | `true` | 성인 여부를 판정할 수 있었는지. `false` 면 `is_adult` 는 "미성년"이 아니라 "확인 불가"를 뜻한다 |
 | `is_foreigner` | boolean | `false` | 외국인 여부 (KCP `local_code` 기준) |
 

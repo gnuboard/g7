@@ -43,11 +43,11 @@ _단건 응답: `data` 객체의 필드. 본인확인 record 가 없는 사용�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | method | string | `"KG이니시스 본인확인"` | 본인확인 수단 표시 라벨 (Resource 고정 문자열) |
-| verified_at | string\|null | `"2026-07-01 14:22:10"` | 최종 본인확인 시각 (`Y-m-d H:i:s`). 재인증 이력이 있으면 `re_verified_at`, 없으면 최초 `verified_at` |
+| verified_at | string\|null | `"2026-07-01 14:22:10"` | 최종 본인확인 시각 — 보는 사람 시간대 (`Y-m-d H:i:s`). 재인증 이력이 있으면 `re_verified_at`, 없으면 최초 `verified_at` |
 | name_masked | string | `"홍**"` | 마스킹된 실명 (첫 글자 + 나머지 `*`) |
 | birthday_masked | string | `"1990-**-**"` | 마스킹된 생년월일 (연도 4자리만 노출) |
 | phone_masked | string | `"010-****-5678"` | 마스킹된 휴대폰 번호 (앞 3자리 + 뒤 4자리) |
-| is_adult | boolean | `true` | 성인 여부 (생년월일 기반 만 19세 이상 자동 계산값) |
+| is_adult | boolean | `true` | 성인 여부 (생년월일 기반 만 19세 이상 자동 계산값 — 한국 법상 나이라 한국 시간 날짜로 센다) |
 | is_foreigner | boolean | `false` | 외국인 여부 (이니시스 `isForeign`) |
 
 `di`/`ci`/`ci2` 등 동일인 식별값과 평문 PII 는 응답에 포함하지 않는다. `InicisIdentityResource` 는 `resourceMeta()` 를 spread 하지 않으므로 `is_owner`/`abilities` 메타도 포함되지 않는다.
@@ -90,7 +90,7 @@ HTTP/1.1 200
   | 필드 | 타입 | 예시값 | 용도/설명 |
   | --- | --- | --- | --- |
   | method | string | `"KG이니시스 본인확인"` | 본인확인 수단 표시 라벨(고정 문자열). |
-  | verified_at | string\|null | `"2026-07-01 14:22:10"` | 최종 본인확인 시각(`Y-m-d H:i:s`). 재인증이 있었으면 `re_verified_at`, 없으면 최초 `verified_at`. |
+  | verified_at | string\|null | `"2026-07-01 14:22:10"` | 최종 본인확인 시각 — 보는 사람 시간대(`Y-m-d H:i:s`). 재인증이 있었으면 `re_verified_at`, 없으면 최초 `verified_at`. |
   | name_masked | string | `"홍**"` | 마스킹된 실명(첫 글자 + 나머지 `*`). |
   | birthday_masked | string | `"1990-**-**"` | 마스킹된 생년월일(연도만 노출). |
   | phone_masked | string | `"010-****-5678"` | 마스킹된 휴대폰 번호(앞 3 + 뒤 4자리). |

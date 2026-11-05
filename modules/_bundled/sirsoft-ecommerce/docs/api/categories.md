@@ -236,8 +236,8 @@ _단건 응답: `data` 객체의 필드 (`CategoryResource`). 생성 직후 `fre
 | icon | string | `folder` | SortableMenuList 표시용 아이콘 (리소스에서 고정값 `folder`) |
 | meta_title | string\|null | `null` | SEO 메타 제목 (미설정 시 null) |
 | meta_description | string\|null | `null` | SEO 메타 설명 (미설정 시 null) |
-| created_at | string | `2026-07-08 01:44:49` | 생성 일시 (`Y-m-d H:i:s`) |
-| updated_at | string | `2026-07-08 01:44:49` | 최종 수정 일시 (`Y-m-d H:i:s`) |
+| created_at | string | `2026-07-08 01:44:49` | 생성 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
+| updated_at | string | `2026-07-08 01:44:49` | 최종 수정 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
 | images | array | `[]` | 카테고리 이미지 배열 (각 항목: id/hash/original_filename/mime_type/size/size_formatted/download_url/order/is_image/alt_text). `temp_key` 로 연결된 임시 이미지가 여기에 포함됨 |
 | products_count | integer | `0` | 연결된 상품 개수 (집계) |
 | children_count | integer | `0` | 하위 카테고리 개수 (집계) |
@@ -956,8 +956,8 @@ _단건 응답: `data` 객체의 필드 (`CategoryResource`). 수정 직후 `fre
 | icon | string | `folder` | SortableMenuList 표시용 아이콘 (리소스에서 고정값 `folder`) |
 | meta_title | string\|null | `null` | SEO 메타 제목 (미설정 시 null) |
 | meta_description | string\|null | `null` | SEO 메타 설명 (미설정 시 null) |
-| created_at | string | `2026-07-08 01:44:49` | 생성 일시 (`Y-m-d H:i:s`) |
-| updated_at | string | `2026-07-08 06:00:17` | 최종 수정 일시 (`Y-m-d H:i:s`) |
+| created_at | string | `2026-07-08 01:44:49` | 생성 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
+| updated_at | string | `2026-07-08 06:00:17` | 최종 수정 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
 | images | array | `[]` | 카테고리 이미지 배열 (각 항목: id/hash/original_filename/mime_type/size/size_formatted/download_url/order/is_image/alt_text) |
 | products_count | integer | `0` | 연결된 상품 개수 (집계) |
 | children_count | integer | `0` | 하위 카테고리 개수 (집계) |

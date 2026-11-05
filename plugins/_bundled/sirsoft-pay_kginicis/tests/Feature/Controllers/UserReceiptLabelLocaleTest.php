@@ -45,7 +45,7 @@ class UserReceiptLabelLocaleTest extends PluginTestCase
             ->assertJsonFragment(['key' => 'amount', 'label' => 'Amount due', 'value' => '10 JPY'])
             ->assertJsonFragment(['key' => 'deposit_status', 'label' => 'Deposit status', 'value' => 'Awaiting deposit'])
             ->assertJsonFragment(['key' => 'cvs_code', 'label' => 'Convenience store code', 'value' => '00007'])
-            ->assertJsonFragment(['key' => 'cvs_payment_term', 'label' => 'Deposit deadline', 'value' => '2026-05-27 23:59:59']);
+            ->assertJsonFragment(['key' => 'cvs_payment_term', 'label' => 'Deposit deadline', 'value' => '2026-05-27 23:59:59 (JST)']);
 
         $this->assertStringNotContainsString('입금', $response->getContent());
     }

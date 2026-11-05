@@ -624,7 +624,8 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             [
                 'status' => $this->headerStatusValue($fresh),
                 'overdue_days' => (string) $overdueDays,
-                'collection_due_date' => TimezoneHelper::toUserDateString($fresh->collection_due_at) ?? '',
+                // 알림 변수 날짜는 사이트 날짜 — 요청자 시간대가 끼어들지 않게 고정한다.
+                'collection_due_date' => TimezoneHelper::toSiteDateString($fresh->collection_due_at) ?? '',
                 'unreturned_item_lines' => implode("\n", $lines),
             ],
         );
@@ -643,8 +644,8 @@ class ClaimStatusNotificationListener implements HookListenerInterface
         }
 
         return __('sirsoft-ecommerce::messages.claims.notifications.advance_exchange_notice', [
-            // 사용자 타임존 날짜 — 화면의 반송 기한과 같은 날을 알린다.
-            'date' => TimezoneHelper::toUserDateString($exchange->collection_due_at) ?? '',
+            // 사이트 날짜 — 알림을 만든 요청자(관리자)의 시간대가 고객 안내에 섞이지 않게 고정한다.
+            'date' => TimezoneHelper::toSiteDateString($exchange->collection_due_at) ?? '',
         ]);
     }
 

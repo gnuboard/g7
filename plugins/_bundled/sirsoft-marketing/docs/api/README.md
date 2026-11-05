@@ -15,3 +15,7 @@
 
 <!-- @generated:end -->
 
+
+## 주입 필드 문서
+
+- [user-consent-injection.md](user-consent-injection.md) — 이 플러그인이 코어 회원 응답에 주입하는 동의 상태·이력 필드

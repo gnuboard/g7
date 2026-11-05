@@ -7,7 +7,10 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 // audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\TimezoneHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -107,8 +110,9 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
         // payment_meta에서 이력 추출
         $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
-        $escrowDelivery = $meta['escrow_delivery'] ?? null;
-        $escrowConfirm = $meta['escrow_confirm'] ?? null;
+        // 시각은 UTC 로 저장돼 있다 — 결제조회 화면에는 보는 사람 시간대로 바꿔 내보낸다
+        $escrowDelivery = $this->withViewerTime($meta['escrow_delivery'] ?? null, 'registered_at');
+        $escrowConfirm = $this->withViewerTime($meta['escrow_confirm'] ?? null, 'confirmed_at');
         $denyConfirmed = isset($meta['escrow_deny_confirm']);
 
         return ResponseHelper::success('common.success', [
@@ -201,7 +205,9 @@ class AdminEscrowDeliveryController extends AdminBaseController
                 'exCode' => $exCode,
                 'exName' => $exName,
                 'charge' => $charge,
-                'invoiceDay' => date('Y-m-d H:i:s'),
+                // 배송등록일은 PG 업무 날짜 — 한국 시간(D7)
+                // audit:allow datetime-display-user-timezone reason: PG 업무 날짜(invoiceDay) — Asia/Seoul 고정(D7)
+                'invoiceDay' => CarbonImmutable::now('Asia/Seoul')->format('Y-m-d H:i:s'),
                 'sendName' => trim((string) ($request->validated('send_name') ?? '')),
                 'sendTel' => trim((string) ($request->validated('send_tel') ?? '')),
                 'sendPost' => trim((string) ($request->validated('send_post') ?? '')),
@@ -232,6 +238,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
             $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
             $meta['pg_response_sanitized'] = true;
             $meta['escrow_delivery'] = [
+                // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
                 'registered_at' => now()->toDateTimeString(),
                 'report' => $report,
                 'invoice' => $invoice,
@@ -275,6 +282,28 @@ class AdminEscrowDeliveryController extends AdminBaseController
                 'message' => [$e->getMessage()],
             ]);
         }
+    }
+
+    /**
+     * 메타 항목의 UTC 시각 필드를 보는 사람 시간대 문자열로 바꾼 사본을 돌려줍니다. (저장값은 바꾸지 않는다)
+     *
+     * @param  mixed  $entry  메타 항목 (배열이 아니면 그대로)
+     * @param  string  $key  시각 필드 이름
+     * @return mixed 변환한 사본
+     */
+    private function withViewerTime(mixed $entry, string $key): mixed
+    {
+        if (! is_array($entry) || empty($entry[$key]) || ! is_string($entry[$key])) {
+            return $entry;
+        }
+
+        try {
+            $entry[$key] = TimezoneHelper::toUserDateTimeString(Carbon::parse($entry[$key], 'UTC'));
+        } catch (\Throwable) {
+            // 해석할 수 없는 값은 원문 그대로 둔다
+        }
+
+        return $entry;
     }
 
     /**

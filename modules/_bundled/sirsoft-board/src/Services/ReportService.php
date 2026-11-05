@@ -524,6 +524,7 @@ class ReportService
             'action_label' => $actionLabel,
             'processor_id' => $processorId,
             'reason' => $reason,
+            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             'created_at' => $processedAt->format('Y-m-d H:i:s'),
         ];
 

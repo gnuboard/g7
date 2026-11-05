@@ -27,7 +27,8 @@ class InicisIdentityResource extends BaseApiResource
 
         return [
             'method' => 'KG이니시스 본인확인',
-            'verified_at' => $verifiedAt?->format('Y-m-d H:i:s'),
+            // 화면 값 — 보는 사람 시간대
+            'verified_at' => $this->formatDateTimeStringForUser($verifiedAt),
             'name_masked' => $this->maskName((string) $this->resource->name),
             'birthday_masked' => $this->maskBirthday((string) $this->resource->birthday),
             'phone_masked' => $this->maskPhone((string) $this->resource->phone),
@@ -38,6 +39,9 @@ class InicisIdentityResource extends BaseApiResource
 
     /**
      * 실명 마스킹: 첫 글자 + 나머지 *.
+     *
+     * @param  string  $name  실명 평문
+     * @return string 마스킹된 실명
      */
     protected function maskName(string $name): string
     {
@@ -52,6 +56,9 @@ class InicisIdentityResource extends BaseApiResource
 
     /**
      * 생년월일 마스킹 (YYYYMMDD → YYYY-**-**).
+     *
+     * @param  string  $birthday  생년월일 평문 (YYYYMMDD)
+     * @return string 마스킹된 생년월일
      */
     protected function maskBirthday(string $birthday): string
     {
@@ -64,6 +71,9 @@ class InicisIdentityResource extends BaseApiResource
 
     /**
      * 휴대폰 마스킹 (01012345678 → 010-****-5678).
+     *
+     * @param  string  $phone  휴대폰 평문
+     * @return string 마스킹된 휴대폰 번호
      */
     protected function maskPhone(string $phone): string
     {

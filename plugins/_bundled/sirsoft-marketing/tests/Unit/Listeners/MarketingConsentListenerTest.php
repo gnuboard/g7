@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Marketing\Tests\Unit\Listeners;
 
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Plugins\Sirsoft\Marketing\Listeners\MarketingConsentListener;
@@ -548,7 +549,7 @@ class MarketingConsentListenerTest extends PluginTestCase
      *
      * @scenario case=resource_filter
      *
-     * @effects consent_merged_into_user_resource
+     * @effects consent_merged_into_user_resource, consent_history_time_uses_viewer_timezone
      *
      * @return void 반환값 없음
      */
@@ -558,10 +559,14 @@ class MarketingConsentListenerTest extends PluginTestCase
 
         // email_subscription 동의 시 marketing_consent(master)도 자동 활성화
         // → 이력은 내림차순이므로 나중에 생성된 marketing_consent가 [0]
+        Carbon::setTestNow(Carbon::parse('2026-11-04 12:52:32', 'UTC'));
         $this->service->updateConsent($user->id, 'email_subscription', true, 'register');
+        Carbon::setTestNow();
 
         $data = ['id' => $user->id];
 
+        // 동의 이력 시각은 보는 사람(관리자) 시간대 — 같은 화면의 가입일과 같은 기준(#160)
+        app()->instance('user_timezone', 'Asia/Seoul');
         $result = $this->listener->filterResourceData($data, $user);
 
         $this->assertNotEmpty($result['consent_histories']);
@@ -571,7 +576,7 @@ class MarketingConsentListenerTest extends PluginTestCase
         $this->assertArrayHasKey('channel_key', $history);
         $this->assertArrayHasKey('action', $history);
         $this->assertArrayHasKey('source', $history);
-        $this->assertArrayHasKey('created_at', $history);
+        $this->assertSame('2026-11-04 21:52:32', $history['created_at']);
         $this->assertEquals('granted', $history['action']);
         $this->assertEquals('register', $history['source']);
 
