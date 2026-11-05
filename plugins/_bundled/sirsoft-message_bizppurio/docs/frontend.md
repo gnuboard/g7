@@ -55,6 +55,10 @@
 `bz_tpl_modal.errors` 를 채워 항목 목록으로 그리고, 목록 행의 [검수 신청]은 항목 문구를 이어 붙여 알립니다.
 삭제 완료 안내는 응답의 `kakao_deleted`·`kakao_skip_reason` 으로 가릅니다 — `not_registered`(카카오에 등록 안 됨),
 `state_not_deletable`(상태 제약), 그 밖(카카오 사유·서버 연결 실패 문구)은 그 사유를 안내 뒤에 붙입니다.
+
+신청일·동기화일 칸은 응답의 `*_date_formatted`(보는 사람 시간대 `Y-m-d`)를 씁니다 — 행 하단 요약처럼 `MM-DD`
+만 필요하면 그 값의 `.slice(5)` 를 씁니다. ISO 원문(`requested_at` 등)을 잘라 쓰면 UTC 날짜가 보여 한국 시간
+새벽 9시 전 신청분이 전날로 표시됩니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

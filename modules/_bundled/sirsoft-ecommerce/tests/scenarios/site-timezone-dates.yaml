@@ -1,0 +1,53 @@
+feature: 이커머스 날짜·시각 문자열의 시간대 — 알림·번호·경계는 사이트, 화면은 보는 사람 (#160)
+
+description: |
+  DB·app.timezone 은 UTC 다. Carbon 을 시간대 변환 없이 문자열로 만들거나 UTC 자정으로 날짜 경계를 자르던 곳을 고친다.
+  - 알림 변수(입금 기한·반송 기한·선교환 안내·소멸 예정일): 사이트 시간대. 요청자(관리자) 시간대가 고객 알림에 섞이지 않는다.
+  - 주문·클레임 번호의 날짜·시각 부분과 일일 순번 리셋: 사이트 시간대의 날짜.
+  - 교환 회수 지연 일수: 사이트 날짜로 센다(알림·관리자 목록·사용자 상세가 같은 일수).
+  - 관리자 화면 시각(카테고리·상품 폼): 보는 사람 시간대.
+  - 관리자가 날짜로 입력한 마일리지 만료일: 사이트 기준 그날 23:59:59 에 만료. 수정 모달은 같은 사이트 날짜로 다시 보인다.
+  - 마이페이지 마일리지 카드: 보는 사람 날짜(`expiring_date_formatted`).
+  - 운영자 콘솔 출력: 사이트 시간대.
+
+axes:
+  surface:
+    - deposit_due_at
+    - deposit_due_at_day_boundary
+    - deposit_due_at_negative_offset
+    - collection_due_date
+    - advance_exchange_notice
+    - mileage_expires_date
+    - order_number_date
+    - daily_reset
+    - overdue_days
+    - category_timestamps
+    - product_form_timestamps
+    - mileage_expiry_input
+    - mileage_expiry_input_negative_offset
+    - mileage_expiry_round_trip
+    - mileage_balance_formatted
+    - cancel_command_output
+
+effects:
+  - notification_dates_use_site_timezone
+  - order_number_date_uses_site_timezone
+  - daily_sequence_reset_uses_site_day
+  - overdue_days_count_site_days
+  - admin_screen_timestamps_use_viewer_timezone
+  - mileage_expiry_date_input_ends_at_site_day
+  - mileage_expiry_edit_round_trip_keeps_date
+  - mileage_balance_exposes_viewer_date
+  - console_output_uses_site_timezone
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/EcommerceNotificationDataListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ClaimNotificationDataListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/ClaimStatusNotificationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/NotifyExpiringMileageCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SequenceServiceSiteTimezoneTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimTrackingGroupsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/AdminTimestampTimezoneTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserMileageBalanceTimezoneTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/CancelPendingPaymentOrdersCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/MileageTransactionControllerTest.php

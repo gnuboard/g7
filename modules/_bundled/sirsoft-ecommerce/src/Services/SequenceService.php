@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
@@ -22,6 +23,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SequenceRepositoryInterface
  */
 class SequenceService
 {
+    /**
+     * @param  SequenceRepositoryInterface  $repository  시퀀스 Repository
+     */
     public function __construct(
         protected SequenceRepositoryInterface $repository
     ) {}
@@ -68,12 +72,12 @@ class SequenceService
                 return $this->generateTimestampCode($sequence, $type);
             }
 
-            // 알고리즘별 다음 값 계산
+            // 알고리즘별 다음 값 계산 (TIMESTAMP·NANOID 는 위에서 이미 돌려보냈다 — 남는 경우는 이 셋뿐이고,
+            // 열거에 없는 값이면 getNextSequence() 와 같이 UnhandledMatchError 로 드러난다)
             $nextValue = match ($sequence->algorithm) {
                 SequenceAlgorithm::HYBRID => $this->calculateHybrid($sequence),
                 SequenceAlgorithm::SEQUENTIAL => $this->calculateSequential($sequence),
                 SequenceAlgorithm::DAILY => $this->calculateDaily($sequence),
-                default => throw new \InvalidArgumentException("지원하지 않는 알고리즘: {$sequence->algorithm->value}"),
             };
 
             // 최대값 체크
@@ -198,9 +202,10 @@ class SequenceService
      */
     protected function calculateDaily(Sequence $sequence): int
     {
-        $today = Carbon::today();
+        // 「하루」는 사이트 시간대의 하루 — UTC 자정으로 자르면 사이트 아침 시각에 리셋된다.
+        $today = Carbon::today(TimezoneHelper::getSiteTimezone());
 
-        // 날짜가 바뀌었으면 리셋
+        // 날짜가 바뀌었으면 리셋 (last_reset_date 는 사이트 날짜로 저장된다)
         if (! $sequence->last_reset_date || ! $today->isSameDay($sequence->last_reset_date)) {
             $this->repository->updateLastResetDate($sequence, $today);
 
@@ -257,7 +262,10 @@ class SequenceService
         $maxRetries = 10;
 
         for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
-            $now = Carbon::now();
+            // 번호의 날짜·시각은 사이트 시간대로 만든다(배포 이후 새 번호부터). DB 시각으로 저장하지 않는다.
+            // audit:allow datetime-display-user-timezone reason: 사람이 읽는 주문번호 날짜 — 사이트 시간대(D3)
+            $now = Carbon::now(TimezoneHelper::getSiteTimezone());
+            // audit:allow datetime-display-user-timezone reason: 사람이 읽는 주문번호 날짜 — 사이트 시간대(D3)
             $dateTime = $now->format('Ymd-His');
             $milliseconds = (int) ($now->micro / 1000);
             $suffix = str_pad((string) $milliseconds, 3, '0', STR_PAD_LEFT) . random_int(0, 9);

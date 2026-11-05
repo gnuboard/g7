@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Services;
 
 use App\Support\SiteUrl;
+use App\Helpers\TimezoneHelper;
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -336,19 +338,27 @@ class CbtCvsOperationsService
             'conf_no' => (string) ($meta['cvs_conf_no'] ?? ''),
             'receipt_no' => (string) ($meta['cvs_receipt_no'] ?? ''),
             'payment_term' => $paymentTerm,
-            'payment_term_formatted' => $paymentTermAt?->format('Y-m-d H:i:s'),
+            // 일본 시각 그대로 + 시간대 표기(D11)
+            // audit:allow datetime-display-user-timezone reason: 일본 PG(CBT) 시각 — Asia/Tokyo 고정(D11)
+            'payment_term_formatted' => $paymentTermAt ? $paymentTermAt->format('Y-m-d H:i:s').' (JST)' : null,
             'is_expired_by_time' => $isExpiredByTime,
             'cvs_status' => (string) ($meta['cvs_status'] ?? ($isWaitingDeposit ? 'waiting_deposit' : '')),
             'last_notify_at' => (string) ($meta['cvs_last_notify_at'] ?? ''),
+            'last_notify_at_formatted' => $this->formatIsoForViewer($meta['cvs_last_notify_at'] ?? null),
             'last_notify_result' => (string) ($meta['cvs_last_notify_result'] ?? ''),
             'last_notify_reason' => (string) ($meta['cvs_last_notify_reason'] ?? ''),
-            'notify_history' => array_slice($this->normalizeHistory($meta['cvs_notify_history'] ?? []), 0, 10),
+            'notify_history' => array_map(
+                fn (array $item): array => $item + ['received_at_formatted' => $this->formatIsoForViewer($item['received_at'] ?? null)],
+                array_slice($this->normalizeHistory($meta['cvs_notify_history'] ?? []), 0, 10),
+            ),
             'notify_url' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
             'can_simulate_notify' => $isCbtCvs && $isWaitingDeposit && (bool) ($meta['is_test_mode'] ?? false),
             'can_mark_expired' => $isCbtCvs && $isWaitingDeposit && $isExpiredByTime,
             'last_recheck_at' => (string) ($meta['cvs_last_recheck_at'] ?? ''),
+            'last_recheck_at_formatted' => $this->formatIsoForViewer($meta['cvs_last_recheck_at'] ?? null),
             'last_recheck_result' => (string) ($meta['cvs_last_recheck_result'] ?? ''),
             'expired_at' => (string) ($meta['cvs_expired_at'] ?? ''),
+            'expired_at_formatted' => $this->formatIsoForViewer($meta['cvs_expired_at'] ?? null),
             'expiry_reason' => (string) ($meta['cvs_expiry_reason'] ?? ''),
         ];
     }
@@ -386,11 +396,15 @@ class CbtCvsOperationsService
             return $this->operationError('messages.cbt_cvs.simulate_failed', 422);
         }
 
-        $now = now();
+        // 일본 PG 의 입금 통보를 모사한다 — 입금 일시는 일본 시각으로 만든다(D11)
+        // audit:allow datetime-display-user-timezone reason: 일본 PG(CBT) 시각 — Asia/Tokyo 고정(D11)
+        $now = CarbonImmutable::now('Asia/Tokyo');
         $payload = [
             'tid' => $payment->transaction_id ?: 'ADMIN_CVS_'.$order->order_number,
             'mid' => (string) ($meta['cbt_mid'] ?? $this->apiService->getJapanMid()),
+            // audit:allow datetime-display-user-timezone reason: 일본 PG(CBT) 시각 — Asia/Tokyo 고정(D11)
             'applDt' => $now->format('Ymd'),
+            // audit:allow datetime-display-user-timezone reason: 일본 PG(CBT) 시각 — Asia/Tokyo 고정(D11)
             'applTm' => $now->format('His'),
             'status' => '00',
             'payNm' => 'CVS',
@@ -449,6 +463,7 @@ class CbtCvsOperationsService
 
             $updatedMeta = array_merge($lockedMeta, [
                 'cvs_status' => 'expired',
+                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'cvs_expired_at' => now()->toIso8601String(),
                 'cvs_expiry_reason' => 'payment_term_elapsed',
             ]);
@@ -487,6 +502,7 @@ class CbtCvsOperationsService
         /** @var OrderPayment $payment */
         $payment = $context['payment'];
         $meta = array_merge($context['meta'], [
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'cvs_last_recheck_at' => now()->toIso8601String(),
             'cvs_last_recheck_result' => 'local_status_checked',
         ]);
@@ -633,6 +649,7 @@ class CbtCvsOperationsService
         string $source,
         ?string $remoteIp
     ): array {
+        // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
         $now = now()->toIso8601String();
         $history = $this->normalizeHistory($existingMeta['cvs_notify_history'] ?? []);
         array_unshift($history, [
@@ -756,7 +773,28 @@ class CbtCvsOperationsService
         }
 
         try {
-            return CarbonImmutable::createFromFormat('YmdHis', $compact) ?: null;
+            // CBT 일시는 일본 PG 의 일본 시각이다 — 일본 시간으로 읽어 순간값으로 만든다(UTC 로 읽으면 9시간 늦게 만료된다).
+            // audit:allow datetime-display-user-timezone reason: 일본 PG(CBT) 시각 — Asia/Tokyo 고정(D11)
+            return CarbonImmutable::createFromFormat('YmdHis', $compact, 'Asia/Tokyo') ?: null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * 저장된 ISO8601 시각을 보는 사람 시간대 표시 문자열로 바꿉니다. (화면 응답 전용 *_formatted)
+     *
+     * @param  mixed  $iso  저장된 ISO8601 시각
+     * @return string|null 표시용 일시 (값이 없거나 해석할 수 없으면 null)
+     */
+    private function formatIsoForViewer(mixed $iso): ?string
+    {
+        if (! is_string($iso) || $iso === '') {
+            return null;
+        }
+
+        try {
+            return TimezoneHelper::toUserDateTimeString(Carbon::parse($iso));
         } catch (\Throwable) {
             return null;
         }

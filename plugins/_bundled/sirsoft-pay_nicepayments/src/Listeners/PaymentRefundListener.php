@@ -71,7 +71,10 @@ class PaymentRefundListener implements HookListenerInterface
 
         $method = $payment->payment_method instanceof \BackedEnum ? $payment->payment_method->value : (string) $payment->payment_method;
         if ($method === 'phone' && $payment->paid_at !== null) {
+            // 휴대폰 결제 환불의 「같은 달」은 PG·통신사 정산 월 규칙이라 한국 시간으로 판정한다(D4).
+            // audit:allow datetime-display-user-timezone reason: PG·통신사 정산 월 — Asia/Seoul 고정(D4)
             return $payment->paid_at->copy()->timezone('Asia/Seoul')->format('Y-m')
+                // audit:allow datetime-display-user-timezone reason: PG·통신사 정산 월 — Asia/Seoul 고정(D4)
                 === now()->copy()->timezone('Asia/Seoul')->format('Y-m');
         }
 

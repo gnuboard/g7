@@ -178,6 +178,7 @@ class PageAttachmentService
 
         // 경로 결정: 페이지가 있으면 최종 경로, 없으면 임시 경로
         if ($pageId) {
+            // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $path = date('Y/m/d').'/'.$storedFilename;
         } else {
             $path = 'temp/'.$tempKey.'/'.$storedFilename;
@@ -253,6 +254,7 @@ class PageAttachmentService
 
         foreach ($tempAttachments as $index => $attachment) {
             // 최종 경로 생성
+            // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $newPath = date('Y/m/d').'/'.$attachment->stored_filename;
 
             // 파일 물리적 이동 (get + put + delete)

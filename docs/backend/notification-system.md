@@ -320,6 +320,34 @@ return [
 
 복수 수신자 알림에서 `data.name`에 `{recipient_name}`을 설정하면, 발송 시 각 수신자의 이름으로 자동 치환됩니다.
 
+### 알림 변수의 날짜·시각
+
+DB 와 `config('app.timezone')` 은 UTC 입니다. 알림 변수에 날짜·시각을 넣을 때 시간대를 정하지 않으면 UTC 값이 그대로
+본문에 들어가, 같은 값을 보여 주는 화면(사이트 시각)과 시간대 차이만큼 어긋납니다.
+
+- **확장(모듈·플러그인)의 알림 데이터는 사이트 기본 시간대로 만듭니다** (관리자 › 환경설정 › 일반의 시간대 =
+  `config('app.default_user_timezone')`). 보는 사람 시간대(`TimezoneHelper::toUser*`)를 쓰지 않는 이유는, 알림 데이터가
+  **그 알림을 일으킨 요청** 안에서 만들어지기 때문입니다. 관리자가 배송·교환을 처리하면 관리자 시간대가 고객 알림에 들어가고,
+  큐·콘솔에서 만들어지면 사이트 시간대로 떨어져 같은 알림이 경로마다 달라집니다.
+- **코어의 단일 수신자 알림**(비밀번호 만료 예고·휴면 예고 등)은 수신자 본인의 시간대를 씁니다 — 수신자가 정해진 뒤 만들기 때문입니다.
+- 법·결제 규칙이 날짜 기준을 정하는 값(한국 법상 나이, 통신사 정산 월 등)은 그 규칙의 시간대로 고정합니다.
+
+```php
+use App\Helpers\TimezoneHelper;
+
+// 날짜만
+'collection_due_date' => TimezoneHelper::toSiteDateString($exchange->collection_due_at) ?? '',
+
+// 날짜+시분초
+'paid_at' => TimezoneHelper::toSiteDateTimeString($payment->paid_at) ?? '',
+
+// 기존 템플릿과 형식을 맞춰야 할 때(예: Y-m-d H:i)
+'deposit_due_at' => $dueAt?->copy()->setTimezone(TimezoneHelper::getSiteTimezone())->format('Y-m-d H:i') ?? '',
+```
+
+「며칠 남음·며칠 지남」처럼 날짜 경계로 세는 값도 사이트 시간대의 하루로 계산합니다(UTC 자정으로 자르면 사이트 새벽 시간대에
+하루 적게 나옵니다).
+
 ---
 
 ## 알림 정의 관리

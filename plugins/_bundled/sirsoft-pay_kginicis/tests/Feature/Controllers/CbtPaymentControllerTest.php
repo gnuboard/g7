@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\PayKginicis\Tests\Feature\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Mockery;
@@ -1641,6 +1642,102 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame(CbtReconciliationService::STATUS_REFUND_RETRYING, $firstClaim['status'] ?? null);
         $this->assertSame(1, $firstClaim['retry_count'] ?? null);
         $this->assertNull($secondClaim);
+    }
+
+    /**
+     * 편의점 결제기한(YmdHis)은 일본 시간으로 읽는다 — 만료 판정은 그 순간값으로, 표시는 일본 시각 + (JST).
+     *
+     * 20261104100000(JST) = 2026-11-04 01:00:00 UTC. UTC 로 읽으면 9시간 늦게 만료된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_admin
+     *
+     * @effects cbt_cvs_term_reads_japan_time
+     */
+    public function test_cvs_payment_term_is_read_as_japan_time(): void
+    {
+        $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-TZ-001', 100, [
+            'cvs_payment_term' => '20261104100000',
+        ]);
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
+        $url = '/api/plugins/sirsoft-pay_kginicis/admin/orders/JP-ORDER-CVS-TZ-001/cbt-cvs';
+
+        Carbon::setTestNow(Carbon::parse('2026-11-04 00:59:59', 'UTC'));
+        $before = $this->actingAs($admin)->getJson($url)->assertOk();
+        $this->assertFalse($before->json('data.is_expired_by_time'));
+        $this->assertSame('2026-11-04 10:00:00 (JST)', $before->json('data.payment_term_formatted'));
+
+        Carbon::setTestNow(Carbon::parse('2026-11-04 01:00:01', 'UTC'));
+        $after = $this->actingAs($admin)->getJson($url)->assertOk();
+        Carbon::setTestNow();
+        $this->assertTrue($after->json('data.is_expired_by_time'));
+        $this->assertTrue($after->json('data.can_mark_expired'));
+    }
+
+    /**
+     * 편의점 운영 시각(ISO 저장)은 화면용 *_formatted 를 보는 사람 시간대로 함께 싣는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_admin
+     *
+     * @effects cbt_operation_times_use_viewer_timezone
+     */
+    public function test_cvs_operation_times_are_formatted_in_viewer_timezone(): void
+    {
+        $iso = '2026-11-03T16:00:00+00:00';
+        $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-TZ-002', 100, [
+            'cvs_last_notify_at' => $iso,
+            'cvs_last_recheck_at' => $iso,
+            'cvs_expired_at' => $iso,
+            'cvs_notify_history' => [['received_at' => $iso, 'result' => 'ok']],
+        ]);
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
+
+        $response = $this->actingAs($admin)->withHeader('X-Timezone', 'Asia/Seoul')
+            ->getJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/JP-ORDER-CVS-TZ-002/cbt-cvs')
+            ->assertOk();
+
+        // 저장 ISO 는 기계값으로 그대로
+        $this->assertSame($iso, $response->json('data.last_notify_at'));
+        $this->assertSame('2026-11-04 01:00:00', $response->json('data.last_notify_at_formatted'));
+        $this->assertSame('2026-11-04 01:00:00', $response->json('data.last_recheck_at_formatted'));
+        $this->assertSame('2026-11-04 01:00:00', $response->json('data.expired_at_formatted'));
+        $this->assertSame('2026-11-04 01:00:00', $response->json('data.notify_history.0.received_at_formatted'));
+    }
+
+    /**
+     * 수동 대사 기록의 시각도 화면용 *_formatted 를 보는 사람 시간대로 싣는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=reconciliation
+     *
+     * @effects cbt_operation_times_use_viewer_timezone
+     */
+    public function test_reconciliation_times_are_formatted_in_viewer_timezone(): void
+    {
+        $iso = '2026-11-03T16:00:00+00:00';
+        $this->insertOrderRow('JP-ORDER-RECON-TZ-001', 100, [
+            CbtReconciliationService::META_KEY => [
+                'status' => CbtReconciliationService::STATUS_MANUAL_REFUND_REQUIRED,
+                'tid' => 'CBT_TID_RECON_TZ_001',
+                'amount' => 100,
+                'created_at' => $iso,
+                'updated_at' => $iso,
+                'last_retry_at' => $iso,
+            ],
+        ]);
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
+
+        $response = $this->actingAs($admin)->withHeader('X-Timezone', 'Asia/Seoul')
+            ->getJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/JP-ORDER-RECON-TZ-001/cbt-reconciliation')
+            ->assertOk();
+
+        $this->assertSame($iso, $response->json('data.updated_at'));
+        $this->assertSame('2026-11-04 01:00:00', $response->json('data.updated_at_formatted'));
+        $this->assertSame('2026-11-04 01:00:00', $response->json('data.last_retry_at_formatted'));
     }
 
     /**

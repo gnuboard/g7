@@ -144,6 +144,7 @@ trait RecordsPaymentWindowClosure
             return $order;
         }
 
+        // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
         $now = now()->toIso8601String();
         $paymentMeta = $payment->payment_meta ?? [];
         $history = $paymentMeta['failure_history'] ?? [];
@@ -202,6 +203,7 @@ trait RecordsPaymentWindowClosure
         }
 
         DB::transaction(function () use ($order, $payment) {
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             $now = now()->toIso8601String();
             $orderMeta = $order->order_meta ?? [];
             $paymentMeta = $payment->payment_meta ?? [];

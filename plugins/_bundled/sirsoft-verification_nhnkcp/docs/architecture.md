@@ -37,6 +37,11 @@ Listener (RegisterKcpProviderListener 등)
 `sirsoft-verification_kginicis`와 계층 구조가 거의 동일한 것은 둘 다 같은 코어 계약을
 구현하기 때문입니다 — 새 IDV provider 를 추가할 때 이 두 플러그인을 참조 구현으로 삼을 수
 있습니다.
+
+날짜 기준도 두 플러그인이 같습니다. 성인 판정(`KcpIdentityProvider::isAdult()`)의 만 나이는
+한국 법상 나이라 생일과 오늘을 모두 `Asia/Seoul` 날짜로 셉니다(서버 UTC 날짜로 세면 한국 시간
+0~9시에 생일을 맞은 사람이 하루 늦게 성인이 됩니다). 마이페이지 카드의 `verified_at` 은 보는 사람
+시간대 문자열입니다.
 <!-- @intent END -->
 
 ## 디렉토리

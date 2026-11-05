@@ -196,6 +196,36 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
     }
 
     /**
+     * 운영자 콘솔에 찍는 입금 기한은 사이트 시간대 시각이다 — UTC 원문이면 사이트 화면과 시간대 차이만큼 어긋난다(#160).
+     *
+     * @scenario surface=cancel_command_output
+     *
+     * @effects console_output_uses_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_dry_run_prints_the_due_at_in_site_timezone(): void
+    {
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+        $order = Order::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'order_status' => OrderStatusEnum::PENDING_PAYMENT,
+        ]);
+        $this->attachOption($order);
+        OrderPayment::factory()->create([
+            'order_id' => $order->id,
+            'payment_method' => PaymentMethodEnum::DBANK,
+            'payment_status' => PaymentStatusEnum::READY,
+            // UTC 11-03 16:00 = 서울 11-04 01:00
+            'deposit_due_at' => Carbon::parse('2026-11-03 16:00:00', 'UTC'),
+        ]);
+
+        $this->artisan('sirsoft-ecommerce:cancel-pending-orders', ['--dry-run' => true])
+            ->expectsOutputToContain('2026-11-04 01:00:00')
+            ->assertSuccessful();
+    }
+
+    /**
      * 계좌이체(BANK)는 입금 기한 만료 자동취소 대상이 아닙니다.
      *
      * 자동취소 대상은 가상계좌(VBANK)와 무통장입금(DBANK)뿐이다.

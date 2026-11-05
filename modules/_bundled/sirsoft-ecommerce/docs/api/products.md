@@ -2334,8 +2334,8 @@ _단건 응답: `data` 객체의 필드._
 | brand_id | integer | `7` | 브랜드 ID |
 | category_ids | array | `[29,30,32]` | category 식별자 배열 (연관 리소스 참조) |
 | primary_category_id | integer | `32` | primary category 식별자 (연관 리소스 참조) |
-| created_at | string | `2026-07-30 14:36:13` | 생성 일시 |
-| updated_at | string | `2026-07-30 14:36:13` | 최종 수정 일시 |
+| created_at | string | `2026-07-30 14:36:13` | 생성 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
+| updated_at | string | `2026-07-30 14:36:13` | 최종 수정 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
 | list_price | string | `5000.00` | 정가 (기본통화 기준) |
 | selling_price | string | `3000.00` | 판매가 (기본통화 기준) |
 | stock_quantity | integer | `26` | 재고 수량 (옵션 있으면 옵션 합계) |

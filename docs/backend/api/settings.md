@@ -97,7 +97,7 @@ _단건 응답: `data` 객체의 필드._
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질) |
 | seo | object | `{"meta_title_suffix":null,"meta_description":null,"meta_k…` | SEO 탭 설정 그룹 (메타 타이틀 접미사·메타 설명/키워드·검색엔진 인증 코드·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기 설정) |
-| advanced | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 고급 탭 설정 그룹 (캐시·디버그·코어 업데이트·GeoIP 설정을 한 탭으로 합친 병합 뷰). cache/debug 카테고리 값이 함께 노출됨 |
+| advanced | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 고급 탭 설정 그룹 (캐시·디버그·코어 업데이트·GeoIP 설정을 한 탭으로 합친 병합 뷰). cache/debug 카테고리 값이 함께 노출됨. `geoip_last_updated_at`(저장된 ISO8601) 옆에 화면 표시용 `geoip_last_updated_at_formatted`(보는 사람 시간대 `Y-m-d H:i:s`)가 함께 실린다 — 저장 요청에 실려 와도 서버가 버린다 |
 | cache | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 캐시 원본 카테고리 (전역 캐시 사용·기본 TTL·레이아웃/통계/SEO 캐시 사용 및 TTL). advanced 탭에 병합되면서 개별 접근용으로 별도 노출된 파생 뷰 |
 | debug | object | `{"debug_mode":false,"sql_query_log":false,"log_level":"er…` | 디버그 원본 카테고리 (디버그 모드·SQL 쿼리 로그·로그 레벨). advanced 탭에 병합되면서 개별 접근용으로 별도 노출된 파생 뷰 |
 | drivers | object | `{"storage_driver":"local","s3_bucket":null,"s3_region":"a…` | 드라이버 탭 설정 그룹 (스토리지/캐시/세션/큐/로그 드라이버 선택 + S3·Redis·Memcached·WebSocket·검색엔진 접속 파라미터) |
@@ -1044,6 +1044,8 @@ _단건 응답: `data` 객체의 필드 (GeoIpDatabaseService::updateDatabase() 
 | database_path | string | `storage/app/geoip/GeoLite2-City.mmdb` | 갱신된 GeoLite2 DB 파일의 절대 경로 (`config('geoip.database_path')`) |
 | file_size_bytes | integer | `60000000` | 다운로드·전개 후 최종 DB 파일 크기 (바이트) |
 | elapsed_seconds | number | `12.34` | 다운로드부터 교체 완료까지 소요 시간 (초) |
+| last_updated_at | string | `2026-11-03T16:00:00+00:00` | DB 파일 갱신 시각 (ISO 8601 기계값) |
+| last_updated_at_formatted | string | `2026-11-04 01:00:00` | DB 파일 갱신 시각 — 보는 사람 시간대 (`Y-m-d H:i:s`, 고급 탭 「최근 갱신」 표시용) |
 
 **응답 예시**
 

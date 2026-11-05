@@ -210,4 +210,8 @@ MySQL 은 DDL 을 롤백하지 않으므로 한 파일이 컬럼 → 인덱스 �
 하루이고, 계정 시간대가 없으면 사이트 기본 시간대입니다(코어 `FiltersByDateRange::applyViewerTodayFilter`). 저장값과
 앱 시간대(`app.timezone`)는 UTC 이므로, 하루를 앱 시간대로 자르면 한국 사이트에서는 오전 9시에 날짜가 바뀌어 새벽 글이
 전날 집계로 가고 일일 신고 한도가 오전 9시에 풀립니다. 하루 단위로 세는 쿼리는 그 하루를 UTC 범위로 바꿔 비교합니다.
+
+게시글·댓글의 처리 이력(`action_logs` JSON)의 `created_at` 은 **오프셋 없는 UTC 문자열**로 저장합니다(신고 처리 이력과 같은
+관례). 화면에 내보낼 때는 `PostResource`·`CommentResource` 가 `Carbon::parse($v, 'UTC')` 로 읽어 보는 사람 시간대로
+바꿉니다 — 저장 형식을 바꾸면 기존 행과 섞이므로 저장 쪽은 그대로 두고 표시 쪽에서만 변환합니다.
 <!-- @intent END -->

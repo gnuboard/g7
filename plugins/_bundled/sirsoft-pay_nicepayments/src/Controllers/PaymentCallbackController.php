@@ -1277,6 +1277,7 @@ class PaymentCallbackController
         }
 
         DB::transaction(function () use ($order, $payment) {
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             $now = now()->toIso8601String();
             $orderMeta = $order->order_meta ?? [];
             $paymentMeta = $payment->payment_meta ?? [];
@@ -1406,6 +1407,7 @@ class PaymentCallbackController
         array $validated
     ): array {
         return [
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'received_at' => now()->toIso8601String(),
             'type' => $type, // 'deposited' | 'cancelled' | 'other'
             'result_code' => $resultCode,

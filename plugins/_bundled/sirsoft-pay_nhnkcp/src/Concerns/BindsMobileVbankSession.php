@@ -50,6 +50,7 @@ trait BindsMobileVbankSession
             $meta = is_array($meta) ? $meta : [];
             $meta[self::MOBILE_VBANK_STATE_KEY] = [
                 'nonce' => $nonce,
+                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'issued_at' => now()->toIso8601String(),
             ];
 

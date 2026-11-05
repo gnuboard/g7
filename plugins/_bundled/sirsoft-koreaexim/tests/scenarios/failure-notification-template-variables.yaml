@@ -1,0 +1,14 @@
+feature: koreaexim_failure_notification_template_variables
+description: |
+  환율 갱신 실패 알림의 템플릿(메일·사이트내 알림)이 쓰는 변수를 리스너가 모두 채우고 정의가 모두 선언한다.
+  메일 제목의 사이트명(`{app_name}`)은 코어가 대신 채우지 않으므로 리스너가 넣는다. 관리자 전용 알림이라 수신 대상은 staff 다.
+
+axes:
+  channel: [mail, database]
+
+effects:
+  - every_template_placeholder_is_filled
+  - definition_declares_audience_and_variables
+
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Unit/UpdateFailedNotificationTemplateVariablesTest.php

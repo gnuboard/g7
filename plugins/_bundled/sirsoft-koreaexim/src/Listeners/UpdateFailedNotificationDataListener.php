@@ -59,7 +59,9 @@ class UpdateFailedNotificationDataListener implements HookListenerInterface
         if ($type !== 'koreaexim_update_failed' || ! $run instanceof KoreaeximRateRun) {
             return $data;
         }
-        $data['data'] = ['name' => '{recipient_name}', 'status_label' => $run->status->label(), 'message' => $run->message,
+        // 메일 제목의 사이트명은 코어가 대신 채우지 않는다(코어는 {recipient_name} 만 치환) — 여기서 넣는다.
+        $data['data'] = ['name' => '{recipient_name}', 'app_name' => (string) config('app.name'), 'status_label' => $run->status->label(), 'message' => $run->message,
+            // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정
             'search_date' => $run->search_date->toDateString(), 'settings_url' => SiteUrl::absolute('/admin/plugins/sirsoft-koreaexim/settings')];
 
         return $data;

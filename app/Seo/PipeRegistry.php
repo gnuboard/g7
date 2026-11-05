@@ -2,6 +2,7 @@
 
 namespace App\Seo;
 
+use App\Helpers\TimezoneHelper;
 use App\Support\LocalizedValue;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
@@ -488,11 +489,17 @@ class PipeRegistry
             if ($value instanceof \DateTimeInterface) {
                 return Carbon::instance($value);
             }
+            // 순간값(숫자 타임스탬프·오프셋이 붙은 문자열)은 보는 사람 시간대로 옮긴다.
+            // 오프셋 없는 문자열은 이미 표시용 벽시계 값(예: *_formatted)으로 보고 그대로 둔다.
             if (is_numeric($value)) {
-                return Carbon::createFromTimestamp((int) $value);
+                return Carbon::createFromTimestamp((int) $value)->setTimezone(TimezoneHelper::getUserTimezone());
             }
             if (is_string($value)) {
-                return Carbon::parse($value);
+                $parsed = Carbon::parse($value);
+
+                return preg_match('/(Z|[+-]\d{2}:?\d{2})$/i', trim($value)) === 1
+                    ? $parsed->setTimezone(TimezoneHelper::getUserTimezone())
+                    : $parsed;
             }
         } catch (\Throwable) {
             return null;

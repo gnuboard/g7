@@ -469,6 +469,7 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             ->where('product_id', $productId)
             ->whereNull('user_id')
             ->where('author_name', $authorName)
+            // audit:allow datetime-display-user-timezone reason: UTC DB 질의값 — 기계값
             ->where('created_at', $createdAt->format('Y-m-d H:i:s'))
             ->orderBy('id')
             ->first();

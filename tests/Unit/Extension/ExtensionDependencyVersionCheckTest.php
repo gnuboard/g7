@@ -139,6 +139,8 @@ class ExtensionDependencyVersionCheckTest extends TestCase
             $extension->shouldReceive('getDependencies')->andReturn(['modules' => ['dep-shop' => '>=1.3.0']]);
             $extension->shouldReceive('getRequiredCoreVersion')->andReturn(null);
             $extension->shouldReceive('getStateContracts')->andReturn([]);
+            // 활성화가 최근 검색어 범위 선언(search_scopes) 형식도 검사한다 — 선언 없음
+            $extension->shouldReceive('getSearchScopes')->andReturn([]);
             $extension->shouldReceive('clearLifecycleFailureReason');
             $extension->shouldReceive('activate')->andReturn(false);
             $extension->shouldReceive('getLifecycleFailureReason')->andReturn('reached-own-activation');

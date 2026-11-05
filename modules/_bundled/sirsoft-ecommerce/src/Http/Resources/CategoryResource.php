@@ -32,8 +32,8 @@ class CategoryResource extends BaseApiResource
             'icon' => 'folder', // SortableMenuList 컴포넌트용 아이콘
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
+            'created_at' => $this->formatDateTimeStringForUser($this->created_at),
+            'updated_at' => $this->formatDateTimeStringForUser($this->updated_at),
 
             // 관계
             'parent' => $this->whenLoaded('parent', function () {

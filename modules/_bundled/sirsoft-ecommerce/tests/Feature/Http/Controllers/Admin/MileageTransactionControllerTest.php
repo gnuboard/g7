@@ -516,7 +516,90 @@ class MileageTransactionControllerTest extends ModuleTestCase
         $response->assertOk();
         $fresh = $lot->fresh();
         $this->assertSame('사유 정정', $fresh->memo);
-        $this->assertSame($newExpiry, $fresh->expires_at->toDateString());
+        // 날짜 입력 = 사이트 기준 그날 23:59:59 (#160 D5) — 서울이면 UTC 같은 날 14:59:59
+        $this->assertSame($newExpiry.' 14:59:59', $fresh->expires_at->utc()->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * 수동 지급의 만료일 날짜 입력은 사이트 기준 그날 23:59:59 에 만료된다 — UTC 자정으로 저장하면 하루 일찍 끝난다.
+     *
+     * @scenario surface=mileage_expiry_input
+     *
+     * @effects mileage_expiry_date_input_ends_at_site_day
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_admin_earn_date_expiry_ends_at_site_day(): void
+    {
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+
+        $response = $this->actingAs($this->adminUser)->postJson($this->apiBase, [
+            'user_id' => $this->memberUser->uuid,
+            'action' => 'earn',
+            'amount' => 100,
+            'currency' => 'KRW',
+            'use_default_expiry' => false,
+            'expires_at' => '2026-12-31',
+        ]);
+
+        $response->assertCreated();
+        $lot = MileageTransaction::where('user_id', $this->memberUser->id)->latest('id')->first();
+        $this->assertSame('2026-12-31 14:59:59', $lot->expires_at->utc()->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * 음수 오프셋 사이트(America/New_York)에서도 사이트 기준 그날 끝이다 — EST 23:59:59 = UTC 다음 날 04:59:59.
+     *
+     * @scenario surface=mileage_expiry_input_negative_offset
+     *
+     * @effects mileage_expiry_date_input_ends_at_site_day
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_date_expiry_ends_at_negative_offset_site_day(): void
+    {
+        config(['app.default_user_timezone' => 'America/New_York']);
+        $lot = MileageTransaction::create([
+            'user_id' => $this->memberUser->id, 'currency' => 'KRW', 'type' => MileageTransactionTypeEnum::ADMIN_EARN->value,
+            'amount' => 1000, 'remaining_amount' => 1000, 'balance_after' => 1000, 'expires_at' => now()->addDays(10),
+        ]);
+
+        $this->actingAs($this->adminUser)->patchJson($this->apiBase.'/'.$lot->id, [
+            'expires_at' => '2026-12-31',
+        ])->assertOk();
+
+        $this->assertSame('2027-01-01 04:59:59', $lot->fresh()->expires_at->utc()->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * 수정 모달 재오픈(목록의 expires_at_date) → 그대로 저장을 3번 반복해도 날짜·저장 시각이 바뀌지 않는다.
+     *
+     * 입력 해석(사이트 그날 끝)과 재표시(사이트 날짜)가 같은 기준이어야 하루씩 밀리지 않는다.
+     *
+     * @scenario surface=mileage_expiry_round_trip
+     *
+     * @effects mileage_expiry_edit_round_trip_keeps_date
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_expiry_round_trip_keeps_the_date(): void
+    {
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+        $lot = MileageTransaction::create([
+            'user_id' => $this->memberUser->id, 'currency' => 'KRW', 'type' => MileageTransactionTypeEnum::ADMIN_EARN->value,
+            'amount' => 1000, 'remaining_amount' => 1000, 'balance_after' => 1000, 'expires_at' => now()->addDays(10),
+        ]);
+
+        $date = '2026-12-31';
+        for ($i = 0; $i < 3; $i++) {
+            $this->actingAs($this->adminUser)->patchJson($this->apiBase.'/'.$lot->id, ['expires_at' => $date])->assertOk();
+            $this->assertSame('2026-12-31 14:59:59', $lot->fresh()->expires_at->utc()->format('Y-m-d H:i:s'));
+
+            $row = collect($this->actingAs($this->adminUser)->getJson($this->apiBase.'?per_page=50')->json('data.data'))
+                ->firstWhere('id', $lot->id);
+            $date = $row['expires_at_date'];
+            $this->assertSame('2026-12-31', $date);
+        }
     }
 
     /**

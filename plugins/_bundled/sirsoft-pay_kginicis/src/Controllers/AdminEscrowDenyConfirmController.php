@@ -116,6 +116,7 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
             // payment_meta에 구매거절확인 이력 저장
             $meta['pg_response_sanitized'] = true;
             $meta['escrow_deny_confirm'] = [
+                // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
                 'confirmed_at' => now()->toDateTimeString(),
                 'dcnf_name' => $dcnfName,
                 'pg_response' => $sanitizedPgResponse,

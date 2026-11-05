@@ -4,6 +4,13 @@ All notable changes to this plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.3] - 2026-11-05
+
+### Fixed
+
+- 마이페이지 본인인증 카드의 인증 시각이 UTC 로 보이던 것을 보는 사람 시간대로 고쳤습니다.
+- 성인 인증의 만 나이를 서버(UTC) 날짜로 세어, 한국 시간 0~9시에 만 19세 생일을 맞은 사람이 하루 늦게 성인으로 인정되던 문제를 고쳤습니다. 이제 한국 시간 날짜로 셉니다.
+
 ## [1.1.2] - 2026-11-01
 
 ### Changed

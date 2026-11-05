@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Console\Commands;
 
+use App\Helpers\TimezoneHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
@@ -122,7 +123,8 @@ class CancelPendingPaymentOrdersCommand extends Command
                 $this->line('- '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.order_line', [
                     'order_number' => $order->order_number,
                     'payment_method' => $paymentMethodValue,
-                    'due_at' => (string) $dueAt,
+                    // 운영자 콘솔 출력 — 사이트 시간대 시각(화면의 입금 기한과 같은 기준)
+                    'due_at' => (string) TimezoneHelper::toSiteDateTimeString($dueAt),
                 ]));
 
                 if ($isDryRun) {

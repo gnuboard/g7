@@ -53,6 +53,7 @@ class ImageUploadService
 
         $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
         $storedFilename = Str::uuid().'.'.$extension;
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $path = date('Y/m/d').'/'.$storedFilename;
 
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)

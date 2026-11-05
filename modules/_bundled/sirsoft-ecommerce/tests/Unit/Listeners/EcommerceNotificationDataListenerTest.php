@@ -6,6 +6,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use App\Models\User;
 use App\Notifications\GenericNotification;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
@@ -434,15 +435,78 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 입금 기한은 사이트 시간대로 찍는다 — 요청자(user_timezone) 시간대가 UTC 여도 같다.
+     *
+     * 회귀(#160): UTC Carbon 을 그대로 format 해 주문 상세(사이트 시각)와 9시간 어긋났다.
+     *
+     * @scenario surface=deposit_due_at
+     *
+     * @effects notification_dates_use_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_pending_deposit_due_at_uses_site_timezone_regardless_of_requester(): void
+    {
+        Config::set('app.default_user_timezone', 'Asia/Seoul');
+        app()->instance('user_timezone', 'UTC');
+
+        $order = $this->makeDbankOrder(orderNumber: 'ORD-TZ-1', totalDue: 20000, dueAt: Carbon::parse('2026-11-07 12:33:19', 'UTC'));
+        $result = $this->listener->extractData($this->emptyDefault(), 'order_pending_deposit', [$order]);
+
+        $this->assertSame('2026-11-07 21:33', $result['data']['deposit_due_at']);
+    }
+
+    /**
+     * 사이트 시간대로 바꾸면 날짜도 넘어간다 — UTC 16:30 은 서울 다음 날 01:30.
+     *
+     * @scenario surface=deposit_due_at_day_boundary
+     *
+     * @effects notification_dates_use_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_pending_deposit_due_at_crosses_site_day_boundary(): void
+    {
+        Config::set('app.default_user_timezone', 'Asia/Seoul');
+
+        $order = $this->makeDbankOrder(orderNumber: 'ORD-TZ-2', totalDue: 20000, dueAt: Carbon::parse('2026-11-06 16:30:00', 'UTC'));
+        $result = $this->listener->extractData($this->emptyDefault(), 'order_pending_deposit', [$order]);
+
+        $this->assertSame('2026-11-07 01:30', $result['data']['deposit_due_at']);
+    }
+
+    /**
+     * 음수 오프셋 사이트 시간대(America/New_York)에서도 사이트 시각으로 찍는다.
+     *
+     * @scenario surface=deposit_due_at_negative_offset
+     *
+     * @effects notification_dates_use_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_pending_deposit_due_at_uses_negative_offset_site_timezone(): void
+    {
+        Config::set('app.default_user_timezone', 'America/New_York');
+        app()->instance('user_timezone', 'Asia/Seoul');
+
+        $order = $this->makeDbankOrder(orderNumber: 'ORD-TZ-3', totalDue: 20000, dueAt: Carbon::parse('2026-11-07 12:33:19', 'UTC'));
+        $result = $this->listener->extractData($this->emptyDefault(), 'order_pending_deposit', [$order]);
+
+        // 2026-11-07 은 미국 동부 표준시(EST, UTC-5)
+        $this->assertSame('2026-11-07 07:33', $result['data']['deposit_due_at']);
+    }
+
+    /**
      * 무통장입금 주문(payment 관계 포함)을 DB 없이 합성합니다.
      *
      * @param  string  $orderNumber  주문번호
      * @param  int  $totalDue  입금 필요액
      * @param  string  $paymentMethod  결제수단 (기본 dbank)
      * @param  array  $currencySnapshot  통화 스냅샷
+     * @param  Carbon|null  $dueAt  입금 기한 (null 이면 7일 뒤)
      * @return Order 결과 객체
      */
-    private function makeDbankOrder(string $orderNumber, int $totalDue, string $paymentMethod = 'dbank', array $currencySnapshot = []): Order
+    private function makeDbankOrder(string $orderNumber, int $totalDue, string $paymentMethod = 'dbank', array $currencySnapshot = [], ?Carbon $dueAt = null): Order
     {
         $order = new Order([
             'order_number' => $orderNumber,
@@ -460,7 +524,7 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
             'dbank_account' => '123-456-789012',
             'dbank_holder' => '주식회사 테스트',
             'depositor_name' => '홍길동',
-            'deposit_due_at' => now()->addDays(7),
+            'deposit_due_at' => $dueAt ?? now()->addDays(7),
         ]);
         $order->setRelation('payment', $payment);
 

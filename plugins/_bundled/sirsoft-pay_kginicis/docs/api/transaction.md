@@ -95,7 +95,7 @@ _단건 응답: `data` 객체의 필드._
 | \_hpp_corp | string \| null | `SKT` | 휴대폰 결제 통신사 |
 | \_escrow_status | string \| null | `1` | 에스크로 상태 값 |
 | \_escrow_confirm | string \| null | `2026-06-21 09:00:00` | 에스크로 구매확정 일시 |
-| \_inquiry_at | string | `2026-06-19 14:02:31` | 이 조회를 수행한 서버 시각 |
+| \_inquiry_at | string | `2026-06-19 14:02:31` | 이 조회를 수행한 시각 — 보는 사람 시간대 |
 | \_cbt_cvs | object \| null | `null` | 일본 편의점결제(CVS) 거래일 때의 상세 상태. `status` / `last_notify_at` / `last_notify_result` / `last_notify_reason` / `last_recheck_at` / `last_recheck_result` / `expired_at` / `expiry_reason` / `notify_history`(최대 10건). CBT 응답에만 포함 |
 
 **응답 예시**

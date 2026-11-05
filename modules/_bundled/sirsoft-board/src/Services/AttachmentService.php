@@ -137,6 +137,7 @@ class AttachmentService
 
         if ($postId) {
             // 기존 게시글 수정: 최종 경로에 바로 저장
+            // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $path = "{$slug}/".date('Y/m/d')."/{$storedFilename}";
         } else {
             // 신규 게시글: 임시 경로에 저장 (저장 시 최종 경로로 이동)
@@ -284,6 +285,7 @@ class AttachmentService
             $nextOrders[$collection]++;
 
             // 최종 경로 생성 (기존 경로 규칙 유지)
+            // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $newPath = "{$slug}/".date('Y/m/d')."/{$attachment->stored_filename}";
 
             // 파일 물리적 이동 (StorageInterface: get + put + delete)

@@ -35,6 +35,8 @@ exclusions:
   - { content_variant: [ex_text, ad_image, mi_item_list], transition: [requested_to_approved, requested_to_rejected, approved_cancel, requested_cancel], reason: "전이 규칙은 유형과 직교(content 는 불투명 JSON) — 전이 axis 는 대표 유형(ba_none)으로 검증하고, 유형 axis 는 검증 매트릭스·신청 페이로드 보존으로 검증" }
 
 effects:
+  # 날짜 표시 — ISO 원문은 기계값, 화면은 보는 사람 날짜 *_date_formatted (#160)
+  - template_dates_have_viewer_date_formatted
   # 데이터 모델·상태 (S1)
   - status_enum_maps_kapi_service_status_vocabulary
   - unknown_service_status_does_not_overwrite_state

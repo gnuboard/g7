@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Helpers\TimezoneHelper;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -57,7 +58,10 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
                 'total_earned' => (float) $row->total_earned,
                 'total_used' => (float) $row->total_used,
                 'expiring_soon' => (float) $row->expiring_soon,
+                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'expiring_date' => $row->expiring_date?->toIso8601String(),
+                // 마이페이지 카드 표시용 — 보는 사람 날짜
+                'expiring_date_formatted' => TimezoneHelper::toUserDateString($row->expiring_date),
             ];
         }
 
@@ -78,7 +82,9 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
                 $earliest = $row->expiring_date;
             }
         }
+        // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
         $summary['expiring_date'] = $earliest?->toIso8601String();
+        $summary['expiring_date_formatted'] = TimezoneHelper::toUserDateString($earliest);
         $summary['by_currency'] = $byCurrency;
 
         return $summary;
@@ -302,6 +308,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
             'total_used' => 0.0,
             'expiring_soon' => 0.0,
             'expiring_date' => null,
+            'expiring_date_formatted' => null,
         ];
     }
 

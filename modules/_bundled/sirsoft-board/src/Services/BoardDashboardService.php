@@ -50,6 +50,7 @@ class BoardDashboardService
      */
     public function getOverview(): array
     {
+        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $today = $this->siteToday()->toDateString();
         $row = $this->boardStatRepository->findByDate($today);
 
@@ -85,18 +86,24 @@ class BoardDashboardService
         $previousEnd = $currentStart->subDay();
 
         $currentRows = $this->boardStatRepository->getByDateRange(
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $currentStart->toDateString(),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $today->toDateString(),
         );
         $previousRows = $this->boardStatRepository->getByDateRange(
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousStart->toDateString(),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousEnd->toDateString(),
         );
 
+        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $indexed = $currentRows->keyBy(fn ($row) => $row->date->toDateString());
 
         $days = [];
         for ($i = 0; $i < $graphDays; $i++) {
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $currentStart->addDays($i)->toDateString();
             $row = $indexed->get($date);
             $days[] = [
@@ -179,6 +186,7 @@ class BoardDashboardService
         $result = [];
 
         for ($i = 0; $i < $days; $i++) {
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $today->subDays($i)->toDateString();
             $postCount = $this->postRepository->countCreatedOnDate($date);
             $commentCount = $this->commentRepository->countCreatedOnDate($date);

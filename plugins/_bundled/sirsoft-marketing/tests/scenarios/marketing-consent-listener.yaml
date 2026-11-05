@@ -24,6 +24,7 @@ effects:
   - register_consent_saved_without_request
   - consent_deleted_before_user_delete
   - consent_merged_into_user_resource
+  - consent_history_time_uses_viewer_timezone   # 동의 이력 시각은 보는 사람 시간대(#160)
 
 test_files:
   - plugins/_bundled/sirsoft-marketing/tests/Unit/Listeners/MarketingConsentListenerTest.php
