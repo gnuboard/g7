@@ -79,6 +79,7 @@
                         "name": "gnuboard7-hello_user_template.TemplateSettingsScreen",
                         "actions": [
                             {
+                                "comment": "칸 값이 바뀌었다 — 폼 값을 갈아 끼우고 변경 표시를 켜며, 지난 저장 결과 안내는 걷는다",
                                 "type": "change",
                                 "event": "onChange",
                                 "handler": "setState",

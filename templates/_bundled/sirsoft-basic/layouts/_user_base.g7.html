@@ -469,6 +469,7 @@
         <div data-each="item, itemIndex in {{_computed.siteMenu ?? []}}">
           <a data-if="{{item.kind === 'home'}}" href="/" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
             <on type="click">
+              <!-- 서랍 메뉴 「홈」 — 서랍을 닫고 첫 화면으로 간다 -->
               <sequence>
                 <set-state target="global" :mobileMenuOpen="false"/>
                 <navigate path="/"/>
@@ -518,6 +519,7 @@
           <div data-if="{{item.kind === 'link' &amp;&amp; (item.children ?? []).length === 0}}">
             <a data-if="{{String(item.url ?? '').startsWith('/') &amp;&amp; !String(item.url ?? '').startsWith('//') &amp;&amp; !item.new_tab}}" href="{{item.url}}" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
               <on type="click">
+                <!-- 사이트 안 주소 메뉴 — 서랍을 닫고 그 주소로 간다 -->
                 <sequence>
                   <set-state target="global" :mobileMenuOpen="false"/>
                   <navigate/>
@@ -543,6 +545,7 @@
               <div data-if="{{!!item.url}}">
                 <a data-if="{{String(item.url ?? '').startsWith('/') &amp;&amp; !String(item.url ?? '').startsWith('//') &amp;&amp; !item.new_tab}}" href="{{item.url}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
                   <on type="click">
+                    <!-- 하위 메뉴를 펼친 상위 항목의 자기 주소 — 서랍을 닫고 그 주소로 간다 -->
                     <sequence>
                       <set-state target="global" :mobileMenuOpen="false"/>
                       <navigate/>
@@ -558,6 +561,7 @@
               <div data-each="child, childIndex in {{item.children ?? []}}">
                 <a data-if="{{child.kind === 'home'}}" href="/" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
                   <on type="click">
+                    <!-- 하위 메뉴 「홈」 — 서랍을 닫고 첫 화면으로 간다 -->
                     <sequence>
                       <set-state target="global" :mobileMenuOpen="false"/>
                       <navigate path="/"/>
@@ -606,6 +610,7 @@
                 <div data-if="{{child.kind === 'link'}}">
                   <a data-if="{{String(child.url ?? '').startsWith('/') &amp;&amp; !String(child.url ?? '').startsWith('//') &amp;&amp; !child.new_tab}}" href="{{child.url}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
                     <on type="click">
+                      <!-- 사이트 안 주소 하위 메뉴 — 서랍을 닫고 그 주소로 간다 -->
                       <sequence>
                         <set-state target="global" :mobileMenuOpen="false"/>
                         <navigate/>

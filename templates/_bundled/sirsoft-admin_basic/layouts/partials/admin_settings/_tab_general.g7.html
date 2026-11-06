@@ -106,6 +106,7 @@
               <set-state target="local" :hasChanges="true" form.general.site_favicon="{{$args[0]}}"/>
             </on>
             <on type="custom" event="onUploadComplete">
+              <!-- 올리기를 마쳤다 — 성공 안내만 띄운다(값 교체는 위 change 블록이 한다) -->
               <toast type="success" message="$t:attachment.upload_success"/>
             </on>
             <on type="custom" event="onUploadError">
@@ -113,9 +114,11 @@
               <toast type="error" message="{{$args[0]}}"/>
             </on>
             <on type="change" event="onRemove">
+              <!-- 파비콘을 뺐다 — 목록에서 그 파일을 걸러 내고 저장 버튼을 풀어 준다. 서버 파기는 저장 때 한다 -->
               <set-state target="local" :hasChanges="true" form.general.site_favicon="{{(_local.form?.general?.site_favicon ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
             </on>
             <on type="custom" event="onRemove">
+              <!-- 뺀 것을 알린다 — 저장해야 확정된다 -->
               <toast type="info" message="$t:attachment.deleted"/>
             </on>
           </file-uploader>

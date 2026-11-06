@@ -1579,6 +1579,7 @@
                                             "if": "{{item.kind === 'home'}}",
                                             "actions": [
                                                 {
+                                                    "comment": "서랍 메뉴 「홈」 — 서랍을 닫고 첫 화면으로 간다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1798,6 +1799,7 @@
                                                     "if": "{{String(item.url ?? '').startsWith('/') && !String(item.url ?? '').startsWith('//') && !item.new_tab}}",
                                                     "actions": [
                                                         {
+                                                            "comment": "사이트 안 주소 메뉴 — 서랍을 닫고 그 주소로 간다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -1924,6 +1926,7 @@
                                                                     "if": "{{String(item.url ?? '').startsWith('/') && !String(item.url ?? '').startsWith('//') && !item.new_tab}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "하위 메뉴를 펼친 상위 항목의 자기 주소 — 서랍을 닫고 그 주소로 간다",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -2002,6 +2005,7 @@
                                                                     "if": "{{child.kind === 'home'}}",
                                                                     "actions": [
                                                                         {
+                                                                            "comment": "하위 메뉴 「홈」 — 서랍을 닫고 첫 화면으로 간다",
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
@@ -2213,6 +2217,7 @@
                                                                             "if": "{{String(child.url ?? '').startsWith('/') && !String(child.url ?? '').startsWith('//') && !child.new_tab}}",
                                                                             "actions": [
                                                                                 {
+                                                                                    "comment": "사이트 안 주소 하위 메뉴 — 서랍을 닫고 그 주소로 간다",
                                                                                     "type": "click",
                                                                                     "handler": "sequence",
                                                                                     "actions": [

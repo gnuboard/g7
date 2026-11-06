@@ -193,6 +193,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/mypage_order_cash_receipt.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/register-currency-field.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/register-shipping-country-field.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/extensions/user-global-footer-business-info.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_brand_index.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_category_index.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_deposit_index.g7.html',
@@ -542,6 +543,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/gnuboard7-hello_admin_template/layouts/errors/500.g7.html',
         'templates/_bundled/gnuboard7-hello_admin_template/layouts/errors/503.g7.html',
         'templates/_bundled/gnuboard7-hello_admin_template/layouts/errors/maintenance.g7.html',
+        'templates/_bundled/gnuboard7-hello_admin_template/settings/template_settings.g7.html',
         'templates/_bundled/gnuboard7-hello_user_template/layouts/_user_base.g7.html',
         'templates/_bundled/gnuboard7-hello_user_template/layouts/errors/401.g7.html',
         'templates/_bundled/gnuboard7-hello_user_template/layouts/errors/403.g7.html',
@@ -550,6 +552,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/gnuboard7-hello_user_template/layouts/errors/503.g7.html',
         'templates/_bundled/gnuboard7-hello_user_template/layouts/errors/maintenance.g7.html',
         'templates/_bundled/gnuboard7-hello_user_template/layouts/home.g7.html',
+        'templates/_bundled/gnuboard7-hello_user_template/settings/template_settings.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/admin_activity_log_list.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/admin_dashboard.g7.html',
@@ -716,6 +719,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/template_partial_test/_info_card.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/template_partial_test.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/settings/template_settings.g7.html',
         'templates/_bundled/sirsoft-basic/extensions/sirsoft-daum_postcode/user-address-search.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/_user_base.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/auth/forgot_password.g7.html',
@@ -1021,6 +1025,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_system.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_update.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_cron_token_rotate.g7.html',
+        'templates/_bundled/sirsoft-basic/settings/template_settings.g7.html',
     ];
 
     /**

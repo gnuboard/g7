@@ -55,6 +55,8 @@ class ShellNoInlineScriptTest extends TestCase
         'basePath',
         // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`(#434)
         'templateSettings',
+        // 템플릿이 공급하는 설정 화면 번들 주소 — 관리자 셸만 싣는다(#434)
+        'templateSettingsAssets',
     ];
 
     /**

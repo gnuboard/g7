@@ -37,6 +37,7 @@
     <div data-ref="template_settings_content">
       <gnuboard7-hello_admin_template.template-settings-screen data-type="composite" data-ref="template_settings_screen" data="{{template_settings?.data ?? null}}" value="{{_local.form ?? {}}}" errors="{{_local.errors ?? {}}}" activeSection="{{_computed.activeSection}}" readOnly="{{_computed.isReadOnly}}" dirty="{{_local.hasChanges === true}}" saving="{{_local.isSaving === true}}" resetting="{{_local.isResetting === true}}" status="{{_local.saveStatus ?? null}}" uploadTriggerEvent="upload:template_settings">
         <on type="change" event="onChange">
+          <!-- 칸 값이 바뀌었다 — 폼 값을 갈아 끼우고 변경 표시를 켜며, 지난 저장 결과 안내는 걷는다 -->
           <set-state target="local" :hasChanges="true" form="{{$args[0]}}" :saveStatus="null"/>
         </on>
         <on type="custom" event="onDirty">

@@ -460,6 +460,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "올리기를 마쳤다 — 성공 안내만 띄운다(값 교체는 위 change 블록이 한다)",
                                             "type": "custom",
                                             "event": "onUploadComplete",
                                             "handler": "toast",
@@ -479,6 +480,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "파비콘을 뺐다 — 목록에서 그 파일을 걸러 내고 저장 버튼을 풀어 준다. 서버 파기는 저장 때 한다",
                                             "type": "change",
                                             "event": "onRemove",
                                             "handler": "setState",
@@ -489,6 +491,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "뺀 것을 알린다 — 저장해야 확정된다",
                                             "type": "custom",
                                             "event": "onRemove",
                                             "handler": "toast",
