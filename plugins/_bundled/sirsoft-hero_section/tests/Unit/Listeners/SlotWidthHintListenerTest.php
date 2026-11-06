@@ -167,6 +167,8 @@ class SlotWidthHintListenerTest extends PluginTestCase
      */
     public function test_banner_hint_follows_real_banner_changes(): void
     {
+        // 설치하지 않은 클론에서도 저장이 돌고, 설치한 클론의 실제 설정 파일을 덮지 않게 한다
+        $this->registerPluginInstance();
         $settings = app(PluginSettingsService::class);
         $settings->save('sirsoft-hero_section', []);
         $this->assertFalse($settings->get('sirsoft-hero_section', 'slot_banners.home_hero'));
