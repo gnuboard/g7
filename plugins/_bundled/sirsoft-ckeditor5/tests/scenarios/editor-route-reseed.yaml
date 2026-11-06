@@ -35,6 +35,7 @@ axes:
     - unit_emit_check_sees_path
     - unit_emitted_value_is_stale
     - unit_missing_value_timeout
+    - editor_late_after_leave
 
 effects:
   - editor_shows_new_form_value
@@ -45,7 +46,10 @@ effects:
   - fallback_shows_new_form_value
   - awaiting_released_after_timeout
   - sync_stops_with_editor
+  - no_form_write_after_leaving_screen
+  - next_screen_editor_registration_kept
 
 test_files:
   - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/routeReseedEngineRender.test.tsx
   - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/externalContentSync.test.tsx
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/initEditor-late-after-leave.test.tsx

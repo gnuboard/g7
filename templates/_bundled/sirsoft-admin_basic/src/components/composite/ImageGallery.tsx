@@ -2,6 +2,7 @@
 // 라이브 E2E(편집기 추가→선택→속성 편집→저장→실사용자화면)는 1-c-verify 세션의
 // Playwright spec(property-edit-propcontrols.spec.ts)이 cover. 데이터/컴포넌트 회귀는
 // ImageGallery.test.tsx(4) + adminPropControlCoverage.test.ts 가 가드.
+// 확대 창 라벨 다국어(labels)는 ImageGallery.labels.test.tsx + 확대 창 접근성 이름 브라우저 실측.
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Lightbox, { Slide } from 'yet-another-react-lightbox';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
@@ -33,6 +34,30 @@ const G7Core = (window as any).G7Core;
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
   G7Core?.t?.(key, params) ?? key;
+
+/**
+ * 확대 창 라벨 — 넘기지 않으면 라이브러리가 창 이름(「Lightbox」)·단추 이름을 영어로 붙인다.
+ * 슬라이드 위치 문구의 `{index}`·`{total}` 은 라이브러리가 채우므로 인자 없이 번역한다.
+ */
+const lightboxLabels = () => ({
+  Lightbox: t('common.lightbox.dialog'),
+  Carousel: t('common.lightbox.carousel'),
+  'Photo gallery': t('common.lightbox.photo_gallery'),
+  Slide: t('common.lightbox.slide'),
+  '{index} of {total}': t('common.lightbox.slide_position'),
+  Previous: t('common.lightbox.previous'),
+  Next: t('common.lightbox.next'),
+  Close: t('common.lightbox.close'),
+  'Zoom in': t('common.lightbox.zoom_in'),
+  'Zoom out': t('common.lightbox.zoom_out'),
+  'Enter Fullscreen': t('common.lightbox.enter_fullscreen'),
+  'Exit Fullscreen': t('common.lightbox.exit_fullscreen'),
+  Play: t('common.lightbox.play'),
+  Pause: t('common.lightbox.pause'),
+  Thumbnails: t('common.lightbox.thumbnails'),
+  'Show thumbnails': t('common.lightbox.show_thumbnails'),
+  'Hide thumbnails': t('common.lightbox.hide_thumbnails'),
+});
 
 // ========== Types ==========
 
@@ -283,6 +308,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     <Lightbox
       open={isOpen}
       close={onClose}
+      labels={lightboxLabels()}
       slides={slides}
       index={currentIndex}
       plugins={plugins}

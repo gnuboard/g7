@@ -959,6 +959,19 @@ URL: https://example.com/{secret}
 → 쿠키 발급 → 유지보수 모드에서도 접근 가능
 ```
 
+### vendor 교체 구간의 응답 (7.1.5+)
+
+Step 8 은 운영 `vendor/` 를 비운 뒤 새 vendor 를 복사한다(수십 초). 유지보수 화면은 미들웨어(`MaintenanceModePage`)가 만드므로 이 구간에는 프레임워크를 실을 수 없다. `public/index.php` 가 vendor 를 싣기 전에 직접 최소 응답을 만든다.
+
+| 상황 | 응답 |
+|------|------|
+| `vendor/autoload.php` 없음 + 유지보수 표식(`storage/framework/down`) 있음 | 503 + `Retry-After`(down 파일의 `retry`, 없으면 60) + `Refresh`(down 파일의 `refresh`). API·JSON 요청은 `{"success":false,"message":…}` |
+| 유지보수 중 vendor 복사 도중 치명 오류(autoload 는 있으나 그것이 부르는 파일이 아직 없음) | 같은 503 — 유지보수 중에는 프레임워크 부팅 전 `display_errors` 를 끄고 종료 처리기가 치명 오류를 503 으로 바꾼다 |
+| `vendor/autoload.php` 없음 + 유지보수 아님 | 500 (일시 장애가 아니라 설치 손상 — `composer install` 또는 vendor 복구 필요). 오류 경로·스택은 본문에 싣지 않는다 |
+| 유지보수 중 + vendor 온전 | 진입점은 끼어들지 않는다 — 종전대로 유지보수 미들웨어의 다국어 화면·JSON |
+
+bypass 쿠키가 있는 관리자도 vendor 교체 구간에는 503 을 받는다(프레임워크가 없어 쿠키를 검증할 수 없다). Step 7(파일 적용)이 Step 8 보다 먼저 새 `public/index.php` 를 놓으므로, 이 처리가 없는 판에서 올리는 업데이트에도 그 업데이트의 vendor 교체 구간부터 적용된다.
+
 ### 해제
 
 ```text

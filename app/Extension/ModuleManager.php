@@ -1513,6 +1513,13 @@ class ModuleManager implements ModuleManagerInterface
                         $this->findBundledModuleManifest($identifier),
                         $module->getRequiredCoreVersion()
                     )) : []),
+                    // 업데이트 대상 판이 요구하는 의존·연동 중 지금 못 미치는 것 — 업데이트 창이 실행 전에 알린다(업데이트가 있을 때만).
+                    // 판정은 업데이트 뒤 완료 문구의 경고·안내와 같다. GitHub 출처라 대상 판 manifest 를 모르면 null.
+                    ...($updateAvailable ? $this->buildUpdateTargetRequirementFields($this->resolveUpdateTargetManifest(
+                        $record->update_source ?? null,
+                        $this->findBundledModuleManifest($identifier),
+                        $latestVersion
+                    )) : []),
                     'github_url' => $module->getGithubUrl(),
                     'github_changelog_url' => $record->github_changelog_url ?? null,
                     'hidden' => $module->isHidden(),
@@ -5169,6 +5176,10 @@ class ModuleManager implements ModuleManagerInterface
                 'to' => $toVersion,
                 'source' => $updateSource,
             ]);
+
+            // 새 판의 최근 검색어 범위 선언(search_scopes) 형식 검사 — 설치·활성화와 같이 틀린 항목은 버리고 경고로만 알린다.
+            // 업데이트로 들어온 선언이 틀려도 로그에만 남고 결과 창·CLI 에는 보이지 않았다 (7.1.5)
+            $module?->getSearchScopes(reportWarnings: true);
 
             // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이
             // 곧 따라 올라오는 흐름을 막지 않는다). 결과·완료 문구·로그로 알린다.

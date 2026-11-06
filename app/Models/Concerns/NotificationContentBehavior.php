@@ -83,9 +83,11 @@ trait NotificationContentBehavior
     /**
      * 변수를 치환하여 제목과 본문을 반환합니다.
      *
-     * {key} 형식의 변수를 실제 값으로 치환합니다.
+     * {key} 형식의 변수를 실제 값으로 치환합니다. 값이 언어별 묶음(`['ko' => …, 'en' => …]`)이면 이 로케일의
+     * 값을 고른다(없으면 사이트 기본 언어 → 영어) — 알림 데이터는 발송 시점에 한 번 만들어 모든 수신자에게 쓰므로,
+     * 번역 문구는 `LocalizedValue::translateAll()` 묶음으로 넘겨야 수신자 언어로 나간다.
      *
-     * @param  array  $data  key => value 변수 맵
+     * @param  array  $data  key => value 변수 맵 (값은 문자열·숫자 또는 언어별 묶음)
      * @param  string|null  $locale  로케일 (null이면 현재 앱 로케일)
      * @return array{subject: string, body: string} 치환된 제목과 본문
      */
@@ -96,7 +98,9 @@ trait NotificationContentBehavior
 
         $replacements = [];
         foreach ($data as $key => $value) {
-            $replacements['{'.$key.'}'] = (string) $value;
+            $replacements['{'.$key.'}'] = is_array($value)
+                ? (LocalizedValue::pick($value, $locale ?? app()->getLocale()) ?? '')
+                : (string) $value;
         }
 
         return [

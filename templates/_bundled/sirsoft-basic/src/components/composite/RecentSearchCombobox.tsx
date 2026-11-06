@@ -12,8 +12,10 @@
  *   펼침 목록 없이 평범한 검색창으로 동작합니다.
  *
  * 접근성: 입력칸 role=combobox(aria-expanded·aria-controls·aria-activedescendant), 목록 role=listbox,
- * 항목 role=option. 키보드 ↑/↓ 이동, Enter 는 고른 항목 또는 입력한 검색어로 검색, Esc 는 닫고 초점 유지,
+ * 항목 role=option. `aria-expanded`·`aria-controls` 는 listbox 가 실제로 보일 때만 켠다 — 최근 검색어가 0건이거나 자동 저장이
+ * 꺼져 안내 상자만 보일 때는 combobox 의 팝업(listbox)이 없으므로 접힘으로 알리고 없는 id 를 가리키지 않는다(안내는 role=status). 키보드 ↑/↓ 이동, Enter 는 고른 항목 또는 입력한 검색어로 검색, Esc 는 닫고 초점 유지,
  * Delete 는 고른 항목 삭제. 누름 영역은 44px 이상.
+ * `showClear` 면 글자가 있을 때 「검색어 지우기」 단추와 Esc 가 칸만 비운다(종전 type=search 입력칸의 × 와 같이 검색하지 않음).
  *
  * @example
  * ```html
@@ -137,6 +139,17 @@ export interface RecentSearchComboboxProps {
   inputClassName?: string;
   /** 검색 단추 클래스 (주면 기본 모양을 대신한다) */
   buttonClassName?: string;
+  /**
+   * 빈 검색어 제출도 `onSearch('')` 로 넘기는가 (기본 false — 빈 제출은 무시).
+   * 목록 화면 검색칸(상품 목록·게시판 목록)처럼 칸을 비우고 제출하면 검색 조건을 푸는 자리에서 켠다. 빈 검색어는 기록하지 않는다
+   */
+  submitEmpty?: boolean;
+  /**
+   * 검색어 지우기(×) 단추를 보이는가 (기본 false). 칸에 글자가 있을 때만 보이고, 누르면 칸을 비우고 초점을 입력칸에 둔다 —
+   * 검색하지 않는다. 글자가 있을 때 Esc 도 칸을 비운다. 종전 `type="search"` 입력칸(게시판 목록)의 브라우저 지우기 동작과 같다.
+   * 입력칸 클래스를 주면 오른쪽 여백(`pr-11`)을 단추 폭만큼 둔다
+   */
+  showClear?: boolean;
   /** 검색 — 인자: 다듬은 검색어. 레이아웃은 `<on event="onSearch">` 와 `$args[0]` 으로 받는다 */
   onSearch?: (keyword: string) => void;
   /** 루트 시험 식별자 */
@@ -163,6 +176,8 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
   className = '',
   inputClassName,
   buttonClassName,
+  submitEmpty = false,
+  showClear = false,
   onSearch,
   'data-testid': testId = 'recent-search-combobox',
   id,
@@ -202,6 +217,8 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
   const { items, autoSave, enabled, loading } = history;
   const open = enabled && !inEditor && focused && !dismissed && text.trim() === '';
   const itemCount = autoSave ? items.length : 0;
+  // combobox 의 팝업은 listbox 다 — 펼침 상자가 열려도 목록이 없으면(0건·자동 저장 꺼짐) 접힘으로 알린다(WAI-ARIA combobox 패턴)
+  const listShown = open && itemCount > 0;
 
   // 목록이 줄면 고른 자리를 안쪽으로 맞춘다(삭제·자동 저장 끄기)
   useEffect(() => {
@@ -216,7 +233,11 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
   const submit = useCallback(
     (raw: string) => {
       const keyword = raw.replace(/\s+/g, ' ').trim();
-      if (keyword === '') return;
+      if (keyword === '') {
+        // 목록 화면 검색칸은 빈 제출로 검색 조건을 푼다 — 기록하지 않는다
+        if (submitEmpty) onSearch?.('');
+        return;
+      }
       setDismissed(true);
       setActiveIndex(-1);
       // 엔진 record 는 던지지 않지만, 확장 구독자 예외 등으로 거부가 새어도 검색은 막지 않는다
@@ -227,7 +248,7 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
       }
       onSearch?.(keyword);
     },
-    [history, onSearch],
+    [history, onSearch, submitEmpty],
   );
 
   /** 항목을 골라 그 검색어로 검색한다 */
@@ -245,6 +266,18 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
   const clearAll = () => {
     void history.clear();
     setActiveIndex(-1);
+    inputRef.current?.focus();
+  };
+
+  /**
+   * 칸을 비운다 — 검색하지 않고 초점은 입력칸에 둔다(종전 검색 입력칸의 × 와 같다).
+   *
+   * @param keepClosed 비운 뒤 최근 검색어 목록을 펼치지 않는가(Esc)
+   */
+  const clearText = (keepClosed: boolean) => {
+    setText('');
+    setActiveIndex(-1);
+    setDismissed(keepClosed);
     inputRef.current?.focus();
   };
 
@@ -284,7 +317,13 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
         // 고른 항목이 없으면 양식 제출(입력한 검색어)로 넘긴다
         return;
       case 'Escape':
-        if (!open) return;
+        if (!open) {
+          if (showClear && text !== '') {
+            event.preventDefault();
+            clearText(true);
+          }
+          return;
+        }
         event.preventDefault();
         event.stopPropagation();
         setDismissed(true);
@@ -363,15 +402,26 @@ export const RecentSearchCombobox: React.FC<RecentSearchComboboxProps> = ({
             aria-label={ariaLabel ?? placeholder ?? t('search.title')}
             role="combobox"
             aria-autocomplete="list"
-            aria-expanded={open}
-            aria-controls={open ? listboxId : undefined}
+            aria-expanded={listShown}
+            aria-controls={listShown ? listboxId : undefined}
             aria-activedescendant={activeId}
             autoComplete="off"
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => handleTextChange(event.target.value)}
             onInput={(event: React.FormEvent<HTMLInputElement>) => handleTextChange(event.currentTarget.value)}
             onKeyDown={handleKeyDown}
-            className={inputClassName ?? DEFAULT_INPUT_CLASS}
+            className={inputClassName ?? (showClear ? DEFAULT_INPUT_CLASS.replace('pr-4', 'pr-11') : DEFAULT_INPUT_CLASS)}
           />
+          {showClear && text !== '' && (
+            <Button
+              type="button"
+              aria-label={t('search.clear')}
+              className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+              onMouseDown={keepFocus}
+              onClick={() => clearText(false)}
+            >
+              <Icon name="x" className="w-3.5 h-3.5" />
+            </Button>
+          )}
         </Div>
         {showButton && (
           <Button type="submit" className={buttonClassName ?? DEFAULT_BUTTON_CLASS}>

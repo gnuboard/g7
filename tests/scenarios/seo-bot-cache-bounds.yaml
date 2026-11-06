@@ -48,6 +48,7 @@ effects:
   - null_render_refunds_render_budget
   - stats_url_column_fits_normalized_cache_url
   - bot_receives_seo_html_on_miss
+  - degraded_render_not_cached   # 데이터 소스 일시 장애(시간 초과·5xx)로 대체값을 쓴 렌더는 보내되 저장하지 않음 — 미들웨어·재생성기
   - non_bot_or_disabled_detection_receives_spa
   - cache_hit_served_with_hit_header
   - render_failure_falls_back_to_spa

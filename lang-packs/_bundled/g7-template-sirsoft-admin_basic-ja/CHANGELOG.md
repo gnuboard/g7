@@ -11,6 +11,9 @@
 - 관리자 기본 템플릿 1.1.5 의 레이아웃 편집기 상태 이름 「상품 진열 탭」(`editor.state.tab.product_display` 「商品陳列タブ」)의 일본어 번역을 추가했습니다.
 - 관리자 기본 템플릿 1.1.5 의 환경설정 > 개인정보 「최근 검색어」 카드 문구(`admin.settings.privacy.search_history.*`, 대상 행·창 제목 `targets.rows|title.search_history`)와 확장 경고 단계 이름(`search_scopes`)의 일본어 번역을 추가했습니다.
 - 회원 상세·수정 「최근 검색어」 구획 문구(`users.detail.tabs.search_history_info`·`users.detail.search_history.*` 「最近の検索語」 등)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 확장 작업 경고 결과 창에서 확장 선언 오류를 알리는 문구(`admin.extensions.lifecycle_warnings.declaration_title`·`declaration_summary`·`declaration_description`·`declaration_hint`)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 모듈·플러그인·템플릿 업데이트 창 「새 버전이 요구하는 확장을 먼저 확인하세요」 경고 상자 문구(`extensions.update_modal.requirements_*`)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 사진 확대 창 화면 읽기 이름(`common.lightbox.*` — 창 이름 「画像の拡大表示」·닫기·이전·다음·확대·전체 화면·「{total}枚中{index}枚目」)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

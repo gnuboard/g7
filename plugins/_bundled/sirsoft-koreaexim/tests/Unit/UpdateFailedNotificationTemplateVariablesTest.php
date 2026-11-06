@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Koreaexim\Tests\Unit;
 
+use App\Models\NotificationTemplate;
 use Plugins\Sirsoft\Koreaexim\Enums\RunStatus;
 use Plugins\Sirsoft\Koreaexim\Listeners\UpdateFailedNotificationDataListener;
 use Plugins\Sirsoft\Koreaexim\Models\KoreaeximRateRun;
@@ -54,6 +55,41 @@ class UpdateFailedNotificationTemplateVariablesTest extends PluginTestCase
 
         $this->assertSame([], $missing, '리스너가 채우지 않는 템플릿 변수가 있어 글자 그대로 발송됩니다.');
         $this->assertSame('테스트 사이트', $data['app_name']);
+    }
+
+    /**
+     * 상태 이름은 수신자 언어로 나간다 — 발송 시점 앱 언어로 미리 번역하면 영어 메일에 한국어 상태 이름이 섞였다.
+     *
+     * @scenario channel=mail
+     *
+     * @effects status_label_follows_recipient_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_status_label_is_rendered_in_recipient_locale(): void
+    {
+        config(['app.supported_locales' => ['ko', 'en'], 'app.name' => 'QA']);
+        app()->setLocale('ko');
+
+        $run = new KoreaeximRateRun([
+            'status' => RunStatus::NoData,
+            'message' => 'probe',
+            'search_date' => '2026-10-03',
+        ]);
+        $data = app(UpdateFailedNotificationDataListener::class)->extract([], 'koreaexim_update_failed', [$run])['data'] ?? [];
+
+        $template = new NotificationTemplate;
+        $template->subject = ['ko' => '{status_label}', 'en' => '{status_label}'];
+        $template->body = ['ko' => '{status_label}', 'en' => '{status_label}'];
+
+        app()->setLocale('en');
+        $english = RunStatus::NoData->label();
+        app()->setLocale('ko');
+        $korean = RunStatus::NoData->label();
+
+        $this->assertNotSame($korean, $english, '번역 파일에 두 언어 상태 이름이 있어야 이 시험이 뜻을 가진다.');
+        $this->assertSame($english, $template->replaceVariables($data, 'en')['body']);
+        $this->assertSame($korean, $template->replaceVariables($data, 'ko')['body']);
     }
 
     /**

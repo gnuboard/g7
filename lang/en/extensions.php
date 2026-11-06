@@ -29,7 +29,7 @@ return [
     'errors' => [
         'state_contract_conflict' => "The ':name' state contract is owned by :owner. :extension cannot declare the same name.",
         'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required or higher. (Current: :installed)',
-        'php_extension_missing' => 'The :name extension requires the PHP extension(s) :extensions on the server. Install them and try again.',
+        'php_extension_missing' => 'The :name extension requires these PHP extensions on the server: :extensions. Install them and try again.',
         'version_check_failed' => 'Version check failed.',
         'operation_in_progress' => 'Cannot process the request because ":name" has an operation in progress (:status).',
         'operation_stuck' => '":name" has been stuck in "updating" for more than :minutes minutes. If the update ended midway, update again with --force to clean it up and finish the update, or activate it to only clean it up and turn it on (you will be told to run an unfinished update again).',
@@ -81,7 +81,16 @@ return [
         'column_target' => 'Target',
         'column_message' => 'Reason',
         'composer_install_failed' => 'Installing Composer dependencies failed — run composer install manually in the extension directory',
-        'php_extension_missing' => 'The server is missing the PHP extension(s) :extensions required by this extension — related features may not work until they are installed',
+        'php_extension_missing' => 'The server is missing PHP extensions required by this extension (:extensions) —related features may not work until they are installed',
+        'search_scopes_not_object' => 'The search_scopes declaration is not an object, so all of it was ignored',
+        'search_scopes_invalid_name' => 'Dropped scopes with an invalid name (must start with a lowercase letter and use only lowercase letters, digits, _ or -, up to 50 characters): :names',
+        'search_scopes_invalid_definition' => 'Dropped scopes whose declaration is not an object: :names',
+        'search_scopes_max_count_out_of_range' => 'Ignored max_count values that are not integers between :min and :max (the default is used): :items',
+        'search_scopes_retention_days_out_of_range' => 'Ignored retention_days values that are not integers between :min and :max days (the default is used): :items',
+        'necessary_storage_not_object' => 'The necessary_storage declaration is not an object, so all of it was ignored',
+        'necessary_storage_invalid_scope' => 'Dropped storage types that are not localStorage, sessionStorage or cookie, or whose key list is not an array: :names',
+        'necessary_storage_invalid_key' => 'Dropped storage keys with an invalid format (letters, digits, _ . : @ + - up to 128 characters; a single trailing * for prefix match): :items',
+        'declaration_hint' => 'This is a mistake in the extension\'s own declaration, so running the task again will not change it — let the extension developer know',
     ],
 
     // Unmet required dependency (dependencies) reasons — shared by recovery failure, cascade install failure and CLI (7.1.4)

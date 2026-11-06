@@ -37,6 +37,8 @@ return ['RunStatus' => ['success' => '성공',
     // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수. 없는 키는 선언 문자열을 그대로 쓴다.
     'notification_variables' => [
         'common' => [
+            'name' => '수신자(관리자) 이름',
+            'app_name' => '사이트 이름',
             'status_label' => '실패 유형',
             'message' => '인증키를 제외한 상세 실패 사유',
             'search_date' => '한국시간 기준 조회일',

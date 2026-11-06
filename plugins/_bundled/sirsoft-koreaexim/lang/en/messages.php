@@ -37,6 +37,8 @@ return ['RunStatus' => ['success' => 'Success',
     // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
     'notification_variables' => [
         'common' => [
+            'name' => 'Recipient (administrator) name',
+            'app_name' => 'Site name',
             'status_label' => 'Failure type',
             'message' => 'Detailed failure reason (excluding the API key)',
             'search_date' => 'Lookup date (Korea time)',

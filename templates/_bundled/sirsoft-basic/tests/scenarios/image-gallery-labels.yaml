@@ -1,0 +1,22 @@
+feature: sirsoft-basic ImageGallery — 확대 창 화면 읽기 이름 다국어
+
+description: |
+  yet-another-react-lightbox 는 labels 를 넘기지 않으면 확대 창 dialog 이름(「Lightbox」)과 닫기·이전·다음·확대·전체 화면
+  단추 이름, 슬라이드 위치(「{index} of {total}」)를 영어 기본값으로 붙여 한국어·일본어 화면에서도 영어로 읽혔다.
+  모든 라벨을 common.lightbox.* 번역 키로 넘기고, 슬라이드 위치 문구는 라이브러리가 번호를 채우도록 인자 없이 번역한다.
+
+axes:
+  label:
+    - dialog
+    - buttons
+    - slide_position
+    - all
+
+effects:
+  - dialog_name_translated
+  - button_names_translated
+  - slide_position_placeholders_filled
+  - no_english_default_left
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ImageGallery.labels.test.tsx

@@ -68,6 +68,8 @@ class PluginResource extends BaseApiResource
             ),
             // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
             ...$this->updateCoreCompatibilityFields(),
+            // 업데이트 대상 판이 요구하는 의존·연동 중 못 미치는 것(업데이트가 있을 때만) — 업데이트 창이 실행 전에 경고한다.
+            ...$this->updateTargetRequirementFields(),
             // composer.json require/suggest ext-* 와 서버 로드 상태 — 목록 카드의 PHP 확장 배지(#151)
             ...$this->phpExtensionRequirementFields('plugin'),
 

@@ -54,6 +54,14 @@ export interface SeoOgFormProps {
   onChangeOg: (next: Record<string, unknown>) => void;
   /** twitter 변경 콜백 */
   onChangeTwitter: (next: Record<string, unknown>) => void;
+  /**
+   * og 키 하나 변경 콜백(선택) — 주면 칸 변경을 이것으로 보낸다. 호스트가 **부르는 시점의 최신** og 에 그 키만 반영하므로,
+   * 다국어 칸의 키 생성 응답이 늦게 와도 그사이 다른 og 칸에 적은 값을 그린 시점의 옛 og 로 덮지 않는다.
+   * 없으면 그린 시점 og 에 키를 반영해 onChangeOg 로 보낸다(종전).
+   */
+  onPatchOg?: (key: string, value: unknown) => void;
+  /** twitter 키 하나 변경 콜백(선택) — {@link SeoOgFormProps.onPatchOg} 와 같다 */
+  onPatchTwitter?: (key: string, value: unknown) => void;
   /** 서버 og 미리보기 행. 전제 미충족이면 빈 배열/undefined */
   ogPreview?: SeoPreviewRow[];
   /** 서버 twitter 미리보기 행 */
@@ -163,6 +171,8 @@ export function SeoOgForm({
   twitter,
   onChangeOg,
   onChangeTwitter,
+  onPatchOg,
+  onPatchTwitter,
   ogPreview,
   twitterPreview,
   defaultsAvailable = false,
@@ -182,21 +192,29 @@ export function SeoOgForm({
 
   const setOg = useCallback(
     (key: string, value: unknown): void => {
+      if (onPatchOg) {
+        onPatchOg(key, value);
+        return;
+      }
       const next = { ...ogVals };
       if (value === undefined || value === '' || value === null) delete next[key];
       else next[key] = value;
       onChangeOg(next);
     },
-    [ogVals, onChangeOg],
+    [ogVals, onChangeOg, onPatchOg],
   );
   const setTw = useCallback(
     (key: string, value: unknown): void => {
+      if (onPatchTwitter) {
+        onPatchTwitter(key, value);
+        return;
+      }
       const next = { ...twVals };
       if (value === undefined || value === '' || value === null) delete next[key];
       else next[key] = value;
       onChangeTwitter(next);
     },
-    [twVals, onChangeTwitter],
+    [twVals, onChangeTwitter, onPatchTwitter],
   );
 
   /** 잠김(🔒) 표시 — 칸 아래 별도 줄(편집 불가 안내라 칸 안에 못 녹임). 출처 배지는 #4 로 칸 안 이관. */

@@ -4436,6 +4436,10 @@
       "notice_title": "確認すべきお知らせがあります",
       "notice_summary": "完了しました — 確認すべきお知らせ {{count}} 件",
       "notice_description": "すべて反映されました。以下のお知らせを確認してください。",
+      "declaration_title": "拡張機能の宣言に誤った値があります",
+      "declaration_summary": "完了しましたが、拡張機能が誤って宣言した値 {{count}} 件を破棄しました",
+      "declaration_description": "作業自体は完了しました。以下の項目は拡張機能が設定ファイル(manifest)に誤って宣言した値のため破棄しました — 再実行しても変わらないため、拡張機能の開発者に知らせてください。",
+      "declaration_hint": "拡張機能の開発者が直す宣言です — 再実行しても変わりません",
       "steps": {
         "dependents": "依存する拡張機能",
         "extract": "展開",

@@ -24,6 +24,7 @@ effects:
   - every_lifecycle_command_reports_warnings
   - storage_cleanup_left_behind_becomes_warning
   - target_name_carried_only_when_given   # 대상 표시 이름은 넘겼을 때만(식별자와 다를 때만) 항목에 싣는다 (7.1.4)
+  - declaration_error_marked_for_developer   # 확장 선언 형식 오류는 cause=declaration 을 싣고(실패로 셈), CLI 표 사유에 확장 개발자가 고칠 선언이라는 안내를 붙인다 (7.1.5)
 
 test_files:
   - tests/Unit/Extension/LifecycleWarningsTest.php

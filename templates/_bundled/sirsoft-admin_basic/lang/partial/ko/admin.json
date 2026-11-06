@@ -4436,6 +4436,10 @@
       "notice_title": "확인할 안내가 있습니다",
       "notice_summary": "완료했습니다 — 확인할 안내 {{count}}건",
       "notice_description": "작업은 모두 반영됐습니다. 아래 안내를 확인하세요.",
+      "declaration_title": "확장 선언에 틀린 값이 있습니다",
+      "declaration_summary": "완료했지만 확장이 잘못 선언한 값 {{count}}건을 버렸습니다",
+      "declaration_description": "작업 자체는 끝났습니다. 아래 항목은 확장이 설정 파일(manifest)에 잘못 선언한 값이라 버린 것입니다 — 다시 실행해도 바뀌지 않으니 확장 개발자에게 알리세요.",
+      "declaration_hint": "확장 개발자가 고칠 선언입니다 — 다시 실행해도 바뀌지 않습니다",
       "steps": {
         "dependents": "의존하는 확장",
         "extract": "압축 풀기",

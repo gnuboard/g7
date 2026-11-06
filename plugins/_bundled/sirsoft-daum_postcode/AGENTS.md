@@ -90,7 +90,11 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 영역은 엔진 밖에서 만든 DOM 이라 Tailwind 클래스 대신 자체 `<style>`(다크 모드 `html.dark` 규칙 포함)을 한 번 싣습니다.
 이벤트가 없으면 PC 는 레이어, 모바일은 전체 화면으로 띄웁니다. 전체 화면(`fullscreen`, 모바일 선택지)은 화면 전체를
 덮는 창(제목 + 닫기)에 100% 높이로 embed 하고 선택·닫기·ESC 로 닫습니다 — 뒤로 가기는 가로채지 않습니다(엔진 라우터가 모든
-popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 기존 설치의 단일 `display_mode` 는 1.2.0 업그레이드 스텝이
+popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 레이어·전체 화면이 열려 있는 동안 ESC 는 그 창 몫이라
+`window` 캡처 단계에서 받아 다른 리스너로 넘기지 않고(`captureEscapeWhileOpen`), 닫히면 누른 버튼으로 초점을 돌립니다 —
+배송지 등록 창(템플릿 Modal) 안에서 연 검색 창에 ESC 를 누르면 아래 창까지 닫히던 결함의 대책이며, 템플릿 창 구현에 기대지
+않습니다. 초점이 카카오 검색 iframe(다른 출처) 안에 있으면 키 입력이 페이지에 오지 않아 ESC 로 닫을 수 없습니다(닫기 단추로 닫힘).
+기존 설치의 단일 `display_mode` 는 1.2.0 업그레이드 스텝이
 `display_mode_pc` 로 옮기고 `display_mode_mobile` 을 `inline` 으로 둡니다. 레이어는 `min(설정px, 100vw - 32px)` × `min(설정px, 100vh - 96px)` 로 화면에 맞춥니다.
 
 **SDK 확보 실패**: `postcodeSdk.ts` 가 스크립트 로드에 `onerror` 를 걸어 실패를 감지하고,
@@ -162,6 +166,7 @@ popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 
 | SDK 확보를 확인하지 않고 필드를 먼저 읽기 전용으로 만들기 | 확보 확인 후에만 읽기 전용 적용 (해제는 확인 없이) | 읽기 전용 + 검색 불가 = 입력 불가. 순서가 뒤집히면 실패 환경에서 필드가 잠긴 채 남는다 |
 | 선택된 주소를 이 플러그인이 직접 저장 | 필드에 쓰기(또는 `callbackAction` 에 넘기기)까지 | 저장 위치·형식은 화면을 소유한 확장이 정한다. 여기서 저장하면 그 확장마다 분기가 늘어난다 |
 | 쓸 칸을 코드에 고정 | `targetFields`·설정 `target_fields` 로 소비처가 고르게 | 사이트·화면마다 필드 구성이 다르다 |
+| 화면 위에 띄운 창(레이어·전체 화면)의 ESC 를 `document` 버블 리스너로 받기 | `captureEscapeWhileOpen` — window 캡처에서 받아 전파 중단, 닫히면 리스너 해제 | 템플릿 Modal 도 document 에서 ESC 를 받아, 창 안에서 연 검색 창에 ESC 한 번이면 아래 창까지 닫혀 입력이 사라진다 |
 | 자산 URL 을 문자열로 조립 | `G7Core.asset.plugin` | 확장자를 정적 location 이 가로채는 서버에서 조립한 URL 만 404 가 된다 |
 <!-- @intent END -->
 
@@ -171,9 +176,9 @@ popstate 에 화면을 다시 그려 입력 중인 폼이 다시 그려진다). 
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 3개 | `plugins/_bundled/sirsoft-daum_postcode/tests` |
-| Vitest | 11개 | `vitest.config.ts` |
+| Vitest | 12개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 13개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

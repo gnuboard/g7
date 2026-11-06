@@ -515,7 +515,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  mixed  $declared  선언값 (`{localStorage: [], sessionStorage: [], cookie: []}`)
      * @param  string  $identifier  템플릿 식별자 (로그용)
-     * @param  bool  $reportWarnings  설치처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
+     * @param  bool  $reportWarnings  설치·업데이트처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
      * @return array{localStorage: array<int, string>, sessionStorage: array<int, string>, cookie: array<int, string>}
      */
     public static function normalizeNecessaryStorage(mixed $declared, string $identifier, bool $reportWarnings = false): array
@@ -525,13 +525,14 @@ class TemplateManager implements TemplateManagerInterface
             return $result;
         }
 
-        $invalid = [];
+        // 버린 이유별로 모은다 — 경고 문구가 「무엇을 왜 버렸는지」를 이유마다 한 덩어리로 말한다
+        $invalid = ['not_object' => false, 'invalid_scope' => [], 'invalid_key' => []];
         if (! is_array($declared)) {
-            $invalid[] = 'necessary_storage';
+            $invalid['not_object'] = true;
         } else {
             foreach ($declared as $scope => $items) {
                 if (! in_array($scope, self::NECESSARY_STORAGE_SCOPES, true) || ! is_array($items)) {
-                    $invalid[] = (string) $scope;
+                    $invalid['invalid_scope'][] = (string) $scope;
 
                     continue;
                 }
@@ -539,20 +540,34 @@ class TemplateManager implements TemplateManagerInterface
                     if (is_string($item) && strlen($item) <= 128 && preg_match(self::NECESSARY_STORAGE_KEY_PATTERN, $item) === 1) {
                         $result[$scope][] = $item;
                     } else {
-                        $invalid[] = $scope.':'.(is_scalar($item) ? (string) $item : gettype($item));
+                        $invalid['invalid_key'][] = $scope.':'.(is_scalar($item) ? (string) $item : gettype($item));
                     }
                 }
                 $result[$scope] = array_values(array_unique($result[$scope]));
             }
         }
 
-        if ($invalid !== []) {
+        $reasons = [];
+        if ($invalid['not_object']) {
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_not_object', [], 'necessary_storage');
+        }
+        if ($invalid['invalid_scope'] !== []) {
+            $names = implode(', ', $invalid['invalid_scope']);
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_invalid_scope', ['names' => $names], $names);
+        }
+        if ($invalid['invalid_key'] !== []) {
+            $items = implode(', ', $invalid['invalid_key']);
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_invalid_key', ['items' => $items], $items);
+        }
+
+        if ($reasons !== []) {
             Log::warning('template.json necessary_storage 의 형식이 틀린 항목을 무시합니다', [
                 'template' => $identifier,
                 'invalid' => $invalid,
             ]);
             if ($reportWarnings) {
-                LifecycleWarnings::current()->add('necessary_storage', $identifier, implode(', ', $invalid));
+                // 템플릿이 template.json 에 잘못 적은 값이라 다시 실행해도 같다 — 템플릿 개발자가 고칠 선언으로 표시한다
+                LifecycleWarnings::current()->declaration('necessary_storage', $identifier, implode(' / ', $reasons));
             }
         }
 
@@ -1270,6 +1285,13 @@ class TemplateManager implements TemplateManagerInterface
                         $record->update_source ?? null,
                         $this->findBundledTemplateManifest($identifier),
                         $template['g7_version'] ?? null
+                    )) : []),
+                    // 업데이트 대상 판이 요구하는 의존·연동 중 지금 못 미치는 것 — 업데이트 창이 실행 전에 알린다(업데이트가 있을 때만).
+                    // 판정은 업데이트 뒤 완료 문구의 경고·안내와 같다. GitHub 출처라 대상 판 manifest 를 모르면 null.
+                    ...($updateAvailable ? $this->buildUpdateTargetRequirementFields($this->resolveUpdateTargetManifest(
+                        $record->update_source ?? null,
+                        $this->findBundledTemplateManifest($identifier),
+                        $latestVersion
                     )) : []),
                     'github_url' => $template['github_url'] ?? ($record->github_url ?? null),
                     'github_changelog_url' => $record->github_changelog_url ?? ($template['github_changelog_url'] ?? null),
@@ -3583,6 +3605,12 @@ class TemplateManager implements TemplateManagerInterface
                 'source' => $updateSource,
                 'layout_strategy' => $layoutStrategy,
             ]);
+
+            // 새 판의 필수 저장 키 선언(template.json necessary_storage) 형식 검사 — 설치와 같이 틀린 항목은 무시하고 경고로만
+            // 알린다. 업데이트로 들어온 선언이 틀려도 로그에만 남고 결과 창·CLI 에는 보이지 않았다 (7.1.5)
+            if (is_array($template)) {
+                self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $identifier, reportWarnings: true);
+            }
 
             // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이
             // 곧 따라 올라오는 흐름을 막지 않는다). 결과·완료 문구·로그로 알린다.

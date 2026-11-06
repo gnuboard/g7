@@ -999,6 +999,9 @@ slots.content:
 **SEO 특수사항**:
 - `meta.seo.structured_data`: Product, AggregateRating 스키마
 - `meta.seo.og`: 상품 이미지, 가격 정보 포함
+- `meta.seo.vars`·`og` 의 제목·설명 식은 `$localized(meta_title) || $localized(name) || ''` 처럼 `||` 로 잇는다 — 화면 `$localized` 는
+  빈 값을 빈 글자로 돌려줘 `??` 로 이으면 다음 후보로 넘어가지 않는다. 그러면 상품 고유 검색 제목이 없는 상품의 방문자 탭 제목에서
+  상품명이 빠지고 틀의 고정 글자만 남는다(봇 `<title>` 은 정상이라 눈에 덜 띈다). 이 식은 서버 평가기와 화면 엔진이 함께 평가한다
 
 **핸들러 패턴**:
 - `sirsoft-basic.addSelectedItemIfComplete` — 옵션 선택 완료 시 자동 추가
@@ -1155,6 +1158,7 @@ slots.content:
 - `searchActiveTab`으로 탭 전환 시 해당 카테고리만 표시
 - 상품 결과는 카드/리스트 뷰 전환 지원
 - `global_state`로 검색 상태 유지 (탭, 필터, 정렬, 페이지)
+- 최근 검색어 범위: 통합검색·머리글·모바일 서랍 검색칸은 `core.site`, 상품 목록·분류 검색줄은 `sirsoft-ecommerce.products`, 게시판 목록 세 유형 검색칸은 `sirsoft-board.posts` 를 `RecentSearchCombobox` 의 `scope` 로 건넨다. 목록 화면 검색칸은 `submitEmpty` 로 빈 제출이 검색어 조건을 푼다(종전 동작)
 
 **핸들러 패턴**:
 - `apiCall` — 검색 API (게시글, 상품, 페이지 별도)

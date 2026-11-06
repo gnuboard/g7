@@ -4492,6 +4492,10 @@
       "notice_title": "Notices to review",
       "notice_summary": "Completed — notices to review: {{count}}",
       "notice_description": "Everything was applied. Please review the notices below.",
+      "declaration_title": "The extension declares invalid values",
+      "declaration_summary": "Completed, but invalid values declared by the extension were dropped ({{count}})",
+      "declaration_description": "The task itself finished. The items below are values the extension declared incorrectly in its manifest and were dropped — running the task again will not change them, so let the extension developer know.",
+      "declaration_hint": "The extension developer needs to fix this declaration — running again will not change it",
       "steps": {
         "dependents": "Dependent extension",
         "extract": "Extract",

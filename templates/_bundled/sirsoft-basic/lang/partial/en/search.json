@@ -66,5 +66,6 @@
     "auto_save_off": "Turn off auto-save",
     "auto_save_on": "Turn on auto-save",
     "auto_save_off_notice": "Search history auto-save is off."
-  }
+  },
+  "clear": "Clear search"
 }

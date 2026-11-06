@@ -198,5 +198,37 @@
             "vars": { "commerce_name": "", "keyword_name": "" },
             "expected": ""
         }
+    ],
+    "required_vars": [
+        {
+            "name": "필수 변수가 비면 틀이 아직 준비되지 않았다 (상품을 받기 전)",
+            "definitions": { "commerce_name": { "source": "setting", "key": "basic_info.shop_name" }, "product_name": { "source": "data", "required": true } },
+            "vars": { "commerce_name": "", "product_name": "" },
+            "expected": true
+        },
+        {
+            "name": "필수 변수에 값이 있으면 준비됐다 (선택 변수는 비어도 된다)",
+            "definitions": { "commerce_name": { "source": "setting", "key": "basic_info.shop_name" }, "product_name": { "source": "data", "required": true } },
+            "vars": { "commerce_name": "", "product_name": "후드 티" },
+            "expected": false
+        },
+        {
+            "name": "필수 변수가 값 목록에 없으면 비어 있는 것이다",
+            "definitions": { "category_name": { "source": "data", "required": true } },
+            "vars": {},
+            "expected": true
+        },
+        {
+            "name": "필수 선언이 없으면 빈 변수도 준비된 것으로 본다 (검색어)",
+            "definitions": { "keyword_name": { "source": "query", "key": "q" } },
+            "vars": { "keyword_name": "" },
+            "expected": false
+        },
+        {
+            "name": "required 가 false 면 필수가 아니다",
+            "definitions": { "product_name": { "source": "data", "required": false } },
+            "vars": { "product_name": "" },
+            "expected": false
+        }
     ]
 }

@@ -26,7 +26,8 @@ use Illuminate\Support\Facades\Log;
  * - 키는 확장 안의 이름이다. 코어가 `{식별자}.` 를 붙여 범위 id 를 만든다 — 확장이 남의 범위를 주장할 수 없다.
  *   이름 규칙 `/^[a-z][a-z0-9_-]{0,49}$/`.
  * - `label` 은 다국어 맵(`{"ko": "…", "en": "…"}`) 또는 번역 키 문자열이다. 없으면 범위 이름을 그대로 보인다.
- * - `max_count`(1~상한)·`retention_days`(0 이상, 0 = 기한 없음)는 선택이다. 범위를 벗어난 값은 버리고 경고한다.
+ * - `max_count`(1~상한)·`retention_days`(0 이상, 0 = 기한 없음)는 선택이다. 범위를 벗어나거나 정수가 아닌 값은 버리고
+ *   경고한다 — 경고는 무엇을 왜 버렸는지 이유별 문장이고, 확장 개발자가 고칠 선언(`cause: declaration`)으로 표시된다.
  *
  * 운영자는 환경설정 > 개인정보 「최근 검색어」 카드에서 범위마다 보관 개수·보관 기한을 고친다. 저장 모양은
  * **목록**(`privacy.search_history_scopes = [{scope, max_count, retention_days}]`)이다 — 범위 id 에 점이 있어
@@ -97,7 +98,7 @@ class SearchScopes
      *
      * @param  mixed  $raw  manifest 값
      * @param  string  $identifier  선언한 확장 식별자 (범위 id 접두어)
-     * @param  bool  $reportWarnings  설치·활성화처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
+     * @param  bool  $reportWarnings  설치·활성화·업데이트처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
      * @return array<string, array{label: string|array<string, string>|null, max_count: int|null, retention_days: int|null}> 범위 id → 선언
      */
     public static function normalize(mixed $raw, string $identifier, bool $reportWarnings = false): array
@@ -107,14 +108,21 @@ class SearchScopes
         }
 
         $normalized = [];
-        $invalid = [];
+        // 버린 이유별로 모은다 — 경고 문구가 「무엇을 왜 버렸는지」를 이유마다 한 덩어리로 말한다
+        $invalid = ['not_object' => false, 'invalid_name' => [], 'invalid_definition' => [], 'max_count' => [], 'retention_days' => []];
 
         if (! is_array($raw)) {
-            $invalid[] = 'search_scopes';
+            $invalid['not_object'] = true;
         } else {
             foreach ($raw as $name => $definition) {
-                if (! is_string($name) || preg_match(self::NAME_PATTERN, $name) !== 1 || ! (is_array($definition) || $definition === null)) {
-                    $invalid[] = is_scalar($name) ? (string) $name : gettype($name);
+                if (! is_string($name) || preg_match(self::NAME_PATTERN, $name) !== 1) {
+                    $invalid['invalid_name'][] = is_scalar($name) ? (string) $name : gettype($name);
+
+                    continue;
+                }
+
+                if (! (is_array($definition) || $definition === null)) {
+                    $invalid['invalid_definition'][] = $name;
 
                     continue;
                 }
@@ -122,14 +130,14 @@ class SearchScopes
                 $definition ??= [];
 
                 $maxCount = self::intOrNull($definition['max_count'] ?? null);
-                if ($maxCount !== null && ($maxCount < 1 || $maxCount > self::maxCountLimit())) {
-                    $invalid[] = $name.'.max_count';
+                if (($definition['max_count'] ?? null) !== null && ($maxCount === null || $maxCount < 1 || $maxCount > self::maxCountLimit())) {
+                    $invalid['max_count'][] = $name.'('.self::describeValue($definition['max_count']).')';
                     $maxCount = null;
                 }
 
                 $retentionDays = self::intOrNull($definition['retention_days'] ?? null);
-                if ($retentionDays !== null && ($retentionDays < 0 || $retentionDays > self::retentionDaysLimit())) {
-                    $invalid[] = $name.'.retention_days';
+                if (($definition['retention_days'] ?? null) !== null && ($retentionDays === null || $retentionDays < 0 || $retentionDays > self::retentionDaysLimit())) {
+                    $invalid['retention_days'][] = $name.'('.self::describeValue($definition['retention_days']).')';
                     $retentionDays = null;
                 }
 
@@ -141,13 +149,15 @@ class SearchScopes
             }
         }
 
-        if ($invalid !== []) {
+        $reasons = self::invalidDeclarationReasons($invalid);
+        if ($reasons !== []) {
             Log::warning('search_scopes 선언의 형식이 틀린 항목을 무시합니다', [
                 'extension' => $identifier,
                 'invalid' => $invalid,
             ]);
             if ($reportWarnings) {
-                LifecycleWarnings::current()->add('search_scopes', $identifier, implode(', ', $invalid));
+                // 확장이 manifest 에 잘못 적은 값이라 다시 실행해도 같다 — 확장 개발자가 고칠 선언으로 표시한다
+                LifecycleWarnings::current()->declaration('search_scopes', $identifier, implode(' / ', $reasons));
             }
         }
 
@@ -476,6 +486,64 @@ class SearchScopes
         }
 
         return array_values($rows);
+    }
+
+    /**
+     * 버린 선언 항목을 이유별 사람이 읽는 문장 목록으로 바꿉니다 (관리자 결과 창·CLI 표의 사유 칸).
+     *
+     * @param  array{not_object: bool, invalid_name: array<int, string>, invalid_definition: array<int, string>, max_count: array<int, string>, retention_days: array<int, string>}  $invalid  이유별로 모은 항목
+     * @return array<int, string> 이유마다 한 문장 (버린 것이 없으면 빈 목록)
+     */
+    private static function invalidDeclarationReasons(array $invalid): array
+    {
+        $reasons = [];
+
+        if ($invalid['not_object']) {
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.search_scopes_not_object', [], 'search_scopes');
+        }
+        if ($invalid['invalid_name'] !== []) {
+            $names = implode(', ', $invalid['invalid_name']);
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.search_scopes_invalid_name', ['names' => $names], $names);
+        }
+        if ($invalid['invalid_definition'] !== []) {
+            $names = implode(', ', $invalid['invalid_definition']);
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.search_scopes_invalid_definition', ['names' => $names], $names);
+        }
+        if ($invalid['max_count'] !== []) {
+            $items = implode(', ', $invalid['max_count']);
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.search_scopes_max_count_out_of_range', [
+                'min' => 1,
+                'max' => self::maxCountLimit(),
+                'items' => $items,
+            ], 'max_count: '.$items);
+        }
+        if ($invalid['retention_days'] !== []) {
+            $items = implode(', ', $invalid['retention_days']);
+            $reasons[] = LifecycleWarnings::reason('extensions.warnings.search_scopes_retention_days_out_of_range', [
+                'min' => 0,
+                'max' => self::retentionDaysLimit(),
+                'items' => $items,
+            ], 'retention_days: '.$items);
+        }
+
+        return $reasons;
+    }
+
+    /**
+     * 선언값을 경고 문구에 넣을 짧은 글자로 바꿉니다.
+     *
+     * @param  mixed  $value  선언값
+     * @return string 글자 (배열·객체는 JSON, 64자를 넘으면 자름)
+     */
+    private static function describeValue(mixed $value): string
+    {
+        $text = match (true) {
+            is_bool($value) => $value ? 'true' : 'false',
+            is_scalar($value) => (string) $value,
+            default => (string) json_encode($value, JSON_UNESCAPED_UNICODE),
+        };
+
+        return mb_strlen($text) > 64 ? mb_substr($text, 0, 64).'…' : $text;
     }
 
     /**

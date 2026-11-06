@@ -7,6 +7,7 @@ use App\Extension\PluginManager;
 use App\Extension\Support\LifecycleWarnings;
 use App\Support\SearchScopes;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Lang;
 use Mockery;
 use Tests\TestCase;
 
@@ -81,6 +82,7 @@ class SearchScopesTest extends TestCase
      */
     public function test_normalize_prefixes_identifier_and_drops_invalid_entries(): void
     {
+        $this->fakeWarningLines();
         LifecycleWarnings::current()->clear();
 
         $normalized = SearchScopes::normalize([
@@ -102,7 +104,84 @@ class SearchScopesTest extends TestCase
         $this->assertCount(1, $warnings);
         $this->assertSame('search_scopes', $warnings[0]['step']);
         $this->assertStringContainsString('Bad Name', $warnings[0]['message']);
-        $this->assertStringContainsString('too_many.max_count', $warnings[0]['message']);
+        $this->assertStringContainsString('too_many(999)', $warnings[0]['message']);
+        $this->assertStringContainsString('negative(-1)', $warnings[0]['message']);
+    }
+
+    /**
+     * 형식이 틀린 선언 경고는 무엇을 왜 버렸는지 이유별 사람 말로 말하고, 다시 실행할 작업이 아니라 확장 개발자가 고칠
+     * 선언이라는 표지(cause=declaration)를 싣는다. 정수가 아닌 보관 개수·기한도 조용히 버리지 않고 같은 이유로 알린다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=scope_declaration_warning_explains_reason
+     *
+     * @effects invalid_scope_declaration_warning_explains_reason, invalid_scope_declaration_marked_for_developer
+     */
+    public function test_invalid_declaration_warning_explains_reason_for_developer(): void
+    {
+        $this->fakeWarningLines();
+        LifecycleWarnings::current()->clear();
+
+        $normalized = SearchScopes::normalize([
+            'rates' => ['label' => ['ko' => '환율'], 'max_count' => 5],
+            'Bad Name!' => ['max_count' => 5],
+            'big' => ['max_count' => 999],
+            'words' => ['max_count' => 'many', 'retention_days' => 99999],
+            'flat' => 'oops',
+        ], 'acme-rates', reportWarnings: true);
+
+        $this->assertSame(['acme-rates.rates', 'acme-rates.big', 'acme-rates.words'], array_keys($normalized));
+        $this->assertNull($normalized['acme-rates.words']['max_count'], '정수가 아닌 보관 개수는 버린다');
+
+        $warnings = LifecycleWarnings::current()->all();
+        $this->assertCount(1, $warnings);
+        $this->assertSame('search_scopes', $warnings[0]['step']);
+        $this->assertSame('acme-rates', $warnings[0]['target']);
+        $this->assertSame(LifecycleWarnings::LEVEL_WARNING, $warnings[0]['level']);
+        $this->assertSame(LifecycleWarnings::CAUSE_DECLARATION, $warnings[0]['cause'] ?? null, '확장 개발자가 고칠 선언이라는 표지');
+        $this->assertSame(
+            'NAME[Bad Name!] / DEF[flat] / COUNT[1-50: big(999), words(many)] / DAYS[0-3650: words(99999)]',
+            $warnings[0]['message'],
+        );
+    }
+
+    /**
+     * 선언 자체가 객체가 아니면 전부 무시했다고 말한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=scope_declaration_warning_explains_reason
+     *
+     * @effects invalid_scope_declaration_warning_explains_reason
+     */
+    public function test_non_object_declaration_warning_says_all_ignored(): void
+    {
+        $this->fakeWarningLines();
+        LifecycleWarnings::current()->clear();
+
+        $this->assertSame([], SearchScopes::normalize('products', 'acme-rates', reportWarnings: true));
+
+        $this->assertSame('NOT_OBJECT', LifecycleWarnings::current()->all()[0]['message'] ?? null);
+    }
+
+    /**
+     * 경고 문구 번역을 시험용 표지 글자로 바꿉니다 — 문구가 아니라 이유·자리표시자 구조를 단언한다.
+     *
+     * @return void 반환값 없음
+     */
+    private function fakeWarningLines(): void
+    {
+        app()->setLocale('ko');
+        // 묶음 파일을 먼저 읽어 둔다 — 읽기 전에 addLines 하면 같은 묶음의 다른 키가 비어 버린다
+        __('extensions.warnings.column_step');
+        Lang::addLines([
+            'extensions.warnings.search_scopes_not_object' => 'NOT_OBJECT',
+            'extensions.warnings.search_scopes_invalid_name' => 'NAME[:names]',
+            'extensions.warnings.search_scopes_invalid_definition' => 'DEF[:names]',
+            'extensions.warnings.search_scopes_max_count_out_of_range' => 'COUNT[:min-:max: :items]',
+            'extensions.warnings.search_scopes_retention_days_out_of_range' => 'DAYS[:min-:max: :items]',
+        ], 'ko');
     }
 
     /**

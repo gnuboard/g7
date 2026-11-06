@@ -211,6 +211,36 @@ function countAdvancedComputed(
   return n;
 }
 
+/**
+ * 상속 화면의 meta 영속값에서 베이스가 준 최상위 키를 덜어 낸다 (seo·scroll_restoration 은 호출부가 따로 나눈다)
+ *
+ * 서버는 베이스 meta 위에 화면 meta 를 얕게 덮어(`LayoutService::mergeMeta`) 편집기에 병합본을 준다 — 화면이 적지 않은
+ * 최상위 키(title·description·is_base·editor_label·icon 등 베이스 meta 의 모든 키)는 병합본 값이 곧 베이스 값이다.
+ * 이 화면이 직접 적은 키는 그대로 남기고, 그 밖의 키는 베이스 값과 달라졌을 때만 남긴다. `is_base` 는 이 화면이
+ * 직접 적지 않았으면 남기지 않는다(베이스 표식이 화면 본문에 박히지 않게).
+ *
+ * @param persist 영속값 후보(병합본 사본) — 제자리에서 줄인다
+ * @param mergedBefore 이번 패치 전 병합본 meta
+ * @param ownMeta 이번 패치 전 이 화면이 직접 적은 meta (__editor.original.meta)
+ */
+function dropInheritedTopLevelMeta(
+  persist: Record<string, unknown>,
+  mergedBefore: Record<string, unknown>,
+  ownMeta: Record<string, unknown> | undefined,
+): void {
+  const own = ownMeta ?? {};
+  for (const key of Object.keys(persist)) {
+    if (key === 'seo' || key === 'scroll_restoration' || key in own) continue;
+    if (key === 'is_base') {
+      delete persist[key];
+      continue;
+    }
+    if (key in mergedBefore && JSON.stringify(persist[key]) === JSON.stringify(mergedBefore[key])) {
+      delete persist[key];
+    }
+  }
+}
+
 /** 편집 대상 표시 이름 — meta.title 해석값 ?? editor_label ?? path */
 function resolveTargetName(
   getValue: ReturnType<typeof usePageSettings>['getValue'],
@@ -363,35 +393,48 @@ export function PageSettingsModal({
   // [기본 정보]·[검색엔진] 탭은 병합본 meta 를 통째로 patch 한다(original 미지정 → 병합본이 그대로 영속). 그대로면
   // 베이스에서 물려받은 scroll_restoration·seo 가 이 화면 값으로 굳어 베이스를 바꿔도 따라가지 않는다 —
   // meta 패치의 영속 값에서는 scroll_restoration 을 이 화면이 직접 적은 값으로, seo 를 이 화면이 적었거나 베이스와
-  // 달라진 키만으로 바꿔 쓴다(seoOwnValue — 서버 mergeSeo 와 같은 규칙).
+  // 달라진 키만으로 바꿔 쓴다(seoOwnValue — 서버 mergeSeo 와 같은 규칙). 베이스를 물려받는 화면이면 title·description·is_base
+  // 같은 최상위 키도 같은 규칙으로 줄인다(dropInheritedTopLevelMeta).
+  // 병합본·이 화면 값은 그린 시점 값이 아니라 **부르는 시점의 최신 문서**(getValue)에서 읽는다 — 다국어 칸은 키 생성 응답
+  // 뒤에 기록되므로 그린 시점 값을 쓰면 그사이 다른 칸이 적은 키를 「베이스 상속분」 으로 잘못 나누거나 옛 이 화면 값으로 지운다.
   const patchMetaKeepingOwnScroll = useCallback(
     (key: string, value: unknown, ...rest: [unknown?]): void => {
+      const liveOriginal = (getValue<Record<string, unknown>>('__editor', {}) ?? {}).original as
+        | Record<string, unknown>
+        | undefined;
       if (
         key === 'meta' &&
         rest.length === 0 &&
-        editorOriginal !== undefined &&
+        liveOriginal !== undefined &&
         value &&
         typeof value === 'object' &&
         !Array.isArray(value)
       ) {
+        const liveMeta = (getValue<Record<string, unknown>>('meta', {}) ?? {}) as Record<string, unknown>;
+        const liveOwnMeta = asScrollObject(liveOriginal.meta) as Record<string, unknown> | undefined;
         const persist: Record<string, unknown> = { ...(value as Record<string, unknown>) };
-        const ownScroll = asScrollObject(ownMeta?.scroll_restoration);
+        const ownScroll = asScrollObject(liveOwnMeta?.scroll_restoration);
         if (ownScroll) persist.scroll_restoration = ownScroll;
         else delete persist.scroll_restoration;
         const ownSeo = seoOwnForPersist(
           persist.seo,
-          deriveInheritedSeo(metaValue.seo, ownMeta?.seo),
-          ownMeta?.seo,
+          deriveInheritedSeo(liveMeta.seo, liveOwnMeta?.seo),
+          liveOwnMeta?.seo,
         );
         if (ownSeo) persist.seo = ownSeo;
         else delete persist.seo;
+        // 베이스를 물려받는 화면이면 최상위 키도 같은 규칙 — 베이스 레이아웃 자신·독립 레이아웃은 원본이 곧 병합본이라 전부 남는다.
+        const extendsName = liveOriginal.extends;
+        if (typeof extendsName === 'string' && extendsName !== '') {
+          dropInheritedTopLevelMeta(persist, liveMeta, liveOwnMeta);
+        }
         patch('meta', value, persist);
         return;
       }
       if (rest.length >= 1) patch(key, value, rest[0]);
       else patch(key, value);
     },
-    [editorOriginal, ownMeta, metaValue, patch],
+    [getValue, patch],
   );
 
   // template.json scroll_restoration — [스크롤] 탭을 처음 열 때 한 번 읽는다(상속 출처 표시).

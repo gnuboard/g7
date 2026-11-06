@@ -221,6 +221,16 @@ effects:
   - data_chip_value_edit_mode_uses_chip_editor_not_raw_input_with_done_button
   - data_chip_value_single_binding_and_fallback_and_settings_edit_all_route_to_chip_editor
   - seo_vars_editor_uses_data_chip_value_input_value_only_no_keyification
+  # 다국어 칸 비동기 기록(평문 → $t:custom.* 키 생성 → 토큰 기록)이 다른 칸 기록·저장과 겹칠 때 값 유실 방지
+  - seo_tab_new_search_title_persists_in_original_meta_seo  # 베이스에 seo.title 이 없는 화면·베이스 자신에서 새로 적은 검색 제목·설명이 저장 영속값에 남는다
+  - seo_tab_new_og_twitter_text_persists_in_original_meta_seo  # OG·Twitter 제목·설명도 같은 경로로 남는다
+  - meta_tab_new_page_title_description_persists_in_original_meta  # [기본 정보] 페이지 이름·설명도 같은 경로로 남는다
+  - page_settings_async_i18n_commit_writes_onto_latest_meta  # 키 생성 응답이 늦게 와도 그린 시점이 아니라 최신 meta 위에 기록 — 그사이 다른 칸 값을 지우지 않는다(순서 뒤바뀜 포함)
+  - save_waits_inflight_i18n_key_creation_before_put  # 키 생성 응답 전에 저장하면 저장이 기록을 기다렸다가 토큰이 실린 본문으로 PUT
+  - save_waiting_i18n_commit_still_puts_after_editor_unmount  # 기다리는 사이 편집기가 닫혀도(토큰 기록과 같은 순간 포함) 저장이 멈추지 않고 그린 문서로 PUT
+  # 상속 화면 [기본 정보]·[검색엔진] 저장이 베이스의 최상위 meta(title·description·is_base 등)를 화면 본문에 굳히지 않음
+  - meta_tab_patch_keeps_only_own_or_changed_top_level_meta_in_original  # 화면이 직접 적은 키 + 베이스와 달라진 키만 저장, is_base 는 화면이 적지 않았으면 저장 안 함
+  - meta_tab_patch_on_base_layout_persists_whole_meta  # 베이스 레이아웃 자신(extends 없음)은 종전대로 meta 전부 저장
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/PageSettingsModal.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/SeoForm.test.tsx
@@ -236,6 +246,10 @@ test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/EditorToolbar.pageSettings.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/spec/candidatePools.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/layouts/page-settings-roundtrip.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/page-settings-seo-own-persist.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/page-settings-seo-save-roundtrip.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/page-settings-meta-inherit-persist.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutDocument.saveAfterUnmount.test.tsx
   - tests/Unit/Services/LayoutServiceMergeComputedTest.php
   - tests/Feature/Api/Admin/PageSettingsEditorEndpointsTest.php
   - tests/Feature/Api/Admin/LayoutControllerTopLevelPatchTest.php

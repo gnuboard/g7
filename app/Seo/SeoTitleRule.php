@@ -155,6 +155,31 @@ final class SeoTitleRule
     }
 
     /**
+     * 확장 변수 선언 중 필수(`required`) 변수가 비었는지 봅니다 — 비었으면 그 확장 제목 틀은 아직 제목 후보가 아닙니다.
+     *
+     * 필수 변수가 빈 채로 틀을 치환하면 고정 글자만 남은 제목(`{product_name} 특가` → 「특가」)이 된다. 화면은 데이터를
+     * 받기 전에, 봇은 데이터가 비었을 때 이 상태가 된다. 값 목록에 없는 변수·null·빈 글자를 빈 값으로 본다.
+     *
+     * @param  array<string, mixed>  $definitions  변수 이름 → 선언(`source`·`key`·`required`)
+     * @param  array<string, mixed>  $vars  변수 이름 → 해석한 값
+     * @return bool 비어 있는 필수 변수가 하나라도 있으면 true
+     */
+    public static function hasMissingRequired(array $definitions, array $vars): bool
+    {
+        foreach ($definitions as $name => $definition) {
+            if (! is_array($definition) || empty($definition['required'])) {
+                continue;
+            }
+            $value = $vars[$name] ?? null;
+            if ($value === null || $value === '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 제목 후보를 글자로 정리합니다 — 태그 제거 · 엔티티 해제 · 공백 한 칸 · 앞뒤 공백 제거.
      *
      * @param  string  $text  제목 후보

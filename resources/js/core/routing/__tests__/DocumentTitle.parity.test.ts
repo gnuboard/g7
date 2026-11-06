@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { computeTitleInput, resolveDocumentTitle, substituteSeoVars } from '../DocumentTitle';
+import { computeTitleInput, hasMissingRequiredSeoVar, resolveDocumentTitle, substituteSeoVars } from '../DocumentTitle';
 
 const fixture = JSON.parse(
   readFileSync(resolve(__dirname, '../../../../../tests/fixtures/seo/title-rule-cases.json'), 'utf8'),
@@ -34,6 +34,12 @@ describe('DocumentTitle 제목 규칙 — 서버와 같은 판정 사례', () =>
   // @effects engine_substitute_matches_fixture
   it.each(fixture.substitute.map((c: any) => [c.name, c]))('틀 치환 — %s', (_name, c: any) => {
     expect(substituteSeoVars(c.template, c.vars)).toBe(c.expected);
+  });
+
+  // @scenario case=required_vars_engine
+  // @effects required_var_empty_template_skipped
+  it.each(fixture.required_vars.map((c: any) => [c.name, c]))('필수 변수 — %s', (_name, c: any) => {
+    expect(hasMissingRequiredSeoVar(c.definitions, c.vars)).toBe(c.expected);
   });
 });
 

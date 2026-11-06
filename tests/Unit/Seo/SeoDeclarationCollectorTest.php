@@ -11,6 +11,8 @@ use App\Seo\SeoDeclarationCollector;
 use App\Seo\TemplateRouteResolver;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\Facades\Exceptions;
 use Mockery;
 use Tests\TestCase;
@@ -306,6 +308,68 @@ class SeoDeclarationCollectorTest extends TestCase
         $result = $this->collector->collect();
 
         $this->assertCount(1, $result);
+    }
+
+    /**
+     * 코어가 덧붙이는 시스템 라우트(미리보기 `__preview__`, meta.is_system_route)는 레이아웃을 읽지 않고 건너뜁니다.
+     *
+     * 템플릿 레이아웃이 아니라 읽으면 매번 실패해 사이트맵 생성마다 오류 보고가 1건씩 쌓였다.
+     *
+     * @scenario surface=declaration
+     *
+     * @effects declaration_skips_system_routes
+     *
+     * @return void 반환값 없음
+     */
+    public function test_collect_skips_system_routes_without_loading_layout(): void
+    {
+        $this->setupActiveTemplateWithRoutes([
+            ['path' => '/', 'layout' => 'home', 'auth_required' => false],
+            ['path' => '*/preview/:token', 'layout' => '__preview__', 'auth_required' => false, 'meta' => ['title' => 'Preview', 'is_system_route' => true]],
+        ]);
+
+        $this->mockLayout('home', [
+            'meta' => ['seo' => ['enabled' => true]],
+            'components' => [],
+        ]);
+        $this->layoutService
+            ->shouldReceive('getLayout')
+            ->with('sirsoft-basic', '__preview__')
+            ->never();
+
+        $reported = [];
+        $this->app->instance(ExceptionHandler::class, new class($reported) extends Handler
+        {
+            /** @var array<int, string> */
+            public array $messages;
+
+            /**
+             * 보고된 메시지를 바깥 배열에 모으는 대역 처리기를 만듭니다.
+             *
+             * @param  array<int, string>  $messages  보고된 메시지 모음(참조)
+             */
+            public function __construct(array &$messages)
+            {
+                parent::__construct(app());
+                $this->messages = &$messages;
+            }
+
+            /**
+             * 보고된 예외 메시지를 모읍니다.
+             *
+             * @param  \Throwable  $e  보고된 예외
+             * @return void 반환값 없음
+             */
+            public function report(\Throwable $e): void
+            {
+                $this->messages[] = $e->getMessage();
+            }
+        });
+
+        $result = $this->collector->collect();
+
+        $this->assertSame(['home'], array_column($result, 'layoutName'));
+        $this->assertSame([], $reported, '시스템 라우트를 레이아웃으로 읽어 오류를 보고하면 안 된다');
     }
 
     // ─── collect(): 모듈 레이아웃 (dotted notation) ──────────────────

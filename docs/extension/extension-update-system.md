@@ -89,6 +89,8 @@
 
 목록 API(모듈·플러그인·템플릿)의 설치된 행도 **업데이트가 있을 때만** 같은 규칙으로 `required_core_version`·`is_compatible`·`current_core_version` 을 싣는다(`ResolvesUpdateCoreCompatibility`). GitHub 출처는 원격 매니페스트를 받지 않는 추정값이고, 정확한 판정은 업데이트 스테이징 단계에서 한다. 관리자 화면은 이 값으로 업데이트 창에 코어 호환 경고와 「강제 업데이트」 체크를 띄우며, 목록의 업데이트 버튼은 잠그지 않는다. 설치본 자체의 호환은 별도 필드 `core_compatible` 이 맡는다.
 
+같은 행은 업데이트할 새 버전이 요구하는 확장 중 지금 미설치·꺼짐·버전 미달인 것도 싣는다(7.1.5) — 필수 의존은 `update_dependency_warnings`, 함께 쓰면 연동되는 확장(`integrations`)은 `update_integration_notices`. 판정은 업데이트가 끝난 뒤 결과의 `dependency_warnings`·`integration_notices`(완료 문구에 덧붙는 안내)와 같은 함수(`DependencyVersionWarnings::forManifest()`·`IntegrationNotices::forManifest()`)이고, 대조 대상은 번들 출처면 `_bundled` 매니페스트, GitHub 출처면 `_bundled` 판이 업데이트 대상 버전과 같을 때만 그 매니페스트다(아니면 `null` — 원격 매니페스트를 받지 않는다). 관리자 업데이트 창은 이 목록을 실행 버튼 위에 경고로 보이지만 업데이트를 막지 않는다 — 업데이트 뒤 안내와 같이 알리기만 한다(코어 업데이트 뒤 번들 일괄 업데이트처럼 의존·연동 확장이 같은 흐름에서 곧 따라 올라오는 경우가 정상 경로다). 그래서 연동 요구 버전을 올린 확장을 먼저 올리려는 운영자가 연동이 꺼진다는 것을 업데이트 전에 알 수 있다.
+
 ### 소스 강제 경로 (sourceOverride)
 
 기본 판정(GitHub·`_bundled` 중 높은 버전)을 우회해 특정 소스 단독으로 업데이트를 실행하는 경로입니다.

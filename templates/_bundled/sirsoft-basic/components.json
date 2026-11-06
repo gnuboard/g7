@@ -1186,6 +1186,18 @@
             "default": true,
             "description": "입력칸 왼쪽 돋보기 아이콘 표시"
           },
+          "submitEmpty": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "빈 검색어 제출도 onSearch('')로 넘김(기록하지 않음) — 칸을 비우고 제출하면 검색 조건을 푸는 목록 화면 검색칸용. 끄면 빈 제출은 무시"
+          },
+          "showClear": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "검색어 지우기(×) 단추 — 칸에 글자가 있을 때만 보이고, 누르면(또는 Esc) 칸만 비우고 초점을 남긴다(검색·기록 안 함). 입력칸 클래스를 주면 오른쪽 여백 pr-11 을 둔다"
+          },
           "inputClassName": {
             "type": "string",
             "required": false,

@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Koreaexim\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\LocalizedValue;
 use App\Support\SiteUrl;
 use Plugins\Sirsoft\Koreaexim\Models\KoreaeximRateRun;
 use Plugins\Sirsoft\Koreaexim\Plugin;
@@ -60,7 +61,11 @@ class UpdateFailedNotificationDataListener implements HookListenerInterface
             return $data;
         }
         // 메일 제목의 사이트명은 코어가 대신 채우지 않는다(코어는 {recipient_name} 만 치환) — 여기서 넣는다.
-        $data['data'] = ['name' => '{recipient_name}', 'app_name' => (string) config('app.name'), 'status_label' => $run->status->label(), 'message' => $run->message,
+        // 상태 이름은 수신자 언어로 — 코어 7.1.5 부터 언어별 묶음을 수신자 언어로 고른다. 옛 코어는 발송 시점 언어 하나.
+        $statusLabel = method_exists(LocalizedValue::class, 'translateAll')
+            ? LocalizedValue::translateAll(fn () => $run->status->label())
+            : $run->status->label();
+        $data['data'] = ['name' => '{recipient_name}', 'app_name' => (string) config('app.name'), 'status_label' => $statusLabel, 'message' => $run->message,
             // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정
             'search_date' => $run->search_date->toDateString(), 'settings_url' => SiteUrl::absolute('/admin/plugins/sirsoft-koreaexim/settings')];
 

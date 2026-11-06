@@ -67,6 +67,7 @@ class SeoRendererTest extends TestCase
         $this->layoutService = Mockery::mock(LayoutService::class);
         $this->templateService = Mockery::mock(TemplateService::class);
         $this->dataSourceResolver = Mockery::mock(DataSourceResolver::class);
+        $this->dataSourceResolver->shouldReceive('degradedDataSources')->andReturn([])->byDefault();
         $this->metaResolver = Mockery::mock(SeoMetaResolver::class);
         $this->htmlMapper = Mockery::mock(ComponentHtmlMapper::class);
         $this->evaluator = Mockery::mock(ExpressionEvaluator::class);
@@ -228,6 +229,53 @@ class SeoRendererTest extends TestCase
 
         $this->assertNotNull($result);
         $this->assertStringContainsString('에어맥스', $result);
+        $this->assertSame([], $request->attributes->get('seo_render_degraded'));
+    }
+
+    /**
+     * 데이터 소스가 시간 초과·서버 오류로 대체값을 쓴 렌더는 그 id 를 요청 속성에 싣습니다 — 저장 경로가 캐시에 넣지 않는다.
+     *
+     * @scenario entry=render_request
+     *
+     * @effects renderer_marks_degraded_render
+     *
+     * @return void 반환값 없음
+     */
+    public function test_render_marks_degraded_data_sources_on_request(): void
+    {
+        $request = Request::create('/products/17');
+
+        $this->setupRouteResolver('/products/17', [
+            'templateIdentifier' => 'sirsoft-user_basic',
+            'layoutName' => 'shop/show',
+            'storedLayoutName' => 'sirsoft-ecommerce.shop/show',
+            'routeParams' => ['id' => '17'],
+            'moduleIdentifier' => 'sirsoft-ecommerce',
+            'routeMeta' => [],
+        ]);
+
+        $this->layoutService
+            ->shouldReceive('getLayout')
+            ->once()
+            ->andReturn($this->buildMergedLayout(
+                seoEnabled: true,
+                seoDataSources: ['product'],
+                components: [['component' => 'Div', 'props' => ['text' => '상품 상세']]],
+                toggleSetting: '$module_settings:seo.seo_product_detail',
+            ));
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.seo_product_detail', true);
+
+        $this->dataSourceResolver->shouldReceive('resolve')->once()->andReturn(['product' => []]);
+        $this->dataSourceResolver->shouldReceive('degradedDataSources')->once()->andReturn(['product']);
+        $this->metaResolver->shouldReceive('resolve')->once()->andReturn($this->buildMetaResult(title: '상품 상세', description: ''));
+        $this->htmlMapper->shouldReceive('render')->once()->andReturn('<div>상품 상세</div>');
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->once()->andReturn('<html><title>상품 상세</title></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        $this->assertNotNull($this->renderer->render($request));
+        $this->assertSame(['product'], $request->attributes->get('seo_render_degraded'));
     }
 
     /**
@@ -4164,6 +4212,89 @@ class SeoRendererTest extends TestCase
         // null 템플릿 → _seo context에 주입되지 않음 (빈 문자열이므로)
         $this->assertNotNull($capturedContext);
         $this->assertArrayNotHasKey('_seo', $capturedContext);
+    }
+
+    /**
+     * 필수(required) 변수가 비면 확장 제목 틀을 쓰지 않습니다 — 틀의 고정 글자만 남은 제목(「특가」)을 내지 않고,
+     * 필수 변수와 무관한 설명 틀은 그대로 씁니다. 화면 탭 제목(`DocumentTitle`)과 같은 규칙입니다.
+     *
+     * @scenario case=required_vars_server
+     *
+     * @effects required_var_empty_template_skipped
+     *
+     * @return void 반환값 없음
+     */
+    public function test_seo_context_skips_title_template_when_required_variable_empty(): void
+    {
+        $request = Request::create('/shop/products/1');
+        $this->setupRouteResolver('/shop/products/1', [
+            'templateIdentifier' => 'sirsoft-basic',
+            'layoutName' => 'shop/show',
+            'routeParams' => ['id' => '1'],
+            'moduleIdentifier' => null,
+            'routeMeta' => [],
+        ]);
+
+        $mergedLayout = $this->buildMergedLayout(
+            seoEnabled: true,
+            seoDataSources: ['product'],
+            pageType: 'product',
+            extensions: [['type' => 'module', 'id' => 'sirsoft-ecommerce']],
+            vars: [
+                'product_name' => '{{product.data.name}}',
+                'product_description' => '{{product.data.description}}',
+            ],
+        );
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
+
+        $moduleMock = Mockery::mock(AbstractModule::class)->makePartial();
+        $moduleMock->shouldReceive('seoVariables')->andReturn([
+            '_common' => [
+                'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
+            ],
+            'product' => [
+                'product_name' => ['source' => 'data', 'required' => true],
+                'product_description' => ['source' => 'data'],
+            ],
+        ]);
+        $this->moduleManager->shouldReceive('getModule')
+            ->with('sirsoft-ecommerce')
+            ->andReturn($moduleMock);
+
+        config()->set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', '');
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', '{commerce_name} | {product_name} 특가');
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_description', '{product_description}');
+
+        $this->dataSourceResolver->shouldReceive('resolve')->once()->andReturn([
+            'product' => ['data' => ['name' => '', 'description' => '산지 직송']],
+        ]);
+
+        $this->evaluator->shouldReceive('evaluate')
+            ->with('{{product.data.name}}', Mockery::any())
+            ->andReturn('');
+        $this->evaluator->shouldReceive('evaluate')
+            ->with('{{product.data.description}}', Mockery::any())
+            ->andReturn('산지 직송');
+
+        $capturedContext = null;
+        $this->metaResolver->shouldReceive('resolve')
+            ->once()
+            ->withArgs(function ($seoConfig, $context) use (&$capturedContext) {
+                $capturedContext = $context;
+
+                return true;
+            })
+            ->andReturn($this->buildMetaResult(title: '상품 상세'));
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->andReturn('<html></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        $this->renderer->render($request);
+
+        $this->assertNotNull($capturedContext);
+        $this->assertSame('', $capturedContext['_seo']['product']['title']);
+        $this->assertSame('산지 직송', $capturedContext['_seo']['product']['description']);
     }
 
     /**

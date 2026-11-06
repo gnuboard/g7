@@ -408,6 +408,105 @@ describe('RecentSearchCombobox (실제 엔진 런타임 · 비회원)', () => {
   });
 
   /**
+   * WAI-ARIA combobox 패턴 — `aria-expanded` 는 combobox 의 팝업(여기서는 listbox)이 보이는지를 알리고, `aria-controls` 는 그 팝업을
+   * 가리킨다. 최근 검색어가 0건이거나 자동 저장이 꺼져 목록 대신 안내만 보일 때는 listbox 가 없으므로 접혀 있다고 알리고
+   * 없는 id 를 가리키지 않는다(안내 문구는 role=status 로 따로 읽힌다).
+   *
+   * @scenario surface=component
+   * @effects empty_history_panel_not_announced_as_expanded_listbox, combobox_listbox_option_aria
+   */
+  it('최근 검색어가 0건이면 안내 상자는 보이되 aria-expanded=false 이고 없는 목록을 aria-controls 로 가리키지 않는다', async () => {
+    render(<RecentSearchCombobox placeholder="검색" />);
+    await focusInput();
+
+    expect(screen.getByTestId('recent-search-panel')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('최근 검색어가 없습니다.');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(input().getAttribute('aria-expanded')).toBe('false');
+    expect(input().hasAttribute('aria-controls')).toBe(false);
+    expect(input().hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
+  /**
+   * @scenario surface=component
+   * @effects empty_history_panel_not_announced_as_expanded_listbox, auto_save_off_hides_list_with_notice
+   */
+  it('자동 저장이 꺼져 안내만 보일 때도 aria-expanded=false 이고, 전체 삭제로 목록이 사라지면 접힘으로 바뀐다', async () => {
+    seed(['침낭'], false);
+    const { unmount } = render(<RecentSearchCombobox />);
+    await focusInput();
+    expect(screen.getByText('검색어 자동 저장이 꺼져 있습니다.')).toBeTruthy();
+    expect(input().getAttribute('aria-expanded')).toBe('false');
+    expect(input().hasAttribute('aria-controls')).toBe(false);
+    unmount();
+
+    seed(['침낭']);
+    render(<RecentSearchCombobox />);
+    await focusInput();
+    const box = input();
+    expect(box.getAttribute('aria-expanded')).toBe('true');
+    // aria-controls 는 문서에 실제로 있는 요소를 가리킨다
+    expect(document.getElementById(box.getAttribute('aria-controls')!)?.getAttribute('role')).toBe('listbox');
+
+    fireEvent.click(screen.getByRole('button', { name: '전체 삭제' }));
+    await flush();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box.getAttribute('aria-expanded')).toBe('false');
+    expect(box.hasAttribute('aria-controls')).toBe(false);
+  });
+
+  /**
+   * @scenario surface=component
+   * @effects blank_keyword_ignored
+   */
+  it('빈 검색어 제출은 기본으로 무시한다(머리글·통합검색)', async () => {
+    const onSearch = vi.fn();
+    render(<RecentSearchCombobox onSearch={onSearch} />);
+    fireEvent.change(input(), { target: { value: '   ' } });
+    fireEvent.submit(input().closest('form')!);
+    expect(onSearch).not.toHaveBeenCalled();
+  });
+
+  /**
+   * 목록 화면의 검색칸(상품 목록·분류·게시판 목록)은 칸을 비우고 제출하면 검색 조건을 푸는 것이 종전 동작이다.
+   *
+   * @scenario surface=component
+   * @effects empty_submit_clears_list_filter
+   */
+  it('submitEmpty 면 빈 제출도 onSearch("") 로 넘기고(검색 조건 풀기) 기록하지 않는다', async () => {
+    seed(['침낭']);
+    const onSearch = vi.fn();
+    render(<RecentSearchCombobox submitEmpty value="코펠" onSearch={onSearch} />);
+    fireEvent.change(input(), { target: { value: '   ' } });
+    fireEvent.submit(input().closest('form')!);
+    expect(onSearch).toHaveBeenCalledWith('');
+    await flush();
+    expect(stored().keywords).toEqual(['침낭']);
+  });
+
+  /**
+   * 확장 범위를 선언한 모듈이 꺼지면 셸의 검색 범위 목록에서 빠진다 — 그 범위의 검색칸은 조용히 평범한 검색창이다.
+   *
+   * @scenario surface=component
+   * @effects unavailable_scope_falls_back_to_plain_search
+   */
+  it.each(['sirsoft-ecommerce.products', 'sirsoft-board.posts'])(
+    '범위를 선언한 확장이 꺼져 있으면(%s 미선언) 펼치지 않고 검색만 한다',
+    async (scope) => {
+      const onSearch = vi.fn();
+      render(<RecentSearchCombobox scope={scope} onSearch={onSearch} />);
+      await focusInput();
+      expect(screen.queryByTestId('recent-search-panel')).toBeNull();
+      expect(input().getAttribute('aria-expanded')).toBe('false');
+      fireEvent.change(input(), { target: { value: '후드' } });
+      fireEvent.submit(input().closest('form')!);
+      expect(onSearch).toHaveBeenCalledWith('후드');
+      await flush();
+      expect(window.localStorage.getItem(SEARCH_HISTORY_STORAGE_KEY)).toBeNull();
+    },
+  );
+
+  /**
    * @scenario surface=component
    * @effects submit_records_without_waiting
    */

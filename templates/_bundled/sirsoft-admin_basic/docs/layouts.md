@@ -721,7 +721,7 @@ _admin_base.g7.html (베이스 레이아웃)
 ├── 공통 Partial
 │   ├── partials/_modal_changelog.g7.html
 │   ├── partials/_modal_license.g7.html
-│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창. 단계 이름은 번역이 있으면 그 이름, 지금 언어에 없으면 대체 언어 이름, 어느 언어에도 없으면 원문 키 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
+│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창. 단계 이름은 번역이 있으면 그 이름, 지금 언어에 없으면 대체 언어 이름, 어느 언어에도 없으면 원문 키. `cause: declaration` 항목(확장 manifest 선언 형식 오류)은 「확장 개발자가 고칠 선언」 안내를 붙이고, 실패가 모두 그런 항목이면 제목·요약도 「확장 선언에 틀린 값이 있습니다」·버린 선언 건수(`declaration_title`·`declaration_summary`)로 바꾸고 「다시 실행」 대신 개발자에게 알리라는 문구 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │

@@ -1,0 +1,32 @@
+feature: 확장 업그레이드 단계 실행 범위·순서
+
+description: |
+  모듈 업데이트가 이전 버전 초과 ~ 새 버전 이하의 업그레이드 단계만 버전순으로 실행하는지, --force 로 같은 버전을
+  다시 올릴 때 그 버전 단계만 실행하는지, 단계 파일 이름의 버전(프리릴리스 포함) 해석과 실패 전파를 잠근다.
+
+axis_notes:
+  case: |
+    range 는 버전 범위 필터(빈 목록·같은 버전·프리릴리스 포함), order 는 버전순 실행·callable 단계, force 는 --force
+    재실행, failure 는 단계 예외 전파, context 는 UpgradeContext 의 현재 단계 표시, filename 은 단계 파일 이름 해석이다.
+
+axes:
+  case: [range, order, failure, context, force, filename]
+
+effects:
+  - extension_upgrade_steps_run_upgrade_steps_does_nothing_with_empty_steps
+  - extension_upgrade_steps_run_upgrade_steps_filters_by_version_range
+  - extension_upgrade_steps_run_upgrade_steps_executes_in_version_order
+  - extension_upgrade_steps_run_upgrade_steps_supports_callable
+  - extension_upgrade_steps_run_upgrade_steps_propagates_exception
+  - extension_upgrade_steps_upgrade_context_with_current_step_creates_new_instance
+  - extension_upgrade_steps_run_upgrade_steps_no_execution_when_versions_equal
+  - extension_upgrade_steps_run_upgrade_steps_force_with_same_version_executes_step
+  - extension_upgrade_steps_run_upgrade_steps_force_with_same_prerelease_version
+  - extension_upgrade_steps_run_upgrade_steps_force_with_different_versions_uses_normal_range
+  - extension_upgrade_steps_upgrade_step_filename_parses_standard_version
+  - extension_upgrade_steps_upgrade_step_filename_parses_prerelease_version
+  - extension_upgrade_steps_upgrade_step_filename_rejects_invalid_names
+  - extension_upgrade_steps_run_upgrade_steps_filters_prerelease_versions
+
+test_files:
+  - tests/Unit/Extension/UpgradeStepsTest.php

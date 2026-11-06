@@ -67,6 +67,11 @@ class TemplateRouteResolver
                 continue;
             }
 
+            // 코어 시스템 라우트(미리보기 등)는 템플릿 레이아웃이 아니다 — 매핑하면 렌더러가 읽다 실패해 오류 로그만 남는다
+            if ($route['meta']['is_system_route'] ?? false) {
+                continue;
+            }
+
             $routePath = $route['path'] ?? '';
             $routePath = $this->resolveRoutePath($routePath);
 

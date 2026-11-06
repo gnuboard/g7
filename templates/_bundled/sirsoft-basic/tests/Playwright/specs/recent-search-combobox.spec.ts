@@ -1,5 +1,5 @@
 /**
- * 최근 검색어 검색창 — 머리글·모바일 서랍·통합검색 화면 (비회원, 실제 브라우저)
+ * 최근 검색어 검색창 — 머리글·모바일 서랍·통합검색 화면·상품 목록·게시판 목록 (비회원, 실제 브라우저)
  *
  * 배경:
  * - 세 검색창이 같은 범위(core.site)의 최근 검색어를 펼침 목록으로 보이고, 제출할 때만 기록한다.
@@ -30,12 +30,12 @@ async function open(page: Page, path: string): Promise<void> {
   await page.waitForFunction(() => typeof (window as unknown as { G7Core?: unknown }).G7Core === 'object', null, { timeout: 60_000 });
 }
 
-/** 저장된 core.site 검색어 (최신순) */
-async function stored(page: Page): Promise<string[]> {
-  return page.evaluate((key) => {
+/** 저장된 검색어 (최신순, 기본 core.site) */
+async function stored(page: Page, scope = 'core.site'): Promise<string[]> {
+  return page.evaluate(([key, s]) => {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw).items?.['core.site'] ?? []).map((i: { k: string }) => i.k) : [];
-  }, KEY);
+    return raw ? (JSON.parse(raw).items?.[s] ?? []).map((i: { k: string }) => i.k) : [];
+  }, [KEY, scope] as const);
 }
 
 /** 이 템플릿이 활성이고 최근 검색어 범위가 켜져 있는가 */
@@ -48,7 +48,7 @@ async function available(page: Page): Promise<boolean> {
 test.describe('최근 검색어 검색창', () => {
   /**
    * @scenario surface=header_desktop
-   * @effects empty_focus_opens_recent_list, submit_records_without_waiting, keyboard_arrow_enter_escape_delete
+   * @effects empty_focus_opens_recent_list, submit_records_without_waiting, keyboard_arrow_enter_escape_delete, empty_history_panel_not_announced_as_expanded_listbox
    */
   test('머리글 — 빈 칸 초점에 펼치고, 제출하면 기록·이동, ↓·Enter 로 다시 검색하고 Esc 는 닫는다', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -59,9 +59,11 @@ test.describe('최근 검색어 검색창', () => {
     page.on('pageerror', (e) => errors.push(e.message));
     const box = page.locator('[data-testid="header-search"] input[role="combobox"]');
 
+    // 0건이면 안내 상자만 보이고 listbox 가 없다 — 펼침을 알리지 않고 없는 목록을 가리키지 않는다(WAI-ARIA combobox)
     await box.click();
-    await expect(box).toHaveAttribute('aria-expanded', 'true');
     await expect(page.getByTestId('recent-search-panel')).toContainText('최근 검색어가 없습니다.');
+    await expect(box).toHaveAttribute('aria-expanded', 'false');
+    expect(await box.getAttribute('aria-controls')).toBeNull();
 
     for (const keyword of ['침낭', '등산화 끈']) {
       await box.fill(keyword);
@@ -73,6 +75,9 @@ test.describe('최근 검색어 검색창', () => {
     await box.fill('');
     await box.click();
     await expect(page.getByRole('option')).toHaveCount(2);
+    await expect(box).toHaveAttribute('aria-expanded', 'true');
+    const controls = await box.getAttribute('aria-controls');
+    expect(await page.locator(`[id="${controls}"]`).getAttribute('role')).toBe('listbox');
     await box.press('ArrowDown');
     await box.press('ArrowDown');
     await expect(box).toHaveAttribute('aria-activedescendant', /option-1$/);
@@ -165,5 +170,65 @@ test.describe('최근 검색어 검색창', () => {
     await page.goBack();
     await page.waitForURL((url) => url.searchParams.get('q') === '등산화');
     await expect(header).toHaveValue('등산화');
+  });
+
+  /**
+   * @scenario surface=shop_list
+   * @effects list_search_box_uses_extension_scope, list_search_keeps_other_conditions_and_resets_page, empty_submit_clears_list_filter
+   */
+  test('상품 목록 — 상품 검색 범위로 기록하고, 정렬을 둔 채 1쪽으로, 칸을 비우고 제출하면 검색어가 풀린다', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await open(page, '/');
+    test.skip(!(await available(page)), '이 사이트의 활성 사용자 템플릿이 sirsoft-basic 이 아니거나 최근 검색어가 꺼져 있다');
+    const shopBase = await page.evaluate(() => (window as any).G7Core?.state?.get?.()?.shopBase ?? '/shop');
+    await page.goto(`${shopBase}/products?sort=price_asc&page=2`);
+    const box = page.locator('#shop_list_search_box input[role="combobox"]');
+    test.skip((await box.count()) === 0, '이커머스가 꺼져 있다');
+    test.skip(!(await page.evaluate(() => !!(window as any).G7Core?.searchHistory?.isEnabled?.('sirsoft-ecommerce.products'))), '상품 검색 범위가 꺼져 있다');
+
+    await box.fill('후드');
+    await box.press('Enter');
+    await page.waitForURL((url) => url.searchParams.get('keyword') === '후드');
+    expect(new URL(page.url()).searchParams.get('sort')).toBe('price_asc');
+    expect(new URL(page.url()).searchParams.get('page')).toBe('1');
+    expect(await stored(page, 'sirsoft-ecommerce.products')).toEqual(['후드']);
+    expect(await stored(page)).toEqual([]);
+
+    await box.fill('');
+    await box.press('Enter');
+    await page.waitForURL((url) => !url.searchParams.has('keyword'));
+    await box.click();
+    await expect(page.locator('#shop_list_search_box [role="option"]')).toHaveText(['후드']);
+  });
+
+  /**
+   * @scenario surface=board_list
+   * @effects list_search_box_uses_extension_scope, list_search_keeps_other_conditions_and_resets_page, clear_empties_without_search
+   */
+  test('게시판 목록 — 게시글 검색 범위로 기록하고 찾을 곳을 함께 싣고, × 는 칸만 비운다', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await open(page, '/boards');
+    test.skip(!(await available(page)), '이 사이트의 활성 사용자 템플릿이 sirsoft-basic 이 아니거나 최근 검색어가 꺼져 있다');
+    const link = page.locator('a[href^="/board/"]').first();
+    test.skip((await link.count()) === 0, '게시판이 꺼져 있거나 게시판이 없다');
+    const href = (await link.getAttribute('href')) ?? '';
+    await page.goto(href.split('?')[0] + '?search_field=title&page=2');
+    const box = page.locator('#board_search_box input[role="combobox"]');
+    await expect(box).toBeVisible();
+
+    await box.fill('공지');
+    await box.press('Enter');
+    await page.waitForURL((url) => url.searchParams.get('search') === '공지');
+    expect(new URL(page.url()).searchParams.get('search_field')).toBe('title');
+    expect(new URL(page.url()).searchParams.get('page')).toBe('1');
+    expect(await stored(page, 'sirsoft-board.posts')).toEqual(['공지']);
+
+    // 종전 검색 입력칸의 × — 칸만 비우고 검색하지 않으며 초점은 칸에 남는다
+    const clear = page.locator('#board_search_box form button[type="button"][aria-label]');
+    await expect(box).toHaveValue('공지');
+    await clear.click();
+    await expect(box).toHaveValue('');
+    await expect(box).toBeFocused();
+    expect(new URL(page.url()).searchParams.get('search')).toBe('공지');
   });
 });

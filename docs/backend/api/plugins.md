@@ -216,6 +216,8 @@ HTTP/1.1 200
 | is_compatible | boolean | `false` | (업데이트가 있는 행에만) 업데이트할 새 버전이 지금 코어와 호환되는지. 업데이트 창의 코어 호환 경고·「강제 업데이트」 체크가 읽는다. 업데이트가 없으면 키 자체가 없다 — 설치본 호환은 `core_compatible` |
 | required_core_version | string\|null | `>=7.2.0` | (업데이트가 있는 행에만) 새 버전이 요구하는 코어 버전 — 번들 출처면 _bundled 매니페스트, GitHub 출처면 설치된 매니페스트의 `g7_version`(원격 매니페스트는 받지 않는 추정) |
 | current_core_version | string | `7.1.0` | (업데이트가 있는 행에만) 현재 코어 버전 |
+| update_dependency_warnings | array\|null | `[{"type":"module","identifier":"sirsoft-ecommerce","state":"version_mismatch","required_version":">=1.3.4","installed_version":"1.3.3",…}]` | (업데이트가 있는 행에만) 새 버전이 요구하는 의존 확장(`dependencies`) 중 지금 미설치·꺼짐·버전 미달인 것. `state` 는 `not_installed`·`inactive`·`version_mismatch`. 판정은 업데이트 뒤 결과의 `dependency_warnings` 와 같고 업데이트를 막지 않는다. 번들 출처면 _bundled 매니페스트로 대조하고, GitHub 출처는 _bundled 판이 같은 버전일 때만 대조하며 아니면 `null`(원격 매니페스트를 받지 않음) |
+| update_integration_notices | array\|null | `[{"type":"plugin","identifier":"sirsoft-daum_postcode","state":"version_mismatch","required_version":">=1.2.0","installed_version":"1.1.2",…}]` | (업데이트가 있는 행에만) 새 버전과 함께 쓰면 연동되는 확장(`integrations`) 중 지금 미설치·꺼짐·버전 미달인 것 — 업데이트 창이 실행 전에 알린다. 판정은 업데이트 뒤 결과의 `integration_notices` 와 같다. 출처별 대조 규칙·`null` 은 `update_dependency_warnings` 와 같다 |
 
 **설명** 설치된 플러그인과 미설치 플러그인을 모두 포함한 전체 플러그인 목록을 페이지네이션으로 조회합니다. `search` 는 이름·식별자·설명·벤더에 대한 OR 검색이고 `filters` 는 AND 조건으로 적용됩니다. `core.plugins.read` 권한이 필요하며, 응답의 `abilities` 는 현재 사용자의 install/activate/uninstall 권한 보유 여부를 담습니다. 관리자 플러그인 관리 화면의 목록 그리드를 구성하는 기본 엔드포인트입니다.
 

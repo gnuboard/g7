@@ -12,6 +12,7 @@
 - 코어 7.1.5 의 레이아웃 저장 검증에서 스크롤 복원 설정(`meta.scroll_restoration`)의 항목명(`validation.attributes.layout_meta_scroll_restoration*`) 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 항목명이 키 그대로 보입니다.
 - 코어 7.1.5 의 최근 검색어 문구(`search.history.*` — 범위 이름·API 응답·요청 항목명, 개인정보 보유기간 핸들러 `privacy.handlers.search_history`·대상 목록 열, 설정 저장 검증 `validation.settings.privacy_search_history_*`·`validation.attributes.privacy_search_history_*`, 레이아웃 편집기 동작 레시피 `layout_editor.action_recipe.record_search_keyword.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 문구가 키 그대로 보입니다.
 - 코어 7.1.5 의 관리자 브라우저 탭 제목 접미사(`seo.admin_title_suffix` 「 - {site_name} 管理画面」)의 일본어 번역을 추가했습니다.
+- 코어 7.1.5 의 확장 설치·활성화 결과 경고에서 최근 검색어 범위 선언·필수 브라우저 저장 항목을 버린 이유(`extensions.warnings.search_scopes_*`·`necessary_storage_*`)와 확장이 고칠 선언이라는 안내(`extensions.warnings.declaration_hint`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면과 명령 출력에서 이 문구가 키 그대로 보입니다.
 
 ### Changed
 

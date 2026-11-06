@@ -1,3 +1,4 @@
+// e2e:allow 앞 화면 _localInit 슬롯 은퇴(engine-v1.88.0)는 화면 전환 중 앞 트리 재렌더 경합이라 Playwright 로 결정적으로 밟기 어렵다 — Chrome MCP 실제 키 재실측(상품 수정 → 뒤로·사이드바, 게시글·사용자 글쓰기 → 뒤로, 수정 → 등록 → 뒤로)과 실물 렌더 시험 DynamicRenderer.localInitStaleScreenReapply 로 잠근다.
 /**
  * `_localInit` 슬롯 관리 (생산부 ↔ 소비부 공용)
  *
@@ -60,11 +61,48 @@ export function getLocalInitTracking(): LocalInitTracking {
  * 새 레이아웃의 `_localInit` 이 이전 레이아웃과 payload 가 우연히 같더라도
  * 정상 적용된다.
  *
+ * 앞 화면 렌더 컨텍스트의 `_localInit` 슬롯을 넘기면 「은퇴」로 표시한다 (@since engine-v1.88.0). 추적을 비운 뒤에도 앞 화면
+ * 트리는 새 화면이 그려질 때까지 남아 다시 그려질 수 있고(전역 상태 구독), 그때 `_local` 리셋으로 조건부 구역이 뒤집혀 새로
+ * 붙는 렌더러는 처리 기록이 없어 그 슬롯을 `apply` 했다 — 앞 화면 폼·`hasChanges` 가 새 화면 `_local` 에 남았다(상품 수정 →
+ * 뒤로 → 상품 목록). 은퇴한 슬롯은 어떤 렌더러도 적용하지 않는다(`isLocalInitRetired`). 새 화면은 새 슬롯 객체를 받는다.
+ *
+ * @param retiredSlot 이번 전환으로 떠나는 화면의 `_localInit` 슬롯 (없으면 생략)
  * @returns void
  */
-export function resetLocalInitTracking(): void {
+export function resetLocalInitTracking(retiredSlot?: unknown): void {
     const target = globalThis as Record<string, any>;
     target[TRACKING_KEY] = { hash: '', timestamp: undefined, consumed: undefined };
+    if (retiredSlot !== null && typeof retiredSlot === 'object') {
+        getRetiredSlots().add(retiredSlot);
+    }
+}
+
+/** 은퇴한 `_localInit` 슬롯 등록부 window 전역 키 (여러 번들 사본이 같은 등록부를 보게 한다) */
+const RETIRED_KEY = '__g7RetiredLocalInitSlots';
+
+/**
+ * 은퇴한 슬롯 등록부를 반환합니다. 객체 참조만 담고, 화면이 사라지면 함께 수거된다(WeakSet).
+ *
+ * @returns 은퇴한 슬롯 집합
+ */
+function getRetiredSlots(): WeakSet<object> {
+    const target = globalThis as Record<string, any>;
+    if (!(target[RETIRED_KEY] instanceof WeakSet)) {
+        target[RETIRED_KEY] = new WeakSet<object>();
+    }
+
+    return target[RETIRED_KEY];
+}
+
+/**
+ * 해당 슬롯이 화면 전환으로 은퇴했는지 판정합니다 — 은퇴한 슬롯은 적용·정리하지 않는다.
+ *
+ * @param slot 판정할 `_localInit` 슬롯 객체
+ * @returns 은퇴했으면 true
+ * @since engine-v1.88.0
+ */
+export function isLocalInitRetired(slot: unknown): boolean {
+    return slot !== null && typeof slot === 'object' && getRetiredSlots().has(slot);
 }
 
 /**
@@ -118,6 +156,8 @@ export type LocalInitAction = 'apply' | 'prune' | 'skip';
  *
  * 배경: `troubleshooting-state-advanced.md` 사례 13(engine-v1.18.3)이 세운
  * "동일 commit 내 복수 root 의 실행 순서에 의존 금지" 규칙의 미적용 구간이었다.
+ *
+ * 앞 화면 슬롯은 이 판정까지 오지 않는다 — 전환 때 은퇴한 슬롯(`isLocalInitRetired`)은 렌더러가 먼저 걸러 낸다.
  *
  * @param params.globalTrackedKey 전역 레지스트리에 기록된 추적 키
  * @param params.instanceHandledKey 이 인스턴스가 마지막으로 처리한 추적 키 (미처리 시 null)

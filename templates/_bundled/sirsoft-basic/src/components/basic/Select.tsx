@@ -1,4 +1,4 @@
-// e2e:allow커스텀 드롭다운 루트 props spread 타입 안전 캐스팅(admin 동기). 단위 회귀는 Select.test.tsx.
+// e2e:allow커스텀 드롭다운 루트 props spread 타입 안전 캐스팅(admin 동기)·키보드 항목 선택(포털 목록 초점 이동). 단위 회귀는 Select.test.tsx·Select.keyboard.test.tsx, 키보드 선택은 상품 상세 실제 키 실측.
 import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
@@ -95,12 +95,17 @@ export const Select: React.FC<SelectProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // 보이는 항목 단추(목록 순서) — ↓↑ 로 실제 초점을 옮긴다(머리글 언어 목록과 같은 방식)
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  // 단추에서 ↓↑ 로 열 때, 목록이 그려진 뒤 초점을 줄 자리
+  const pendingFocusRef = useRef<'selected' | 'last' | null>(null);
 
   // 목록형 단추 이름 — 「{이름} {현재 값}」. 종전에는 aria-label·aria-labelledby 가 단추가 아니라 바깥 상자에
   // 붙어 읽히지 않았고 고른 값만 단추 이름이 됐다(#757). 숨은 이름 span + 값 span 을 단추에 잇는다(관리자 템플릿과 같은 계약).
   const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const nameId = `${domId}-name`;
   const valueId = `${domId}-value`;
+  const listboxId = `${domId}-listbox`;
 
   // options를 SelectOption[] 형식으로 정규화
   const normalizedOptions = useMemo((): SelectOption[] | null => {
@@ -255,6 +260,87 @@ export const Select: React.FC<SelectProps> = ({
     }
   };
 
+  // 고를 수 있는(잠기지 않은) 항목의 목록 위치
+  const enabledIndexes = (): number[] =>
+    (visibleOptions ?? []).map((opt, index) => (opt.disabled ? -1 : index)).filter((index) => index >= 0);
+
+  // 목록 안 항목으로 초점 — 'selected' 는 고른 값(잠겼거나 없으면 첫 항목), 'last' 는 고른 값(없으면 마지막 항목)
+  const focusOption = (where: 'selected' | 'last') => {
+    const enabled = enabledIndexes();
+    if (enabled.length === 0) return;
+    const selectedIndex = (visibleOptions ?? []).findIndex((opt) => String(opt.value) === String(value));
+    const target = enabled.includes(selectedIndex)
+      ? selectedIndex
+      : where === 'last' ? enabled[enabled.length - 1] : enabled[0];
+    optionRefs.current[target]?.focus();
+  };
+
+  // ↓↑ 로 연 목록이 그려지면(포털은 위치 계산 뒤에 붙는다) 맡겨 둔 항목으로 초점
+  useEffect(() => {
+    if (!isOpen || !dropdownPos || pendingFocusRef.current === null) return;
+    const where = pendingFocusRef.current;
+    pendingFocusRef.current = null;
+    focusOption(where);
+  });
+
+  // 단추 키보드 — ↓/↑ 는 목록을 열고(열려 있으면 그대로) 항목으로 들어간다. Enter·Space 는 단추 기본 동작(클릭)
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (disabled || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) return;
+    event.preventDefault();
+    const where = event.key === 'ArrowUp' ? 'last' : 'selected';
+    if (isOpen && dropdownPos) {
+      focusOption(where);
+      return;
+    }
+    pendingFocusRef.current = where;
+    setIsOpen(true);
+  };
+
+  // 목록 키보드 — 잠긴 항목을 건너뛰며 ↓↑ 순환, Home·End 양 끝, Esc 는 목록만 닫고 단추로,
+  // Tab 은 닫고 단추로 초점을 돌려 이어지는 기본 Tab 이 단추 다음 칸으로 가게 한다(목록은 문서 끝 포털이다).
+  // 검색칸에서는 ↓ 만 항목으로 들어가고 나머지 키는 글자 편집에 남긴다.
+  const handleListboxKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsOpen(false);
+      buttonRef.current?.focus();
+      return;
+    }
+    if (event.key === 'Tab') {
+      setIsOpen(false);
+      buttonRef.current?.focus();
+      return;
+    }
+    const enabled = enabledIndexes();
+    if (enabled.length === 0) return;
+    const inSearch = event.target === searchInputRef.current;
+    const current = optionRefs.current.findIndex((el) => el !== null && el === document.activeElement);
+    const position = enabled.indexOf(current);
+    let next: number;
+    switch (event.key) {
+      case 'ArrowDown':
+        next = position < 0 ? enabled[0] : enabled[(position + 1) % enabled.length];
+        break;
+      case 'ArrowUp':
+        if (inSearch) return;
+        next = position < 0 ? enabled[enabled.length - 1] : enabled[(position - 1 + enabled.length) % enabled.length];
+        break;
+      case 'Home':
+        if (inSearch) return;
+        next = enabled[0];
+        break;
+      case 'End':
+        if (inSearch) return;
+        next = enabled[enabled.length - 1];
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    optionRefs.current[next]?.focus();
+  };
+
   const handleSelect = (optionValue: string | number) => {
     if (onChange) {
       // ActionDispatcher가 이벤트를 인식할 수 있도록 preventDefault 메서드 포함
@@ -312,10 +398,12 @@ export const Select: React.FC<SelectProps> = ({
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
+        onKeyDown={handleTriggerKeyDown}
         disabled={disabled}
         className={`${baseButtonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-controls={isOpen && dropdownPos ? listboxId : undefined}
         aria-labelledby={buttonLabelledBy}
       >
         <Span id={valueId} className="truncate">{selectedLabel || '\u00A0'}</Span>
@@ -334,7 +422,9 @@ export const Select: React.FC<SelectProps> = ({
           ref={dropdownRef}
           className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
           style={{ top: dropdownPos.top, bottom: dropdownPos.bottom, left: dropdownPos.left, width: dropdownPos.width }}
+          id={listboxId}
           role="listbox"
+          onKeyDown={handleListboxKeyDown}
         >
           {searchable && (
             <Div className="p-2 border-b border-gray-200 dark:border-gray-600">
@@ -356,11 +446,12 @@ export const Select: React.FC<SelectProps> = ({
                 {searchTerm ? selectNoResults() : ''}
               </Div>
             )}
-            {(visibleOptions ?? []).map((option) => {
+            {(visibleOptions ?? []).map((option, index) => {
               const isSelected = String(option.value) === String(value);
               return (
                 <Button
                   key={option.value}
+                  ref={(el: HTMLButtonElement | null) => { optionRefs.current[index] = el; }}
                   type="button"
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   disabled={option.disabled}

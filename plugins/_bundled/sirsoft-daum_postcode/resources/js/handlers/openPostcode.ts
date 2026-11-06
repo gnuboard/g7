@@ -140,6 +140,45 @@ let inlineSequence = 0;
 const openInlineAreas = new Map<HTMLElement, { area: HTMLElement; close: (restoreFocus: boolean) => void }>();
 
 /**
+ * 화면 위에 띄운 우편번호 창(레이어·전체 화면)이 열려 있는 동안 Esc 를 그 창 몫으로 받습니다.
+ *
+ * 창이 열려 있는 동안 Esc 는 맨 위 창인 우편번호 창의 것이다. 템플릿의 창(Modal)도 document 에서 Esc 를 받아 맨 위 창을
+ * 닫는데, 우편번호 창은 body 에 붙어 템플릿 창이 「창 안에 펼친 팝업」으로 알아보지 못한다 — 둘이 같은 Esc 를 각자 받아,
+ * 배송지 등록 창 안에서 연 검색 창에 Esc 를 한 번 누르면 그 아래 창까지 닫혀 입력이 사라졌다. 그래서 어느 document
+ * 리스너보다 먼저 도는 window 캡처 단계에서 받아 처리하고 다른 리스너로 넘기지 않는다. 템플릿마다 창 구현이 달라도
+ * 같은 결과가 나도록 템플릿 규칙(aria 속성 등)에 기대지 않는다.
+ *
+ * 창이 이미 문서에서 빠졌으면(다른 경로로 걷힘) Esc 를 가로채지 않고 리스너만 걷는다.
+ *
+ * @param element 열려 있는 창 요소
+ * @param onEscape Esc 를 받았을 때 창을 닫는 처리
+ * @return 리스너를 걷는 함수
+ */
+function captureEscapeWhileOpen(element: HTMLElement, onEscape: () => void): () => void {
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        if (!element.isConnected) {
+            detach();
+
+            return;
+        }
+
+        event.stopImmediatePropagation();
+        event.stopPropagation();
+        onEscape();
+    };
+
+    const detach = () => window.removeEventListener('keydown', handleKeyDown, true);
+
+    window.addEventListener('keydown', handleKeyDown, true);
+
+    return detach;
+}
+
+/**
  * 우편번호 API 응답을 G7 표준 형식으로 변환합니다.
  */
 function convertToG7AddressEvent(daumData: any): G7AddressEvent {
@@ -409,7 +448,9 @@ export async function openPostcodeHandler(
     const { portable, mode: displayMode } = resolveDisplayMode(params, pluginSettings);
 
     // 누른 버튼은 기다리기(SDK 재시도) 전에 잡는다 — 합성 이벤트는 비동기 경계를 넘으면 currentTarget 이 빈다.
-    const trigger = displayMode === 'inline' ? resolveTriggerButton(context?.event) : null;
+    // 펼치기는 영역을 넣을 자리로, 레이어·전체 화면은 닫힌 뒤 초점을 돌려줄 곳으로 쓴다.
+    const clickedButton = resolveTriggerButton(context?.event);
+    const trigger = displayMode === 'inline' ? clickedButton : null;
 
     // 같은 버튼으로 이미 펼쳐 둔 영역이 있으면 접고 끝낸다(토글).
     if (trigger) {
@@ -527,7 +568,7 @@ export async function openPostcodeHandler(
 
     if (portable) {
         // 모바일 전체 화면: 화면 전체를 덮는 창 안에 100% 높이로 끼워 넣는다
-        const fullscreen = createFullscreenDialog(trigger ?? resolveTriggerButton(context?.event));
+        const fullscreen = createFullscreenDialog(clickedButton);
 
         new Postcode({
             ...baseConfig,
@@ -543,7 +584,7 @@ export async function openPostcodeHandler(
     }
 
     // 레이어 모드: 오버레이에 임베드
-    const { layer, closeLayer } = createEmbedLayer(width, height);
+    const { layer, closeLayer } = createEmbedLayer(width, height, clickedButton);
 
     new Postcode({
         ...baseConfig,
@@ -617,14 +658,8 @@ function createFullscreenDialog(trigger: HTMLElement | null): {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    const handleEscKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            close(true);
-        }
-    };
-
     const close = (restoreFocus: boolean) => {
-        document.removeEventListener('keydown', handleEscKey);
+        detachEscape();
 
         if (!dialog.isConnected) {
             return;
@@ -639,7 +674,8 @@ function createFullscreenDialog(trigger: HTMLElement | null): {
     };
 
     closeButton.addEventListener('click', () => close(true));
-    document.addEventListener('keydown', handleEscKey);
+    // Esc 는 이 창만 닫는다 — 아래에 열린 창(배송지 등록 등)으로 넘기지 않는다
+    const detachEscape = captureEscapeWhileOpen(dialog, () => close(true));
     closeButton.focus();
 
     logger.log('[openPostcode] Fullscreen dialog created');
@@ -668,8 +704,15 @@ function layerSizeStyle(width: number, height: number): string {
 /**
  * 임베드용 레이어(오버레이) 요소를 생성합니다.
  * 플러그인 설정에서 전달받은 width, height를 쓰되 화면보다 크면 화면에 맞춥니다.
+ *
+ * 닫기: 닫기 단추 · 바깥 클릭 · ESC · 주소 선택. 어느 경로로 닫혀도 누른 버튼으로 초점을 돌린다 — 종전에는 초점이
+ * 문서 본문으로 떨어져, 배송지 등록 창 안에서 연 경우 키보드 사용자가 창 안 위치를 잃었다.
+ *
+ * @param width 설정 너비(px)
+ * @param height 설정 높이(px)
+ * @param trigger 누른 버튼 (초점 복귀용, 없으면 null)
  */
-function createEmbedLayer(width: number, height: number): {
+function createEmbedLayer(width: number, height: number, trigger: HTMLElement | null = null): {
     overlay: HTMLElement;
     layer: HTMLElement;
     closeLayer: () => void;
@@ -734,21 +777,23 @@ function createEmbedLayer(width: number, height: number): {
     overlay.appendChild(wrapper);
     document.body.appendChild(overlay);
 
-    // ESC 키로 레이어 닫기
-    const handleEscKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            closeLayer();
-        }
-    };
-
-    // 레이어 닫기 함수 — 어느 경로로 닫혀도 ESC 리스너를 함께 걷는다
+    // 레이어 닫기 함수 — 어느 경로로 닫혀도 ESC 리스너를 함께 걷고 누른 버튼으로 초점을 돌린다
     const closeLayer = () => {
-        document.removeEventListener('keydown', handleEscKey);
+        detachEscape();
 
-        if (overlay.parentNode) {
-            overlay.parentNode.removeChild(overlay);
+        if (!overlay.parentNode) {
+            return;
+        }
+
+        overlay.parentNode.removeChild(overlay);
+
+        if (trigger?.isConnected) {
+            trigger.focus();
         }
     };
+
+    // ESC 는 이 레이어만 닫는다 — 아래에 열린 창(배송지 등록 등)으로 넘기지 않는다
+    const detachEscape = captureEscapeWhileOpen(overlay, closeLayer);
 
     // 닫기 버튼 클릭 시 레이어 닫기
     closeButton.addEventListener('click', closeLayer);
@@ -759,8 +804,6 @@ function createEmbedLayer(width: number, height: number): {
             closeLayer();
         }
     });
-
-    document.addEventListener('keydown', handleEscKey);
 
     logger.log('[openPostcode] Layer created with size:', { width, height });
 

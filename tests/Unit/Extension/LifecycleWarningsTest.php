@@ -19,6 +19,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Lang;
 use Mockery;
 use Tests\TestCase;
 
@@ -104,6 +105,66 @@ class LifecycleWarningsTest extends TestCase
         $this->assertSame(['step' => 'dependents', 'target' => 'acme-hello', 'target_name' => 'Hello 플러그인', 'message' => '안내', 'level' => 'notice'], $items[0]);
         $this->assertArrayNotHasKey('target_name', $items[1], '이름을 못 찾아 식별자로 대체됐으면 싣지 않는다');
         $this->assertSame(['step' => 'seeder', 'target' => 'X', 'message' => 'fail', 'level' => 'warning'], $items[2]);
+    }
+
+    /**
+     * 확장 선언 형식 오류(declaration)는 실패(warning)로 세되 `cause` 표지를 싣고, 다른 항목에는 표지 키가 없다.
+     * artisan 경고 표는 그 항목 사유 뒤에 「다시 실행할 일이 아니라 확장 개발자가 고칠 선언」 안내를 붙인다.
+     *
+     * @scenario surface=collector
+     *
+     * @effects declaration_error_marked_for_developer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declaration_error_carries_cause_and_cli_tells_developer_fix(): void
+    {
+        app()->setLocale('ko');
+        // 묶음 파일을 먼저 읽어 둔다 — 읽기 전에 addLines 하면 같은 묶음의 다른 키가 비어 버린다
+        __('extensions.warnings.column_step');
+        Lang::addLines(['extensions.warnings.declaration_hint' => 'DEVELOPER_FIX'], 'ko');
+
+        $warnings = LifecycleWarnings::current();
+        $warnings->declaration('search_scopes', 'acme-rates', '범위 이름 형식이 틀려 버렸습니다: Bad Name!');
+        $warnings->add('seeder', 'X', 'fail');
+
+        $items = $warnings->all();
+        $this->assertSame(['step' => 'search_scopes', 'target' => 'acme-rates', 'message' => '범위 이름 형식이 틀려 버렸습니다: Bad Name!', 'level' => 'warning', 'cause' => 'declaration'], $items[0]);
+        $this->assertTrue(LifecycleWarnings::isDeclarationError($items[0]));
+        $this->assertArrayNotHasKey('cause', $items[1], '선언 오류가 아닌 항목은 모양이 그대로다');
+        $this->assertFalse(LifecycleWarnings::isDeclarationError($items[1]));
+        $this->assertTrue(LifecycleWarnings::hasFailures([$items[0]]), '선언 일부가 반영되지 않았으므로 실패로 센다');
+
+        // 사유 문장은 번역이 있으면 번역, 없으면(옛 언어팩) 키 글자 대신 버린 항목 원문
+        $this->assertSame('DEVELOPER_FIX', LifecycleWarnings::reason('extensions.warnings.declaration_hint', [], 'RAW'));
+        $this->assertSame('Bad Name!', LifecycleWarnings::reason('extensions.warnings.zztest_missing_line', ['names' => 'x'], 'Bad Name!'));
+
+        $warnings->clear();
+        $command = new class extends Command
+        {
+            use ReportsLifecycleWarnings;
+
+            protected $signature = 'zztest:lifecycle-declaration-warn';
+
+            /**
+             * 선언 형식 오류 경고 하나를 남기고 성공으로 끝납니다.
+             *
+             * @return int 종료코드
+             */
+            public function handle(): int
+            {
+                LifecycleWarnings::current()->declaration('search_scopes', 'acme-rates', 'NAME[Bad Name!]');
+
+                return self::SUCCESS;
+            }
+        };
+        $this->app->make(Kernel::class)->registerCommand($command);
+
+        $exit = Artisan::call('zztest:lifecycle-declaration-warn');
+        $output = Artisan::output();
+        $this->assertSame(1, $exit, '실패 경고이므로 종전처럼 종료코드 1');
+        $this->assertStringContainsString('NAME[Bad Name!] — DEVELOPER_FIX', $output);
+        $this->assertStringContainsString(LifecycleWarnings::CLI_MARKER, $output);
     }
 
     /**

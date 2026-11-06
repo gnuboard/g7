@@ -131,6 +131,276 @@
             ]
         },
         {
+            "comment": "새 버전이 요구하는 확장(목록 행 `update_dependency_warnings`·`update_integration_notices`, 코어 7.1.5) — 새 판 manifest 의\n         필수 의존·연동을 지금 설치 상태와 대조해 못 미치는 것(미설치·꺼짐·버전 미달)을 업데이트 **전에** 알린다.\n         판정은 업데이트가 끝난 뒤 완료 안내와 같고, 업데이트를 막지 않는다(실행 버튼을 잠그지 않는다).\n         배지는 설치 창의 연동 목록과 같은 문구·모양이다. 옛 코어는 두 필드를 싣지 않으므로 절이 그려지지 않는다.",
+            "id": "plugin_update_requirements_section",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_global.selectedPlugin?.update_dependency_warnings ?? []).length > 0 || (_global.selectedPlugin?.update_integration_notices ?? []).length > 0}}",
+            "props": {
+                "className": "mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg",
+                "role": "alert"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-triangle",
+                                "className": "text-amber-600 dark:text-amber-400 mt-0.5 shrink-0",
+                                "aria-hidden": "true"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium text-warning-soft"
+                                    },
+                                    "text": "$t:extensions.update_modal.requirements_title"
+                                },
+                                {
+                                    "comment": "필수 의존 — 못 미치면 업데이트 뒤 이 확장이 제대로 동작하지 않을 수 있다",
+                                    "id": "plugin_update_requirements_dependencies",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.selectedPlugin?.update_dependency_warnings ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft"
+                                            },
+                                            "text": "$t:extensions.update_modal.requirements_dependencies_hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "_global.selectedPlugin.update_dependency_warnings",
+                                                "item_var": "depItem"
+                                            },
+                                            "props": {
+                                                "className": "flex-center flex-wrap gap-2 p-2 mt-1 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{depItem.type === 'module'}}",
+                                                    "props": {
+                                                        "name": "cube",
+                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "aria-hidden": "true"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{depItem.type === 'plugin'}}",
+                                                    "props": {
+                                                        "name": "puzzle-piece",
+                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "aria-hidden": "true"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary text-sm"
+                                                    },
+                                                    "text": "{{depItem.name || depItem.identifier}} ({{depItem.identifier}})"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{depItem.required_version && depItem.required_version !== '*'}}",
+                                                    "props": {
+                                                        "className": "text-tertiary font-mono"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.required_version|version={{depItem.required_version}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{depItem.installed_version}}",
+                                                    "props": {
+                                                        "className": "text-tertiary font-mono"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.installed_version|version={{depItem.installed_version}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{depItem.state === 'not_installed'}}",
+                                                    "props": {
+                                                        "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.not_installed"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{depItem.state === 'inactive'}}",
+                                                    "props": {
+                                                        "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.inactive"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{depItem.state === 'version_mismatch'}}",
+                                                    "props": {
+                                                        "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.version_mismatch"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "함께 쓰면 연동되는 확장 — 못 미치면 업데이트는 되지만 그 연동이 꺼진다",
+                                    "id": "plugin_update_requirements_integrations",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.selectedPlugin?.update_integration_notices ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft"
+                                            },
+                                            "text": "$t:extensions.update_modal.requirements_integrations_hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "_global.selectedPlugin.update_integration_notices",
+                                                "item_var": "intItem"
+                                            },
+                                            "props": {
+                                                "className": "flex-center flex-wrap gap-2 p-2 mt-1 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{intItem.type === 'module'}}",
+                                                    "props": {
+                                                        "name": "cube",
+                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "aria-hidden": "true"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{intItem.type === 'plugin'}}",
+                                                    "props": {
+                                                        "name": "puzzle-piece",
+                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "aria-hidden": "true"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{intItem.type === 'template'}}",
+                                                    "props": {
+                                                        "name": "palette",
+                                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                                        "aria-hidden": "true"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary text-sm"
+                                                    },
+                                                    "text": "{{intItem.name || intItem.identifier}} ({{intItem.identifier}})"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{intItem.required_version && intItem.required_version !== '*'}}",
+                                                    "props": {
+                                                        "className": "text-tertiary font-mono"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.required_version|version={{intItem.required_version}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{intItem.installed_version}}",
+                                                    "props": {
+                                                        "className": "text-tertiary font-mono"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.installed_version|version={{intItem.installed_version}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{intItem.state === 'not_installed'}}",
+                                                    "props": {
+                                                        "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.not_installed"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{intItem.state === 'inactive'}}",
+                                                    "props": {
+                                                        "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.inactive"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{intItem.state === 'version_mismatch'}}",
+                                                    "props": {
+                                                        "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.version_mismatch"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "type": "basic",
             "name": "Div",
             "if": "{{_global.pluginUpdateError}}",

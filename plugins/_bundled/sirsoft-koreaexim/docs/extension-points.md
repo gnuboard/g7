@@ -105,5 +105,5 @@ KST 갱신 시각을 사이트 스케줄 시간대로 바꿉니다. 요일은 �
 <!-- @intent START -->
 koreaexim_update_failed 정의의 소유자는 이 플러그인입니다. 제목·본문·수신자는 공통 알림 템플릿 저장소와 API를 사용하며 플러그인 환경설정에서 편집합니다. 코어 환경설정의 알림 탭은 확장 필터 없이 조회하므로 이 정의도 함께 표시하며, 두 화면은 같은 API 를 쓰므로 어느 쪽에서 고쳐도 같은 값입니다. 플러그인 화면은 자기 정의만 보이도록 extension_type=plugin·extension_identifier=sirsoft-koreaexim 으로 필터합니다. 업데이트는 사용자 수정값을 보존합니다.
 
-템플릿 변수는 수신자 이름 `{name}`·사이트 이름 `{app_name}`·실패 유형 `{status_label}`·사유 `{message}`·조회일 `{search_date}`·설정 주소 `{settings_url}` 입니다. 코어는 `{recipient_name}` 만 수신자별로 치환하므로 사이트 이름은 데이터 리스너(`UpdateFailedNotificationDataListener`)가 직접 넣습니다 — 빠지면 메일 제목에 `{app_name}` 글자가 그대로 나갑니다. 관리자 전용 알림이라 수신 대상(`audience`)은 `staff` 입니다.
+템플릿 변수는 수신자 이름 `{name}`·사이트 이름 `{app_name}`·실패 유형 `{status_label}`·사유 `{message}`·조회일 `{search_date}`·설정 주소 `{settings_url}` 입니다. 코어는 `{recipient_name}` 만 수신자별로 치환하므로 사이트 이름은 데이터 리스너(`UpdateFailedNotificationDataListener`)가 직접 넣습니다 — 빠지면 메일 제목에 `{app_name}` 글자가 그대로 나갑니다. 실패 유형 `{status_label}` 은 `LocalizedValue::translateAll()` 로 지원 언어마다 만든 묶음으로 넘겨 코어가 수신자 언어로 고릅니다(코어 7.1.5 이상 — 그 메서드가 없는 옛 코어는 갱신을 실행한 쪽 언어 하나로 넘깁니다). 관리자 전용 알림이라 수신 대상(`audience`)은 `staff` 입니다.
 <!-- @intent END -->

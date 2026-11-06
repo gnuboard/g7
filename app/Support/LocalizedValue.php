@@ -74,6 +74,33 @@ final class LocalizedValue
     }
 
     /**
+     * 번역 문구를 지원 언어마다 만들어 언어별 묶음으로 돌려줍니다.
+     *
+     * 알림 변수처럼 한 번 만들어 여러 언어의 수신자에게 쓰는 값에 쓴다 — 그때의 앱 언어로 한 번만 번역하면
+     * 다른 언어 수신자에게 그 언어가 섞인다. 만드는 동안 바꾼 앱 언어는 되돌린다.
+     *
+     * @param  callable(): string  $translate  현재 앱 언어로 번역 문구를 돌려주는 함수 (예: `fn () => $status->label()`)
+     * @return array<string, string> 언어 코드 => 번역 문구 (`config('app.supported_locales')` 순서)
+     */
+    public static function translateAll(callable $translate): array
+    {
+        $original = app()->getLocale();
+        $locales = config('app.supported_locales', [$original]);
+        $map = [];
+
+        try {
+            foreach ($locales as $locale) {
+                app()->setLocale($locale);
+                $map[$locale] = (string) $translate();
+            }
+        } finally {
+            app()->setLocale($original);
+        }
+
+        return $map;
+    }
+
+    /**
      * 보여 줄 수 있는 값인지 판정합니다.
      *
      * @param  mixed  $candidate  후보 값

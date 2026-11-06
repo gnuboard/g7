@@ -54,9 +54,7 @@ const FILES = walk(LAYOUT_ROOT).filter((f) => !/^shop\/guest_/.test(rel(f)));
 const EXCEPTIONS: Array<{ file: string; node: string; path: string; reason: string }> = [
   { file: 'auth/reset_password.json', node: 'Modal', path: '/', reason: '모달 자체의 닫기 이동 — 누를 링크 요소가 없다' },
   { file: 'partials/board/form/_password_verify_modal.json', node: 'Modal', path: '/board/{{route.slug}}/{{route.id}}', reason: '모달 자체의 닫기 이동 — 누를 링크 요소가 없다' },
-  { file: 'partials/shop/list/_search_filter_bar.json', node: 'Button', path: '{{_global.shopBase}}/products', reason: '검색 실행 — 입력한 검색어로 이동하는 제출 단추' },
   { file: 'partials/shop/list/_search_filter_bar.json', node: 'Button', path: '{{_global.shopBase}}/products', reason: '검색 초기화 — 입력값을 비우는 단추' },
-  { file: 'shop/category.json', node: 'Button', path: '{{route.path}}', reason: '검색 실행 — 입력한 검색어로 이동하는 제출 단추' },
   { file: 'partials/mypage/claims/_list.json', node: 'Button', path: "{{(_local.claimDetailPathBase ?? '') + '/' + (claim.claim_number ?? '')}}", reason: '비회원 주문상세 셸 전용 번호(same_window) — 조회 토큰이 탭에 묶여 새 탭은 조회 폼으로. 7.1.1 부터 role=link 글자 대신 키보드로 누르는 단추' },
   { file: 'shop/order_complete.json', node: 'Button', path: "{{(_global.shopBase ?? '/shop') + '/guest/orders/' + orderData?.data?.order_number}}", reason: '비회원 갈래 — 비회원 주문 조회 토큰이 탭에 묶여 새 탭은 조회 폼으로(회원 갈래는 링크)' },
   { file: 'partials/board/index/_write_button.json', node: 'Button', path: '/login', reason: '비로그인 로그인 유도 — 안내 후 로그인 화면으로(권한 있는 회원 갈래는 링크)' },

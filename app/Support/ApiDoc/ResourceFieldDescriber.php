@@ -101,6 +101,8 @@ class ResourceFieldDescriber
         'github_changelog_url' => 'GitHub 변경 이력(CHANGELOG) URL (manifest 파생)',
         'changelog' => '변경 이력 텍스트 (원격/파일 CHANGELOG 본문)',
         'current_core_version' => '현재 설치된 코어 버전',
+        'update_dependency_warnings' => '(업데이트가 있는 행에만) 업데이트할 새 버전이 요구하는 의존 확장 중 지금 미설치·꺼짐·버전 미달인 것 (각 원소 type/identifier/name/state/required_version/installed_version/message — 대상 판 manifest 를 모르면 null)',
+        'update_integration_notices' => '(업데이트가 있는 행에만) 업데이트할 새 버전과 함께 쓰면 연동되는 확장 중 지금 미설치·꺼짐·버전 미달인 것 (각 원소 type/identifier/name/state/required_version/installed_version/message — 대상 판 manifest 를 모르면 null)',
         'installed_modules' => '설치된 모듈 집계 객체 (total/active)',
         'installed_templates' => '설치된 템플릿 집계 객체 (total/active)',
         'active_plugins' => '활성 플러그인 집계 객체 (total/active)',

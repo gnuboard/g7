@@ -74,6 +74,15 @@ return [
         'column_message' => '理由',
         'composer_install_failed' => 'Composer 依存関係のインストールに失敗しました — 拡張フォルダで composer install を手動で実行してください',
         'php_extension_missing' => 'この拡張に必要な PHP 拡張 :extensions がサーバーにありません — 関連機能が動作しない可能性があるため、インストールしてください',
+        'search_scopes_not_object' => 'search_scopes の宣言がオブジェクト形式ではないため、すべて無視しました',
+        'search_scopes_invalid_name' => 'スコープ名の形式が正しくないため破棄しました(英小文字で始まり、英小文字・数字・_・- で50文字以内): :names',
+        'search_scopes_invalid_definition' => 'スコープの宣言がオブジェクトではないため破棄しました: :names',
+        'search_scopes_max_count_out_of_range' => '保管件数が :min〜:max の整数ではないため無視し、既定値を使います: :items',
+        'search_scopes_retention_days_out_of_range' => '保管期限が :min〜:max 日の整数ではないため無視し、既定値を使います: :items',
+        'necessary_storage_not_object' => 'necessary_storage の宣言がオブジェクト形式ではないため、すべて無視しました',
+        'necessary_storage_invalid_scope' => '保存先の種類が localStorage・sessionStorage・cookie ではないか、キー一覧が配列ではないため破棄しました: :names',
+        'necessary_storage_invalid_key' => '保存キーの形式が正しくないため破棄しました(英数字・_ . : @ + - で128文字以内、前方一致は末尾に * を1つ): :items',
+        'declaration_hint' => '拡張機能が宣言した値の誤りのため、再実行しても変わりません — 拡張機能の開発者に知らせてください',
     ],
     // 必須依存(dependencies)未充足の理由 — 復旧失敗・連鎖インストール失敗・CLI が同じ文を使う (7.1.4)
     'dependency_status' => [

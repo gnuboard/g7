@@ -320,6 +320,22 @@ return [
 
 복수 수신자 알림에서 `data.name`에 `{recipient_name}`을 설정하면, 발송 시 각 수신자의 이름으로 자동 치환됩니다.
 
+### 알림 변수의 번역 문구 (7.1.5)
+
+알림 데이터는 그 알림을 일으킨 요청(또는 예약 작업) 안에서 한 번 만들어 모든 수신자에게 씁니다. 상태 이름 같은 번역 문구를
+`__()`·`$enum->label()` 로 그때 번역해 넣으면 **그 요청의 언어**로 굳어, 다른 언어 수신자의 메일에 섞입니다(영어 메일 본문에
+한국어 상태 이름). 번역 문구는 지원 언어마다 만든 묶음으로 넘깁니다 — 치환(`replaceVariables`)이 수신자 언어로 고르고, 없으면
+사이트 기본 언어 → 영어 순으로 대신합니다(`LocalizedValue` 규칙).
+
+```php
+use App\Support\LocalizedValue;
+
+$data['status_label'] = LocalizedValue::translateAll(fn () => $run->status->label()); // ['ko' => '…', 'en' => '…']
+```
+
+코어 7.1.4 이하를 함께 지원하는 확장은 `method_exists(LocalizedValue::class, 'translateAll')` 로 확인하고, 없으면 종전처럼
+문자열을 넘깁니다(옛 코어의 치환은 배열 값을 받지 못합니다).
+
 ### 알림 변수의 날짜·시각
 
 DB 와 `config('app.timezone')` 은 UTC 입니다. 알림 변수에 날짜·시각을 넣을 때 시간대를 정하지 않으면 UTC 값이 그대로

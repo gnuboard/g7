@@ -1,3 +1,4 @@
+// e2e:allow 전환 때 떠나는 화면 _localInit 슬롯 은퇴 전달(engine-v1.88.0) — Chrome MCP 실제 키 재실측과 DynamicRenderer.localInitStaleScreenReapply 시험으로 잠근다.
 /**
  * TemplateApp 클래스
  * 템플릿 엔진의 모든 모듈을 통합하고 초기화하는 메인 애플리케이션 클래스
@@ -1688,13 +1689,15 @@ export class TemplateApp {
                 // @since engine-v1.52.2: _localInit 추적 레지스트리도 함께 초기화.
                 // _local 을 비웠는데 추적 해시가 남아 있으면, 새 레이아웃의 _localInit payload 가
                 // 이전 레이아웃과 우연히 동일할 때 "이미 적용됨"으로 오판되어 건너뛴다.
-                resetLocalInitTracking();
+                // @since engine-v1.88.0: 떠나는 화면의 _localInit 슬롯은 은퇴로 표시한다 — 새 화면이 그려지기 전 앞 화면 트리가
+                // 다시 그려지며 새로 붙는 렌더러가 그 슬롯을 적용하면 앞 화면 폼·hasChanges 가 새 _local 에 남았다(상품 수정 → 뒤로)
+                resetLocalInitTracking((previousDataContext as any)._localInit);
             } else if (previousRoutePath !== null && previousRoutePath !== route.path) {
                 // @since engine-v1.79.0: 같은 레이아웃의 다른 경로도 `_localInit` 추적을 초기화한다.
                 // 경로가 바뀌면 상태 소유 루트의 저장소 A 를 비우는데(DynamicRenderer storeResetKey), 추적이 남아 있으면
                 // 「수정 → 등록 → 뒤로 가기」처럼 같은 payload 로 돌아왔을 때 「이미 적용됨」으로 건너뛰어 빈 A 를
-                // 다시 채우지 못한다(트러블슈팅 cache 사례 8 의 같은 레이아웃 판).
-                resetLocalInitTracking();
+                // 다시 채우지 못한다(트러블슈팅 cache 사례 8 의 같은 레이아웃 판). 떠나는 경로의 슬롯도 은퇴로 표시한다 (engine-v1.88.0)
+                resetLocalInitTracking((previousDataContext as any)._localInit);
             }
 
             this.currentLayoutName = newLayoutName;

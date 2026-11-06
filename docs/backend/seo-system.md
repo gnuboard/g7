@@ -340,6 +340,8 @@ seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거�
 | `og:title` | 레이아웃 `og.title` → 고른 제목 → (제목이 비면) 사이트 이름 |
 | 편집기 「검색 제목·설명」 | 레이아웃 편집기 → 페이지 설정 → 검색엔진의 「제목」「설명」(`meta.seo.title`·`meta.seo.description`)은 그 화면의 기본 제목·설명입니다. 상품·게시글·페이지 자체 값이 있으면 그것이 앞서고, 확장 제목·설명 틀과 소셜 공유(og) 값보다는 앞섭니다. 설명 순서는 리소스 `meta_description` → 페이지 `seo_meta.description` → `meta.seo.description` → 확장 설명 틀 → `og.description` → 코어 설명 |
 | 확장 제목 틀 | 사이트 이름을 넣지 않습니다(접미사가 붙임). 다국어 값(`{ko, en, …}`)이면 현재 로케일 → 사이트 기본 언어 → 영어 |
+| 필수 변수가 빈 확장 제목 틀 | 확장 변수 선언의 `required: true` 변수(상품명·카테고리명)가 비면 그 확장 제목 틀은 후보가 아닙니다(`SeoTitleRule::hasMissingRequired` · 엔진 `hasMissingRequiredSeoVar`). 틀의 고정 글자만 남은 제목(`{product_name} 특가` → 「특가」)을 쓰지 않고 다음 후보로 갑니다 — 화면은 데이터를 받는 동안 라우트 제목입니다. 설명 틀은 그대로 씁니다 |
+| 레이아웃 후보 식 | `vars`·`og` 식에서 `$localized(…)` 를 이어 쓸 때는 `??` 가 아니라 `\|\|` 로 잇습니다. 화면 `$localized` 는 빈 값을 빈 글자로 돌려줘 `??` 가 다음 후보로 넘어가지 않습니다(서버는 null 을 그대로 돌려줘 넘어감) — 두 구현이 다른 제목을 냅니다 |
 
 | 페이지 | 기본 제목 (접미사 기본값일 때) |
 |--------|------|
@@ -896,7 +898,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 | stats_records_per_minute | `G7_SEO_STATS_RECORDS_PER_MINUTE` | 300 | IP 당 분당 통계 기록 수 |
 | max_concurrent_renders | `G7_SEO_MAX_CONCURRENT_RENDERS` | 4 | 사이트 전체에서 동시에 진행하는 미스 렌더 수. 0 이면 제한 없음 |
 
-데이터소스 호출 1건의 제한 시간은 `config/core.php` 의 `seo_datasource.timeout`(`G7_SEO_DATASOURCE_TIMEOUT`, 기본 2초)입니다. 넘기면 그 데이터소스는 `fallback` 으로 채워집니다.
+데이터소스 호출 1건의 제한 시간은 `config/core.php` 의 `seo_datasource.timeout`(`G7_SEO_DATASOURCE_TIMEOUT`, 기본 2초)입니다. 넘기면 그 데이터소스는 `fallback` 으로 채워집니다. 시간 초과·연결 오류·5xx 로 `fallback` 을 쓴 렌더는 그 봇에게만 보내고 캐시에 넣지 않습니다(미들웨어·캐시 재생성 모두, 로그 `[SEO] Degraded render not cached`) — 넣으면 데이터 없는 화면(상품명 없는 제목·본문)이 캐시 수명 동안 나갑니다. 다음 미스가 다시 그립니다. 4xx(없는 상품 등)는 다시 불러도 같은 결과라 그대로 캐시합니다.
 
 상한을 넘긴 요청은 **차단되지 않고** 일반 SPA 응답을 받습니다. 봇에게 오류를 돌려주면 그 URL 이 색인에서 빠지므로 차단이 곧 손해입니다. 판정 결과는 응답 헤더 `X-SEO-Cache`(`HIT`/`MISS`/`BYPASS`)로 드러나며, 그것이 운영 진단의 통로입니다.
 
@@ -2000,6 +2002,7 @@ public function seoVariables(): array
 ```
 
 - 값이 비면 `Log::warning('[SEO] Required variable not resolved', ...)` 기록 (SeoRenderer)
+- 그 확장의 **제목 틀은 쓰지 않음** — `_seo.{page_type}.title` 이 빈 값이라 다음 제목 후보(og·라우트 제목)로 넘어갑니다. 설명 틀은 그대로 씁니다. 사람 탭 제목도 같은 규칙입니다(데이터를 받기 전 고정 글자만 남은 제목 방지)
 - 렌더링을 **중단하지 않음** — 빈 값으로 계속 진행 (부분 누락 허용)
 - 기본값 주입/예외 발생 없음 — 누락을 감지하는 진단용 표시
 

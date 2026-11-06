@@ -813,6 +813,32 @@ function buildUploadUrl(): string {
 }
 
 /**
+ * 만드는 사이 화면을 떠나 컨테이너가 문서에서 떨어진 편집기를 해제합니다 — 해제 실패는 무시한다(이미 화면 밖이다).
+ *
+ * @param editor 방금 만든 편집기
+ */
+async function discardDetachedEditor(editor: unknown): Promise<void> {
+    try {
+        await (editor as any)?.destroy?.();
+    } catch {
+        // 떨어져 나간 편집기 — 해제 실패가 새 화면에 영향을 주지 않는다
+    }
+}
+
+/**
+ * 떠난 화면 편집기의 등록을 거둡니다 — 등록부 키(`ckeditor5-{name}`)는 화면이 달라도 같으므로, 그 사이 같은 이름으로
+ * 선 다음 화면 편집기가 등록을 바꿔 놓았으면 건드리지 않는다(지우면 해제·읽기 전용 전환이 그 편집기에 닿지 않는다).
+ *
+ * @param containerId 등록부 키
+ * @param instanceMap 떠난 화면이 등록한 편집기 묶음
+ */
+function releaseDetachedRegistration(containerId: string, instanceMap: Map<string, unknown>): void {
+    if (editorInstances.get(containerId) === instanceMap) {
+        editorInstances.delete(containerId);
+    }
+}
+
+/**
  * 단일 CKEditor 인스턴스를 생성합니다.
  */
 async function createEditorInstance(
@@ -1477,6 +1503,13 @@ export async function initEditorHandler(
                     initialContent,
                 });
 
+                // 만드는 사이 화면을 떠났으면(컨테이너가 문서에서 떨어짐) 편집기를 해제하고 폼에 쓰지 않는다 — 그때의 _local 은
+                // 새 화면 것이라 `form.{name}_mode` 가 목록 화면 상태에 남았다
+                if (!container.isConnected) {
+                    await discardDetachedEditor(editor);
+                    return;
+                }
+
                 instanceMap.set(locale, editor);
 
                 // 초기화 중 change:data 이벤트 억제 (CKEditor 내부 initialData 처리 시 발생 가능)
@@ -1535,6 +1568,12 @@ export async function initEditorHandler(
         // 활성 locale 에디터 먼저 생성
         await createLocaleEditor(activeLocale);
 
+        // 만드는 사이 화면을 떠났으면 평문 폴백도 세우지 않는다 — 폴백이 `form.{name}_mode` 를 새 화면 _local 에 쓴다
+        if (!container.isConnected) {
+            releaseDetachedRegistration(containerId, instanceMap);
+            return;
+        }
+
         // 활성 locale 조차 세우지 못했으면 자산은 있어도 편집기를 쓸 수 없는 상태다.
         // 나머지 locale 을 계속 시도해봐야 같은 이유로 실패하므로 평문 입력으로 내려앉는다.
         if (!instanceMap.has(activeLocale)) {
@@ -1584,6 +1623,13 @@ export async function initEditorHandler(
                 ...editorOptions,
                 initialContent,
             });
+
+            // 다국어 갈래와 같은 이유 — 만드는 사이 화면을 떠났으면 해제하고 폼에 쓰지 않는다
+            if (!container.isConnected) {
+                await discardDetachedEditor(editor);
+                releaseDetachedRegistration(containerId, instanceMap);
+                return;
+            }
 
             const singleLocale = getCurrentLocale();
             instanceMap.set(singleLocale, editor);

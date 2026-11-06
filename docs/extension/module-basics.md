@@ -247,6 +247,7 @@ public function activate(): bool
 ```
 
 - `add(string $step, string $target, string $message)` — `step` 은 실패한 단계, `target` 은 대상(확장 식별자·파일명 등), `message` 는 **이미 번역된** 사유.
+- `declaration(string $step, string $target, string $message)`(7.1.5+) — 확장이 선언한 값의 형식이 틀려 그 부분을 버린 실패. 항목에 `cause: "declaration"` 이 실려 관리자 결과 창이 「다시 실행」 대신 확장 개발자가 고칠 선언이라고 안내한다. 사유에는 무엇을 왜 버렸는지 적는다. 코어가 검사하는 `search_scopes`·`necessary_storage` 가 이 방식으로 알린다.
 - 확장의 `g7_version` 하한이 7.1.3 미만이면 `class_exists` 가드를 반드시 둔다(없으면 옛 코어에서 치명 오류).
 - 작업 자체를 거부해야 하면 경고가 아니라 `failWith()`(위 절)로 실패를 반환한다.
 

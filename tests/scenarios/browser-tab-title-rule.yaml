@@ -35,6 +35,8 @@ axes:
     - layout_seo_title_server
     - layout_seo_title_engine
     - admin_screen_title
+    - required_vars_server
+    - required_vars_engine
 
 effects:
   - server_title_rule_matches_fixture                 # 서버 규칙이 공용 판정 사례와 같은 답을 낸다
@@ -54,11 +56,13 @@ effects:
   - admin_title_falls_back_to_route_title             # 관리자: 레이아웃 제목이 없으면 라우트 제목, 앞 화면 제목 잔류 없음
   - admin_title_suffix_follows_locale                 # 관리자 접미사는 화면 언어를 따른다
   - admin_shell_exports_site_name_and_localized_suffix  # 관리자 셸이 사이트 이름과 지원 언어별 접미사 맵을 넘긴다
+  - required_var_empty_template_skipped               # 확장 변수 선언의 required 변수가 비면 확장 제목 틀을 후보로 쓰지 않는다(데이터 받기 전 고정 글자만 남은 제목 방지)
   - layout_seo_title_before_extension_template_and_og  # 편집기 「검색 제목·설명」(meta.seo.title·description)이 자체 값 다음·확장 틀·og 앞 후보
 
 test_files:
   - tests/Unit/Seo/SeoTitleRuleParityTest.php
   - tests/Unit/Seo/SeoMetaResolverTest.php
+  - tests/Unit/Seo/SeoRendererTest.php
   - resources/js/core/routing/__tests__/DocumentTitle.parity.test.ts
   - resources/js/core/__tests__/TemplateApp.documentTitle.test.ts
   - tests/Feature/View/AdminShellTitleTest.php

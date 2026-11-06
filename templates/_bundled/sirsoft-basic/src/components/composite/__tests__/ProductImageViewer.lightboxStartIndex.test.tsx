@@ -35,7 +35,7 @@ const counterText = () =>
   document.querySelector('.yarl__counter')?.textContent?.replace(/\s+/g, ' ').trim();
 
 const closeLightbox = () => {
-  fireEvent.click(document.querySelector('.yarl__button[aria-label="Close"]') as Element);
+  fireEvent.click(document.querySelector('.yarl__button[aria-label="common.lightbox.close"]') as Element);
 };
 
 describe('ProductImageViewer 확대 창 시작 사진 (#821)', () => {

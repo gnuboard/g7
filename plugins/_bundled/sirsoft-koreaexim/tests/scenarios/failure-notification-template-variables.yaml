@@ -9,6 +9,7 @@ axes:
 effects:
   - every_template_placeholder_is_filled
   - definition_declares_audience_and_variables
+  - status_label_follows_recipient_locale   # 상태 이름을 언어별 묶음으로 넘겨 수신자 언어 메일에 그 언어 상태 이름(코어 7.1.5)
 
 test_files:
   - plugins/_bundled/sirsoft-koreaexim/tests/Unit/UpdateFailedNotificationTemplateVariablesTest.php

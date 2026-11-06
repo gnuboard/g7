@@ -34,6 +34,17 @@ export interface RecentSearchComboboxProps {
     inputClassName?: string;
     /** 검색 단추 클래스 (주면 기본 모양을 대신한다) */
     buttonClassName?: string;
+    /**
+     * 빈 검색어 제출도 `onSearch('')` 로 넘기는가 (기본 false — 빈 제출은 무시).
+     * 목록 화면 검색칸(상품 목록·게시판 목록)처럼 칸을 비우고 제출하면 검색 조건을 푸는 자리에서 켠다. 빈 검색어는 기록하지 않는다
+     */
+    submitEmpty?: boolean;
+    /**
+     * 검색어 지우기(×) 단추를 보이는가 (기본 false). 칸에 글자가 있을 때만 보이고, 누르면 칸을 비우고 초점을 입력칸에 둔다 —
+     * 검색하지 않는다. 글자가 있을 때 Esc 도 칸을 비운다. 종전 `type="search"` 입력칸(게시판 목록)의 브라우저 지우기 동작과 같다.
+     * 입력칸 클래스를 주면 오른쪽 여백(`pr-11`)을 단추 폭만큼 둔다
+     */
+    showClear?: boolean;
     /** 검색 — 인자: 다듬은 검색어. 레이아웃은 `<on event="onSearch">` 와 `$args[0]` 으로 받는다 */
     onSearch?: (keyword: string) => void;
     /** 루트 시험 식별자 */

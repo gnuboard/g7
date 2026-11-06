@@ -59,6 +59,39 @@ class SeoTitleRuleParityTest extends TestCase
     }
 
     /**
+     * 필수 변수 준비 판정 사례를 공급합니다.
+     *
+     * @return array<string, array{0: array, 1: array, 2: bool}> 사례 이름 → [변수 선언, 변수 값, 기대값]
+     */
+    public static function requiredVarsCases(): array
+    {
+        $out = [];
+        foreach (self::cases()['required_vars'] as $case) {
+            $out[$case['name']] = [$case['definitions'], $case['vars'], $case['expected']];
+        }
+
+        return $out;
+    }
+
+    /**
+     * 확장 제목 틀의 필수(required) 변수가 비었는지 판정이 사례마다 기대값을 냅니다 — 비면 틀을 제목 후보로 쓰지 않습니다.
+     *
+     * @scenario case=required_vars_server
+     *
+     * @effects required_var_empty_template_skipped
+     *
+     * @param  array  $definitions  변수 선언
+     * @param  array  $vars  변수 값
+     * @param  bool  $expected  기대값
+     * @return void 반환값 없음
+     */
+    #[DataProvider('requiredVarsCases')]
+    public function test_missing_required_variable_matches_fixture(array $definitions, array $vars, bool $expected): void
+    {
+        $this->assertSame($expected, SeoTitleRule::hasMissingRequired($definitions, $vars));
+    }
+
+    /**
      * 제목 규칙이 사례마다 기대한 제목·접미사·전체 제목을 냅니다.
      *
      * @scenario case=rule_fixture_server

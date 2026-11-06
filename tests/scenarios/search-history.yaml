@@ -23,6 +23,8 @@ description: |
 axes:
   case:
     - scope_declaration_normalized
+    - scope_declaration_warning_explains_reason
+    - scope_declaration_update_warning
     - scope_aggregate_active_only
     - scope_effective_values
     - settings_rows_present_and_merge
@@ -50,6 +52,10 @@ effects:
   # 범위 선언·집계 (App\Support\SearchScopes)
   - extension_scope_prefixed_with_identifier           # 확장 선언 키에 `{식별자}.` 접두어
   - invalid_scope_declaration_dropped_with_warning     # 이름 규칙·범위 밖 값은 버리고 설치·활성화 경고(search_scopes)
+  - invalid_scope_declaration_warning_explains_reason  # 경고 사유는 이유별 사람 말(이름 형식·선언 모양·보관 개수·기한 범위, 정수 아님 포함)
+  - invalid_scope_declaration_marked_for_developer     # 경고 항목에 cause=declaration — 다시 실행할 작업이 아니라 확장 개발자가 고칠 선언
+  - invalid_scope_declaration_reported_on_update       # 모듈·플러그인 업데이트도 새 판 선언을 검사해 결과·관리자 응답 warnings 에 싣는다
+  - valid_scope_declaration_silent_on_update           # 새 판 선언이 정상이면 업데이트 결과에 search_scopes 경고가 없다
   - core_scope_always_present                          # core.site 가 늘 맨 앞
   - inactive_extension_scope_absent                    # 비활성 확장 범위는 집계에 없다
   - effective_value_precedence_settings_declared_default   # 설정 행 → 선언값 → 10개·기한 없음
@@ -120,6 +126,7 @@ effects:
 test_files:
   # PHPUnit
   - tests/Unit/Support/SearchScopesTest.php
+  - tests/Feature/Extension/UpdateManifestDeclarationWarningTest.php
   - tests/Feature/Api/Auth/SearchHistoryApiTest.php
   - tests/Feature/Privacy/SearchHistoryRetentionTest.php
   - tests/Feature/Privacy/SearchHistoryUserPurgeTest.php

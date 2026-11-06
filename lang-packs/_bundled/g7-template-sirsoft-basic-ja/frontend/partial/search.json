@@ -63,5 +63,6 @@
     "auto_save_off": "自動保存をオフ",
     "auto_save_on": "自動保存をオン",
     "auto_save_off_notice": "検索語の自動保存はオフになっています。"
-  }
+  },
+  "clear": "検索語をクリア"
 }

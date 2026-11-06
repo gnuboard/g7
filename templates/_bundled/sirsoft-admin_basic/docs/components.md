@@ -390,7 +390,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Input` | 텍스트 입력 | label, error | checkable |
-| `Select` | 선택 박스. `options` 를 주면 커스텀 드롭다운으로 그리며 펼침 목록은 트리거 폭을 하한으로 항목이 한 줄에 들어갈 만큼 넓어지고(상한 320px·화면 오른쪽 여유), 스크롤바 자리를 미리 확보한다 | label, error, options, searchable | - |
+| `Select` | 선택 박스. `options` 를 주면 커스텀 드롭다운으로 그리며 펼침 목록은 트리거 폭을 하한으로 항목이 한 줄에 들어갈 만큼 넓어지고(상한 320px·화면 오른쪽 여유), 스크롤바 자리를 미리 확보한다. 목록형 키보드: 단추에서 ↓(고른 값·없으면 첫 항목)·↑(고른 값·없으면 마지막 항목)로 열고 항목에 초점, 목록 안 ↓/↑(잠긴 항목 건너뛰며 순환)·Home·End, Enter·Space 로 고름, Esc 는 목록만 닫고 단추로(바깥 창 Esc 로 번지지 않음), Tab 은 닫고 단추 다음 칸으로, 펼쳤을 때만 단추 `aria-controls` 가 목록을 가리킨다 — 사용자 템플릿 Basic 의 Select 와 같은 계약. 회귀 테스트: `src/components/basic/__tests__/Select.keyboard.test.tsx` | label, error, options, searchable | - |
 | `Option` | Select 내부 옵션 | value | - |
 | `Optgroup` | Select 옵션 그룹화 | label | - |
 | `Textarea` | 텍스트 영역 | label, error | - |
@@ -642,7 +642,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Accordion` | 아코디언 (접기/펼치기) | defaultOpen, isOpen, onToggle, style, disabled |
 | `Card` | 카드 컨테이너 (헤더, 본문, 푸터) | title, content, imageUrl, imageAlt, onClick, ... |
 | `LoadingSpinner` | 로딩 스피너 | size, color, fullscreen, text |
-| `ImageGallery` | 라이트박스 이미지 갤러리 (줌, 다운로드, 썸네일) | images, initialIndex, onClose |
+| `ImageGallery` | 라이트박스 이미지 갤러리 (줌, 다운로드, 썸네일) — 창 이름·단추 이름·「몇 장 중 몇 번째」 등 화면 읽기 이름은 `common.lightbox.*` 로 화면 언어를 따른다 | images, initialIndex, onClose |
 
 ---
 

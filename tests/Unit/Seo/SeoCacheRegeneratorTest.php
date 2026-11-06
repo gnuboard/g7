@@ -18,6 +18,9 @@ use Tests\TestCase;
  * - 렌더링 실패(null) 시 캐시 저장 스킵
  * - 예외 발생 시 graceful 처리
  * - 다국어 로케일별 재생성
+ * - 데이터 소스 일시 장애로 저하된 렌더는 저장하지 않음
+ *
+ * @scenario-manifest tests/scenarios/seo-cache-regenerator.yaml
  */
 class SeoCacheRegeneratorTest extends TestCase
 {
@@ -27,6 +30,11 @@ class SeoCacheRegeneratorTest extends TestCase
 
     private SeoCacheRegenerator $regenerator;
 
+    /**
+     * 렌더러·캐시 대역과 재생성기를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +48,11 @@ class SeoCacheRegeneratorTest extends TestCase
         );
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫습니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -50,6 +63,12 @@ class SeoCacheRegeneratorTest extends TestCase
 
     /**
      * 렌더링 성공 시 캐시에 저장되는지 확인
+     *
+     * @scenario case=render_success
+     *
+     * @effects regenerator_stores_rendered_html
+     *
+     * @return void 반환값 없음
      */
     public function test_render_and_cache_stores_html_on_success(): void
     {
@@ -80,6 +99,12 @@ class SeoCacheRegeneratorTest extends TestCase
 
     /**
      * 렌더링 결과가 null이면 캐시 저장을 건너뛰는지 확인
+     *
+     * @scenario case=render_null
+     *
+     * @effects regenerator_skips_null_render
+     *
+     * @return void 반환값 없음
      */
     public function test_render_and_cache_skips_when_render_returns_null(): void
     {
@@ -97,10 +122,45 @@ class SeoCacheRegeneratorTest extends TestCase
         $this->assertFalse($result);
     }
 
+    /**
+     * 데이터 소스가 시간 초과·서버 오류로 대체값을 쓴 렌더(저하)는 캐시에 넣지 않는다 — 데이터 없는 화면을 미리 데워 두지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=render_degraded
+     *
+     * @effects degraded_render_not_cached
+     */
+    public function test_render_and_cache_skips_degraded_render(): void
+    {
+        config(['app.locale' => 'ko']);
+        config(['app.supported_locales' => ['ko']]);
+
+        $this->rendererMock->shouldReceive('render')
+            ->once()
+            ->andReturnUsing(function (Request $request) {
+                $request->attributes->set('seo_layout_name', 'shop/show');
+                $request->attributes->set('seo_render_degraded', ['product']);
+
+                return '<html><title>상품 상세</title></html>';
+            });
+
+        $this->cacheMock->shouldNotReceive('putWithLayout');
+        Log::shouldReceive('warning')->once()->with('[SEO] Degraded render not cached', Mockery::type('array'));
+
+        $this->assertFalse($this->regenerator->renderAndCache('/shop/products/17'));
+    }
+
     // ─── 다국어 재생성 ──────────────────────────────────────
 
     /**
      * 지원 로케일별로 각각 렌더링 + 캐시 저장이 수행되는지 확인
+     *
+     * @scenario case=multi_locale
+     *
+     * @effects regenerator_renders_every_supported_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_render_and_cache_iterates_supported_locales(): void
     {
@@ -135,6 +195,12 @@ class SeoCacheRegeneratorTest extends TestCase
 
     /**
      * 렌더링 중 예외 발생 시 graceful하게 처리되는지 확인
+     *
+     * @scenario case=render_exception
+     *
+     * @effects regenerator_survives_render_exception
+     *
+     * @return void 반환값 없음
      */
     public function test_render_and_cache_handles_exceptions_gracefully(): void
     {
@@ -161,6 +227,12 @@ class SeoCacheRegeneratorTest extends TestCase
 
     /**
      * 일부 로케일만 실패해도 나머지는 정상 처리되는지 확인
+     *
+     * @scenario case=partial_locale_failure
+     *
+     * @effects regenerator_survives_render_exception
+     *
+     * @return void 반환값 없음
      */
     public function test_render_and_cache_continues_on_partial_locale_failure(): void
     {
@@ -194,6 +266,12 @@ class SeoCacheRegeneratorTest extends TestCase
 
     /**
      * 로케일이 렌더링 후 원래 값으로 복원되는지 확인
+     *
+     * @scenario case=multi_locale
+     *
+     * @effects regenerator_restores_app_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_render_and_cache_restores_locale(): void
     {

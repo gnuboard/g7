@@ -17,6 +17,7 @@
  */
 
 import { DataBindingEngine } from '../template-engine/DataBindingEngine';
+import { hasPipes } from '../template-engine/PipeRegistry';
 import { pickLocalized } from '../support/localeTag';
 
 /** 확장 하나의 제목 계산 값 (SeoTitleRuleExporter) */
@@ -250,6 +251,27 @@ export function substituteSeoVars(template: string, vars: Record<string, unknown
     .replace(/\s+/gu, ' ');
 
   return result.trim();
+}
+
+/**
+ * 확장 변수 선언 중 필수(`required`) 변수가 비었는지 본다 — 서버 `SeoTitleRule::hasMissingRequired` 의 짝.
+ *
+ * 비었으면 그 확장 제목 틀은 아직 제목 후보가 아니다(데이터를 받기 전 `{product_name} 특가` → 「특가」 방지).
+ * 값 목록에 없는 변수·null·빈 글자를 빈 값으로 본다.
+ *
+ * @param definitions 변수 이름 → 선언(`source`·`key`·`required`)
+ * @param vars 변수 이름 → 해석한 값
+ * @returns 비어 있는 필수 변수가 하나라도 있으면 true
+ * @since engine-v1.88.0
+ */
+export function hasMissingRequiredSeoVar(definitions: Record<string, any>, vars: Record<string, unknown>): boolean {
+  for (const [name, definition] of Object.entries(definitions ?? {})) {
+    if (!definition || typeof definition !== 'object' || Array.isArray(definition) || !definition.required) continue;
+    const value = vars[name];
+    if (value === undefined || value === null || value === '') return true;
+  }
+
+  return false;
 }
 
 /** 제목 입력 계산에 필요한 도구 */
@@ -501,7 +523,8 @@ export function computeTitleInput(
       }
 
       const templates = entry.templates?.[pageType] ?? {};
-      const title = substituteSeoVars(localize(templates.title ?? ''), allResolved);
+      // 필수 변수가 비면(데이터를 받기 전) 제목 틀은 아직 후보가 아니다 — 고정 글자만 남은 제목을 쓰지 않는다
+      const title = hasMissingRequiredSeoVar(merged, allResolved) ? '' : substituteSeoVars(localize(templates.title ?? ''), allResolved);
       const description = substituteSeoVars(localize(templates.description ?? ''), allResolved);
       if (title !== '' || description !== '') {
         seoContextCache[pageType] = { title, description };
@@ -696,7 +719,11 @@ export class DocumentTitleController {
         if (single && !single[1].includes('{{')) {
           let value: unknown;
           try {
-            value = engine.evaluateExpression(single[1].trim(), context, { skipCache: true });
+            // 파이프 식은 evaluatePipeExpression 으로 — evaluateExpression 은 `|` 를 비트 OR 로 보아
+            // 인자 없는 파이프(`{{v | date}}`)가 예외 없이 `0` 같은 오답 제목이 된다.
+            value = hasPipes(single[1])
+              ? engine.evaluatePipeExpression(single[1].trim(), context, { skipCache: true })
+              : engine.evaluateExpression(single[1].trim(), context, { skipCache: true });
           } catch {
             value = engine.resolveBindings(expression, context, { skipCache: true });
           }

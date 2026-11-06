@@ -87,5 +87,24 @@
   "quantity_increase": "Increase quantity",
   "close_menu": "Close menu",
   "page_transitioning": "Changing page",
-  "page_loading": "Loading page"
+  "page_loading": "Loading page",
+  "lightbox": {
+    "dialog": "Image viewer",
+    "carousel": "Carousel",
+    "photo_gallery": "Photo gallery",
+    "slide": "Photo",
+    "slide_position": "{index} of {total}",
+    "previous": "Previous photo",
+    "next": "Next photo",
+    "close": "Close",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out",
+    "enter_fullscreen": "Enter full screen",
+    "exit_fullscreen": "Exit full screen",
+    "play": "Start slideshow",
+    "pause": "Pause slideshow",
+    "thumbnails": "Thumbnails",
+    "show_thumbnails": "Show thumbnails",
+    "hide_thumbnails": "Hide thumbnails"
+  }
 }
