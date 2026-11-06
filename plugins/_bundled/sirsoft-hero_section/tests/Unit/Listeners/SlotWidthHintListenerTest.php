@@ -6,6 +6,8 @@ use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\PluginSettingsService;
 use Mockery;
+use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
+use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
@@ -110,14 +112,84 @@ class SlotWidthHintListenerTest extends PluginTestCase
     }
 
     /**
+     * 배너 유무 힌트는 노출 중이거나 예약된 배너가 있을 때만 참이다 — 꺼 둔 배너·기간이 끝난 배너는 사이트에 나올 일이 없다.
+     *
+     * @scenario surface=slot_banner_hint_from_banners
+     *
+     * @return void 반환값 없음
+     */
+    public function test_filter_fills_banner_hint_from_exposable_banners(): void
+    {
+        Banner::factory()->forPosition(HeroPosition::HomeHero)->inactive()->create();
+        Banner::factory()->forPosition(HeroPosition::HomeHero)->ended()->create();
+        Banner::factory()->forPosition(HeroPosition::ShopHero)->scheduled()->create();
+
+        $filled = HookManager::applyFilters('core.plugin_settings.filter_save_data', ['slot_banners' => ['home_hero' => true]], 'sirsoft-hero_section');
+        $this->assertSame(['home_hero' => false, 'shop_hero' => true], $filled['slot_banners']);
+
+        Banner::factory()->forPosition(HeroPosition::HomeHero)->running()->create();
+        $filled = HookManager::applyFilters('core.plugin_settings.filter_save_data', [], 'sirsoft-hero_section');
+        $this->assertSame(['home_hero' => true, 'shop_hero' => true], $filled['slot_banners']);
+    }
+
+    /**
+     * 배너가 바뀌어 유무가 달라질 때만 플러그인 설정을 다시 저장한다 — 배너를 고칠 때마다 설정 파일을 쓰지 않는다.
+     *
+     * @scenario surface=slot_banner_hint_from_banners
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resaves_banner_hint_only_when_presence_changes(): void
+    {
+        $banner = Banner::factory()->forPosition(HeroPosition::HomeHero)->running()->create();
+
+        // 저장된 힌트와 같으면 저장하지 않는다
+        $calls = $this->recordSaves(['home_hero' => true, 'shop_hero' => false]);
+        HookManager::doAction('sirsoft-hero_section.banner.after_create', $banner);
+        HookManager::doAction('sirsoft-hero_section.banner.after_update', $banner, [], 'home_hero');
+        $this->assertCount(0, $calls);
+
+        // 달라지면(마지막 배너를 지웠다) 힌트를 다시 맞춘다 — 삭제·일괄 처리 경로도 같다
+        $banner->delete();
+        HookManager::doAction('sirsoft-hero_section.banner.after_delete', $banner->id, []);
+        HookManager::doAction('sirsoft-hero_section.banner.after_bulk_delete', [$banner->id], []);
+        HookManager::doAction('sirsoft-hero_section.banner.after_bulk_status', [$banner->id], false, []);
+        $this->assertCount(3, $calls);
+        $this->assertSame(['sirsoft-hero_section'], array_values(array_unique(array_column($calls->getArrayCopy(), 0))));
+    }
+
+    /**
+     * 실제 훅 체인 — 배너를 API 로 만들고 지우면 사용자 화면이 받는 플러그인 설정의 힌트가 따라간다.
+     *
+     * @scenario surface=slot_banner_hint_from_banners
+     *
+     * @return void 반환값 없음
+     */
+    public function test_banner_hint_follows_real_banner_changes(): void
+    {
+        $settings = app(PluginSettingsService::class);
+        $settings->save('sirsoft-hero_section', []);
+        $this->assertFalse($settings->get('sirsoft-hero_section', 'slot_banners.home_hero'));
+
+        $banner = Banner::factory()->forPosition(HeroPosition::HomeHero)->running()->create();
+        HookManager::doAction('sirsoft-hero_section.banner.after_create', $banner);
+        $this->assertTrue(app(PluginSettingsService::class)->get('sirsoft-hero_section', 'slot_banners.home_hero'));
+
+        $this->actingAs($this->admin)->deleteJson($this->api('/admin/banners/'.$banner->id))->assertOk();
+        $this->assertFalse(app(PluginSettingsService::class)->get('sirsoft-hero_section', 'slot_banners.home_hero'));
+    }
+
+    /**
      * 플러그인 설정 저장을 가로채 호출을 기록합니다(실제 파일은 쓰지 않는다).
      *
+     * @param  array<string, bool>|null  $bannerHint  저장돼 있다고 볼 배너 유무 힌트
      * @return \ArrayObject<int, array{0: string, 1: array<string, mixed>}> 호출 기록
      */
-    private function recordSaves(): \ArrayObject
+    private function recordSaves(?array $bannerHint = null): \ArrayObject
     {
         $calls = new \ArrayObject;
         $settings = Mockery::mock(PluginSettingsService::class);
+        $settings->shouldReceive('get')->with('sirsoft-hero_section', 'slot_banners')->andReturn($bannerHint);
         $settings->shouldReceive('save')->andReturnUsing(function (string $identifier, array $data) use ($calls) {
             $calls->append([$identifier, $data]);
 

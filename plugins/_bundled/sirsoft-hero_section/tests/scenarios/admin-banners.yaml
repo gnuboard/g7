@@ -30,6 +30,7 @@ axes:
     - store_requires_pc_image
     - store_requires_default_locale_title
     - store_rejects_inactive_locale_key
+    - update_keeps_stored_inactive_locale_key
     - store_period_range_requires_dates
     - store_period_end_after_start
     - store_color_format

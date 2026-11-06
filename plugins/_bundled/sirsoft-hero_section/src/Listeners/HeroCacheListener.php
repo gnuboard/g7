@@ -143,14 +143,15 @@ class HeroCacheListener implements HookListenerInterface
     }
 
     /**
-     * 이 플러그인의 설정(캐시 시간)이 바뀌면 전체 캐시를 비웁니다.
+     * 이 플러그인의 설정(캐시 시간)이 바뀌면 전체 캐시를 비웁니다. 힌트만 다시 맞추는 저장은 건너뛴다 — 공개 응답과 무관하고,
+     * 한 위치의 첫 배너를 등록했다고 다른 위치 캐시까지 비우면 안 된다(그 위치 캐시는 배너·위치 설정 훅이 이미 비운다).
      *
      * @param  mixed  ...$args  코어 훅 인자 (첫 인자: 플러그인 식별자)
      * @return void 반환값 없음
      */
     public function onPluginSettingsSaved(...$args): void
     {
-        if (($args[0] ?? null) === 'sirsoft-hero_section') {
+        if (($args[0] ?? null) === 'sirsoft-hero_section' && ! SlotWidthHintListener::syncing()) {
             $this->hero->invalidate();
         }
     }

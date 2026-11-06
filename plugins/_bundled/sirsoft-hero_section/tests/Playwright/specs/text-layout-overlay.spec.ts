@@ -7,10 +7,16 @@
  * 재생되는지, 화면을 내리면 메뉴가 원래 배경으로 돌아오는지 잰다. 관리자 화면: 비활성 시험 배너를 만들어 9칸·숫자·미리보기 끌기·
  * 화살표 키로 자리를 바꾸고 저장해 서버 값과 새로 연 화면 값을 확인한다. 위치 설정의 메뉴 겹치기 저장은 끝나면 되돌린다.
  */
-import { test, expect, gotoUser, authenticatePage, createBanner, auth, uniqueTitle, ADMIN_LIST, API, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, gotoUser, hidePopups, authenticatePage, createBanner, auth, uniqueTitle, ADMIN_LIST, API, VIEWPORTS } from '../fixtures/hero-auth';
 import type { Page, Route } from '@playwright/test';
 
 test.setTimeout(180_000);
+
+// 팝업이 슬라이더 클릭을 가로채지 않게 비우고, 공개 응답을 꾸미는 시험이 운영 배너 없이도 돌도록 시험 배너를 둔다(끝나면 지운다)
+test.beforeEach(async ({ page, request, managerToken, created }) => {
+  await hidePopups(page);
+  created.push(await createBanner(request, managerToken));
+});
 
 const HERO_API = '**/api/plugins/sirsoft-hero_section/hero?position=home_hero*';
 
@@ -72,6 +78,8 @@ test('메뉴 겹치기 — 헤더가 배너 위에 투명하게 올라가고 문
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
   await expect(page.locator('.hs-slider__slide--active .hs-slider__eyebrow')).toHaveText('E2E 머리글', { timeout: 30_000 });
+  // 헤더 배경은 0.2초 전환으로 바뀐다 — 문구가 뜬 직후에 재면 전환 전 색이 읽힌다
+  await expect.poll(() => measure(page).then((m) => m.headerBg)).toBe('rgba(0, 0, 0, 0)');
   const pc = await measure(page);
   expect(pc.overlay).toBe('dark');
   expect(pc.active).toBe('dark');
@@ -252,12 +260,15 @@ test('위치 설정 — 메뉴 겹치기를 켜서 저장하면 공개 응답 �
   const list = await (await request.get(`${API}/admin/position-settings`, { headers: auth(managerToken) })).json();
   const original = list.data.positions.find((p: { key: string }) => p.key === 'shop_hero').settings;
   try {
+    // 본문 폭 안내를 보려고 본문 폭으로 맞춘다(운영 값이 무엇이든 끝나면 되돌린다)
+    const narrowed = await request.put(`${API}/admin/position-settings/shop_hero`, { headers: auth(managerToken), data: { ...original, width: 'content' } });
+    expect(narrowed.status(), await narrowed.text()).toBe(200);
     await authenticatePage(page, managerToken);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`${ADMIN_LIST}?position=shop_hero`);
     const toggle = page.locator('#hero_slider_header_overlay');
     await expect(toggle).toBeVisible({ timeout: 30_000 });
-    // shop_hero 는 본문 폭(운영 값) — 관리자 템플릿 Select 는 버튼형이라 고른 값은 버튼 글자로 본다
+    // 관리자 템플릿 Select 는 버튼형이라 고른 값은 버튼 글자로 본다
     await expect(page.locator('#hero_slider_width button').first()).toHaveText('본문 폭에 맞춤');
     if (!(await toggle.isChecked())) {
       await toggle.check();

@@ -31,7 +31,7 @@
 | `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:134` |
 | `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:85` |
 | `sirsoft-hero_section.hero.filter_public_banners` | filter | 사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale) | `src/Services/PublicHeroService.php:69` |
-| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:131` |
+| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:152` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -57,16 +57,21 @@
 | `core.thumbnail.filter_url_patterns` | filter | `ThumbnailRegistrationListener` | `addUrlPattern` | 10 |
 | `sirsoft-hero_section.banner.after_bulk_delete` | action (미선언) | `BannerActivityLogListener` | `handleBulkDelete` | 20 |
 | `sirsoft-hero_section.banner.after_bulk_delete` | action (미선언) | `HeroCacheListener` | `onBulkDelete` | - |
+| `sirsoft-hero_section.banner.after_bulk_delete` | action (미선언) | `SlotWidthHintListener` | `onBannerChange` | 20 |
 | `sirsoft-hero_section.banner.after_bulk_status` | action (미선언) | `BannerActivityLogListener` | `handleBulkStatus` | 20 |
 | `sirsoft-hero_section.banner.after_bulk_status` | action (미선언) | `HeroCacheListener` | `onBulkStatus` | - |
+| `sirsoft-hero_section.banner.after_bulk_status` | action (미선언) | `SlotWidthHintListener` | `onBannerChange` | 20 |
 | `sirsoft-hero_section.banner.after_create` | action (미선언) | `BannerActivityLogListener` | `handleCreated` | 20 |
 | `sirsoft-hero_section.banner.after_create` | action (미선언) | `HeroCacheListener` | `onBannerSaved` | - |
+| `sirsoft-hero_section.banner.after_create` | action (미선언) | `SlotWidthHintListener` | `onBannerChange` | 20 |
 | `sirsoft-hero_section.banner.after_delete` | action (미선언) | `BannerActivityLogListener` | `handleDeleted` | 20 |
 | `sirsoft-hero_section.banner.after_delete` | action (미선언) | `HeroCacheListener` | `onBannerDeleted` | - |
+| `sirsoft-hero_section.banner.after_delete` | action (미선언) | `SlotWidthHintListener` | `onBannerChange` | 20 |
 | `sirsoft-hero_section.banner.after_reorder` | action (미선언) | `BannerActivityLogListener` | `handleReordered` | 20 |
 | `sirsoft-hero_section.banner.after_reorder` | action (미선언) | `HeroCacheListener` | `onReorder` | - |
 | `sirsoft-hero_section.banner.after_update` | action (미선언) | `BannerActivityLogListener` | `handleUpdated` | 20 |
 | `sirsoft-hero_section.banner.after_update` | action (미선언) | `HeroCacheListener` | `onBannerUpdated` | - |
+| `sirsoft-hero_section.banner.after_update` | action (미선언) | `SlotWidthHintListener` | `onBannerChange` | 20 |
 | `sirsoft-hero_section.banner_image.after_change` | action (미선언) | `BannerActivityLogListener` | `handleImageChanged` | 20 |
 | `sirsoft-hero_section.position_setting.after_update` | action (미선언) | `BannerActivityLogListener` | `handlePositionSetting` | 20 |
 | `sirsoft-hero_section.position_setting.after_update` | action (미선언) | `HeroCacheListener` | `onPositionSetting` | - |
@@ -93,7 +98,7 @@
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-플러그인 리스너는 자동 발견되지 않으므로 `plugin.php` `getHookListeners()` 에 올린 것만 동작한다. 공개 캐시 비우기(`HeroCacheListener`)와 데이터 삭제 시 이미지 폴더 정리(`PluginLifecycleListener`)는 `sync` 로 즉시 돈다 — 저장 직후 사용자 화면에 옛 배너가 남지 않게.
+플러그인 리스너는 자동 발견되지 않으므로 `plugin.php` `getHookListeners()` 에 올린 것만 동작한다. 공개 캐시 비우기(`HeroCacheListener`)는 `sync` 로 즉시 돈다 — 저장 직후 사용자 화면에 옛 배너가 남지 않게. 데이터까지 지우는 제거의 이미지 폴더 정리는 리스너가 아니라 `Plugin::uninstall()` 이 맡는다 — `core.plugins.before_uninstall` 은 제거 가드보다 먼저 발화해 거기서 지우면 제거가 막혀도 파일만 사라진다.
 <!-- @intent END -->
 
 ## 레이아웃 확장

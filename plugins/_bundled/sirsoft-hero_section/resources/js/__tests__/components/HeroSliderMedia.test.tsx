@@ -248,6 +248,37 @@ describe('HeroSlider 영상 배너', () => {
     expect(swiperState.instance!.autoplay.running).toBe(true);
   });
 
+  // @scenario surface=video_preload_by_turn
+  it('영상은 재생 차례인 장만 다 받고, 다음 장은 정보만, 그 뒤 장은 받지 않는다', () => {
+    const { container } = render(<HeroSlider banners={[videoBanner(1), videoBanner(2), videoBanner(3)]} settings={{ autoplay: true }} />);
+    expect([...container.querySelectorAll('video')].map((v) => v.getAttribute('preload'))).toEqual(['auto', 'metadata', 'none']);
+  });
+
+  // @scenario surface=video_preload_by_turn
+  it('장을 넘기면 지나간 첫 장 영상도 차례가 아닌 장처럼 받지 않는다', () => {
+    const { container } = render(<HeroSlider banners={[videoBanner(1), videoBanner(2), videoBanner(3)]} settings={{ autoplay: true }} />);
+    fireEvent.click(container.querySelector('.hs-slider__next')!);
+    expect([...container.querySelectorAll('video')].map((v) => v.getAttribute('preload'))).toEqual(['none', 'auto', 'metadata']);
+  });
+
+  // @scenario surface=video_preload_by_turn
+  it('움직임 줄이기·데이터 절약 방문자에게는 재생하기 전까지 영상을 받지 않는다', () => {
+    mockMedia({ reduce: true });
+    const reduced = render(<HeroSlider banners={[videoBanner(1), videoBanner(2)]} />);
+    expect([...reduced.container.querySelectorAll('video')].map((v) => v.getAttribute('preload'))).toEqual(['none', 'none']);
+    reduced.unmount();
+
+    mockMedia();
+    Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true } });
+    try {
+      const saving = render(<HeroSlider banners={[videoBanner(1), videoBanner(2), videoBanner(3)]} settings={{ autoplay: true }} />);
+      // 재생 차례인 장은 재생이 받는다 — 미리 받는 것만 끈다
+      expect([...saving.container.querySelectorAll('video')].map((v) => v.getAttribute('preload'))).toEqual(['auto', 'none', 'none']);
+    } finally {
+      delete (navigator as unknown as { connection?: unknown }).connection;
+    }
+  });
+
   // @scenario surface=reduced_motion_starts_paused
   // @effects pause_controls_video_playback
   it('움직임 줄이기를 켠 방문자는 영상이 멈춘 채 시작하고 단추로 재생한다', () => {

@@ -41,12 +41,41 @@ trait BannerFieldRules
     private array $translatableFields = ['title', 'eyebrow', 'description', 'button_text', 'image_alt'];
 
     /**
+     * 수정 요청의 언어 키 규칙 — 지원 언어와 그 배너에 이미 저장된 언어만 받는다(새 임의 키는 거부).
+     *
+     * @param  Banner|null  $stored  수정 대상 배너(등록이면 null)
+     * @param  string  $field  다국어 필드
+     * @return array<int, Closure> 규칙(등록이면 비어 있다 — 엄격 검사가 맡는다)
+     */
+    private function storedLocaleRule(?Banner $stored, string $field): array
+    {
+        if ($stored === null) {
+            return [];
+        }
+
+        return [function (string $attribute, mixed $value, Closure $fail) use ($stored, $field): void {
+            $allowed = [...config('app.translatable_locales', ['ko', 'en']), ...array_keys((array) $stored->getAttribute($field))];
+            foreach (array_keys((array) $value) as $locale) {
+                if (! in_array($locale, $allowed, true)) {
+                    $fail(__('validation.translatable.unsupported_language', ['lang' => $locale]));
+
+                    return;
+                }
+            }
+        }];
+    }
+
+    /**
      * 공통 검증 규칙을 반환합니다.
      *
+     * @param  Banner|null  $stored  수정 대상 배너(등록이면 null) — 언어팩을 꺼 지원 목록에서 빠진 언어라도 저장돼 있던 번역은 통과시킨다.
+     *                               화면에 그 칸이 없어 운영자가 지울 수 없고, 언어팩을 다시 켜면 그대로 복구돼야 한다
      * @return array<string, mixed> 검증 규칙
      */
-    protected function bannerRules(): array
+    protected function bannerRules(?Banner $stored = null): array
     {
+        $strict = $stored === null;
+
         return [
             'position' => ['required', Rule::enum(HeroPosition::class)],
             'media_type' => ['sometimes', 'required', Rule::enum(BannerMediaType::class)],
@@ -59,14 +88,14 @@ trait BannerFieldRules
             'display_period' => ['required', Rule::enum(DisplayPeriod::class)],
             'starts_at' => ['exclude_unless:display_period,range', 'required', 'date'],
             'ends_at' => ['exclude_unless:display_period,range', 'required', 'date', 'after:starts_at'],
-            'title' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100, strictLocales: true)],
-            'eyebrow' => ['nullable', 'array', new TranslatableField(maxLength: 50, strictLocales: true)],
+            'title' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'title')],
+            'eyebrow' => ['nullable', 'array', new TranslatableField(maxLength: 50, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'eyebrow')],
             // 머리글 보이기·색은 이전 화면·API 호출이 보내지 않아도 저장한 값(처음이면 보임·흰색)을 지킨다
             'eyebrow_visible' => ['sometimes', 'required', 'boolean'],
             'eyebrow_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'description' => ['nullable', 'array', new TranslatableField(maxLength: 300, strictLocales: true)],
-            'button_text' => ['nullable', 'array', new TranslatableField(maxLength: 30, strictLocales: true)],
-            'image_alt' => ['nullable', 'array', new TranslatableField(maxLength: 200, strictLocales: true)],
+            'description' => ['nullable', 'array', new TranslatableField(maxLength: 300, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'description')],
+            'button_text' => ['nullable', 'array', new TranslatableField(maxLength: 30, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'button_text')],
+            'image_alt' => ['nullable', 'array', new TranslatableField(maxLength: 200, strictLocales: $strict), ...$this->storedLocaleRule($stored, 'image_alt')],
             'title_visible' => ['required', 'boolean'],
             'title_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'title_align' => ['required', Rule::enum(TextAlign::class)],

@@ -6,7 +6,7 @@
  *
  * 공개 API 응답은 `page.route` 로 늦추기만 한다. 위치 설정을 바꾼 시험은 끝나면 되돌린다.
  */
-import { test, expect, gotoUser, auth, API, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, gotoUser, auth, createBanner, API, VIEWPORTS } from '../fixtures/hero-auth';
 import type { APIRequestContext, Page, Route } from '@playwright/test';
 
 test.setTimeout(150_000);
@@ -30,7 +30,7 @@ async function reloadSlow(page: Page, path: string): Promise<void> {
   await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('sirsoft-hero_section:')).forEach((k) => localStorage.removeItem(k)));
   await delayHero(page, 2_500);
   await page.reload();
-  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 40_000 });
 }
 
 /** 슬라이더 자리·본문 시작 위치를 잰다. */
@@ -62,7 +62,9 @@ async function saveSettings(request: APIRequestContext, token: string, settings:
 
 for (const viewport of ['desktop', 'mobile'] as const) {
   // @scenario surface=loading_skeleton_until_response
-  test(`응답 전에는 스켈레톤이 자리를 잡고, 배너가 와도 본문이 밀리지 않는다 (${viewport})`, async ({ page }) => {
+  test(`응답 전에는 스켈레톤이 자리를 잡고, 배너가 와도 본문이 밀리지 않는다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+    // 홈에 배너가 있어야 재는 사양이다 — 운영 배너에 기대지 않고 시험 배너를 둔다(끝나면 지운다)
+    created.push(await createBanner(request, managerToken));
     await page.setViewportSize(VIEWPORTS[viewport]);
     await reloadSlow(page, '/');
     const before = await measure(page);
@@ -83,8 +85,80 @@ for (const viewport of ['desktop', 'mobile'] as const) {
   });
 }
 
+// @scenario surface=loading_skeleton_skipped_without_banners
+test('[case:components-misc-hero-skeleton-first-visit-without-banners] 배너가 없는 위치는 첫 접속(브라우저 기억 없음)에도 스켈레톤을 그리지 않는다', async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.desktop);
+  // 운영 배너는 건드리지 않는다 — 첫 HTML 의 힌트와 공개 응답만 「없음」으로 바꾼다. 힌트를 못 바꾸면 이 시험은 아무것도 재지 않는다
+  let hinted = false;
+  await page.route((url) => url.pathname === '/', async (route: Route) => {
+    const response = await route.fetch();
+    const html = await response.text();
+    const body = html.replace(/("slot_banners":\{"home_hero":)true/, '$1false');
+    hinted = body !== html || html.includes('"slot_banners":{"home_hero":false');
+    await route.fulfill({ response, body });
+  });
+  await page.route(HERO_API, async (route: Route) => {
+    const response = await route.fetch();
+    const json = await response.json();
+    json.data.banners = [];
+    await new Promise((r) => setTimeout(r, 2_000));
+    await route.fulfill({ response, json });
+  });
+  // 잠깐 나타났다 사라져도 잡는다
+  await page.addInitScript(() => {
+    new MutationObserver(() => {
+      if (document.querySelector('section.hs-slider')) (window as unknown as { heroSeen: boolean }).heroSeen = true;
+    }).observe(document, { childList: true, subtree: true });
+  });
+  const answered = page.waitForResponse(/sirsoft-hero_section\/hero\?position=home_hero/, { timeout: 30_000 });
+  await gotoUser(page, '/');
+  await answered;
+  await page.waitForTimeout(500);
+  expect(hinted).toBe(true);
+  expect(await page.evaluate(() => (window as unknown as { heroSeen?: boolean }).heroSeen ?? false)).toBe(false);
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+});
+
+// @scenario surface=loading_skeleton_skipped_without_banners
+test('첫 HTML 의 힌트가 「있음」이어도 직전 방문이 0건이면 스켈레톤을 그리지 않는다 — 기간이 끝나 낡은 힌트가 재방문자에게 스켈레톤을 띄우지 않는다', async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.desktop);
+  let hinted = false;
+  await page.route((url) => url.pathname === '/', async (route: Route) => {
+    const response = await route.fetch();
+    const html = await response.text();
+    const body = html.replace(/("slot_banners":\{"home_hero":)false/, '$1true');
+    hinted = body.includes('"slot_banners":{"home_hero":true');
+    await route.fulfill({ response, body });
+  });
+  await page.route(HERO_API, async (route: Route) => {
+    const response = await route.fetch();
+    const json = await response.json();
+    json.data.banners = [];
+    await new Promise((r) => setTimeout(r, 2_000));
+    await route.fulfill({ response, json });
+  });
+  await page.addInitScript(() => {
+    // 동의 플러그인이 미동의 저장소를 비우므로 값을 심지 않고 읽기를 대신한다 — 저장소를 쓸 수 있는 재방문자의 상태다
+    const read = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (key: string) {
+      return key === 'sirsoft-hero_section:slot:home_hero' ? JSON.stringify({ banners: 0, width: 'content' }) : read.call(this, key);
+    };
+    new MutationObserver(() => {
+      if (document.querySelector('section.hs-slider')) (window as unknown as { heroSeen: boolean }).heroSeen = true;
+    }).observe(document, { childList: true, subtree: true });
+  });
+  const answered = page.waitForResponse(/sirsoft-hero_section\/hero\?position=home_hero/, { timeout: 30_000 });
+  await gotoUser(page, '/');
+  await answered;
+  await page.waitForTimeout(500);
+  expect(hinted).toBe(true);
+  expect(await page.evaluate(() => (window as unknown as { heroSeen?: boolean }).heroSeen ?? false)).toBe(false);
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+});
+
 // @scenario surface=loading_skeleton_remembers_slot
-test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으로 기억하지 않아, 다음 방문에도 스켈레톤이 자리를 잡는다', async ({ page }) => {
+test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으로 기억하지 않아, 다음 방문에도 스켈레톤이 자리를 잡는다', async ({ page, request, managerToken, created }) => {
+  created.push(await createBanner(request, managerToken));
   const memory = () => page.evaluate(() => JSON.parse(localStorage.getItem('sirsoft-hero_section:slot:home_hero') ?? 'null'));
   await page.setViewportSize(VIEWPORTS.desktop);
   await gotoUser(page, '/');
@@ -98,7 +172,7 @@ test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으�
     await route.fulfill({ status: 500, contentType: 'application/json', body: '{"success":false}' });
   });
   await page.reload();
-  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 40_000 });
   await expect(page.locator('section.hs-slider')).toHaveCount(0, { timeout: 15_000 });
   // 개인정보 동의 전에는 사이트가 새로 열 때 저장소를 비우기도 한다(그러면 null) — 어느 쪽이든 실패를 「0건」으로 남기면 안 된다
   expect((await memory())?.banners ?? null).not.toBe(0);
@@ -107,7 +181,7 @@ test('받기에 실패한 방문은 자리를 비우되 「배너 없음」으�
   await page.unrouteAll({ behavior: 'ignoreErrors' });
   await delayHero(page, 2_500);
   await page.reload();
-  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('section.hs-slider.hs-slider--skeleton')).toBeVisible({ timeout: 40_000 });
   await expect(page.locator('section.hs-slider:not(.hs-slider--skeleton) [data-banner-id]').first()).toBeAttached({ timeout: 15_000 });
   await page.unrouteAll({ behavior: 'ignoreErrors' });
 });

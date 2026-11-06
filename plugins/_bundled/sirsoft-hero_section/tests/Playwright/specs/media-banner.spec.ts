@@ -7,10 +7,16 @@
  * 공개 API 응답은 `page.route` 로 홈 배너 앞에 시험 배너를 끼워 넣는다(운영 배너·설정은 건드리지 않는다). 시험 영상은 서버에
  * 인코더가 없어도 되도록 브라우저 안에서 canvas 를 2초 녹화한 WEBM 이다. 유튜브 서버 요청은 끊는다(주소만 본다).
  */
-import { test, expect, gotoUser, authenticatePage, ADMIN_LIST, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, hidePopups, authenticatePage, ADMIN_LIST, VIEWPORTS } from '../fixtures/hero-auth';
 import type { Page, Route } from '@playwright/test';
 
 test.setTimeout(150_000);
+
+// 운영 배너가 비노출이어도 돌도록 시험 배너를 직접 둔다(끝나면 지운다)
+test.beforeEach(async ({ page, request, managerToken, created }) => {
+  await hidePopups(page);
+  created.push(await createBanner(request, managerToken));
+});
 
 const HERO_API = '**/api/plugins/sirsoft-hero_section/hero?position=home_hero*';
 const VIDEO_URL = '/e2e-hero-media/clip.webm';
@@ -187,6 +193,7 @@ test('휴대폰에서는 영상 대표 이미지로 모바일 이미지만 받�
 });
 
 // @scenario surface=reduced_motion_starts_paused
+// @scenario surface=video_preload_by_turn
 test('움직임 줄이기에서는 영상이 멈춘 채 시작하고, 「배너 다시 재생」 단추로 재생한다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -198,8 +205,12 @@ test('움직임 줄이기에서는 영상이 멈춘 채 시작하고, 「배너 
   await expect(toggle).toBeVisible({ timeout: 20_000 });
   await page.waitForTimeout(1_000);
   expect((await videoState(page))?.paused).toBe(true);
+  // 재생하지 않는 영상은 받지 않는다 — 큰 파일이 멈춘 화면 뒤에서 내려받히지 않게
+  const video = page.locator('.hs-slider__slide--active video.hs-slider__video');
+  await expect(video).toHaveAttribute('preload', 'none');
   await toggle.click();
   await expect.poll(async () => (await videoState(page))?.paused, { timeout: 5_000 }).toBe(false);
+  await expect(video).toHaveAttribute('preload', 'auto');
   await expect(page.getByRole('button', { name: '배너 일시정지' })).toBeVisible();
 });
 

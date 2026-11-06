@@ -112,13 +112,13 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 422 | Validation Error | `position` 이 없거나 `home_hero`·`shop_hero` 밖의 값 (`The selected position is invalid.`) |
-| 429 | Too Many Requests | 같은 주소에서 분당 120회 초과 |
+| 429 | Too Many Requests | 같은 주소에서 분당 600회 초과 |
 
 <!-- @generated:end -->
 
 **설명**
 
-사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width, header_overlay, pagination}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,direct_url,width,height}, mobile|null}, media_type, youtube_id|null, videos{pc{url,direct_url,mime}, mobile|null}|null}]}`. `youtube_id` 는 `media_type` 이 `youtube` 일 때만, `videos` 는 `video` 일 때만 싣는다(종류를 바꿔도 남은 값이 사이트에 나가지 않게). `images.pc` 는 영상 배너에서도 대표 이미지다. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 120회 제한.
+사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width, header_overlay, pagination}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,direct_url,width,height}, mobile|null}, media_type, youtube_id|null, videos{pc{url,direct_url,mime}, mobile|null}|null}]}`. `youtube_id` 는 `media_type` 이 `youtube` 일 때만, `videos` 는 `video` 일 때만 싣는다(종류를 바꿔도 남은 값이 사이트에 나가지 않게). `images.pc` 는 영상 배너에서도 대표 이미지다. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 600회 제한.
 
 
 ## 이미지 표시

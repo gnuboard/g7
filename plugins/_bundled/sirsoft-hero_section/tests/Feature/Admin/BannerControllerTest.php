@@ -482,6 +482,8 @@ class BannerControllerTest extends PluginTestCase
 
         $small = Banner::factory()->count(2)->withImages()->create()->pluck('id')->all();
         $large = Banner::factory()->count(8)->withImages()->create()->pluck('id')->all();
+        // 위치의 배너 유무가 바뀌면 힌트 저장이 한 번 더 돈다 — 배너 수와 무관한 일회성이라 어느 호출에서도 유무가 그대로이게 둔다
+        Banner::factory()->create();
 
         // 첫 호출에만 도는 일회성 스키마 확인이 비교를 흐리지 않게 한 번 먼저 부른다
         $service->bulkSetActive($small, true, null);

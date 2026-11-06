@@ -5,12 +5,14 @@ namespace Plugins\Sirsoft\HeroSection;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
+use Illuminate\Support\Facades\Schema;
 use Plugins\Sirsoft\HeroSection\Listeners\ActivityLogDescriptionResolver;
 use Plugins\Sirsoft\HeroSection\Listeners\BannerActivityLogListener;
 use Plugins\Sirsoft\HeroSection\Listeners\HeroCacheListener;
 use Plugins\Sirsoft\HeroSection\Listeners\PluginLifecycleListener;
 use Plugins\Sirsoft\HeroSection\Listeners\SlotWidthHintListener;
 use Plugins\Sirsoft\HeroSection\Listeners\ThumbnailRegistrationListener;
+use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
 
 /**
@@ -178,6 +180,28 @@ class Plugin extends AbstractPlugin
         } catch (\Throwable) {
             // 캐시 비우기 실패가 비활성화를 막지 않는다 — 다음 활성화 때 버전이 다시 오른다
         }
+
+        return true;
+    }
+
+    /**
+     * 플러그인 제거 — 데이터까지 지운 제거면 이미지 폴더를 비웁니다.
+     *
+     * 코어 삭제는 테이블만 지우고 스토리지 파일은 남긴다. `core.plugins.before_uninstall` 은 제거 가드보다 먼저 발화해
+     * 거기서 지우면 제거가 막혀도 파일만 사라지므로, 가드와 마이그레이션 롤백을 지난 이 시점에 지운다.
+     * 테이블이 남아 있으면 데이터를 보존하는 제거다 — 다시 설치하면 배너가 그대로 보여야 하므로 건드리지 않는다.
+     *
+     * @return bool 제거 성공 여부
+     */
+    public function uninstall(): bool
+    {
+        if (Schema::hasTable('hero_section_banners')) {
+            return true;
+        }
+
+        // 지금 업로드 디스크와, 제거 시작 때(테이블이 있을 때) 읽어 둔 행 디스크를 모두 비운다(#878).
+        // 파일 정리 실패가 이미 끝난 데이터 삭제를 되돌리지 못한다 — 남은 파일은 디스크별 로그로 알린다
+        BannerImageService::purgeDisks($this->getStorageFor(BannerImageService::CATEGORY), BannerImageService::takeDisksForUninstall());
 
         return true;
     }

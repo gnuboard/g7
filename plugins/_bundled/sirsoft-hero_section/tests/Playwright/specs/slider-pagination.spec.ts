@@ -7,10 +7,16 @@
  * 사용자 화면은 공개 API 응답을 `page.route` 로 시험 배너 3장 + 페이징 설정으로 바꾼다(운영 배너·설정은 건드리지 않는다).
  * 관리 화면 저장은 끝나면 원래 설정으로 되돌린다.
  */
-import { test, expect, gotoUser, authenticatePage, auth, API, ADMIN_LIST, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, hidePopups, authenticatePage, auth, API, ADMIN_LIST, VIEWPORTS } from '../fixtures/hero-auth';
 import type { APIRequestContext, Page, Route } from '@playwright/test';
 
 test.setTimeout(120_000);
+
+// 팝업이 슬라이더 클릭을 가로채지 않게 비우고, 운영 배너가 비노출이어도 돌도록 시험 배너를 둔다(끝나면 지운다)
+test.beforeEach(async ({ page, request, managerToken, created }) => {
+  await hidePopups(page);
+  created.push(await createBanner(request, managerToken));
+});
 
 const HERO_API = '**/api/plugins/sirsoft-hero_section/hero?position=home_hero*';
 const TITLES = ['E2E 페이징 하나', 'E2E 페이징 둘', 'E2E 페이징 셋'];
@@ -129,7 +135,9 @@ async function readSettings(request: APIRequestContext, token: string): Promise<
 
 // @scenario surface=admin_pagination_setting
 // @effects pagination_follows_position_setting
-test('관리자 목록 — 페이징 모양을 고르면 저장 전에 미리보기가 바뀌고, 저장 본문에 실린다', async ({ page, request, managerToken }) => {
+test('관리자 목록 — 페이징 모양을 고르면 저장 전에 미리보기가 바뀌고, 저장 본문에 실린다', async ({ page, request, managerToken, created }) => {
+  // 페이징은 2장부터 그려진다
+  created.push(await createBanner(request, managerToken));
   const original = await readSettings(request, managerToken);
   const preview = () => page.evaluate(() => {
     const frame = document.querySelector('#hero_preview iframe, .hs-preview iframe') as HTMLIFrameElement | null;
@@ -168,7 +176,9 @@ test('관리자 목록 — 페이징 모양을 고르면 저장 전에 미리보
 
 // @scenario surface=admin_preview_without_swiper_errors
 // @effects pagination_follows_position_setting
-test('관리자 미리보기 — 자동 넘김 설정이어도 오류 없이 첫 장에 머물고, 미리보기 안 다음 단추·탭으로 장을 옮긴다 (desktop)', async ({ page, managerToken }) => {
+test('관리자 미리보기 — 자동 넘김 설정이어도 오류 없이 첫 장에 머물고, 미리보기 안 다음 단추·탭으로 장을 옮긴다 (desktop)', async ({ page, request, managerToken, created }) => {
+  // 셋째 탭까지 누르므로 3장이 있어야 한다
+  for (let i = 0; i < 2; i++) created.push(await createBanner(request, managerToken));
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.setViewportSize(VIEWPORTS.desktop);

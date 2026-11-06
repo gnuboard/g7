@@ -60,6 +60,7 @@ axes:
     - video_device_from_engine_width
     - device_breakpoints_match_engine_presets
     - css_width_media_free
+    - loading_skeleton_skipped_without_banners
 
 effects:
   - accessible_carousel_semantics

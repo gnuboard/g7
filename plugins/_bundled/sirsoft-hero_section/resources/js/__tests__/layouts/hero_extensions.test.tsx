@@ -51,6 +51,8 @@ describe('사용자 화면 주입 조각', () => {
       expect(slider.props.loading).toBe(`{{${source} == null}}`);
       // 받는 동안의 폭은 첫 로드 때 받은 플러그인 설정 힌트로 고른다
       expect(slider.props.skeletonWidth).toBe(`{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.${slider.props.position} ?? ''}}`);
+      // 배너가 없는 위치는 첫 접속(브라우저 기억 없음)에도 자리를 잡지 않는다 — 첫 로드 힌트로 고른다
+      expect(slider.props.skeletonBanners).toBe(`{{_global.plugins?.['sirsoft-hero_section']?.slot_banners?.${slider.props.position}}}`);
     }
   });
 

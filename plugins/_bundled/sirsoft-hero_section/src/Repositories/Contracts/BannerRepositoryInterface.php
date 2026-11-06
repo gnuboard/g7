@@ -169,6 +169,15 @@ interface BannerRepositoryInterface
     public function exposureCandidatesForPosition(string $position, CarbonInterface $now): Collection;
 
     /**
+     * 위치에 노출 후보(사용 중이고 아직 끝나지 않은 배너, 예약 포함)가 있는지 반환합니다.
+     *
+     * @param  string  $position  위치 키
+     * @param  CarbonInterface  $now  기준 시각
+     * @return bool 있으면 true
+     */
+    public function hasExposureCandidates(string $position, CarbonInterface $now): bool;
+
+    /**
      * 위치에서 다음으로 노출 상태가 바뀌는 시각을 반환합니다(예약 시작 또는 종료).
      *
      * @param  string  $position  위치 키

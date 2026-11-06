@@ -15,6 +15,7 @@ axes:
     - respects_limit
     - file_delete_failure_keeps_row
     - schedule_registered_daily
+    - uninstall_purges_images_after_guards
 
 effects:
   - orphan_files_removed
@@ -22,3 +23,4 @@ effects:
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Console/PruneTempImagesCommandTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/PluginUninstallTest.php

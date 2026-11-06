@@ -56,7 +56,7 @@ class UpdateBannerRequest extends FormRequest
         $bannerId = (int) $this->route('banner')?->id;
         $tempKey = is_string($this->input('temp_key')) ? $this->input('temp_key') : null;
 
-        $rules = $this->bannerRules() + [
+        $rules = $this->bannerRules($this->route('banner')) + [
             'revision' => ['sometimes', 'required', 'integer', 'min:0'],
             'temp_key' => ['nullable', 'string', 'max:64'],
             'pc_image_id' => ['sometimes', 'required', 'integer', new SelectableBannerImage(BannerDevice::Pc, $bannerId, $tempKey)],

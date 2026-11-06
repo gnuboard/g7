@@ -205,8 +205,30 @@ interface HeroVideoMediaProps extends MediaCallbacks {
   /** 배너가 한 장뿐이면 반복 재생 */
   loop: boolean;
 
-  /** 먼저 받아 둘지 (첫 장·다음 장) */
+  /** 먼저 받아 둘지 (지금 장·다음 장) */
   eager: boolean;
+
+  /** 움직임 줄이기 — 재생하기 전까지 영상을 받지 않는다 */
+  reduced?: boolean;
+}
+
+/**
+ * 영상을 미리 얼마나 받을지 정합니다 — 재생 차례인 장만 다 받고, 다음 장은 길이·첫 프레임 정보만, 그 뒤 장은 받지 않는다.
+ * 움직임 줄이기·데이터 절약 방문자는 재생하기 전까지 받지 않는다(큰 영상이 재생되지 않는데도 내려받히지 않게).
+ *
+ * @param playing 지금 재생할지
+ * @param eager 먼저 받아 둘 장인지 (지금 장·다음 장)
+ * @param reduced 움직임 줄이기인지
+ * @returns video preload 값
+ */
+function videoPreload(playing: boolean, eager: boolean, reduced: boolean): 'auto' | 'metadata' | 'none' {
+  if (playing) {
+    return 'auto';
+  }
+
+  const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+
+  return eager && !reduced && !saveData ? 'metadata' : 'none';
 }
 
 /**
@@ -216,7 +238,7 @@ interface HeroVideoMediaProps extends MediaCallbacks {
  * @param props 영상 속성
  * @returns 영상 요소
  */
-export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, posters, playing, active, loop, eager, onEnded, onFailed }) => {
+export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, posters, playing, active, loop, eager, reduced = false, onEnded, onFailed }) => {
   const ref = useRef<HTMLVideoElement>(null);
   const { mobile } = useHeroScreen(forceDevice);
   const source = (mobile ? sources.mobile ?? sources.pc : sources.pc) ?? null;
@@ -262,7 +284,7 @@ export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDe
       muted
       playsInline
       loop={loop}
-      preload={eager ? 'auto' : 'metadata'}
+      preload={videoPreload(playing, eager, reduced)}
       aria-hidden="true"
       tabIndex={-1}
       disablePictureInPicture

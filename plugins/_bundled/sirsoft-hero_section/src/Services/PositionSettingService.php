@@ -9,6 +9,7 @@ use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Enums\SlideWidth;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
+use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
 
@@ -23,10 +24,12 @@ class PositionSettingService
      * PositionSettingService 생성자
      *
      * @param  PositionSettingRepositoryInterface  $settings  위치 설정 Repository
+     * @param  BannerRepositoryInterface  $banners  배너 저장소(위치별 배너 유무 힌트의 원본)
      * @param  PreviewFrameResolver  $frames  관리자 미리보기 구좌 틀 해석기
      */
     public function __construct(
         private PositionSettingRepositoryInterface $settings,
+        private BannerRepositoryInterface $banners,
         private PreviewFrameResolver $frames,
     ) {}
 
@@ -95,6 +98,24 @@ class PositionSettingService
         }
 
         return $overlays;
+    }
+
+    /**
+     * 위치별로 노출 후보 배너(노출 중·예약)가 있는지 반환합니다 — 첫 로드 때 받는 플러그인 설정 힌트(`slot_banners`)의 원본이다.
+     * 첫 접속은 브라우저에 직전 모양 기억이 없으므로, 이 힌트가 없으면 배너가 없는 위치도 응답 전까지 스켈레톤을 그린다.
+     * 기간이 끝나 저절로 빠진 배너는 다음 저장 때 반영된다 — 그 사이 저장소를 쓸 수 있는 재방문자는 브라우저 기억이 스켈레톤을 막고, 첫 방문자·저장소가 막힌 방문자에게는 잠깐 보인다.
+     *
+     * @return array<string, bool> 위치 키 => 후보 유무
+     */
+    public function slotBanners(): array
+    {
+        $now = now();
+        $banners = [];
+        foreach (HeroPosition::cases() as $position) {
+            $banners[$position->value] = $this->banners->hasExposureCandidates($position->value, $now);
+        }
+
+        return $banners;
     }
 
     /**

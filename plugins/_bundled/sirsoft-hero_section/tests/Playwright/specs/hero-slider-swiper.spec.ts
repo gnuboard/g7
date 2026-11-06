@@ -11,8 +11,16 @@
  */
 import type { CDPSession, Page } from '@playwright/test';
 import {
-  test, expect, createBanner, gotoUser, slider, slideTitles, activeTitle, uniqueTitle, VIEWPORTS,
+  test, expect, createBanner, gotoUser, hidePopups, slider, slideTitles, activeTitle, uniqueTitle, VIEWPORTS,
 } from '../fixtures/hero-auth';
+
+// 배너를 만들고 자동 넘김 간격(5초)을 몇 번 기다리므로 기본 30초로는 개발 사이트에서 빠듯하다
+test.setTimeout(90_000);
+
+// 사이트 팝업이 슬라이더를 덮어 단추·점 클릭을 가로채지 않게 비운다
+test.beforeEach(async ({ page }) => {
+  await hidePopups(page);
+});
 
 /**
  * 홈을 열고 사양이 만든 제목이 슬라이더에 붙을 때까지 기다린다.
@@ -82,7 +90,8 @@ for (const viewport of ['desktop', 'mobile'] as const) {
     // @effects user_screen_reflects_admin_change, test_data_cleaned_up
     test(`다음 단추로 끝까지 가면 첫 장으로, 첫 장에서 이전 단추면 마지막 장으로 돈다 (${viewport})`, async ({ page, request, managerToken, created }) => {
       const errors: string[] = [];
-      page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+      // 자원 오류 문구에는 주소가 없다 — 주소를 붙여야 아래 걸러내기가 듣고 실패 메시지로 대상을 안다
+      page.on('console', (m) => { if (m.type() === 'error') errors.push(`${m.text()} ${m.location().url}`); });
       const a = uniqueTitle('넘김A');
       const b = uniqueTitle('넘김B');
       created.push(await createBanner(request, managerToken, { title: { ko: a } }));

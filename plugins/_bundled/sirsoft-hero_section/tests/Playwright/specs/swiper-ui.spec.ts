@@ -5,10 +5,16 @@
  *
  * 위치 설정은 사양이 바꾸고 끝나면 되돌린다. 배너는 사양이 만들고 fixture 가 지운다(운영 배너는 건드리지 않는다).
  */
-import { test, expect, createBanner, gotoUser, auth, API, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, hidePopups, auth, API, VIEWPORTS } from '../fixtures/hero-auth';
 import type { APIRequestContext, Page } from '@playwright/test';
 
 test.setTimeout(240_000);
+
+// 팝업이 슬라이더 클릭을 가로채지 않게 비우고, 홈 응답을 복제하는 시험이 운영 배너 없이도 돌도록 시험 배너를 둔다(끝나면 지운다)
+test.beforeEach(async ({ page, request, managerToken, created }) => {
+  await hidePopups(page);
+  created.push(await createBanner(request, managerToken));
+});
 
 type Settings = { autoplay: boolean; interval_seconds: number; effect: string; width?: string };
 

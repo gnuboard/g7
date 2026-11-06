@@ -10,7 +10,7 @@ use Plugins\Sirsoft\HeroSection\Services\PositionSettingService;
 use Throwable;
 
 /**
- * 위치별 표시 폭·메뉴 겹침 힌트(`slot_widths`·`slot_overlays`)를 플러그인 설정에 맞춰 둔다 — 사용자 화면은 첫 로드 때 플러그인
+ * 위치별 표시 폭·메뉴 겹침·배너 유무 힌트(`slot_widths`·`slot_overlays`·`slot_banners`)를 플러그인 설정에 맞춰 둔다 — 사용자 화면은 첫 로드 때 플러그인
  * 설정(`_global.plugins`)을 받으므로, 배너 응답이 오기 전 스켈레톤을 실제와 같은 폭(본문 폭·화면 전체)과 같은 자리(메뉴 밑으로
  * 겹침)로 그릴 수 있다.
  *
@@ -25,6 +25,11 @@ class SlotWidthHintListener implements HookListenerInterface
     private const PLUGIN = 'sirsoft-hero_section';
 
     /**
+     * 힌트만 다시 맞추는 저장이 진행 중인지 — 리스너는 훅마다 새로 만들어지므로 정적으로 둔다
+     */
+    private static bool $syncing = false;
+
+    /**
      * 구독할 훅과 메서드 매핑 반환
      *
      * @return array<string, array<string, mixed>> 훅 이름 => 옵션
@@ -34,6 +39,11 @@ class SlotWidthHintListener implements HookListenerInterface
         return [
             'core.plugin_settings.filter_save_data' => ['method' => 'fillHint', 'type' => 'filter', 'priority' => 20],
             'sirsoft-hero_section.position_setting.after_update' => ['method' => 'onPositionSetting', 'priority' => 20, 'sync' => true],
+            'sirsoft-hero_section.banner.after_create' => ['method' => 'onBannerChange', 'priority' => 20, 'sync' => true],
+            'sirsoft-hero_section.banner.after_update' => ['method' => 'onBannerChange', 'priority' => 20, 'sync' => true],
+            'sirsoft-hero_section.banner.after_delete' => ['method' => 'onBannerChange', 'priority' => 20, 'sync' => true],
+            'sirsoft-hero_section.banner.after_bulk_status' => ['method' => 'onBannerChange', 'priority' => 20, 'sync' => true],
+            'sirsoft-hero_section.banner.after_bulk_delete' => ['method' => 'onBannerChange', 'priority' => 20, 'sync' => true],
             'core.plugin_settings.after_reset' => ['method' => 'onPluginEvent', 'priority' => 20, 'sync' => true],
             'core.plugins.after_activate' => ['method' => 'onPluginEvent', 'priority' => 20, 'sync' => true],
             'core.plugins.after_update' => ['method' => 'onPluginEvent', 'priority' => 20, 'sync' => true],
@@ -46,6 +56,16 @@ class SlotWidthHintListener implements HookListenerInterface
      * @param  PositionSettingService  $positions  위치 설정 서비스
      */
     public function __construct(private PositionSettingService $positions) {}
+
+    /**
+     * 힌트만 다시 맞추는 저장이 진행 중인지 반환합니다 — 공개 응답 내용과 무관한 저장이라 전체 캐시를 비우지 않는다.
+     *
+     * @return bool 진행 중이면 true
+     */
+    public static function syncing(): bool
+    {
+        return self::$syncing;
+    }
 
     /**
      * 인터페이스 기본 핸들러 (개별 메서드에서 처리)
@@ -70,6 +90,7 @@ class SlotWidthHintListener implements HookListenerInterface
 
         $settings['slot_widths'] = $this->positions->slotWidths();
         $settings['slot_overlays'] = $this->positions->slotOverlays();
+        $settings['slot_banners'] = $this->positions->slotBanners();
 
         return $settings;
     }
@@ -87,6 +108,27 @@ class SlotWidthHintListener implements HookListenerInterface
         $width = $snapshot['width'] ?? PositionSetting::DEFAULTS['width'];
         $overlay = (bool) ($snapshot['header_overlay'] ?? PositionSetting::DEFAULTS['header_overlay']);
         if ($width !== $after['width'] || $overlay !== $after['header_overlay']) {
+            $this->sync();
+        }
+    }
+
+    /**
+     * 배너가 바뀌어 위치별 배너 유무가 달라졌으면 힌트를 다시 맞춥니다(유무가 그대로면 플러그인 설정을 건드리지 않는다).
+     *
+     * @param  mixed  ...$args  배너 훅 인자 (쓰지 않는다 — 유무는 저장소에서 다시 잰다)
+     * @return void 반환값 없음
+     */
+    public function onBannerChange(...$args): void
+    {
+        try {
+            $changed = app(PluginSettingsService::class)->get(self::PLUGIN, 'slot_banners') !== $this->positions->slotBanners();
+        } catch (Throwable $e) {
+            Log::error('히어로섹션 배너 유무 힌트 확인 실패', ['error' => $e->getMessage()]);
+
+            return;
+        }
+
+        if ($changed) {
             $this->sync();
         }
     }
@@ -112,10 +154,14 @@ class SlotWidthHintListener implements HookListenerInterface
      */
     private function sync(): void
     {
+        self::$syncing = true;
+
         try {
             app(PluginSettingsService::class)->save(self::PLUGIN, []);
         } catch (Throwable $e) {
-            Log::error('히어로섹션 표시 폭·메뉴 겹침 힌트 저장 실패', ['error' => $e->getMessage()]);
+            Log::error('히어로섹션 표시 폭·메뉴 겹침·배너 유무 힌트 저장 실패', ['error' => $e->getMessage()]);
+        } finally {
+            self::$syncing = false;
         }
     }
 }

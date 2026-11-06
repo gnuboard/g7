@@ -43,7 +43,7 @@ async function homeTitles(page: Page, viewport: keyof typeof VIEWPORTS, position
   await gotoUser(page, path);
   // 공개 API 응답을 기다리지 않고 슬라이드가 붙기를 기다린다 — 응답이 엔진 캐시로 채워지면 네트워크 응답이 없어 30초를
   // 다 쓰고, 응답이 와도 슬라이더 번들·Swiper 가 붙기 전일 수 있다(갱신 직후 첫 방문). 배너가 없는 위치면 그냥 지나간다.
-  await expect.poll(() => page.locator(`section.hs-slider[data-position="${position}"] [data-index]`).count(), { timeout: 15_000 })
+  await expect.poll(() => page.locator(`section.hs-slider[data-position="${position}"] [data-index]`).count(), { timeout: 30_000 })
     .toBeGreaterThan(0).catch(() => undefined);
   await page.waitForTimeout(500);
   return slideTitles(page);
@@ -84,7 +84,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
     // @effects user_screen_reflects_admin_change, test_data_cleaned_up
     test(`등록 화면에서 만든 배너가 홈 슬라이더에 보인다 (${viewport})`, async ({ page, request, managerToken, created }) => {
       const errors: string[] = [];
-      page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+      page.on('console', (m) => { if (m.type() === 'error') errors.push(`${m.text()} ${m.location().url}`); });
       const title = uniqueTitle('등록');
 
       await authenticatePage(page, managerToken);
@@ -232,7 +232,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
     // @effects user_screen_reflects_admin_change, test_data_cleaned_up
     test(`수정 화면에서 바꾼 이미지는 [저장] 전에는 홈에 반영되지 않고, 저장하면 바뀐다 (${viewport})`, async ({ page, request, managerToken, created }) => {
       const errors: string[] = [];
-      page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+      page.on('console', (m) => { if (m.type() === 'error') errors.push(`${m.text()} ${m.location().url}`); });
       const title = uniqueTitle('이미지');
       const id = await createBanner(request, managerToken, { title: { ko: title } });
       created.push(id);

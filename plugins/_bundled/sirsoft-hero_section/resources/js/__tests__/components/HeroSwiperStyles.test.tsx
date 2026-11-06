@@ -11,7 +11,7 @@ import React from 'react';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup, act } from '@testing-library/react';
+import { render, cleanup, act, fireEvent } from '@testing-library/react';
 import type { HeroBanner } from '../../components/composite/HeroSlider';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
@@ -106,6 +106,29 @@ describe('Swiper CSS 동봉 자산', () => {
     expect(document.head.lastChild).toBe(document.getElementById('hs-swiper-css'));
     expect(container.querySelector('section.hs-slider--skeleton')).toBeNull();
     expect(container.querySelectorAll('section.hs-slider[role="region"]')).toHaveLength(2);
+  });
+
+  // @scenario surface=swiper_styles_vendor_asset
+  it('데이터가 CSS 보다 먼저 와도 키보드 복귀를 감지한다 — 슬라이더를 누른 뒤 Tab 으로 돌아오면 자동 넘김이 멈춘다', async () => {
+    const core = installCore();
+    const { HeroSlider } = await fresh();
+    // fresh() 가 모듈을 새로 불러와도 슬라이더가 쓴 대역은 swiper/react 쪽이다
+    const { swiperState } = (await import('swiper/react')) as unknown as typeof import('../swiperMock');
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
+    expect(container.querySelector('section[role="region"]')).toBeNull();
+    await act(async () => {
+      core.resolve();
+    });
+    const region = container.querySelector('section[role="region"]') as HTMLElement;
+    const autoplay = swiperState.instance!.autoplay;
+
+    fireEvent.pointerDown(region, { pointerType: 'mouse' });
+    fireEvent.focus(region);
+    expect(autoplay.running).toBe(true);
+    fireEvent.blur(region);
+    fireEvent.keyDown(document, { key: 'Tab' });
+    fireEvent.focus(region);
+    expect(autoplay.running).toBe(false);
   });
 
   // @scenario surface=swiper_styles_vendor_asset

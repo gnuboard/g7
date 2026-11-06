@@ -220,6 +220,11 @@
                         "required": false,
                         "description": "받는 동안 메뉴를 겹칠지 — 확장점 조각이 플러그인 설정 힌트(`slot_overlays`)를 넘긴다. 켜져 있으면 스켈레톤도 메뉴 밑으로 들어가 배너가 와도 화면이 위아래로 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양."
                     },
+                    "skeletonBanners": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "받는 동안 자리를 잡을지 — 확장점 조각이 첫 로드 플러그인 설정 힌트(`slot_banners`)로 넘긴다. 첫 접속은 브라우저 기억이 없으므로 이 값이 false 면 배너가 없는 위치에 스켈레톤을 그리지 않는다. 브라우저 기억이 0건이어도 그리지 않는다(둘 중 하나라도 없음이면 생략)."
+                    },
                     "onTextMove": {
                         "type": "function",
                         "required": false,

@@ -6,9 +6,9 @@
  * 실측(수정 전): 한글·일본어 최대 길이는 문구 상자가 구좌 위로 넘어 제목 위쪽이 가려졌고(태블릿 한글은 제목 전체),
  * 공백 없는 문자열은 줄을 바꾸지 못해 오른쪽이 잘렸으며 모바일 버튼이 구좌 폭을 넘었다. 문구를 줄이거나 지우지 않고
  * 모두 구좌 안(필요하면 문구 영역 안 스크롤)에서 읽을 수 있어야 하고, 스크롤 영역이 넘김 컨트롤 밑으로 지나가면 안 된다.
- * 사양이 만든 배너는 fixture 가 지운다(확인용 배너와 함께 2장이 되어 컨트롤이 보인다).
+ * 사양이 둘째 배너까지 만들어 2장이 되어야 컨트롤이 보인다. 사양이 만든 배너는 fixture 가 지운다.
  */
-import { test, expect, createBanner, gotoUser, auth, API, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, hidePopups, auth, API, VIEWPORTS } from '../fixtures/hero-auth';
 import type { APIRequestContext } from '@playwright/test';
 
 test.setTimeout(150_000);
@@ -32,6 +32,7 @@ for (const [name, [title, description, button]] of Object.entries(VARIANTS)) {
     const marker = `[${name}-${Date.now()}]`;
     const fullTitle = (marker + title).slice(0, 100);
     created.push(await createBanner(request, managerToken, { title: { ko: fullTitle }, description: { ko: description }, button_text: { ko: button } }));
+    created.push(await createBanner(request, managerToken));
 
     for (const viewport of ['desktop', 'tablet', 'mobile'] as const) {
       await page.setViewportSize(VIEWPORTS[viewport]);
@@ -96,7 +97,8 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
 
   // 화면 전체 폭은 휴대폰에서 구좌가 넓고 높아져 최대 길이 문구도 넘치지 않는다 — 넘치는 문구 영역을 보려고 본문 폭으로 두고, 끝나면 되돌린다
   let original: Settings | null = null;
-  test.beforeEach(async ({ request, managerToken }) => {
+  test.beforeEach(async ({ page, request, managerToken }) => {
+    await hidePopups(page);
     original = await readHomeSettings(request, managerToken);
     if (original.width !== 'content') await saveHomeSettings(request, managerToken, { ...original, width: 'content' });
   });
@@ -188,6 +190,8 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     const fullTitle = (marker + title).slice(0, 100).trimEnd();
     // 버튼 문구를 비우면 슬라이드 전체가 링크다
     created.push(await createBanner(request, managerToken, { title: { ko: fullTitle }, description: { ko: description }, link_url: '/shop/products' }));
+    // 장을 옮기는 점은 2장부터 그려진다
+    created.push(await createBanner(request, managerToken));
 
     await gotoUser(page, '/');
     const hs = page.locator('section.hs-slider[role="region"]');

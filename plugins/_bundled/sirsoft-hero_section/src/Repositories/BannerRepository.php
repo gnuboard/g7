@@ -310,19 +310,43 @@ class BannerRepository implements BannerRepositoryInterface
      */
     public function exposureCandidatesForPosition(string $position, CarbonInterface $now): Collection
     {
-        return Banner::query()
+        return $this->exposureCandidatesQuery($position, $now)
             ->with(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            // audit:allow query-unbounded-get reason: 캐시에 담는 노출 후보(사용 중 + 아직 안 끝난 배너) 전체 — 위치당 운영상 수십 건
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  string  $position  위치 키
+     * @param  CarbonInterface  $now  기준 시각
+     * @return bool 있으면 true
+     */
+    public function hasExposureCandidates(string $position, CarbonInterface $now): bool
+    {
+        return $this->exposureCandidatesQuery($position, $now)->exists();
+    }
+
+    /**
+     * 노출 후보(사용 중이고 아직 끝나지 않은 배너) 조회의 공통 조건입니다.
+     *
+     * @param  string  $position  위치 키
+     * @param  CarbonInterface  $now  기준 시각
+     * @return Builder<Banner> 조회
+     */
+    private function exposureCandidatesQuery(string $position, CarbonInterface $now): Builder
+    {
+        return Banner::query()
             ->where('position', $position)
             ->where('is_active', true)
             ->where(function (Builder $q) use ($now) {
                 $q->where('display_period', DisplayPeriod::Always->value)
                     ->orWhereNull('ends_at')
                     ->orWhere('ends_at', '>=', $now);
-            })
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            // audit:allow query-unbounded-get reason: 캐시에 담는 노출 후보(사용 중 + 아직 안 끝난 배너) 전체 — 위치당 운영상 수십 건
-            ->get();
+            });
     }
 
     /**

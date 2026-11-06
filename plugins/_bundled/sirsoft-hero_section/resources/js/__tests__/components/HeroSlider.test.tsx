@@ -866,6 +866,43 @@ describe('HeroSlider', () => {
       expect(container.querySelector('[data-hs-width="content"] > section.hs-slider--skeleton')).not.toBeNull();
     });
 
+    // @scenario surface=loading_skeleton_skipped_without_banners
+    it('[case:components-misc-hero-skeleton-first-visit-without-banners] 첫 접속이어도 첫 로드 힌트가 「배너 없음」이면 스켈레톤을 그리지 않고, 그래도 배너가 오면 그린다', () => {
+      const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners={false} contentClass="px-8" />);
+      expect(container.innerHTML).toBe('');
+      rerender(<HeroSlider banners={[banner(1)]} loading={false} position="home_hero" skeletonBanners={false} contentClass="px-8" />);
+      expect(container.querySelector('section.hs-slider[role="region"]')).not.toBeNull();
+    });
+
+    // @scenario surface=loading_skeleton_skipped_without_banners
+    it('[case:components-misc-hero-skeleton-first-visit-without-banners] 힌트와 브라우저 기억 중 하나라도 「없음」이면 자리를 잡지 않는다 — 기간이 끝나 힌트가 낡아도 재방문자의 본문이 매번 밀리지 않는다', () => {
+      window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 0, width: 'content' }));
+      const expired = render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners />);
+      expect(expired.container.innerHTML).toBe('');
+      expired.unmount();
+      window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 3, width: 'content' }));
+      const removed = render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners={false} />);
+      expect(removed.container.innerHTML).toBe('');
+      removed.unmount();
+      const present = render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners />);
+      expect(present.container.querySelector('section.hs-slider--skeleton')).not.toBeNull();
+    });
+
+    // @scenario surface=loading_skeleton_skipped_without_banners
+    it('힌트가 없으면(옛 설정) 종전처럼 브라우저 기억을 따른다', () => {
+      const first = render(<HeroSlider banners={[]} loading position="home_hero" />);
+      expect(first.container.querySelector('section.hs-slider--skeleton')).not.toBeNull();
+      first.unmount();
+      window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 0, width: 'content' }));
+      expect(render(<HeroSlider banners={[]} loading position="home_hero" />).container.innerHTML).toBe('');
+    });
+
+    // @scenario surface=loading_skeleton_skipped_without_banners
+    it('배너가 없다는 힌트면 받는 동안 사이트 메뉴도 겹치지 않는다(메뉴가 투명해졌다 돌아오지 않게)', () => {
+      render(<HeroSlider banners={[]} loading position="home_hero" skeletonBanners={false} skeletonWidth="full" skeletonOverlay />);
+      expect(document.documentElement.getAttribute('data-header-overlay')).toBeNull();
+    });
+
     // @scenario surface=loading_skeleton_remembers_slot
     // @effects loading_skeleton_reserves_slot
     it('저장소를 쓸 수 없어도(개인정보 동의 전 차단 등) 기본 스켈레톤으로 동작한다', () => {

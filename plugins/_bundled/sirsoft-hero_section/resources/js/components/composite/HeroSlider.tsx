@@ -194,6 +194,12 @@ export interface HeroSliderProps {
   skeletonOverlay?: boolean;
 
   /**
+   * 받는 동안 자리를 잡을지 — 확장점 조각이 첫 로드 플러그인 설정 힌트(`slot_banners`)로 넘긴다. 첫 접속은 브라우저 기억이 없으므로
+   * 이 값이 false 면 배너가 없는 위치에 스켈레톤을 그리지 않는다. 브라우저 기억이 0건이어도 그리지 않는다(둘 중 하나라도 없음이면 생략).
+   */
+  skeletonBanners?: boolean;
+
+  /**
    * 편집 미리보기 전용 — 주면 문구 상자를 끌거나 화살표 키로 옮길 수 있고, 놓을 때 고정 기기(`forceDevice`)의 새 자리를 알린다.
    * 사이트 화면에서는 넘기지 않는다.
    */
@@ -371,6 +377,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   loading = false,
   skeletonWidth = '',
   skeletonOverlay,
+  skeletonBanners,
   onTextMove,
   replay = 0,
   className = '',
@@ -430,7 +437,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     };
     doc.addEventListener('keydown', onKey, true);
     return () => doc.removeEventListener('keydown', onKey, true);
-  }, [count > 0]);
+  }, [count > 0, stylesReady]);
 
   // 배너 목록이 바뀌면(언어 전환·재조회) Swiper 를 새로 만들어 첫 장으로
   const key = banners.map((b) => b.id).join(',');
@@ -442,7 +449,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   // 메뉴 겹침 — 사이트 화면의 화면 전체 폭에서만(본문 폭이면 메뉴 양옆이 배너 밖이라 글자가 묻힌다). 편집 미리보기(기기 고정)는 신호를 내지 않는다.
   // 받는 동안에는 힌트(없으면 직전 방문 모양)를 따르고, 바탕 밝기는 직전 첫 장(없으면 사이트 다크 모드면 어두움)으로 둔다
   const skeletonFull = (skeletonWidth || remembered?.width) === 'full';
-  const waiting = count === 0 && loading && remembered?.banners !== 0;
+  // 첫 로드 힌트와 직전 방문 기억 중 하나라도 「없음」이면 자리를 잡지 않는다 — 첫 접속은 기억이 없어 힌트가 막고, 기간이 끝나 힌트가
+  // 낡아도(저장이 있어야 갱신된다) 저장소를 쓸 수 있는 재방문은 기억이 막는다. 틀려도 배너는 그대로 그려지고 스켈레톤만 건너뛴다
+  const waiting = count === 0 && loading && skeletonBanners !== false && remembered?.banners !== 0;
   const overlayOn = !forceDevice && (waiting
     ? skeletonFull && (skeletonOverlay ?? remembered?.overlay === true)
     : full && overlaySetting && count > 0);
@@ -586,7 +595,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   } as React.CSSProperties;
 
   if (count === 0 || !stylesReady) {
-    if (count === 0 && (!loading || remembered?.banners === 0)) {
+    if (count === 0 && !waiting) {
       return null;
     }
 
@@ -696,7 +705,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               index={i}
               count={count}
               active={i === index}
-              eager={i === 0 || i === (index + 1) % count}
+              eager={i === index || i === (index + 1) % count}
               forceDevice={forceDevice}
               mobileScreen={heroScreen.mobile}
               box={sliderBox ?? null}
@@ -1085,6 +1094,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           active={active}
           loop={loop}
           eager={eager}
+          reduced={reduced}
           onEnded={onMediaEnded}
           onFailed={onMediaFailed}
         />

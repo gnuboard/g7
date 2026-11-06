@@ -22,7 +22,7 @@ use Plugins\Sirsoft\HeroSection\Http\Controllers\Public\HeroController;
 
 // 공개 — 사용자 템플릿 확장점(home_hero·shop_hero)이 부른다
 Route::get('/hero', [HeroController::class, 'show'])
-    ->middleware('throttle:120,1,sirsoft-hero_section.hero')
+    ->middleware('throttle:600,1,sirsoft-hero_section.hero')
     ->name('hero.show');
 Route::get('/images/{hash}', [PublicBannerImageController::class, 'show'])
     ->where('hash', '[A-Za-z0-9]{64}')

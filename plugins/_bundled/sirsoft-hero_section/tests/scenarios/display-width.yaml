@@ -18,6 +18,7 @@ axes:
     - site_width_home_hero
     - site_width_shop_hero
     - slot_width_hint_from_position_settings
+    - slot_banner_hint_from_banners
 
 effects:
   - site_slider_matches_width_setting

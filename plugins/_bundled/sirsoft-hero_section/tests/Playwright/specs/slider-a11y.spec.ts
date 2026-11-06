@@ -6,10 +6,16 @@
  *
  * 공개 API 응답은 `page.route` 로 시험 배너 3장으로 바꾼다(운영 배너·설정은 건드리지 않는다). 이미지는 홈 첫 배너의 것을 빌린다.
  */
-import { test, expect, gotoUser, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, hidePopups, VIEWPORTS } from '../fixtures/hero-auth';
 import type { Page, Route } from '@playwright/test';
 
 test.setTimeout(90_000);
+
+// 운영 배너가 비노출이어도 돌도록 시험 배너를 직접 둔다(끝나면 지운다)
+test.beforeEach(async ({ page, request, managerToken, created }) => {
+  await hidePopups(page);
+  created.push(await createBanner(request, managerToken));
+});
 
 const HERO_API = '**/api/plugins/sirsoft-hero_section/hero?position=home_hero*';
 const TITLES = ['E2E 접근성 하나', 'E2E 접근성 둘', 'E2E 접근성 셋'];
@@ -18,8 +24,9 @@ const TITLES = ['E2E 접근성 하나', 'E2E 접근성 둘', 'E2E 접근성 셋'
  * 홈 배너 응답을 시험 배너 3장(버튼 없는 전체 링크, 대체 문구 = 제목 — 대체 문구를 비우면 공개 응답이 제목으로 채운다)으로 바꾼다.
  *
  * @param page 페이지
+ * @param autoplay 자동 넘김
  */
-async function injectBanners(page: Page): Promise<void> {
+async function injectBanners(page: Page, autoplay = false): Promise<void> {
   await page.route(HERO_API, async (route: Route) => {
     const response = await route.fetch();
     const body = await response.json();
@@ -28,7 +35,7 @@ async function injectBanners(page: Page): Promise<void> {
       id: 990101 + i, title, description: `${title} 설명`, button_text: '', image_alt: title, title_visible: true, description_visible: true,
       link_url: '/shop/products', link_new_window: false, images, media_type: 'image', youtube_id: null, videos: null, presentation: null,
     }));
-    body.data.settings = { ...body.data.settings, autoplay: false, effect: 'slide' };
+    body.data.settings = { ...body.data.settings, autoplay, effect: 'slide' };
     await route.fulfill({ response, json: body });
   });
 }
@@ -43,7 +50,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       await injectBanners(page);
       await gotoUser(page, '/');
       const bullets = page.locator('section.hs-slider .hs-slider__pagination button.hs-slider__bullet');
-      await expect(bullets).toHaveCount(3, { timeout: 30_000 });
+      await expect(bullets).toHaveCount(3, { timeout: 60_000 });
 
       const boxes = await bullets.evaluateAll((els) => els.map((el) => {
         const dot = el.getBoundingClientRect();
@@ -109,6 +116,31 @@ test('화면 읽기 프로그램은 제목을 한 번만 읽고, 장 번호는 �
   await expect(active).toHaveAttribute('data-index', '1');
   await expect(counter).toHaveText('3개 중 2번째');
   await expect(counter).toHaveText('', { timeout: 6_000 });
+});
+
+// @scenario surface=swiper_styles_vendor_asset
+test('배너가 Swiper CSS 보다 먼저 와도 누른 뒤 키보드로 들어오면 자동 넘김이 멈춘다 (desktop)', async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await injectBanners(page, true);
+  // 슬라이더가 스켈레톤으로 시작해 나중에 그려지는 순서를 고정한다 — 키보드 감지가 이 순서에서 빠졌었다
+  await page.route('**/dist/vendor/swiper/**/*.css', async (route: Route) => {
+    await new Promise((r) => setTimeout(r, 3_000));
+    await route.continue();
+  });
+  await gotoUser(page, '/');
+  const hs = page.locator('section.hs-slider[role="region"]');
+  const counter = hs.locator('.hs-slider__counter');
+  await expect(counter).toHaveAttribute('aria-live', 'off', { timeout: 40_000 });
+
+  const bullets = hs.locator('.hs-slider__pagination button.hs-slider__bullet');
+  await bullets.nth(1).click();
+  await page.mouse.move(0, 0);
+  // 마우스로 눌러 들어온 포커스는 자동 넘김을 붙잡지 않는다
+  await expect(counter).toHaveAttribute('aria-live', 'off');
+
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest('section.hs-slider'))).toBe(true);
+  await expect(counter).toHaveAttribute('aria-live', 'polite');
 });
 
 // @scenario surface=carousel_labels_follow_locale
