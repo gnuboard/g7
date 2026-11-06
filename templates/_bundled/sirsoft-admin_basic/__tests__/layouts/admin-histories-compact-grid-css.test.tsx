@@ -18,7 +18,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const css = fs.readFileSync(path.resolve(__dirname, '../../src/styles/main.css'), 'utf8');
+const css = fs.readFileSync(path.resolve(__dirname, '../../src/styles/semantic.css'), 'utf8');
 
 /**
  * 주어진 위치를 감싸는 `@layer` 이름 목록을 돌려준다(주석·문자열은 단순화해 무시).

@@ -111,6 +111,10 @@
     "name": "レイアウト編集",
     "description": "テンプレートレイアウトを編集できます。"
   },
+  "core.templates.settings": {
+    "name": "テンプレート設定",
+    "description": "テンプレート環境設定を保存します。"
+  },
   "core.permissions": {
     "name": "権限管理",
     "description": "ロールおよび権限管理権限"

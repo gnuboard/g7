@@ -1781,6 +1781,7 @@
     "queue_pending": "Pending queue jobs",
     "queue_failed": "Failed queue jobs",
     "queue_logs": "Queue processing log",
-    "coreSchedules": "Core scheduled tasks"
+    "coreSchedules": "Core scheduled tasks",
+    "template_settings": "Template settings"
   }
 }

@@ -149,6 +149,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
      * 순서 변경
      *
      * @param  array<int, array{id: int, order: int}>  $orderData  순서 데이터
+     * @return void 반환값 없음
      */
     public function reorder(array $orderData): void
     {
@@ -228,6 +229,23 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     }
 
     /**
+     * 컬렉션명 접두사로 첨부파일 조회 (attachmentable 없는 경우)
+     *
+     * @param  string  $prefix  컬렉션명 접두사 (LIKE 와일드카드는 이스케이프된다)
+     * @return Collection<int, Attachment>
+     */
+    public function getByCollectionPrefix(string $prefix): Collection
+    {
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);
+
+        return Attachment::where('collection', 'like', $escaped.'%')
+            ->whereNull('attachmentable_type')
+            ->whereNull('attachmentable_id')
+            ->ordered()
+            ->get();
+    }
+
+    /**
      * 미연결 첨부파일을 특정 엔티티에 연결합니다.
      * 기존 연결된 파일들의 order 뒤에 순차적으로 배치됩니다.
      *
@@ -275,6 +293,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
      * @param  string  $attachmentableType  첨부 대상 타입
      * @param  int  $attachmentableId  첨부 대상 ID
      * @param  string  $collection  컬렉션명
+     * @return void 반환값 없음
      */
     public function reorderAfterDelete(string $attachmentableType, int $attachmentableId, string $collection): void
     {

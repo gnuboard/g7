@@ -115,8 +115,9 @@
       <div data-ref="sidebar_header" class="sidebar_header">
         <responsive on="portable" class="hidden"/>
         <div data-ref="sidebar_logo" data-leave-guard="true" class="sidebar_logo">
-          <img data-ref="logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="logo_image"/>
-          <span data-ref="app_name" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-xl truncate">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
+          <!-- 관리자 로고 = 템플릿 설정 branding.logo(관리자 전용 변형), 비우면 환경설정 사이트 로고 (#434) -->
+          <img data-ref="logo_image" data-if="{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" src="{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="logo_image"/>
+          <span data-ref="app_name" data-if="{{!(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" class="text-primary font-bold text-xl truncate">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
         </div>
       </div>
       <!-- 언어/통화/배송국가 선택 — 모바일 전용. 헤더 우측 그룹에서 이동(모바일 헤더가 420px 를 요구해 폰 뷰포트에서 통화 선택기가 화면 밖으로 잘렸다). 사용자 템플릿 _user_base 의 mobile_drawer_prefs 와 동일하게 셋 다 가로 나열 칩으로 통일. 통화/배송국가는 이커머스 모듈이 'header_currency' 슬롯에 주입하므로 SlotContainer 만 배치(모듈 비활성 시 자동 미렌더). 스크롤 영역(admin_sidebar_menu) 바깥 최상단에 둔다. -->
@@ -334,8 +335,8 @@
             <span class="text-primary text-lg leading-none">☰</span>
           </button>
           <div data-ref="mobile_logo" class="mobile_logo">
-            <img data-ref="mobile_logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="mobile_logo_image"/>
-            <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-lg leading-none truncate">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
+            <img data-ref="mobile_logo_image" data-if="{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" src="{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="mobile_logo_image"/>
+            <span data-if="{{!(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}" class="text-primary font-bold text-lg leading-none truncate">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
           </div>
         </div>
         <div data-ref="mobile_header_right" class="mobile_header_right">

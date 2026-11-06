@@ -43,8 +43,8 @@ describe('plugin_settings.json — 레이아웃 메타/권한', () => {
     });
 
     /** @effects layout_meta_extends_admin_base_with_plugins_update_permission */
-    it('core.plugins.update 권한을 요구한다', () => {
-        expect((root as { permissions?: string[] }).permissions).toContain('core.plugins.update');
+    it('진입은 보기 권한(core.plugins.read) — 수정 권한이 없으면 읽기 전용으로 연다(#434 W18, 저장은 서버가 막는다)', () => {
+        expect((root as { permissions?: string[] }).permissions).toEqual(['core.plugins.read']);
     });
 
     /** @effects layout_meta_extends_admin_base_with_plugins_update_permission */

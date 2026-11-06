@@ -8,5 +8,6 @@
   "retry": "Retry",
   "retrying": "Retrying...",
   "close": "Close",
-  "retry_failed": "The retry failed. Please try again in a moment."
+  "retry_failed": "The retry failed. Please try again in a moment.",
+  "template_settings_screen": "Template settings screen"
 }

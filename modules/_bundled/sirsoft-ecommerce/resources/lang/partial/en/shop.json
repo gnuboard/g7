@@ -239,5 +239,19 @@
     "expand_detail": "Show Full Details",
     "collapse_detail": "Collapse Details"
   },
-  "product_access_denied": "You do not have permission to view products. Please log in or contact an administrator."
+  "product_access_denied": "You do not have permission to view products. Please log in or contact an administrator.",
+  "footer_business_info": {
+    "company": "Company",
+    "ceo": "Representative",
+    "address": "Address",
+    "business_number": "Business registration No.",
+    "verify": "Verify business",
+    "mail_order_number": "Mail-order business No.",
+    "telecom_number": "Value-added telecom No.",
+    "phone": "Phone",
+    "fax": "Fax",
+    "email": "Email",
+    "privacy_officer": "Privacy officer",
+    "region_label": "Business information"
+  }
 }

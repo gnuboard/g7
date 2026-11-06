@@ -5,6 +5,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { getDefaultTheme } from '../../handlers/setThemeHandler';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
 // 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
@@ -96,7 +97,8 @@ const getInitialTheme = (): ThemeMode => {
   if (savedTheme && ['auto', 'light', 'dark'].includes(savedTheme)) {
     return savedTheme;
   }
-  return 'auto';
+  // 저장값이 없는 첫 방문자는 템플릿 설정의 기본 화면 모드 (#434)
+  return getDefaultTheme();
 };
 
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({

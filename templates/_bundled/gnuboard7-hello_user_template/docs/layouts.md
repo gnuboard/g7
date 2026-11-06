@@ -101,4 +101,7 @@ layouts/errors/404.g7.html
 layouts/errors/500.g7.html
 layouts/errors/503.g7.html
 layouts/errors/maintenance.g7.html
+settings/template_settings.g7.html
 ```
+
+`settings/template_settings.g7.html` 은 `layouts/` 밖의 이 템플릿 설정 화면이다 — 코어가 켜진 관리자 템플릿마다 `gnuboard7-hello_user_template.template_settings` 로 교차 등록하고, 화면은 설정 묶음(`dist/settings/*`) 부품 `gnuboard7-hello_user_template.TemplateSettingsScreen` 이 그린다([architecture.md](architecture.md)).

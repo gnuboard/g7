@@ -151,8 +151,9 @@ for (const file of files) {
  * (2026-10-22 결정, issue816). 종전에는 확장 조각·PHP 리스너의 className 을 여기서 모아 safelist 에 넣었다.
  */
 
-// main.css에 @source inline() 자동 삽입
-const mainCssPath = path.join(__dirname, '../src/styles/main.css');
+// semantic.css 에 @source inline() 자동 삽입 — 레이아웃 스캔 앵커(`@source "../../layouts/**/*.json"`)가 이 파일에 있다.
+// main.css 는 `@import` 만 앞에 두는 파일이라 거기에 끼우면 뒤의 `@import` 가 전부 무시된다(#434 분리 때 실측).
+const mainCssPath = path.join(__dirname, '../src/styles/semantic.css');
 let mainCss = fs.readFileSync(mainCssPath, 'utf-8');
 
 // 기존 safelist 마커 제거
@@ -194,4 +195,4 @@ if (layoutSourcePattern.test(mainCss)) {
 
 fs.writeFileSync(mainCssPath, mainCss);
 
-console.log(`✓ Injected ${classes.size} classes into main.css`);
+console.log(`✓ Injected ${classes.size} classes into semantic.css`);

@@ -1,4 +1,6 @@
-<!-- 공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다. -->
+<!-- 공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다.
+     계산값 siteMenu — 템플릿 설정 header.menu(#434)에서 꺼진 항목·꺼진 모듈의 자동 항목·보이지 않을 대상(회원만·비회원만·특정 역할)을 거른 메뉴.
+     헤더·모바일 드로어·봇 화면이 모두 이 값을 쓴다(따로 판정하면 셋이 어긋난다). 비회원은 역할 guest 로 본다. 보이기는 메뉴 안내일 뿐 접근 제어가 아니다. -->
 <layout name="_user_base" version="1.0.0">
   <meta title="$t:user.base_layout_title" description="$t:user.base_layout_description" :is_base="true">
     <seo :enabled="false">
@@ -104,6 +106,7 @@
       <toast type="info" message="{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}" :duration="5000"/>
     </on-receive>
   </data-source>
+  <computed name="siteMenu">{{(_global.templateSettings?.header?.menu ?? [{id: 'home', kind: 'home'}, {id: 'popular', kind: 'popular'}, {id: 'shop', kind: 'shop'}, {id: 'boards', kind: 'boards'}]).filter(i => i &amp;&amp; i.is_active !== false &amp;&amp; (i.kind !== 'shop' || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) &amp;&amp; ((i.kind !== 'boards' &amp;&amp; i.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) &amp;&amp; ((i.visibility ?? 'all') === 'all' || (i.visibility === 'members' &amp;&amp; !!_global.currentUser?.uuid) || (i.visibility === 'guests' &amp;&amp; !_global.currentUser?.uuid) || (i.visibility === 'roles' &amp;&amp; (i.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest'))))).map(i => ({...i, children: (i.children ?? []).filter(c => c &amp;&amp; c.is_active !== false &amp;&amp; (c.kind !== 'shop' || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)) &amp;&amp; ((c.kind !== 'boards' &amp;&amp; c.kind !== 'popular') || (_global.activeModules?.includes('sirsoft-board') ?? true)) &amp;&amp; ((c.visibility ?? 'all') === 'all' || (c.visibility === 'members' &amp;&amp; !!_global.currentUser?.uuid) || (c.visibility === 'guests' &amp;&amp; !_global.currentUser?.uuid) || (c.visibility === 'roles' &amp;&amp; (c.roles ?? []).some(r => (_global.currentUser?.uuid ? (_global.currentUser?.roles ?? []).some(o => o.identifier === r) : r === 'guest')))))})).filter(i => i.kind !== 'link' || !!i.url || i.children.length > 0)}}</computed>
   <global-headers>
     <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-Currency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" X-Shipping-Country="{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     <match pattern="/api/auth/*" X-Cart-Key="{{_global.cartKey}}"/>
@@ -169,15 +172,19 @@
         <on type="click">
           <navigate/>
         </on>
-        <div data-if="{{_global.settings?.general?.site_logo_url}}" class="min-w-0">
+        <!-- 다크 모드 로고(템플릿 설정 branding.logo_dark)가 있으면 어두운 화면에서는 그것만 보인다 -->
+        <div data-if="{{_global.settings?.general?.site_logo_url}}" class="min-w-0 {{_global.templateSettings?.branding?.logo_dark_url ? 'dark:hidden' : ''}}">
           <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" class="h-8 w-auto max-w-full object-contain object-left"/>
         </div>
-        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate">{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}</span>
+        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate {{_global.templateSettings?.branding?.logo_dark_url ? 'dark:hidden' : ''}}">{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}</span>
+        <div data-ref="mobile_header_logo_dark" data-if="{{!!_global.templateSettings?.branding?.logo_dark_url}}" class="hidden dark:block min-w-0">
+          <img src="{{_global.templateSettings?.branding?.logo_dark_url}}" alt="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" class="h-8 w-auto max-w-full object-contain object-left"/>
+        </div>
       </a>
       <!-- 모바일 헤더 우측 - 액션 버튼들 -->
       <div data-ref="mobile_header_right" class="flex items-center gap-1 shrink-0">
         <!-- 다크모드 전환 -->
-        <theme-toggle data-type="composite" data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
+        <theme-toggle data-type="composite" data-ref="mobile_theme_btn" data-if="{{_global.templateSettings?.header?.show_theme_toggle ?? true}}" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
         <!-- 알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니) -->
         <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
           <on event="onClose">
@@ -456,62 +463,173 @@
           $t:shop.guest_order_form.nav_link
         </a>
       </div>
-      <!-- 메뉴 섹션 - 홈 -->
-      <div class="p-4">
-        <a href="/" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer">
-          <on type="click">
-            <!-- 홈으로 — 드로어를 닫고 이동한다. -->
-            <sequence>
-              <set-state target="global" :mobileMenuOpen="false"/>
-              <navigate path="/"/>
-            </sequence>
-          </on>
-          <icon name="home" size="md"/>
-          <span>$t:user.nav.home</span>
-        </a>
-        <a href="/boards/popular" data-ref="mobile_drawer_popular_link" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
-          <on type="click">
-            <!-- 인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다. -->
-            <sequence>
-              <set-state target="global" :mobileMenuOpen="false"/>
-              <navigate path="/boards/popular"/>
-            </sequence>
-          </on>
-          <icon name="flame" size="md" class="text-orange-600 dark:text-orange-500"/>
-          <span>$t:user.nav.popular</span>
-        </a>
-      </div>
-      <!-- 메뉴 섹션 - 게시판 (제목 + 목록). 게시판 모듈이 꺼져 있으면 제목까지 통째로 숨긴다. -->
-      <div data-ref="mobile_drawer_boards_section" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="px-4 pb-4">
-        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.boards</div>
-        <div data-each="board in {{boards.data ?? []}}">
-          <a href="/board/{{board.slug}}" class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+      <!-- 메뉴 섹션 — 템플릿 설정 header.menu 를 거른 계산값(siteMenu) 순서대로 그린다. 자동 항목(홈·인기글·쇼핑·게시판 전체)은 이 자리에서
+           펴고, 하위 메뉴가 있는 상위 메뉴는 눌러 접었다 편다(한 번에 하나 — mobileMenuExpandedId). 사이트 안 경로는 드로어를 닫고 SPA 이동, 바깥 주소·새 창은 일반 링크. -->
+      <div data-ref="mobile_drawer_menu_section" class="p-4">
+        <div data-each="item, itemIndex in {{_computed.siteMenu ?? []}}">
+          <a data-if="{{item.kind === 'home'}}" href="/" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
             <on type="click">
-              <!-- 그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록). -->
+              <!-- 서랍 메뉴 「홈」 — 서랍을 닫고 첫 화면으로 간다 -->
               <sequence>
                 <set-state target="global" :mobileMenuOpen="false"/>
-                <navigate path="/board/{{board.slug}}"/>
+                <navigate path="/"/>
               </sequence>
             </on>
-            <span class="min-w-0 truncate">{{board.name}}</span>
-            <span data-if="{{board.post_count > 0}}" class="text-xs text-gray-600 dark:text-gray-300 shrink-0">{{board.post_count}}</span>
+            <icon name="home" size="md"/>
+            <span>{{$localized(item.label) || $t('user.nav.home')}}</span>
           </a>
+          <a data-if="{{item.kind === 'popular' &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" href="/boards/popular" data-ref="mobile_drawer_popular_link_{{itemIndex}}" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+            <on type="click">
+              <!-- 인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다. -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="/boards/popular"/>
+              </sequence>
+            </on>
+            <icon name="flame" size="md" class="text-orange-600 dark:text-orange-500"/>
+            <span>{{$localized(item.label) || $t('user.nav.popular')}}</span>
+          </a>
+          <a data-if="{{item.kind === 'shop' &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" href="{{_global.shopBase}}/products" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+            <on type="click">
+              <!-- 상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다. -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="{{_global.shopBase}}/products"/>
+              </sequence>
+            </on>
+            <icon name="shopping-bag" size="md"/>
+            <span>{{$localized(item.label) || $t('user.nav.shop')}}</span>
+          </a>
+          <div data-if="{{item.kind === 'boards' &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" data-ref="mobile_drawer_boards_section_{{itemIndex}}">
+            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-2 mb-2 px-3">{{$localized(item.label) || $t('user.nav.boards')}}</div>
+            <div data-each="board in {{boards.data ?? []}}">
+              <a href="/board/{{board.slug}}" class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                <on type="click">
+                  <!-- 그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록). -->
+                  <sequence>
+                    <set-state target="global" :mobileMenuOpen="false"/>
+                    <navigate path="/board/{{board.slug}}"/>
+                  </sequence>
+                </on>
+                <span class="min-w-0 truncate">{{board.name}}</span>
+                <span data-if="{{board.post_count &gt; 0}}" class="text-xs text-gray-600 dark:text-gray-300 shrink-0">{{board.post_count}}</span>
+              </a>
+            </div>
+          </div>
+          <div data-if="{{item.kind === 'link' &amp;&amp; (item.children ?? []).length === 0}}">
+            <a data-if="{{String(item.url ?? '').startsWith('/') &amp;&amp; !String(item.url ?? '').startsWith('//') &amp;&amp; !item.new_tab}}" href="{{item.url}}" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+              <on type="click">
+                <!-- 사이트 안 주소 메뉴 — 서랍을 닫고 그 주소로 간다 -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate/>
+                </sequence>
+              </on>
+              <span class="min-w-0 truncate">{{$localized(item.label)}}</span>
+            </a>
+            <a data-if="{{!(String(item.url ?? '').startsWith('/') &amp;&amp; !String(item.url ?? '').startsWith('//')) || !!item.new_tab}}" href="{{item.url}}" target="{{item.new_tab ? '_blank' : '_self'}}" rel="{{item.new_tab ? 'noopener noreferrer' : ''}}" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+              <span class="min-w-0 truncate">{{$localized(item.label)}}</span>
+              <icon data-if="{{!!item.new_tab}}" name="arrow-up-right-from-square" class="text-xs shrink-0"/>
+            </a>
+          </div>
+          <div data-if="{{item.kind === 'link' &amp;&amp; (item.children ?? []).length > 0}}" data-ref="mobile_drawer_menu_group_{{itemIndex}}">
+            <button type="button" aria-expanded="{{_global.mobileMenuExpandedId === item.id}}" class="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+              <on type="click">
+                <!-- 하위 메뉴 접기/펴기 — 다른 묶음이 열려 있으면 그것을 닫고 이것을 연다. -->
+                <set-state target="global" mobileMenuExpandedId="{{_global.mobileMenuExpandedId === item.id ? null : item.id}}"/>
+              </on>
+              <span class="min-w-0 truncate font-medium">{{$localized(item.label)}}</span>
+              <icon name="{{_global.mobileMenuExpandedId === item.id ? 'chevron-up' : 'chevron-down'}}" class="text-xs shrink-0"/>
+            </button>
+            <div data-if="{{_global.mobileMenuExpandedId === item.id}}" class="pb-1">
+              <div data-if="{{!!item.url}}">
+                <a data-if="{{String(item.url ?? '').startsWith('/') &amp;&amp; !String(item.url ?? '').startsWith('//') &amp;&amp; !item.new_tab}}" href="{{item.url}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                  <on type="click">
+                    <!-- 하위 메뉴를 펼친 상위 항목의 자기 주소 — 서랍을 닫고 그 주소로 간다 -->
+                    <sequence>
+                      <set-state target="global" :mobileMenuOpen="false"/>
+                      <navigate/>
+                    </sequence>
+                  </on>
+                  <span class="min-w-0 truncate">{{$localized(item.label)}}</span>
+                </a>
+                <a data-if="{{!(String(item.url ?? '').startsWith('/') &amp;&amp; !String(item.url ?? '').startsWith('//')) || !!item.new_tab}}" href="{{item.url}}" target="{{item.new_tab ? '_blank' : '_self'}}" rel="{{item.new_tab ? 'noopener noreferrer' : ''}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                  <span class="min-w-0 truncate">{{$localized(item.label)}}</span>
+                  <icon data-if="{{!!item.new_tab}}" name="arrow-up-right-from-square" class="text-xs shrink-0"/>
+                </a>
+              </div>
+              <div data-each="child, childIndex in {{item.children ?? []}}">
+                <a data-if="{{child.kind === 'home'}}" href="/" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                  <on type="click">
+                    <!-- 하위 메뉴 「홈」 — 서랍을 닫고 첫 화면으로 간다 -->
+                    <sequence>
+                      <set-state target="global" :mobileMenuOpen="false"/>
+                      <navigate path="/"/>
+                    </sequence>
+                  </on>
+                  <icon name="home" size="md"/>
+                  <span>{{$localized(child.label) || $t('user.nav.home')}}</span>
+                </a>
+                <a data-if="{{child.kind === 'popular' &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" href="/boards/popular" data-ref="mobile_drawer_popular_link_{{itemIndex}}_{{childIndex}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                  <on type="click">
+                    <!-- 인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다. -->
+                    <sequence>
+                      <set-state target="global" :mobileMenuOpen="false"/>
+                      <navigate path="/boards/popular"/>
+                    </sequence>
+                  </on>
+                  <icon name="flame" size="md" class="text-orange-600 dark:text-orange-500"/>
+                  <span>{{$localized(child.label) || $t('user.nav.popular')}}</span>
+                </a>
+                <a data-if="{{child.kind === 'shop' &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" href="{{_global.shopBase}}/products" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                  <on type="click">
+                    <!-- 상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다. -->
+                    <sequence>
+                      <set-state target="global" :mobileMenuOpen="false"/>
+                      <navigate path="{{_global.shopBase}}/products"/>
+                    </sequence>
+                  </on>
+                  <icon name="shopping-bag" size="md"/>
+                  <span>{{$localized(child.label) || $t('user.nav.shop')}}</span>
+                </a>
+                <div data-if="{{child.kind === 'boards' &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" data-ref="mobile_drawer_boards_section_{{itemIndex}}_{{childIndex}}">
+                  <div data-each="board in {{boards.data ?? []}}">
+                    <a href="/board/{{board.slug}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                      <on type="click">
+                        <!-- 그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록). -->
+                        <sequence>
+                          <set-state target="global" :mobileMenuOpen="false"/>
+                          <navigate path="/board/{{board.slug}}"/>
+                        </sequence>
+                      </on>
+                      <span class="min-w-0 truncate">{{board.name}}</span>
+                      <span data-if="{{board.post_count &gt; 0}}" class="text-xs text-gray-600 dark:text-gray-300 shrink-0">{{board.post_count}}</span>
+                    </a>
+                  </div>
+                </div>
+                <div data-if="{{child.kind === 'link'}}">
+                  <a data-if="{{String(child.url ?? '').startsWith('/') &amp;&amp; !String(child.url ?? '').startsWith('//') &amp;&amp; !child.new_tab}}" href="{{child.url}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                    <on type="click">
+                      <!-- 사이트 안 주소 하위 메뉴 — 서랍을 닫고 그 주소로 간다 -->
+                      <sequence>
+                        <set-state target="global" :mobileMenuOpen="false"/>
+                        <navigate/>
+                      </sequence>
+                    </on>
+                    <span class="min-w-0 truncate">{{$localized(child.label)}}</span>
+                  </a>
+                  <a data-if="{{!(String(child.url ?? '').startsWith('/') &amp;&amp; !String(child.url ?? '').startsWith('//')) || !!child.new_tab}}" href="{{child.url}}" target="{{child.new_tab ? '_blank' : '_self'}}" rel="{{child.new_tab ? 'noopener noreferrer' : ''}}" class="w-full flex items-center justify-between gap-2 pl-9 pr-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+                    <span class="min-w-0 truncate">{{$localized(child.label)}}</span>
+                    <icon data-if="{{!!child.new_tab}}" name="arrow-up-right-from-square" class="text-xs shrink-0"/>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <!-- 메뉴 섹션 - 쇼핑. 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
+      <!-- 메뉴 섹션 - 쇼핑 도구(장바구니). 상품 목록 링크는 위 메뉴의 쇼핑 항목이 맡는다. 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
       <div data-ref="mobile_drawer_shop_section" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.shop</div>
-        <a href="{{_global.shopBase}}/products" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
-          <on type="click">
-            <!-- 상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다. -->
-            <sequence>
-              <set-state target="global" :mobileMenuOpen="false"/>
-              <navigate path="{{_global.shopBase}}/products"/>
-            </sequence>
-          </on>
-          <icon name="shopping-bag" size="md"/>
-          <span>$t:user.nav.products</span>
-        </a>
         <a href="{{_global.shopBase}}/cart" class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <!-- 장바구니로 — 옆 배지 수량은 cart 데이터소스가 채우므로 비회원도 담은 것이 보인다. -->
@@ -602,7 +720,7 @@
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===
          shopProductsHref 는 봇 화면(seo-config header_nav)의 「쇼핑」 링크 전용이다 — 값과 글자가 섞인 attrs 패턴({shopBase}/products)을
          옛 코어(7.1.3 이하)의 봇 렌더가 치환하지 못해 완성된 주소 하나를 prop 으로 넘긴다. 컴포넌트는 이 prop 을 읽지 않는다. -->
-    <header data-type="composite" data-ref="desktop_header" registrationEnabled="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+    <header data-type="composite" data-ref="desktop_header" registrationEnabled="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}" logo="{{_global.settings?.general?.site_logo_url}}" logoDark="{{_global.templateSettings?.branding?.logo_dark_url ?? ''}}" showThemeToggle="{{_global.templateSettings?.header?.show_theme_toggle ?? true}}" menu="{{_computed.siteMenu}}" seoLegacyNav="false" seoMenuLinks="{{(_computed.siteMenu ?? []).flatMap(i => [i].concat(i.children ?? [])).flatMap(i => i.kind === 'link' ? (i.url ? [{href: i.url, label: $localized(i.label)}] : []) : i.kind === 'home' ? [{href: '/', label: $t('user.nav.home')}] : i.kind === 'popular' ? [{href: '/boards/popular', label: $t('user.nav.popular')}] : i.kind === 'shop' ? [{href: (_global.shopBase ?? '/shop') + '/products', label: $t('user.nav.shop')}] : i.kind === 'boards' ? (boards?.data ?? []).map(b => ({href: '/board/' + b.slug, label: b.name})) : [])}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" boards="{{boards.data ?? []}}" maxVisibleBoards="{{_global.templateSettings?.header?.max_boards ?? 5}}" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->
@@ -701,11 +819,15 @@
       </container>
     </div>
     <!-- === 푸터 (Footer 컴포넌트) === -->
-    <footer data-type="composite" data-ref="footer" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" pageEnabled="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}">
+    <footer data-type="composite" data-ref="footer" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" pageEnabled="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="{{$localized(_global.templateSettings?.footer?.copyright ?? {}) ?? ''}}" defaultCopyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" showPoweredBy="{{_global.templateSettings?.footer?.show_powered_by ?? true}}">
       <prop name="socialLinks">
-        <field name="github" value="{{_global.settings?.social?.github}}"/>
-        <field name="twitter" value="{{_global.settings?.social?.twitter}}"/>
-        <field name="discord" value="{{_global.settings?.social?.discord}}"/>
+        <field name="youtube" value="{{_global.templateSettings?.footer?.social_youtube ?? ''}}"/>
+        <field name="instagram" value="{{_global.templateSettings?.footer?.social_instagram ?? ''}}"/>
+        <field name="facebook" value="{{_global.templateSettings?.footer?.social_facebook ?? ''}}"/>
+        <field name="x" value="{{_global.templateSettings?.footer?.social_x ?? ''}}"/>
+        <field name="github" value="{{_global.templateSettings?.footer?.social_github ?? ''}}"/>
+        <field name="discord" value="{{_global.templateSettings?.footer?.social_discord ?? ''}}"/>
+        <field name="blog" value="{{_global.templateSettings?.footer?.social_blog ?? ''}}"/>
       </prop>
     </footer>
     <!-- === Extension Point: 모든 사용자 페이지 푸터 직후에 플러그인이 정보 영역을 노출할 수 있도록 공용 확장 지점 제공 === -->

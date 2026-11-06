@@ -185,6 +185,10 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.plugin_settings.after_save' => ['method' => 'handlePluginSettingsAfterSave', 'priority' => 20],
             'core.plugin_settings.after_reset' => ['method' => 'handlePluginSettingsAfterReset', 'priority' => 20],
 
+            // ─── Template Settings (#434) ───
+            'core.template_settings.after_save' => ['method' => 'handleTemplateSettingsAfterSave', 'priority' => 20],
+            'core.template_settings.after_reset' => ['method' => 'handleTemplateSettingsAfterReset', 'priority' => 20],
+
             // ─── Analytics ───
             // 운영자가 방문 데이터에 손대는 행위만 남긴다. 수집 자체(초당 여러 건)는
             // 활동 로그에 넣지 않는다 — 감사 기록이 통계 트래픽에 묻힌다.
@@ -1859,6 +1863,50 @@ class CoreActivityLogListener implements HookListenerInterface
         $this->logActivity('plugin_settings.reset', [
             'description_key' => 'activity_log.description.plugin_settings_reset',
             'description_params' => ['plugin_name' => $identifier],
+        ]);
+    }
+
+    /**
+     * 템플릿 설정 저장 후 로그 기록 (#434)
+     *
+     * 저장이 실패한 경우는 남기지 않는다 — 설정이 바뀌지 않았다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  array  $settings  저장된 설정 (병합 결과)
+     * @param  bool  $result  저장 성공 여부
+     * @return void 반환값 없음
+     */
+    public function handleTemplateSettingsAfterSave(string $identifier, array $settings, bool $result): void
+    {
+        if (! $result) {
+            return;
+        }
+
+        $this->logActivity('template_settings.save', [
+            'description_key' => 'activity_log.description.template_settings_save',
+            'description_params' => ['template_name' => $identifier],
+            'properties' => ['identifier' => $identifier, 'keys' => array_keys($settings)],
+        ]);
+    }
+
+    /**
+     * 템플릿 설정 기본값 되돌리기 후 로그 기록 (#434)
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  string|null  $section  되돌린 섹션 (null 이면 전체)
+     * @param  bool  $result  성공 여부
+     * @return void 반환값 없음
+     */
+    public function handleTemplateSettingsAfterReset(string $identifier, ?string $section, bool $result): void
+    {
+        if (! $result) {
+            return;
+        }
+
+        $this->logActivity('template_settings.reset', [
+            'description_key' => 'activity_log.description.template_settings_reset',
+            'description_params' => ['template_name' => $identifier],
+            'properties' => ['identifier' => $identifier, 'section' => $section],
         ]);
     }
 

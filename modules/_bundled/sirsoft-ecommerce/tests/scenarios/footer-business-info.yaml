@@ -1,0 +1,19 @@
+feature: 푸터 사업자 정보 표시 (#434)
+
+description: |
+  쇼핑몰은 전자상거래법이 첫 화면 표시를 요구하는 사업자 정보(상호·대표·주소·연락처·사업자등록번호·통신판매업 신고번호·
+  개인정보 보호책임자)를 사용자 템플릿 공용 자리 `user_global_footer` 에 직접 그린다 — 어느 사용자 템플릿이든 그 자리만 있으면 같다.
+  값의 주인은 쇼핑몰 설정 > 기본정보이고(템플릿 설정에 다시 입력받지 않는다), 「푸터에 사업자 정보 표시」(기본 켜짐)로 끈다.
+
+  축: case — 검증 표면 하나씩(선언 노출 / 조각 렌더 조건).
+
+axes:
+  case: [expose, fragment]
+
+effects:
+  - legal_fields_exposed_and_internal_hidden
+  - footer_business_info_rendered_when_enabled
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Config/FooterBusinessInfoExposeTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/footerBusinessInfo.test.ts

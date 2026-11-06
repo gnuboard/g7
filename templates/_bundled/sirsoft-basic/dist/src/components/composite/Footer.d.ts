@@ -1,10 +1,14 @@
 import { default as React } from 'react';
 interface SocialLinks {
-    github?: string;
-    twitter?: string;
-    discord?: string;
-    facebook?: string;
+    youtube?: string;
     instagram?: string;
+    facebook?: string;
+    x?: string;
+    github?: string;
+    discord?: string;
+    blog?: string;
+    /** 옛 이름 — `x` 와 같은 아이콘 */
+    twitter?: string;
 }
 interface FooterLink {
     label: string;
@@ -19,10 +23,14 @@ interface FooterProps {
     siteName?: string;
     /** 사이트 설명 */
     siteDescription?: string;
-    /** 저작권 텍스트 */
+    /** 저작권 텍스트 — 운영자가 템플릿 설정(`footer.copyright`, 언어별)에 넣은 문구. 비면 기본 문구 */
     copyrightText?: string;
-    /** 소셜 미디어 링크 */
+    /** 기본 저작권 문구 — 번역 문구(`footer.copyright`). 운영자 문구가 없을 때 쓴다 */
+    defaultCopyrightText?: string;
+    /** 소셜 미디어 링크 — 템플릿 설정 `footer.social_*` (빈 값은 그리지 않는다) */
     socialLinks?: SocialLinks;
+    /** 「Powered by 그누보드7」 을 보일지 — 기본 true (템플릿 설정 `footer.show_powered_by`, #434) */
+    showPoweredBy?: boolean;
     /** 링크 그룹 (미지정 시 기본값 사용 — 직접 넘기면 아래 모듈 플래그와 무관하게 그대로 그린다) */
     linkGroups?: FooterLinkGroup[];
     /**

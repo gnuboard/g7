@@ -235,5 +235,19 @@
     "expand_detail": "詳細情報を展開",
     "collapse_detail": "詳細情報を閉じる"
   },
-  "product_access_denied": "商品閲覧権限がありません。ログインするか、管理者にお問い合わせください。"
+  "product_access_denied": "商品閲覧権限がありません。ログインするか、管理者にお問い合わせください。",
+  "footer_business_info": {
+    "company": "商号",
+    "ceo": "代表者",
+    "address": "住所",
+    "business_number": "事業者登録番号",
+    "verify": "事業者情報の確認",
+    "mail_order_number": "通信販売業届出番号",
+    "telecom_number": "付加通信事業届出番号",
+    "phone": "電話",
+    "fax": "FAX",
+    "email": "メール",
+    "privacy_officer": "個人情報保護責任者",
+    "region_label": "事業者情報"
+  }
 }

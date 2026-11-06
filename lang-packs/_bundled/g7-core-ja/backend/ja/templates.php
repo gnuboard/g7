@@ -384,4 +384,38 @@ return [
         'invalid' => '❌ --layout-source は auto または json である必要があります。(入力値: :value)',
         'json_notice' => '⚠️  レイアウトインストールソースを JSON に強制的に変換します — ペア .json がある .g7.html は無視されます。',
     ],
+    'settings' => [
+        'updated' => 'テンプレート設定を保存しました。',
+        'reset' => 'テンプレート設定を既定値に戻しました。',
+        'attributes' => [
+            'section' => '設定セクション',
+        ],
+        'reset_failed' => 'テンプレート設定を既定値に戻せませんでした: :error',
+        'warnings' => [
+            'owned_elsewhere' => 'テンプレート「:template」の設定項目 :fields は、コアや他の拡張機能が既に持つ値と名前が同じです — その値を読み込んで使い、再度保存しないでください。',
+        ],
+        'update_failed' => 'テンプレート設定の保存に失敗しました: :error',
+        'not_found' => '設定画面のないテンプレートです。',
+        'errors' => [
+            'invalid_json' => 'テンプレート「:template」の設定宣言(config/settings/defaults.json)が正しい JSON ではありません: :error',
+            'invalid_schema' => 'テンプレート「:template」の設定宣言が規約に合っていません: :errors',
+            'not_available' => 'テンプレート「:template」はインストールされていないか、設定宣言がありません。',
+            'save_failed' => '設定ファイルを書き込めませんでした。',
+        ],
+        'menu' => [
+            'not_list' => 'メニューの値は項目のリストである必要があります。',
+            'item_invalid' => 'メニュー項目の形式が正しくありません。',
+            'id_invalid' => 'メニュー項目の識別子が正しくありません。',
+            'id_duplicate' => '同じ識別子を持つメニュー項目が複数あります。',
+            'kind_invalid' => '不明なメニュー項目の種類です。',
+            'auto_duplicate' => '自動項目はメニューに一度だけ置けます。',
+            'auto_no_children' => '自動項目の下にはサブメニューを置けません。',
+            'label_required' => 'メニュー名を入力してください。',
+            'url_required' => 'リンク先を入力してください。サブメニューを持つ上位メニューのみ空にできます。',
+            'too_deep' => 'メニューは:depth階層までです。',
+            'visibility_invalid' => '表示設定が正しくありません。',
+            'roles_required' => '「特定のロールのみ」を選んだ場合はロールを1つ以上選択してください。',
+            'too_many' => 'メニュー項目はサブメニューを含めて最大:max個までです。',
+        ],
+    ],
 ];

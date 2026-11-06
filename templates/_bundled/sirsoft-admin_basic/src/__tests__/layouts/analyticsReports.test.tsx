@@ -354,6 +354,8 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
     const isPairRow = (row: any): boolean => {
       const kids = Array.isArray(row?.children) ? row.children : [];
       if (kids.length !== 2 || row.iteration) return false;
+      // 둘째가 단추·링크면 값이 아니라 「문구 + 이동 단추」 안내다(예: 저장이 잠긴 이유 + 그 칸으로 이동) — 짝이 아니다
+      if (['Button', 'A'].includes(kids[1]?.name)) return false;
       const label = typeof kids[0]?.text === 'string' ? kids[0].text : '';
       if (!/^\$t:[\w.-]+$/.test(label.trim())) return false;
       // 둘째가 단추·링크면 값이 아니라 동작이다(「이유 문구 + 그 자리로 가기」 같은 안내 줄 — 히어로 저장 잠김 이유).

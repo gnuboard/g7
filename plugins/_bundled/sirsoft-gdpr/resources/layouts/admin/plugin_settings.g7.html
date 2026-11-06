@@ -100,7 +100,7 @@
   <computed name="isNotificationReadOnly">{{gdprNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
   <computed name="isPluginReadOnly">{{gdprSettings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
-    <permission>core.plugins.update</permission>
+    <permission>core.plugins.read</permission>
   </permissions>
   <transition-overlay target="settings_main_content" fallback-target="plugin_settings_content">
     <wait-for>gdprSettings</wait-for>

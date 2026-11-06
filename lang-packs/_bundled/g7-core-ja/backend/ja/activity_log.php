@@ -234,6 +234,8 @@ return [
         'plugin_dependent_templates' => 'プラグイン依存テンプレート閲覧',
         'plugin_settings_save' => 'プラグイン設定保存 (:plugin_name)',
         'plugin_settings_reset' => 'プラグイン設定初期化 (:plugin_name)',
+        'template_settings_save' => 'テンプレート設定保存 (:template_name)',
+        'template_settings_reset' => 'テンプレート設定を既定値に戻す (:template_name)',
         'template_index' => 'テンプレート一覧の閲覧',
         'template_show' => 'テンプレート詳細閲覧 (:template_name)',
         'template_install' => 'テンプレートインストール (:template_name)',

@@ -235,5 +235,19 @@
     "expand_detail": "상세정보 펼쳐보기",
     "collapse_detail": "상세정보 접기"
   },
-  "product_access_denied": "상품 조회 권한이 없습니다. 로그인하거나 관리자에게 문의해주세요."
+  "product_access_denied": "상품 조회 권한이 없습니다. 로그인하거나 관리자에게 문의해주세요.",
+  "footer_business_info": {
+    "company": "상호",
+    "ceo": "대표",
+    "address": "주소",
+    "business_number": "사업자등록번호",
+    "verify": "사업자정보 확인",
+    "mail_order_number": "통신판매업 신고번호",
+    "telecom_number": "부가통신사업 신고번호",
+    "phone": "전화",
+    "fax": "팩스",
+    "email": "이메일",
+    "privacy_officer": "개인정보 보호책임자",
+    "region_label": "사업자 정보"
+  }
 }

@@ -109,7 +109,7 @@ class SeoSettingsCacheListenerTest extends TestCase
     // ─── 비-SEO 탭 저장 ──────────────────────────────────────
 
     /**
-     * SEO 탭이 아닌 경우 아무 동작도 하지 않는지 확인
+     * 봇 화면에 쓰이지 않는 탭(메일 등)은 아무 동작도 하지 않는지 확인
      *
      * @scenario case=core_seo_sync
      *
@@ -121,7 +121,66 @@ class SeoSettingsCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldNotReceive('clearAll');
 
-        $this->listener->onSettingsSave('general', ['site_name' => 'Test'], ['success' => true]);
+        $this->listener->onSettingsSave('mail', ['host' => 'smtp.example.com'], ['success' => true]);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 일반 탭 저장도 SEO 캐시를 비운다 (#434 결함 ②).
+     *
+     * 봇 화면은 사이트 이름(제목 접미 폴백)·로고·파비콘을 일반 탭에서 읽는다. 종전에는 SEO 탭만 구독해
+     * 이름·아이콘을 바꿔도 봇 화면이 캐시 TTL 까지 옛 값이었다.
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects seo_cache_cleared_on_general_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_settings_save_clears_all_cache_for_general_tab(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onSettingsSave('general', ['site_name' => 'Test'], true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 템플릿 설정 저장(파비콘 등)도 SEO 캐시를 비운다 (#434).
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects seo_cache_cleared_on_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_template_settings_save_clears_all_cache(): void
+    {
+        $hooks = SeoSettingsCacheListener::getSubscribedHooks();
+        $this->assertSame('onTemplateSettingsSave', $hooks['core.template_settings.after_save']['method']);
+        $this->assertTrue($hooks['core.template_settings.after_save']['sync']);
+
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onTemplateSettingsSave('sirsoft-basic', ['favicon' => [1]], true);
+    }
+
+    /**
+     * 템플릿 설정 저장이 실패했으면 캐시를 두는지 확인 (#434).
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects seo_cache_cleared_on_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_failed_template_settings_save_keeps_cache(): void
+    {
+        $this->cacheMock->shouldNotReceive('clearAll');
+
+        $this->listener->onTemplateSettingsSave('sirsoft-basic', [], false);
 
         $this->addToAssertionCount(1);
     }
@@ -226,6 +285,24 @@ class SeoSettingsCacheListenerTest extends TestCase
     public function test_on_setting_set_ignores_non_seo_key(): void
     {
         $this->cacheMock->shouldNotReceive('clearAll');
+
+        $this->listener->onSettingSet('mail.host', 'smtp.example.com', true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 일반 범주 단건 저장도 SEO 캐시를 비운다 (#434 결함 ②).
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects seo_cache_cleared_on_general_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_setting_set_clears_cache_for_general_key(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
 
         $this->listener->onSettingSet('general.site_name', 'Test', true);
 

@@ -11,6 +11,7 @@ use App\Extension\Consent\ConsentManager;
 use App\Extension\HookManager;
 use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
+use App\Support\Favicon\FaviconPolicy;
 use App\Rules\CspSourceHost;
 use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
@@ -166,6 +167,20 @@ class SaveSettingsRequest extends FormRequest
             ]);
         }
 
+        // 사이트 파비콘(#434)도 동일하게 첨부 객체 배열 → 정수 ID 배열로 정규화
+        $siteFavicon = $this->input('general.site_favicon');
+
+        if (is_array($siteFavicon)) {
+            $this->merge([
+                'general' => array_merge($this->input('general', []), [
+                    'site_favicon' => array_map(
+                        fn ($item) => is_array($item) ? ($item['id'] ?? $item) : $item,
+                        $siteFavicon
+                    ),
+                ]),
+            ]);
+        }
+
         // 사이트 기본 OG 이미지도 동일하게 첨부 객체 배열 → 정수 ID 배열로 정규화
         $ogImageDefault = $this->input('seo.og_image_default');
 
@@ -202,7 +217,7 @@ class SaveSettingsRequest extends FormRequest
      *
      * 운영자가 `https://example.com/g7/` 로 적으면 그 값에 `/path` 를 잇는 소비처마다 `//` 가
      * 생긴다. 소비처에서 걷어내면 한 곳이 빠지고, 저장 경로 진입 전 한 곳에서 걷어내면 그 형태가
-     * 설정 파일에 남지 않는다 (16차 G3 라운드 B-4). 문자열이 아닌 값은 검증 규칙이 판정한다.
+     * 설정 파일에 남지 않는다. 문자열이 아닌 값은 검증 규칙이 판정한다.
      *
      * @return void 입력을 제자리에서 고친다
      */
@@ -606,6 +621,9 @@ class SaveSettingsRequest extends FormRequest
             'system.cron_visit_fallback' => ['nullable', 'boolean'],
             'general.site_logo' => ['nullable', 'array'],
             'general.site_logo.*' => ['integer', Rule::exists(Attachment::class, 'id')],
+            // 사이트 파비콘(#434) — 1개, 그 컬렉션(site_favicon)에 실재하는 첨부만(로고·템플릿 파비콘 첨부를 끌어오지 못하게)
+            'general.site_favicon' => ['nullable', 'array', 'max:1'],
+            'general.site_favicon.*' => ['integer', Rule::exists(Attachment::class, 'id')->where('collection', FaviconPolicy::CORE_COLLECTION)],
 
             // 메일 설정
             'mail.mailer' => $this->getTabRules($tab, 'mail', [Rule::in(self::SUPPORTED_MAILERS)]),
@@ -1831,6 +1849,7 @@ class SaveSettingsRequest extends FormRequest
             // 배열 항목 — 인덱스가 붙은 원시 키(seo.bot_user_agents.0 …)가 문구에 실리지 않도록
             // 와일드카드 한 줄로 전 인덱스를 덮는다.
             'general.site_logo.*' => __('validation.attributes.site_logo'),
+            'general.site_favicon.*' => __('validation.attributes.site_favicon'),
             'seo.bot_user_agents.*' => __('validation.attributes.bot_user_agents'),
             'seo.og_image_default.*' => __('validation.attributes.og_image_default'),
             'advanced.outbound_proxy_bypass.*' => __('validation.attributes.outbound_proxy_bypass'),
@@ -1857,6 +1876,7 @@ class SaveSettingsRequest extends FormRequest
             'general.maintenance_mode' => __('validation.attributes.maintenance_mode'),
             'general.asset_url_mode' => __('validation.attributes.asset_url_mode'),
             'general.site_logo' => __('validation.attributes.site_logo'),
+            'general.site_favicon' => __('validation.attributes.site_favicon'),
             'seo.og_image_default' => __('validation.attributes.og_image_default'),
             // mail
             'mail.mailer' => __('validation.attributes.mailer'),

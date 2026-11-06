@@ -313,6 +313,8 @@ return [
         // Plugin settings
         'plugin_settings_save' => 'Plugin settings saved (:plugin_name)',
         'plugin_settings_reset' => 'Plugin settings reset (:plugin_name)',
+        'template_settings_save' => 'Template settings saved (:template_name)',
+        'template_settings_reset' => 'Template settings restored to defaults (:template_name)',
 
         // Template management
         'template_index' => 'Template list viewed',

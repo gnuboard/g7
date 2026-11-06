@@ -10,6 +10,8 @@
   "delete": "削除",
   "deleting": "削除中...",
   "change": "変更",
+  "add_language": "言語を追加",
+  "remove_language": "{{language}} の入力を削除",
   "edit": "編集",
   "create": "作成",
   "search": "検索",

@@ -1386,6 +1386,7 @@ scoped 인스턴스만 비우므로 싱글톤이면 재시작 전까지 옛 값�
 | `resources/extensions/mypage_order_cash_receipt.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `mypage_order_cash_receipt_slot` |
 | `resources/extensions/register-currency-field.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `auth/register` |
 | `resources/extensions/register-shipping-country-field.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 대상 레이아웃 `auth/register` |
+| `resources/extensions/user-global-footer-business-info.g7.html` | 다른 확장/템플릿 레이아웃에 주입되는 조각 — 확장점 `user_global_footer` |
 <!-- @generated:layout-extensions END -->
 
 <!-- @intent START -->

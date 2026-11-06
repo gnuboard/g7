@@ -41,6 +41,10 @@ function classNameOf(node: Record<string, unknown> | undefined): string {
 }
 
 describe('admin_settings 환경설정 sticky 고정', () => {
+  /**
+   * @scenario surface=layout_node
+   * @effects settings_tab_bar_sticky_at_top
+   */
   it('상단 탭 컨테이너(sticky_header)에 .sticky-tab-nav 시맨틱 클래스가 적용되어야 한다', () => {
     // #399 Phase 1.3: sticky 책임이 TabNavigation 노드 자체가 아니라 그를 감싸는
     // 래퍼 Div(sticky_header) 로 이동했다. 래퍼가 .sticky-tab-nav* 자산을 보유하면
@@ -55,6 +59,10 @@ describe('admin_settings 환경설정 sticky 고정', () => {
     expect(findById(stickyHeader, 'tab_navigation'), 'sticky_header 가 tab_navigation 을 감싸지 않음').toBeDefined();
   });
 
+  /**
+   * @scenario surface=layout_node
+   * @effects settings_footer_buttons_sticky_at_bottom
+   */
   it('하단 버튼(footer_buttons)에 .sticky-footer-buttons 시맨틱 클래스가 적용되어야 한다', () => {
     const footer = findById(adminSettingsLayout, 'footer_buttons');
     expect(footer).toBeDefined();
@@ -63,12 +71,16 @@ describe('admin_settings 환경설정 sticky 고정', () => {
     expect(className).toContain('sticky-footer-buttons');
   });
 
+  /**
+   * @scenario surface=semantic_css
+   * @effects settings_tab_bar_sticky_at_top, settings_footer_buttons_sticky_at_bottom
+   */
   it('상단/하단 sticky 자산 정의가 sticky/top|bottom/z 토큰을 포함 (계층 보장)', () => {
     // 시맨틱화 (#399 Phase 1.3 ~ 1.5) 이후 회귀 의도 보존:
     // .sticky-tab-nav 안에 sticky/top-0/z-40, .sticky-footer-buttons 안에
     // sticky/bottom-0/z-10 토큰이 살아있어야 상단 탭과 하단 저장 버튼이
     // 콘텐츠 스크롤 시 가려지지 않고, 헤더 (z-50) 보다 낮은 계층을 유지한다.
-    const cssPath = path.resolve(__dirname, '../../src/styles/main.css');
+    const cssPath = path.resolve(__dirname, '../../src/styles/semantic.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
 
     const topNavBlock = css.match(/\.sticky-tab-nav\s*\{[^}]*\}/)?.[0] ?? '';
@@ -84,6 +96,10 @@ describe('admin_settings 환경설정 sticky 고정', () => {
     expect(classNameOf(findById(adminSettingsLayout, 'footer_buttons'))).toContain('sticky-footer-buttons');
   });
 
+  /**
+   * @scenario surface=component_render
+   * @effects tab_navigation_forwards_class_name
+   */
   it('TabNavigation 컴포넌트가 className prop 을 렌더 루트에 전달한다', () => {
     // tab_navigation 은 composite TabNavigation 이므로 sticky 가 className prop 으로
     // 전달되어 실제 DOM 에 반영되는지 확인 (데스크톱 분기 = <nav>)

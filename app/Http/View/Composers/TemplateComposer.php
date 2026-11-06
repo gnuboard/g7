@@ -15,6 +15,7 @@ use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
 use App\Services\FrontendConfigService;
 use App\Services\TemplateService;
+use App\Services\TemplateSettingsService;
 use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
@@ -36,6 +37,7 @@ class TemplateComposer
      * @param  PluginManager  $pluginManager  플러그인 매니저
      * @param  TemplateManager  $templateManager  템플릿 매니저
      * @param  FrontendConfigService  $frontendConfigService  프론트엔드 공개 설정 조립
+     * @param  TemplateSettingsService  $templateSettingsService  템플릿 설정 (설정 화면 부품 묶음 주소)
      */
     public function __construct(
         private TemplateService $templateService,
@@ -43,6 +45,7 @@ class TemplateComposer
         private PluginManager $pluginManager,
         private TemplateManager $templateManager,
         private FrontendConfigService $frontendConfigService,
+        private TemplateSettingsService $templateSettingsService,
     ) {}
 
     /**
@@ -63,6 +66,7 @@ class TemplateComposer
         $bundle = $this->frontendConfigService->settingsBundle(FrontendConfigService::SCOPE_ADMIN);
         $frontendSettings = $bundle['settings'];
         $pluginSettings = $bundle['plugins'];
+        $templateSettings = $bundle['templateSettings'];
         $moduleSettings = $bundle['modules'];
 
         // 활성화된 모듈의 프론트엔드 에셋 정보 수집
@@ -98,10 +102,13 @@ class TemplateComposer
         // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 빈 카테고리(`identity`)를 `{}` 로 바꾸는 일은 공개 설정 API 와 같은 조립 함수가 한다
         $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
+        $view->with('templateSettings', $templateSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
         $view->with('pluginAssets', $pluginAssets);
         $view->with('bundleUrls', $bundleUrls);
+        // 템플릿이 공급한 설정 화면 부품 묶음 — 어느 관리자 템플릿이 켜져 있든 그 템플릿 부품으로 설정 화면을 그린다 (#434 D28·D30)
+        $view->with('templateSettingsAssets', $this->templateSettingsService->settingsAssetUrls($extensionCacheVersion));
         $view->with('activeModulesMeta', $activeModulesMeta);
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);

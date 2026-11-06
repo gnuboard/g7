@@ -69,6 +69,7 @@ class UserTemplateComposer
         $frontendSettings = $bundle['settings'];
         $consentInitial = $bundle['consentInitial'];
         $pluginSettings = $bundle['plugins'];
+        $templateSettings = $bundle['templateSettings'];
         $moduleSettings = $bundle['modules'];
 
         // 활성화된 모듈의 프론트엔드 에셋 정보 수집
@@ -104,6 +105,7 @@ class UserTemplateComposer
         // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 빈 카테고리(`identity`)를 `{}` 로 바꾸는 일은 공개 설정 API 와 같은 조립 함수가 한다
         $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
+        $view->with('templateSettings', $templateSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
         $view->with('pluginAssets', $pluginAssets);

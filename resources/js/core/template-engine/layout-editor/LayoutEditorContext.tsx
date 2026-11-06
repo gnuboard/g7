@@ -538,3 +538,15 @@ export function useLayoutEditor(): LayoutEditorContextValue {
   }
   return ctx;
 }
+
+/**
+ * 편집기 컨텍스트를 예외 없이 읽는다 — 공급자 밖(속성 컨트롤 단독 렌더)에서는 null.
+ *
+ * 컨텍스트가 있으면 덧붙이고 없으면 생략하는 부가 표시(예: 템플릿 설정 화면 링크)에만 쓴다.
+ * 상태를 바꾸는 쪽은 {@link useLayoutEditor} 를 쓴다.
+ *
+ * @return 편집기 컨텍스트 또는 null
+ */
+export function useOptionalLayoutEditor(): LayoutEditorContextValue | null {
+  return useContext(LayoutEditorContext);
+}

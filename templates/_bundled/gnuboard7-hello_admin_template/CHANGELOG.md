@@ -8,6 +8,8 @@
 
 ### Added
 
+- 템플릿이 자기 설정 화면을 공급하는 가장 작은 예제를 추가했습니다 — 화면 레이아웃(`settings/template_settings.g7.html`), 화면 부품(`src/settings/TemplateSettingsScreen.tsx`, 파비콘 1칸·업로더·저장 결과·확인 창), 묶음 빌드(`vite.settings.config.ts`), 부품 매니페스트(`components.settings.json`). 어느 관리자 템플릿이 켜져 있든 이 화면이 뜹니다.
+- 템플릿 환경설정 예제(브랜딩 섹션의 파비콘 1칸)를 추가했습니다 — `config/settings/defaults.json` 선언의 최소 예입니다.
 - 다크 모드 방식 선언(`features.color_scheme`)을 넣었습니다. 이 템플릿은 다크 모드가 없다고 코어에 알리므로, 확장 화면은 이 템플릿에서 늘 밝은 색으로 그려집니다(코어 7.2.0 이상).
 
 ### Changed

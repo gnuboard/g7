@@ -12,9 +12,55 @@ interface User {
     avatar?: string;
     is_admin?: boolean;
 }
+/**
+ * 헤더 메뉴 항목 — 템플릿 설정 `header.menu` (#434). 레이아웃 계산값 `siteMenu` 가 보이기 조건·꺼진 항목을 이미 걸러서 넘긴다.
+ *
+ * `kind` 가 `link` 면 운영자가 적은 주소, 그 밖(`home`·`popular`·`shop`·`boards`)은 이 컴포넌트가 그 자리에 그리는 자동 항목이다.
+ */
+export interface HeaderMenuItem {
+    id?: string;
+    kind: string;
+    /** 이름 — 언어별 맵(`{ko, en}`) 또는 문자열. 자동 항목은 비우면 기본 이름 */
+    label?: string | Record<string, string>;
+    /** 사이트 안 경로(`/…`) 또는 http(s) 주소 — 서버가 검증한 값 */
+    url?: string;
+    /** 새 창으로 열기 */
+    new_tab?: boolean;
+    /** 하위 메뉴 (1단) */
+    children?: HeaderMenuItem[];
+}
+/** 메뉴 값이 없을 때(편집기 미리보기 등) — 템플릿 설정 기본값과 같은 순서 */
+export declare const DEFAULT_HEADER_MENU: HeaderMenuItem[];
+/**
+ * 언어별 이름에서 현재 언어 값을 고릅니다 — 비었으면 다른 언어의 첫 값(기본 언어 대체는 서버·엔진과 같은 규칙).
+ *
+ * @param label 이름
+ * @param locale 현재 언어
+ * @returns 표시할 이름
+ */
+export declare const pickLocalizedLabel: (label: HeaderMenuItem["label"], locale: string) => string;
 interface HeaderProps {
     /** 사이트 로고 URL */
     logo?: string;
+    /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`, #434) */
+    logoDark?: string;
+    /** 테마(라이트/다크) 단추를 보일지 — 기본 true (템플릿 설정 `header.show_theme_toggle`) */
+    showThemeToggle?: boolean;
+    /** 헤더 메뉴 — 템플릿 설정 `header.menu` 를 보이기 조건으로 거른 값(레이아웃 `_computed.siteMenu`). 없으면 기본 메뉴 */
+    menu?: HeaderMenuItem[] | null;
+    /**
+     * 봇 화면 전용 — `menu` 를 펴서 링크로 만든 목록(`{href, label}`). 검색봇 HTML 매핑(`seo-config.json` header_nav)이
+     * 1단 순회만 하므로 레이아웃이 미리 펴서 넘긴다. 사람 화면 렌더에는 쓰지 않는다.
+     */
+    seoMenuLinks?: Array<{
+        href: string;
+        label: string;
+    }>;
+    /**
+     * 봇 화면 전용 — `"false"` 면 `seo-config.json` 의 옛 고정 링크(홈·인기글·쇼핑·게시판 목록)를 끈다. 이 prop 이 없는
+     * keep 된 옛 레이아웃은 종전대로 고정 링크가 나간다.
+     */
+    seoLegacyNav?: string;
     /** 사이트 이름 */
     siteName?: string;
     /** 현재 로그인된 사용자 */

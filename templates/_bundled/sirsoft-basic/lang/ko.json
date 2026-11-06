@@ -64,5 +64,8 @@
   },
   "layout_editor": {
     "$partial": "partial/ko/layout_editor.json"
+  },
+  "settings": {
+    "$partial": "partial/ko/settings.json"
   }
 }

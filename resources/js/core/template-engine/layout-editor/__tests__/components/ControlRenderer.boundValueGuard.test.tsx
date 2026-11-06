@@ -149,3 +149,45 @@ describe('ControlRenderer — 데이터 연결 값 보호 공용 게이트', () 
     expect(screen.getByTestId('g7le-image-expression').textContent).toBe(EXPR);
   });
 });
+
+describe('ControlRenderer — 템플릿 설정 연결 값 (#434)', () => {
+  const TS_EXPR = '{{_global.templateSettings?.header?.max_boards ?? 5}}';
+
+  /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls */
+  it('템플릿 설정에 연결된 값은 「템플릿 설정에 연결됨」 안내만 보이고 직접 지정으로 바꾸는 단추가 없다', () => {
+    const node: EditorNode = { type: 'basic', name: 'Header', props: { maxVisibleBoards: TS_EXPR } };
+    render(<ControlRenderer controlKey="hdrMax" control={numberCtrl} node={node} t={t} onPatch={vi.fn()} />);
+
+    expect(screen.getByTestId('g7le-control-hdrMax-expression').textContent).toBe(TS_EXPR);
+    expect(screen.getByTestId('g7le-control-hdrMax-template-settings-notice').textContent).toBe('layout_editor.control.bound_value.template_settings_notice');
+    expect(screen.queryByTestId('g7le-control-hdrMax-expression-replace')).toBeNull();
+    expect(screen.queryByTestId('g7le-number-input')).toBeNull();
+    // 편집기 공급자 밖에서는 어느 템플릿인지 몰라 [설정 열기] 를 그리지 않는다
+    expect(screen.queryByTestId('g7le-control-hdrMax-template-settings-open')).toBeNull();
+  });
+
+  /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls */
+  it('편집기 안에서는 편집 중인 템플릿의 설정 화면을 새 창으로 여는 [설정 열기] 가 붙는다 (S30)', () => {
+    const node: EditorNode = { type: 'basic', name: 'Header', props: { maxVisibleBoards: TS_EXPR } };
+    render(
+      <LayoutEditorProvider templateIdentifier="sirsoft-basic" initialLocale="ko">
+        <ControlRenderer controlKey="hdrMax" control={numberCtrl} node={node} t={t} onPatch={vi.fn()} />
+      </LayoutEditorProvider>,
+    );
+
+    const open = screen.getByTestId('g7le-control-hdrMax-template-settings-open');
+    expect(open.getAttribute('href')).toBe('/admin/templates/sirsoft-basic/settings');
+    expect(open.getAttribute('target')).toBe('_blank');
+    expect(open.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(open.textContent).toBe('layout_editor.control.bound_value.open_template_settings');
+  });
+
+  /** @effects bound_value_shows_expression_badge_and_locks_destructive_controls */
+  it('다른 연결(환경설정 등)은 지금처럼 직접 지정으로 바꿀 수 있다', () => {
+    const node: EditorNode = { type: 'basic', name: 'Header', props: { maxVisibleBoards: EXPR } };
+    render(<ControlRenderer controlKey="hdrMax" control={numberCtrl} node={node} t={t} onPatch={vi.fn()} />);
+
+    expect(screen.getByTestId('g7le-control-hdrMax-expression-replace')).toBeTruthy();
+    expect(screen.queryByTestId('g7le-control-hdrMax-template-settings-notice')).toBeNull();
+  });
+});

@@ -10,7 +10,9 @@ use App\Helpers\PermissionHelper;
 use App\Models\Attachment;
 use App\Models\User;
 use App\Services\Concerns\ResolvesRowStorage;
+use App\Support\Favicon\FaviconPolicy;
 use App\Support\ImageResizer;
+use App\Support\SettingAttachmentReferences;
 use App\Support\UploadedFileName;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
@@ -80,7 +82,7 @@ class AttachmentService
         // 행의 `size` → 서빙의 `Content-Length` 로 **선언**되어 응답이 잘린다. `getimagesize()`
         // 는 파일을 직접 읽으므로 메타(width/height)만 축소본을 보고 크기만 어긋난다 —
         // 두 값이 한 행에서 서로 다른 파일을 가리키는 상태다.
-        // 형제 `sirsoft-board` 는 같은 사유로 이미 이 처리를 갖는다 (11차 G3 라운드 B11-4).
+        // 형제 `sirsoft-board` 는 같은 사유로 이미 이 처리를 갖는다.
         clearstatcache(true, $file->getRealPath());
 
         // 저장 경로 생성 (날짜별 디렉토리).
@@ -228,30 +230,15 @@ class AttachmentService
     /**
      * 고아 정리에서 보호할 첨부 ID 목록을 반환합니다.
      *
-     * 사이트 로고는 소유자(attachmentable) 없이 설정값이 직접 참조하는 첨부라 판정식만으로는
-     * 고아와 구분되지 않습니다. 현역으로 설정에 실린 ID 를 명시적으로 제외합니다.
+     * 로고·기본 공유 이미지·파비콘·템플릿 설정 첨부는 소유자(attachmentable) 없이 설정값이 직접 참조하는 첨부라
+     * 판정식만으로는 고아와 구분되지 않습니다. 보호 목록은 설정 선언에서 파생합니다({@see SettingAttachmentReferences}) —
+     * 종전에는 사이트 로고 한 줄을 손으로 적어 기본 공유 이미지가 빠졌습니다(#434).
      *
      * @return array<int, int> 보호할 첨부 ID 목록
      */
     private function protectedAttachmentIds(): array
     {
-        $siteLogo = g7_core_settings('general.site_logo', []);
-
-        if (! is_array($siteLogo)) {
-            return [];
-        }
-
-        $ids = [];
-
-        foreach ($siteLogo as $item) {
-            $id = is_array($item) ? ($item['id'] ?? null) : $item;
-
-            if (is_numeric($id)) {
-                $ids[] = (int) $id;
-            }
-        }
-
-        return array_values(array_unique($ids));
+        return SettingAttachmentReferences::ids();
     }
 
     /**
@@ -404,7 +391,7 @@ class AttachmentService
      * 종전에는 비이미지 다운로드가 `download()` 하나로 끝나 검증자가 하나도 없었다 —
      * 같은 사이트에서 같은 첨부가 이미지면 304 로 재검증되고 문서면 매번 전문을 받아 갔다.
      * 오류도 로그도 없이 대역폭으로만 나타나고, 정적 서빙(링크가 되는 서버)은 두 유형을
-     * 가리지 않으므로 링크 유무로 동작이 갈리는 상태였다 (14차 G3 라운드).
+     * 가리지 않으므로 링크 유무로 동작이 갈리는 상태였다.
      *
      * 훅 순서는 종전 `download()` 와 같다 — 권한 훅 → 액션 훅(IDV 가드) → 필터 훅.
      *
@@ -483,6 +470,49 @@ class AttachmentService
             // 조건부 요청의 `Last-Modified`/`If-Modified-Since` 축 — ETag 를 쓰지 않고
             // 시각으로만 재검증하는 프록시는 이 값이 없으면 매번 전문을 받아 간다.
             'last_modified' => $attachment->updated_at?->getTimestamp(),
+        ];
+    }
+
+    /**
+     * 파비콘 파일 정보 조회 — 파비콘 컬렉션 첨부만 (#434)
+     *
+     * 파비콘은 브라우저가 쿠키·토큰 없이 요청하므로 공개 경로다. 그래서 대상이 좁아야 한다 — 파비콘 컬렉션
+     * (`site_favicon`, `template_settings.{템플릿}.favicon`)에 속하고 MIME 이 파비콘 목록 안인 첨부만 내보낸다.
+     * 그 밖의 첨부는 해시를 알아도 이 경로로 받을 수 없다(일반 다운로드 경로의 권한 판정을 우회하지 않게).
+     *
+     * @param  string  $hash  첨부 해시
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null}|null 파일 정보 (대상이 아니면 null)
+     */
+    public function getFaviconFileInfo(string $hash): ?array
+    {
+        $attachment = $this->repository->findByHash($hash);
+
+        if (! $attachment
+            || ! FaviconPolicy::isFaviconCollection($attachment->collection)
+            || FaviconPolicy::responseMime($attachment->mime_type) === null) {
+            return null;
+        }
+
+        $response = $this->storageForRow($attachment->disk)->response(
+            '',
+            $attachment->path,
+            $attachment->original_filename,
+            [
+                'Content-Type' => (string) FaviconPolicy::responseMime($attachment->mime_type),
+                'Content-Length' => (string) $attachment->size,
+            ]
+        );
+
+        if (! $response) {
+            Log::error('파비콘 첨부가 스토리지에 없음', ['attachment_id' => $attachment->id, 'path' => $attachment->path]);
+
+            return null;
+        }
+
+        return [
+            'response' => $response,
+            ...$this->serveMeta($attachment),
+            'mime_type' => (string) FaviconPolicy::responseMime($attachment->mime_type),
         ];
     }
 

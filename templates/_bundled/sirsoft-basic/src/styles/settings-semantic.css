@@ -1,0 +1,210 @@
+/*
+ * 설정 화면 부품 의미 클래스 — .sirsoft-basic-settings 안에서만 (#434 D28·D29)
+ *
+ * 이 템플릿 설정 화면 부품은 관리자 화면 모양(버튼·안내 상자·입력칸·스위치)을 쓴다. 다른 관리자 템플릿에는 그 클래스가 없으므로
+ * 설정 화면 묶음이 자기 규칙을 가져간다 — 화면 뿌리(.sirsoft-basic-settings) 안으로 범위를 좁혀 켜진 관리자 템플릿 화면을 바꾸지 않는다.
+ * 규칙은 sirsoft-admin_basic 의미 클래스와 같은 모양에서 출발했다(그 템플릿이 켜져 있으면 같은 모양으로 보인다).
+ */
+@layer components {
+  .sirsoft-basic-settings .text-tertiary {
+    @apply text-xs text-gray-600;
+    @apply dark:text-gray-300;
+  }
+  .sirsoft-basic-settings .card-title {
+    @apply text-lg font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  .sirsoft-basic-settings .admin-card > .card-title {
+    @apply mb-4;
+  }
+  .sirsoft-basic-settings .admin-card > .card-title:has(+ .card-description) {
+    @apply mb-0;
+  }
+  .sirsoft-basic-settings .admin-card > .card-description {
+    @apply mb-4;
+  }
+  .sirsoft-basic-settings .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+    @apply dark:bg-red-600 dark:hover:bg-red-700;
+  }
+  .sirsoft-basic-settings .btn-sm {
+    @apply px-3 py-1.5;
+  }
+  .sirsoft-basic-settings .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    /* 링크(<a>)로 그린 단추의 비활성 — <a> 에는 :disabled 가 없어 aria-disabled 로 같은 꾸밈 (#757) */
+    @apply aria-disabled:opacity-50 aria-disabled:cursor-not-allowed;
+  }
+  .sirsoft-basic-settings .btn-primary {
+    @apply bg-gray-900 text-white hover:bg-gray-800;
+    @apply dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100;
+  }
+  .sirsoft-basic-settings .btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
+    @apply dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+  }
+  .sirsoft-basic-settings .btn-ghost {
+    @apply bg-transparent text-gray-600 hover:bg-gray-100;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .sirsoft-basic-settings .input {
+    @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
+    @apply placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-300;
+    @apply disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed;
+    @apply dark:disabled:bg-gray-800 dark:disabled:text-gray-500;
+  }
+  .sirsoft-basic-settings .textarea {
+    @apply w-full bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm;
+    @apply placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-300;
+    @apply disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed;
+    @apply dark:disabled:bg-gray-700 dark:disabled:text-gray-500;
+  }
+  .sirsoft-basic-settings .form-hint {
+    @apply text-xs text-gray-600 mt-1;
+    @apply dark:text-gray-300;
+  }
+  .sirsoft-basic-settings .input-error {
+    @apply border border-red-500 focus:ring-red-500;
+    @apply dark:border-red-500;
+  }
+  .sirsoft-basic-settings .form-field-error .input {
+    @apply border border-red-500 focus:ring-red-500;
+    @apply dark:border-red-500;
+  }
+  .sirsoft-basic-settings .form-error {
+    @apply block text-xs text-red-700 mt-1;
+    @apply dark:text-red-300;
+  }
+  .sirsoft-basic-settings .checkbox {
+    @apply w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500 cursor-pointer;
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:text-blue-400;
+  }
+  .sirsoft-basic-settings .checkbox:checked {
+    @apply bg-gray-900 border-gray-900;
+    @apply dark:bg-white dark:border-white;
+  }
+  .sirsoft-basic-settings .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium;
+  }
+  .sirsoft-basic-settings .badge-gray {
+    @apply bg-gray-100 text-gray-600 border border-gray-200;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700;
+  }
+  .sirsoft-basic-settings .admin-card {
+    @apply bg-white border border-gray-200 rounded-lg p-4 mb-6;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+    @apply flex flex-col;
+  }
+  .sirsoft-basic-settings .tabs {
+    @apply bg-gray-100 rounded-lg p-1 inline-flex;
+    @apply dark:bg-gray-800;
+  }
+  .sirsoft-basic-settings .tab {
+    @apply px-6 py-2 rounded-md text-sm font-medium text-gray-600 cursor-pointer transition-colors;
+    @apply hover:text-gray-700;
+    @apply dark:text-gray-300 dark:hover:text-gray-300;
+  }
+  .sirsoft-basic-settings .tab.active {
+    @apply bg-white text-gray-900 shadow-sm;
+    @apply dark:bg-gray-700 dark:text-white;
+  }
+  .sirsoft-basic-settings .form-label {
+    @apply block text-sm font-medium text-gray-900 mb-1;
+    @apply dark:text-white;
+  }
+  .sirsoft-basic-settings .form-hint {
+    @apply text-xs text-gray-600 mt-1;
+    @apply dark:text-gray-300;
+  }
+  .sirsoft-basic-settings .flex-center {
+    @apply flex items-center;
+  }
+  .sirsoft-basic-settings .alert-info {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-sm text-blue-900 dark:text-blue-100;
+  }
+  .sirsoft-basic-settings .alert-warning {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-sm text-yellow-900 dark:text-yellow-100;
+  }
+  .sirsoft-basic-settings .alert-danger {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-sm text-red-900 dark:text-red-100;
+  }
+  .sirsoft-basic-settings .alert-success {
+    @apply flex items-center gap-3 px-3 py-3 border rounded-md bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-sm text-green-900 dark:text-green-100;
+  }
+  .sirsoft-basic-settings .alert-info:has(+ .row-stack),
+.sirsoft-basic-settings .alert-warning:has(+ .row-stack),
+.sirsoft-basic-settings .alert-danger:has(+ .row-stack),
+.sirsoft-basic-settings .alert-success:has(+ .row-stack),
+.sirsoft-basic-settings .alert-info:has(+ .toggle-group),
+.sirsoft-basic-settings .alert-warning:has(+ .toggle-group),
+.sirsoft-basic-settings .alert-danger:has(+ .toggle-group),
+.sirsoft-basic-settings .alert-success:has(+ .toggle-group),
+.sirsoft-basic-settings .alert-info:has(+ .grid-2col-responsive),
+.sirsoft-basic-settings .alert-warning:has(+ .grid-2col-responsive),
+.sirsoft-basic-settings .alert-danger:has(+ .grid-2col-responsive),
+.sirsoft-basic-settings .alert-success:has(+ .grid-2col-responsive) {
+    @apply mb-4;
+  }
+  .sirsoft-basic-settings .row-stack > .alert-info,
+.sirsoft-basic-settings .row-stack > .alert-warning,
+.sirsoft-basic-settings .row-stack > .alert-danger,
+.sirsoft-basic-settings .row-stack > .alert-success {
+    padding-top: calc(var(--spacing) * 3);
+    padding-bottom: calc(var(--spacing) * 3);
+  }
+  .sirsoft-basic-settings .row-stack > * + .alert-info,
+.sirsoft-basic-settings .row-stack > * + .alert-warning,
+.sirsoft-basic-settings .row-stack > * + .alert-danger,
+.sirsoft-basic-settings .row-stack > * + .alert-success {
+    margin-top: calc(var(--spacing) * 3);
+  }
+  .sirsoft-basic-settings .text-info-soft {
+    @apply text-xs text-blue-700 dark:text-blue-300;
+  }
+  .sirsoft-basic-settings .text-warning-soft {
+    @apply text-xs text-yellow-700 dark:text-yellow-300;
+  }
+  .sirsoft-basic-settings .spinner-sm {
+    @apply w-4 h-4 animate-spin;
+  }
+  .sirsoft-basic-settings .sticky-footer-buttons {
+    @apply sticky bottom-0 z-10 flex justify-end items-center gap-3 mt-6 px-4 py-3;
+    @apply bg-gray-50 border border-gray-200 rounded-lg;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .sirsoft-basic-settings .tab-content {
+    @apply pt-6;
+  }
+  .sirsoft-basic-settings .admin-page-content-responsive {
+    @apply p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50;
+    @apply dark:bg-gray-900;
+  }
+  .sirsoft-basic-settings .toggle-container {
+    @apply inline-flex flex-wrap items-start gap-x-2 w-auto;
+  }
+  .sirsoft-basic-settings .toggle-switch-wrapper {
+    @apply relative inline-flex items-center flex-shrink-0;
+  }
+  .sirsoft-basic-settings .toggle-switch-track {
+    @apply relative rounded-full transition-colors bg-gray-200;
+    @apply peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300;
+    @apply peer-checked:bg-blue-600;
+    @apply dark:bg-gray-700;
+    @apply dark:peer-focus:ring-blue-800;
+    @apply dark:peer-checked:bg-blue-500;
+    @apply after:content-[''] after:absolute after:top-0.5 after:left-0.5;
+    @apply after:bg-white after:border after:border-gray-300 after:rounded-full after:transition-all;
+    @apply dark:after:border-gray-600;
+    @apply peer-checked:after:translate-x-full peer-checked:after:border-white;
+  }
+  .sirsoft-basic-settings .toggle-label {
+    @apply text-sm font-medium text-gray-900;
+    @apply dark:text-white;
+  }
+  .sirsoft-basic-settings .toggle-description {
+    @apply w-full mt-1 text-xs text-gray-500;
+    @apply dark:text-gray-400;
+  }
+}

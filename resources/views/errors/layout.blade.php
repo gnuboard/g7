@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('code') | {{ config('app.name', '그누보드7') }}</title>
+    {{-- 파비콘 — 번들 계층만(DB·API 를 보지 않는다, #434) --}}
+    {!! g7_favicon_tags_static() !!}
     @include('partials.error-fallback-styles')
     <style>
         .error-code {

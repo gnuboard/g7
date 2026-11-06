@@ -147,8 +147,10 @@ describe('상속원(_user_base) — 매 화면 부르는 모듈 데이터소스�
         expect(byId(tree, 'mobile_drawer_wishlist_link').if).toBe(guard(SHOP));
         expect(byId(tree, 'mobile_drawer_guest_order_link').if).toBe(guard(SHOP));
         expect(byId(tree, 'mobile_drawer_shop_section').if).toBe(guard(SHOP));
-        expect(byId(tree, 'mobile_drawer_popular_link').if).toBe(guard(BOARD));
-        expect(byId(tree, 'mobile_drawer_boards_section').if).toBe(guard(BOARD));
+        // 인기글·게시판 묶음은 헤더 메뉴(템플릿 설정 header.menu) 반복 안의 자동 항목이다 — 줄마다 종류 조건과 게시판 가드를 함께 단다
+        const menuNodes = nodes(tree).filter((n) => /^mobile_drawer_(popular_link|boards_section)_/.test(String(n.id ?? '')));
+        expect(menuNodes.length).toBeGreaterThanOrEqual(4);
+        menuNodes.forEach((n) => expect(String(n.if), String(n.id)).toContain(BOARD));
         expect(byId(tree, 'mobile_drawer_info_section').if).toBe(guard(PAGE));
         // 검색 공급자(게시판·쇼핑몰·페이지)가 모두 꺼졌을 때만 서랍 검색칸을 숨긴다(D12)
         expect(byId(tree, 'mobile_drawer_search').if).toBe(`{{(${BOARD}) || (${SHOP}) || (${PAGE})}}`);
@@ -196,9 +198,10 @@ describe('상속원(_user_base) — 매 화면 부르는 모듈 데이터소스�
         expect(header.props.searchEnabled).toBe(`{{(${BOARD}) || (${SHOP}) || (${PAGE})}}`);
         // 봇 화면 「쇼핑」 링크용 완성 주소 — 옛 코어 봇 렌더는 섞인 attrs 패턴({shopBase}/products)을 치환하지 못한다
         expect(header.props.shopProductsHref).toBe("{{_global.shopBase ?? '/shop'}}/products");
-        // seo-config 대체 prop 은 keep 된 옛 레이아웃에도 늘 있는 값이어야 한다
-        expect(header.props.maxVisibleBoards).toBe(5);
-        expect(String(footer.props.copyrightText)).toMatch(/^\$t:footer\.copyright/);
+        // seo-config 대체 prop 은 keep 된 옛 레이아웃에도 늘 있는 값이어야 한다 — 게시판 개수는 템플릿 설정(1~10, 기본 5)이라
+        // 언제나 0 이 아닌 수, 저작권 기본 문구는 번역 문구(운영자 문구는 copyrightText, 비면 빈 값)
+        expect(header.props.maxVisibleBoards).toBe('{{_global.templateSettings?.header?.max_boards ?? 5}}');
+        expect(String(footer.props.defaultCopyrightText)).toMatch(/^\$t:footer\.copyright/);
 
         expect(footer.props.boardEnabled).toBe(guard(BOARD));
         expect(footer.props.pageEnabled).toBe(guard(PAGE));
@@ -221,9 +224,10 @@ describe('seo-config — 봇 화면의 머리글·꼬리말 링크', () => {
     // @scenario surface=user_base_header
     // @effects header_footer_module_props
     it('머리글 인기글·쇼핑 링크는 모듈 props 로 가리고, 없으면(keep 된 옛 레이아웃) 늘 있는 maxVisibleBoards 로 넘어가 보인다', () => {
-        expect(header.find((f) => f.attrs?.href === '/boards/popular')?.if).toBe('{boardEnabled|maxVisibleBoards}');
+        // 새 레이아웃은 seoLegacyNav="false" 로 이 고정 링크를 끄고 헤더 메뉴(seoMenuLinks)를 낸다 — keep 된 옛 레이아웃은 그 prop 이 없어 종전대로
+        expect(header.find((f) => f.attrs?.href === '/boards/popular')?.if).toBe('{seoLegacyNav|boardEnabled|maxVisibleBoards}');
         const shop = header.find((f) => f.content === '$t:nav.shop')!;
-        expect(shop.if).toBe('{shopEnabled|maxVisibleBoards}');
+        expect(shop.if).toBe('{seoLegacyNav|shopEnabled|maxVisibleBoards}');
         // 섞인 패턴은 옛 코어 봇 렌더가 중괄호째 내보낸다 — 완성된 주소 prop 하나만 쓴다
         expect(shop.attrs.href).toBe('{shopProductsHref}');
     });
@@ -232,7 +236,11 @@ describe('seo-config — 봇 화면의 머리글·꼬리말 링크', () => {
     // @effects header_footer_module_props
     it('꼬리말 커뮤니티·정보·정책 묶음은 모듈 props 로 가리고, 대체는 사이트명(빈 값 가능)이 아닌 copyrightText', () => {
         const groups = footer.filter((f) => f.tag === 'div' && typeof f.if === 'string');
-        expect(groups.map((g) => g.if)).toEqual(['{boardEnabled|copyrightText}', '{pageEnabled|copyrightText}', '{pageEnabled|copyrightText}']);
+        expect(groups.map((g) => g.if)).toEqual([
+            '{boardEnabled|defaultCopyrightText|copyrightText}',
+            '{pageEnabled|defaultCopyrightText|copyrightText}',
+            '{pageEnabled|defaultCopyrightText|copyrightText}',
+        ]);
         expect(JSON.stringify(seo)).not.toContain('|siteName}');
         expect(JSON.stringify(seo.render_modes.header_nav)).not.toContain('{shopBase}');
     });
@@ -243,17 +251,24 @@ describe('홈 — 게시판·쇼핑 섹션', () => {
 
     // @scenario surface=home
     // @effects shared_module_source_guarded
-    it.each(['stats', 'recent_posts', 'popular_boards', 'home_boards'])('게시판 데이터소스 %s 는 게시판 가드 + 404 삼킴', (id) => {
-        expectGuardedSource(home, id, BOARD);
+    it.each([
+        // [데이터소스, 추가 조건 — 템플릿 설정으로 숨긴 섹션은 부르지 않는다(#434)]
+        ['stats', null],
+        ['recent_posts', 'show_feature_row'],
+        ['popular_boards', 'show_feature_row'],
+        ['home_boards', 'show_board_summaries'],
+    ])('게시판 데이터소스 %s 는 게시판 가드 + 404 삼킴', (id, setting) => {
+        expectGuardedSource(home, id, setting ? `(${BOARD}) && (_global.templateSettings?.home?.${setting} ?? true)` : BOARD);
     });
 
     // @scenario surface=home
     // @effects shared_module_link_guarded
     it('통계 카드 줄·게시판 요약 줄·2행(최근 글·인기 게시판·쇼핑 홍보)은 게시판 가드, 1행 쇼핑 홍보 칸은 게시판 꺼짐 + 쇼핑몰 켜짐', () => {
         const tree = home.slots.content;
-        expect(byId(tree, 'home_stat_cards').if).toBe(guard(BOARD));
-        expect(byId(tree, 'home_board_summaries').if).toBe(guard(BOARD));
-        expect(byId(tree, 'home_feature_row').if).toBe(guard(BOARD));
+        // 모듈 가드는 그대로, 템플릿 설정(홈 섹션 보이기, 저장값 없으면 보임)이 함께 붙는다 (#434)
+        expect(byId(tree, 'home_stat_cards').if).toBe(guard(`(${BOARD}) && (_global.templateSettings?.home?.show_stats ?? true)`));
+        expect(byId(tree, 'home_board_summaries').if).toBe(guard(`(${BOARD}) && (_global.templateSettings?.home?.show_board_summaries ?? true)`));
+        expect(byId(tree, 'home_feature_row').if).toBe(guard(`(${BOARD}) && (_global.templateSettings?.home?.show_feature_row ?? true)`));
         const topPromo = byId(tree, 'home_top_shop_promo');
         expect(topPromo.if).toBe(`{{!(${BOARD}) && (${SHOP})}}`);
         expect(topPromo.children).toEqual([{ partial: 'partials/home/_shop_promo.json' }]);

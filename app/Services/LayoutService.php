@@ -1407,6 +1407,12 @@ class LayoutService
         if ($sourceType === LayoutSourceType::Module) {
             return ['kind' => 'module', 'identifier' => $extensionId];
         }
+        // 템플릿 설정 화면(`{템플릿}.template_settings`, #434) — 템플릿이 관리자 템플릿에 교차 등록한 행이다.
+        // 플러그인으로 잘못 분류하면 편집기가 없는 `plugin:{id}` 샘플을 찾는다. 엔진은 template 종류를 편집 중인
+        // 템플릿 스펙으로 폴백하므로, 그 관리자 템플릿 editor-spec 의 샘플이 쓰인다.
+        if ($row?->isTemplateSettingsLayout()) {
+            return ['kind' => 'template', 'identifier' => $extensionId];
+        }
 
         // 행/소스타입 부재 — 이름 패턴 폴백 (모듈 패턴이면 module, 아니면 plugin)
         $kind = $this->isModuleLayoutName($layoutName) ? 'module' : 'plugin';

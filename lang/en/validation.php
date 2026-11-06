@@ -588,6 +588,7 @@ return [
     ],
 
     // Translatable field validation messages
+    'safe_link' => 'The :attribute must be a site path starting with / or an http/https URL.',
     'translatable' => [
         'must_be_array' => 'Translatable field must be an array.',
         'unsupported_language' => "Unsupported language code: ':lang'",
@@ -1507,6 +1508,7 @@ return [
         'maintenance_mode' => 'maintenance mode',
         'asset_url_mode' => 'asset URL mode',
         'site_logo' => 'site logo',
+        'site_favicon' => 'site favicon',
         'og_image_default' => 'default share image',
         // SEO settings (additional)
         'bot_user_agents' => 'bot user agents',

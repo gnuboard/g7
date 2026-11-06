@@ -11,9 +11,10 @@ use Illuminate\Support\Facades\Log;
 /**
  * 코어 SEO 설정 변경 시 SEO 캐시 전체 무효화 리스너
  *
- * 코어 환경설정의 SEO 탭 저장 시 전체 SEO 캐시를 삭제합니다.
- * SEO 설정(title suffix, cache TTL 등)은 모든 페이지에 영향을 미치므로
- * 전체 캐시를 무효화합니다.
+ * 코어 환경설정의 SEO 탭·일반 탭 저장, 템플릿 설정 저장 시 전체 SEO 캐시를 삭제합니다.
+ * SEO 설정(title suffix, cache TTL 등)과 일반 탭의 사이트 이름·로고·파비콘, 템플릿 파비콘은
+ * 모든 봇 화면에 실리므로 전체 캐시를 무효화합니다(#434 — 종전에는 SEO 탭만 구독해 일반 탭 변경이
+ * 캐시 TTL 까지 봇 화면에 반영되지 않았다).
  *
  * 비우기는 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면 TTL 까지) 봇이 옛 화면을
  * 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에 비운다 — 커밋 전에 비우면
@@ -21,6 +22,13 @@ use Illuminate\Support\Facades\Log;
  */
 class SeoSettingsCacheListener implements HookListenerInterface
 {
+    /**
+     * 봇 화면에 실리는 코어 설정 카테고리 — seo(제목 접미·메타), general(사이트 이름·로고·파비콘)
+     *
+     * @var array<int, string>
+     */
+    private const BOT_VISIBLE_CATEGORIES = ['seo', 'general'];
+
     /**
      * 구독할 훅 목록 반환
      *
@@ -43,6 +51,18 @@ class SeoSettingsCacheListener implements HookListenerInterface
                 'priority' => 20,
                 'sync' => true,
             ],
+            // 템플릿 설정(파비콘 등)도 봇 화면 `<head>` 에 실린다 (#434)
+            'core.template_settings.after_save' => [
+                'method' => 'onTemplateSettingsSave',
+                'priority' => 20,
+                'sync' => true,
+            ],
+            // 기본값 되돌리기도 봇 화면에 실리는 값을 바꾼다 — 인자 모양($identifier, $section, $result)의 결과 위치가 같다
+            'core.template_settings.after_reset' => [
+                'method' => 'onTemplateSettingsSave',
+                'priority' => 20,
+                'sync' => true,
+            ],
         ];
     }
 
@@ -60,7 +80,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
     /**
      * 코어 설정 저장 시 SEO 캐시를 무효화합니다.
      *
-     * SEO 탭 설정이 저장된 경우에만 전체 캐시를 삭제합니다.
+     * 봇 화면에 실리는 탭(SEO·일반)이 저장된 경우에만 전체 캐시를 삭제합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($tab, $mergedSettings, $result)
      * @return void 반환값 없음
@@ -70,8 +90,8 @@ class SeoSettingsCacheListener implements HookListenerInterface
         DB::afterCommit(function () use ($args) {
             $tab = $args[0] ?? null;
 
-            // SEO 탭이 아니면 무시
-            if ($tab !== 'seo') {
+            // 봇 화면에 쓰이지 않는 탭이면 무시
+            if (! in_array($tab, self::BOT_VISIBLE_CATEGORIES, true)) {
                 return;
             }
 
@@ -82,7 +102,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
     /**
      * 코어 설정 단건 저장 시 SEO 캐시를 무효화합니다.
      *
-     * seo 카테고리 키가 실제로 저장된 경우에만 전체 캐시를 삭제합니다.
+     * 봇 화면에 실리는 카테고리(seo·general) 키가 실제로 저장된 경우에만 전체 캐시를 삭제합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($key, $value, $result)
      * @return void 반환값 없음
@@ -93,7 +113,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             $key = $args[0] ?? null;
             $result = $args[2] ?? false;
 
-            if (! is_string($key) || ! str_starts_with($key, 'seo.')) {
+            if (! is_string($key) || ! in_array(explode('.', $key)[0], self::BOT_VISIBLE_CATEGORIES, true) || ! str_contains($key, '.')) {
                 return;
             }
 
@@ -103,6 +123,27 @@ class SeoSettingsCacheListener implements HookListenerInterface
             }
 
             $this->clearSeoCaches(['key' => $key]);
+        });
+    }
+
+    /**
+     * 템플릿 설정 저장 시 SEO 캐시를 무효화합니다 (#434).
+     *
+     * @param  mixed  ...$args  훅 인자 ($identifier, $mergedSettings, $result)
+     * @return void 반환값 없음
+     */
+    public function onTemplateSettingsSave(...$args): void
+    {
+        DB::afterCommit(function () use ($args) {
+            $identifier = $args[0] ?? null;
+            $result = $args[2] ?? false;
+
+            // 저장 실패는 상태를 바꾸지 않았으므로 캐시도 그대로 둔다
+            if ($result !== true) {
+                return;
+            }
+
+            $this->clearSeoCaches(['template' => $identifier]);
         });
     }
 

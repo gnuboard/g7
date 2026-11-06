@@ -75,7 +75,9 @@
       "mail_order_number_placeholder": "제 2024-서울강남-12345 호",
       "telecom_number": "부가통신 사업자번호",
       "telecom_number_placeholder": "부가통신 사업자번호",
-      "postcode_plugin_required": "다음 우편번호 플러그인이 설치되지 않았거나 비활성화 상태입니다. 관리자 > 플러그인에서 활성화해주세요."
+      "postcode_plugin_required": "다음 우편번호 플러그인이 설치되지 않았거나 비활성화 상태입니다. 관리자 > 플러그인에서 활성화해주세요.",
+      "footer_display": "푸터에 사업자 정보 표시",
+      "footer_display_help": "켜면 사용자 화면 맨 아래에 상호·대표·주소·연락처·사업자등록번호·통신판매업 신고번호·개인정보 보호책임자를 보입니다(전자상거래법 표시 의무). 상호나 사업자등록번호가 비어 있으면 보이지 않습니다."
     },
     "public_asset_storage": {
       "title": "공개 자산 스토리지",

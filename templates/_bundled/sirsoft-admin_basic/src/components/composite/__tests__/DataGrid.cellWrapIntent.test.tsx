@@ -6,7 +6,7 @@
  * (`wrap-anywhere`·`break-words`·`break-all`)가 아무 일도 하지 않았다 — 게시판 글 목록에서 띄어쓰기 없는 긴 제목이
  * 한 줄로 늘어 표가 컨테이너보다 넓어졌다(7.1.1 출시 전 실측 결함 3: 제목 열 989px·표 1602px > 1094px).
  *
- * 칸에 `data-grid-cell` 표식을 달고, main.css 의 components 층 규칙이 그 안의 줄바꿈 클래스 요소만 white-space 를
+ * 칸에 `data-grid-cell` 표식을 달고, semantic.css 의 components 층 규칙이 그 안의 줄바꿈 클래스 요소만 white-space 를
  * 되돌린다. jsdom 은 층·상속 계산을 하지 않으므로 여기서는 표식과 규칙의 짝을 잠그고, 실제 폭은 빌드 CSS 로 잰다.
  *
  * @scenario-manifest tests/scenarios/datagrid-cell-wrap-intent.yaml
@@ -17,9 +17,9 @@ import { resolve } from 'node:path';
 import { render } from '@testing-library/react';
 import { DataGrid } from '../DataGrid';
 
-const css = readFileSync(resolve(__dirname, '../../../styles/main.css'), 'utf-8');
+const css = readFileSync(resolve(__dirname, '../../../styles/semantic.css'), 'utf-8');
 
-/** main.css 에서 `@layer components { … }` 블록 본문만 꺼낸다(중괄호 짝을 센다). */
+/** semantic.css(main.css 가 가져온다, #434) 에서 `@layer components { … }` 블록 본문만 꺼낸다(중괄호 짝을 센다). */
 function componentsLayer(source: string): string {
   const start = source.indexOf('@layer components {');
   expect(start, '@layer components 블록이 없습니다').toBeGreaterThanOrEqual(0);
@@ -48,7 +48,7 @@ describe('DataGrid 칸 안의 줄바꿈 의도', () => {
 
   // @scenario surface=desktop_cell
   // @effects wrap_classes_restore_white_space
-  it('main.css components 층이 칸 안 줄바꿈 클래스 요소의 white-space 를 normal 로 되돌린다', () => {
+  it('semantic.css components 층이 칸 안 줄바꿈 클래스 요소의 white-space 를 normal 로 되돌린다', () => {
     const layer = componentsLayer(css);
     const rule = /\.data-grid-cell\s+:is\(([^)]*)\)\s*\{\s*white-space:\s*normal;?\s*\}/.exec(layer);
     expect(rule, 'components 층에 .data-grid-cell 줄바꿈 규칙이 없습니다').not.toBeNull();

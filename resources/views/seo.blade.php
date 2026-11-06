@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="{{ $locale }}" data-g7-color-scheme="{{ $colorScheme ?? 'light' }}">
+<html lang="{{ $locale }}" data-g7-color-scheme="{{ $colorScheme ?? 'light' }}"{!! g7_template_html_attributes('user') !!}>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }}{{ $titleSuffix }}</title>
+    {{-- 파비콘 (#434) — SeoRenderer 가 렌더 중인 사용자 템플릿 기준으로 만든 태그 --}}
+    {!! $faviconTags ?? '' !!}
     {!! $generatorTag ?? '' !!}
     <meta name="description" content="{{ $description }}">
     @if($keywords)

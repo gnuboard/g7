@@ -285,6 +285,10 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
   증분·--prune·백업 부재 세 모드 모두에서 복사와 orphan 정리 양쪽에서 건너뛴다(skipPaths).
   Step 6.5 의 3-way 산출과 롤백 manifest 도 같은 목록으로 건너뛰어 적용 목록과 일치시킨다.
   excludes 의 「이름 매치(모든 깊이)」와 달리 경로가 같거나 그 하위일 때만 건너뛴다.
+- 운영자 파비콘 보존(7.2.0+): 사이트의 `public/favicon.ico` 가 비어 있지 않고 배포본의 같은 파일과 내용이
+  다르면(운영자가 직접 넣은 아이콘) 그 경로 하나만 skipPaths 로 건너뛴다. 비어 있는 파일(7.1 이하 기본값)이나
+  배포본과 같은 파일은 평소대로 갱신한다. 이름 기준 excludes 에 넣지 않는 이유 — 코어 번들 아이콘
+  `public/assets/core/favicon/favicon.ico` 까지 갱신이 막힌다 (`CoreUpdateService::isOperatorFavicon`)
 - 자동 발견 폴백: targets 에 미등재된 source 최상위 항목도 스캔하여 적용
   (config('app.update.protected_paths') 와 config('app.update.excludes') 매치 시 스킵)
 - FilePermissionHelper::copyDirectory() 사용 → 원본 파일 권한 보존

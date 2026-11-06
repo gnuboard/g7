@@ -31,11 +31,13 @@ class FrontendConfigService
      * @param  SettingsService  $settingsService  코어 설정 서비스
      * @param  ModuleSettingsService  $moduleSettingsService  모듈 설정 서비스
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
+     * @param  TemplateSettingsService  $templateSettingsService  템플릿 설정 서비스
      */
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly ModuleSettingsService $moduleSettingsService,
         private readonly PluginSettingsService $pluginSettingsService,
+        private readonly TemplateSettingsService $templateSettingsService,
     ) {}
 
     /**
@@ -45,7 +47,7 @@ class FrontendConfigService
      * `{}` 로 나가도록 빈 카테고리를 빈 객체로 바꿔 돌려준다 — 셸과 API 가 이 한 곳의 값을 그대로 싣는다.
      *
      * @param  string  $scope  범위 (`user`|`admin`)
-     * @return array{settings: array<string, mixed>, plugins: array<string, mixed>, modules: array<string, mixed>, appConfig: array<string, mixed>, consentInitial: array<string, mixed>|null} 설정 묶음
+     * @return array{settings: array<string, mixed>, plugins: array<string, mixed>, modules: array<string, mixed>, templateSettings: array<string, mixed>, appConfig: array<string, mixed>, consentInitial: array<string, mixed>|null} 설정 묶음
      */
     public function settingsBundle(string $scope): array
     {
@@ -87,6 +89,13 @@ class FrontendConfigService
             $modules = [];
         }
 
+        // 활성 템플릿 공개 설정(#434) — 이 범위(사용자·관리자)의 활성 템플릿 하나의 frontend_schema 노출값
+        try {
+            $templateSettings = $this->templateSettingsService->getActiveFrontendSettings($scope);
+        } catch (\Throwable $e) {
+            $templateSettings = [];
+        }
+
         try {
             $appConfig = $this->settingsService->getAppConfigForFrontend();
         } catch (\Exception $e) {
@@ -101,6 +110,7 @@ class FrontendConfigService
             'settings' => EmptyMapChildren::asObjects($settings),
             'plugins' => $plugins,
             'modules' => $modules,
+            'templateSettings' => $templateSettings,
             'appConfig' => $appConfig,
             'consentInitial' => $consentInitial,
         ];
@@ -200,6 +210,7 @@ class FrontendConfigService
             'settings' => (object) $bundle['settings'],
             'modules' => (object) $bundle['modules'],
             'plugins' => (object) $bundle['plugins'],
+            'template_settings' => (object) $bundle['templateSettings'],
             'app_config' => (object) $bundle['appConfig'],
             'websocket' => $this->websocket(),
             'custom_routes' => $this->customRoutes(),

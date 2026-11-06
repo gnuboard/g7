@@ -79,5 +79,6 @@ class WorkerSettingsRefresher
         $mirror->refreshCore($repository);
         $mirror->refreshAllModules();
         $mirror->refreshAllPlugins();
+        $mirror->refreshAllTemplates();
     }
 }

@@ -1,0 +1,279 @@
+{
+    "comment": "쇼핑몰 사업자 정보 (#434) — 전자상거래법이 첫 화면 표시를 요구하는 정보를 사용자 템플릿의 공용 자리(user_global_footer, 푸터 바로 뒤)에 그린다.\n  값의 주인은 쇼핑몰 설정 > 기본정보다(템플릿 설정에 다시 입력받지 않는다). 쇼핑몰 설정 「푸터에 사업자 정보 표시」(기본 켜짐)가 꺼져 있거나\n  상호·사업자등록번호가 둘 다 비면 그리지 않는다. 빈 항목은 줄을 만들지 않는다. 사업자등록번호가 있으면 공정거래위원회 사업자정보 조회를 새 창으로 연다\n  (조회 주소는 식 하나로 만든다 — 바인딩 평가기는 정규식 리터럴을 풀지 못해 `{{…replace(/…/g)}}` 가 글자 그대로 나갔다, 사업자번호는 세 칸 입력이라 `-` 만 뺀다).\n  스타일은 이 모듈 CSS(앞글자 ecommerce:)로 자기 공급한다 — 템플릿 의미 클래스에 기대지 않는다.",
+    "extension_point": "user_global_footer",
+    "mode": "append",
+    "priority": 50,
+    "components": [
+        {
+            "id": "ecommerceFooterBusinessInfo",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_global.modules?.['sirsoft-ecommerce']?.basic_info?.footer_business_info_enabled ?? true) !== false && !!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.company_name || _global.modules?.['sirsoft-ecommerce']?.basic_info?.business_number)}}",
+            "props": {
+                "role": "contentinfo",
+                "aria-label": "$t:sirsoft-ecommerce.shop.footer_business_info.region_label",
+                "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-800 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce:max-w-7xl ecommerce:mx-auto ecommerce:px-4 ecommerce:py-5 ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-4 ecommerce:gap-y-1 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                    },
+                    "children": [
+                        {
+                            "id": "ecommerceFooterBiz_company",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.company_name)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.company"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.company_name}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_ceo",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.ceo_name)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.ceo"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.ceo_name}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_address",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.base_address)}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.address"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{[_global.modules?.['sirsoft-ecommerce']?.basic_info?.zipcode ? '(' + _global.modules?.['sirsoft-ecommerce']?.basic_info.zipcode + ')' : '', _global.modules?.['sirsoft-ecommerce']?.basic_info?.base_address, _global.modules?.['sirsoft-ecommerce']?.basic_info?.detail_address].filter(Boolean).join(' ')}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_business_number",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.business_number)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.business_number"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.business_number}}"
+                                },
+                                {
+                                    "id": "ecommerceFooterBiz_verify",
+                                    "type": "basic",
+                                    "name": "A",
+                                    "props": {
+                                        "href": "{{'https://www.ftc.go.kr/bizCommPop.do?wrkr_no=' + String(_global.modules?.['sirsoft-ecommerce']?.basic_info?.business_number ?? '').split('-').join('')}}",
+                                        "target": "_blank",
+                                        "rel": "noopener noreferrer",
+                                        "className": "ecommerce:ms-1 ecommerce:underline ecommerce:hover:no-underline"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.verify"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_mail_order_number",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.mail_order_number)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.mail_order_number"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.mail_order_number}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_telecom_number",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.telecom_number)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.telecom_number"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.telecom_number}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_phone",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.phone)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.phone"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.phone}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_fax",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.fax)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.fax"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.fax}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_email",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.email)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.email"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.email}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ecommerceFooterBiz_privacy_officer",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!(_global.modules?.['sirsoft-ecommerce']?.basic_info?.privacy_officer)}}",
+                            "props": {
+                                "className": "ecommerce:whitespace-nowrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.shop.footer_business_info.privacy_officer"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:ms-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.privacy_officer}}{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.privacy_officer_email ? ' (' + _global.modules?.['sirsoft-ecommerce']?.basic_info.privacy_officer_email + ')' : ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

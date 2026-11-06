@@ -245,7 +245,7 @@
         "isPluginReadOnly": "{{gdprSettings?.data?.abilities?.can_update !== true}}"
     },
     "permissions": [
-        "core.plugins.update"
+        "core.plugins.read"
     ],
     "transition_overlay": {
         "target": "settings_main_content",

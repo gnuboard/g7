@@ -61,17 +61,25 @@
                 {
                     "tag": "nav",
                     "children": [
-                        { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home" },
-                        { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular", "if": "{boardEnabled|maxVisibleBoards}" },
-                        { "tag": "a", "attrs": { "href": "{shopProductsHref}" }, "content": "$t:nav.shop", "if": "{shopEnabled|maxVisibleBoards}" }
+                        { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home", "if": "{seoLegacyNav|maxVisibleBoards}" },
+                        { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular", "if": "{seoLegacyNav|boardEnabled|maxVisibleBoards}" },
+                        { "tag": "a", "attrs": { "href": "{shopProductsHref}" }, "content": "$t:nav.shop", "if": "{seoLegacyNav|shopEnabled|maxVisibleBoards}" }
                     ]
                 },
                 {
                     "tag": "nav",
+                    "if": "{seoLegacyNav|maxVisibleBoards}",
                     "iterate": "boards",
                     "item_tag": "a",
                     "item_content": "{name}",
                     "item_attrs": { "href": "/board/{slug}" }
+                },
+                {
+                    "tag": "nav",
+                    "iterate": "seoMenuLinks",
+                    "item_tag": "a",
+                    "item_content": "{label}",
+                    "item_attrs": { "href": "{href}" }
                 }
             ]
         },
@@ -84,9 +92,13 @@
                 {
                     "tag": "nav",
                     "children": [
-                        { "tag": "a", "attrs": { "href": "{socialLinks.github}" }, "content": "GitHub", "if": "{socialLinks.github}" },
-                        { "tag": "a", "attrs": { "href": "{socialLinks.twitter}" }, "content": "Twitter", "if": "{socialLinks.twitter}" },
-                        { "tag": "a", "attrs": { "href": "{socialLinks.discord}" }, "content": "Discord", "if": "{socialLinks.discord}" }
+                        { "tag": "a", "attrs": { "href": "{socialLinks.youtube}", "rel": "noopener noreferrer" }, "content": "YouTube", "if": "{socialLinks.youtube}" },
+                        { "tag": "a", "attrs": { "href": "{socialLinks.instagram}", "rel": "noopener noreferrer" }, "content": "Instagram", "if": "{socialLinks.instagram}" },
+                        { "tag": "a", "attrs": { "href": "{socialLinks.facebook}", "rel": "noopener noreferrer" }, "content": "Facebook", "if": "{socialLinks.facebook}" },
+                        { "tag": "a", "attrs": { "href": "{socialLinks.x}", "rel": "noopener noreferrer" }, "content": "X", "if": "{socialLinks.x}" },
+                        { "tag": "a", "attrs": { "href": "{socialLinks.github}", "rel": "noopener noreferrer" }, "content": "GitHub", "if": "{socialLinks.github}" },
+                        { "tag": "a", "attrs": { "href": "{socialLinks.discord}", "rel": "noopener noreferrer" }, "content": "Discord", "if": "{socialLinks.discord}" },
+                        { "tag": "a", "attrs": { "href": "{socialLinks.blog}", "rel": "noopener noreferrer" }, "content": "Blog", "if": "{socialLinks.blog}" }
                     ]
                 },
                 {
@@ -94,7 +106,7 @@
                     "children": [
                         {
                             "tag": "div",
-                            "if": "{boardEnabled|copyrightText}",
+                            "if": "{boardEnabled|defaultCopyrightText|copyrightText}",
                             "children": [
                                 { "tag": "h4", "content": "$t:footer.community" },
                                 { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home" },
@@ -104,7 +116,7 @@
                         },
                         {
                             "tag": "div",
-                            "if": "{pageEnabled|copyrightText}",
+                            "if": "{pageEnabled|defaultCopyrightText|copyrightText}",
                             "children": [
                                 { "tag": "h4", "content": "$t:footer.info" },
                                 { "tag": "a", "attrs": { "href": "/page/about" }, "content": "$t:footer.about" },
@@ -114,7 +126,7 @@
                         },
                         {
                             "tag": "div",
-                            "if": "{pageEnabled|copyrightText}",
+                            "if": "{pageEnabled|defaultCopyrightText|copyrightText}",
                             "children": [
                                 { "tag": "h4", "content": "$t:footer.policy" },
                                 { "tag": "a", "attrs": { "href": "/page/terms" }, "content": "$t:footer.terms" },
@@ -124,8 +136,8 @@
                         }
                     ]
                 },
-                { "tag": "p", "content": "© {siteName}. All rights reserved." },
-                { "tag": "p", "content": "Powered by 그누보드7" }
+                { "tag": "p", "content": "{copyrightText|defaultCopyrightText}", "if": "{copyrightText|defaultCopyrightText}" },
+                { "tag": "p", "content": "Powered by 그누보드7", "if": "{showPoweredBy|defaultCopyrightText|copyrightText}" }
             ]
         },
         "product_card_view": {

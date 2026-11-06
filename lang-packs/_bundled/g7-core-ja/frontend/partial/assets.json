@@ -8,5 +8,6 @@
   "retry_failed": "再試行しましたが失敗しました。しばらく後に再度お試しください。",
   "module_styles": "モジュールスタイル",
   "plugin_styles": "プラグインスタイル",
-  "extension_style_overrides": "テンプレートの拡張スタイル調整"
+  "extension_style_overrides": "テンプレートの拡張スタイル調整",
+  "template_settings_screen": "テンプレート設定画面"
 }

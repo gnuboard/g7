@@ -53,6 +53,11 @@
 메뉴는 그룹 없는 최상위 「팝업 관리」(order 56, 히어로섹션 55 바로 아래)다. 「운영 도구」 메뉴 그룹은 별도 이슈로 뺐다.
 <!-- @intent END -->
 
+## 설정 화면 권한
+
+- 들어가기: 「플러그인 보기」(`core.plugins.read`). 「플러그인 수정」 권한이 없으면 읽기 전용 안내와 함께 보이고 입력·저장·변경 단추가 잠깁니다 — 화면 계산값 `isPluginReadOnly` 는 조회 응답 `abilities.can_update !== true` 입니다.
+- 저장·변경: 서버가 수정 권한으로 막습니다(아래 「라우트」 표의 권한). 화면 진입 권한을 「수정」으로 올리지 마세요 — 보기 권한만 있는 운영자가 「레이아웃 접근 권한이 없습니다」 오류 화면만 보게 됩니다(#434, 잠금 시험 `tests/Unit/Plugins/PluginSettingsLayoutPermissionTest.php`).
+
 ## 라우트
 
 <!-- @generated:routes START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

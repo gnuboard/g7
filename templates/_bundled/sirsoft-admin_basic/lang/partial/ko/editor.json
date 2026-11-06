@@ -1781,6 +1781,7 @@
     "queue_pending": "큐 대기 Job",
     "queue_failed": "큐 실패 Job",
     "queue_logs": "큐 처리 기록",
-    "coreSchedules": "코어 예약 작업 목록"
+    "coreSchedules": "코어 예약 작업 목록",
+    "template_settings": "템플릿 설정"
   }
 }

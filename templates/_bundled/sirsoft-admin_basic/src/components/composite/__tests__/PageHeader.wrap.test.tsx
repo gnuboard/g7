@@ -23,7 +23,7 @@ describe('PageHeader — 좁은 폭 버튼 줄바꿈', () => {
   // @effects page_header_buttons_wrap_as_units
   it('스타일에 버튼 묶음 줄바꿈과 버튼 글자 한 줄 규칙이 있다', () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const css: string = require('fs').readFileSync(require('path').resolve(__dirname, '../../../styles/main.css'), 'utf8');
+    const css: string = require('fs').readFileSync(require('path').resolve(__dirname, '../../../styles/semantic.css'), 'utf8');
     expect(css).toMatch(/\.page-actions \{\s*@apply flex flex-wrap items-center gap-3;/);
     expect(css).toMatch(/\.page-actions > \* \{\s*@apply shrink-0 whitespace-nowrap;/);
   });

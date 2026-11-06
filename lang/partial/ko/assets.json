@@ -8,5 +8,6 @@
   "retry": "다시 시도",
   "retrying": "다시 시도 중...",
   "close": "닫기",
-  "retry_failed": "다시 시도했지만 실패했습니다. 잠시 후 다시 시도해 주세요."
+  "retry_failed": "다시 시도했지만 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  "template_settings_screen": "템플릿 설정 화면"
 }

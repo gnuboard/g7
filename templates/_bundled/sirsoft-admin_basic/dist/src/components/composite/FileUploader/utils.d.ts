@@ -20,7 +20,7 @@ export declare const getFileIcon: (mimeType: string) => string;
  *
  * 호출 시점의 `window.G7Core` 를 읽는다 — 모듈을 불러온 시점에 잡아 두면 그 뒤에 준비된 번역 함수를 쓰지 못한다.
  */
-export declare const t: (key: string, params?: Record<string, string | number>) => any;
+export declare const t: (key: string, params?: Record<string, string | number>) => string;
 /**
  * 파일이 업로더의 `accept` 값에 맞는지 판정합니다.
  *

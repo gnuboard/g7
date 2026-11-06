@@ -44,6 +44,11 @@
 관리자 메뉴 「히어로섹션 관리」(`/admin/plugins/sirsoft-hero_section/banners`)를 등록한다. 환경설정 화면은 플러그인 관리의 설정 단추로 연다.
 <!-- @intent END -->
 
+## 설정 화면 권한
+
+- 들어가기: 「플러그인 보기」(`core.plugins.read`). 「플러그인 수정」 권한이 없으면 읽기 전용 안내와 함께 보이고 입력·저장·변경 단추가 잠깁니다 — 화면 계산값 `isPluginReadOnly` 는 조회 응답 `abilities.can_update !== true` 입니다.
+- 저장·변경: 서버가 수정 권한으로 막습니다(아래 「라우트」 표의 권한). 화면 진입 권한을 「수정」으로 올리지 마세요 — 보기 권한만 있는 운영자가 「레이아웃 접근 권한이 없습니다」 오류 화면만 보게 됩니다(#434, 잠금 시험 `tests/Unit/Plugins/PluginSettingsLayoutPermissionTest.php`).
+
 ## 라우트
 
 <!-- @generated:routes START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

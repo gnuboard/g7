@@ -175,7 +175,8 @@ class CoreActivityLogListenerTest extends TestCase
         // #798 외부 인증 — 회원 차단·차단 해제·모든 기기 로그아웃(core.user.after_block·after_unblock·
         // after_sessions_revoked) +3 → 88.
         // #609 코어 업데이트 웹 단계 실행(core.core_update.started·completed·failed) +3 → 91.
-        $this->assertCount(91, $hooks);
+        // #434 템플릿 환경설정 저장·기본값 되돌리기(core.template_settings.after_save·after_reset) +2 → 93.
+        $this->assertCount(93, $hooks);
         $this->assertSame(
             ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
             $hooks['core.user.after_update_roles'] ?? null,

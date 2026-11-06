@@ -120,6 +120,16 @@ class FrontendConfigApiTest extends TestCase
         [$legacyRest, $legacyConfig] = $this->splitConfigBlock($legacy);
         $this->assertArrayHasKey('customRoutes', $config);
         unset($config['customRoutes']);
+        // 7.2.0 #434 — 활성 템플릿 공개 설정 키와 head 파비콘 링크가 더해졌다. 그 둘만 걷고 나머지는 7.1 과 같아야 한다.
+        $this->assertArrayHasKey('templateSettings', $config);
+        unset($config['templateSettings']);
+        // 템플릿이 공급하는 설정 화면 번들 주소(#434) — 관리자 셸만 싣는다.
+        if ($view === 'admin') {
+            $this->assertArrayHasKey('templateSettingsAssets', $config);
+            unset($config['templateSettingsAssets']);
+        }
+        $this->assertMatchesRegularExpression('#<link rel="icon"#', $rest);
+        $rest = (string) preg_replace('#\s*<link rel="(?:icon|apple-touch-icon)"[^>]*>#', '', $rest);
         $this->assertSame($legacyConfig, $config);
         $this->assertSame($legacyRest, $rest);
     }
@@ -284,7 +294,7 @@ class FrontendConfigApiTest extends TestCase
     {
         $data = json_decode((string) $response->getContent())->data;
 
-        foreach (['frontendSettings' => 'settings', 'moduleSettings' => 'modules', 'pluginSettings' => 'plugins', 'appConfig' => 'app_config'] as $shellKey => $apiKey) {
+        foreach (['frontendSettings' => 'settings', 'moduleSettings' => 'modules', 'pluginSettings' => 'plugins', 'templateSettings' => 'template_settings', 'appConfig' => 'app_config'] as $shellKey => $apiKey) {
             $this->assertEquals(
                 json_decode((string) json_encode((object) $shell[$shellKey])),
                 $data->{$apiKey},

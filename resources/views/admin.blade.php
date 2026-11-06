@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"{!! g7_template_html_attributes('admin') !!}>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,8 @@
         {!! g7_meta_generator_tag() !!}
 
         <title>{{ config('app.name', '그누보드7') }} - Admin</title>
+        {{-- 파비콘 — 활성 관리자 템플릿 설정 > 일반 탭 파비콘 > 번들 기본 (#434). 템플릿 없음 화면에서도 낸다 --}}
+        {!! g7_favicon_tags('admin') !!}
 
         <!-- 템플릿 외부 리소스 (template.json의 externals) -->
         @include('partials.template-externals-head')
@@ -66,10 +68,14 @@
                 'basePath' => \App\Support\AssetUrl::basePrefix(),
                 'settings' => (object) ($frontendSettings ?? []),
                 'plugins' => (object) ($pluginSettings ?? []),
+                // 활성 템플릿 공개 설정 (#434) — 엔진이 `_global.templateSettings` 로 싣는다
+                'templateSettings' => (object) ($templateSettings ?? []),
                 'modules' => (object) ($moduleSettings ?? []),
                 'moduleAssets' => $moduleAssets ?? [],
                 'pluginAssets' => $pluginAssets ?? [],
                 'bundleUrls' => $bundleUrls ?? null,
+                // 설치된 템플릿(꺼진 것 포함)이 공급한 설정 화면 부품 묶음 — 관리자 화면만 플러그인 묶음 뒤에 싣는다 (#434)
+                'templateSettingsAssets' => $templateSettingsAssets ?? [],
                 'customAssets' => $customAssets ?? [],
                 // 템플릿 다크 방식 선언 — 엔진이 `<html data-g7-color-scheme>` 중립 표식으로 옮긴다(확장 CSS 는 표식만 본다)
                 'colorScheme' => $colorScheme ?? ['strategy' => 'none'],

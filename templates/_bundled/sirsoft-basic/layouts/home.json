@@ -77,7 +77,7 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -97,7 +97,7 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -117,7 +117,7 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_board_summaries ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -132,12 +132,12 @@
             "id": "popularProducts",
             "label_key": "$t:editor.data_source.popularProducts",
             "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/products/popular?limit=8",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/popular?limit={{_global.templateSettings?.home?.product_count ?? 8}}",
             "method": "GET",
             "auth_mode": "optional",
             "auto_fetch": true,
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -158,12 +158,12 @@
             "id": "newProducts",
             "label_key": "$t:editor.data_source.newProducts",
             "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/products/new?limit=8",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/new?limit={{_global.templateSettings?.home?.product_count ?? 8}}",
             "method": "GET",
             "auth_mode": "optional",
             "auto_fetch": true,
             "loading_strategy": "progressive",
-            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
+            "if": "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}",
             "fallback": {
                 "data": []
             },
@@ -234,8 +234,10 @@
                         "children": [
                             {
                                 "comment": "=== 좌측: 웰컴 카드 (통계 카드 옆에서는 row-span-2, 쇼핑 홍보 카드 옆에서는 col-span-2) ===",
+                                "id": "home_welcome_slot",
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{_global.templateSettings?.home?.show_welcome ?? true}}",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -272,7 +274,7 @@
                                 "id": "home_stat_cards",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+                                "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_stats ?? true)}}",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -309,7 +311,7 @@
                         "id": "home_feature_row",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+                        "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}",
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -352,7 +354,7 @@
                         "id": "home_board_summaries",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+                        "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_board_summaries ?? true)}}",
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -384,7 +386,7 @@
                         "id": "home_shop_sections",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
+                        "if": "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}",
                         "props": {
                             "className": "mt-8"
                         },

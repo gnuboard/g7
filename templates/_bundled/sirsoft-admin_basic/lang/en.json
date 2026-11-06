@@ -28,5 +28,8 @@
   },
   "editor": {
     "$partial": "partial/en/editor.json"
+  },
+  "settings": {
+    "$partial": "partial/en/settings.json"
   }
 }

@@ -1,0 +1,45 @@
+{
+  "sections": {
+    "branding": {
+      "label": "브랜딩",
+      "hint": "관리자 화면의 아이콘·색·로고. 비운 칸은 환경설정 값(없으면 기본값)을 씁니다."
+    }
+  },
+  "favicon": {
+    "label": "파비콘",
+    "hint": "이 템플릿이 켜져 있을 때 관리자 화면 브라우저 탭에 표시되는 아이콘입니다."
+  },
+  "logo": {
+    "label": "관리자 로고",
+    "hint": "관리자 사이드바에 쓸 로고입니다. 비우면 환경설정 사이트 로고를 씁니다."
+  },
+  "accent": {
+    "label": "포인트 색",
+    "hint": "버튼·링크·안내 상자의 색입니다.",
+    "blue": "파랑(기본)",
+    "indigo": "남색",
+    "violet": "보라",
+    "green": "초록",
+    "teal": "청록",
+    "orange": "주황",
+    "rose": "장미",
+    "slate": "회색"
+  },
+  "color_scheme": {
+    "label": "기본 화면 모드",
+    "hint": "처음 방문한 사람에게 보일 모드입니다. 이미 모드를 고른 방문자(이 브라우저 포함)는 그 값을 씁니다.",
+    "system": "시스템 설정 따르기",
+    "light": "라이트",
+    "dark": "다크"
+  },
+  "screen": {
+    "fields": {
+      "row_title": "{{number}}번째",
+      "move_up": "위로",
+      "move_down": "아래로",
+      "remove_item": "삭제",
+      "add_item": "추가 ({{current}}/{{max}})",
+      "max_items_reached": "최대 {{max}}개까지 넣을 수 있습니다."
+    }
+  }
+}

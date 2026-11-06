@@ -58,6 +58,7 @@
 @source not "../../dist/css";
 @source not "../../dist/src";
 @source not "../../dist/index.d.ts";
+@source not "../../dist/settings";
 
 /*
  * Icon 크기 임의값.
@@ -338,4 +339,106 @@ html[data-header-overlay-active] .g7-site-header :is(a, button):not([class^="bg-
 
 html[data-header-overlay-active="dark"] .g7-site-header :is(a, button):not([class^="bg-"], [class*=" bg-"]):not(.g7-site-header :is([class^="bg-"], [class*=" bg-"]) *):not(form *) {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* 포인트 색 (#434) — 템플릿 설정 표준 키 `branding.accent` 를 코어가 `<html data-g7-accent>` 로 싣는다.
+ * 이 템플릿은 강조색으로 파랑(blue) 한 벌을 쓰므로(버튼·링크·안내 상자) 파랑 변수 묶음만 고른 색으로 바꾼다 —
+ * 레이아웃·컴포넌트의 `*-blue-*` 클래스는 그대로다(Tailwind v4 는 `bg-blue-600` 을 `var(--color-blue-600)` 로 굽는다).
+ * 층 없는 규칙이라 테마 층(`@layer theme`)의 기본값보다 우선한다. 파랑(기본)은 덮지 않는다. */
+[data-g7-accent="indigo"] {
+  --color-blue-50: var(--color-indigo-50);
+  --color-blue-100: var(--color-indigo-100);
+  --color-blue-200: var(--color-indigo-200);
+  --color-blue-300: var(--color-indigo-300);
+  --color-blue-400: var(--color-indigo-400);
+  --color-blue-500: var(--color-indigo-500);
+  --color-blue-600: var(--color-indigo-600);
+  --color-blue-700: var(--color-indigo-700);
+  --color-blue-800: var(--color-indigo-800);
+  --color-blue-900: var(--color-indigo-900);
+  --color-blue-950: var(--color-indigo-950);
+}
+
+[data-g7-accent="violet"] {
+  --color-blue-50: var(--color-violet-50);
+  --color-blue-100: var(--color-violet-100);
+  --color-blue-200: var(--color-violet-200);
+  --color-blue-300: var(--color-violet-300);
+  --color-blue-400: var(--color-violet-400);
+  --color-blue-500: var(--color-violet-500);
+  --color-blue-600: var(--color-violet-600);
+  --color-blue-700: var(--color-violet-700);
+  --color-blue-800: var(--color-violet-800);
+  --color-blue-900: var(--color-violet-900);
+  --color-blue-950: var(--color-violet-950);
+}
+
+[data-g7-accent="green"] {
+  --color-blue-50: var(--color-green-50);
+  --color-blue-100: var(--color-green-100);
+  --color-blue-200: var(--color-green-200);
+  --color-blue-300: var(--color-green-300);
+  --color-blue-400: var(--color-green-400);
+  --color-blue-500: var(--color-green-500);
+  --color-blue-600: var(--color-green-600);
+  --color-blue-700: var(--color-green-700);
+  --color-blue-800: var(--color-green-800);
+  --color-blue-900: var(--color-green-900);
+  --color-blue-950: var(--color-green-950);
+}
+
+[data-g7-accent="teal"] {
+  --color-blue-50: var(--color-teal-50);
+  --color-blue-100: var(--color-teal-100);
+  --color-blue-200: var(--color-teal-200);
+  --color-blue-300: var(--color-teal-300);
+  --color-blue-400: var(--color-teal-400);
+  --color-blue-500: var(--color-teal-500);
+  --color-blue-600: var(--color-teal-600);
+  --color-blue-700: var(--color-teal-700);
+  --color-blue-800: var(--color-teal-800);
+  --color-blue-900: var(--color-teal-900);
+  --color-blue-950: var(--color-teal-950);
+}
+
+[data-g7-accent="orange"] {
+  --color-blue-50: var(--color-orange-50);
+  --color-blue-100: var(--color-orange-100);
+  --color-blue-200: var(--color-orange-200);
+  --color-blue-300: var(--color-orange-300);
+  --color-blue-400: var(--color-orange-400);
+  --color-blue-500: var(--color-orange-500);
+  --color-blue-600: var(--color-orange-600);
+  --color-blue-700: var(--color-orange-700);
+  --color-blue-800: var(--color-orange-800);
+  --color-blue-900: var(--color-orange-900);
+  --color-blue-950: var(--color-orange-950);
+}
+
+[data-g7-accent="rose"] {
+  --color-blue-50: var(--color-rose-50);
+  --color-blue-100: var(--color-rose-100);
+  --color-blue-200: var(--color-rose-200);
+  --color-blue-300: var(--color-rose-300);
+  --color-blue-400: var(--color-rose-400);
+  --color-blue-500: var(--color-rose-500);
+  --color-blue-600: var(--color-rose-600);
+  --color-blue-700: var(--color-rose-700);
+  --color-blue-800: var(--color-rose-800);
+  --color-blue-900: var(--color-rose-900);
+  --color-blue-950: var(--color-rose-950);
+}
+
+[data-g7-accent="slate"] {
+  --color-blue-50: var(--color-slate-50);
+  --color-blue-100: var(--color-slate-100);
+  --color-blue-200: var(--color-slate-200);
+  --color-blue-300: var(--color-slate-300);
+  --color-blue-400: var(--color-slate-400);
+  --color-blue-500: var(--color-slate-500);
+  --color-blue-600: var(--color-slate-600);
+  --color-blue-700: var(--color-slate-700);
+  --color-blue-800: var(--color-slate-800);
+  --color-blue-900: var(--color-slate-900);
+  --color-blue-950: var(--color-slate-950);
 }

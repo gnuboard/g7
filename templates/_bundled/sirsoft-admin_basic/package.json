@@ -16,7 +16,7 @@
         "vendor:browser-image-compression": "node scripts/vendor-copy.mjs node_modules/browser-image-compression dist/vendor/browser-image-compression/2.0.2 dist/browser-image-compression.js=browser-image-compression.js LICENSE",
         "safelist": "node scripts/extract-safelist.cjs",
         "prebuild": "npm run safelist",
-        "build": "vite build",
+        "build": "vite build && vite build --config vite.settings.config.ts",
         "dev": "npm run safelist && vite build --watch",
         "test": "vitest",
         "test:run": "vitest run",

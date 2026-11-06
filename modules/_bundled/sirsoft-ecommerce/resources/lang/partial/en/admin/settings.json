@@ -75,7 +75,9 @@
       "mail_order_number_placeholder": "e.g., 2024-Seoul-12345",
       "telecom_number": "Telecom Business Number",
       "telecom_number_placeholder": "Telecom business number",
-      "postcode_plugin_required": "Daum Postcode plugin is not installed or inactive. Please activate it in Admin > Plugins."
+      "postcode_plugin_required": "Daum Postcode plugin is not installed or inactive. Please activate it in Admin > Plugins.",
+      "footer_display": "Show business information in the footer",
+      "footer_display_help": "Shows the company name, representative, address, contacts, business registration number, mail-order business number and privacy officer at the bottom of user screens (a legal display duty for online stores in Korea). Nothing is shown while the company name and the business registration number are both empty."
     },
     "public_asset_storage": {
       "title": "Public Asset Storage",

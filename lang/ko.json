@@ -11,6 +11,9 @@
     },
     "compat": {
       "$partial": "partial/ko/compat.json"
+    },
+    "template_settings": {
+      "$partial": "partial/ko/template_settings.json"
     }
   },
   "layout_editor": {

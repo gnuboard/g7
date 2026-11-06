@@ -65,7 +65,9 @@
       "mail_order_number_placeholder": "第2024-ソウル江南-12345号",
       "telecom_number": "付加通信事業者番号",
       "telecom_number_placeholder": "付加通信事業者番号",
-      "postcode_plugin_required": "Daum郵便番号プラグインがインストールされていないか無効化されています。管理者＞プラグインで有効化してください。"
+      "postcode_plugin_required": "Daum郵便番号プラグインがインストールされていないか無効化されています。管理者＞プラグインで有効化してください。",
+      "footer_display": "フッターに事業者情報を表示",
+      "footer_display_help": "オンにするとユーザー画面の最下部に商号・代表者・住所・連絡先・事業者登録番号・通信販売業届出番号・個人情報保護責任者を表示します(韓国の電子商取引法の表示義務)。商号と事業者登録番号がどちらも空欄の間は表示されません。"
     },
     "public_asset_storage": {
       "title": "公開アセットストレージ",

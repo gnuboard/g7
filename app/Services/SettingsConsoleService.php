@@ -6,7 +6,9 @@ use App\Exceptions\SettingsConsoleException;
 use App\Extension\HookManager;
 use App\Extension\PluginManager;
 use App\Extension\Support\ComputedSettingKeys;
+use App\Extension\Template\TemplateSettingsSchema;
 use App\Http\Requests\Admin\UpdatePluginSettingsRequest;
+use App\Http\Requests\Admin\UpdateTemplateSettingsRequest;
 use App\Http\Requests\Settings\SaveSettingsRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Support\EnvPriority;
@@ -21,6 +23,8 @@ use Illuminate\Validation\ValidationException;
  *   `SettingsService::saveSettings()`(화면 「저장」과 같은 경로), 탭이 없으면 `UpdateSettingRequest` →
  *   `SettingsService::setSetting()`(단건 경로).
  * - 플러그인: 현재 값 + 변경을 `UpdatePluginSettingsRequest` 로 검증해 바뀐 키만 `PluginSettingsService::save()`.
+ * - 템플릿(#434): 현재 값 + 변경을 `UpdateTemplateSettingsRequest` 로 검증해 바뀐 키만 `TemplateSettingsService::save()`.
+ *   첨부 키(파비콘 등)는 조회만 한다 — 파일 업로드는 관리자 화면에서만.
  * - 모듈: 모듈 설정 서비스의 선택 메서드 `settingsSaveRequestClass()` 가 돌려주는 FormRequest 로 검증해
  *   그 서비스의 `saveSettings()` 와 코어 훅 `core.module_settings.after_save`(화면 저장과 같은 훅). 메서드가 없는
  *   모듈은 거부한다. 기본값 파일에 없는 키(DB 로 관리하는 목록 등 화면 전용 저장)는 「관리자 화면 전용」이다.
@@ -38,6 +42,7 @@ class SettingsConsoleService
      * @param  PluginManager  $pluginManager  플러그인 조회
      * @param  PluginSettingsService  $pluginSettings  플러그인 설정 저장
      * @param  ModuleSettingsService  $moduleSettings  모듈 설정 서비스 조회
+     * @param  TemplateSettingsService  $templateSettings  템플릿 설정 서비스
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -45,6 +50,7 @@ class SettingsConsoleService
         private readonly PluginManager $pluginManager,
         private readonly PluginSettingsService $pluginSettings,
         private readonly ModuleSettingsService $moduleSettings,
+        private readonly TemplateSettingsService $templateSettings,
     ) {}
 
     /**
@@ -53,11 +59,19 @@ class SettingsConsoleService
      * @param  string  $key  설정 키
      * @param  string|null  $plugin  플러그인 식별자
      * @param  string|null  $module  모듈 식별자
+     * @param  string|null  $template  템플릿 식별자
      * @return bool 민감 값이면 true
      */
-    public function isSensitive(string $key, ?string $plugin = null, ?string $module = null): bool
+    public function isSensitive(string $key, ?string $plugin = null, ?string $module = null, ?string $template = null): bool
     {
         $segments = explode('.', $key);
+
+        // 템플릿 설정은 선언의 sensitive 표시(`섹션.키`)와 이름으로 판정한다
+        if ($template !== null) {
+            $field = count($segments) >= 2 ? $this->templateSettings->schema($template)?->field($segments[0].'.'.$segments[1]) : null;
+
+            return ! empty($field['sensitive']) || $this->sensitiveByName(end($segments));
+        }
 
         if ($plugin !== null) {
             $schema = $this->pluginManager->getPlugin($plugin)?->getSettingsSchema() ?? [];
@@ -78,10 +92,15 @@ class SettingsConsoleService
      * @param  string  $key  설정 키
      * @param  string|null  $plugin  플러그인 식별자
      * @param  string|null  $module  모듈 식별자
+     * @param  string|null  $template  템플릿 식별자
      * @return mixed 현재 값 (없으면 null)
      */
-    public function currentValue(string $key, ?string $plugin = null, ?string $module = null): mixed
+    public function currentValue(string $key, ?string $plugin = null, ?string $module = null, ?string $template = null): mixed
     {
+        if ($template !== null) {
+            return $this->lookup((array) $this->templateSettings->get($template), $key);
+        }
+
         if ($plugin !== null) {
             return $this->lookup((array) $this->pluginSettings->get($plugin), $key);
         }
@@ -100,26 +119,26 @@ class SettingsConsoleService
      * @param  mixed  $value  새 값 (형태 변환을 마친 값)
      * @param  string|null  $plugin  플러그인 식별자
      * @param  string|null  $module  모듈 식별자
+     * @param  string|null  $template  템플릿 식별자
      * @return array{before: mixed, after: mixed} 저장 전후 값
      *
      * @throws SettingsConsoleException 저장 전에 거부한 경우
      * @throws ValidationException 화면과 같은 검증에 실패한 경우
      */
-    public function set(string $key, mixed $value, ?string $plugin = null, ?string $module = null): array
+    public function set(string $key, mixed $value, ?string $plugin = null, ?string $module = null, ?string $template = null): array
     {
-        if ($plugin !== null && $module !== null) {
-            throw new SettingsConsoleException(__('settings.console.cli.scope_conflict'));
-        }
+        $this->assertSingleScope($plugin, $module, $template);
 
-        $before = $this->currentValue($key, $plugin, $module);
+        $before = $this->currentValue($key, $plugin, $module, $template);
 
         match (true) {
+            $template !== null => $this->setTemplateSetting($template, $key, $value),
             $plugin !== null => $this->setPluginSetting($plugin, $key, $value),
             $module !== null => $this->setModuleSetting($module, $key, $value),
             default => $this->setCoreSetting($key, $value),
         };
 
-        return ['before' => $before, 'after' => $this->freshValue($key, $plugin, $module)];
+        return ['before' => $before, 'after' => $this->freshValue($key, $plugin, $module, $template)];
     }
 
     /**
@@ -129,17 +148,20 @@ class SettingsConsoleService
      * @param  string|null  $plugin  플러그인 식별자
      * @param  string|null  $module  모듈 식별자
      * @param  bool  $showSecrets  민감 값을 가리지 않을지
+     * @param  string|null  $template  템플릿 식별자
      * @return array<string, mixed> 「키 => 표시 값」 (민감 값은 가림, 계산·.env 고정 표시 포함)
      *
      * @throws SettingsConsoleException 키·대상을 찾을 수 없는 경우
      */
-    public function get(?string $key, ?string $plugin = null, ?string $module = null, bool $showSecrets = false): array
+    public function get(?string $key, ?string $plugin = null, ?string $module = null, bool $showSecrets = false, ?string $template = null): array
     {
-        if ($plugin !== null && $module !== null) {
-            throw new SettingsConsoleException(__('settings.console.cli.scope_conflict'));
-        }
+        $this->assertSingleScope($plugin, $module, $template);
 
-        if ($plugin !== null) {
+        if ($template !== null) {
+            $this->assertTemplateSettings($template);
+            $all = (array) $this->templateSettings->get($template);
+            $computed = $this->templateSettings->schema($template)?->computedPaths() ?? [];
+        } elseif ($plugin !== null) {
             $instance = $this->pluginManager->getPlugin($plugin)
                 ?? throw new SettingsConsoleException(__('settings.console.cli.plugin_not_found', ['id' => $plugin]));
             $all = (array) $this->pluginSettings->get($plugin);
@@ -176,9 +198,11 @@ class SettingsConsoleService
         $display = [];
         foreach ($rows as $rowKey => $value) {
             $segments = explode('.', $rowKey);
-            $isComputed = $plugin !== null
+            $isComputed = $template !== null
+                ? in_array(implode('.', array_slice($segments, 0, 2)), $computed, true)
+                : ($plugin !== null
                 ? in_array($segments[0], $computed, true)
-                : ($module === null && count($segments) >= 2 && $this->resolver->isComputed($segments[0], $segments[1]));
+                : ($module === null && count($segments) >= 2 && $this->resolver->isComputed($segments[0], $segments[1])));
 
             if ($isComputed) {
                 $display[$rowKey] = ['value' => $value, 'note' => __('settings.console.cli.computed_marker')];
@@ -186,10 +210,10 @@ class SettingsConsoleService
                 continue;
             }
 
-            $sensitive = $this->isSensitive($rowKey, $plugin, $module);
+            $sensitive = $this->isSensitive($rowKey, $plugin, $module, $template);
             $display[$rowKey] = [
                 'value' => $sensitive && ! $showSecrets && $value !== null && $value !== '' ? self::MASK : $value,
-                'note' => $plugin === null && $module === null && count($segments) >= 2 && EnvPriority::isLocked($segments[0].'.'.$segments[1])
+                'note' => $plugin === null && $module === null && $template === null && count($segments) >= 2 && EnvPriority::isLocked($segments[0].'.'.$segments[1])
                     ? __('settings.console.cli.env_locked_marker')
                     : null,
             ];
@@ -335,10 +359,14 @@ class SettingsConsoleService
      * @param  string  $key  설정 키
      * @param  string|null  $plugin  플러그인 식별자
      * @param  string|null  $module  모듈 식별자
+     * @param  string|null  $template  템플릿 식별자
      * @return mixed 저장된 값
      */
-    private function freshValue(string $key, ?string $plugin, ?string $module): mixed
+    private function freshValue(string $key, ?string $plugin, ?string $module, ?string $template = null): mixed
     {
+        if ($template !== null) {
+            $this->templateSettings->clearCache($template);
+        }
         if ($plugin !== null) {
             $this->pluginSettings->clearCache($plugin);
         }
@@ -346,7 +374,86 @@ class SettingsConsoleService
             $this->moduleSettings->clearCache($module);
         }
 
-        return $this->currentValue($key, $plugin, $module);
+        return $this->currentValue($key, $plugin, $module, $template);
+    }
+
+    /**
+     * 대상 범위(플러그인·모듈·템플릿)는 하나만 줄 수 있다.
+     *
+     * @param  string|null  $plugin  플러그인 식별자
+     * @param  string|null  $module  모듈 식별자
+     * @param  string|null  $template  템플릿 식별자
+     * @return void 반환값 없음
+     *
+     * @throws SettingsConsoleException 둘 이상을 준 경우
+     */
+    private function assertSingleScope(?string $plugin, ?string $module, ?string $template): void
+    {
+        if (count(array_filter([$plugin, $module, $template], fn ($scope) => $scope !== null)) > 1) {
+            throw new SettingsConsoleException(__('settings.console.cli.scope_conflict'));
+        }
+    }
+
+    /**
+     * 템플릿이 설치돼 있고 설정 선언이 있는지 확인한다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return void 반환값 없음
+     *
+     * @throws SettingsConsoleException 없거나 선언이 없는 경우
+     */
+    private function assertTemplateSettings(string $identifier): void
+    {
+        if ($this->templateSettings->findTemplate($identifier) === null || $this->templateSettings->schema($identifier) === null) {
+            throw new SettingsConsoleException(__('settings.console.cli.template_not_found', ['id' => $identifier]));
+        }
+    }
+
+    /**
+     * 템플릿 설정 저장 — 관리자 화면과 같은 FormRequest 로 검증하고 바뀐 키만 저장한다 (#434).
+     *
+     * 키는 `섹션.키`(언어별 문구는 `섹션.키.ko` 처럼 더 깊게도 된다). 첨부 칸은 파일 업로드가 필요해 터미널에서 바꾸지
+     * 않는다(조회만). 계산 키도 거부한다. 언어별 문구·목록 값은 JSON 으로 준다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  string  $key  설정 키 (`섹션.키[.하위]`)
+     * @param  mixed  $value  새 값
+     * @return void 반환값 없음
+     */
+    private function setTemplateSetting(string $identifier, string $key, mixed $value): void
+    {
+        $this->assertTemplateSettings($identifier);
+        $schema = $this->templateSettings->schema($identifier);
+        $segments = explode('.', $key);
+        $field = implode('.', array_slice($segments, 0, 2));
+
+        if (in_array($field, $schema->computedPaths(), true)) {
+            throw new SettingsConsoleException(__('settings.console.cli.computed_key', ['key' => $key]));
+        }
+
+        if (count($segments) < 2 || $schema->field($field) === null) {
+            throw new SettingsConsoleException(__('settings.console.cli.template_unknown_key', ['id' => $identifier, 'key' => $key]));
+        }
+
+        if (in_array($field, $schema->attachmentPaths(), true)) {
+            throw new SettingsConsoleException(__('settings.console.cli.template_attachment_readonly', ['key' => $key]));
+        }
+
+        // 바꾸는 칸 하나만 보낸다 — 나머지 칸은 미제출 = 기존값 유지(첨부 ID 검증은 화면 저장의 몫이다).
+        $current = $this->templateSettings->get($identifier, $field);
+        $payload = [];
+        Arr::set($payload, $field, $current);
+        Arr::set($payload, $key, $value);
+
+        $validated = FormRequestRunner::validate(UpdateTemplateSettingsRequest::class, $payload, ['identifier' => $identifier], 'PUT', '/api/admin/templates/'.$identifier.'/settings');
+
+        $submitted = [];
+        Arr::set($submitted, $field, Arr::get($validated, $field));
+
+        $reason = null;
+        if (! $this->templateSettings->save($identifier, $submitted, $reason)) {
+            throw new SettingsConsoleException(__('settings.console.cli.save_failed', ['reason' => (string) $reason]));
+        }
     }
 
     /**

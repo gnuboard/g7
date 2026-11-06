@@ -724,6 +724,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_refresh_layouts.g7.html
 │   │       ├── _modal_reactivate_language_packs.g7.html
 │   │       └── _drawer_manifest_preview.g7.html
+│   ├── ../settings/template_settings.g7.html (이 템플릿 설정 화면 — `layouts/` 밖. 코어가 켜진 관리자 템플릿마다 `sirsoft-admin_basic.template_settings` 로 교차 등록, 화면은 설정 묶음 부품 `sirsoft-admin_basic.TemplateSettingsScreen`)
 │   └── admin_template_layout_edit.g7.html (레이아웃 편집기)
 │       └── partials/admin_template_layout_edit/
 │           ├── _modal_version_history.g7.html

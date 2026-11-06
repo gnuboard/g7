@@ -126,8 +126,8 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "settings": "{{result.data.settings}}",
-                                                "uploadSettings": "{{result.data.settings.upload}}",
+                                                "settings": "{{result.data.frontend_settings ?? result.data.settings}}",
+                                                "uploadSettings": "{{(result.data.frontend_settings ?? result.data.settings).upload}}",
                                                 "notification_channel_off_modal": null
                                             }
                                         },

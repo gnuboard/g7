@@ -409,6 +409,211 @@
                                     }
                                 }
                             ]
+                        },
+                        {
+                            "comment": "파비콘(#434) — 로고와 같은 지연 업로드(저장 버튼이 `upload:site_favicon` 신호를 보낸다). 1개만 두므로\n             완료 시 폼 값을 **교체**한다. ico·svg 를 받는 파비콘 전용 형식 목록을 쓰고, 이미지 압축은 두지 않는다\n             (ico·svg 를 다른 형식으로 바꾸지 않게). 허용 형식·크기는 서버가 파비콘 컬렉션에만 따로 정한다.",
+                            "id": "field_site_favicon",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.general.site_favicon"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary mb-2"
+                                    },
+                                    "text": "$t:admin.settings.general.site_favicon_desc"
+                                },
+                                {
+                                    "id": "site_favicon_uploader",
+                                    "type": "composite",
+                                    "name": "FileUploader",
+                                    "actions": [
+                                        {
+                                            "comment": "고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(로고 칸과 같다).",
+                                            "type": "change",
+                                            "event": "onFilesChange",
+                                            "handler": "setState",
+                                            "if": "{{$args[0] && $args[0].length > 0}}",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true
+                                            }
+                                        },
+                                        {
+                                            "comment": "파비콘은 1개라 덧붙이지 않고 **교체**한다 — 이전 값은 저장 때 서버가 파기한다.",
+                                            "type": "change",
+                                            "event": "onUploadComplete",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true,
+                                                "form.general.site_favicon": "{{$args[0]}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "올리기를 마쳤다 — 성공 안내만 띄운다(값 교체는 위 change 블록이 한다)",
+                                            "type": "custom",
+                                            "event": "onUploadComplete",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:attachment.upload_success"
+                                            }
+                                        },
+                                        {
+                                            "comment": "업로드 실패 — 서버 문구(형식·1MB·SVG 안전 검사)를 그대로 띄운다",
+                                            "type": "custom",
+                                            "event": "onUploadError",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{$args[0]}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "파비콘을 뺐다 — 목록에서 그 파일을 걸러 내고 저장 버튼을 풀어 준다. 서버 파기는 저장 때 한다",
+                                            "type": "change",
+                                            "event": "onRemove",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true,
+                                                "form.general.site_favicon": "{{(_local.form?.general?.site_favicon ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "뺀 것을 알린다 — 저장해야 확정된다",
+                                            "type": "custom",
+                                            "event": "onRemove",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:attachment.deleted"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "collection": "site_favicon",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "maxFiles": 1,
+                                        "maxSize": 1,
+                                        "accept": ".ico,.png,.svg,.gif,.jpg,.jpeg,.webp",
+                                        "initialFiles": "{{settings?.data?.general?.site_favicon ?? []}}",
+                                        "autoUpload": false,
+                                        "uploadTriggerEvent": "upload:site_favicon",
+                                        "confirmBeforeRemove": true
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['general.site_favicon']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['general.site_favicon']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "comment": "우선순위 안내(D9) — 그 화면 종류의 활성 템플릿 설정에 파비콘이 있으면 이 칸보다 그것이 쓰인다",
+                                    "id": "favicon_override_user",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{settings?.data?._meta?.favicon?.user?.source === 'template'}}",
+                                    "props": {
+                                        "role": "note",
+                                        "className": "flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-blue-700 dark:text-blue-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.general.favicon_override_user|name={{settings?.data?._meta?.favicon?.user?.template_name ?? settings?.data?._meta?.favicon?.user?.template_identifier ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{!!settings?.data?._meta?.favicon?.user?.settings_route}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "다른 화면 이동은 실제 주소를 가진 링크로 둔다(#757 WP-L) — 클릭은 SPA 이동, 이탈 경고는 그대로 받는다.\n                     audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동(#434) — 목적지는 활성 템플릿마다 다른 설정 화면이라 환경설정 탭 쿼리를 이어 갈 이유가 없다.",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{settings?.data?._meta?.favicon?.user?.settings_route}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "{{settings?.data?._meta?.favicon?.user?.settings_route}}",
+                                                "className": "underline font-medium hover:no-underline"
+                                            },
+                                            "text": "$t:admin.settings.general.favicon_go_template_settings"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "favicon_override_admin",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{settings?.data?._meta?.favicon?.admin?.source === 'template'}}",
+                                    "props": {
+                                        "role": "note",
+                                        "className": "flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs text-blue-700 dark:text-blue-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.general.favicon_override_admin|name={{settings?.data?._meta?.favicon?.admin?.template_name ?? settings?.data?._meta?.favicon?.admin?.template_identifier ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "A",
+                                            "if": "{{!!settings?.data?._meta?.favicon?.admin?.settings_route}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "다른 화면 이동은 실제 주소를 가진 링크로 둔다(#757 WP-L) — 클릭은 SPA 이동, 이탈 경고는 그대로 받는다.\n                     audit:allow layout-list-context-navigate-merge-query 템플릿 설정 화면으로 이동(#434) — 목적지는 활성 템플릿마다 다른 설정 화면이라 환경설정 탭 쿼리를 이어 갈 이유가 없다.",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{settings?.data?._meta?.favicon?.admin?.settings_route}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "{{settings?.data?._meta?.favicon?.admin?.settings_route}}",
+                                                "className": "underline font-medium hover:no-underline"
+                                            },
+                                            "text": "$t:admin.settings.general.favicon_go_template_settings"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
                 }

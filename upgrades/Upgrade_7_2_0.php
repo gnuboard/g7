@@ -33,6 +33,9 @@ use App\Extension\AbstractUpgradeStep;
  *         `deploy/**` 서버 설정 조각의 해시 원장(`storage/app/core-update/deploy-fragments.json`)이
  *         없는 설치본에 현재 디스크(사이드카 없는 조각 = 릴리즈 판본)의 해시로 원장을 씨앗한다.
  *         원장이 없으면 다음 업데이트가 전 조각을 「판정 불가 → 보존 + .dist」 로 본다.
+ *       06_RegisterTemplateSettingsLayouts.php
+ *         설치된 템플릿의 환경설정 화면(`{템플릿}.template_settings`, #434)을 켜진 관리자 템플릿에 등록한다.
+ *         코어만 올리고 템플릿 갱신·관리자 템플릿 활성화를 하지 않은 사이트에서 템플릿 「설정」 화면이 비지 않게 한다.
  *
  * 직접 등록 스케줄(화면에서 운영자가 만든 행)은 손대지 않는다. 신규 테이블(`queue_job_logs`)·컬럼은 일반 마이그레이션이
  * 만들고, 설정 기본값(큐 처리 기록 보관 기간 등)은 코어 업데이트 흐름의 비파괴 동기화가 반영한다.

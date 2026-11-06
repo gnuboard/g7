@@ -418,4 +418,40 @@ return [
             'layout_name_max' => '레이아웃 이름은 최대 150자까지 허용됩니다.',
         ],
     ],
+
+    // 템플릿 환경설정 (#434)
+    'settings' => [
+        'updated' => '템플릿 설정을 저장했습니다.',
+        'reset' => '템플릿 설정을 기본값으로 되돌렸습니다.',
+        'attributes' => [
+            'section' => '설정 섹션',
+        ],
+        'reset_failed' => '템플릿 설정을 기본값으로 되돌리지 못했습니다: :error',
+        'warnings' => [
+            'owned_elsewhere' => '템플릿 ":template" 의 설정 칸 :fields 은(는) 코어·다른 확장이 이미 가진 값과 이름이 같습니다 — 그 값을 읽어 쓰고 다시 저장하지 마세요.',
+        ],
+        'update_failed' => '템플릿 설정 저장에 실패했습니다: :error',
+        'not_found' => '설정 화면이 없는 템플릿입니다.',
+        'errors' => [
+            'invalid_json' => '템플릿 ":template" 의 설정 선언(config/settings/defaults.json)이 올바른 JSON 이 아닙니다: :error',
+            'invalid_schema' => '템플릿 ":template" 의 설정 선언이 규약에 맞지 않습니다: :errors',
+            'not_available' => '템플릿 ":template" 은 설치되지 않았거나 설정 선언이 없습니다.',
+            'save_failed' => '설정 파일을 쓰지 못했습니다.',
+        ],
+        'menu' => [
+            'not_list' => '메뉴 값은 항목 목록이어야 합니다.',
+            'item_invalid' => '메뉴 항목 형식이 올바르지 않습니다.',
+            'id_invalid' => '메뉴 항목 식별값이 올바르지 않습니다.',
+            'id_duplicate' => '같은 식별값을 가진 메뉴 항목이 둘 이상 있습니다.',
+            'kind_invalid' => '알 수 없는 메뉴 항목 종류입니다.',
+            'auto_duplicate' => '자동 항목은 메뉴에 한 번만 둘 수 있습니다.',
+            'auto_no_children' => '자동 항목 아래에는 하위 메뉴를 둘 수 없습니다.',
+            'label_required' => '메뉴 이름을 입력하세요.',
+            'url_required' => '이동할 주소를 입력하세요. 하위 메뉴가 있는 상위 메뉴만 주소를 비워 둘 수 있습니다.',
+            'too_deep' => '메뉴는 :depth단까지만 둘 수 있습니다.',
+            'visibility_invalid' => '보이기 설정이 올바르지 않습니다.',
+            'roles_required' => '「특정 역할만」을 고르면 역할을 하나 이상 선택해야 합니다.',
+            'too_many' => '메뉴 항목은 하위 메뉴를 합쳐 최대 :max개까지 둘 수 있습니다.',
+        ],
+    ],
 ];

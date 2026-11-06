@@ -1057,6 +1057,61 @@
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            "comment": "푸터 사업자 정보 표시 (#434) — 켜면 이 모듈이 사용자 템플릿의 공용 자리(user_global_footer)에 위 값을 그린다(전자상거래법 첫 화면 표시).\n             어느 사용자 템플릿이든 그 자리만 있으면 같다. 기본 켜짐 — 값이 비어 있으면 그리지 않는다",
+                            "id": "field_footer_business_info_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce-form-group ecommerce:mt-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce-flex-center ecommerce:justify-between ecommerce:gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "ecommerce-form-label ecommerce:mb-0"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "basic_info.footer_business_info_enabled",
+                                                "value": "{{_local.form?.basic_info?.footer_business_info_enabled ?? true}}",
+                                                "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "ecommerce-form-hint ecommerce:mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display_help"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['basic_info.footer_business_info_enabled']}}",
+                                    "props": {
+                                        "className": "ecommerce-form-error"
+                                    },
+                                    "text": "{{_local.errors?.['basic_info.footer_business_info_enabled']?.[0] ?? ''}}"
+                                }
+                            ]
                         }
                     ]
                 }

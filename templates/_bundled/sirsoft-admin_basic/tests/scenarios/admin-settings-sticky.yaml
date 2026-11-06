@@ -1,0 +1,18 @@
+feature: 관리자 환경설정 화면의 상단 탭과 하단 저장 버튼이 스크롤해도 고정된다
+
+description: |
+  환경설정(admin_settings)의 탭 줄은 그를 감싸는 `sticky_header` 래퍼가 `.sticky-tab-nav` 로,
+  저장 버튼 줄은 `.sticky-footer-buttons` 로 고정한다. 두 의미 클래스가 sticky·위치·계층(z) 토큰을
+  잃으면 긴 설정 화면에서 탭과 저장 버튼이 스크롤과 함께 사라지거나 헤더(z-50) 위로 올라온다.
+  축 surface 는 단언 대상(레이아웃 노드·의미 클래스 CSS·컴포넌트 렌더)이다.
+
+axes:
+  surface: [layout_node, semantic_css, component_render]
+
+effects:
+  - settings_tab_bar_sticky_at_top
+  - settings_footer_buttons_sticky_at_bottom
+  - tab_navigation_forwards_class_name
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-sticky.test.tsx

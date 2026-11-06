@@ -8,22 +8,23 @@ import { Button } from './Button';
 import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
+import { translate } from '../../utils/translate';
 
 /** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 전수 실측) */
 const selectSearchPlaceholder = (): string => {
-  const translated = (window as any).G7Core?.t?.('common.search_placeholder');
+  const translated = translate('common.search_placeholder');
   return typeof translated === 'string' && translated !== 'common.search_placeholder' ? translated : 'Search...';
 };
 
 /** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 전수 실측 후속) */
 const selectSearchLabel = (): string => {
-  const translated = (window as any).G7Core?.t?.('common.search');
+  const translated = translate('common.search');
   return typeof translated === 'string' && translated !== 'common.search' ? translated : 'Search';
 };
 
 /** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 전수 실측 같은 결함군) */
 const selectNoResults = (): string => {
-  const translated = (window as any).G7Core?.t?.('common.no_results');
+  const translated = translate('common.no_results');
   return typeof translated === 'string' && translated !== 'common.no_results' ? translated : 'No results';
 };
 

@@ -129,7 +129,7 @@
         "isMessagingReadOnly": "{{settings?.data?.abilities?.can_update !== true || report_url?.data?.abilities?.can_manage_messaging !== true}}"
     },
     "permissions": [
-        "core.plugins.update"
+        "core.plugins.read"
     ],
     "init_actions": [
         {

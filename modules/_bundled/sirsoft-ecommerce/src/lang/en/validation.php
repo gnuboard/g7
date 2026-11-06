@@ -1485,6 +1485,7 @@ return [
         'basic_info.privacy_officer_email' => 'Privacy Officer Email',
         'basic_info.mail_order_number' => 'Mail Order Business Number',
         'basic_info.telecom_number' => 'Telecom Business Number',
+        'basic_info.footer_business_info_enabled' => 'Show business information in footer',
         // 내보내기(#787)
         'basic_info.export_retention_days' => 'Export File Retention',
 

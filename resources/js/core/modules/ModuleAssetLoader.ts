@@ -216,6 +216,42 @@ export class ModuleAssetLoader {
     }
 
     /**
+     * 템플릿이 공급한 설정 화면 부품 묶음을 싣습니다 (#434).
+     *
+     * 템플릿 설정 화면은 그 템플릿 부품으로 그린다 — 어느 관리자 템플릿이 켜져 있든 뜨게, 플러그인 묶음처럼 관리자
+     * 화면을 열 때 싣는다. 묶음은 `registerExtensionComponent('{템플릿id}.이름')` 로 등록하므로 확장 묶음과 같이
+     * 켜진 관리자 템플릿 부품 뒤에 실려야 그 템플릿의 `overrides` 대체본이 지켜진다.
+     *
+     * 템플릿끼리는 함께 받는다. 템플릿 하나가 실패해도 그 템플릿만 경고한다 — 설정 화면 하나 때문에 관리자 화면 전체가
+     * 멈추지 않게.
+     *
+     * @return Promise<void>
+     * @since engine-v1.87.0
+     */
+    async loadTemplateSettingsBundles(): Promise<void> {
+        // 템플릿끼리는 순서가 없다 — 함께 받아 관리자 화면 첫 그리기를 템플릿 수만큼 늦추지 않는다
+        await Promise.all(
+            parseTemplateSettingsBundlesFromConfig().map(async (bundle) => {
+                const key = `template-settings-${cssEscapeId(bundle.identifier)}`;
+
+                try {
+                    await this.loadBundle(key, bundle.js, bundle.css);
+                } catch (error) {
+                    // 설정 묶음은 핸들러를 등록하지 않는다 — 실패 기록을 남기면 「확장 핸들러를 기다리지 않는다」 판정이 켜진다.
+                    // 그 설정 화면만 비므로 자산 실패 안내로 알린다(항목명은 사용자 어휘, 식별자 원문을 내지 않는다).
+                    logger.warn(`Template settings bundle failed to load: ${bundle.identifier}`, error);
+                    this.failedJsAssets.delete(key);
+                    notifyAssetFailure({
+                        id: key,
+                        label: assetText('core.assets.template_settings_screen', '템플릿 설정 화면'),
+                        retry: () => this.loadBundle(key, bundle.js, bundle.css),
+                    });
+                }
+            })
+        );
+    }
+
+    /**
      * 운영자가 덧붙인 사용자 추가 에셋(`custom/`)을 로드합니다.
      *
      * 목록은 서버가 `window.G7Config.customAssets` 로 내려준다 — 활성 확장의 `custom/`
@@ -840,6 +876,43 @@ export function parseBundleUrlsFromConfig(): ExtensionBundleUrls | null {
         pluginJs: urls.pluginJs ? convertToCurrentMode(urls.pluginJs) : urls.pluginJs,
         pluginCss: urls.pluginCss ? convertToCurrentMode(urls.pluginCss) : urls.pluginCss,
     } as ExtensionBundleUrls;
+}
+
+/**
+ * 템플릿이 공급한 설정 화면 부품 묶음 서술자 (#434).
+ */
+export interface TemplateSettingsBundle {
+    identifier: string;
+    js?: string | null;
+    css?: string | null;
+}
+
+/**
+ * window.G7Config.templateSettingsAssets 에서 템플릿 설정 화면 부품 묶음 목록을 파싱합니다.
+ *
+ * 관리자 화면에만 서버가 싣는다(사용자 화면은 빈 목록). 설치된 템플릿(꺼진 것 포함) 중 묶음을 빌드해 둔 것이다.
+ *
+ * @returns 템플릿별 묶음 URL 목록
+ * @since engine-v1.87.0
+ */
+export function parseTemplateSettingsBundlesFromConfig(): TemplateSettingsBundle[] {
+    if (typeof window === 'undefined') {
+        return [];
+    }
+
+    const list = (window as any).G7Config?.templateSettingsAssets;
+
+    if (!Array.isArray(list)) {
+        return [];
+    }
+
+    return list
+        .filter((item: any) => typeof item?.identifier === 'string' && item.identifier !== '')
+        .map((item: any) => ({
+            identifier: item.identifier,
+            js: typeof item.js === 'string' ? convertToCurrentMode(item.js) : null,
+            css: typeof item.css === 'string' ? convertToCurrentMode(item.css) : null,
+        }));
 }
 
 /**
