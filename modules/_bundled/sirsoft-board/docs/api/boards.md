@@ -2550,7 +2550,7 @@ Cache-Control: public, max-age=86400
 | file | body | file | 예 | 게시판 허용 확장자 · 최대 용량 | 업로드 파일. **파일 이름의 확장자와 내용으로 추론한 형식이 모두** 게시판 허용 확장자에 들어야 한다(md·log·csv·tsv 처럼 원래 일반 텍스트인 형식은 허용 목록에 있으면 통과). 이름이 허용 밖이면 「허용되지 않은 파일 형식입니다」, 내용이 맞지 않으면(예: SVG 내용의 `x.png`) 「파일 내용이 허용된 형식과 일치하지 않습니다」, 0바이트면 「빈 파일(0바이트)은 올릴 수 없습니다」로 422 |
 | post_id | body | integer | 아니오 | min 1 | post 식별자 |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
-| temp_key | body | string | 아니오 | UUID | 게시글 저장 전 임시 업로드를 묶는 키 (`post_id` 와 함께 생략하면 서버가 UUID 를 발급. post_id가 없을 때 첨부를 임시로 그룹핑, 저장 시 게시글에 연결) |
+| temp_key | body | string | 아니오 | UUID 또는 `temp_<숫자>_<36진수 소문자>`(7.0.x 화면 꼴) | 게시글 저장 전 임시 업로드를 묶는 키 (`post_id` 와 함께 생략하면 서버가 UUID 를 발급. post_id가 없을 때 첨부를 임시로 그룹핑, 저장 시 게시글에 연결) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.attachment.upload_validation_rules`).
 
@@ -3836,7 +3836,7 @@ HTTP/1.1 200
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
 | attachment_ids | body | integer[] | 아니오 | — | 미리 업로드해 둔 첨부 ID 목록. 게시글에 연결된다 (관리자 수정 경로와 동일) |
-| temp_key | body | string | 아니오 | UUID | 임시 업로드 묶음 키. 해당 묶음의 첨부가 게시글로 이동·연결된다 |
+| temp_key | body | string | 아니오 | UUID 또는 `temp_<숫자>_<36진수 소문자>`(7.0.x 화면 꼴) | 임시 업로드 묶음 키. 해당 묶음의 첨부가 게시글로 이동·연결된다 |
 | is_secret | body | boolean | 아니오 | — | 비밀글 여부. 문자열 `"true"`/`"false"`/`"1"`/`"0"` 도 수용해 boolean 으로 정규화한다 (해석 불가값은 422) |
 | is_notice | body | boolean | 아니오 | — | 공지 여부. 현재 값과 **다르게** 보내면(등록·해제 모두) 게시판 관리 권한 또는 공지 등록 권한(`posts.write-notice`)이 있어야 한다 — 없으면 403. 수정 폼이 기존 값을 그대로 되돌려 보내는 것은 판정하지 않는다 |
 | status | body | string | 아니오 | `published` | 게시 상태. 사용자 경로는 `published` 만 허용 |

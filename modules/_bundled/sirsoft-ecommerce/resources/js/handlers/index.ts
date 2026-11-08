@@ -244,6 +244,18 @@ import {
     toggleSelectAllItemsHandler,
 } from './orderItemSelectionHandlers';
 
+// 7.0.x 기본 템플릿 복사본의 주문 취소 창 호환 — 현재 기본 템플릿은 부르지 않는다 (템플릿 호환 대장 결정 「호환 처리」)
+import {
+    initUserCancelItemsHandler,
+    toggleUserCancelItemHandler,
+    toggleUserCancelSelectAllHandler,
+    updateUserCancelQuantityHandler,
+    estimateUserRefundHandler,
+    changeUserRefundPriorityHandler,
+    executeUserCancelOrderHandler,
+    clearUserCancelOrderTimers,
+} from './legacyUserCancelOrderHandlers';
+
 // 구매확정 핸들러 (사용자)
 import { confirmOrderOptionHandler } from './userConfirmOrderHandlers';
 
@@ -577,6 +589,16 @@ export const handlerMap = {
     // ===== 주문 상품 선택 (사용자) =====
     toggleItemSelection: toggleItemSelectionHandler,
     toggleSelectAllItems: toggleSelectAllItemsHandler,
+
+    // ===== 주문 취소 창 (7.0.x 기본 템플릿 복사본 호환 전용 — 새 화면은 클레임 신청 흐름) =====
+    initUserCancelItems: initUserCancelItemsHandler,
+    toggleUserCancelItem: toggleUserCancelItemHandler,
+    toggleUserCancelSelectAll: toggleUserCancelSelectAllHandler,
+    updateUserCancelQuantity: updateUserCancelQuantityHandler,
+    estimateUserRefund: estimateUserRefundHandler,
+    changeUserRefundPriority: changeUserRefundPriorityHandler,
+    executeUserCancelOrder: executeUserCancelOrderHandler,
+    clearUserCancelOrderTimers: clearUserCancelOrderTimers,
 
     // ===== 구매확정 (사용자) =====
     confirmOrderOption: confirmOrderOptionHandler,

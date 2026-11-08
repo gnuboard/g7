@@ -1,0 +1,24 @@
+feature: 7.0.x 기본 템플릿 복사본의 주문 취소 창 호환 (예전 사용자 취소 핸들러 재등록)
+
+description: |
+  7.1 이 마이페이지 주문 취소를 클레임 신청 흐름으로 바꾸며 예전 사용자 취소 핸들러(initUserCancelItems ·
+  toggleUserCancelItem · toggleUserCancelSelectAll · updateUserCancelQuantity · estimateUserRefund ·
+  changeUserRefundPriority · executeUserCancelOrder · clearUserCancelOrderTimers)의 등록을 뺐다.
+  7.0.x 기본 사용자 템플릿을 복사한 화면은 주문 상세 「주문 취소」 창 버튼이 반응하지 않았다.
+  템플릿 호환 대장 결정 「호환 처리」(2026-11-08)에 따라 7.0.11 구현을 legacyUserCancelOrderHandlers.ts 로
+  되살려 예전 이름으로만 등록한다. 부르는 구 취소 API 와 요청 규칙은 7.0.11 과 같다.
+
+coverage_strategy: full
+
+axes:
+  surface: [handler_registry, cancel_endpoint, cancel_items, estimate_endpoint]
+
+effects:
+  - legacy_user_cancel_handler_names_registered
+  - legacy_cancel_calls_member_or_guest_endpoint
+  - legacy_cancel_always_sends_selected_items
+  - legacy_estimate_calls_member_or_guest_endpoint
+  - legacy_debounced_estimate_reaches_modal_context
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/legacyUserCancelOrderHandlers.test.ts
