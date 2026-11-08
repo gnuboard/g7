@@ -84,6 +84,58 @@ class LifecycleWarningsTest extends TestCase
     }
 
     /**
+     * 경고 사유의 설치 루트 절대경로를 상대경로로 바꾼다 — 구분자가 섞여도(`\` 와 `/`), Windows 에서는 대소문자가 달라도 지운다(#161 S8).
+     *
+     * @scenario surface=collector
+     *
+     * @effects install_root_paths_become_relative
+     *
+     * @return void 반환값 없음
+     */
+    public function test_install_root_absolute_paths_become_relative(): void
+    {
+        $root = rtrim(base_path(), '\\/');
+        $mixed = str_replace('/', '\\', $root).'\\storage\\framework/cache/locks/ab/cd';
+        $slashed = str_replace('\\', '/', $root).'/modules/sirsoft-page/module.json';
+        $variants = [$mixed, $slashed];
+        if (PHP_OS_FAMILY === 'Windows') {
+            $variants[] = strtoupper($root).'\\bootstrap\\cache\\x.php';
+        }
+
+        $warnings = new LifecycleWarnings;
+        foreach ($variants as $i => $path) {
+            $warnings->add('operation', "t{$i}", "fopen({$path}): Failed to open stream");
+        }
+
+        $messages = array_column($warnings->all(), 'message');
+        $this->assertSame('fopen(storage\\framework/cache/locks/ab/cd): Failed to open stream', $messages[0]);
+        $this->assertSame('fopen(modules/sirsoft-page/module.json): Failed to open stream', $messages[1]);
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->assertSame('fopen(bootstrap\\cache\\x.php): Failed to open stream', $messages[2]);
+        }
+        foreach ($messages as $message) {
+            $this->assertStringNotContainsStringIgnoringCase($root, $message);
+        }
+    }
+
+    /**
+     * 설치 루트 밖의 경로와 경로가 아닌 문구는 그대로 둔다.
+     *
+     * @scenario surface=collector
+     *
+     * @effects install_root_paths_become_relative
+     *
+     * @return void 반환값 없음
+     */
+    public function test_non_root_paths_untouched(): void
+    {
+        $warnings = new LifecycleWarnings;
+        $warnings->add('operation', 't', 'copy(D:\\other\\place\\x.zip) failed; /var/tmp/y not writable');
+
+        $this->assertSame('copy(D:\\other\\place\\x.zip) failed; /var/tmp/y not writable', $warnings->all()[0]['message']);
+    }
+
+    /**
      * 대상 표시 이름(target_name)은 넘겼을 때만 싣는다 — 넘기지 않거나 식별자와 같으면 키가 없어 기존 항목 모양이 그대로다.
      *
      * @scenario surface=collector

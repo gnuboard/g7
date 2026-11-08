@@ -56,6 +56,8 @@ effects:
   - withdrawn_erasure_is_idempotent
   - rows_within_retention_are_kept
   - dry_run_deletes_nothing
+  - lock_store_error_fails_only_that_handler          # 잠금 저장소 오류는 그 핸들러만 실패로 남기고 다음 핸들러를 처리한다(#161 F6)
+  - lock_store_error_message_is_localized             # 잠금 오류 결과는 번역문 — 원본 저장소 오류는 로그에만
   - settings_tab_opens_with_every_feature_off
   - period_field_appears_only_when_its_toggle_is_on
   - preview_badges_render_the_same_counts_the_api_returns

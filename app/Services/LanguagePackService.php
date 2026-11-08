@@ -11,6 +11,7 @@ use App\Enums\LanguagePackStatus;
 use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\InstalledExtensionLookup;
@@ -1000,6 +1001,10 @@ class LanguagePackService
         $targetInactive = $this->isTargetExtensionInactive($manifest);
 
         $identifier = $manifest['identifier'];
+
+        // 같은 언어팩의 다른 작업과 겹치지 않게 잠근다 — 업데이트(performUpdate)가 부른 설치는 그 잠금에 합류한다(#161)
+        $operationLock = ExtensionOperationLock::acquire('language_pack', $identifier, 'install');
+
         $existing = $this->repository->findByIdentifier($identifier);
 
         if ($existing && ! $force) {
@@ -1085,6 +1090,10 @@ class LanguagePackService
      */
     public function activate(LanguagePack $pack, bool $force = false): LanguagePack
     {
+        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
+        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'activate');
+
         $this->assertNotInProgress($pack);
 
         if ($pack->isActive()) {
@@ -1171,6 +1180,10 @@ class LanguagePackService
      */
     public function deactivate(LanguagePack $pack, bool $cascadeFromHost = false): LanguagePack
     {
+        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
+        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'deactivate');
+
         $this->assertNotInProgress($pack);
 
         if (! $pack->isActive()) {
@@ -1212,6 +1225,10 @@ class LanguagePackService
         if ($pack->isProtected()) {
             throw new LanguagePackOperationException('language_packs.errors.protected_pack');
         }
+
+        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
+        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'uninstall');
 
         $this->assertNotInProgress($pack);
 
@@ -2023,6 +2040,10 @@ class LanguagePackService
             throw new LanguagePackOperationException('language_packs.errors.update_no_source');
         }
 
+        // 같은 언어팩의 업데이트는 한 번에 하나만 — 업데이트 확인(네트워크)과 Updating 기록 사이 구간에 들어온 두 번째 요청이
+        // 함께 통과하던 창(#138 과 같은 창)을 막는다. 안쪽 설치(finalizeInstall)는 이 잠금에 합류한다(#161).
+        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'update');
+
         $this->assertNotInProgress($pack);
 
         // force=false 일 때만 버전 변동 여부를 가드한다. force=true 는 모듈/플러그인/템플릿의
@@ -2061,6 +2082,7 @@ class LanguagePackService
             if (File::isDirectory($activeDir)) {
                 $backupPath = ExtensionBackupHelper::createBackup('lang-packs', $identifier);
             }
+            $operationLock->keepAlive();
 
             // 3. 신버전 다운로드 + 적용 (force 전파 — 다운그레이드 우회 허용)
             if ($useBundled) {
@@ -2068,6 +2090,7 @@ class LanguagePackService
             } else {
                 $updated = $this->installFromGithub((string) $githubUrl, $autoActivate, $pack->installed_by, $force);
             }
+            $operationLock->keepAlive(force: true);
 
             // 4. 꺼져 있던 팩의 상태·사유 복원 — 재설치 경로는 활성이 아닌 팩을 installed·사유 없음으로 기록한다.
             //    그대로 두면 꺼 둔 팩(inactive)은 대상 확장을 다시 켤 때의 「함께 켤 언어팩」 목록(inactive 만 고른다)에서,
@@ -2086,6 +2109,7 @@ class LanguagePackService
                     $this->refreshCache();
                 }
             }
+            $operationLock->keepAlive();
 
             // 5. 백업 정리
             if ($backupPath) {

@@ -55,6 +55,7 @@ return [
     ],
     // `privacy:*` 명령 출력
     'console' => [
+        'lock_unavailable' => '잠금 저장소(캐시)를 쓸 수 없어 이 항목을 처리하지 않았습니다.',
         'process_retention' => [
             'handler_required' => '--handler 에 핸들러 식별자를 지정하세요. 전 핸들러를 실행하려면 옵션을 빼세요.',
             'registered_handlers' => '등록된 핸들러: :handlers',

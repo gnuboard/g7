@@ -291,8 +291,12 @@
               <on-code code="409">
                 <!-- 창에서 고르기 전까지 스위치는 서버 값에 둔다 — 창을 닫아도 뒤집힌 채 남지 않는다(#703). -->
                 <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
-                <set-state target="global" slotConflictCurrent="{{error.errors?.current ?? null}}" slotConflictTarget="{{error.errors?.target ?? null}}" slotConflictTargetId="{{$args[1].id}}"/>
-                <open-modal target="language_pack_slot_conflict_modal"/>
+                <!-- 같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는
+                     칸 충돌 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161). -->
+                <toast if="{{error.errors?.operation_in_progress}}" type="info" message="{{error.message}}"/>
+                <refetch-data-source if="{{error.errors?.operation_in_progress}}" dataSourceId="language_packs"/>
+                <set-state if="{{!error.errors?.operation_in_progress}}" target="global" slotConflictCurrent="{{error.errors?.current ?? null}}" slotConflictTarget="{{error.errors?.target ?? null}}" slotConflictTargetId="{{$args[1].id}}"/>
+                <open-modal if="{{!error.errors?.operation_in_progress}}" target="language_pack_slot_conflict_modal"/>
               </on-code>
             </error-handling>
           </api-call>

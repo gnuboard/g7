@@ -1415,32 +1415,26 @@ export class ActionDispatcher {
         logger.warn('reloadExtensions: TemplateApp.reloadExtensionState unavailable');
       }
 
-      // 2. 선택적으로 모듈/플러그인 에셋 동적 로드/제거
+      // 2. 선택적으로 모듈/플러그인 에셋 동적 로드/제거 — 보조 작업이라 실패는 로그만 남긴다.
+      //
+      // executeAction 을 거치지 않고 등록 핸들러를 직접 부른다. executeAction 은 실패를 오류 처리기(기본: 토스트)로
+      // 먼저 넘긴 뒤 던지므로, 아래 catch 가 삼키기 전에 내부 문구 「Failed to execute action: reloadPluginHandlers」가
+      // 화면에 떴다 — 켜자마자 다시 끄거나 라우트 캐시를 다시 굽는 사이 자산이 404·500 이면(#882 실측). 켜기·끄기 자체는
+      // 이미 끝났고 자산은 다음 새로고침에 다시 붙으므로 알릴 일이 아니다.
       const { moduleInfo, pluginInfo } = action.params || {};
-      if (moduleInfo) {
-        try {
-          await this.executeAction(
-            {
-              handler: 'reloadModuleHandlers',
-              params: action.params,
-            } as ActionDefinition,
-            context
-          );
-        } catch (error) {
-          logger.error('reloadExtensions: reloadModuleHandlers failed', error);
+      const assetReloads: Array<[unknown, string]> = [
+        [moduleInfo, 'reloadModuleHandlers'],
+        [pluginInfo, 'reloadPluginHandlers'],
+      ];
+      for (const [info, handlerName] of assetReloads) {
+        const assetHandler = info ? this.customHandlers.get(handlerName) : undefined;
+        if (!assetHandler) {
+          continue;
         }
-      }
-      if (pluginInfo) {
         try {
-          await this.executeAction(
-            {
-              handler: 'reloadPluginHandlers',
-              params: action.params,
-            } as ActionDefinition,
-            context
-          );
+          await assetHandler({ handler: handlerName, params: action.params } as ActionDefinition, context);
         } catch (error) {
-          logger.error('reloadExtensions: reloadPluginHandlers failed', error);
+          logger.error(`reloadExtensions: ${handlerName} failed`, error);
         }
       }
 

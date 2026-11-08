@@ -34,6 +34,8 @@ return [
         'operation_in_progress' => '":name"에 대해 진행 중인 작업(:status)이 있어 요청을 처리할 수 없습니다.',
         'operation_stuck' => '":name" 확장이 :minutes분 넘게 「업데이트 중」에 멈춰 있습니다. 업데이트가 도중에 끝난 경우라면 --force 로 다시 업데이트하면 정리한 뒤 업데이트를 마저 끝내고, 활성화하면 정리만 하고 켭니다(끝나지 않은 업데이트는 다시 실행하라고 안내합니다).',
         'update_already_running' => '":name" 업데이트가 이미 진행 중입니다. 끝난 뒤 다시 확인하세요.',
+        'operation_already_running' => '":name"에 다른 작업(설치·업데이트·활성화 등)이 진행 중입니다. 끝난 뒤 다시 시도하세요.',
+        'operation_lock_unavailable' => '작업 잠금 저장소(캐시)를 쓸 수 없어 ":name" 작업을 시작하지 않았습니다. 환경설정 > 드라이버의 캐시 상태를 확인한 뒤 다시 시도하세요.',
         'zip_missing_manifest' => 'ZIP 내부에서 :file 매니페스트를 찾을 수 없습니다: :zip',
         'zip_invalid_manifest' => 'ZIP 내부의 :file 매니페스트를 JSON 으로 해석할 수 없습니다.',
         'zip_identifier_mismatch' => 'ZIP 매니페스트의 식별자가 대상 확장과 일치하지 않습니다. (기대: :expected, 실제: :actual)',
@@ -212,6 +214,7 @@ return [
 
         // core:update 의 번들 확장 일괄 업데이트 프롬프트 · core:execute-bundled-updates
         'bundled_update' => [
+            'lock_unavailable_aborted' => '작업 잠금 저장소(캐시)를 쓸 수 없어 일괄 업데이트를 중단했습니다 — 남은 :count건을 건너뛰었습니다. 캐시 상태를 확인한 뒤 다시 실행하세요.',
             'up_to_date' => '활성 확장이 최신 번들과 일치합니다.',
             'detected' => '번들에 새 버전이 포함된 확장이 감지되었습니다:',
             'detected_items' => [

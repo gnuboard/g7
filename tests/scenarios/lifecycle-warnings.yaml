@@ -11,6 +11,7 @@ axes:
 
 effects:
   - warnings_collected_in_order
+  - install_root_paths_become_relative
   - broken_layout_file_becomes_warning_not_silent
   - api_success_response_carries_warnings
   - cli_exit_code_one_with_marker

@@ -140,6 +140,13 @@ export interface ExtensionCardGridProps {
    */
   resyncKey?: string | number;
 
+  /**
+   * 누른 스위치의 진행 표시를 재동기 신호(`resyncKey`)가 올 때까지 둔다 — 서버 값이 바뀌어도 끄지 않는다.
+   * 성공 뒤에도 후속 작업(확장 화면 파일 받기 등)이 이어지는 목록이 켜고, 그 작업이 끝난 뒤 신호를 올린다.
+   * 기본 false(서버 값이 바뀌면 끔).
+   */
+  holdUntilResync?: boolean;
+
   loading?: boolean;
   skeletonCount?: number;
 
@@ -423,21 +430,23 @@ const ControlRow: React.FC<{
   onSecondaryAction?: (row: any) => void;
   onAction?: (actionId: string | number, row: any) => void;
   resyncKey?: string | number;
+  holdUntilResync?: boolean;
   className?: string;
-}> = ({ item, onToggle, onPrimaryAction, onSecondaryAction, onAction, resyncKey, className = '' }) => {
+}> = ({ item, onToggle, onPrimaryAction, onSecondaryAction, onAction, resyncKey, holdUntilResync = false, className = '' }) => {
   const payload = item.row ?? item;
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
-  // 스위치는 누른 값을 먼저 보여 주되(대기 값), 서버 값이 바뀌거나 화면이 재동기 신호(resyncKey)를 올리면
-  // 대기 값을 버리고 서버 값을 따른다. Toggle 은 받은 checked 가 바뀔 때만 내부 값을 맞추므로, 서버가 거절해
-  // 값이 그대로인 채 목록이 다시 오면 누른 쪽으로 뒤집힌 채 남았다(의존 충돌 창 취소 — #703 실측).
-  // 행 객체는 기준으로 쓸 수 없다 — 엔진이 렌더마다 새 객체를 만들어 대기 값이 곧바로 버려지고, 요청이
-  // 끝날 때까지(수 초) 누른 반응이 보이지 않는다.
+  // 스위치는 서버 작업이 끝날 때까지 원래 값에 머물고, 그동안 잠긴 채 손잡이 자리에 스피너를 보인다 — 먼저 뒤집어
+  // 보이면 작업이 실패·거절돼도 「켜졌다」고 읽혔다(#882 결정). 서버 값이 바뀌거나(목록 다시 받기) 화면이 재동기
+  // 신호(resyncKey — 실패·409·확인 창 열림)를 올리면 진행 표시를 끈다. 행 객체는 기준으로 쓸 수 없다 — 엔진이 렌더마다
+  // 새 객체를 만들어 진행 표시가 곧바로 꺼진다. 누른 카드만 잠그고 다른 카드는 바로 누를 수 있다.
+  // holdUntilResync 면 서버 값이 바뀌어도 두고 재동기 신호에서만 끈다 — 모듈·플러그인은 켜기 뒤 화면 파일(JS·CSS)을 더 받는데,
+  // 그 사이 다시 끄면 받던 파일이 404 가 됐다(#882 결정: 파일까지 받은 뒤 해제).
   const serverChecked = item.toggle?.checked ?? false;
-  const [pendingChecked, setPendingChecked] = useState<boolean | null>(null);
+  const [pending, setPending] = useState(false);
   useEffect(() => {
-    setPendingChecked(null);
-  }, [resyncKey, serverChecked, item.id]);
+    setPending(false);
+  }, [resyncKey, holdUntilResync ? null : serverChecked, item.id]);
 
   return (
     <Div
@@ -473,14 +482,16 @@ const ControlRow: React.FC<{
       )}
       {item.toggle && (
         <Toggle
-          checked={pendingChecked ?? serverChecked}
+          checked={serverChecked}
+          awaitConfirmation={true}
+          pending={pending}
           disabled={item.toggle.disabled}
           name={item.toggle.label ?? item.name}
           // 이름을 명시한다 — 비워 두면 곁 글자를 찾아 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자를 집었다.
           ariaLabel={item.toggle.label ?? item.name}
           onChange={(next: any) => {
             const value = typeof next === 'boolean' ? next : Boolean(next?.target?.checked);
-            setPendingChecked(value);
+            setPending(true);
             onToggle?.(value, payload);
           }}
         />
@@ -609,7 +620,8 @@ const GalleryCard: React.FC<{
   onSecondaryAction?: (row: any) => void;
   onAction?: (actionId: string | number, row: any) => void;
   resyncKey?: string | number;
-}> = ({ item, onItemClick, onToggle, onPrimaryAction, onSecondaryAction, onAction, resyncKey }) => {
+  holdUntilResync?: boolean;
+}> = ({ item, onItemClick, onToggle, onPrimaryAction, onSecondaryAction, onAction, resyncKey, holdUntilResync }) => {
   return (
     <CardShell
       item={item}
@@ -638,6 +650,7 @@ const GalleryCard: React.FC<{
             onSecondaryAction={onSecondaryAction}
             onAction={onAction}
             resyncKey={resyncKey}
+            holdUntilResync={holdUntilResync}
             className="justify-start flex-wrap"
           />
         </Div>
@@ -660,7 +673,8 @@ const ListRow: React.FC<{
   onSecondaryAction?: (row: any) => void;
   onAction?: (actionId: string | number, row: any) => void;
   resyncKey?: string | number;
-}> = ({ item, onItemClick, onToggle, onPrimaryAction, onSecondaryAction, onAction, resyncKey }) => {
+  holdUntilResync?: boolean;
+}> = ({ item, onItemClick, onToggle, onPrimaryAction, onSecondaryAction, onAction, resyncKey, holdUntilResync }) => {
   return (
     <CardShell
       item={item}
@@ -685,6 +699,7 @@ const ListRow: React.FC<{
         onSecondaryAction={onSecondaryAction}
         onAction={onAction}
         resyncKey={resyncKey}
+        holdUntilResync={holdUntilResync}
         className="shrink-0"
       />
     </CardShell>
@@ -743,6 +758,7 @@ export const ExtensionCardGrid: React.FC<ExtensionCardGridProps> = ({
   onSecondaryAction,
   onAction,
   resyncKey,
+  holdUntilResync = false,
   loading = false,
   skeletonCount,
   className = '',
@@ -815,6 +831,7 @@ export const ExtensionCardGrid: React.FC<ExtensionCardGridProps> = ({
                     onSecondaryAction={onSecondaryAction}
                     onAction={handleAction}
                     resyncKey={resyncKey}
+                    holdUntilResync={holdUntilResync}
                   />
                 ) : (
                   <ListRow
@@ -826,6 +843,7 @@ export const ExtensionCardGrid: React.FC<ExtensionCardGridProps> = ({
                     onSecondaryAction={onSecondaryAction}
                     onAction={handleAction}
                     resyncKey={resyncKey}
+                    holdUntilResync={holdUntilResync}
                   />
                 )
               )}

@@ -250,6 +250,13 @@ class JsonConfigRepository implements ConfigRepositoryInterface
         $path = $this->getCategoryPath($category);
         $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
+        // 변환 실패(잘못된 UTF-8 등)면 파일을 열지 않는다 — 열고 비운 뒤 false 를 쓰면 설정 파일이 빈 채로 남았다(#161 F5)
+        if ($json === false) {
+            Log::error("설정 JSON 변환 실패 — 파일을 바꾸지 않습니다: {$category}", ['error' => json_last_error_msg()]);
+
+            return false;
+        }
+
         try {
             // 파일 잠금으로 동시 쓰기 방지
             // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
@@ -262,14 +269,24 @@ class JsonConfigRepository implements ConfigRepositoryInterface
                 return false;
             }
 
-            if (flock($handle, LOCK_EX)) {
-                ftruncate($handle, 0);
-                fwrite($handle, $json);
-                fflush($handle);
-                flock($handle, LOCK_UN);
+            // 잠금을 못 잡거나 다 쓰지 못하면 실패로 답한다 — 7.1.4 까지는 잠금 실패 시 쓰지 않고도, 쓰기가 잘려도 성공(true)을
+            // 돌려 화면이 「저장됨」을 보였는데 값은 그대로였다(#161 F5)
+            if (! $this->lockForWrite($handle)) {
+                fclose($handle);
+                Log::error("설정 파일 잠금 실패 — 저장하지 않았습니다: {$category}");
+
+                return false;
             }
 
+            $written = $this->writeLocked($handle, $json);
+            flock($handle, LOCK_UN);
             fclose($handle);
+
+            if (! $written) {
+                Log::error("설정 파일 쓰기 실패(일부만 기록됐거나 디스크에 반영되지 않음): {$category}");
+
+                return false;
+            }
 
             // 캐시 무효화 — 저장한 카테고리와 전체 맵 양쪽을 비운다.
             // 한쪽만 비우면 저장 직후 조회가 이전 값을 돌려준다.
@@ -551,6 +568,35 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             Log::error('설정 기본값 파일 로드 실패', ['error' => $e->getMessage()]);
             $this->defaultsCache = ['_meta' => ['categories' => []], 'defaults' => [], 'frontend_schema' => []];
         }
+    }
+
+    /**
+     * 설정 파일에 배타 잠금을 겁니다(시험에서 실패를 흉내 낼 수 있게 분리).
+     *
+     * @param  resource  $handle  열린 파일 핸들
+     * @return bool 잠금 성공 여부
+     */
+    protected function lockForWrite($handle): bool
+    {
+        return flock($handle, LOCK_EX);
+    }
+
+    /**
+     * 잠긴 파일을 비우고 JSON 을 씁니다 — 모든 바이트를 쓰고 디스크로 내보냈을 때만 성공입니다(시험에서 실패를 흉내 낼 수 있게 분리).
+     *
+     * @param  resource  $handle  잠긴 파일 핸들
+     * @param  string  $json  쓸 JSON
+     * @return bool 쓰기 성공 여부
+     */
+    protected function writeLocked($handle, string $json): bool
+    {
+        if (! ftruncate($handle, 0)) {
+            return false;
+        }
+
+        $bytes = fwrite($handle, $json);
+
+        return $bytes === strlen($json) && fflush($handle);
     }
 
     /**

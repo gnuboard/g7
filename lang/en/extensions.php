@@ -34,6 +34,8 @@ return [
         'operation_in_progress' => 'Cannot process the request because ":name" has an operation in progress (:status).',
         'operation_stuck' => '":name" has been stuck in "updating" for more than :minutes minutes. If the update ended midway, update again with --force to clean it up and finish the update, or activate it to only clean it up and turn it on (you will be told to run an unfinished update again).',
         'update_already_running' => 'An update of ":name" is already running. Check again after it finishes.',
+        'operation_already_running' => 'Another operation (install, update, activation, etc.) on ":name" is in progress. Try again after it finishes.',
+        'operation_lock_unavailable' => 'The operation lock store (cache) is unavailable, so the operation on ":name" was not started. Check the cache status in Settings > Drivers and try again.',
         'zip_missing_manifest' => 'Manifest :file not found inside ZIP: :zip',
         'zip_invalid_manifest' => 'Manifest :file inside ZIP is not valid JSON.',
         'zip_identifier_mismatch' => 'ZIP manifest identifier does not match target extension. (expected: :expected, actual: :actual)',
@@ -212,6 +214,7 @@ return [
 
         // Bundled extension bulk update prompt of core:update / core:execute-bundled-updates
         'bundled_update' => [
+            'lock_unavailable_aborted' => 'The bulk update was aborted because the operation lock store (cache) is unavailable — skipped the remaining :count item(s). Check the cache status and run it again.',
             'up_to_date' => 'Active extensions match the latest bundle.',
             'detected' => 'Extensions with a newer version in the bundle were detected:',
             'detected_items' => [

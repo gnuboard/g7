@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -127,8 +129,14 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
+        } catch (LanguagePackOperationException $e) {
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('language_packs.install_failed', 500, $e);
         }
@@ -155,8 +163,14 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
+        } catch (LanguagePackOperationException $e) {
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('language_packs.install_failed', 500, $e);
         }
@@ -183,8 +197,14 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
+        } catch (LanguagePackOperationException $e) {
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('language_packs.install_failed', 500, $e);
         }
@@ -212,8 +232,14 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error('language_packs.manifest_invalid', 422, $e->errors());
+        } catch (LanguagePackOperationException $e) {
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('language_packs.install_failed', 500, $e);
         }
@@ -243,12 +269,18 @@ class LanguagePackController extends AdminBaseController
                 'language_packs.activate_success',
                 (new LanguagePackResource($pack))->toArray($request)
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
         } catch (LanguagePackSlotConflictException $e) {
             // 동일 슬롯에 다른 활성 팩 존재 — 프론트가 모달로 사용자 확인 후 force=true 로 재호출
             return $this->error('language_packs.errors.slot_conflict', 409, [
                 'current' => (new LanguagePackResource($e->current))->toArray($request),
                 'target' => (new LanguagePackResource($e->target))->toArray($request),
             ]);
+        } catch (LanguagePackOperationException $e) {
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('language_packs.activate_failed', 500, $e);
         }
@@ -290,6 +322,12 @@ class LanguagePackController extends AdminBaseController
                 'language_packs.deactivate_success',
                 (new LanguagePackResource($pack))->toArray($request)
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
+        } catch (LanguagePackOperationException $e) {
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('language_packs.deactivate_failed', 500, $e);
         }
@@ -314,6 +352,12 @@ class LanguagePackController extends AdminBaseController
             $this->service->uninstall($pack, $cascade);
 
             return $this->success('language_packs.uninstall_success');
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
+        } catch (LanguagePackOperationException $e) {
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('language_packs.uninstall_failed', 500, $e);
         }
@@ -357,6 +401,12 @@ class LanguagePackController extends AdminBaseController
                 'language_packs.update_success',
                 (new LanguagePackResource($updated))->toArray($request)
             );
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
+            return $this->operationLockError($e);
+        } catch (LanguagePackOperationException $e) {
+            // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
+            return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
             return $this->error('language_packs.update_failed', 500, $e);
         }

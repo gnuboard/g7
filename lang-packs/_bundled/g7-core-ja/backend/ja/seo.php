@@ -31,6 +31,8 @@ return [
     // `seo:generate-sitemap` コマンド出力
     'console' => [
         'generate_sitemap' => [
+            'already_running' => 'サイトマップをすでに生成中のため、今回の実行はスキップします。',
+            'lock_unavailable' => 'サイトマップ生成のロックストア（キャッシュ）が使用できないため、実行しませんでした。',
             'invalid_mode' => '無効なモードです。許可: :allowed',
             'generated' => 'サイトマップを生成しました。(モード: :mode)',
             'dispatched' => 'サイトマップ生成をキューにディスパッチしました。(モード: :mode)',

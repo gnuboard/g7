@@ -54,6 +54,12 @@ effects:
   - render_failure_falls_back_to_spa
   - locale_param_selects_render_locale_and_cache_key
   - invalidation_pattern_treats_only_asterisk_as_wildcard
+  # 인덱스 읽기·쓰기 경합 (#161 F1) — 동시 저장이 서로의 인덱스 항목을 덮어쓰면 그 페이지가 무효화에서 빠진다
+  - seo_index_mutations_run_inside_index_lock         # 저장·무효화 재구성·전체 비우기의 인덱스 쓰기는 모두 잠금 안
+  - seo_store_skipped_when_index_lock_unavailable     # 잠금 대기 초과·저장소 오류면 페이지도 인덱스도 쓰지 않는다
+  - seo_invalidate_forgets_pages_without_index_lock   # 잠금을 못 잡아도 무효화의 페이지 삭제는 일어난다
+  - seo_clear_all_forgets_index_without_index_lock    # 전체 비우기는 잠금을 못 잡아도 인덱스까지 지운다
+  - seo_prune_inside_store_reuses_held_lock           # 저장 안 상한 정리는 잠금을 다시 잡지 않는다(재진입 대기 없음)
 
 sub_flows:
   - id: cache_manager_basics

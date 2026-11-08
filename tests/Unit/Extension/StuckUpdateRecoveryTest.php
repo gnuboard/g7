@@ -8,6 +8,7 @@ use App\Extension\Helpers\StuckUpdateRecovery;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Tests\Concerns\SimulatesOperationLockStore;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,8 @@ use Tests\TestCase;
  */
 class StuckUpdateRecoveryTest extends TestCase
 {
+    use SimulatesOperationLockStore;
+
     /**
      * 테스트 준비 — 시각을 고정하고 잠금을 비운다.
      *
@@ -41,6 +44,7 @@ class StuckUpdateRecoveryTest extends TestCase
     protected function tearDown(): void
     {
         Carbon::setTestNow();
+        $this->restoreOperationLockStore();
         Cache::lock(ExtensionOperationLock::key('module', 'g7test-stuck'))->forceRelease();
 
         parent::tearDown();
@@ -160,5 +164,73 @@ class StuckUpdateRecoveryTest extends TestCase
         } catch (\RuntimeException $e) {
             $this->assertStringNotContainsString('--force', $e->getMessage(), '실제로 도는 업데이트에는 종전 문구');
         }
+    }
+
+    /**
+     * 잠금 저장소가 오류를 내면 진행 중 여부를 알 수 없으므로 멈춘 업데이트로 보지 않는다 (#161 S1).
+     *
+     * @scenario entry_point=recovery_judgement
+     *
+     * @effects stuck_judgement_unavailable_when_store_down
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_down_is_not_stuck(): void
+    {
+        $this->breakLockStore();
+
+        $this->assertFalse(StuckUpdateRecovery::isStuck('module', 'g7test-stuck', $this->record(ExtensionStatus::Updating->value, 601)));
+    }
+
+    /**
+     * 잠금 저장소가 오류를 내면 정리(되돌리기)하지 않는다 — 진행 중인 업데이트를 inactive 로 되돌리는 쪽이 더 위험하다 (#161 S1).
+     *
+     * @scenario entry_point=recovery_judgement
+     *
+     * @effects stuck_judgement_unavailable_when_store_down
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_down_recover_returns_null(): void
+    {
+        $this->breakLockStore();
+        $written = false;
+
+        $restored = StuckUpdateRecovery::recover('module', 'g7test-stuck', $this->record(ExtensionStatus::Updating->value, 601), function () use (&$written): void {
+            $written = true;
+        });
+
+        $this->assertNull($restored);
+        $this->assertFalse($written, '저장소 장애인데 행을 되돌렸다');
+    }
+
+    /**
+     * 진행 중 하트비트가 행 `updated_at` 을 갱신하면 10분이 넘은 업데이트도 고착으로 보지 않는다 (#161 S2).
+     *
+     * @scenario entry_point=recovery_judgement
+     *
+     * @effects heartbeat_refreshes_lock_and_touches_row
+     *
+     * @return void 반환값 없음
+     */
+    public function test_heartbeat_touch_keeps_running_update_fresh(): void
+    {
+        $this->useSpyLockStore();
+        $row = $this->record(ExtensionStatus::Updating->value, 0);
+        $lock = ExtensionOperationLock::acquire('module', 'g7test-stuck');
+        $progress = $lock->wrapProgress(null, function () use ($row): void {
+            $row->updated_at = Carbon::now();
+        });
+
+        // 11분 동안 30초마다 진행 콜백이 불린다
+        for ($i = 1; $i <= 22; $i++) {
+            Carbon::setTestNow(Carbon::now()->addSeconds(30));
+            $progress('files', 'x');
+        }
+
+        $this->assertFalse(StuckUpdateRecovery::looksStale($row), '하트비트가 있는데 오래된 행으로 판정했다');
+        $this->assertGreaterThanOrEqual(22, self::$i161Refreshes, '진행 중에 잠금을 늘리지 않았다');
+        $this->assertFalse(StuckUpdateRecovery::isStuck('module', 'g7test-stuck', $row));
+        $lock->release();
     }
 }

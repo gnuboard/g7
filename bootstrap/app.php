@@ -3,6 +3,7 @@
 use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\CoreVersionMismatchException;
+use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
 use App\Exceptions\PhpExtensionRequirementException;
@@ -264,6 +265,14 @@ $app = Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'core_version_mismatch',
                     'data' => $e->getPayload(),
                 ], 422);
+            }
+        });
+
+        // 확장·언어팩·코어 작업 잠금 거절 → 409(같은 대상 진행 중) / 503(잠금 저장소 오류) (#161)
+        // 컨트롤러가 잡지 않는 진입점(멈춘 업데이트 정리 등)의 안전망 — APP_DEBUG 에서도 trace·서버 경로를 싣지 않는다.
+        $exceptions->render(function (ExtensionOperationLockException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return ResponseHelper::error($e->getMessageKey(), $e->getStatusCode(), $e->getErrors(), $e->getMessageParams());
             }
         });
 

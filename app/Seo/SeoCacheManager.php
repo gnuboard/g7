@@ -4,6 +4,10 @@ namespace App\Seo;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Cache\Lock;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SeoCacheManager implements SeoCacheManagerInterface
@@ -27,6 +31,16 @@ class SeoCacheManager implements SeoCacheManagerInterface
      * 저장 상한에서 인덱스 정리를 다시 시도하기까지의 최소 간격 (초)
      */
     private const PRUNE_INTERVAL_SECONDS = 60;
+
+    /**
+     * 인덱스 잠금 유지 시간 (초) — 인덱스 읽기·쓰기 한 번을 감싸는 짧은 구간
+     */
+    private const INDEX_LOCK_SECONDS = 10;
+
+    /**
+     * 인덱스 잠금을 기다리는 최대 시간 (초)
+     */
+    private const INDEX_LOCK_WAIT_SECONDS = 2;
 
     /**
      * SEO 캐시 관리자를 생성합니다.
@@ -139,7 +153,9 @@ class SeoCacheManager implements SeoCacheManagerInterface
             $this->cache->forget($entry['key']);
         }
 
-        $this->cache->forget(self::INDEX_KEY);
+        // 잠금을 못 잡아도 인덱스는 지운다 — 전체 비우기는 운영자가 명시한 동작이다
+        $forgetIndex = fn () => $this->cache->forget(self::INDEX_KEY);
+        $this->withIndexLock($forgetIndex, $forgetIndex);
 
         Log::info('[SEO] All cache cleared', ['count' => count($index)]);
     }
@@ -224,14 +240,25 @@ class SeoCacheManager implements SeoCacheManagerInterface
     }
 
     /**
-     * 유효한 캐시만 남겨 인덱스를 재구성하고 그 결과를 반환합니다.
+     * 인덱스 잠금 안에서 인덱스를 재구성합니다(무효화 뒤). 잠금을 잡지 못하면 건너뜁니다 — 지워진 페이지의 인덱스 항목은
+     * 다음 재구성·저장 상한 정리가 걷어 낸다.
+     *
+     * @return array<string, array<string, mixed>> 정리된 인덱스 (건너뛰면 빈 배열)
+     */
+    private function rebuildIndex(): array
+    {
+        return $this->withIndexLock(fn () => $this->rebuildIndexLocked(), fn () => []);
+    }
+
+    /**
+     * 유효한 캐시만 남겨 인덱스를 재구성하고 그 결과를 반환합니다 — 호출하는 쪽이 인덱스 잠금을 잡고 있어야 한다.
      *
      * 페이지는 TTL 로 사라지지만 인덱스 항목은 남는다 — 이 메서드가 그 차이를 메우는
      * 유일한 지점이므로, 인덱스를 근거로 판정하는 쪽(저장 상한)은 판정 전에 여기를 거친다.
      *
      * @return array<string, array<string, mixed>> 정리된 인덱스
      */
-    private function rebuildIndex(): array
+    private function rebuildIndexLocked(): array
     {
         $index = $this->getIndex();
         $validIndex = [];
@@ -303,6 +330,25 @@ class SeoCacheManager implements SeoCacheManagerInterface
         }
 
         $key = $this->buildKey($url, $locale);
+
+        // 인덱스 읽기 → 판정 → 페이지·인덱스 쓰기를 한 잠금 안에서 한다. 동시 저장 두 건이 같은 인덱스를 읽고 각자 덮어쓰면
+        // 한쪽 항목이 사라져, 그 페이지는 무효화(글 수정 등)에서 빠지고 TTL 동안 낡은 화면이 남았다(#161 F1).
+        // 잠금을 잡지 못하면(대기 초과·저장소 오류) 저장하지 않는다 — 성능 캐시라 쓰지 않는 쪽이 안전하다.
+        $this->withIndexLock(fn () => $this->storePageLocked($key, $url, $locale, $html, $layoutName), fn () => null);
+    }
+
+    /**
+     * 인덱스 잠금 안에서 페이지와 인덱스 항목을 저장합니다.
+     *
+     * @param  string  $key  페이지 캐시 키
+     * @param  string  $url  URL (경로 + 정규화 쿼리)
+     * @param  string  $locale  로케일
+     * @param  string  $html  저장할 HTML
+     * @param  string|null  $layoutName  레이아웃명 (없으면 인덱스에 기록하지 않음)
+     * @return void
+     */
+    private function storePageLocked(string $key, string $url, string $locale, string $html, ?string $layoutName): void
+    {
         $index = $this->getIndex();
 
         if (! isset($index[$key])) {
@@ -312,7 +358,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
             // 아니라 "과거에 저장한 적이 있는 양"을 재게 되어, 한 번 닿은 경로는 실제
             // 캐시가 비어도 영영 저장이 막힌다(상한이 아니라 일방향 래치가 된다).
             if (! SeoCacheBounds::canStore($index, $url, $locale) && $this->shouldAttemptPrune()) {
-                $index = $this->rebuildIndex();
+                $index = $this->rebuildIndexLocked();
             }
 
             if (! SeoCacheBounds::canStore($index, $url, $locale)) {
@@ -344,5 +390,68 @@ class SeoCacheManager implements SeoCacheManagerInterface
         $index[$key] = $entry;
 
         $this->cache->put(self::INDEX_KEY, $index, 86400 * 30);
+    }
+
+    /**
+     * 인덱스 잠금 안에서 인덱스를 고칩니다.
+     *
+     * 스토어가 잠금을 제공하지 않으면 잠금 없이 고친다(종전과 같음). 잠금을 기다리다 시간이 지나거나 잠금 저장소가 오류를 내면
+     * 경고 로그를 남기고 `$onUnavailable` 을 따른다 — 저장은 건너뛰고, 무효화의 페이지 삭제는 이미 잠금 밖에서 끝났다.
+     * 콜백 자체의 오류는 그대로 올려 보낸다(선례 `AbstractCacheDriver::withIndexLock`).
+     *
+     * @param  callable(): mixed  $mutate  잠금 안에서 할 일
+     * @param  callable(): mixed  $onUnavailable  잠금을 잡지 못했을 때 할 일
+     * @return mixed 실행한 쪽의 반환값
+     */
+    private function withIndexLock(callable $mutate, callable $onUnavailable): mixed
+    {
+        try {
+            // audit:allow no-cache-facade-direct reason: CacheInterface 는 잠금을 제공하지 않는다 — 같은 스토어의 LockProvider 를
+            // 얻으려고 스토어 이름(getStore)만 빌린다. 키 접두사는 resolveKey 로 드라이버와 같게 맞춘다.
+            $store = Cache::store($this->cache->getStore())->getStore();
+        } catch (\Throwable) {
+            $store = null;
+        }
+
+        if (! $store instanceof LockProvider) {
+            return $mutate();
+        }
+
+        $lockKey = $this->cache->resolveKey(self::INDEX_KEY).':lock';
+        $started = false;
+        $done = false;
+        $result = null;
+        $guarded = function () use ($mutate, &$started, &$done, &$result) {
+            $started = true;
+            $result = $mutate();
+            $done = true;
+
+            return $result;
+        };
+
+        try {
+            $lock = $store->lock($lockKey, self::INDEX_LOCK_SECONDS);
+            // 기본 재시도 간격(250ms)은 2초 대기에 8번뿐이다 — 인덱스 갱신은 짧으니 촘촘히 다시 묻는다
+            if ($lock instanceof Lock) {
+                $lock->betweenBlockedAttemptsSleepFor(10);
+            }
+
+            return $lock->block(self::INDEX_LOCK_WAIT_SECONDS, $guarded);
+        } catch (LockTimeoutException $e) {
+            Log::warning('[SEO] 캐시 인덱스 잠금 대기 시간 초과 — 이번 인덱스 갱신은 건너뜁니다', ['key' => $lockKey]);
+
+            return $onUnavailable();
+        } catch (\Throwable $e) {
+            if ($done) {
+                // 고친 뒤 잠금 해제만 실패 — 결과를 살린다(잠금은 유지 시간이 지나면 풀린다)
+                return $result;
+            }
+            if ($started) {
+                throw $e;
+            }
+            Log::warning('[SEO] 캐시 인덱스 잠금 저장소 오류 — 이번 인덱스 갱신은 건너뜁니다', ['key' => $lockKey, 'error' => $e->getMessage()]);
+
+            return $onUnavailable();
+        }
     }
 }

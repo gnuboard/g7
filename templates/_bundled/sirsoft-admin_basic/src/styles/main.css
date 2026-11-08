@@ -3153,6 +3153,24 @@
     @apply peer-checked:after:translate-x-full peer-checked:after:border-white;
   }
 
+  /*
+   * 진행 중 스피너 — 손잡이(after pseudo) 자리에 겹친다. 위치는 현재 값 쪽(off=왼쪽, on=오른쪽), 크기는 호출처가
+   * 손잡이와 같은 h/w 를 붙인다(Toggle.tsx sizeClasses.spinner).
+   */
+  .toggle-switch-spinner {
+    @apply absolute top-0.5 flex items-center justify-center rounded-full pointer-events-none;
+    @apply bg-white text-blue-600 border border-gray-300;
+    @apply dark:bg-gray-200 dark:text-blue-500 dark:border-gray-600;
+  }
+
+  .toggle-switch-spinner-off {
+    @apply left-0.5;
+  }
+
+  .toggle-switch-spinner-on {
+    @apply right-0.5;
+  }
+
   .toggle-label {
     @apply text-sm font-medium text-gray-900;
     @apply dark:text-white;
