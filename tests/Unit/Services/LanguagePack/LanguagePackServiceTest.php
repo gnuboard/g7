@@ -5,16 +5,21 @@ namespace Tests\Unit\Services\LanguagePack;
 use App\Enums\LanguagePackDeactivationReason;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
+use App\Exceptions\ExtensionOperationInProgressException;
+use App\Exceptions\ExtensionOperationLockUnavailableException;
 use App\Exceptions\LanguagePackOperationException;
+use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\HookManager;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\SimulatesOperationLockStore;
 use Tests\TestCase;
 
 /**
@@ -25,6 +30,7 @@ use Tests\TestCase;
 class LanguagePackServiceTest extends TestCase
 {
     use RefreshDatabase;
+    use SimulatesOperationLockStore;
 
     private LanguagePackService $service;
 
@@ -76,6 +82,8 @@ class LanguagePackServiceTest extends TestCase
      */
     protected function tearDown(): void
     {
+        $this->restoreOperationLockStore();
+
         // 백업이 실제로 있을 때만 실 설치본 자리를 비우고 되돌린다 — 백업이 없으면 지우지 않는다.
         if ($this->protectedRealInstallDir !== null && File::isDirectory($this->protectedRealInstallDir)) {
             $realDir = base_path('lang-packs/g7-core-ja');
@@ -1232,6 +1240,93 @@ class LanguagePackServiceTest extends TestCase
             @unlink($zipPath);
             File::deleteDirectory(base_path('lang-packs/'.$identifier));
         }
+    }
+
+    /**
+     * 같은 언어팩에 다른 작업이 진행 중이면 업데이트는 업데이트 확인(네트워크)·Updating 기록 전에 409 로 거절한다(#161 S4).
+     *
+     * @scenario case=perform_update_locked
+     *
+     * @effects language_pack_lifecycle_locked
+     *
+     * @return void 반환값 없음
+     */
+    public function test_perform_update_rejected_while_locked(): void
+    {
+        $identifier = 'updlock-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updlock', '1.0.0'));
+        $held = Cache::lock(ExtensionOperationLock::key('language_pack', $identifier), 60);
+
+        try {
+            $pack = $this->service->installFromBundled($identifier);
+            $this->assertTrue($held->get());
+
+            try {
+                $this->service->performUpdate($pack, force: true);
+                $this->fail('같은 언어팩 작업이 진행 중인데 업데이트가 진행됐다');
+            } catch (ExtensionOperationInProgressException $e) {
+                $this->assertSame('update', $e->operation);
+            }
+
+            $this->assertNotSame(LanguagePackStatus::Updating->value, $pack->fresh()->status, '거절된 업데이트가 Updating 을 기록했다');
+        } finally {
+            $held->release();
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 업데이트가 부르는 설치(finalizeInstall)는 업데이트가 잡은 잠금에 합류한다 — 스스로를 409 로 막지 않고, 끝나면 잠금이 풀린다.
+     *
+     * @scenario case=perform_update_locked
+     *
+     * @effects language_pack_lifecycle_locked
+     *
+     * @return void 반환값 없음
+     */
+    public function test_perform_update_reenters_finalize_install(): void
+    {
+        $identifier = 'updreen-core-ja';
+        $bundledDir = $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updreen', '1.0.0'));
+
+        try {
+            $pack = $this->service->installFromBundled($identifier);
+            $this->createBundledFixture($identifier, $this->coreJaManifest($identifier, 'updreen', '1.0.1'));
+
+            $updated = $this->service->performUpdate($pack, force: true);
+
+            $this->assertSame('1.0.1', $updated->version);
+            $this->assertTrue(ExtensionOperationLock::isFree('language_pack', $identifier), '업데이트가 끝났는데 잠금이 남았다');
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
+     * 잠금 저장소가 오류를 내면 언어팩 활성화도 시작하지 않는다(503) — 상태는 그대로다.
+     *
+     * @scenario case=perform_update_locked
+     *
+     * @effects language_pack_lifecycle_locked
+     *
+     * @return void 반환값 없음
+     */
+    public function test_activate_503_when_store_down(): void
+    {
+        $pack = $this->makePack('lockdown', 'ja', LanguagePackStatus::Inactive->value);
+        $this->breakLockStore();
+
+        try {
+            $this->service->activate($pack);
+            $this->fail('잠금 저장소 오류인데 활성화가 진행됐다');
+        } catch (ExtensionOperationLockUnavailableException $e) {
+            $this->assertSame('activate', $e->operation);
+            $this->assertSame(503, $e->getStatusCode());
+        }
+
+        $this->assertSame(LanguagePackStatus::Inactive->value, $pack->fresh()->status);
     }
 
     /**

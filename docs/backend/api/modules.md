@@ -290,6 +290,8 @@ _단건 응답: `data` 객체의 필드 (`data.module` 은 목록과 동일한 `
 | 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
 | 409 | Conflict | `force` 없이 호출했고 필요한 의존 확장이 미충족인 경우 (`error` 에 `warning`, `missing_modules`, `missing_plugins` 포함) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 모듈에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Internal Server Error | 활성화 처리 중 예외 발생 (`module.activate_failed`) |
 
 <!-- @generated:end -->
@@ -466,6 +468,8 @@ _단건 응답: `data` 는 비활성화된 모듈의 `ModuleResource` 객체 (�
 | 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
 | 409 | Conflict | `force` 없이 호출했고 이 모듈에 의존하는 활성 확장이 있는 경우 (`error` 에 `warning`, `dependent_templates`, `dependent_modules`, `dependent_plugins` 포함) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 모듈에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Internal Server Error | 비활성화 처리 중 예외 발생 (`module.deactivate_failed`) |
 
 <!-- @generated:end -->
@@ -594,6 +598,8 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 설치 파이프라인이 던진 검증 오류 (의존 확장 cascade 설치 실패·이미 설치됨 등 — `error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 모듈에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Internal Server Error | 설치 처리 중 예외 발생 (`modules.installation_failed`) |
 
 <!-- @generated:end -->
@@ -713,6 +719,8 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님·50MB 초과), 또는 ZIP 처리 오류 (module.json 미존재/형식 오류·식별자 누락·이미 설치됨) |
+| 409 | Conflict | 같은 모듈에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Internal Server Error | 설치 처리 중 예외 발생 (`module.install_failed`) |
 
 <!-- @generated:end -->
@@ -826,6 +834,8 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 형식 검증 실패, 또는 GitHub 처리 오류 (저장소 미존재·다운로드 실패·module.json 형식 오류·이미 설치됨) |
+| 409 | Conflict | 같은 모듈에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Internal Server Error | 설치 처리 중 예외 발생 (`module.install_failed`) |
 
 <!-- @generated:end -->
@@ -1229,6 +1239,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.modules.uninstall`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 같은 모듈에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Internal Server Error | 제거 처리 중 예외 발생 (`module.uninstall_failed`) |
 
 <!-- @generated:end -->
@@ -2043,7 +2055,8 @@ _단건 응답: `data` 는 업데이트된 모듈의 `ModuleResource` 객체 (�
 | 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
 | 404 | Not Found | 해당 식별자의 모듈을 찾을 수 없는 경우 (`module.not_found`) |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 업데이트 실패 (업데이트 소스 없음·다운그레이드 차단·코어 버전 비호환 — `error.errors.module_name` 에 사유) |
-| 409 | Conflict | 같은 모듈의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) |
+| 409 | Conflict | 같은 모듈의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) · 7.1.5 부터 `errors.operation_in_progress: true` 를 싣고, 같은 확장의 설치·활성화·비활성화·제거가 진행 중이어도 같은 응답이다 |
+| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Internal Server Error | 업데이트 처리 중 예외 발생 (`modules.errors.update_failed`) |
 
 <!-- @generated:end -->

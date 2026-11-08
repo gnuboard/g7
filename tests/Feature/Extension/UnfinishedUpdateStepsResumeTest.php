@@ -464,8 +464,9 @@ PHP);
             ['plugin', $this->fixturePlugin, 'plugin:update', __('plugins.commands.update.backup_restored')],
             ['template', $this->fixtureTemplate, 'template:update', __('templates.commands.update.backup_restored')],
         ] as [$type, $identifier, $command, $restoredHint]) {
-            // 다른 프로세스가 같은 확장을 업데이트하는 중
-            $lock = ExtensionOperationLock::acquire($type, $identifier);
+            // 다른 프로세스가 같은 확장을 업데이트하는 중 — 같은 프로세스의 acquire() 는 재진입 합류라(#161) 저장소에 직접 잡는다
+            $lock = Cache::lock(ExtensionOperationLock::key($type, $identifier), 60);
+            $this->assertTrue($lock->get());
             try {
                 $exit = Artisan::call($command, ['identifier' => $identifier, '--force' => true, '--no-interaction' => true]);
                 $output = Artisan::output();

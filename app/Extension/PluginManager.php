@@ -413,6 +413,10 @@ class PluginManager implements PluginManagerInterface
         bool $force = false,
         ?string &$failureReason = null,
     ): bool {
+        // 같은 플러그인의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('plugin', $pluginName, 'install');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_install', $pluginName);
 
@@ -703,6 +707,10 @@ class PluginManager implements PluginManagerInterface
      */
     public function activatePlugin(string $pluginName, bool $force = false): array
     {
+        // 같은 플러그인의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('plugin', $pluginName, 'activate');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_activate', $pluginName);
 
@@ -726,7 +734,7 @@ class PluginManager implements PluginManagerInterface
         $record = $this->pluginRepository->findByIdentifier($plugin->getIdentifier());
         if ($record) {
             // 멈춘 업데이트(updating 고착)는 활성화가 정리하고 진행한다 — 업데이트 프로세스가 죽은 뒤 빠져나올 길이 없었다(7.1.1 출시 전)
-            if (StuckUpdateRecovery::recover('plugin', $plugin->getIdentifier(), $record, fn (array $attributes) => $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), $attributes)) !== null) {
+            if (StuckUpdateRecovery::recover('plugin', $plugin->getIdentifier(), $record, fn (array $attributes) => $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), $attributes), lockHeld: true) !== null) {
                 self::invalidatePluginStatusCache();
                 $record = $this->pluginRepository->findByIdentifier($plugin->getIdentifier());
             }
@@ -923,6 +931,10 @@ class PluginManager implements PluginManagerInterface
         string $reason = DeactivationReason::Manual->value,
         ?string $incompatibleRequiredVersion = null,
     ): array {
+        // 같은 플러그인의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('plugin', $pluginName, 'deactivate');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_deactivate', $pluginName);
 
@@ -1156,6 +1168,10 @@ class PluginManager implements PluginManagerInterface
         ?string &$failureReason = null,
         ?array &$preservedBackups = null,
     ): bool {
+        // 같은 플러그인의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
+        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
+        $operationLock = ExtensionOperationLock::acquire('plugin', $pluginName, 'uninstall');
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_uninstall', $pluginName, $deleteData);
 
@@ -4774,6 +4790,21 @@ class PluginManager implements PluginManagerInterface
         // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
         $operationLock = ExtensionOperationLock::acquire('plugin', $identifier);
 
+        // 진행 중 하트비트 — 단계마다(30초 간격) 잠금을 늘리고, `updating` 기록 뒤에는 행 `updated_at` 도 갱신한다. 10분 넘게
+        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(#161 D4).
+        $statusUpdating = false;
+        $touch = function () use (&$statusUpdating, $identifier): void {
+            if ($statusUpdating) {
+                $this->pluginRepository->updateByIdentifier($identifier, ['updated_at' => now()]);
+            }
+        };
+        $onProgress = $operationLock->wrapProgress($onProgress, $touch);
+        $onUpgradeStep = function (...$args) use ($operationLock, $touch, $onUpgradeStep) {
+            $operationLock->keepAlive($touch, force: true);
+
+            return $onUpgradeStep !== null ? $onUpgradeStep(...$args) : null;
+        };
+
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.plugins.before_update', $identifier);
 
@@ -4895,6 +4926,7 @@ class PluginManager implements PluginManagerInterface
                 'status' => ExtensionStatus::Updating->value,
                 'updated_at' => now(),
             ]);
+            $statusUpdating = true;
 
             // 3. 스테이징 (소스에 따라 분기)
             $onProgress?->__invoke('staging', __('extensions.progress.staging'));
@@ -5062,6 +5094,7 @@ class PluginManager implements PluginManagerInterface
                 'status' => $previousStatus,
                 'updated_at' => now(),
             ]);
+            $statusUpdating = false;
 
             // 플러그인 상태 캐시 무효화 — 상태 복원 쓰기 직후에 둔다.
             // Updating 전이 직후에는 비우지 않는다: 그러면 Updating 창 안의
@@ -5169,6 +5202,7 @@ class PluginManager implements PluginManagerInterface
                 ]), $dependencyWarnings), $integrationNotices),
             ];
         } catch (\Throwable $e) {
+            $statusUpdating = false;
             // 실패 시: 백업 복원 + 상태 복원
             Log::error('플러그인 업데이트 실패', [
                 'plugin' => $identifier,

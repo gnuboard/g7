@@ -4,7 +4,10 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use Illuminate\Cache\ArrayStore;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Board\Rules\CooldownRule;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -239,5 +242,186 @@ class PostCooldownTest extends BoardTestCase
         $this->actingAs($user)->postJson($this->postUrl(), $this->validPostData())
             ->assertStatus(422)
             ->assertJsonStructure(['errors']);
+    }
+
+    // ==========================================
+    // 원자적 선점 (#161 F7)
+    // ==========================================
+
+    /**
+     * 회원의 게시글 쿨다운 캐시 키(모듈 캐시 접두사 포함)를 돌려줍니다.
+     *
+     * @param  int  $userId  회원 ID
+     * @return string 캐시 키
+     */
+    private function postCooldownKey(int $userId): string
+    {
+        return "g7:module.sirsoft-board:post_cooldown_{$this->board->slug}_{$userId}";
+    }
+
+    /**
+     * 쿨다운 규칙을 한 번 검증하고 실패 문구를 돌려줍니다.
+     *
+     * @return array<int, string> 실패 문구 (통과하면 빈 배열)
+     */
+    private function validateCooldownOnce(): array
+    {
+        $failures = [];
+        (new CooldownRule('post', 60, $this->board->slug))->validate('title', '제목', function ($message) use (&$failures) {
+            $failures[] = (string) $message;
+        });
+
+        return $failures;
+    }
+
+    /**
+     * 쿨다운 자리는 검증 시점에 원자적으로 선점한다 — 동시에 들어온 두 요청이 아직 아무도 작성을 기록하지 않은 상태에서 검증하면,
+     * 1.2.2 까지는 둘 다 통과해 쿨다운을 켠 게시판에 글이 여러 개 써졌다. 이제 두 번째 검증은 실패한다.
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_active
+     *
+     * @effects concurrent_post_requests_claim_cooldown_atomically
+     *
+     * @return void 반환값 없음
+     */
+    public function test_rule_claims_atomically_so_second_concurrent_request_fails(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        // 두 요청의 검증이 Service 의 작성 기록보다 먼저 연달아 돈다
+        $this->assertSame([], $this->validateCooldownOnce(), '첫 요청은 자리를 잡는다');
+        $second = $this->validateCooldownOnce();
+
+        $this->assertCount(1, $second, '두 번째 요청은 같은 자리를 잡지 못한다');
+        $this->assertNotSame('', trim($second[0]), '쿨다운 안내 문구로 실패한다');
+        $this->assertStringStartsWith('claim:', (string) Cache::get($this->postCooldownKey($user->id)), '자리는 첫 요청의 표지로 잡혀 있다');
+    }
+
+    /**
+     * 다른 칸 검증에 실패한 요청은 응답 뒤 선점한 자리를 반납한다 — 반납하지 않으면 422 를 받은 사용자가 고쳐 다시 올려도
+     * 쿨다운에 막힌다. 작성에 성공한 요청은 Service 가 값을 덮어써 쿨다운이 이어진다.
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_active
+     *
+     * @effects failed_post_validation_releases_cooldown_claim
+     *
+     * @return void 반환값 없음
+     */
+    public function test_failed_validation_releases_cooldown_claim(): void
+    {
+        $this->mockSettings['spam_security']['post_cooldown_seconds'] = 60;
+        $this->applySettings();
+
+        $user = $this->createUser();
+
+        // 본문이 비어 422 — 제목 칸의 쿨다운 규칙은 이미 자리를 잡았다
+        $this->actingAs($user)->postJson($this->postUrl(), ['title' => '쿨다운 테스트 제목', 'content' => ''])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['content'])
+            ->assertJsonMissingValidationErrors(['title']);
+
+        // 시험 요청도 응답 뒤 terminate 를 거친다 — 반납 콜백이 돌아 자리가 비었다
+        $this->assertNull(Cache::get($this->postCooldownKey($user->id)), '실패한 요청의 자리는 반납된다');
+
+        // 고쳐 다시 올리면 쿨다운에 막히지 않는다
+        $this->actingAs($user)->postJson($this->postUrl(), $this->validPostData())
+            ->assertStatus(201);
+
+        // 성공한 작성은 쿨다운을 남긴다(반납 콜백이 Service 의 기록을 지우지 않는다)
+        $this->assertTrue(Cache::get($this->postCooldownKey($user->id)));
+        $this->actingAs($user)->postJson($this->postUrl(), $this->validPostData())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['title']);
+    }
+
+    /**
+     * 댓글 쿨다운도 같은 원자적 선점을 쓴다 — 동시 두 댓글 요청 중 두 번째 검증은 실패하고, 글 쿨다운과 키가 달라 서로 막지 않는다(#161 F7).
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_active
+     *
+     * @effects concurrent_comment_requests_claim_cooldown_atomically
+     *
+     * @return void 반환값 없음
+     */
+    public function test_comment_rule_claims_atomically_and_is_separate_from_post_cooldown(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user);
+
+        $validate = function (string $type): array {
+            $failures = [];
+            (new CooldownRule($type, 60, $this->board->slug))->validate('content', '내용', function ($message) use (&$failures) {
+                $failures[] = (string) $message;
+            });
+
+            return $failures;
+        };
+
+        $this->assertSame([], $validate('comment'), '첫 댓글 요청은 자리를 잡는다');
+        $this->assertCount(1, $validate('comment'), '두 번째 댓글 요청은 같은 자리를 잡지 못한다');
+        $this->assertSame([], $validate('post'), '댓글 쿨다운이 글 쿨다운 자리를 막지 않는다');
+        $this->assertStringStartsWith('claim:', (string) Cache::get("g7:module.sirsoft-board:comment_cooldown_{$this->board->slug}_{$user->id}"));
+    }
+
+    /**
+     * 쿨다운 캐시가 오류를 내면 오류를 기록하고 검증을 통과시킨다 — 도배 방지 장치가 캐시 장애로 글쓰기 전체를 막는 쪽이 더
+     * 나쁘다(설계상 fail-open, 종전 `has()` 도 장애 시 통과였다).
+     *
+     * @scenario concern=write_cooldown, condition=cooldown_active
+     *
+     * @effects cooldown_cache_error_does_not_block_posting
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cache_error_does_not_block_posting(): void
+    {
+        $this->mockSettings['spam_security']['post_cooldown_seconds'] = 60;
+        $this->applySettings();
+
+        config(['cache.stores.i161_board_broken_add' => ['driver' => 'i161_board_broken_add']]);
+        Cache::extend('i161_board_broken_add', fn () => Cache::repository(new class extends ArrayStore
+        {
+            /**
+             * 쿨다운 키의 선점은 저장소 오류를 내고, 다른 키는 「없을 때만 저장」을 그대로 한다.
+             *
+             * @param  string  $key  키
+             * @param  mixed  $value  값
+             * @param  int  $seconds  유지 시간(초)
+             * @return bool 저장 여부
+             *
+             * @throws \RuntimeException 쿨다운 키일 때
+             */
+            public function add($key, $value, $seconds)
+            {
+                if (str_contains((string) $key, '_cooldown_')) {
+                    throw new \RuntimeException('i161 cache store down C:\\fake\\g7');
+                }
+
+                if ($this->get($key) !== null) {
+                    return false;
+                }
+
+                return $this->put($key, $value, $seconds);
+            }
+        }));
+        $default = config('cache.default');
+        config(['cache.default' => 'i161_board_broken_add']);
+
+        Log::spy();
+        $user = $this->createUser();
+
+        try {
+            $this->actingAs($user)->postJson($this->postUrl(), $this->validPostData())
+                ->assertStatus(201);
+        } finally {
+            config(['cache.default' => $default]);
+            Cache::forgetDriver('i161_board_broken_add');
+        }
+
+        Log::shouldHaveReceived('error')
+            ->withArgs(fn ($message, $context = []) => str_contains((string) $message, '쿨다운 캐시 오류')
+                && str_contains((string) ($context['error'] ?? ''), 'i161 cache store down'))
+            ->once();
     }
 }

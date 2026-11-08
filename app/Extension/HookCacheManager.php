@@ -7,6 +7,7 @@ use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
+use App\Support\AtomicBootstrapCache;
 use App\Support\BootDeferredLog;
 use Illuminate\Support\Facades\File;
 
@@ -270,7 +271,8 @@ class HookCacheManager
                 File::makeDirectory($dir, 0755, true);
             }
 
-            File::put($this->cacheFilePath, $content);
+            // 제자리에 덮어쓰지 않는다 — 쓰는 사이 다른 요청이 반쯤 쓰인 파일을 읽었다(#882). 임시 파일에 다 쓴 뒤 바꿔 끼운다.
+            AtomicBootstrapCache::write($this->cacheFilePath, $content);
 
             BootDeferredLog::info('hooks.cache_file_written', [], [
                 'path' => $this->cacheFilePath,

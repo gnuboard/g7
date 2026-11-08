@@ -1153,6 +1153,10 @@ replace: true는 같은 페이지 내에서만 사용
 | `pluginInfo` | object | 플러그인 activate/deactivate API 응답 |
 | `action` | 문자열 | `"add"` 또는 `"remove"` — 에셋 로드 또는 제거 |
 
+에셋 로드·제거는 보조 작업이다 — 실패해도(켠 직후 다시 꺼져 404, 서버가 캐시를 굽는 중 500 등) 오류 처리기·토스트를 거치지 않고 로그만 남기며 `reloadExtensions` 는 성공으로 끝난다(engine-v1.88.1). 확장 상태 재동기화(routes·translations·layouts)도 단계마다 실패를 삼킨다. 따라서 이 핸들러에는 `onError` 를 걸 필요가 없다.
+
+이 핸들러가 끝나야 에셋까지 붙은 것이다. 켜기·끄기 스위치처럼 「작업이 끝날 때까지 다시 누르지 못하게」 할 화면은 이 핸들러를 포함한 후속 묶음(`parallel`)이 **끝난 뒤** 진행 표시를 끈다 — 목록 값이 바뀐 순간 풀면 에셋을 받는 사이 다시 끌 수 있다(관리자 기본 템플릿 `ExtensionCardGrid` 의 `holdUntilResync`).
+
 ### 사용 사례
 
 - 모듈/플러그인/템플릿 install/activate/deactivate/uninstall onSuccess

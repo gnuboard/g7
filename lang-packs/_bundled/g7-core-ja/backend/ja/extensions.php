@@ -27,6 +27,8 @@ return [
         'operation_in_progress' => '":name"に対して進行中の処理(:status)があるため、リクエストを処理できません。',
         'operation_stuck' => '":name" は :minutes 分以上「更新中」のまま止まっています。更新が途中で終了した場合は、--force で再更新すると整理してから更新を最後まで完了し、有効化すると整理だけして有効にします(終わっていない更新はもう一度実行するよう案内します)。',
         'update_already_running' => '":name"のアップデートはすでに進行中です。終了後にもう一度確認してください。',
+        'operation_already_running' => '":name"に対して別の操作（インストール・アップデート・有効化など）が進行中です。終了後にもう一度お試しください。',
+        'operation_lock_unavailable' => '操作ロックストア（キャッシュ）が使用できないため、":name"の操作を開始しませんでした。環境設定 > ドライバーのキャッシュ状態を確認してから、もう一度お試しください。',
         'zip_missing_manifest' => 'ZIP内から :file マニフェストが見つかりません: :zip',
         'zip_invalid_manifest' => 'ZIP内の :file マニフェストをJSONとして解析できません。',
         'zip_identifier_mismatch' => 'ZIPマニフェストの識別子が対象拡張と一致しません。(期待値: :expected、実際: :actual)',
@@ -181,6 +183,7 @@ return [
             'upgrade_step_running' => '  • [:identifier] アップグレードステップを実行: :version',
         ],
         'bundled_update' => [
+            'lock_unavailable_aborted' => '操作ロックストア（キャッシュ）が使用できないため、一括アップデートを中断しました — 残りの:count件をスキップしました。キャッシュ状態を確認してから、もう一度実行してください。',
             'up_to_date' => '有効な拡張は最新のバンドルと一致しています。',
             'detected' => 'バンドルに新しいバージョンが含まれる拡張が検出されました:',
             'detected_items' => [

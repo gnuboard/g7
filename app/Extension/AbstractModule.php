@@ -563,8 +563,13 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
      *               'description' => '작업 설명 (선택)',
      *               'enabled_config' => 'setting.key' (선택, module_setting()으로 조회하여 활성화 여부 결정),
+     *               'without_overlapping' => false | int (선택, 기본 true = 중복 실행 방지·1440분 뒤 잠금 만료, 정수면 그 분 뒤 만료),
+     *               'on_one_server' => false (선택, 기본 true = 다중 서버에서 한 서버만 실행 — 공유 캐시 스토어 필요),
      *               ],
      *               ]
+     *
+     * 중복 실행 방지(7.1.5): 이전 회차가 끝나지 않았으면 다음 회차를 건너뛴다. 비정상 종료로 남은 잠금은 만료 시간이 지나거나
+     * `php artisan schedule:clear-cache` 로 풀린다. 같은 작업을 겹쳐 돌려도 되면 `without_overlapping => false` 로 끈다.
      *
      * enabled_config 형식:
      *   - 'order_settings.auto_cancel_expired' → module_setting($identifier, 'order_settings.auto_cancel_expired')

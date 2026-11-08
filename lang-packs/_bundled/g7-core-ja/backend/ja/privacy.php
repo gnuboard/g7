@@ -49,6 +49,7 @@ return [
     ],
     // `privacy:*` コマンド出力
     'console' => [
+        'lock_unavailable' => 'ロックストア（キャッシュ）が使用できないため、この項目を処理しませんでした。',
         'process_retention' => [
             'handler_required' => '--handler にハンドラー識別子を指定してください。すべてのハンドラーを実行する場合はオプションを省略してください。',
             'registered_handlers' => '登録済みハンドラー: :handlers',

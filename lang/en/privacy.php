@@ -55,6 +55,7 @@ return [
     ],
     // `privacy:*` command output
     'console' => [
+        'lock_unavailable' => 'This item was not processed because the lock store (cache) is unavailable.',
         'process_retention' => [
             'handler_required' => 'Specify a handler identifier for --handler. To run all handlers, omit the option.',
             'registered_handlers' => 'Registered handlers: :handlers',

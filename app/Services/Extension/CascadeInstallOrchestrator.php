@@ -5,6 +5,7 @@ namespace App\Services\Extension;
 use App\Enums\ExtensionStatus;
 use App\Enums\LanguagePackDeactivationReason;
 use App\Enums\LanguagePackStatus;
+use App\Exceptions\ExtensionOperationLockException;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Vendor\VendorMode;
 use App\Services\LanguagePackService;
@@ -175,6 +176,10 @@ class CascadeInstallOrchestrator
                     ? $this->moduleService->activateModule($identifier)
                     : $this->pluginService->activatePlugin($identifier);
             } catch (\Throwable $e) {
+                // 의존 확장에 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503)면 감싸지 않고 올린다 — 응답 상태·표지를 지킨다(#161)
+                if ($e instanceof ExtensionOperationLockException) {
+                    throw $e;
+                }
                 // 종류는 현지화한 이름으로 싣는다 — 의존 미충족 문구(ChecksDependencyVersions)와 같은 extensions.dependency_types
                 throw new RuntimeException(self::appendKeptNotice(__('extensions.errors.cascade_dependency_failed', [
                     'type' => __('extensions.dependency_types.'.$type),

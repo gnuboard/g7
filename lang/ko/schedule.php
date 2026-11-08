@@ -4,6 +4,8 @@ return [
     // 메시지
     'fetch_success' => '스케줄 목록을 조회했습니다.',
     'fetch_failed' => '스케줄 목록 조회에 실패했습니다.',
+    'already_running' => '이 스케줄이 이미 실행 중입니다(중복 실행 방지). 끝난 뒤 다시 실행하세요.',
+    'run_lock_unavailable' => '스케줄 실행 잠금 저장소(캐시)를 쓸 수 없어 실행하지 않았습니다.',
     'create_success' => '스케줄이 생성되었습니다.',
     'create_failed' => '스케줄 생성에 실패했습니다.',
     'update_success' => '스케줄이 수정되었습니다.',

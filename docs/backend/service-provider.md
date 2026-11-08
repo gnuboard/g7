@@ -549,6 +549,7 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 - **testing 환경**: `config:clear` 는 수행(값 반영 계약 유지)하되 `config:cache` 생성은 스킵(캐시된 config 가 다음 테스트로 누출되는 격리 파괴 방지).
 - **설치 미완료 상태**: 불완전 config 박제를 피하려 재생성을 스킵하고 clear 만 한다.
 - **local 개발 주의**: config:cache 가 켜지면 `config/*.php` 를 직접 수정해도 다음 요청에 반영되지 않는다. 이는 개발자가 `php artisan config:clear` 로 대응하는 개발자 책임 영역이다.
+- **먼저 지우지 않는다 (7.1.5)**: 설치된 환경의 `rebuild()` 는 `config:clear` 를 먼저 하지 않고, `config:cache` 의 출력 경로(`APP_CONFIG_CACHE`)를 같은 폴더의 임시 파일로 돌려 구운 뒤 실제 파일과 바꿔 끼운다(`App\Support\AtomicBootstrapCache`). 굽기가 실패하면 그때 `config:clear` 로 낡은 캐시를 지운다. 지운 뒤 굽는 사이에 들어온 요청이 비캐시 부팅·반쯤 쓰인 파일을 만나던 경합을 없앤다 — 라우트 캐시와 같은 방식(`docs/backend/routing.md` 「먼저 지우지 않는다」).
 
 ### 적용 지점
 

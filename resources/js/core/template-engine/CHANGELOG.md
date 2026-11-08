@@ -5,6 +5,16 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.88.1] - 2026-11-08
+
+### Fixed
+
+- `reloadExtensions` 가 모듈·플러그인 자산(JS·CSS)을 다시 붙이다 실패하면, 확장을 켜고 끄는 일 자체는 끝났는데도 내부 문구 「Failed to execute action: reloadPluginHandlers」(모듈은 `reloadModuleHandlers`)가 오류 토스트로 떴다. 이제 자산 재로드 실패는 로그만 남긴다 — 자산은 다음 새로고침에 다시 붙는다.
+
+배경: `reloadExtensions` 는 자산 재로드를 `try/catch` 로 감싸 실패를 삼키도록 짜였지만, 위임을 `executeAction` 으로 해서 그 안의 기본 오류 처리기가 삼키기 전에 토스트를 먼저 띄웠다. 플러그인을 켜자마자 다시 끄거나(켜기 뒤 자산을 받는 동안 꺼져 404), 서버가 라우트 캐시를 다시 굽는 사이(500) 자산 요청이 세 번 모두 실패하면 드러났다(실측: GDPR 켜기 뒤 `plugin.css` 404·404·500). 이제 등록 핸들러를 직접 불러 오류 처리기를 거치지 않는다. 확장 4종(모듈·플러그인·템플릿·언어팩)의 관리자 목록·창 성공 체인 전수 — 자산을 붙이는 것은 모듈·플러그인 두 경로뿐이고, 템플릿·언어팩은 `reloadExtensions` 를 정보 없이 불러 이 경로를 타지 않는다. `reloadExtensionState`·`refetchDataSource` 는 실패를 단계별로 삼켜 던지지 않는다.
+
+회귀 잠금: `__tests__/ActionDispatcher.reloadExtensions.test.ts` 「자산 재로드가 실패해도 토스트를 띄우지 않고 reloadExtensions 는 끝까지 간다」 2건(모듈·플러그인, 고치기 전 2 실패 — `handleToast` 가 「Failed to execute action: reloadPluginHandlers」로 1회 호출).
+
 ## [engine-v1.88.0] - 2026-11-04
 
 ### Added

@@ -5,12 +5,35 @@ namespace Tests\Unit\Seo;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Seo\SeoCacheManager;
 use App\Seo\SeoUrl;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Cache\Lock;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class SeoCacheManagerTest extends TestCase
 {
     private SeoCacheManager $cacheManager;
+
+    /**
+     * 시험 저장소 잠금 동작 — normal(실제 배열 잠금)·timeout(대기 초과)·error(저장소 오류)
+     */
+    public static string $i161LockMode = 'normal';
+
+    /**
+     * 시험 저장소가 받은 잠금 이름 기록
+     *
+     * @var array<int, string>
+     */
+    public static array $i161LockNames = [];
+
+    /**
+     * 인덱스를 쓰거나 지울 때마다 그 순간 인덱스 잠금이 잡혀 있었는지 기록
+     *
+     * @var array<int, bool>
+     */
+    public static array $i161IndexWritesUnderLock = [];
 
     /**
      * 테스트 초기화 - SeoCacheManager 인스턴스를 준비합니다.
@@ -587,5 +610,359 @@ class SeoCacheManagerTest extends TestCase
 
         $this->assertNull($this->cacheManager->get('/shop?page=4', 'ko'));
         $this->assertSame('<html>en1</html>', $this->cacheManager->get('/shop?page=1', 'en'));
+    }
+
+    /**
+     * 잠금 동작을 바꿀 수 있는 시험 저장소(`i161_seo_lock`)를 등록하고 그 저장소를 쓰는 매니저를 돌려줍니다.
+     *
+     * 저장소는 배열 저장소를 그대로 쓰되 잠금 이름을 기록하고, 인덱스(`seo.cached_urls`)를 쓰거나 지울 때 그 순간
+     * 인덱스 잠금이 잡혀 있었는지 남긴다. `$i161LockMode` 로 잠금을 대기 초과·저장소 오류로 바꿀 수 있다.
+     *
+     * @return array{0: SeoCacheManager, 1: CoreCacheDriver} 매니저와 그 캐시 드라이버
+     */
+    private function makeI161LockManager(): array
+    {
+        self::$i161LockMode = 'normal';
+        self::$i161LockNames = [];
+        self::$i161IndexWritesUnderLock = [];
+
+        config(['cache.stores.i161_seo_lock' => ['driver' => 'i161_seo_lock']]);
+
+        Cache::extend('i161_seo_lock', fn () => Cache::repository(new class extends ArrayStore
+        {
+            /**
+             * 잠금 이름을 기록하고, 시험 모드에 맞는 잠금을 돌려준다.
+             *
+             * @param  string  $name  잠금 이름
+             * @param  int  $seconds  잠금 유지 시간(초)
+             * @param  string|null  $owner  소유자
+             * @return \Illuminate\Contracts\Cache\Lock 잠금
+             */
+            public function lock($name, $seconds = 0, $owner = null)
+            {
+                SeoCacheManagerTest::$i161LockNames[] = $name;
+
+                if (SeoCacheManagerTest::$i161LockMode === 'normal') {
+                    return parent::lock($name, $seconds, $owner);
+                }
+
+                return new class($name, $seconds, $owner, SeoCacheManagerTest::$i161LockMode) extends Lock
+                {
+                    /**
+                     * 시험 잠금을 만든다.
+                     *
+                     * @param  string  $name  잠금 이름
+                     * @param  int  $seconds  잠금 유지 시간(초)
+                     * @param  string|null  $owner  소유자
+                     * @param  string  $mode  timeout 또는 error
+                     */
+                    public function __construct($name, $seconds, $owner, private string $mode)
+                    {
+                        parent::__construct($name, $seconds, $owner);
+                    }
+
+                    /**
+                     * 저장소 오류 모드면 던지고, 대기 초과 모드면 남이 쥐고 있는 것처럼 실패한다.
+                     *
+                     * @return bool 언제나 false
+                     *
+                     * @throws \RuntimeException 저장소 오류 모드일 때
+                     */
+                    public function acquire()
+                    {
+                        if ($this->mode === 'error') {
+                            throw new \RuntimeException('i161 lock store down C:\\fake\\g7');
+                        }
+
+                        return false;
+                    }
+
+                    /**
+                     * 대기 초과 모드는 기다리지 않고 바로 시간 초과를 낸다(2초 대기를 시험에서 생략).
+                     *
+                     * @param  int  $seconds  기다릴 시간(초)
+                     * @param  callable|null  $callback  잠금 안에서 실행할 콜백
+                     * @return mixed 콜백 반환값 (대기 초과 모드에서는 반환하지 않음)
+                     *
+                     * @throws LockTimeoutException 대기 초과 모드일 때
+                     */
+                    public function block($seconds, $callback = null)
+                    {
+                        if ($this->mode === 'timeout') {
+                            throw new LockTimeoutException('i161 index lock timeout');
+                        }
+
+                        return parent::block($seconds, $callback);
+                    }
+
+                    /**
+                     * 잠금을 푼다.
+                     *
+                     * @return bool 언제나 true
+                     */
+                    public function release()
+                    {
+                        return true;
+                    }
+
+                    /**
+                     * 소유자와 무관하게 잠금을 푼다.
+                     *
+                     * @return void 반환값 없음
+                     */
+                    public function forceRelease() {}
+
+                    /**
+                     * 현재 소유자를 돌려준다.
+                     *
+                     * @return string|null 소유자 없음
+                     */
+                    protected function getCurrentOwner()
+                    {
+                        return null;
+                    }
+                };
+            }
+
+            /**
+             * 값을 쓴다 — 인덱스를 쓰는 순간 인덱스 잠금이 잡혀 있었는지 기록한다.
+             *
+             * @param  string  $key  키
+             * @param  mixed  $value  값
+             * @param  int  $seconds  유지 시간(초)
+             * @return bool 저장 여부
+             */
+            public function put($key, $value, $seconds)
+            {
+                if (str_ends_with($key, 'seo.cached_urls')) {
+                    SeoCacheManagerTest::$i161IndexWritesUnderLock[] = isset($this->locks[$key.':lock']);
+                }
+
+                return parent::put($key, $value, $seconds);
+            }
+
+            /**
+             * 값을 지운다 — 인덱스를 지우는 순간 인덱스 잠금이 잡혀 있었는지 기록한다.
+             *
+             * @param  string  $key  키
+             * @return bool 삭제 여부
+             */
+            public function forget($key)
+            {
+                if (str_ends_with($key, 'seo.cached_urls')) {
+                    SeoCacheManagerTest::$i161IndexWritesUnderLock[] = isset($this->locks[$key.':lock']);
+                }
+
+                return parent::forget($key);
+            }
+        }));
+
+        $driver = new CoreCacheDriver('i161_seo_lock');
+
+        return [new SeoCacheManager($driver), $driver];
+    }
+
+    /**
+     * 인덱스 잠금 이름 — 매니저가 쓰는 캐시 드라이버의 인덱스 키 뒤에 `:lock` 을 붙인다.
+     *
+     * @param  CoreCacheDriver  $driver  매니저가 쓰는 캐시 드라이버
+     * @return string 인덱스 잠금 이름
+     */
+    private function indexLockName(CoreCacheDriver $driver): string
+    {
+        return $driver->resolveKey('seo.cached_urls').':lock';
+    }
+
+    /**
+     * 기록된 잠금 이름 중 인덱스 잠금의 횟수를 셉니다.
+     *
+     * @param  string  $lockName  인덱스 잠금 이름
+     * @return int 인덱스 잠금을 요청한 횟수
+     */
+    private function countIndexLocks(string $lockName): int
+    {
+        return count(array_filter(self::$i161LockNames, fn (string $name) => $name === $lockName));
+    }
+
+    /**
+     * 인덱스를 고치는 세 경로(저장·무효화 재구성·전체 비우기)가 모두 인덱스 잠금을 잡은 채 인덱스를 쓴다 — 동시 저장 두 건이
+     * 같은 인덱스를 읽고 각자 덮어쓰면 한쪽 항목이 사라져 그 페이지가 무효화에서 빠졌다(#161 F1).
+     *
+     * @scenario store_state=under_caps
+     *
+     * @effects seo_index_mutations_run_inside_index_lock
+     *
+     * @return void 반환값 없음
+     */
+    public function test_index_mutations_run_inside_index_lock(): void
+    {
+        [$manager, $driver] = $this->makeI161LockManager();
+        $lockName = $this->indexLockName($driver);
+
+        $manager->putWithLayout('/a', 'ko', '<html>a</html>', 'la');
+        $manager->putWithLayout('/b', 'ko', '<html>b</html>', 'lb');
+        $manager->putWithLayout('/c', 'ko', '<html>c</html>', 'lc');
+        $this->assertSame(1, $manager->invalidateByUrl('/a'));
+        $this->assertSame(1, $manager->invalidateByLayout('lb'));
+        $this->assertSame(['/c'], array_values($manager->getCachedUrls()));
+        $manager->clearAll();
+
+        // 저장 3 + 무효화 재구성 2 + 전체 비우기 1
+        $this->assertSame(6, $this->countIndexLocks($lockName));
+        $this->assertCount(6, self::$i161IndexWritesUnderLock, '인덱스 쓰기·지우기가 모두 기록돼야 한다');
+        $this->assertNotContains(false, self::$i161IndexWritesUnderLock, '인덱스 쓰기·지우기는 모두 잠금 안에서 일어난다');
+        $this->assertSame([], $manager->getCachedUrls());
+    }
+
+    /**
+     * 인덱스 잠금을 기다리다 시간이 지나면 페이지도 인덱스도 쓰지 않는다 — 잠금 없이 쓰면 다른 저장의 인덱스 항목을
+     * 덮어쓸 수 있고, 성능 캐시라 한 번 쓰지 않는 쪽이 안전하다.
+     *
+     * @scenario store_state=under_caps
+     *
+     * @effects seo_store_skipped_when_index_lock_unavailable
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_page_skips_when_index_lock_times_out(): void
+    {
+        [$manager] = $this->makeI161LockManager();
+        Log::spy();
+
+        self::$i161LockMode = 'timeout';
+        $manager->putWithLayout('/a', 'ko', '<html>a</html>', 'la');
+
+        $this->assertNull($manager->get('/a', 'ko'), '페이지를 쓰지 않는다');
+        $this->assertSame([], $manager->getCachedUrls(), '인덱스를 쓰지 않는다');
+        $this->assertSame([], self::$i161IndexWritesUnderLock);
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message) => str_contains((string) $message, '잠금 대기 시간 초과'))
+            ->once();
+    }
+
+    /**
+     * 잠금 저장소가 오류를 내도 저장을 건너뛰고 예외를 올려 보내지 않는다 — 봇 응답 경로가 캐시 잠금 장애로 실패하면 안 된다.
+     *
+     * @scenario store_state=under_caps
+     *
+     * @effects seo_store_skipped_when_index_lock_unavailable
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_page_skips_when_lock_store_errors(): void
+    {
+        [$manager] = $this->makeI161LockManager();
+        Log::spy();
+
+        self::$i161LockMode = 'error';
+        $manager->put('/a', 'ko', '<html>a</html>');
+        $manager->putWithLayout('/b', 'ko', '<html>b</html>', 'lb');
+
+        $this->assertNull($manager->get('/a', 'ko'));
+        $this->assertNull($manager->get('/b', 'ko'));
+        $this->assertSame([], $manager->getCachedUrls());
+        $this->assertSame([], self::$i161IndexWritesUnderLock);
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn ($message, $context = []) => str_contains((string) $message, '잠금 저장소 오류')
+                && str_contains((string) ($context['error'] ?? ''), 'i161 lock store down'))
+            ->twice();
+    }
+
+    /**
+     * 잠금을 잡지 못해도 무효화의 페이지 삭제는 그대로 일어난다 — 페이지 삭제는 잠금 밖이고, 건너뛰는 것은 인덱스 재구성뿐이다
+     * (남은 인덱스 항목은 다음 재구성이 걷어 낸다). 글을 고쳤는데 낡은 화면이 남으면 안 된다.
+     *
+     * @scenario store_state=under_caps
+     *
+     * @effects seo_invalidate_forgets_pages_without_index_lock
+     *
+     * @return void 반환값 없음
+     */
+    public function test_invalidate_forgets_pages_when_lock_unavailable(): void
+    {
+        [$manager] = $this->makeI161LockManager();
+
+        $manager->putWithLayout('/products/1', 'ko', '<html>1</html>', 'shop/show');
+        $manager->putWithLayout('/products/2', 'ko', '<html>2</html>', 'shop/show');
+        $manager->putWithLayout('/categories/1', 'ko', '<html>c</html>', 'shop/category');
+
+        self::$i161LockMode = 'error';
+
+        $this->assertSame(1, $manager->invalidateByUrl('/products/1'));
+        $this->assertNull($manager->get('/products/1', 'ko'), '잠금 없이도 페이지는 지운다');
+
+        $this->assertSame(1, $manager->invalidateByLayout('shop/category'));
+        $this->assertNull($manager->get('/categories/1', 'ko'));
+        $this->assertSame('<html>2</html>', $manager->get('/products/2', 'ko'), '대상이 아닌 페이지는 남는다');
+
+        // 인덱스 재구성은 건너뛰었다 — 지워진 페이지의 항목이 남아 있다
+        $this->assertContains('/products/1', $manager->getCachedUrls());
+
+        self::$i161LockMode = 'timeout';
+        $this->assertSame(1, $manager->invalidateByUrl('/products/2'));
+        $this->assertNull($manager->get('/products/2', 'ko'), '대기 초과여도 페이지는 지운다');
+    }
+
+    /**
+     * 전체 비우기는 잠금을 잡지 못해도 인덱스까지 지운다 — 운영자가 명시한 동작이다.
+     *
+     * @scenario store_state=under_caps
+     *
+     * @effects seo_clear_all_forgets_index_without_index_lock
+     *
+     * @return void 반환값 없음
+     */
+    public function test_clear_all_forgets_index_when_lock_unavailable(): void
+    {
+        [$manager] = $this->makeI161LockManager();
+
+        $manager->putWithLayout('/a', 'ko', '<html>a</html>', 'la');
+        $manager->putWithLayout('/b', 'ko', '<html>b</html>', 'lb');
+
+        self::$i161LockMode = 'error';
+        $manager->clearAll();
+
+        $this->assertNull($manager->get('/a', 'ko'));
+        $this->assertNull($manager->get('/b', 'ko'));
+        $this->assertSame([], $manager->getCachedUrls());
+    }
+
+    /**
+     * 저장 상한에서 저장 안의 인덱스 정리는 잠금을 다시 잡지 않는다 — 배열·Redis 잠금은 재진입이 안 돼 다시 잡으면 2초를
+     * 기다린 뒤 시간 초과로 저장을 버린다. 한 번의 저장은 잠금을 한 번만 잡고, 정리 뒤 자리가 나면 저장한다.
+     *
+     * @scenario store_state=path_cap
+     *
+     * @effects seo_prune_inside_store_reuses_held_lock
+     *
+     * @return void 반환값 없음
+     */
+    public function test_prune_inside_store_does_not_reacquire_lock(): void
+    {
+        [$manager, $driver] = $this->makeI161LockManager();
+        $lockName = $this->indexLockName($driver);
+
+        config([
+            'core.seo_cache_limits.max_variants_per_path' => 3,
+            'core.seo_cache_limits.max_entries' => 20000,
+        ]);
+
+        for ($i = 1; $i <= 3; $i++) {
+            $manager->putWithLayout('/shop?page='.$i, 'ko', '<html>'.$i.'</html>', 'shop');
+        }
+
+        $this->expirePages($driver);
+        self::$i161LockNames = [];
+        self::$i161IndexWritesUnderLock = [];
+
+        $started = microtime(true);
+        $manager->putWithLayout('/shop?page=4', 'ko', '<html>4</html>', 'shop');
+        $elapsed = microtime(true) - $started;
+
+        $this->assertSame(1, $this->countIndexLocks($lockName), '저장 한 번에 잠금은 한 번');
+        $this->assertSame([true, true], self::$i161IndexWritesUnderLock, '정리 쓰기와 저장 쓰기 모두 같은 잠금 안');
+        $this->assertSame('<html>4</html>', $manager->get('/shop?page=4', 'ko'));
+        $this->assertSame(['/shop?page=4'], array_values($manager->getCachedUrls()));
+        $this->assertLessThan(1.5, $elapsed, '잠금 재진입 대기(2초)가 없어야 한다');
     }
 }

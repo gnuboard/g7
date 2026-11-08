@@ -1,0 +1,25 @@
+feature: 설정 JSON 저장 실패 판정 (#161 F5)
+
+description: |
+  JsonConfigRepository::saveCategory() 는 7.1.4 까지 파일 잠금을 못 잡아 쓰지 않았어도, 쓰기가 잘렸어도
+  성공(true)을 돌려 화면이 「저장됨」을 보였는데 값은 그대로였다. JSON 변환이 실패하면(잘못된 UTF-8 등) 파일을
+  열고 비운 뒤 false 를 써 설정 파일이 빈 채로 남았다.
+
+  이제 변환 실패는 파일을 열기 전에 false 로 끝나고, 잠금 실패·일부만 기록·fflush 실패도 false 다. 잠금과 쓰기는
+  덮어쓸 수 있는 protected 메서드(lockForWrite·writeLocked)로 나뉘어 있어 시험이 실패를 흉내 낸다 — 쓰기 판정은
+  부모 구현을 그대로 쓰고 쓰기 대상만 시험 스트림으로 바꾼다.
+
+axis_notes:
+  case: |
+    lock_fails 는 배타 잠금 실패, short_write 는 일부 바이트만 기록, flush_fails 는 끝까지 썼지만 fflush 실패,
+    write_ok 는 같은 판정 경로의 정상 대조, json_encode_fails 는 저장할 값의 JSON 변환 실패다.
+
+axes:
+  case: [lock_fails, short_write, flush_fails, write_ok, json_encode_fails]
+
+effects:
+  - settings_save_reports_failure_without_touching_file   # 잠금 실패·변환 실패는 false, 기존 파일은 그대로
+  - settings_save_reports_failure_on_incomplete_write     # 일부만 기록·fflush 실패는 false, 끝까지 쓰면 true
+
+test_files:
+  - tests/Unit/Repositories/JsonConfigRepositoryWriteTest.php

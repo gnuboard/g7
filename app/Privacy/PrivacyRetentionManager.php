@@ -360,9 +360,28 @@ class PrivacyRetentionManager
             // 직권 실행과 같은 락 — 관리자가 화면에서 돌린 작업이 이 핸들러를 처리하는 중이면
             // 건너뛴다. 같은 행을 두 프로세스가 동시에 처리하면 prune 훅이 두 번 나가고 삭제
             // 방식은 서로의 대상을 지운다. 건너뛴 것은 다음 주기가 다시 잡는다.
-            $lock = $dryRun ? null : Cache::lock(self::lockKey($id), self::RUN_LOCK_SECONDS);
+            // 잠금 저장소 오류는 이 항목만 실패로 남기고 다음 핸들러로 간다 — 7.1.4 까지는 예외가 루프 밖으로 나가 남은 핸들러가
+            // 모두 처리되지 않았다(#161 F6). 잠금 없이 파기하지 않는다(prune 훅 중복·서로의 대상 삭제 방지).
+            try {
+                $lock = $dryRun ? null : Cache::lock(self::lockKey($id), self::RUN_LOCK_SECONDS);
+                $acquired = $lock === null || $lock->get();
+            } catch (Throwable $e) {
+                $result[$id] = [
+                    'status' => 'failed',
+                    'count' => 0,
+                    'mode' => 'none',
+                    'label' => $label,
+                    'error' => __('privacy.console.lock_unavailable'),
+                ];
+                Log::error('개인정보 보유기간 처리 잠금 오류 — 이 항목을 건너뜁니다', [
+                    'handler' => $id,
+                    'error' => $e->getMessage(),
+                ]);
 
-            if ($lock !== null && ! $lock->get()) {
+                continue;
+            }
+
+            if (! $acquired) {
                 $result[$id] = ['status' => 'locked', 'count' => 0, 'mode' => 'none', 'label' => $label];
 
                 continue;
@@ -390,7 +409,14 @@ class PrivacyRetentionManager
                     'error' => $e->getMessage(),
                 ]);
             } finally {
-                $lock?->release();
+                try {
+                    $lock?->release();
+                } catch (Throwable $e) {
+                    Log::warning('개인정보 보유기간 처리 잠금 해제 실패 — 유지 시간이 지나면 풀립니다', [
+                        'handler' => $id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
         }
 

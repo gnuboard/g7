@@ -10,6 +10,7 @@ use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
+use App\Support\AtomicBootstrapCache;
 use App\Support\ConfigCacheHelper;
 use App\Support\PhpExtensionProbe;
 use Closure;
@@ -272,8 +273,9 @@ class ExtensionManager
             File::makeDirectory($dir, 0755, true);
         }
 
-        // 파일 저장
-        File::put($this->autoloadFilePath, $content);
+        // 파일 저장 — 제자리에 덮어쓰지 않는다. 쓰는 사이 다른 요청이 반쯤 쓰인 파일을 읽었다(#882).
+        // 임시 파일에 다 쓴 뒤 바꿔 끼운다.
+        AtomicBootstrapCache::write($this->autoloadFilePath, $content);
 
         Log::info('확장 오토로드 파일 생성 완료', [
             'path' => $this->autoloadFilePath,

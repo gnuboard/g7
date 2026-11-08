@@ -49,7 +49,9 @@ return [
         'file' => [
             'driver' => 'file',
             'path' => storage_path('framework/cache/data'),
-            'lock_path' => storage_path('framework/cache/data'),
+            // 잠금은 데이터와 다른 폴더에 둔다 — cache:clear(FileStore::flush)가 data/ 를 통째로 지울 때
+            // 진행 중인 확장·코어 업데이트와 예약 작업의 잠금까지 함께 지워지지 않게 한다.
+            'lock_path' => storage_path('framework/cache/locks'),
         ],
 
         'memcached' => [

@@ -174,19 +174,55 @@ class LifecycleWarnings
     }
 
     /**
-     * 경고 사유에서 DB 접속 정보·SQL 문장을 뗍니다.
+     * 경고 사유에서 DB 접속 정보·SQL 문장을 떼고, 설치 루트 절대경로를 상대경로로 바꿉니다.
      *
      * Laravel QueryException 메시지는 「SQLSTATE[…]: 사유 (Connection: …, Host: …, Database: …, SQL: …)」 꼴이라 그대로 두면
-     * 관리자 결과 창에 DB 호스트·이름·쿼리가 보인다. 사유 부분만 남긴다.
+     * 관리자 결과 창에 DB 호스트·이름·쿼리가 보인다. 사유 부분만 남긴다. 파일 오류(fopen·mkdir 등)의 사유에는 서버 절대경로가
+     * 들어 있어 결과 창 「자세히 보기」·명령줄 경고 표에 그대로 보였다(#161 S8) — 설치 루트 부분을 떼어 상대경로로 보인다.
      *
      * @param  string  $message  원래 사유
-     * @return string 접속 정보·SQL 을 뗀 사유
+     * @return string 접속 정보·SQL 을 떼고 설치 루트를 상대경로로 바꾼 사유
      */
     private static function scrubMessage(string $message): string
     {
         $scrubbed = preg_replace('/\s*\(Connection:.*$/s', '', $message);
+        $scrubbed = is_string($scrubbed) && $scrubbed !== '' ? $scrubbed : $message;
 
-        return is_string($scrubbed) && $scrubbed !== '' ? $scrubbed : $message;
+        return self::relativizePaths($scrubbed);
+    }
+
+    /**
+     * 사유 안의 설치 루트 절대경로를 떼어 상대경로로 바꿉니다(예: `C:\…\g7\storage\framework/cache/x` → `storage\framework/cache/x`).
+     *
+     * 루트 후보는 `base_path()` 와 그 실제 경로(심볼릭 링크 해제), 각각의 원형·`/` 정규화·`\` 정규화다. 긴 것부터 지워 겹치는
+     * 후보가 짧은 쪽에 먼저 잘리지 않게 한다. Windows 는 대소문자를 가리지 않는다. 설치 루트 밖의 경로는 그대로 둔다.
+     *
+     * @param  string  $message  사유
+     * @return string 설치 루트를 뗀 사유
+     */
+    private static function relativizePaths(string $message): string
+    {
+        $base = base_path();
+        $real = realpath($base);
+        $roots = [];
+        foreach (array_filter([$base, $real !== false ? $real : null]) as $root) {
+            $root = rtrim($root, '\\/');
+            $roots[] = $root;
+            $roots[] = str_replace('\\', '/', $root);
+            $roots[] = str_replace('/', '\\', $root);
+        }
+        $roots = array_values(array_unique(array_filter($roots, fn (string $root) => strlen($root) >= 3)));
+        usort($roots, fn (string $a, string $b) => strlen($b) <=> strlen($a));
+
+        $flags = PHP_OS_FAMILY === 'Windows' ? 'i' : '';
+        foreach ($roots as $root) {
+            $replaced = preg_replace('~'.preg_quote($root, '~').'[\\\\/]?~'.$flags, '', $message);
+            if (is_string($replaced)) {
+                $message = $replaced;
+            }
+        }
+
+        return $message;
     }
 
     /**

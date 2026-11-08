@@ -374,7 +374,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 220개 (정의: `resources/js/handlers/index.ts`).
+핸들러 228개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -562,6 +562,14 @@
 | `submitAdminClaimRequest` | `sirsoft-ecommerce.submitAdminClaimRequest` |
 | `toggleItemSelection` | `sirsoft-ecommerce.toggleItemSelection` |
 | `toggleSelectAllItems` | `sirsoft-ecommerce.toggleSelectAllItems` |
+| `initUserCancelItems` | `sirsoft-ecommerce.initUserCancelItems` |
+| `toggleUserCancelItem` | `sirsoft-ecommerce.toggleUserCancelItem` |
+| `toggleUserCancelSelectAll` | `sirsoft-ecommerce.toggleUserCancelSelectAll` |
+| `updateUserCancelQuantity` | `sirsoft-ecommerce.updateUserCancelQuantity` |
+| `estimateUserRefund` | `sirsoft-ecommerce.estimateUserRefund` |
+| `changeUserRefundPriority` | `sirsoft-ecommerce.changeUserRefundPriority` |
+| `executeUserCancelOrder` | `sirsoft-ecommerce.executeUserCancelOrder` |
+| `clearUserCancelOrderTimers` | `sirsoft-ecommerce.clearUserCancelOrderTimers` |
 | `confirmOrderOption` | `sirsoft-ecommerce.confirmOrderOption` |
 | `changeShippingAddress` | `sirsoft-ecommerce.changeShippingAddress` |
 | `submitReview` | `sirsoft-ecommerce.submitReview` |

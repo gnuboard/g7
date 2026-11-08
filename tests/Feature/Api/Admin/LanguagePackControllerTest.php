@@ -586,14 +586,15 @@ class LanguagePackControllerTest extends TestCase
     }
 
     /**
-     * 보호된 팩은 지워지지 않는다 — 코어 한국어팩이 사라지면 관리 화면 자체가 뜨지 않는다.
+     * 보호된 팩은 지워지지 않는다 — 코어 한국어팩이 사라지면 관리 화면 자체가 뜨지 않는다. 거절은 서버 오류(500)가 아니라
+     * 422 와 「보호된 팩」 사유 문구다(#882 — 7.1.4 까지는 안내성 실패가 500 「제거에 실패했습니다」로 나왔다).
      *
      * @scenario endpoint=uninstall, outcome=success
      * @effects protected_pack_cannot_be_uninstalled
      *
      * @return void 반환값 없음
      */
-    public function test_uninstall_protected_pack_returns_500(): void
+    public function test_uninstall_protected_pack_returns_422_with_reason(): void
     {
         $pack = LanguagePack::query()->create([
             'identifier' => 'g7-core-ko',
@@ -613,7 +614,33 @@ class LanguagePackControllerTest extends TestCase
 
         $response = $this->deleteJson('/api/admin/language-packs/'.$pack->id);
 
-        $response->assertStatus(500);
+        $response->assertStatus(422)
+            ->assertJsonPath('message', __('language_packs.errors.protected_pack'));
+        $this->assertNotNull(LanguagePack::query()->find($pack->id), '보호된 팩이 지워졌다');
+    }
+
+    /**
+     * 이미 최신인 언어팩의 업데이트는 422 와 「이미 최신」 문구로 답한다 — 7.1.4 까지는 500 「업데이트에 실패했습니다」였다(#882).
+     *
+     * @scenario endpoint=update, outcome=validation_rejected
+     * @effects language_pack_notice_failures_respond_422
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_already_latest_returns_422_with_reason(): void
+    {
+        $pack = $this->makeActiveCorePack();
+        $this->mock(\App\Services\LanguagePackService::class, function ($mock) use ($pack) {
+            $mock->shouldReceive('find')->andReturn($pack);
+            $mock->shouldReceive('performUpdate')->andThrow(new \App\Exceptions\LanguagePackOperationException('language_packs.errors.update_already_latest'));
+        });
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/admin/language-packs/'.$pack->id.'/update');
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', __('language_packs.errors.update_already_latest'));
     }
 
     /**
@@ -720,7 +747,8 @@ class LanguagePackControllerTest extends TestCase
     }
 
     /**
-     * 갱신 수행은 GitHub 로 설치된 팩만 대상이다 — 다른 출처는 되받을 곳이 없다.
+     * 갱신 수행은 GitHub 로 설치된 팩만 대상이다 — 다른 출처는 되받을 곳이 없다. 거절은 422 와 「업데이트 출처 없음」 사유다
+     * (#882 — 7.1.4 까지는 500 「업데이트에 실패했습니다」).
      *
      * @scenario endpoint=install, outcome=validation_rejected
      * @effects perform_update_rejects_non_github_source
@@ -734,7 +762,8 @@ class LanguagePackControllerTest extends TestCase
 
         $response = $this->postJson('/api/admin/language-packs/'.$pack->id.'/update');
 
-        $response->assertStatus(500);
+        $response->assertStatus(422)
+            ->assertJsonPath('message', __('language_packs.errors.update_no_source'));
     }
 
     /**

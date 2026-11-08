@@ -5,10 +5,11 @@ namespace App\Services;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
-use App\Exceptions\ExtensionOperationInProgressException;
+use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\PluginOperationException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\EditorSpecAssembler;
+use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
@@ -170,6 +171,10 @@ class PluginService
             }
 
             return null;
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
+            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'plugin_name' => [__('plugins.installation_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -218,6 +223,10 @@ class PluginService
             // 실패 사유(reason)를 그대로 전달한다 — 여기서 떨어뜨리면 관리자 화면의
             // 실패 문구에 원인 자리가 비어 자리표시자가 그대로 노출된다.
             return $result;
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
+            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'plugin_name' => [__('plugins.activation_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -259,6 +268,10 @@ class PluginService
             }
 
             return $result;
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
+            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'plugin_name' => [__('plugins.deactivation_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -304,6 +317,10 @@ class PluginService
             // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return $result;
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
+            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'plugin_name' => [__('plugins.uninstallation_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -572,8 +589,9 @@ class PluginService
             return array_merge($result, [
                 'plugin_info' => $pluginInfo,
             ]);
-        } catch (ExtensionOperationInProgressException $e) {
-            // 같은 확장의 업데이트가 진행 중 — 「업데이트 실패」(422)로 감싸면 화면이 두 번째 요청을 실패로 보여 준다(#138 실측 ②)
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
+            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
             throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
@@ -933,6 +951,10 @@ class PluginService
                 $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', $file->getClientOriginalName()
             );
 
+            // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
+            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
+            $operationLock = ExtensionOperationLock::acquire('plugin', $result['identifier'], 'install');
+
             $this->ensurePluginNotInstalled($result['identifier']);
 
             ZipInstallHelper::moveToPending(
@@ -948,6 +970,10 @@ class PluginService
                 }
                 throw $e;
             }
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
+            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
         } catch (PluginOperationException $e) {
             throw $e;
         } catch (\RuntimeException $e) {
@@ -993,6 +1019,10 @@ class PluginService
                 $zipPath, $extractPath, 'plugin.json', 'plugins'
             );
 
+            // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
+            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
+            $operationLock = ExtensionOperationLock::acquire('plugin', $result['identifier'], 'install');
+
             $this->ensurePluginNotInstalled($result['identifier']);
 
             ZipInstallHelper::moveToPending(
@@ -1008,6 +1038,10 @@ class PluginService
                 }
                 throw $e;
             }
+        } catch (ExtensionOperationLockException $e) {
+            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
+            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
         } catch (PluginOperationException $e) {
             throw $e;
         } catch (\RuntimeException $e) {

@@ -15,6 +15,7 @@ use App\Http\Resources\AttachmentResource;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\ConfigCacheHelper;
+use App\Support\RouteCacheHelper;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
@@ -1497,10 +1498,11 @@ class SettingsService
             }
 
             Artisan::call('cache:clear');
-            Artisan::call('route:clear');
             Artisan::call('view:clear');
 
-            // config 는 clear 후 즉시 재생성 (비운 채 두면 이후 모든 요청이 config 재파싱).
+            // 라우트·config 는 지우는 대신 다시 구워 바꿔 끼운다 — 비운 채 두면 이후 모든 요청이 재파싱하고,
+            // 지우는 순간 들어온 요청은 500(`routes-v7.php: No such file`)을 받았다(#882).
+            RouteCacheHelper::rebuild();
             ConfigCacheHelper::rebuild();
 
             return true;
@@ -1517,12 +1519,11 @@ class SettingsService
     public function optimizeSystem(): bool
     {
         try {
-            // config:cache / route:cache 는 새 Application 을 부팅하며 전역 Container 를 바꿔 놓는다.
-            // 보존 래퍼 없이 부르면 이 요청의 후속 `app()->terminating()` 예약이 사라진다.
-            ConfigCacheHelper::withPreservedContainer(static function (): void {
-                Artisan::call('config:cache');
-                Artisan::call('route:cache');
-            });
+            // config·라우트 캐시는 두 헬퍼로 굽는다 — 새 Application 을 부팅하는 명령을 보존 래퍼(withPreservedContainer)로
+            // 감싸고(후속 `app()->terminating()` 예약 보존), 임시 파일에 다 구운 뒤 바꿔 끼운다. 명령을 직접 부르면 명령이
+            // 먼저 지운 뒤 다시 써서 그 사이 들어온 요청이 500 을 받았다(#882).
+            ConfigCacheHelper::rebuild();
+            RouteCacheHelper::rebuild();
             Artisan::call('view:cache');
 
             return true;

@@ -7,9 +7,11 @@ use App\Console\Commands\Core\Concerns\BundledSourcePlacementPrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
+use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\CoreBackupHelper;
+use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\ModuleManager;
@@ -104,8 +106,20 @@ class CoreUpdateCommand extends Command
 
         $sourceDir = $this->option('source');
         $zipPath = $this->option('zip');
+        $coreLock = null;
 
         try {
+            // 코어 업데이트는 한 번에 하나만 — 두 곳에서 동시에 돌리면 먼저 끝난 쪽이 유지보수 모드를 풀어 교체 중인 사이트가
+            // 열리고 스텝이 두 번 돌았다(#161 S5). 유지보수 진입 전이라 거절해도 정리할 것이 없다. 잠금 저장소 오류면 시작하지
+            // 않는다. 이 지역 변수가 handle() 을 빠져나갈 때 풀린다. 자식 프로세스(업그레이드 스텝·번들 일괄 업데이트)는 잡지 않는다.
+            try {
+                $coreLock = ExtensionOperationLock::acquireCore();
+            } catch (ExtensionOperationLockException $e) {
+                $this->error($e->getMessage());
+
+                return Command::FAILURE;
+            }
+
             // --source 와 --zip 동시 지정 금지
             if ($sourceDir && $zipPath) {
                 $this->error(__('settings.core_update.console.source_zip_conflict'));
@@ -281,9 +295,12 @@ class CoreUpdateCommand extends Command
                 }
                 $bar->display();
             };
+            // 진행 콜백마다(30초 간격) 코어 잠금을 늘린다 — 오래 걸리는 다운로드·vendor 설치 중 잠금이 만료되지 않게 한다
+            $onProgress = $coreLock->wrapProgress($onProgress);
 
             // ── Step 2: _pending 경로 검증 ──
             $bar->setMessage(__('settings.core_update.step_validate_pending'));
+            $coreLock?->keepAlive();
             $bar->advance();
             $log('_pending 경로 검증');
 
@@ -307,6 +324,7 @@ class CoreUpdateCommand extends Command
 
             // ── Step 3: Maintenance 모드 ──
             $bar->setMessage(__('settings.core_update.step_maintenance'));
+            $coreLock?->keepAlive();
             $bar->advance();
 
             if (! $this->option('no-maintenance')) {
@@ -325,6 +343,7 @@ class CoreUpdateCommand extends Command
             } else {
                 $bar->setMessage(__('settings.core_update.step_download'));
             }
+            $coreLock?->keepAlive();
             $bar->advance();
 
             if ($sourceDir) {
@@ -408,6 +427,7 @@ class CoreUpdateCommand extends Command
 
             // ── Step 5: 백업 ──
             $bar->setMessage(__('settings.core_update.step_backup'));
+            $coreLock?->keepAlive();
             $bar->advance();
 
             if (! $this->option('no-backup')) {
@@ -465,11 +485,13 @@ class CoreUpdateCommand extends Command
 
             if ($composerSkipped) {
                 $bar->setMessage(__('settings.core_update.console.progress.composer_skipped'));
+                $coreLock?->keepAlive();
                 $bar->advance();
                 $log('composer.json/lock 변경 없음, vendor 재설치 스킵');
                 $vendorResult = null;
             } else {
                 $bar->setMessage(__('settings.core_update.step_composer'));
+                $coreLock?->keepAlive();
                 $bar->advance();
                 $log("_pending vendor 설치 시작 (mode: {$vendorMode->value})");
 
@@ -563,6 +585,7 @@ class CoreUpdateCommand extends Command
 
             // ── Step 7: 파일 적용 ──
             $bar->setMessage(__('settings.core_update.step_apply'));
+            $coreLock?->keepAlive();
             $bar->advance();
 
             if ($prune) {
@@ -585,10 +608,12 @@ class CoreUpdateCommand extends Command
             // ── Step 8: vendor 디렉토리 복사 (_pending → 운영) ──
             if ($composerSkipped) {
                 $bar->setMessage(__('settings.core_update.console.progress.vendor_copy_skipped'));
+                $coreLock?->keepAlive();
                 $bar->advance();
                 $log('composer 스킵 → vendor 디렉토리 복사 불필요');
             } else {
                 $bar->setMessage(__('settings.core_update.step_composer_prod'));
+                $coreLock?->keepAlive();
                 $bar->advance();
                 $log('vendor 디렉토리 복사 시작');
 
@@ -607,6 +632,7 @@ class CoreUpdateCommand extends Command
             // syncCoreRolesAndPermissions / syncCoreMenus 직접 호출 금지 — 부모 메모리의
             // 구버전 config 로 sync 가 돌면 신규 권한/메뉴가 누락된다 (#326 회귀).
             $bar->setMessage(__('settings.core_update.step_migration'));
+            $coreLock?->keepAlive();
             $bar->advance();
             $log('마이그레이션, 역할/메뉴 동기화 실행');
 
@@ -625,6 +651,7 @@ class CoreUpdateCommand extends Command
             //
             // proc_open 미지원 / 실행 실패 시 in-process fallback 으로 안전하게 전환.
             $bar->setMessage(__('settings.core_update.step_upgrade'));
+            $coreLock?->keepAlive();
             $bar->advance();
             $log('업그레이드 스텝 별도 프로세스 실행 시도');
 
@@ -657,10 +684,13 @@ class CoreUpdateCommand extends Command
 
             // ── Step 11: Cleanup ──
             $bar->setMessage(__('settings.core_update.step_cleanup'));
+            $coreLock?->keepAlive();
             $bar->advance();
 
             $service->updateVersionInEnv($toVersion);
             $service->clearAllCaches();
+            // 캐시 비우기(redis·memcached flush)가 잠금까지 지웠을 수 있다 — 바로 늘리거나 다시 잡는다
+            $coreLock?->keepAlive(force: true);
 
             // 상주 큐 워커는 부팅이 한 번뿐이라 옛 코드를 물고 있다 — 캐시가 새 코드 기준으로
             // 정리된 직후 재시작 신호를 보낸다.
@@ -734,6 +764,7 @@ class CoreUpdateCommand extends Command
             // bootstrap/cache/autoload-extensions.php, {modules|plugins|templates}/{id}/vendor,
             // storage/app/* 등이 sudo 컨텍스트에서 root 로 오염될 수 있다.
             // 실제 업데이트가 수행된 경우 restoreOwnership 을 한 번 더 호출해 재복원한다.
+            $coreLock?->keepAlive(force: true);
             $promptResult = $this->runBundledExtensionUpdatePrompt(
                 app(ModuleManager::class),
                 app(PluginManager::class),
@@ -807,6 +838,8 @@ class CoreUpdateCommand extends Command
             try {
                 $service->updateVersionInEnv($toVersion);
                 $service->clearAllCaches();
+                // 캐시 비우기(redis·memcached flush)가 잠금까지 지웠을 수 있다 — 바로 늘리거나 다시 잡는다
+                $coreLock?->keepAlive(force: true);
                 // 핸드오프는 정상 종료 경로의 훅 캐시 재굽기를 지나지 않는다 — 파일은 이미 toVersion 이므로
                 // 새 코드로 부팅하는 새 프로세스에서 굽는다(#138 후속).
                 $this->rebuildHookCacheInFreshProcess($log);
@@ -905,6 +938,8 @@ class CoreUpdateCommand extends Command
                 // 캐시 정리 실패는 fatal 아님 — warning 후 진행.
                 try {
                     $service->clearAllCaches();
+                    // 캐시 비우기(redis·memcached flush)가 잠금까지 지웠을 수 있다 — 바로 늘리거나 다시 잡는다
+                    $coreLock?->keepAlive(force: true);
                     $log('롤백 후 캐시 정리 완료');
                 } catch (\Throwable $cacheError) {
                     $log("롤백 후 캐시 정리 실패 (계속 진행): {$cacheError->getMessage()}");

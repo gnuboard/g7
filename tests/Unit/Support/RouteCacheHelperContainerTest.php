@@ -19,7 +19,11 @@ use Tests\TestCase;
 class RouteCacheHelperContainerTest extends TestCase
 {
     /**
+     * rebuild() 가 route:cache 를 보존 래퍼로 감싸 부른다 — 감싸지 않으면 뒤따르는 terminating 예약이 사라진다.
+     *
      * @effects route_cache_rebuild_preserves_container_instance
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function rebuild_는_route_cache_를_보존_래퍼로_감싼다(): void
@@ -31,18 +35,23 @@ class RouteCacheHelperContainerTest extends TestCase
     }
 
     /**
-     * 관리자 「시스템 최적화」 도 같은 두 명령을 부르므로 같은 래퍼를 거친다.
+     * 관리자 「시스템 최적화」·「캐시 정리」 도 같은 두 명령을 쓰므로 두 헬퍼를 거친다 — 헬퍼가 보존 래퍼로 감싸고,
+     * 임시 파일에 다 구운 뒤 바꿔 끼운다(#882: 명령을 직접 부르면 먼저 지운 사이 들어온 요청이 500).
      *
      * @effects route_cache_rebuild_preserves_container_instance
+     *
+     * @return void 반환값 없음
      */
     #[Test]
-    public function optimize_system_은_config_route_cache_를_보존_래퍼로_감싼다(): void
+    public function optimize_system_과_clear_cache_는_두_헬퍼로_굽는다(): void
     {
-        $body = $this->methodBody(SettingsService::class, 'optimizeSystem');
+        foreach (['optimizeSystem', 'clearCache'] as $method) {
+            $body = $this->methodBody(SettingsService::class, $method);
 
-        $this->assertStringContainsString('withPreservedContainer(', $body);
-        $this->assertStringNotContainsString("\n            Artisan::call('config:cache');", $body);
-        $this->assertStringNotContainsString("\n            Artisan::call('route:cache');", $body);
+            $this->assertStringContainsString('ConfigCacheHelper::rebuild()', $body, $method);
+            $this->assertStringContainsString('RouteCacheHelper::rebuild()', $body, $method);
+            $this->assertDoesNotMatchRegularExpression("/Artisan::call\\('(?:config|route):(?:cache|clear)'\\)/", $body, $method);
+        }
     }
 
     /**
@@ -52,6 +61,8 @@ class RouteCacheHelperContainerTest extends TestCase
      * 그 자리 뒤의 `terminating` 예약이 조용히 사라진다.
      *
      * @effects route_cache_rebuild_preserves_container_instance
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 새_앱을_부팅하는_artisan_호출은_헬퍼_밖에서_직접_부르지_않는다(): void
@@ -87,6 +98,10 @@ class RouteCacheHelperContainerTest extends TestCase
 
     /**
      * 메서드 본문 소스를 돌려준다.
+     *
+     * @param  string  $class  클래스 이름
+     * @param  string  $method  메서드 이름
+     * @return string 메서드 본문 소스
      */
     private function methodBody(string $class, string $method): string
     {
