@@ -12,7 +12,7 @@
 | [백엔드](backend/) | 42개 | 정상 |
 | [프론트엔드](frontend/) | 50개 | 정상 |
 | [확장 시스템](extension/) | 39개 | 정상 |
-| 공통 | 22개 | 정상 |
+| 공통 | 21개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
@@ -275,11 +275,10 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [upgrade-step-guide.md](extension/upgrade-step-guide.md) | 업그레이드 스텝 작성 가이드 (Upgrade Step Guide) |
 | [vendor-bundle.md](extension/vendor-bundle.md) | Vendor 번들 시스템 (Vendor Bundle System) |
 
-### 공통 (22개)
+### 공통 (21개)
 
 | 문서 | 제목 |
 |------|------|
-| [__leak-probe-65200-1794196097069.md](__leak-probe-65200-1794196097069.md) | probe |
 | [README.md](ai-tools/agents/README.md) | 그누보드7 DevTools MCP 서버 소스 |
 | [README.md](ai-tools/devtools/README.md) | 그누보드7 DevTools MCP 서버 |
 | [README.md](ai-tools/README.md) | 그누보드7 AI 도구 |
