@@ -31,6 +31,7 @@ effects:
   - admin_report_list_exposes_processor_uuid_only
   # 상세
   - admin_report_detail_returns_report
+  - admin_report_detail_signs_content_media
   # 상태 변경과 대상 게시글 동기화
   - admin_report_status_update_persists_status_and_note
   - admin_report_bulk_status_update_persists_all

@@ -25,6 +25,7 @@
 | [claim-image.md](claim-image.md) | `claim-image` | 1 |
 | [claim-payments.md](claim-payments.md) | `claim-payments` | 2 |
 | [checkout.md](checkout.md) | `checkout` | 5 |
+| [content-media.md](content-media.md) | `content-media` | 3 |
 | [claim-reasons.md](claim-reasons.md) | `claim-reasons` | 8 |
 | [claims.md](claims.md) | `claims` | 5 |
 | [coupons.md](coupons.md) | `coupons` | 4 |

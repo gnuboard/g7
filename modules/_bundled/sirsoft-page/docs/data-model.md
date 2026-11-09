@@ -7,7 +7,7 @@
 <!-- @generated:models START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
-| `Page` | `pages` | 11 | creator→User, updater→User, versions→PageVersion, attachments→PageAttachment | 검색 색인 |
+| `Page` | `pages` | 11 | creator→User, updater→User, versions→PageVersion, attachments→PageAttachment, contentMedia→PageAttachment | 검색 색인 |
 | `PageAttachment` | `page_attachments` | 13 | page→Page, creator→User | - |
 | `PageVersion` | `page_versions` | 8 | page→Page, creator→User | - |
 <!-- @generated:models END -->
@@ -33,6 +33,10 @@
 `Page` 만 검색 색인 대상입니다. 색인에 실리는 컬럼과 가중치는 모델의 `searchableColumns()` ·
 `searchableWeights()` 가 선언하고, 다시 태울지 여부는 `searchIndexShouldBeUpdated()` 와
 `search.page.index_should_update` 필터가 정합니다.
+`page_attachments.collection = content_media`(1.2.2, `PageAttachment::RESERVED_COLLECTIONS`)는 편집기 본문에 넣은 미디어입니다. 파일은 처음부터
+`content-media/Y/m/d/` 에 두고, 페이지에 잇기 전까지 `page_id = null` + `temp_key` 입니다. 페이지 저장 트랜잭션 안에서 본문(로케일마다)이 참조한
+것만 잇고 빠진 것은 지웁니다. `Page::attachments()`·첨부 연결(파일 이동)·첨부 개수는 본문 미디어를 빼고, `Page::contentMedia()` 가 따로 봅니다.
+일반 첨부 업로드는 이 컬렉션 이름을 쓸 수 없습니다.
 <!-- @intent END -->
 
 ## 소유 테이블

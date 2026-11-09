@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductCommonInfoRepository
  */
 class ProductCommonInfoService
 {
+    /**
+     * @param  ProductCommonInfoRepositoryInterface  $repository  공통 정보 리포지토리
+     */
     public function __construct(
         protected ProductCommonInfoRepositoryInterface $repository
     ) {}
@@ -110,6 +114,11 @@ class ProductCommonInfoService
             $data['sort_order'] = $this->repository->getMaxSortOrder() + 1;
         }
 
+        // 본문 미디어 서명 주소는 정식 주소로 저장한다 (#883)
+        if (array_key_exists('content', $data)) {
+            $data['content'] = app(ContentMediaService::class)->normalizeContent($data['content']);
+        }
+
         $commonInfo = DB::transaction(function () use ($data) {
             // is_default가 true이면 기존 기본값 해제
             if (! empty($data['is_default'])) {
@@ -117,6 +126,9 @@ class ProductCommonInfoService
             }
 
             $commonInfo = $this->repository->create($data);
+
+            // 본문이 참조한 본문 미디어만 잇는다 (#883)
+            $this->syncContentMedia($commonInfo, $data);
 
             return $commonInfo->fresh();
         });
@@ -153,6 +165,11 @@ class ProductCommonInfoService
         // 필터 훅 - 데이터 변형
         $data = HookManager::applyFilters('sirsoft-ecommerce.product-common-info.filter_update_data', $data, $id);
 
+        // 본문 미디어 서명 주소는 정식 주소로 저장한다 (#883)
+        if (array_key_exists('content', $data)) {
+            $data['content'] = app(ContentMediaService::class)->normalizeContent($data['content']);
+        }
+
         $commonInfo = DB::transaction(function () use ($commonInfo, $data) {
             // is_default가 true로 변경되면 기존 기본값 해제
             if (! empty($data['is_default']) && ! $commonInfo->is_default) {
@@ -161,6 +178,11 @@ class ProductCommonInfoService
 
             $commonInfo = $this->repository->update($commonInfo->id, $data);
 
+            // 본문 미디어 동기화 — 본문을 보낸 수정만 (#883)
+            if (array_key_exists('content', $data)) {
+                $this->syncContentMedia($commonInfo, $data);
+            }
+
             return $commonInfo->fresh();
         });
 
@@ -168,6 +190,24 @@ class ProductCommonInfoService
         HookManager::doAction('sirsoft-ecommerce.product-common-info.after_update', $commonInfo, $data, $snapshot);
 
         return $commonInfo;
+    }
+
+    /**
+     * 공통 정보 본문이 참조한 본문 미디어를 맞춥니다 — 저장 트랜잭션 안 (#883).
+     *
+     * @param  ProductCommonInfo  $commonInfo  저장된 공통 정보
+     * @param  array  $data  요청 데이터 (`content_media_temp_key`)
+     * @return void 반환값 없음
+     */
+    private function syncContentMedia(ProductCommonInfo $commonInfo, array $data): void
+    {
+        app(ContentMediaService::class)->syncWithContent(
+            ContentMediaOwnerType::CommonInfo,
+            (int) $commonInfo->id,
+            $commonInfo->content,
+            ($commonInfo->content_mode ?? 'text') === 'html',
+            isset($data['content_media_temp_key']) && is_string($data['content_media_temp_key']) ? $data['content_media_temp_key'] : null
+        );
     }
 
     /**

@@ -6,6 +6,7 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardSettingsController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\CommentController as AdminCommentController;
+use Modules\Sirsoft\Board\Http\Controllers\Admin\ContentMediaController as AdminContentMediaController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\IdentityPolicyController as AdminIdentityPolicyController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\PostController as AdminPostController;
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\ReportController as AdminReport
 use Modules\Sirsoft\Board\Http\Controllers\User\AttachmentController as UserAttachmentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\BoardController as UserBoardController;
 use Modules\Sirsoft\Board\Http\Controllers\User\CommentController as UserCommentController;
+use Modules\Sirsoft\Board\Http\Controllers\User\ContentMediaController as UserContentMediaController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostController as UserPostController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostScrapController as UserPostScrapController;
 use Modules\Sirsoft\Board\Http\Controllers\User\ReactionController as UserReactionController;
@@ -92,6 +94,12 @@ Route::prefix('boards')->middleware(['optional.sanctum', 'throttle:600,1'])->nam
     Route::get('/{slug}/attachment/{hash}/preview', [UserAttachmentController::class, 'preview'])
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.preview');
+
+    // 본문 미디어 서빙 (#883) — 권한 미들웨어 없음: <img>·<video> 요청에는 Bearer 가 실리지 않으므로
+    // 서명·글 읽기 권한·비밀/삭제/블라인드 게이트는 컨트롤러(서비스)가 맡는다
+    Route::get('/{slug}/content-media/{hash}', [UserContentMediaController::class, 'show'])
+        ->where('hash', '[a-zA-Z0-9]{12}')
+        ->name('content-media.show');
 });
 
 /*
@@ -490,6 +498,13 @@ Route::prefix('admin/board/{slug}/attachments')->middleware(['auth:sanctum', 'ad
         ->name('download');
 });
 
+// 관리자 본문 미디어 업로드 (#883) — 서빙은 사용자 경로(boards/{slug}/content-media/{hash})를 함께 쓴다
+Route::prefix('admin/board/{slug}/content-media')->middleware(['auth:sanctum', 'admin', 'throttle:60,1'])->name('admin.board.content-media.')->group(function () {
+    Route::post('/', [AdminContentMediaController::class, 'upload'])
+        ->middleware('permission:admin,sirsoft-board.{slug}.admin.attachments.upload')
+        ->name('upload');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Admin Comment Routes (관리자 댓글)
@@ -772,6 +787,13 @@ Route::prefix('boards/{slug}/attachments')->middleware(['optional.sanctum', 'thr
     Route::delete('/{id}', [UserAttachmentController::class, 'destroy'])
         ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
         ->name('destroy');
+});
+
+// 본문 미디어 업로드 (#883) — 편집기 본문 이미지·동영상·오디오. 「파일 첨부 사용」과 무관하게 업로드 권한 + 본문 미디어 정책으로 판정
+Route::prefix('boards/{slug}/content-media')->middleware(['optional.sanctum', 'throttle:60,1'])->name('boards.content-media.')->group(function () {
+    Route::post('/', [UserContentMediaController::class, 'upload'])
+        ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
+        ->name('upload');
 });
 
 /*

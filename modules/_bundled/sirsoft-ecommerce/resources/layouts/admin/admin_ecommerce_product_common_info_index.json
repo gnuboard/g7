@@ -21,6 +21,23 @@
     },
     "data_sources": [
         {
+            "id": "contentMediaTarget",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.contentMediaTarget",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/content-media/target",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "owner_type": "common_info"
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "편집기 본문 미디어 업로드 계약 (#883) — 받는 종류가 없거나 권한이 없으면 null 이라 편집기는 종전대로 동작한다"
+        },
+        {
             "id": "commonInfos",
             "label_key": "$t:sirsoft-ecommerce.editor.data_source.commonInfos",
             "type": "api",
@@ -71,6 +88,7 @@
         }
     ],
     "initLocal": {
+        "contentMediaTempKey": "{{$uuid()}}",
         "form": {
             "name": {
                 "ko": "",

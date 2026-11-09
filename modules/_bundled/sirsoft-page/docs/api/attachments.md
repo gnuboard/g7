@@ -155,6 +155,43 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 }
 ```
 
+### POST /api/modules/sirsoft-page/admin/content-media
+<!-- @generated:start:api.modules.sirsoft-page.admin.content-media.upload -->
+- **라우트명**: `api.modules.sirsoft-page.admin.content-media.upload`
+- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageContentMediaController@upload`
+- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false` · `throttle:60,1`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| file | body | file | 예 | 페이지 본문 미디어 정책 | 본문에 넣을 이미지·동영상·오디오. 형식은 파일 내용으로 판정 |
+| temp_key | body | string | 예 | UUID | 페이지 폼의 임시 키 — 저장 때 같은 키로 본문이 참조한 것만 잇는다 |
+
+**응답 필드** (`data` 내부): `data.id` · `data.hash`(12자) · `data.kind`(`image`·`video`·`audio`) · `data.url`(서명된 서빙 주소, 편집 중 미리보기)
+
+- 상태: `201` · `403` · `422` 정책 밖 파일·임시 키 없음·같은 임시 키 업로드가 문서당 최대 × 2 초과(`errors.code = content_media_limit_exceeded`)
+> **`data.content_media`** (1.2.2) — 편집기 확장점 `html_editor` 의 `mediaUpload` 로 넘길 본문 미디어 업로드 계약(받는 종류가 없으면 `null`). 화면은 `fields.temp_key` 에 폼 임시 키를 더한다.
+
+<!-- @generated:end -->
+
+---
+
+### GET /api/modules/sirsoft-page/pages/content-media/{hash}
+<!-- @generated:start:api.modules.sirsoft-page.pages.content-media.show -->
+- **라우트명**: `api.modules.sirsoft-page.pages.content-media.show`
+- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\User\PublicPageContentMediaController@show`
+- **인증/권한**: `optional.sanctum` · `throttle:600,1` — 게이트는 「발행 또는 열람권(`sirsoft-page.pages.read`) 또는 서명」
+
+**요청 파라미터**: `hash`(path, `[A-Za-z0-9]{12}`) · `expires`·`signature`(query, 선택) · `Range`(header, 한 구간)
+
+**응답**: 파일 본문. 래스터 이미지는 inline, 동영상·오디오는 정책·코어 후보가 켜졌을 때 inline + `media-src 'self'` CSP, 그 밖에는 다운로드. `nosniff`·`Accept-Ranges: bytes`. 발행 페이지는 `Cache-Control: public`, 미발행은 `private`.
+
+- 상태: `200`·`206` · `403` · `404` · `416`
+<!-- @generated:end -->
+
+---
+
 ### PATCH /api/modules/sirsoft-page/admin/attachments/reorder
 <!-- @generated:start:api.modules.sirsoft-page.admin.attachments.reorder -->
 - **라우트명**: `api.modules.sirsoft-page.admin.attachments.reorder`

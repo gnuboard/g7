@@ -899,6 +899,28 @@ return [
 
     // Settings validation messages
     'settings' => [
+        // 본문 콘텐츠 (#883)
+        'embed_provider_invalid' => 'External video service #:index has an invalid format.',
+        'embed_provider_too_many' => 'You can add up to :max external video services.',
+        'embed_provider_id_duplicate' => 'Service #:index identifier (:id) duplicates a built-in service or another entry.',
+        'embed_provider_id_format' => 'Service #:index identifier must be 2-32 characters starting with a lowercase letter (lowercase letters, digits, underscore).',
+        'embed_provider_name' => 'Enter a name of 1-40 characters for service #:index.',
+        'embed_provider_patterns_count' => 'Service #:index must have 1-5 URL formats.',
+        'embed_provider_pattern_format' => 'Service #:index URL formats must start with https:// or http:// and contain {id} exactly once. A * in the host is allowed only as the leading subdomain (*.example.com).',
+        'embed_provider_player_https' => 'Service #:index player URL must start with https:// and contain {id} exactly once.',
+        'embed_provider_player_host' => 'Service #:index player URL cannot use this site\'s own address or *.',
+        'embed_provider_option' => 'Service #:index :field is not an allowed choice.',
+        'embed_preset_unknown' => 'Unknown external video service: :id',
+        'content_custom_tag_list' => 'You can add up to :max extra tags.',
+        'content_custom_tag_format' => 'Extra tag ":tag" is invalid. Use up to 32 characters starting with a lowercase letter (lowercase letters, digits, hyphen).',
+        'content_custom_tag_rejected' => 'The ":tag" tag cannot be added — :reason',
+        'content_custom_tag_reasons' => [
+            'script' => 'it can run scripts.',
+            'style' => 'it can restyle the whole page or load external files.',
+            'document' => 'it can change the document structure and bypass other sanitizing rules.',
+            'embed' => 'it embeds external documents or programs (add external videos under "External video services").',
+            'form' => 'input forms can be used to capture personal information.',
+        ],
         // General settings - Required fields
         'site_name_required' => 'Please enter the site name.',
         'site_name_max' => 'Site name may not be greater than 100 characters.',
@@ -1332,6 +1354,22 @@ return [
     'summary_more_errors' => '(and :count more errors)',
 
     'attributes' => [
+        // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
+        'content_settings' => 'content settings',
+        'content_allow_figure_caption' => 'allow image captions',
+        'content_allow_uploaded_video' => 'allow uploaded video',
+        'content_allow_uploaded_audio' => 'allow uploaded audio',
+        'content_allow_external_embed' => 'allow external video embeds',
+        'content_embed_presets' => 'external video services',
+        'content_embed_custom_providers' => 'custom external video services',
+        'content_custom_tags' => 'additional allowed tags',
+        'content_media_url_ttl_minutes' => 'content media URL lifetime',
+        // 외부 영상 서비스 예시 주소 확인 (#883)
+        'embed_provider' => 'external video service',
+        'embed_provider_url_patterns' => 'URL formats',
+        'embed_provider_player_url' => 'player URL',
+        'embed_provider_id_rule' => 'id characters',
+        'embed_provider_sample_url' => 'example URL',
         'layout_source' => 'layout install source',
         'layout_meta_icon' => 'menu icon',
         'layout_meta_editor_label' => 'editor label',

@@ -32,6 +32,7 @@
             "ecommerce_settings": "쇼핑몰 설정",
             "extra_fee_templates": "추가 배송비 템플릿",
             "policy_abilities": "배송정책 권한",
+            "contentMediaTarget": "본문 미디어 업로드 계약",
             "product_abilities": "상품 권한",
             "identityProviders": "본인인증 제공자",
             "notice_templates": "상품정보고시 템플릿",

@@ -493,7 +493,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 > 안의 `{{row.…}}` 는 그 카드의 행으로 풀린다. 행 컨텍스트에는 `_global` 이 없으므로 전역 값이 필요한 액션은 이벤트
 > 방식(`"event": "onItemClick"` + `switch`)을 쓴다. 종전에는 코어에 없는 멤버를 찾아 조용히 건너뛰었다(7.1.0 에서 수정).
 > 회귀 테스트: `src/components/composite/__tests__/CardGrid.actionDispatch.test.tsx`.
-| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, isHtml, purifyConfig, text |
+| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지). 코어 7.1.5+ 는 「본문 콘텐츠」 규칙(`G7Core.contentPolicy.sanitize`)으로 정화하고 외부 영상(`oembed`)을 플레이어로 바꾼다 — `purifyConfig.FORBID_TAGS` 는 규칙이 풀지 않는다 | content, isHtml, purifyConfig, text |
 
 #### 폼/입력
 

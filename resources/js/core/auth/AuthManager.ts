@@ -220,7 +220,9 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     userEndpoint: '/auth/user',
     loginEndpoint: '/auth/login',
     logoutEndpoint: '/auth/logout',
-    refreshEndpoint: '/auth/refresh',
+    // 서버 라우트는 `POST /api/user/auth/refresh` 뿐이다 — `/auth/user`·`/auth/logout` 과 달리 `/auth/refresh` 별칭이 없어
+    // 사용자 화면 갱신이 늘 404 였다(#883 후속, engine-v1.89.0)
+    refreshEndpoint: '/user/auth/refresh',
     twoFactorEndpoint: '/auth/login/two-factor',
     twoFactorResendEndpoint: '/auth/login/two-factor/resend',
     passwordChangeEndpoint: '/auth/login/password-change',

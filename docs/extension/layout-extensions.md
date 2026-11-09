@@ -537,6 +537,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `board_post_form_top` (7.1.1+) | 글쓰기 폼 맨 위(검증 오류 상자 아래, 작성자 정보 앞) | (번들 사용처 없음) | 글쓰기에 입력칸을 더할 곳이 없다 |
 | `board_post_form_bottom` (7.1.1+) | 글쓰기 폼 맨 아래(취소·저장 단추 바로 위) | (번들 사용처 없음) | 동의 문구·부가 입력칸을 더할 곳이 없다 |
 
+- `html_editor` 의 props(7.1.5): `name`·`content`/`value`·`isHtml`·`multilingual`·`placeholder`·`label`·`rows`·`disabled`/`readOnly`·`showHtmlModeToggle`, 그리고 **`mediaUpload`** — 본문 미디어 업로드 계약(`ContentMediaUploadTarget` 또는 `null`). 편집기 플러그인은 이 값을 읽기만 하고, 없으면 종전 동작이다. 형식·서버 도구는 [본문 미디어 업로드 계약](content-media.md).
 - 슬롯형 확장점은 `<extension-point name="…"><default/></extension-point>` 로 둔다. 주입이 없으면 아무것도 그리지 않는다.
 - 모달 안의 목록(예: 탈퇴 경고)은 노드 id 를 겨냥하는 Overlay 가 닿지 않으므로 확장점으로 연다.
 - 표시 분기(결제수단·PG·발급 상태 등)는 주입하는 쪽이 조건으로 처리한다 — 템플릿은 자리만 둔다.

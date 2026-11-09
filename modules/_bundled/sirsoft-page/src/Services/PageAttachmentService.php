@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
@@ -257,12 +258,8 @@ class PageAttachmentService
             // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $newPath = date('Y/m/d').'/'.$attachment->stored_filename;
 
-            // 파일 물리적 이동 (get + put + delete)
-            $content = $this->storage->get('attachments', $attachment->path);
-            if ($content) {
-                $this->storage->put('attachments', $newPath, $content);
-                $this->storage->delete('attachments', $attachment->path);
-            }
+            // 파일 이동 — 페이지 저장 트랜잭션 안에서는 복사해 두고 커밋되면 원본을 지운다 (StorageTransaction, #883)
+            StorageTransaction::move($this->storage, 'attachments', $attachment->path, $newPath);
 
             // DB 업데이트: page_id 설정, temp_key 제거, path 변경, order 재배치 (조회 순서 = 업로드 순서, 기존 첨부 뒤)
             $this->attachmentRepository->update($attachment, [
@@ -277,14 +274,17 @@ class PageAttachmentService
 
         // 임시 디렉토리 정리 — 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
         // 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
-        try {
-            $this->storage->deleteDirectory('attachments', 'temp/'.$tempKey);
-        } catch (\Throwable $e) {
-            Log::warning('페이지 임시 첨부 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
-                'temp_key' => $tempKey,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // 원본 삭제가 커밋 뒤라 정리도 커밋 뒤에 한다.
+        StorageTransaction::afterCommit(function () use ($tempKey) {
+            try {
+                $this->storage->deleteDirectory('attachments', 'temp/'.$tempKey);
+            } catch (\Throwable $e) {
+                Log::warning('페이지 임시 첨부 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
+                    'temp_key' => $tempKey,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
 
         return $linkedCount;
     }

@@ -120,6 +120,11 @@ return [
         'index_success' => 'コメントリストを閲覧しました。',
         'index_failed' => 'コメントリストの取得に失敗しました。',
     ],
+    'content_media' => [
+        'upload_success' => '本文メディアをアップロードしました。',
+        'upload_failed' => '本文メディアをアップロードできませんでした。',
+    ],
+
     'attachment' => [
         'uploaded' => 'ファイルがアップロードされました。',
         'upload_success' => 'ファイルがアップロードされました。',
@@ -471,6 +476,16 @@ return [
     ],
     // 掲示板モジュールシーダーのコンソール出力
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => 'ブラウザ実測シーダーは CLI と G7_PLAYWRIGHT_BYPASS=1 でのみ実行します。',
+            'member' => '  会員 :email / :password',
+            'board_exists' => '  - :slug は既に存在します',
+            'board_created' => '  - :slug を作成しました',
+            'posts' => '  - サンプル投稿 :count 件を確認 (新規作成した投稿のゲストパスワード: :password)',
+            'media_posts' => '  - 本文メディアのサンプル投稿 :count 件を作成 (非会員パスワード: :password)',
+            'done' => 'ブラウザ実測データの準備が完了しました',
+            'cleanup_done' => 'ブラウザ実測データを整理しました — :counts',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => '管理者ユーザーがいないため、掲示板アクティビティログシーダーをスキップします。',
             'skip_no_boards' => 'サンプル掲示板がないため、掲示板アクティビティログをスキップします。',

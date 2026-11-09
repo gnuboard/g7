@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Http\Controllers\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
@@ -137,9 +138,10 @@ class PageAttachmentController extends AdminBaseController
      */
     public function settings(): JsonResponse
     {
+        // 편집기 본문 미디어 업로드 계약을 함께 싣는다 — 페이지 폼이 이미 이 응답을 읽는다 (#883)
         return $this->success(
             'sirsoft-page::messages.attachment.settings_success',
-            $this->attachmentService->publicLimits()
+            $this->attachmentService->publicLimits() + ['content_media' => app(PageContentMediaService::class)->uploadTarget()]
         );
     }
 }

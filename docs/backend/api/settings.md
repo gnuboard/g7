@@ -20,6 +20,54 @@
 
 상한을 넘긴 목록의 응답 형태는 [pagination.md](../pagination.md) 를 참고하세요.
 
+## 본문 콘텐츠 (`content` 탭, 7.1.5)
+
+게시글·페이지·상품 설명 본문에 남길 수 있는 것을 정합니다. 저장 경로는 `content` 탭(`_tab=content`)입니다. 템플릿 표시기·검색엔진(봇)
+정화기·쇼핑몰 상품 설명 저장 정화기·편집기가 같은 규칙을 읽습니다([본문 미디어 업로드 계약 — 본문 콘텐츠 규칙](../../extension/content-media.md)).
+
+| 필드 | 타입 | 범위 | 의미 |
+| --- | --- | --- | --- |
+| `content.allow_figure_caption` | boolean | 기본 `true` | 그림 설명(`figcaption`) |
+| `content.allow_uploaded_video` · `content.allow_uploaded_audio` | boolean | 기본 `false` | 업로드한 동영상·오디오 재생 태그. 서빙 주소 패턴에 맞는 `src`·`poster` 만 남는다 |
+| `content.allow_external_embed` | boolean | 기본 `true` | 외부 영상(`oembed`) — 켜진 서비스면 플레이어, 아니면 링크 |
+| `content.embed_presets` | object | 키: 프리셋 3종(`youtube`·`vimeo`·`tiktok`) 또는 `ext:{확장}:{id}` | 서비스별 켜기(불리언). 모르는 키는 422(`validation.settings.embed_preset_unknown`) |
+| `content.embed_custom_providers` | array | 최대 30 | 운영자 추가 서비스 `{id, name, enabled, url_patterns[], player_url, id_rule, aspect, allow[]}`(`enabled` 는 불리언만). 항목 번호·필드별 422 |
+| `content.custom_tags` | array | 태그 이름 | 추가 허용 태그. 스크립트·스타일·문서 구조·외부 삽입·폼 계열은 422(이유 포함) |
+| `content.media_url_ttl_minutes` | integer | 5 ~ 1440, 기본 240 | 비공개 본문 미디어 서명 주소 유효 시간 |
+
+공개 설정(`frontend_schema`)으로는 원본 값을 내보내지 않고 계산 값 `content.render_policy`(켜진 후보 태그·속성 규칙·미디어 출처 패턴·
+켜진 서비스의 컴파일 정규식과 플레이어 주소 틀)만 내려갑니다. 관리자 설정 응답의 `_meta.embed_extension_providers`
+(`[{key, extension, id, name}]`)는 확장이 `core.content.filter_embed_providers` 로 더한 서비스 목록으로, 화면이 켜기 칸을 그립니다.
+
+### POST /api/admin/settings/content/embed-preview
+
+외부 영상 서비스 추가 창의 예시 주소 확인입니다. 저장하지 않고, 저장 때와 같은 컴파일 규칙으로 예시 주소에서 꺼낸 id 와 만들어질
+플레이어 주소를 돌려줍니다. 권한: `core.settings.read`.
+
+| 파라미터 | 위치 | 타입 | 필수 | 규칙 | 설명 |
+| --- | --- | --- | --- | --- | --- |
+| provider | body | object | 예 | | 저장 전 서비스 입력값 |
+| provider.url_patterns | body | array | 예 | 1~5개, 각 255자 이내 | 주소 형식(`*`·`{id}`) |
+| provider.player_url | body | string | 예 | 255자 이내 | 플레이어 주소(`https://`, `{id}` 1개) |
+| provider.id_rule | body | string | 아니오 | `alnum`·`alnum_dash`·`digits` | id 글자 규칙 |
+| sample_url | body | string | 예 | 500자 이내 | 확인할 예시 주소 |
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "matched": true,
+        "id": "aB3-cd_9",
+        "player_url": "https://chzzk.naver.com/embed/clip/aB3-cd_9",
+        "errors": {}
+    }
+}
+```
+
+형식이 틀린 입력(http 플레이어 주소, `{id}` 없음 등)은 `matched: false` 와 함께 `errors` 에 필드별 문구를 담아 200 으로 돌려줍니다 —
+창이 저장 전에 알려 주는 용도입니다. 필수 값이 비면 422 입니다.
+
 ## IP 접근 제한 (`security` 탭)
 
 허용한 IP 에서만 관리자 영역·지정 경로에 접근하게 합니다. 저장 경로는 `security` 탭이며, 키는

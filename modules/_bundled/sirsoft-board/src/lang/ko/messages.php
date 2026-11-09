@@ -192,6 +192,11 @@ return [
     ],
 
     // 첨부파일 작업 메시지
+    'content_media' => [
+        'upload_success' => '본문 미디어를 올렸습니다.',
+        'upload_failed' => '본문 미디어를 올리지 못했습니다.',
+    ],
+
     'attachment' => [
         'uploaded' => '파일이 업로드되었습니다.',
         'upload_success' => '파일이 업로드되었습니다.',
@@ -552,6 +557,16 @@ return [
     ],
     // 게시판 모듈 시더 콘솔 출력
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => '브라우저 실측 시더는 CLI 와 G7_PLAYWRIGHT_BYPASS=1 에서만 실행합니다.',
+            'member' => '  회원 :email / :password',
+            'board_exists' => '  - :slug 이미 있음',
+            'board_created' => '  - :slug 생성',
+            'posts' => '  - 표본 글 :count건 확인 (새로 만든 글의 비회원 비밀번호: :password)',
+            'media_posts' => '  - 본문 미디어 표본 글 :count건 생성 (비회원 비밀번호: :password)',
+            'done' => '브라우저 실측 데이터 준비 완료',
+            'cleanup_done' => '브라우저 실측 데이터 정리 — :counts',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => '관리자 사용자가 없어 게시판 활동 로그 시더를 건너뜁니다.',
             'skip_no_boards' => '샘플 게시판이 없어 게시판 활동 로그를 건너뜁니다.',

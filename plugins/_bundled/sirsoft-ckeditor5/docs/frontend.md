@@ -59,6 +59,24 @@
 `'html'` 로 되돌리면서 **그 사이에 쓴 내용을 승계**해야 합니다. 이 셋 중 하나라도 빠지면 사용자
 입력이 사라집니다.
 
+`initEditor` 는 이미지 업로드 단추를 **관리자에게만** 붙입니다(1.1.3+). 이 플러그인의 업로드 주소는 관리자 전용
+(`auth:sanctum` + `admin`)이라, 사용자 화면에서 비회원·일반 회원에게 단추를 주면 누르는 순간 401·403 으로 실패합니다
+(비회원은 종전에 로그인 화면으로 옮겨져 쓰던 글이 사라졌습니다). 판정은 부팅 때 받은 인증 사용자
+(`G7Core.AuthManager.getInstance().getUser().is_admin`)를 먼저 보고, 없으면 사용자 템플릿의 `_global.currentUser` 를 봅니다 —
+관리자 템플릿은 `_global.currentUser` 를 올리지 않으므로 레이아웃 식으로 가르면 관리자 화면 단추까지 사라집니다.
+
+화면이 확장점 `html_editor` 에 본문 미디어 업로드 계약(`mediaUpload`, 코어 7.1.5 `ContentMediaUploadTarget`)을 넘기면 위 규칙
+대신 계약을 따릅니다(1.1.3+). 확장 조각은 `mediaUpload="{{extensionPointProps.mediaUpload ?? null}}"` 를 넘기고, `initEditor`
+는 `G7Core.contentMedia.normalizeTarget` 로 정규화한 계약이 있으면 업로드 단추를 계약 정책의 이미지 허용으로, 파일 형식
+(`image.upload.types`)을 정책 확장자로 정합니다. 어댑터(`G7UploadAdapter`)는 `validateFile` → `isAtLimit`(문서당 개수) →
+`G7Core.contentMedia.upload` 순으로 올립니다 — 업로드 주소·응답 경로는 계약이 정하고 이 플러그인은 읽기만 합니다. 정책이
+동영상·오디오를 켜면 `mediaUploadButtons.ts` 가 툴바에 `g7VideoUpload`·`g7AudioUpload` 단추를 더하고, 올린 파일을
+`<video controls src>`·`<audio controls src>` 로 넣습니다. 계약이 없거나 형식이 틀리면(복제 템플릿) 종전 규칙입니다.
+
+편집기 경고(업로드 실패 등)는 CKEditor Notification 의 기본 `alert` 대신 `G7Core.toast.error` 로 보냅니다(탭이 멈추지 않습니다).
+업로드 어댑터는 토큰 없이 보낸 업로드의 401(`G7Core.api.isAnonymousUnauthorized`)에 서버 문구 대신
+`editor.upload_login_required` 안내를 씁니다.
+
 편집기 생성은 비동기라 수 초가 걸릴 수 있습니다. 그 사이 사용자가 다른 화면으로 옮겨 컨테이너가 문서에서 떨어졌으면
 `initEditor` 는 만든 편집기를 해제하고 폼에 아무것도 쓰지 않습니다(`_mode`·평문 폴백 모두) — 그때의 `_local` 은 새 화면
 것이라, 종전에는 상품 수정 → 목록으로 바로 옮기면 목록 상태에 `form.description_mode` 가 남았습니다.

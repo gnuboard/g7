@@ -38,14 +38,17 @@ Route::get('/user/orders/{orderNumber}/receipt', [UserReceiptController::class, 
     ->middleware('optional.sanctum')
     ->name('user.orders.receipt');
 
+// 모바일 결제 승인키 획득 (KCP SmartPhone Pay SOAP) — 주문 소유자(회원 Sanctum / 비회원 X-Guest-Order-Token) 확인 후 발급.
+// 종전 auth:sanctum 은 비회원 주문의 모바일 결제를 막았다(#883). 클레임 추가결제는 컨트롤러가 회원 본인만 통과시킨다.
+Route::post('/mobile/approval-key', [MobileApprovalController::class, 'getApprovalKey'])
+    ->middleware('optional.sanctum')
+    ->name('mobile.approval-key');
+
 Route::middleware(['auth:sanctum'])->group(function () {
     // 테스트 모드 가상계좌 모의입금 정보 (입금대기 상태일 때만 데이터 반환)
     Route::get('/user/orders/{orderNumber}/vbank-mock-deposit-info', [UserVbankMockDepositController::class, 'show'])
         ->name('user.orders.vbank-mock-deposit-info');
 
-    // 모바일 결제 승인키 획득 (KCP SmartPhone Pay SOAP)
-    Route::post('/mobile/approval-key', [MobileApprovalController::class, 'getApprovalKey'])
-        ->name('mobile.approval-key');
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->group(function () {

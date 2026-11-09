@@ -861,7 +861,8 @@ export class TemplateApp {
                 apiClient.removeToken();
 
                 // onUnauthorized 콜백이 발동했다는 것은 토큰이 서버에서 거부되었다는 의미
-                // (apiClient 는 토큰 미보유 시 요청을 skip 하므로 콜백도 발동 안 함).
+                // (토큰을 싣지 않고 보낸 요청의 401 은 ApiClient 가 걸러 호출자에게 돌려주므로 이 콜백까지 오지 않는다
+                // — engine-v1.88.2. 데이터소스는 토큰이 없으면 required 요청을 아예 보내지 않는다).
                 // 즉 사용자는 로그인된 상태였다가 세션이 만료된 케이스이므로
                 // reason='session_expired' 를 부여해 로그인 페이지에서 안내 토스트가 노출되도록 한다.
                 const returnUrl = window.location.pathname + window.location.search;

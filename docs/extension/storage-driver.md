@@ -25,6 +25,8 @@
 - [모듈에서 사용하기](#모듈에서-사용하기)
 - [카테고리 네이밍 규칙](#카테고리-네이밍-규칙)
 - [예제 코드](#예제-코드)
+- [스트림 계약 (StreamingStorageInterface)](#스트림-계약-streamingstorageinterface-715)
+- [트랜잭션 파일 보상 (StorageTransaction)](#트랜잭션-파일-보상-storagetransaction-715)
 - [마이그레이션 가이드](#마이그레이션-가이드)
 - [API 레퍼런스](#api-레퍼런스)
 - [트러블슈팅](#트러블슈팅)
@@ -623,6 +625,59 @@ class ProductImageService
     }
 }
 ```
+
+---
+
+## 스트림 계약 (StreamingStorageInterface, 7.1.5+)
+
+`StorageInterface` 는 파일 내용을 문자열로 주고받는다. 동영상처럼 큰 파일을 메모리에 통째로 올리지 않고 옮기거나 일부 구간만
+내보내려면 `App\Contracts\Extension\StreamingStorageInterface`(같은 계약을 확장)를 쓴다. 코어 드라이버 셋
+(`CoreStorageDriver`·`ModuleStorageDriver`·`PluginStorageDriver`)이 구현한다. 계약을 직접 구현한 제3자 드라이버를 깨지 않으려고
+`StorageInterface` 에 메서드를 더하지 않고 별도 계약으로 두었다 — 쓰는 쪽은 `instanceof StreamingStorageInterface` 로 확인하고,
+아니면 `get()`/`put()` 으로 내려간다.
+
+| 메서드 | 반환 | 설명 |
+| --- | --- | --- |
+| `readStream($category, $path)` | resource\|null | 읽기 스트림(없으면 null) |
+| `writeStream($category, $path, $stream)` | bool | 스트림 내용을 쓴다 |
+| `size($category, $path)` | int\|null | 바이트 크기 |
+| `localPath($category, $path)` | string\|null | 로컬 디스크면 실제 경로(원격·없음은 null) — `BinaryFileResponse` 로 Range 를 맡길 때 |
+| `readRangeStream($category, $path, $start, $end)` | resource\|null | 바이트 구간 [start, end] 을 시작 위치에 둔 스트림. s3 는 Range 로 그 구간만 받고, 그 밖은 시크(안 되면 앞부분을 읽어 버린다 — 큰 오프셋에서 느리다) |
+
+모든 경로는 `StorageInterface` 와 같은 경로 가드(순회·절대경로·인코딩 조각 거부)를 거친다.
+
+## 트랜잭션 파일 보상 (StorageTransaction, 7.1.5+)
+
+파일 저장소는 DB 트랜잭션에 참여하지 않는다. 저장 도중 파일을 옮기고 뒤 단계가 실패해 DB 가 되돌아가면 파일만 새 자리에 남는다.
+`App\Extension\Helpers\StorageTransaction` 은 「커밋되면 옮기고, 롤백되면 원래대로」를 보장한다.
+
+```php
+use App\Extension\Helpers\StorageTransaction;
+
+DB::transaction(function () use ($temp, $final) {
+    // 트랜잭션 안: 대상에 복사해 두고, 커밋되면 원본을 지운다. 롤백되면 사본을 지운다.
+    StorageTransaction::move($this->storage, 'attachments', $temp, $final);
+    $this->repository->update($row, ['path' => $final]);
+
+    // 임시 디렉토리 정리처럼 커밋된 뒤에 할 일
+    StorageTransaction::afterCommit(fn () => $this->storage->deleteDirectory('attachments', $tempDir));
+});
+```
+
+| 메서드 | 트랜잭션 안 | 커밋되면 | 롤백되면 | 트랜잭션 밖 |
+| --- | --- | --- | --- | --- |
+| `move($storage, $category, $from, $to, ?$connection)` | 대상에 복사(스트림 저장소면 스트림) | 원본 삭제 | 대상 삭제 | 즉시 이동 |
+| `put($storage, $category, $path, $content, ?$connection)` | 기록 | — | 삭제 | 즉시 |
+| `deleteAfterCommit($storage, $category, $path, ?$connection)` | 지우지 않음 | 삭제 | 그대로 | 즉시 삭제 |
+| `afterCommit(callable, ?$connection)` | — | 실행(예외는 경고 로그) | — | 즉시 |
+
+- 롤백 감지는 `TransactionRolledBack` 이벤트와 등록 깊이 비교다. 안쪽 트랜잭션(savepoint)이 먼저 커밋된 뒤 바깥이 롤백돼도 보상한다
+  — `DB::afterRollBack()` 은 이 경우 콜백을 실행하지 않는다(커밋된 안쪽 콜백을 버린다).
+- 보상·마무리 실패는 경고 로그(「파일 보상 실패 — 수동 정리 필요」·「파일 마무리 실패 — 수동 정리 필요」)만 남기고 예외를 올리지 않는다.
+  원래 예외를 덮지 않기 위해서다.
+- 복사하는 동안 원본과 사본이 함께 있어 용량을 잠깐 두 배로 쓴다. 커밋 직후 프로세스가 죽으면 원본이 남을 수 있다(경고 로그도 없이) —
+  확장의 임시 파일 정리 명령이 그 자리를 함께 정리하게 둔다.
+- 저장 트랜잭션 안 훅에서 파일을 다루는 리스너도 이 도구를 쓴다([훅 시스템 — 저장 트랜잭션 안 훅](hooks.md#저장-트랜잭션-안-훅)).
 
 ---
 

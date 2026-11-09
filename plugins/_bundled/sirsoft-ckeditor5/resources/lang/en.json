@@ -9,7 +9,8 @@
             "style_label": "Editor styles",
             "fallback_notice": "Could not load the editor. Switched to a plain text box. What you write is still saved."
         },
-        "upload_failed": "Couldn't upload file: {{name}}."
+        "upload_failed": "Couldn't upload file: {{name}}.",
+        "upload_login_required": "Sign in to upload images. Your draft is kept."
     },
     "admin": {
         "uploads": {

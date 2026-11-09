@@ -11,6 +11,7 @@ use Modules\Sirsoft\Board\Models\Board;
  * 게시글 첨부 개수 선차단 Trait
  *
  * 총합은 **직접 업로드 + `attachment_ids` + `temp_key` 임시첨부 + 기존 첨부** 4소스라
+ * (예약 컬렉션 `Attachment::RESERVED_COLLECTIONS` — 본문 미디어 — 은 세지 않는다. 서비스와 같은 기준, #883)
  * 필드 단위 규칙(`files` 의 `max:`)만으로는 판정할 수 없습니다. 최종 불변조건은
  * `AttachmentService::assertAttachmentCountWithin()` 이 담당하며, 이 Trait 은
  * "글을 다 쓰고 저장 단계에서 실패" 를 막는 UX 선차단입니다 (역할이 다른 중복).
@@ -47,6 +48,7 @@ trait ValidatesAttachmentCount
             $newCount += Attachment::query()
                 ->where('temp_key', $tempKey)
                 ->whereNull('post_id')
+                ->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS)
                 ->count();
         }
 
@@ -55,7 +57,8 @@ trait ValidatesAttachmentCount
         }
 
         $existing = $postId !== null
-            ? Attachment::query()->where('board_id', $board->id)->where('post_id', $postId)->count()
+            ? Attachment::query()->where('board_id', $board->id)->where('post_id', $postId)
+                ->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS)->count()
             : 0;
 
         if ($existing + $newCount > $limit) {
@@ -105,6 +108,7 @@ trait ValidatesAttachmentCount
             $existing = Attachment::query()
                 ->where('board_id', $board->id)
                 ->where('post_id', $postId)
+                ->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS)
                 ->count();
         } elseif (is_string($tempKey) && $tempKey !== '') {
             // 임시첨부는 아직 게시판에 귀속되기 전이라 board_id 로 좁히지 않는다
@@ -112,6 +116,7 @@ trait ValidatesAttachmentCount
             $existing = Attachment::query()
                 ->where('temp_key', $tempKey)
                 ->whereNull('post_id')
+                ->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS)
                 ->count();
         }
 

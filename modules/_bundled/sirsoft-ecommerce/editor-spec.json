@@ -168,6 +168,57 @@
   "sampleData": {
     "comment": "실제 모듈 레이아웃 data_source ID(admin: products/categories/orders/order/reviews 등) + 사용자 페이지(템플릿이 렌더, /api/modules/sirsoft-ecommerce/* 호출) byEndpointPattern. 계획서 추정과 실제 ID 차이 반영(데이터소스가 SSoT).",
     "byDataSourceId": {
+      "contentMediaTarget": {
+        "data": {
+          "data": {
+            "version": 1,
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/content-media",
+            "fileField": "file",
+            "fields": {
+              "owner_type": "product"
+            },
+            "headers": {},
+            "response": {
+              "urlPath": "data.url",
+              "idPath": "data.id",
+              "kindPath": "data.kind"
+            },
+            "mediaUrlPattern": "/api/modules/sirsoft-ecommerce/content-media/(?<hash>[A-Za-z0-9]{12})",
+            "policy": {
+              "image": {
+                "enabled": true,
+                "maxSizeMb": 10,
+                "extensions": [
+                  "jpg",
+                  "jpeg",
+                  "png",
+                  "gif",
+                  "webp"
+                ],
+                "mimeTypes": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/gif",
+                  "image/webp"
+                ]
+              },
+              "video": {
+                "enabled": false,
+                "maxSizeMb": 10,
+                "extensions": [],
+                "mimeTypes": []
+              },
+              "audio": {
+                "enabled": false,
+                "maxSizeMb": 10,
+                "extensions": [],
+                "mimeTypes": []
+              },
+              "maxPerDocument": 30
+            }
+          }
+        }
+      },
       "wishlists": {
         "data": {
           "data": [

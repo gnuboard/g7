@@ -680,8 +680,9 @@
                                                 "id": "content_editor",
                                                 "type": "extension_point",
                                                 "name": "html_editor",
-                                                "if": "{{route?.id ? _local.form?.content !== undefined : createAbility !== undefined}}",
+                                                "if": "{{attachmentSettings !== undefined && (route?.id ? _local.form?.content !== undefined : createAbility !== undefined)}}",
                                                 "props": {
+                                                    "mediaUpload": "{{attachmentSettings?.data?.content_media ? Object.assign({}, attachmentSettings.data.content_media, { fields: Object.assign({}, attachmentSettings.data.content_media.fields ?? {}, { temp_key: _local.tempKey }) }) : null}}",
                                                     "multilingual": true,
                                                     "value": "{{_local.form?.content}}",
                                                     "isHtml": "{{_local.form?.content_mode === 'html'}}",

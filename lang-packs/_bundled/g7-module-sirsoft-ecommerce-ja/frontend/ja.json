@@ -447,6 +447,7 @@
       "ecommerce_settings": "ショッピングモール設定",
       "extra_fee_templates": "追加配送料金テンプレート",
       "policy_abilities": "配送ポリシー権限",
+      "contentMediaTarget": "本文メディアのアップロード情報",
       "product_abilities": "商品権限",
       "identityProviders": "本人認証プロバイダー",
       "notice_templates": "商品情報表示テンプレート",

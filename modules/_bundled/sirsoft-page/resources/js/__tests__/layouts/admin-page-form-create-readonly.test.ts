@@ -128,12 +128,15 @@ describe('관리자 페이지 작성 화면 — 등록 권한 없을 때 읽기 
     it('본문 편집기는 등록 모드에서 권한 확인이 끝난 뒤, 수정 모드에서 기존 값이 온 뒤에 그려진다', () => {
         const editor = findById(form, 'content_editor');
         const mounted = (ctx: Record<string, unknown>) =>
-            Boolean(evaluate(editor?.if ?? '', { route: {}, _local: {}, createAbility: undefined, ...ctx }));
+            Boolean(evaluate(editor?.if ?? '', { route: {}, _local: {}, createAbility: undefined, attachmentSettings: { data: {} }, ...ctx }));
         expect(mounted({})).toBe(false);
         expect(mounted({ createAbility: { data: { abilities: { can_create: true } } } })).toBe(true);
         expect(mounted({ createAbility: null })).toBe(true);
         expect(mounted({ route: { id: '13' }, _local: { form: {} } })).toBe(false);
         expect(mounted({ route: { id: '13' }, _local: { form: { content: { ko: '' } } } })).toBe(true);
+        // 업로드 계약(attachmentSettings.content_media)을 받기 전에는 세우지 않는다 — 처음 세워질 때의 계약만 쓴다(#883)
+        expect(mounted({ createAbility: { data: { abilities: { can_create: true } } }, attachmentSettings: undefined })).toBe(false);
+        expect(mounted({ createAbility: { data: { abilities: { can_create: true } } }, attachmentSettings: null })).toBe(true);
     });
 
     /**

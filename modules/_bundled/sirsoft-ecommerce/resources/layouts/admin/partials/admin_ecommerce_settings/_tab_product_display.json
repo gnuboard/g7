@@ -181,6 +181,20 @@
                     ]
                 }
             ]
+        },
+        {
+            "comment": "본문 미디어 — 상품 설명·공통 정보 편집기 본문에 바로 넣는 이미지·동영상·오디오의 규칙 (#883). 비우면 상품 이미지 규칙(동영상·오디오는 코어 「본문 콘텐츠」 스위치)",
+            "id": "product_display_content_media_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card mt-4"
+            },
+            "children": [
+                {
+                    "partial": "_content_media_policy.json"
+                }
+            ]
         }
     ]
 }

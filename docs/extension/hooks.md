@@ -673,6 +673,15 @@ $boards = $this->cache->remember('board_menu', function () {
 「지우고 넣기」라 확장이 집계 표에 직접 쓰면 다음 집계가 지운다. 이 훅은 반드시 `'sync' => true` 로
 구독한다(아래 판정표).
 
+### 본문 콘텐츠 규칙 확장 훅 (7.1.5)
+
+| 훅 | 타입 | 받는 값 → 돌려줄 값 |
+| --- | --- | --- |
+| `core.content.filter_embed_providers` | filter | `array $providers`(처음 `[]`) → 외부 영상 서비스 항목 목록. 항목에 `extension`(확장 식별자) 필수, 검증 실패 항목은 버린다. 운영자가 「본문 콘텐츠」 탭에서 켜야 쓰인다 |
+| `core.content.filter_media_source_patterns` | filter | `array $patterns`(구분자 없는 정규식) → 목록. 본문 `<video>`·`<audio>`·`<source>` 의 `src`·`poster` 가 맞아야 남는 서빙 주소 |
+
+항목 형식·기본 서빙 주소 패턴·예시는 [본문 미디어 업로드 계약 — 본문 콘텐츠 규칙](content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy)을 보세요.
+
 ### 스토리지·드라이버 확장 훅 페이로드
 
 #### `core.storage.filter_url`
@@ -968,9 +977,28 @@ public static function getSubscribedHooks(): array
 | `sync` 필수 | 같은 응답·바로 다시 연 화면에 보이는 파생 데이터 갱신(상품 총재고·옵션 그룹, 가입 직후 배정값, 저장한 동의값) |
 | `sync` 필수 | `before_*` 훅에서 삭제 전 데이터 정리 — 큐로 가면 커밋 뒤에 돌아 외래키가 이미 값을 지운 상태에서 정리 대상을 찾지 못하고, 실패해도 삭제를 되돌리지 못한다 |
 | `sync` 필수 | 같은 발송·처리 사이클의 문맥을 잇는 리스너(발송 로그 기록과 그 로그에 외부 발송 건을 잇는 리스너) — 큐로 가면 요청 단위 문맥이 작업 경계에서 사라지고, 가리기 전 본문이 큐 인자로 남는다 |
+| `sync` 필수 | 저장 트랜잭션 안 훅(`sirsoft-board.post.before_create_commit`·`before_update_commit`, `sirsoft-ecommerce.product.before_create_commit`·`before_update_commit`) — 큐로 가면 커밋 뒤에 돌아 같은 트랜잭션에 저장할 수 없고 실패해도 저장을 되돌리지 못한다 |
 | 기본값(큐) 유지 | 활동 로그, 알림 발송, 통계 갱신 등 실패해도 호출자를 되돌리지 않는 후속 처리 |
 
 선언만으로는 검증되지 않는다 — 회귀 테스트는 리스너를 손으로 `addAction` 하지 말고 실제 등록 경로(`HookListenerRegistrar::register()`)를 태운 뒤, **호출자 트랜잭션 안에서 반영되는지**와 **예외가 호출자를 롤백시키는지**를 단언한다. 손으로 등록하면 프로덕션이 쓰지 않는 경로를 검증하게 되어, 커밋 이후 실행 문제를 그대로 통과시킨다.
+
+#### 저장 트랜잭션 안 훅
+
+게시글·상품 저장에는 트랜잭션 **안**에서 도는 훅이 있다(7.1.5+). 기존 `after_create`·`after_update` 는 커밋 뒤 그대로다.
+
+| 훅 | 위치 | 인자 |
+| --- | --- | --- |
+| `sirsoft-board.post.before_create_commit` | 글 생성 — 첨부 연결 뒤, 커밋 앞 | `(Post $post, string $slug, array $data, array $options)` |
+| `sirsoft-board.post.before_update_commit` | 글 수정 — 첨부 연결 뒤, 커밋 앞 | `(Post $post, string $slug, array $data, array $snapshot)` |
+| `sirsoft-ecommerce.product.before_create_commit` | 상품 생성 — 트랜잭션 안 마지막 저장 뒤 | `(Product $product, array $data)` |
+| `sirsoft-ecommerce.product.before_update_commit` | 상품 수정 — 트랜잭션 안 마지막 저장 뒤 | `(Product $product, array $data, array $snapshot)` |
+
+- 확장이 글·상품 ID 가 정해진 뒤 같은 트랜잭션에서 자기 데이터를 저장하는 자리다. 리스너는 `'sync' => true` 로 구독한다 — 아니면
+  큐 래핑 + `afterCommit` 이라 커밋 뒤에 돈다.
+- 리스너의 예외는 저장 전체를 되돌린다. 오류 응답이 사용자에게 간다.
+- 커밋 전이라 외부 호출·메일·알림을 보내지 않는다(롤백돼도 되돌릴 수 없다). 그런 일은 `after_*` 에서 한다.
+- 파일을 옮기거나 지우면 `StorageTransaction`([저장소 드라이버 — 트랜잭션 파일 보상](storage-driver.md#트랜잭션-파일-보상-storagetransaction-715))
+  을 쓴다 — 롤백되면 파일도 제자리로 돌아간다.
 
 ### getSubscribedHooks() 옵션 요약
 

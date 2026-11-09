@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\CacheInterface;
+use Modules\Sirsoft\Ecommerce\Enums\ContentMediaOwnerType;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Search\SearchPagePolicy;
@@ -283,7 +284,7 @@ class ProductService
         // 데이터 가공 훅
         $data = HookManager::applyFilters('sirsoft-ecommerce.product.filter_create_data', $data);
 
-        // XSS 방어: HTML 설명 정화
+        // XSS 방어: HTML 설명 정화(본문 미디어 서명 주소 정리 포함 — sanitizeDescription)
         $data = $this->sanitizeDescription($data);
 
         // SEO 동기화 플래그 적용 (서버 SSoT — ON 이면 name/description 으로 meta_* 채움)
@@ -340,7 +341,16 @@ class ProductService
             // 상품정보제공고시 동기화 (템플릿은 UI용, 저장하지 않음)
             $this->syncNotice($product, $data['notice_items'] ?? null);
 
-            return $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
+            $product = $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
+
+            // 상품 설명이 참조한 본문 미디어만 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다 (#883)
+            $this->syncDescriptionMedia($product, $data);
+
+            // 훅: before_create_commit — 트랜잭션 안·상품 ID 확정·마지막 저장 뒤. 확장이 같은 트랜잭션에서 자기 데이터를
+            // 저장하는 자리다(sync 리스너만, 예외는 저장 전체를 되돌린다, 파일은 StorageTransaction). (#883)
+            HookManager::doAction('sirsoft-ecommerce.product.before_create_commit', $product, $data);
+
+            return $product;
         });
 
         // 생성 후 훅
@@ -380,7 +390,7 @@ class ProductService
         // 수정자 정보 추가
         $data['updated_by'] = Auth::id();
 
-        $product = DB::transaction(function () use ($product, $data) {
+        $product = DB::transaction(function () use ($product, $data, $snapshot) {
             $productData = collect($data)->except([
                 'options', 'category_ids', 'images', 'label_assignments',
                 'notice_items', 'additional_options',
@@ -417,7 +427,17 @@ class ProductService
                 $this->syncNotice($product, $data['notice_items'] ?? null);
             }
 
-            return $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
+            $product = $product->load(['activeOptions', 'categories', 'images', 'additionalOptions']);
+
+            // 본문 미디어 동기화 — 설명을 보낸 수정만 (#883)
+            if (array_key_exists('description', $data)) {
+                $this->syncDescriptionMedia($product, $data);
+            }
+
+            // 훅: before_update_commit — 트랜잭션 안·마지막 저장 뒤 (생성의 before_create_commit 과 같은 규약, #883)
+            HookManager::doAction('sirsoft-ecommerce.product.before_update_commit', $product, $data, $snapshot);
+
+            return $product;
         });
 
         // 수정 후 훅 (스냅샷 전달)
@@ -1386,10 +1406,25 @@ class ProductService
     }
 
     /**
-     * 상품 설명 HTML을 정화합니다.
+     * 상품 설명이 참조한 본문 미디어를 맞춥니다 — 저장 트랜잭션 안 (#883).
      *
-     * XSS 공격을 방지하기 위해 HTMLPurifier를 사용하여
-     * 허용된 HTML 태그만 남기고 위험한 내용을 제거합니다.
+     * @param  Product  $product  저장된 상품
+     * @param  array  $data  요청 데이터 (`content_media_temp_key`)
+     * @return void 반환값 없음
+     */
+    protected function syncDescriptionMedia(Product $product, array $data): void
+    {
+        app(ContentMediaService::class)->syncWithContent(
+            ContentMediaOwnerType::Product,
+            (int) $product->id,
+            $product->description,
+            ($product->description_mode ?? 'text') === 'html',
+            isset($data['content_media_temp_key']) && is_string($data['content_media_temp_key']) ? $data['content_media_temp_key'] : null
+        );
+    }
+
+    /**
+     * 상품 설명 HTML을 정화합니다.
      *
      * @param  array  $data  상품 데이터
      * @return array 정화된 상품 데이터
@@ -1404,9 +1439,13 @@ class ProductService
             return $data;
         }
 
+        // 편집 폼이 받은 본문 미디어 서명 주소는 정식 주소로 되돌린 뒤 정화한다 — 생성·수정 공통, 정화기가 쿼리의 & 를 바꾸기 전에 (#883)
+        $data['description'] = app(ContentMediaService::class)->normalizeContent($data['description']);
+
         foreach ($data['description'] as $locale => $content) {
             if (is_string($content) && ! empty($content)) {
-                $data['description'][$locale] = $this->purifyHtml($content);
+                // 상품 설명은 게시판과 같은 「본문 콘텐츠」 규칙 — 그림 캡션·업로드 동영상·외부 영상이 남는다 (#883 D20)
+                $data['description'][$locale] = $this->purifyHtml($content, 'content');
             }
         }
 

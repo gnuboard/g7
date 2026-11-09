@@ -32,6 +32,7 @@
             "ecommerce_settings": "Ecommerce Settings",
             "extra_fee_templates": "Extra Fee Templates",
             "policy_abilities": "Shipping policy permissions",
+            "contentMediaTarget": "Content media upload target",
             "product_abilities": "Product permissions",
             "identityProviders": "Identity Providers",
             "notice_templates": "Notice Templates",

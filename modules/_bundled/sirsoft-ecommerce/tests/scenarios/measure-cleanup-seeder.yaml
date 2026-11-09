@@ -1,0 +1,14 @@
+feature: 실측 정리 시더 — 표지 상품의 본문 미디어(행·파일)를 지운다
+
+description: |
+  본문 미디어는 소유자 외래키가 없어 상품을 지워도 남는다. 정리 시더는 표지 상품의 본문 미디어 행과 모듈 저장소 파일을
+  지우고, 다른 상품의 본문 미디어는 남긴다.
+
+axes:
+  case: [cleanup]
+
+effects:
+  - marker_product_content_media_deleted
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Seeders/Issue162MeasureCleanupSeederTest.php

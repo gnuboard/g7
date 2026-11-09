@@ -1277,6 +1277,12 @@ return [
     ],
     'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
     'attributes' => [
+        'content_media' => [
+            'owner_type' => '本文メディアの所有種別',
+            'file' => '本文メディアファイル',
+            'temp_key' => '一時キー',
+        ],
+        'content_media_temp_key' => '本文メディアの一時キー',
         // 手動決済処理・再有効化の確認ウィンドウ3項目 (Q13・Q14)
         'apply_stock_deduction' => '在庫差し引き',
         'apply_mileage_deduction' => '使用マイレージ差し引き',

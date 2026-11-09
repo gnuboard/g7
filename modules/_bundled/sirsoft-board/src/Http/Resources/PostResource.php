@@ -14,6 +14,7 @@ use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
@@ -48,7 +49,8 @@ class PostResource extends BaseApiResource
 
             // 상세 전용: 필터링된 제목/내용 (삭제글·비밀글 권한 체크)
             'title' => $this->getFilteredTitle($request, $slug),
-            'content' => $this->getFilteredContent($request, $slug),
+            // 본문 미디어 정식 주소는 게이트를 통과한 이 직렬화에서만 서명 주소로 바꾼다 (#883)
+            'content' => $this->presentContentMedia($this->getFilteredContent($request, $slug), $slug),
 
             // 상세 전용: 작성자 UUID
             'user_id' => $this->user?->uuid,
@@ -159,7 +161,7 @@ class PostResource extends BaseApiResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'content' => $canReceiveContent ? $this->content : null,
+            'content' => $canReceiveContent ? $this->presentContentMedia($this->content, $slug) : null,
             'content_mode' => $this->content_mode ?? 'text',
             'category' => $this->category,
             'is_notice' => (bool) $this->is_notice,
@@ -1045,7 +1047,26 @@ class PostResource extends BaseApiResource
     }
 
     /**
-     * 권한에 따라 필터링된 내용을 반환합니다.
+     * 본문의 본문 미디어 정식 주소를 서명 주소로 바꿉니다 — HTML 모드 본문만 (#883).
+     *
+     * 본문을 받을 자격(비밀·블라인드·삭제 게이트)을 통과한 뒤의 값에만 부른다. 서명은 그 자격의 위임이라, `<img>`·`<video>` 가
+     * 인증 헤더 없이도 비밀글 본문 미디어를 받는다.
+     *
+     * @param  string|null  $content  게이트를 통과한 본문
+     * @param  string|null  $slug  게시판 슬러그
+     * @return string|null 서명 주소로 바꾼 본문
+     */
+    private function presentContentMedia(?string $content, ?string $slug): ?string
+    {
+        if ($content === null || $slug === null || $slug === '' || ($this->content_mode ?? 'text') !== 'html') {
+            return $content;
+        }
+
+        return app(PostContentMediaService::class)->presentContent($content, $slug);
+    }
+
+    /**
+     * 필터링된 내용을 반환합니다 (삭제글·블라인드·비밀글 게이트).
      *
      * @param  Request  $request  HTTP 요청
      * @param  string|null  $slug  게시판 슬러그

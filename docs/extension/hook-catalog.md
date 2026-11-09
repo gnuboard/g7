@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (622)
+- [코어](#코어) (625)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -134,6 +134,8 @@
 | `core.consent.allowed_types` | filter | 1 |  |
 | `core.consent.changed` | action | 3 |  |
 | `core.consent.registered_providers` | filter | 1 |  |
+| `core.content.filter_embed_providers` | filter | 1 |  |
+| `core.content.filter_media_source_patterns` | filter | 1 |  |
 | `core.custom_assets.after_change` | action | 4 |  |
 | `core.custom_translation.bulk_destroy_validation_rules` | filter | 2 |  |
 | `core.custom_translation.index_validation_rules` | filter | 2 |  |
@@ -540,6 +542,7 @@
 | `core.settings.apply_driver_config` | action | 3 |  |
 | `core.settings.before_save` | action | 1 |  |
 | `core.settings.before_set` | action | 2 |  |
+| `core.settings.embed_preview_validation_rules` | filter | 2 |  |
 | `core.settings.filter_save_data` | filter | 1 |  |
 | `core.settings.password_expiry_preview_validation_rules` | filter | 2 |  |
 | `core.settings.privacy_preview_validation_rules` | filter | 2 |  |

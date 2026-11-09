@@ -116,4 +116,47 @@ interface PageAttachmentRepositoryInterface
      * @return int 최대 order 값
      */
     public function getMaxOrder(?int $pageId = null, ?string $tempKey = null): int;
+
+    /**
+     * 임시 키로 올린, 아직 페이지에 잇지 않은 본문 미디어 수 (#883)
+     *
+     * @param  string  $tempKey  임시 키
+     * @return int 개수
+     */
+    public function countTempContentMedia(string $tempKey): int;
+
+    /**
+     * 임시 키로 올린 임시 본문 미디어 중 해시가 맞는 것 (#883)
+     *
+     * @param  string  $tempKey  임시 키
+     * @param  array<int, string>  $hashes  본문이 참조한 해시
+     * @return Collection<int, PageAttachment> 임시 본문 미디어
+     */
+    public function getTempContentMediaByHashes(string $tempKey, array $hashes): Collection;
+
+    /**
+     * 페이지에 이어진 본문 미디어 (#883)
+     *
+     * @param  int  $pageId  페이지 ID
+     * @return Collection<int, PageAttachment> 본문 미디어
+     */
+    public function getContentMediaByPage(int $pageId): Collection;
+
+    /**
+     * 해시로 본문 미디어를 찾습니다 (#883)
+     *
+     * @param  string  $hash  해시
+     * @return PageAttachment|null 본문 미디어
+     */
+    public function findContentMediaByHash(string $hash): ?PageAttachment;
+
+    /**
+     * 임시 본문 미디어를 페이지에 잇습니다 — DB 갱신뿐 (#883)
+     *
+     * @param  PageAttachment  $attachment  임시 본문 미디어
+     * @param  int  $pageId  페이지 ID
+     * @param  int  $order  본문 안 순서
+     * @return void 반환값 없음
+     */
+    public function linkContentMedia(PageAttachment $attachment, int $pageId, int $order): void;
 }

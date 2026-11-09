@@ -14,6 +14,7 @@
 | `ClaimImage` | `ecommerce_claim_images` | 13 | claimable→?, creator→User | - |
 | `ClaimPayment` | `ecommerce_claim_payments` | 18 | payable→?, order→Order, mileageTransactions→MileageTransaction | - |
 | `ClaimReason` | `ecommerce_claim_reasons` | 10 | creator→User, updater→User | HasUserOverrides |
+| `ContentMedia` | `ecommerce_content_media` | 13 | - | SoftDeletes |
 | `Coupon` | `ecommerce_promotion_coupons` | 22 | issues→CouponIssue, products→Product, includedProducts→Product, excludedProducts→Product, categories→Category, includedCategories→Category, 외 2개 | SoftDeletes, 검색 색인 |
 | `CouponIssue` | `ecommerce_promotion_coupon_issues` | 9 | coupon→Coupon, user→User, order→Order | - |
 | `EcommerceStat` | `ecommerce_stats` | 4 | - | - |
@@ -152,6 +153,10 @@
 (`Order::pgTaxFreeAmount()` = 면세 + 영세, `Order::pgTaxableAmount()` = 과세표준 − 영세). 그래서 결제사 매출 내역에는
 영세가 면세로 보이며, 세무 신고의 영세 매출은 쇼핑몰의 `total_zero_rated_amount` 를 기준으로 합니다. 영세를 파는 상점은
 결제사와 복합과세(또는 영세율) 계약이 필요합니다 — 면세 상품을 파는 조건과 같습니다.
+`ecommerce_content_media`(1.3.4)는 상품 설명·상품 공통 정보 편집기 본문에 넣은 이미지·동영상·오디오입니다(`owner_type` product|common_info).
+저장 전에는 `owner_id` null + `temp_key` 이고, 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것만 소유자에 잇고 빠진 것은 소프트 삭제합니다.
+상품 이미지 테이블을 쓰지 않는 이유는 동영상에 맞지 않는 크기·썸네일 의미가 있고 공통 정보에는 첨부 저장소가 없기 때문입니다. 파일 카테고리는
+`content-media`(기본 디스크 — 미공개 상품은 서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않음)입니다.
 <!-- @intent END -->
 
 ## 소유 테이블
@@ -166,6 +171,7 @@
 | `ecommerce_claim_images` | `ClaimImage` |
 | `ecommerce_claim_payments` | `ClaimPayment` |
 | `ecommerce_claim_reasons` | `ClaimReason` |
+| `ecommerce_content_media` | `ContentMedia` |
 | `ecommerce_mail_templates` | - |
 | `ecommerce_mileage_balances` | `MileageBalance` |
 | `ecommerce_mileage_transactions` | `MileageTransaction` |
@@ -259,7 +265,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 130개.
+마이그레이션 131개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -393,6 +399,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_10_26_000002_add_tax_status_to_ecommerce_order_options_table.php` | - | `ecommerce_order_options` | ✅ |
 | `2026_10_26_000003_add_total_zero_rated_amount_to_ecommerce_orders_table.php` | - | `ecommerce_orders` | ✅ |
 | `2026_11_02_000001_update_imported_review_fields_in_ecommerce_product_reviews_table.php` | - | - | ✅ |
+| `2026_11_10_000001_create_ecommerce_content_media_table.php` | `ecommerce_content_media` | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -449,6 +456,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `ClaimShippingFeeModeEnum` | `string` | 2 | `fixed`, `original_policy` |
 | `ClaimTrackingDirectionEnum` | `string` | 2 | `collection`, `redelivery` |
 | `ClaimTypeEnum` | `string` | 4 | `exchange`, `return`, `refund`, `cancel` |
+| `ContentMediaOwnerType` | `string` | 2 | `product`, `common_info` |
 | `CouponDiscountType` | `string` | 2 | `fixed`, `rate` |
 | `CouponIssueCondition` | `string` | 4 | `manual`, `signup`, `first_purchase`, `birthday` |
 | `CouponIssueMethod` | `string` | 3 | `direct`, `download`, `auto` |
@@ -545,6 +553,8 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 | `ClaimPaymentRepositoryInterface` | 인터페이스 | 클레임 추가결제 리포지토리 인터페이스 |
 | `ClaimReasonRepository` | 구현 | 클레임 사유 Repository 구현체 |
 | `ClaimReasonRepositoryInterface` | 인터페이스 | 클레임 사유 Repository 인터페이스 |
+| `ContentMediaRepository` | 구현 | 이커머스 본문 미디어 Repository 구현체 |
+| `ContentMediaRepositoryInterface` | 인터페이스 | 이커머스 본문 미디어 Repository 인터페이스 |
 | `CouponIssueRepository` | 구현 | 쿠폰 발급 Repository 구현체 |
 | `CouponIssueRepositoryInterface` | 인터페이스 | 쿠폰 발급 Repository 인터페이스 |
 | `CouponRepository` | 구현 | 쿠폰 Repository 구현체 |

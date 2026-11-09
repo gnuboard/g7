@@ -75,10 +75,13 @@
                     },
                     "children": [
                         {
+                            "comment": "편집기는 처음 세워질 때의 업로드 계약만 쓴다 — 계약을 담은 소스(contentMediaTarget)를 받기(실패 포함) 전에는 세우지 않는다(#883 실측: 먼저 서면 업로드 단추가 끝내 생기지 않음)",
                             "id": "description_editor",
                             "type": "extension_point",
                             "name": "html_editor",
+                            "if": "{{contentMediaTarget !== undefined}}",
                             "props": {
+                                "mediaUpload": "{{contentMediaTarget?.data ? Object.assign({}, contentMediaTarget.data, { fields: Object.assign({}, contentMediaTarget.data.fields ?? {}, { temp_key: _local.ui?.contentMediaTempKey }) }) : null}}",
                                 "multilingual": true,
                                 "value": "{{_local.form?.description ?? ''}}",
                                 "rows": 15,

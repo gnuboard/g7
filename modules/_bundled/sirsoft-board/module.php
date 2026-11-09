@@ -127,6 +127,8 @@ class Module extends AbstractModule
                     'api.modules.sirsoft-board.boards.comments.*',
                     'api.modules.sirsoft-board.boards.attachments.*',
                     'api.modules.sirsoft-board.boards.attachment.*',
+                    // 본문 미디어 업로드·서빙 (#883) — 서빙(show)은 컨트롤러도 없는 게시판을 404 로 돌려 결과가 같다
+                    'api.modules.sirsoft-board.boards.content-media.*',
                     'api.modules.sirsoft-board.admin.board.*',
                 ],
             ],

@@ -46,7 +46,9 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      */
     public function getByPageId(int $pageId): Collection
     {
+        // 첨부 목록 — 본문 미디어(예약 컬렉션)는 뺀다 (#883)
         return PageAttachment::where('page_id', $pageId)
+            ->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS)
             ->orderBy('order')
             ->get();
     }
@@ -59,8 +61,10 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      */
     public function getByTempKey(string $tempKey): Collection
     {
+        // 임시 첨부 — 본문 미디어는 임시 키가 같아도 첨부 연결(파일 이동)이 집어 가지 않는다 (#883)
         return PageAttachment::where('temp_key', $tempKey)
             ->whereNull('page_id')
+            ->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS)
             ->orderBy('order')
             ->get();
     }
@@ -178,7 +182,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      */
     public function getMaxOrder(?int $pageId = null, ?string $tempKey = null): int
     {
-        $query = PageAttachment::query();
+        $query = PageAttachment::query()->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS);
 
         if ($pageId) {
             $query->where('page_id', $pageId);
@@ -187,5 +191,65 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
         }
 
         return (int) $query->max('order');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countTempContentMedia(string $tempKey): int
+    {
+        return PageAttachment::query()
+            ->whereNull('page_id')
+            ->where('temp_key', $tempKey)
+            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getTempContentMediaByHashes(string $tempKey, array $hashes): Collection
+    {
+        if ($hashes === []) {
+            return new Collection;
+        }
+
+        return PageAttachment::query()
+            ->whereNull('page_id')
+            ->where('temp_key', $tempKey)
+            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
+            ->whereIn('hash', $hashes)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getContentMediaByPage(int $pageId): Collection
+    {
+        return PageAttachment::query()
+            ->where('page_id', $pageId)
+            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
+            ->orderBy('order')
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findContentMediaByHash(string $hash): ?PageAttachment
+    {
+        return PageAttachment::query()
+            ->where('hash', $hash)
+            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function linkContentMedia(PageAttachment $attachment, int $pageId, int $order): void
+    {
+        $attachment->update(['page_id' => $pageId, 'temp_key' => null, 'order' => $order]);
     }
 }

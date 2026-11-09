@@ -9,7 +9,8 @@
       "style_label": "エディタースタイル",
       "fallback_notice": "エディターを読み込めませんでした。一時的な入力ウィンドウに切り替えました。作成した内容はそのまま保存されます。"
     },
-    "upload_failed": "ファイルをアップロードできませんでした: {{name}}"
+    "upload_failed": "ファイルをアップロードできませんでした: {{name}}",
+    "upload_login_required": "画像をアップロードするにはログインが必要です。作成中の内容はそのまま残ります。"
   },
   "settings": {
     "title": "CKEditor5 設定",

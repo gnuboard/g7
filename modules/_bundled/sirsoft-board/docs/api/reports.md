@@ -439,7 +439,7 @@ _단건 응답: `data` 객체의 필드._
 | board | object | `{"id":4,"name":"갤러리","slug":"gallery"}` | 신고 대상이 속한 게시판 정보 (id/name/slug). 게시판이 삭제된 경우 관계 대신 첫 신고 로그 스냅샷의 게시판명으로 폴백합니다. |
 | target_type | string | `post` | 신고 대상 타입 (post, comment) |
 | target_id | integer | `55` | 신고 대상 ID (동적 테이블의 ID) |
-| post | object | `{"id":55,"title":"작업물 공유합니다","content":"최근에 작업한 결과물입니다.피드…` | 신고 대상 게시글 상세 (id/title/content/작성일시/작성자). 대상이 댓글이면 해당 댓글의 상위 게시글 정보가 담기며, 조회 불가 시 null 입니다. |
+| post | object | `{"id":55,"title":"작업물 공유합니다","content":"최근에 작업한 결과물입니다.피드…` | 신고 대상 게시글 상세 (id/title/content/작성일시/작성자). 대상이 댓글이면 해당 댓글의 상위 게시글 정보가 담기며, 조회 불가 시 null 입니다. HTML 본문(`content_mode=html`)의 본문 미디어 주소는 서명 주소로 나갑니다(1.2.3 — 비밀글 본문 미디어도 `<img>` 로 보이게). |
 | comment | null | `null` | 신고 대상 댓글 상세 (id/content/작성일시/작성자). 대상 타입이 comment 일 때만 채워지고 게시글 신고에서는 null 입니다. |
 | target_status | string | `published` | 신고 대상 콘텐츠의 현재 상태 (reportable의 current_status — 예: published, blinded). |
 | target_status_label | string | `게시중` | `target_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |

@@ -1301,6 +1301,10 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 - `href`/`src` 등 URL 속성은 허용 스킴만 남깁니다. `javascript:` 는 제어문자를 끼워 넣은 우회 형태까지 차단하고, `data:` 는 이미지 형식만 허용합니다.
 - 외부 링크에는 `rel="noopener noreferrer"` 를 보강합니다.
 - 파싱에 실패하면 정화되지 않은 HTML 을 내보내지 않고 전체를 이스케이프합니다.
+- 코어 환경설정 「본문 콘텐츠」에서 켠 후보 태그(그림 설명 `figcaption`, 업로드 `video`·`audio`·`source`, 외부 영상 `oembed`)와 운영자 추가 태그는
+  제거·벗김 목록에서 빠집니다(`App\Support\Content\ContentHtmlPolicy`, 7.1.5). 정화 뒤 `finalize('bot')` 이 후보 태그의 속성을 정해진 것만 남기고,
+  미디어 `src`·`poster` 는 서빙 주소 패턴에 맞을 때만 남기며, `<oembed url>` 은 원래 주소의 `nofollow` 링크로 바꿉니다(http(s) 가 아니면 지움).
+  봇 화면에는 iframe 을 내보내지 않습니다.
 
 차단 목록의 기준은 일반 화면 컴포넌트의 DOMPurify 설정입니다(`templates/_bundled/sirsoft-basic/src/components/composite/HtmlContent.tsx`). **한쪽만 바꾸면 두 화면의 정화 강도가 어긋나므로 함께 갱신**하세요. 계약은 `tests/Unit/Seo/HtmlSanitizerTest.php` 와 `tests/Unit/Seo/ExtensionPointPropsRenderingTest.php` 가 잠급니다.
 

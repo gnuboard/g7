@@ -900,6 +900,28 @@ return [
 
     // 설정 검증 메시지
     'settings' => [
+        // 본문 콘텐츠 (#883)
+        'embed_provider_invalid' => ':index번째 외부 영상 서비스 항목 형식이 올바르지 않습니다.',
+        'embed_provider_too_many' => '외부 영상 서비스는 최대 :max개까지 추가할 수 있습니다.',
+        'embed_provider_id_duplicate' => ':index번째 서비스 식별자(:id)가 기본 서비스나 다른 항목과 겹칩니다.',
+        'embed_provider_id_format' => ':index번째 서비스 식별자는 영문 소문자로 시작하는 2~32자(영문 소문자·숫자·밑줄)여야 합니다.',
+        'embed_provider_name' => ':index번째 서비스 이름은 1~40자로 입력해 주세요.',
+        'embed_provider_patterns_count' => ':index번째 서비스의 주소 형식은 1~5개여야 합니다.',
+        'embed_provider_pattern_format' => ':index번째 서비스의 주소 형식은 https:// 또는 http:// 로 시작하고 {id} 를 정확히 한 번 넣어야 합니다. 호스트의 * 는 맨 앞 하위 도메인 자리(*.example.com)에만 쓸 수 있습니다.',
+        'embed_provider_player_https' => ':index번째 서비스의 플레이어 주소는 https:// 로 시작하고 {id} 를 정확히 한 번 넣어야 합니다.',
+        'embed_provider_player_host' => ':index번째 서비스의 플레이어 주소에 이 사이트 주소나 * 는 쓸 수 없습니다.',
+        'embed_provider_option' => ':index번째 서비스의 :field 값이 허용된 선택지가 아닙니다.',
+        'embed_preset_unknown' => '알 수 없는 외부 영상 서비스입니다: :id',
+        'content_custom_tag_list' => '추가 태그는 최대 :max개까지 입력할 수 있습니다.',
+        'content_custom_tag_format' => '추가 태그 「:tag」 형식이 올바르지 않습니다. 영문 소문자로 시작하는 32자 이내(영문 소문자·숫자·하이픈)로 입력해 주세요.',
+        'content_custom_tag_rejected' => '「:tag」 태그는 추가할 수 없습니다 — :reason',
+        'content_custom_tag_reasons' => [
+            'script' => '스크립트를 실행할 수 있습니다.',
+            'style' => '화면 전체의 모양을 바꾸거나 외부 파일을 불러올 수 있습니다.',
+            'document' => '문서 구조를 바꿔 다른 정화 규칙을 우회할 수 있습니다.',
+            'embed' => '외부 문서·프로그램을 본문 안에 띄웁니다(외부 영상은 「외부 영상 서비스」로 추가하세요).',
+            'form' => '입력 양식으로 개인정보를 가로채는 데 쓰일 수 있습니다.',
+        ],
         // 일반 설정 - 필수 필드
         'site_name_required' => '사이트 이름을 입력해주세요.',
         'site_name_max' => '사이트 이름은 100자를 초과할 수 없습니다.',
@@ -1325,6 +1347,22 @@ return [
 
     // 검증 속성명 (validation.attributes)
     'attributes' => [
+        // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
+        'content_settings' => '본문 콘텐츠 설정',
+        'content_allow_figure_caption' => '그림 설명 허용',
+        'content_allow_uploaded_video' => '업로드 동영상 허용',
+        'content_allow_uploaded_audio' => '업로드 오디오 허용',
+        'content_allow_external_embed' => '외부 영상 삽입 허용',
+        'content_embed_presets' => '외부 영상 서비스 사용 여부',
+        'content_embed_custom_providers' => '직접 추가한 외부 영상 서비스',
+        'content_custom_tags' => '추가 허용 태그',
+        'content_media_url_ttl_minutes' => '본문 미디어 주소 유효 시간',
+        // 외부 영상 서비스 예시 주소 확인 (#883)
+        'embed_provider' => '외부 영상 서비스',
+        'embed_provider_url_patterns' => '주소 형식',
+        'embed_provider_player_url' => '플레이어 주소',
+        'embed_provider_id_rule' => 'id 글자 규칙',
+        'embed_provider_sample_url' => '예시 주소',
         'layout_source' => '레이아웃 설치 소스',
         'layout_meta_icon' => '메뉴 아이콘',
         'layout_meta_editor_label' => '편집기 표시 이름',

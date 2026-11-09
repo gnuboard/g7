@@ -14,6 +14,7 @@ use Modules\Sirsoft\Page\Repositories\PageRepository;
 use Modules\Sirsoft\Page\Repositories\PageVersionRepository;
 use Modules\Sirsoft\Page\Seo\PageSitemapContributor;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
+use Modules\Sirsoft\Page\Services\PageContentMediaService;
 
 /**
  * Page 모듈 서비스 프로바이더
@@ -34,6 +35,7 @@ class PageServiceProvider extends BaseModuleServiceProvider
      */
     protected array $storageServices = [
         PageAttachmentService::class,
+        PageContentMediaService::class,
     ];
 
     /**

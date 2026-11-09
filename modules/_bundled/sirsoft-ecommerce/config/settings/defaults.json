@@ -545,7 +545,8 @@
         },
         "product_display": {
             "related_order": "random",
-            "related_cache_hours": 24
+            "related_cache_hours": 24,
+            "content_media": null
         },
         "inquiry": {
             "board_slug": null

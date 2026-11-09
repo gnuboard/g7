@@ -63,6 +63,7 @@ use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\Repositories\UserSearchHistoryRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
+use App\Extension\Storage\StorageTransactionJournal;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
 use App\Extension\CoreVersionChecker;
@@ -144,8 +145,11 @@ use App\Services\UniqueIdService;
 use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivilegedDatabaseAccounts;
+use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
@@ -435,6 +439,9 @@ class CoreServiceProvider extends ServiceProvider
         // 디렉토리를 재스캔했다. 요청 단위 상태는 라우트 병합 열화 플래그 하나뿐이며
         // 그 플래그는 병합 진입 시 재설정되므로 공유해도 안전하다.
         $this->app->singleton(TemplateService::class);
+
+        // 트랜잭션 파일 보상 저널 (StorageTransaction) — 한 요청·잡 안의 트랜잭션 항목을 공유해야 롤백 때 되돌린다
+        $this->app->singleton(StorageTransactionJournal::class);
     }
 
     /**
@@ -444,6 +451,10 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 트랜잭션 파일 보상 — 롤백·커밋 이벤트로 저널을 정리한다 (환경 무관, .env 없는 설치 전에도 무해)
+        Event::listen(TransactionRolledBack::class, fn (TransactionRolledBack $event) => $this->app->make(StorageTransactionJournal::class)->handleRolledBack($event));
+        Event::listen(TransactionCommitted::class, fn (TransactionCommitted $event) => $this->app->make(StorageTransactionJournal::class)->handleCommitted($event));
+
         // 코어 훅 리스너 자동 발견 및 등록 (환경 무관)
         $this->registerCoreHookListeners();
 

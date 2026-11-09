@@ -316,6 +316,20 @@ return [
 
     // 필드 속성명 (attributes)
     'attributes' => [
+        'content_media' => [
+            'file' => '본문 미디어 파일',
+            'temp_key' => '임시 키',
+            'post_id' => '게시글 번호',
+        ],
+        // 본문 미디어 정책 하위 칸 (#883) — :kind 는 코어 미디어 종류 이름(이미지·동영상·오디오)
+        'content_media_policy' => [
+            'policy' => '본문 미디어 정책',
+            'max_per_document' => '문서당 최대 본문 미디어 수',
+            'kind' => ':kind 본문 미디어 설정',
+            'enabled' => ':kind 본문 미디어 사용',
+            'max_size_mb' => ':kind 파일당 최대 크기(MB)',
+            'extensions' => ':kind 허용 확장자',
+        ],
         'board_ids' => '게시판 순서',
         'bulk_members' => [
             'apply_all' => '대상 게시판 범위',
@@ -578,6 +592,10 @@ return [
     ],
 
     // 첨부파일 검증
+    'content_media' => [
+        'temp_key_required' => '본문 미디어 업로드에는 임시 키(UUID)가 필요합니다. 화면을 새로고침한 뒤 다시 시도해 주세요.',
+    ],
+
     'attachment' => [
         'file' => [
             'required' => '파일은 필수입니다.',
@@ -592,6 +610,7 @@ return [
         'file_mimes' => '허용되지 않은 파일 형식입니다.',
         'post_id_required' => '게시글 ID는 필수입니다.',
         'post_id_invalid' => '유효하지 않은 게시글 ID입니다.',
+        'collection_reserved' => '이 첨부 구분으로는 올릴 수 없습니다.',
         'max_count_exceeded' => '최대 업로드 파일 수(:max개)를 초과했습니다.',
         'extension_not_allowed' => '허용되지 않은 파일 확장자입니다: :extension',
         // 순서 변경 검증 메시지

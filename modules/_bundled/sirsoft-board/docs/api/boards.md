@@ -2549,7 +2549,7 @@ Cache-Control: public, max-age=86400
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | file | body | file | 예 | 게시판 허용 확장자 · 최대 용량 | 업로드 파일. **파일 이름의 확장자와 내용으로 추론한 형식이 모두** 게시판 허용 확장자에 들어야 한다(md·log·csv·tsv 처럼 원래 일반 텍스트인 형식은 허용 목록에 있으면 통과). 이름이 허용 밖이면 「허용되지 않은 파일 형식입니다」, 내용이 맞지 않으면(예: SVG 내용의 `x.png`) 「파일 내용이 허용된 형식과 일치하지 않습니다」, 0바이트면 「빈 파일(0바이트)은 올릴 수 없습니다」로 422 |
 | post_id | body | integer | 아니오 | min 1 | post 식별자 |
-| collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
+| collection | body | string | 아니오 | max 100, `content_media` 제외 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default). 예약 컬렉션 `content_media`(본문 미디어)는 422 — 전용 업로드로만 올린다 |
 | temp_key | body | string | 아니오 | UUID 또는 `temp_<숫자>_<36진수 소문자>`(7.0.x 화면 꼴) | 게시글 저장 전 임시 업로드를 묶는 키 (`post_id` 와 함께 생략하면 서버가 UUID 를 발급. post_id가 없을 때 첨부를 임시로 그룹핑, 저장 시 게시글에 연결) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.attachment.upload_validation_rules`).
@@ -2636,7 +2636,14 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 게시글 작성/수정 폼에서 단일 파일을 업로드합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, 게시판의 파일 업로드 설정이 꺼져 있으면 403을 반환합니다. 파일 1개당 용량 상한은 게시판의 `max_file_size`, 비어 있으면 게시판 환경설정 기본값, 그것도 없으면 10MB 순으로 정해지며(게시글 저장 검증과 같은 기준) 초과 시 422를 반환합니다. 게시글 저장 전 임시 업로드를 위해 `temp_key` 로 묶어두거나 `post_id` 로 기존 글에 바로 연결할 수 있고, 성공 시 FileUploader 컴포넌트가 기대하는 `data.data` 형식으로 첨부 메타(해시·URL·순서 등)를 201로 반환합니다.
+**설명** 게시글 작성/수정 폼에서 단일 파일을 업로드합니다. `optional.sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며(비회원 권한이 있으면 비회원도 올린다), 게시판의 파일 업로드 설정이 꺼져 있으면 403을 반환합니다. 파일 1개당 용량 상한은 게시판의 `max_file_size`, 비어 있으면 게시판 환경설정 기본값, 그것도 없으면 10MB 순으로 정해지며(게시글 저장 검증과 같은 기준) 초과 시 422를 반환합니다. 게시글 저장 전 임시 업로드를 위해 `temp_key` 로 묶어두거나 `post_id` 로 기존 글에 바로 연결할 수 있고, 성공 시 FileUploader 컴포넌트가 기대하는 `data.data` 형식으로 첨부 메타(해시·URL·순서 등)를 201로 반환합니다.
+
+**소유 규칙 (1.2.3+)**
+
+- `post_id` 로 기존 글에 붙이면 그 글이 **이 게시판 글**이어야 하고(아니면 404 「게시글을 찾을 수 없습니다」), 글 수정과 같은 판정을 통과해야 한다(아니면 403 「수정 권한이 없습니다」) — 게시판 관리자·회원 글 작성자 본인·비회원 글은 비밀번호 확인 뒤 받은 검증 토큰(`X-Board-Post-Verify-Token` 헤더 또는 `verification_token`, 업로드가 소비하지 않음) 또는 `password`.
+- 응답 `data.data.temp_key` 는 올린 사람에게만 주는 임시 키다(키 없이 올렸으면 서버가 만든 키, `post_id` 업로드는 null). 비회원은 글 저장에서 첨부 번호(`attachment_ids`)로 이을 때 이 키를 `temp_key` 로 함께 보내야 한다 — 번호만으로는 잇지 않는다.
+- 임시 첨부를 글에 잇는 것은 이 게시판에 올린 임시 첨부(`{slug}/temp/…`)뿐이고, 회원은 본인 업로드, 비회원은 비회원 업로드만 잇는다.
+- 첨부 개수 상한은 예약 컬렉션(`content_media`)을 뺀 모든 컬렉션을 센다.
 
 
 ### PATCH /api/modules/sirsoft-board/boards/{slug}/attachments/reorder
@@ -2969,6 +2976,64 @@ HTTP/1.1 200
 
 **설명** 비회원이 작성한 댓글의 수정/삭제 권한을 확인하기 위해 비밀번호를 검증합니다. `auth:sanctum` + `sirsoft-board.{slug}.comments.write` 권한이 필요하며, 대상이 비회원 댓글이 아니면 400, 비밀번호가 틀리면 401을 반환합니다. 검증 성공 시 1시간 유효한 임시 토큰(`verification_token`)을 발급해 이후 수정/삭제 요청에서 비밀번호 재입력 없이 사용하도록 합니다.
 
+
+### POST /api/modules/sirsoft-board/boards/{slug}/content-media
+<!-- @generated:start:api.modules.sirsoft-board.boards.content-media.upload -->
+- **라우트명**: `api.modules.sirsoft-board.boards.content-media.upload`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ContentMediaController@upload`
+- **인증/권한**: `optional.sanctum` + `permission:user,sirsoft-board.{slug}.attachments.upload` (비회원 포함) · `throttle:60,1`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | 게시판 slug |
+| file | body | file | 예 | 게시판 본문 미디어 정책의 종류·확장자·파일당 크기 | 본문에 넣을 이미지·동영상·오디오. 형식은 파일 내용으로 판정한다(이름만 바꾼 파일은 거부) |
+| temp_key | body | string | 예 | UUID | 글쓰기 화면의 임시 키. 글 저장 때 같은 키를 보내야 본문이 참조한 미디어가 글에 이어진다 |
+| post_id | body | integer | 아니오 | min 1 | 기존 글 편집 중이면 그 글 번호 — 그 글을 고칠 수 있는지 본다(아니면 403, 다른 게시판 글이면 404) |
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| data.id | integer | `812` | 본문 미디어 행 번호 |
+| data.hash | string | `"Xk2pQ9rT0aLm"` | 서빙 주소의 12자 해시 |
+| data.kind | string | `"image"` | `image`·`video`·`audio` |
+| data.url | string | `"/api/modules/sirsoft-board/boards/free/content-media/Xk2pQ9rT0aLm?expires=…&signature=…"` | 서명된 서빙 주소(편집 중 미리보기). 글 저장 때 서명 쿼리는 떼어 정식 주소로 저장한다 |
+
+- 상태: `201` 성공 · `401/403` 업로드 권한 없음 · `403` `post_id` 의 글을 고칠 수 없음 · `404` 게시판·글 없음 · `422` 정책 밖 파일(`errors.file`)·임시 키 없음·같은 임시 키 업로드가 문서당 최대 개수의 2배 초과(`errors.code = content_media_limit_exceeded`)
+- 비회원 응답에는 소유 쿠키 `g7_board_guest_upload`(경로 `/api/modules/sirsoft-board`, httpOnly)가 붙는다 — 첨부 업로드와 같은 쿠키다.
+- 「파일 첨부 사용」(`use_file_upload`)은 보지 않는다. 정책은 게시판 `content_media_policy`, 비어 있으면 그 게시판 첨부 정책(동영상·오디오는 코어 「본문 콘텐츠」 스위치를 따름).
+<!-- @generated:end -->
+
+---
+
+### GET /api/modules/sirsoft-board/boards/{slug}/content-media/{hash}
+<!-- @generated:start:api.modules.sirsoft-board.boards.content-media.show -->
+- **라우트명**: `api.modules.sirsoft-board.boards.content-media.show`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ContentMediaController@show`
+- **인증/권한**: `optional.sanctum` · `throttle:600,1` — 권한 미들웨어 없음(`<img>`·`<video>` 요청에는 Bearer 가 실리지 않음). 게이트는 아래와 같다
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | 게시판 slug |
+| hash | path | string | 예 | `[A-Za-z0-9]{12}` | 본문 미디어 해시 |
+| expires·signature | query | string | 아니오 | — | 글 응답·업로드 응답이 준 한시 서명(유효 시간은 환경설정 「본문 콘텐츠」 미디어 주소 유효 시간, 기본 240분) |
+| Range | header | string | 아니오 | `bytes=a-b` 한 구간 | 동영상 탐색. 여러 구간은 200 전량 |
+
+**게이트**
+
+- 서명이 유효하면 통과(글에 잇기 전 임시 행 포함 — 편집 중 미리보기).
+- 서명이 없으면 임시 행은 403. 글에 이어진 행은 요청자의 **글 읽기 권한**(`posts.read`, 게시판 관리자 포함)과 삭제·비밀·블라인드 게이트(첨부 미리보기와 같은 기준).
+
+**응답**: 파일 본문. 래스터 이미지는 `inline`, 동영상·오디오는 게시판 정책과 코어 후보가 모두 켜졌을 때 `inline` + `Content-Security-Policy: default-src 'none'; media-src 'self'; sandbox`, 그 밖에는 다운로드. 언제나 `X-Content-Type-Options: nosniff`·`Cache-Control: private`. 로컬·원격 디스크 모두 `Accept-Ranges: bytes`·`206`·`416` 을 지원한다.
+
+- 상태: `200`·`206` · `403` 게이트 · `404` 해시·게시판 없음 · `416` 구간 충족 불가
+<!-- @generated:end -->
+
+---
 
 ### GET /api/modules/sirsoft-board/boards/{slug}/posts
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.index -->
@@ -3504,6 +3569,9 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+
+> **본문 미디어 업로드 계약 `data.content_media`** (1.2.3) — 이 게시판 `attachments.upload` 권한이 있고 정책이 받는 종류가 있으면 편집기 확장점 `html_editor` 의 `mediaUpload` 로 넘길 계약 객체(`version`·`endpoint`·`fileField`·`fields`·`headers`·`response`·`mediaUrlPattern`·`policy`), 없으면 `null`. 화면은 `fields.temp_key` 에 글쓰기 임시 키를 더해 넘긴다. 형식은 코어 `docs/extension/content-media.md`.
 
 <!-- @generated:end -->
 

@@ -2,9 +2,10 @@
 
 namespace App\Extension\Storage;
 
-use App\Contracts\Extension\StorageInterface;
+use App\Contracts\Extension\StreamingStorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\Storage\Concerns\GuardsStoragePaths;
+use App\Extension\Storage\Concerns\ProvidesStreamingAccess;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -15,9 +16,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 모듈별로 격리된 파일 저장소를 제공합니다.
  * 경로 패턴: storage/app/modules/{identifier}/{category}/{path}
  */
-class ModuleStorageDriver implements StorageInterface
+class ModuleStorageDriver implements StreamingStorageInterface
 {
     use GuardsStoragePaths;
+    use ProvidesStreamingAccess;
     use ResolvesPublicUrl;
 
     /**

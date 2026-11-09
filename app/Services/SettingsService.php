@@ -12,9 +12,12 @@ use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\AttachmentResource;
+use App\Rules\EmbedCustomProviderRule;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\ConfigCacheHelper;
+use App\Support\Content\ContentHtmlPolicy;
+use App\Support\Content\EmbedProviderRegistry;
 use App\Support\RouteCacheHelper;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
@@ -521,8 +524,37 @@ class SettingsService
         return match ($transform) {
             'format_extensions' => $this->formatExtensions($sourceValue),
             'first_image_url' => $this->getFirstImageUrl($sourceValue),
+            // 본문 콘텐츠 규칙 — 표시기·편집기용 계산값(허용 태그·속성·미디어 출처·외부 영상 컴파일 정규식, #883)
+            'content_render_policy' => ContentHtmlPolicy::fromSettings($settings)->toFrontendArray(),
             default => $sourceValue,
         };
+    }
+
+    /**
+     * 외부 영상 서비스 예시 주소 확인 — 저장 전 입력값으로 꺼낸 id 와 만들어질 플레이어 주소 (#883).
+     *
+     * 저장하지 않는다. 형식이 틀리면 필드별 문구를 함께 돌려 창이 저장 전에 알린다(저장 때와 같은 검증·컴파일 규칙).
+     *
+     * @param  array<string, mixed>  $entry  서비스 입력값(`url_patterns`·`player_url`·`id_rule`)
+     * @param  string  $sampleUrl  확인할 예시 주소
+     * @return array{matched: bool, id: ?string, player_url: ?string, errors: array<string, string>} 확인 결과
+     */
+    public function previewEmbedProvider(array $entry, string $sampleUrl): array
+    {
+        $errors = array_map(fn (string $key) => __($key, ['index' => 1, 'field' => '']), EmbedCustomProviderRule::validateEntry($entry + ['id' => 'preview', 'name' => 'preview'], false));
+        $preview = $errors === [] ? EmbedProviderRegistry::preview($entry, $sampleUrl) : ['matched' => false, 'id' => null, 'player_url' => null];
+
+        return ['matched' => $preview['matched'], 'id' => $preview['id'], 'player_url' => $preview['player_url'], 'errors' => $errors];
+    }
+
+    /**
+     * 확장이 제공한 외부 영상 서비스의 켜기 선택지 — 「본문 콘텐츠」 탭이 그린다 (#883).
+     *
+     * @return array<int, array{key: string, extension: string, id: string, name: string}> 선택지
+     */
+    public function embedExtensionProviderOptions(): array
+    {
+        return EmbedProviderRegistry::extensionProviderOptions();
     }
 
     /**

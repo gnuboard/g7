@@ -1,0 +1,30 @@
+feature: 이커머스 본문 미디어 — 상품 설명·공통 정보 편집기 본문 이미지·동영상·오디오 (#883 4단계)
+
+description: |
+  `ecommerce_content_media` 테이블. 관리자 업로드(`POST admin/content-media`, owner_type 별 권한)는 임시 행을 만들고, 상품·공통
+  정보 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것만 소유자에 잇는다(빠지면 소프트 삭제). 서빙은 상품이면 「전시 중
+  또는 관리자 또는 서명」, 공통 정보는 공개. 임시 상품 이미지 정리 명령이 오래된 임시 본문 미디어도 함께 지운다.
+
+axes:
+  case: [admin_upload, sync, serve_gate, prune, store_purify]
+
+effects:
+  - upload_creates_temp_row
+  - owner_type_permission_enforced
+  - referenced_linked
+  - removed_soft_deleted
+  - signed_query_stripped
+  - visible_product_public
+  - hidden_product_requires_signature
+  - temp_requires_signature
+  - common_info_public
+  - stale_temp_pruned
+  - content_profile_keeps_caption_and_embed
+  - baseline_profile_unchanged
+  - content_profile_keeps_custom_tags
+  - signed_query_stripped_on_update
+  - serve_honours_range
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ContentMediaUploadAndSyncTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/Concerns/PurifiesHtmlProfileTest.php

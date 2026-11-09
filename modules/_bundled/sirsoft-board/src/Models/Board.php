@@ -161,6 +161,9 @@ class Board extends Model
         'max_file_count',
         'allowed_extensions',
 
+        // 본문 미디어 정책 (null: 첨부 정책을 따름, #883)
+        'content_media_policy',
+
         // 댓글 설정
         'comment_order',
         'max_comment_depth',
@@ -194,6 +197,7 @@ class Board extends Model
             'categories' => 'array',
             // 빈 배열을 NULL 로 정규화해 "확장자 미지정" 표현을 하나로 유지합니다.
             'allowed_extensions' => AsAllowedExtensions::class,
+            'content_media_policy' => 'array',
             'blocked_keywords' => 'array',
             'is_active' => 'boolean',
             'display_order' => 'integer',

@@ -1,0 +1,291 @@
+{
+    "render_policy": {
+        "version": 1,
+        "forbid_tags": [
+            "script",
+            "noscript",
+            "iframe",
+            "frame",
+            "frameset",
+            "object",
+            "embed",
+            "applet",
+            "portal",
+            "form",
+            "input",
+            "textarea",
+            "select",
+            "button",
+            "style",
+            "link",
+            "meta",
+            "base",
+            "body",
+            "head",
+            "html",
+            "title",
+            "svg",
+            "math",
+            "audio",
+            "video",
+            "source",
+            "track",
+            "canvas",
+            "details",
+            "dialog",
+            "plaintext",
+            "xmp",
+            "listing",
+            "marquee",
+            "noframes",
+            "noembed",
+            "template",
+            "slot"
+        ],
+        "extra_tags": [
+            "figure",
+            "figcaption",
+            "oembed"
+        ],
+        "attributes": {
+            "figure": [
+                "class"
+            ],
+            "figcaption": [
+                "class"
+            ],
+            "oembed": [
+                "url"
+            ]
+        },
+        "custom_tags": [],
+        "media_src_patterns": [
+            "^/api/(?:modules|plugins)/[a-z0-9_-]+/(?:[a-z0-9_-]+/)*content-media/[A-Za-z0-9]{12}(?:\\?[^\"'<>\\s]*)?$"
+        ],
+        "allow_external_embed": true,
+        "allow_uploaded_video": false,
+        "allow_uploaded_audio": false,
+        "embed_providers": [
+            {
+                "id": "youtube",
+                "name": "YouTube",
+                "source": "preset",
+                "patterns": [
+                    "^https?://(?:[^/?#.]+\\.)*youtube\\.com\\/watch\\?v=(?<id>[A-Za-z0-9_-]{11})/?(?:[?&#].*)?$",
+                    "^https?://youtu\\.be\\/(?<id>[A-Za-z0-9_-]{11})/?(?:[?&#].*)?$",
+                    "^https?://(?:[^/?#.]+\\.)*youtube\\.com\\/shorts\\/(?<id>[A-Za-z0-9_-]{11})/?(?:[?&#].*)?$",
+                    "^https?://(?:[^/?#.]+\\.)*youtube\\.com\\/embed\\/(?<id>[A-Za-z0-9_-]{11})/?(?:[?&#].*)?$"
+                ],
+                "aspects": [
+                    "16:9",
+                    "16:9",
+                    "9:16",
+                    "16:9"
+                ],
+                "player_url": "https://www.youtube-nocookie.com/embed/{id}",
+                "aspect": "16:9",
+                "allow": [
+                    "fullscreen",
+                    "encrypted-media",
+                    "picture-in-picture"
+                ]
+            },
+            {
+                "id": "vimeo",
+                "name": "Vimeo",
+                "source": "preset",
+                "patterns": [
+                    "^https?://vimeo\\.com\\/(?<id>[0-9]{1,64})/?(?:[?&#].*)?$",
+                    "^https?://player\\.vimeo\\.com\\/video\\/(?<id>[0-9]{1,64})/?(?:[?&#].*)?$"
+                ],
+                "aspects": [
+                    "16:9",
+                    "16:9"
+                ],
+                "player_url": "https://player.vimeo.com/video/{id}",
+                "aspect": "16:9",
+                "allow": [
+                    "fullscreen",
+                    "encrypted-media",
+                    "picture-in-picture"
+                ]
+            },
+            {
+                "id": "tiktok",
+                "name": "TikTok",
+                "source": "preset",
+                "patterns": [
+                    "^https?://(?:[^/?#.]+\\.)*tiktok\\.com\\/@[^/?#]*\\/video\\/(?<id>[0-9]{1,64})/?(?:[?&#].*)?$"
+                ],
+                "aspects": [
+                    "9:16"
+                ],
+                "player_url": "https://www.tiktok.com/player/v1/{id}",
+                "aspect": "9:16",
+                "allow": [
+                    "fullscreen",
+                    "encrypted-media",
+                    "picture-in-picture"
+                ]
+            },
+            {
+                "id": "chzzk_clip",
+                "name": "치지직 클립",
+                "source": "custom",
+                "patterns": [
+                    "^https?://chzzk\\.naver\\.com\\/clips\\/(?<id>[A-Za-z0-9_-]{1,64})/?(?:[?&#].*)?$"
+                ],
+                "aspects": [
+                    "16:9"
+                ],
+                "player_url": "https://chzzk.naver.com/embed/clip/{id}",
+                "aspect": "16:9",
+                "allow": [
+                    "fullscreen"
+                ]
+            }
+        ]
+    },
+    "samples": [
+        {
+            "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "provider": "youtube",
+            "id": "dQw4w9WgXcQ",
+            "player_url": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+            "aspect": "16:9"
+        },
+        {
+            "url": "https://youtu.be/dQw4w9WgXcQ?t=10",
+            "provider": "youtube",
+            "id": "dQw4w9WgXcQ",
+            "player_url": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+            "aspect": "16:9"
+        },
+        {
+            "url": "https://m.youtube.com/shorts/abcdefghijk",
+            "provider": "youtube",
+            "id": "abcdefghijk",
+            "player_url": "https://www.youtube-nocookie.com/embed/abcdefghijk",
+            "aspect": "9:16"
+        },
+        {
+            "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            "provider": "youtube",
+            "id": "dQw4w9WgXcQ",
+            "player_url": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+            "aspect": "16:9"
+        },
+        {
+            "url": "https://vimeo.com/76979871",
+            "provider": "vimeo",
+            "id": "76979871",
+            "player_url": "https://player.vimeo.com/video/76979871",
+            "aspect": "16:9"
+        },
+        {
+            "url": "https://player.vimeo.com/video/76979871",
+            "provider": "vimeo",
+            "id": "76979871",
+            "player_url": "https://player.vimeo.com/video/76979871",
+            "aspect": "16:9"
+        },
+        {
+            "url": "https://www.dailymotion.com/video/x8abc12",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://dai.ly/x8abc12",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://tv.naver.com/v/12345678",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://tv.naver.com/h/87654321",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://tv.kakao.com/v/445566",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://tv.kakao.com/channel/123/cliplink/998877",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://vod.sooplive.co.kr/player/1234567",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://www.tiktok.com/@user.name/video/7234567890123456789",
+            "provider": "tiktok",
+            "id": "7234567890123456789",
+            "player_url": "https://www.tiktok.com/player/v1/7234567890123456789",
+            "aspect": "9:16"
+        },
+        {
+            "url": "https://www.instagram.com/p/AbC_dEf-123/",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://www.instagram.com/reel/XyZ987/",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://chzzk.naver.com/clips/aB3-cd_9",
+            "provider": "chzzk_clip",
+            "id": "aB3-cd_9",
+            "player_url": "https://chzzk.naver.com/embed/clip/aB3-cd_9",
+            "aspect": "16:9"
+        },
+        {
+            "url": "https://www.youtube.com/watch?v=short",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "https://notyoutube.com/watch?v=dQw4w9WgXcQ",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        },
+        {
+            "url": "javascript:alert(1)",
+            "provider": null,
+            "id": null,
+            "player_url": null,
+            "aspect": null
+        }
+    ]
+}
