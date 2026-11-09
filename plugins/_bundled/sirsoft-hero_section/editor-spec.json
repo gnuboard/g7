@@ -427,6 +427,9 @@
       "heroSectionHome": {
         "data": {
           "position": "home_hero",
+          "abilities": {
+            "can_update": false
+          },
           "settings": {
             "autoplay": true,
             "interval_seconds": 5,
@@ -547,6 +550,9 @@
       "heroSectionShop": {
         "data": {
           "position": "shop_hero",
+          "abilities": {
+            "can_update": false
+          },
           "settings": {
             "autoplay": true,
             "interval_seconds": 5,

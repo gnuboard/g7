@@ -16,6 +16,7 @@ description: |
 
 axes:
   surface:
+    - admin_edit_link_for_editors
     - renders_nothing_when_empty
     - single_banner_hides_controls
     - loop_and_touch_swipe_enabled
@@ -63,6 +64,8 @@ axes:
     - loading_skeleton_skipped_without_banners
 
 effects:
+  - user_screen_reflects_admin_change
+  - test_data_cleaned_up
   - accessible_carousel_semantics
   - responsive_image_switch
   - preview_survives_multilingual_fields
@@ -83,6 +86,7 @@ test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSwiperStyles.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSliderDeviceWidth.test.tsx
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/swiper-ui.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/admin-edit-link.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/loading-skeleton.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/slider-a11y.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/text-motion-scroll.spec.ts

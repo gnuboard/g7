@@ -154,6 +154,75 @@
   box-sizing: border-box;
 }
 
+.hs-slider__edit-layer {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  top: 12px;
+  pointer-events: none;
+}
+
+/* 메뉴 겹치기면 투명 메뉴 아래로 내린다 — 메뉴가 단추를 덮지 않게 */
+.hs-slider--header-overlay .hs-slider__edit-layer {
+  top: calc(12px + var(--g7-header-height, 0px));
+}
+
+.hs-slider__edit-box {
+  display: flex;
+  justify-content: flex-end;
+  box-sizing: border-box;
+}
+
+.hs-slider__edit-box--inset {
+  padding-inline: 12px;
+}
+
+.hs-slider__admin-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1;
+  color: #374151;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.hs-slider__admin-edit-icon {
+  flex: none;
+}
+
+.hs-slider__admin-edit:hover {
+  background: #fff;
+}
+
+.hs-slider__admin-edit:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.hs-slider__admin-edit:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+  color: #e5e7eb;
+  background: rgba(31, 41, 55, .92);
+}
+
+/* 휴대폰은 아이콘만 — 문구는 화면 읽기용으로 남긴다 */
+@media (max-width: 767px) {
+  .hs-slider__admin-edit-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 .hs-slider__controls.hs-slider__controls--boxed {
   position: static;
   pointer-events: auto;
@@ -452,7 +521,8 @@
 .hs-preview__viewport { width: 100%; overflow: hidden; position: relative; }
 .hs-preview__expand { display: block; margin: 8px; border: 1px solid #64748b; border-radius: 6px; padding: 6px 12px; background: #f8fafc; color: #0f172a; cursor: pointer; }
 .hs-preview__expand:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #1e293b; color: #f8fafc; }
-.hs-preview__dialog { width: min(1400px, 96vw); max-width: 96vw; max-height: 94vh; overflow: auto; padding: 12px; border: 1px solid #64748b; border-radius: 10px; background: #fff; color: #0f172a; }
+/* 관리자 CSS 초기화가 요소 margin 을 0 으로 만들어 모달 dialog 의 가운데 정렬(margin: auto)이 사라진다 — 되살린다 */
+.hs-preview__dialog { margin: auto; width: min(1400px, 96vw); max-width: 96vw; max-height: 94vh; overflow: auto; padding: 12px; border: 1px solid #64748b; border-radius: 10px; background: #fff; color: #0f172a; }
 .hs-preview__dialog:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { background: #0f172a; color: #f8fafc; }
 .hs-preview__dialog::backdrop { background: rgba(0, 0, 0, .6); }
 .hs-preview__fallback,

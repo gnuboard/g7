@@ -11,7 +11,7 @@
             "endpoint": "/api/plugins/sirsoft-hero_section/hero",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": false,
+            "auth_mode": "optional",
             "loading_strategy": "background",
             "params": {
                 "position": "shop_hero"
@@ -19,7 +19,7 @@
             "fallback": {
                 "data": null
             },
-            "comment": "지금 노출 중인 배너 — 인증 없이 받는다. 실패하면 빈 값으로 떨어져 슬라이더를 그리지 않는다"
+            "comment": "지금 노출 중인 배너 — 로그인하지 않아도 받는다. 로그인했으면 토큰을 실어 수정 권한(abilities.can_update)을 함께 받는다. 실패하면 빈 값으로 떨어져 슬라이더를 그리지 않는다"
         }
     ],
     "components": [
@@ -40,6 +40,7 @@
                 "loading": "{{heroSectionShop == null}}",
                 "skeletonWidth": "{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.shop_hero ?? ''}}",
                 "skeletonBanners": "{{_global.plugins?.['sirsoft-hero_section']?.slot_banners?.shop_hero}}",
+                "editable": "{{heroSectionShop?.data?.abilities?.can_update === true}}",
                 "skeletonOverlay": "{{_global.plugins?.['sirsoft-hero_section']?.slot_overlays?.shop_hero}}",
                 "settings": "{{heroSectionShop?.data?.settings}}",
                 "position": "shop_hero",

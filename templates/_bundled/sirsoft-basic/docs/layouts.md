@@ -1222,6 +1222,8 @@ slots.content:
 extends: _user_base
 data_sources: [stats, recent_posts, popular_boards, home_boards (게시판 가드), popularProducts, newProducts (쇼핑몰 가드), visitor_summary]
 meta.seo: { structured_data: WebSite }
+slots.page_top:
+  └── extension-point home_hero (본문 상자 밖 전폭 자리 — 히어로 배너)
 slots.content:
   └── Container
       ├── Grid home_top_row (게시판이 꺼지면 쇼핑몰 켜짐: 환영 2칸 + 쇼핑 홍보 1칸 / 둘 다 꺼짐: 1열)
@@ -1243,6 +1245,8 @@ slots.content:
       │   └── partials/shop/list/_new_products.g7.html (신상품 8개)
       └── _visitor_counter.g7.html (방문자 수 — 설정으로 켬)
 ```
+
+히어로 자리 `home_hero` 는 본문 폭 기준으로 `contentClass="px-8 md:px-10"`·`contentClassDesktop="max-w-7xl mx-auto px-16"` 를 넘깁니다. 홈 본문은 `_user_base` 본문 상자 여백 안에 컨테이너 여백(`px-4`·태블릿 `px-6`·데스크톱 `px-8`)을 한 번 더 두므로, 두 여백을 더한 값이어야 배너가 아래 카드 줄과 같은 폭이 됩니다. 컨테이너 여백을 바꾸면 이 값도 같이 바꿉니다. 쇼핑몰 메인(`shop/index`)의 `shop_hero` 는 안쪽 여백이 없어 본문 상자 값 그대로입니다.
 
 ---
 

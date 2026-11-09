@@ -200,6 +200,12 @@ export interface HeroSliderProps {
   skeletonBanners?: boolean;
 
   /**
+   * 「관리자에서 수정」 단추를 보일지 — 확장점 조각이 공개 응답의 수정 권한(`abilities.can_update`)을 넘긴다. 켜면 오른쪽 위에
+   * 지금 보이는 배너의 관리자 수정 화면을 새 탭으로 여는 링크를 그린다. 편집 미리보기(`forceDevice`)에서는 그리지 않는다.
+   */
+  editable?: boolean;
+
+  /**
    * 편집 미리보기 전용 — 주면 문구 상자를 끌거나 화살표 키로 옮길 수 있고, 놓을 때 고정 기기(`forceDevice`)의 새 자리를 알린다.
    * 사이트 화면에서는 넘기지 않는다.
    */
@@ -233,6 +239,13 @@ const EFFECTS: Record<HeroEffect, Partial<SwiperOptions>> = {
 };
 
 /** Swiper 기본 화살표 아이콘(navigation 모듈과 같은 SVG) — 이전 단추는 CSS 가 180° 돌린다 */
+/** 「관리자에서 수정」 연필 아이콘 */
+const PENCIL = (
+  <svg className="hs-slider__admin-edit-icon" width="12" height="12" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <path d="M12.15 1.15a1.5 1.5 0 0 1 2.12 0l.58.58a1.5 1.5 0 0 1 0 2.12L5.6 13.1 2 14l.9-3.6 9.25-9.25Z" />
+  </svg>
+);
+
 const ARROW = (
   <svg className="hs-slider__arrow-icon" width="11" height="20" viewBox="0 0 11 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <path d="M0.38296 20.0762C0.111788 19.805 0.111788 19.3654 0.38296 19.0942L9.19758 10.2796L0.38296 1.46497C0.111788 1.19379 0.111788 0.754138 0.38296 0.482966C0.654131 0.211794 1.09379 0.211794 1.36496 0.482966L10.4341 9.55214C10.8359 9.9539 10.8359 10.6053 10.4341 11.007L1.36496 20.0762C1.09379 20.3474 0.654131 20.3474 0.38296 20.0762Z" fill="currentColor" />
@@ -378,6 +391,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   skeletonWidth = '',
   skeletonOverlay,
   skeletonBanners,
+  editable = false,
   onTextMove,
   replay = 0,
   className = '',
@@ -653,6 +667,21 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         </div>
   );
 
+  // 관리자에서 수정 — 수정 권한이 있는 회원에게만, 지금 보이는 배너의 관리자 수정 화면을 새 탭으로 연다(상품 상세의 같은 단추와 같은 동작)
+  const editLabel = t('sirsoft-hero_section.slider.admin_edit', '관리자에서 수정');
+  const editLink = editable && !forceDevice && activeBanner && (
+    <a
+      className="hs-slider__admin-edit"
+      href={sitePath(`/admin/plugins/sirsoft-hero_section/banners/${activeBanner.id}/edit`)}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={editLabel}
+    >
+      {PENCIL}
+      <span className="hs-slider__admin-edit-label">{editLabel}</span>
+    </a>
+  );
+
   const slider = (
     <section
       id={id}
@@ -780,6 +809,13 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         // 화면 전체 폭 — 단추를 본문 상자 오른쪽 끝에 맞춘다. 층은 클릭을 막지 않고 단추만 받는다
         ? <div className="hs-slider__controls-layer"><div className={`hs-slider__controls-box ${textBox}`}>{controls}</div></div>
         : controls)}
+
+      {editLink && (
+        // 오른쪽 위 — 화면 전체 폭이면 본문 상자 오른쪽 끝에 맞춘다. 층은 클릭을 막지 않고 링크만 받는다
+        <div className="hs-slider__edit-layer">
+          <div className={`hs-slider__edit-box ${textBox || 'hs-slider__edit-box--inset'}`}>{editLink}</div>
+        </div>
+      )}
     </section>
   );
 

@@ -59,6 +59,7 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | banners[].link_new_window | boolean | `false` | 새 창 열기 |
 | banners[].images.pc | object | `{"url":"/api/plugins/sirsoft-hero_section/images/FCm6p4tn…` | PC 이미지 `url`·`direct_url`·`width`·`height`. `url` 은 사이트 마운트 접두사 포함(하위 폴더 설치면 `/g7/api/plugins/…`, 영상 `videos.*.url` 도 같다) |
 | banners[].images.pc.direct_url | string\|null | `null` | 원본 직접 주소(#878) — 공개 자산 디스크(public·CDN)에 올린 행만 채워지고 접두사 없는 절대 주소다. 슬라이더는 `<img src>`·srcset 의 원본 후보에만 쓰고 축소 후보는 `url?size=` 다. 영상 `videos.*.direct_url` 도 같고, 있으면 그 주소로 재생한다 |
+| abilities.can_update | boolean | `false` | 요청한 회원이 배너를 수정할 수 있는지(`sirsoft-hero_section.banners.update`). 로그인하지 않았으면 false. 공개 캐시에 담지 않고 요청마다 판정한다 |
 | banners[].images.mobile | object | `{"url":"/api/plugins/sirsoft-hero_section/images/KrjUXDR7…` | 모바일 이미지(없으면 null — PC 를 쓴다) |
 
 **응답 예시**
@@ -102,7 +103,10 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
                     }
                 }
             }
-        ]
+        ],
+        "abilities": {
+            "can_update": false
+        }
     }
 }
 ```
@@ -122,6 +126,8 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 
 
 ## 이미지 표시
+
+인증은 선택이다 — 로그인하지 않아도 받고, 토큰을 실어 보내면 `abilities.can_update` 만 그 회원 기준으로 바뀐다(`optional.sanctum`). 배너·설정은 방문자 공용 캐시에서 나오고 권한은 그 밖에서 붙인다.
 
 `banners[].presentation`에는 기기별 초점 좌표(pc_x, pc_y, mobile_x, mobile_y; 0~100 정수)와 문구 배경(overlay: none/dark/light)이 들어갑니다. 기존 배너는 중앙 초점 50과 배경 없음으로 응답합니다. 문구 자리(`text_pc_x`·`text_pc_y`·`text_mobile_x`·`text_mobile_y`, 0~100)·문구 상자 폭(`text_width` %)·등장 효과(`animation`·`animation_speed`·`animation_delay`)·바탕 밝기(`tone` dark/light)도 같은 객체에 있고, 저장하지 않은 배너는 왼쪽 아래·전폭·효과 없음·어두움(종전 화면)입니다. 머리글은 `banners[].eyebrow`(요청 언어 문구, 없으면 빈 문자열)·`eyebrow_visible`·`eyebrow_color` 입니다. `settings.header_overlay`(boolean)는 위치 설정의 메뉴 겹치기이며, 사용자 슬라이더는 `width` 가 `full` 일 때만 이 값을 씁니다. `settings.pagination` 은 페이징 모양(`dots` 점 기본·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호)입니다. 사용자 슬라이더와 관리자 미리보기는 이 값을 같은 방식으로 사용합니다.
 

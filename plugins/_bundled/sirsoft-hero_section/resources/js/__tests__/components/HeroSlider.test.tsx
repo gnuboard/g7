@@ -61,6 +61,28 @@ describe('HeroSlider', () => {
     delete (window as any).G7Core;
   });
 
+  // @scenario surface=admin_edit_link_for_editors
+  it('수정 권한이 있으면 지금 보이는 배너의 관리자 수정 화면으로 새 탭 링크를 그린다', () => {
+    const { container } = render(<HeroSlider banners={[banner(7), banner(8)]} editable />);
+    const link = container.querySelector<HTMLAnchorElement>('a.hs-slider__admin-edit');
+    expect(link?.getAttribute('href')).toBe('/admin/plugins/sirsoft-hero_section/banners/7/edit');
+    expect(link?.getAttribute('target')).toBe('_blank');
+    expect(link?.getAttribute('rel')).toContain('noopener');
+    expect(link?.textContent).toContain('관리자에서 수정');
+
+    act(() => swiperState.props?.onRealIndexChange?.({ realIndex: 1 }));
+    expect(container.querySelector('a.hs-slider__admin-edit')?.getAttribute('href')).toBe('/admin/plugins/sirsoft-hero_section/banners/8/edit');
+  });
+
+  // @scenario surface=admin_edit_link_for_editors
+  it('수정 권한이 없거나 편집 미리보기면 수정 링크를 그리지 않는다', () => {
+    const { container, rerender } = render(<HeroSlider banners={[banner(7)]} />);
+    expect(container.querySelector('a.hs-slider__admin-edit')).toBeNull();
+
+    rerender(<HeroSlider banners={[banner(7)]} editable forceDevice="pc" />);
+    expect(container.querySelector('a.hs-slider__admin-edit')).toBeNull();
+  });
+
   // @scenario surface=renders_nothing_when_empty
   // @effects slider_controls_follow_banner_count
   it('배너가 없으면 아무것도 그리지 않는다', () => {

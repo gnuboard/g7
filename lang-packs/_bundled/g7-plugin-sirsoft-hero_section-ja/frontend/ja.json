@@ -67,7 +67,8 @@
     "slide_role": "スライド",
     "slide_label": "{{count}}個中{{n}}番目",
     "text_label": "バナーテキスト",
-    "styles_label": "バナースライダーの外観"
+    "styles_label": "バナースライダーの外観",
+    "admin_edit": "管理者で編集"
   },
   "admin": {
     "title": "ヒーローセクション管理",

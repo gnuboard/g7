@@ -26,7 +26,9 @@ describe('사용자 화면 주입 조각', () => {
     const source = (home as any).data_sources[0];
     expect(source.endpoint).toBe('/api/plugins/sirsoft-hero_section/hero');
     expect(source.params).toEqual({ position: 'home_hero' });
-    expect(source.auth_required).toBe(false);
+    // 로그인하지 않아도 받는다 — 로그인했으면 토큰을 실어 수정 권한만 더 받는다(선택 인증)
+    expect(source.auth_required).not.toBe(true);
+    expect(source.auth_mode).toBe('optional');
     expect((home as any).components[0].props.position).toBe('home_hero');
   });
 
@@ -79,6 +81,14 @@ describe('사용자 화면 주입 조각', () => {
       const key = (doc.data_sources[0].label_key as string).replace('$t:sirsoft-hero_section.', '');
       expect(pick(ko, key)).toBeTruthy();
       expect(pick(en, key)).toBeTruthy();
+    }
+  });
+
+  // @scenario surface=admin_edit_link_for_editors
+  it('로그인했으면 토큰을 실어 받고(선택 인증), 응답의 수정 권한을 슬라이더에 넘긴다', () => {
+    for (const { doc, source } of fragments) {
+      expect(doc.data_sources[0].auth_mode).toBe('optional');
+      expect(doc.components[0].props.editable).toBe(`{{${source}?.data?.abilities?.can_update === true}}`);
     }
   });
 

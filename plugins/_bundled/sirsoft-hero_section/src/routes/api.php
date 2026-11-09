@@ -20,9 +20,9 @@ use Plugins\Sirsoft\HeroSection\Http\Controllers\Public\HeroController;
 |
 */
 
-// 공개 — 사용자 템플릿 확장점(home_hero·shop_hero)이 부른다
+// 공개 — 사용자 템플릿 확장점(home_hero·shop_hero)이 부른다. 로그인했으면 사용자를 알아 수정 권한(abilities)만 붙인다
 Route::get('/hero', [HeroController::class, 'show'])
-    ->middleware('throttle:600,1,sirsoft-hero_section.hero')
+    ->middleware(['optional.sanctum', 'throttle:600,1,sirsoft-hero_section.hero'])
     ->name('hero.show');
 Route::get('/images/{hash}', [PublicBannerImageController::class, 'show'])
     ->where('hash', '[A-Za-z0-9]{64}')

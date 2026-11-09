@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Public;
 
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
@@ -403,6 +404,82 @@ class HeroControllerTest extends PluginTestCase
     private function hero(string $position = 'home_hero', string $locale = 'ko'): TestResponse
     {
         return $this->getJson($this->api('/hero?position='.$position), ['Accept-Language' => $locale]);
+    }
+
+    /**
+     * 비로그인 방문자에게는 수정 권한이 없다 — 사용자 화면에 「관리자에서 수정」 단추를 그리지 않는다.
+     *
+     * @scenario surface=edit_ability_guest_is_false
+     *
+     * @return void 반환값 없음
+     */
+    public function test_guest_has_no_edit_ability(): void
+    {
+        Banner::factory()->withImages()->create();
+
+        $this->hero()->assertOk()->assertJsonPath('data.abilities.can_update', false);
+    }
+
+    /**
+     * 배너 수정 권한이 있는 회원이 로그인해 받으면 수정 권한이 참이다.
+     *
+     * @scenario surface=edit_ability_follows_update_permission
+     *
+     * @return void 반환값 없음
+     */
+    public function test_banner_editor_has_edit_ability(): void
+    {
+        Banner::factory()->withImages()->create();
+        $editor = $this->adminWith(['sirsoft-hero_section.banners.read', 'sirsoft-hero_section.banners.update']);
+
+        $this->heroAs($editor)->assertOk()->assertJsonPath('data.abilities.can_update', true);
+    }
+
+    /**
+     * 조회 권한만 있는 회원은 수정 권한이 없다.
+     *
+     * @scenario surface=edit_ability_follows_update_permission
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reader_has_no_edit_ability(): void
+    {
+        Banner::factory()->withImages()->create();
+        $reader = $this->adminWith(['sirsoft-hero_section.banners.read']);
+
+        $this->heroAs($reader)->assertOk()->assertJsonPath('data.abilities.can_update', false);
+    }
+
+    /**
+     * 공개 캐시는 방문자 공용이라 수정 권한을 담지 않는다 — 편집자가 먼저 받아 캐시가 채워져도 다음 비로그인 방문자는 거짓이다.
+     *
+     * @scenario surface=edit_ability_not_cached_across_visitors
+     *
+     * @return void 반환값 없음
+     */
+    public function test_edit_ability_is_not_cached_across_visitors(): void
+    {
+        $this->setPluginSettings(['public_cache_minutes' => 10]);
+        Banner::factory()->withImages()->create();
+        $editor = $this->adminWith(['sirsoft-hero_section.banners.read', 'sirsoft-hero_section.banners.update']);
+
+        $this->heroAs($editor)->assertJsonPath('data.abilities.can_update', true);
+        $this->app['auth']->forgetGuards();
+
+        $this->hero()->assertJsonPath('data.abilities.can_update', false);
+    }
+
+    /**
+     * 로그인한 회원의 토큰을 실어 공개 API 를 받습니다.
+     *
+     * @param  User  $user  회원
+     * @return TestResponse 응답
+     */
+    private function heroAs(User $user): TestResponse
+    {
+        $token = $user->createToken('hero-test')->plainTextToken;
+
+        return $this->getJson($this->api('/hero?position=home_hero'), ['Accept-Language' => 'ko', 'Authorization' => 'Bearer '.$token]);
     }
 
     /**

@@ -65,6 +65,7 @@
         "media_pause": "배너 일시정지",
         "carousel_role": "캐러셀",
         "slide_role": "슬라이드",
+        "admin_edit": "관리자에서 수정",
         "slide_label": "{{count}}개 중 {{n}}번째",
         "text_label": "배너 문구",
         "styles_label": "배너 슬라이더 모양"

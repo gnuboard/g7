@@ -65,6 +65,7 @@
         "media_pause": "Pause banners",
         "carousel_role": "carousel",
         "slide_role": "slide",
+        "admin_edit": "Edit in admin",
         "slide_label": "{{n}} of {{count}}",
         "text_label": "Banner text",
         "styles_label": "Banner slider styles"

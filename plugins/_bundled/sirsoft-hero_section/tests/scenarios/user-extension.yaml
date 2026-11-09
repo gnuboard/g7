@@ -7,6 +7,7 @@ description: |
 
 axes:
   surface:
+    - admin_edit_link_for_editors
     - home_extension_targets_home_hero
     - shop_extension_targets_shop_hero
     - hidden_when_no_banners
