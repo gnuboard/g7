@@ -6,7 +6,7 @@ import type { Swiper as SwiperInstance, SwiperOptions } from 'swiper';
 import { useSwiperStyles } from '../../support/swiperStyles';
 import { sitePath } from '../../apiUrl';
 import { mediaSrc, responsiveSrcset, sliderImageSizes, type SliderBox } from '../../support/thumbnail';
-import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useHeroScreen, useMarketingConsent, type HeroVideo } from '../../support/media';
+import { HeroVideoMedia, useHeroScreen, type HeroVideo } from '../../support/media';
 import { LetterText, lineDelay, textMotion, textOverflows, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
 export type { HeroVideo } from '../../support/media';
@@ -77,14 +77,11 @@ export interface HeroBanner {
   /** 새 창 열기 */
   link_new_window?: boolean;
 
-  /** PC·모바일 이미지 — 미디어가 영상·유튜브면 대표 이미지(받는 동안·움직임 줄이기·동의 전) */
+  /** PC·모바일 이미지 — 미디어가 영상이면 대표 이미지(받는 동안·움직임 줄이기) */
   images?: { pc?: HeroImage | null; mobile?: HeroImage | null };
 
   /** 미디어 종류 — 없으면 이미지 */
-  media_type?: 'image' | 'youtube' | 'video';
-
-  /** 유튜브 영상 ID (미디어 종류가 유튜브일 때) */
-  youtube_id?: string | null;
+  media_type?: 'image' | 'video';
 
   /** PC·모바일 영상 파일 (미디어 종류가 영상 파일일 때, 모바일이 없으면 PC 영상) */
   videos?: { pc?: HeroVideo | null; mobile?: HeroVideo | null } | null;
@@ -299,19 +296,13 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * 배너가 재생할 수 있는 미디어(영상 파일·유튜브)를 가졌는지 확인합니다.
+ * 배너가 재생할 수 있는 미디어(영상 파일)를 가졌는지 확인합니다.
  *
  * @param banner 배너
- * @returns 영상이면 'video', 유튜브면 'youtube', 아니면 null
+ * @returns 영상이면 'video', 아니면 null
  */
-function mediaOf(banner?: HeroBanner): 'video' | 'youtube' | null {
-  if (banner?.media_type === 'video' && banner.videos?.pc?.url) {
-    return 'video';
-  }
-  if (banner?.media_type === 'youtube' && isYoutubeId(banner.youtube_id)) {
-    return 'youtube';
-  }
-  return null;
+function mediaOf(banner?: HeroBanner): 'video' | null {
+  return banner?.media_type === 'video' && banner.videos?.pc?.url ? 'video' : null;
 }
 
 /**
@@ -375,9 +366,8 @@ function withSiteMedia(banner: HeroBanner): HeroBanner {
  * 자동으로 넘어가는 동안에는 장 번호를 화면 읽기 프로그램이 매번 읽지 않게 한다.
  * 표시 폭(`settings.width`)이 본문 폭이면 확장점이 넘긴 본문 상자(`contentClass`) 안에 그리고, 화면 전체면 끝까지 그리되
  * 문구·넘김 단추만 그 상자에 맞춘다(화면 전체는 높이 상한 640px — 그보다 넓은 화면은 초점 기준으로 위아래를 자른다).
- * 미디어가 영상 파일·유튜브인 배너는 활성 장일 때 소리 없이 재생하고, 그동안은 간격 넘김을 멈췄다가 영상이 끝나면 다음 장으로
- * 넘긴다(한 장뿐이면 반복). 유튜브는 방문자가 마케팅 쿠키에 동의했거나 동의 관리가 없는 사이트에서만 바로 불러오고, 그 전에는
- * 대표 이미지와 재생 단추만 보인다. 움직임 줄이기에서는 영상을 멈춘 채 시작하고 일시정지 단추로 재생한다. 재생할 수 없는 영상은
+ * 미디어가 영상 파일인 배너는 활성 장일 때 소리 없이 재생하고, 그동안은 간격 넘김을 멈췄다가 영상이 끝나면 다음 장으로
+ * 넘긴다(한 장뿐이면 반복). 움직임 줄이기에서는 영상을 멈춘 채 시작하고 일시정지 단추로 재생한다. 재생할 수 없는 영상은
  * 이미지처럼 간격으로 넘긴다. 일시정지 단추는 자동 넘김과 영상 재생을 함께 멈춘다.
  * 템플릿은 자기 오버라이드 폴더(템플릿 루트 기준 src/components/overrides/sirsoft-hero_section/)의 HeroSlider.tsx 로 이 컴포넌트를 대체할 수 있다(같은 props).
  */
@@ -430,9 +420,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const hasMedia = banners.some((banner) => mediaOf(banner) !== null);
   const [pausedChoice, setPausedChoice] = useState<boolean | null>(null);
   const paused = pausedChoice ?? (reduced && hasMedia);
-  const consent = useMarketingConsent();
-  // 방문자가 재생 단추를 누른 유튜브 배너 · 재생할 수 없던 배너 · 이번 차례에 끝까지 본 배너
-  const [allowedYoutube, setAllowedYoutube] = useState<ReadonlySet<number>>(() => new Set());
+  // 재생할 수 없던 배너 · 이번 차례에 끝까지 본 배너
   const [failedMedia, setFailedMedia] = useState<ReadonlySet<number>>(() => new Set());
   const [endedMedia, setEndedMedia] = useState<ReadonlySet<number>>(() => new Set());
   const [hovered, setHovered] = useState(false);
@@ -470,12 +458,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     ? skeletonFull && (skeletonOverlay ?? remembered?.overlay === true)
     : full && overlaySetting && count > 0);
   useHeaderOverlay(overlayOn ? (waiting ? (remembered?.tone ?? siteTone()) : toneOf(activeBanner)) : null);
-  const youtubeAllowed = (banner: HeroBanner) => consent || allowedYoutube.has(banner.id);
-  /** 이 배너의 영상이 지금 재생 차례를 맡는지 — 재생할 수 없거나(동의 전 유튜브 포함) 이번 차례에 끝났으면 이미지처럼 간격으로 넘긴다 */
+  /** 이 배너의 영상이 지금 재생 차례를 맡는지 — 재생할 수 없거나 이번 차례에 끝났으면 이미지처럼 간격으로 넘긴다 */
   const mediaRuns = (banner?: HeroBanner) => {
     const media = mediaOf(banner);
-    return !!banner && media !== null && !failedMedia.has(banner.id) && !endedMedia.has(banner.id)
-      && (media === 'video' || youtubeAllowed(banner));
+    return !!banner && media !== null && !failedMedia.has(banner.id) && !endedMedia.has(banner.id);
   };
   const activeMediaRuns = mediaRuns(activeBanner);
 
@@ -742,11 +728,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               textBox={textBox}
               playing={i === index && !paused && mediaRuns(banner)}
               loop={count === 1}
-              youtubeAllowed={youtubeAllowed(banner)}
-              onAllowYoutube={() => {
-                setAllowedYoutube((previous) => new Set(previous).add(banner.id));
-                setPausedChoice(false);
-              }}
               onMediaEnded={() => onMediaEnded(banner)}
               onMediaFailed={() => onMediaFailed(banner)}
               reduced={reduced}
@@ -842,17 +823,11 @@ interface HeroSlideProps {
   /** 상자를 아직 재기 전인지 — 그동안은 이미지 주소를 붙이지 않는다(곧 같은 작업 안에서 잰 값으로 다시 그린다) */
   boxPending?: boolean;
 
-  /** 영상·유튜브를 지금 재생할지 */
+  /** 영상을 지금 재생할지 */
   playing?: boolean;
 
   /** 한 장뿐이라 영상을 반복할지 */
   loop?: boolean;
-
-  /** 유튜브를 불러와도 되는지 */
-  youtubeAllowed?: boolean;
-
-  /** 유튜브 재생 단추를 눌렀다 */
-  onAllowYoutube?: () => void;
 
   /** 영상이 끝났다 */
   onMediaEnded?: () => void;
@@ -966,7 +941,7 @@ function wrapBox(box: string, node: React.ReactNode): React.ReactNode {
  */
 const HeroSlide: React.FC<HeroSlideProps> = ({
   banner, index, count, active, eager, forceDevice, mobileScreen = forceDevice === 'mobile', box = null, boxPending = false, textBox = '',
-  playing = false, loop = false, youtubeAllowed = false, onAllowYoutube = noop, onMediaEnded = noop, onMediaFailed = noop,
+  playing = false, loop = false, onMediaEnded = noop, onMediaFailed = noop,
   reduced = false, replay = 0, onTextMove,
 }) => {
   const pc = banner.images?.pc ?? null;
@@ -1131,22 +1106,6 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           loop={loop}
           eager={eager}
           reduced={reduced}
-          onEnded={onMediaEnded}
-          onFailed={onMediaFailed}
-        />
-      )}
-      {media === 'youtube' && (
-        <HeroYoutubeMedia
-          videoId={banner.youtube_id as string}
-          title={t('sirsoft-hero_section.slider.youtube_title', '유튜브 영상: {{title}}', { title: banner.title || alt })}
-          playing={playing}
-          loop={loop}
-          allowed={youtubeAllowed}
-          onAllow={onAllowYoutube}
-          playLabel={t('sirsoft-hero_section.slider.youtube_play', '유튜브 영상 재생')}
-          notice={t('sirsoft-hero_section.slider.youtube_notice', '재생하면 YouTube 에서 영상을 불러옵니다.')}
-          active={active}
-          preload={eager}
           onEnded={onMediaEnded}
           onFailed={onMediaFailed}
         />

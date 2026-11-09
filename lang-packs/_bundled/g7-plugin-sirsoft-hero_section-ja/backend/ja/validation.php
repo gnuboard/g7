@@ -60,7 +60,6 @@ return [
         'ids_item' => '選択したバナー',
         'width' => '表示幅',
         'media_type' => 'メディア種類',
-        'youtube_url' => 'YouTube アドレス',
         'pc_video' => 'PC 動画',
         'mobile_video' => 'モバイル動画',
         'kind' => 'ファイルの種類',
@@ -72,8 +71,5 @@ return [
     ],
     'pc_video' => [
         'required' => '動画ファイル(PC)をアップロードしてください。モバイル用動画がない場合はPC動画を使用します。',
-    ],
-    'youtube_url' => [
-        'invalid' => 'YouTube動画のアドレスを確認してください。例：https://www.youtube.com/watch?v=… または https://youtu.be/…',
     ],
 ];

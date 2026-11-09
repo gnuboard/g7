@@ -123,7 +123,6 @@
                 "mobile": null
             },
             "media_type": "image",
-            "youtube_url": "",
             "videos": {
                 "pc": null,
                 "mobile": null
@@ -146,10 +145,9 @@
     "computed": {
         "uploadMb": "{{position_settings?.data?.upload?.effective_mb ?? 5}}",
         "videoUploadMb": "{{position_settings?.data?.upload?.video_effective_mb ?? 30}}",
-        "mediaType": "{{['youtube', 'video'].includes(_local.form?.media_type) ? _local.form.media_type : 'image'}}",
+        "mediaType": "{{_local.form?.media_type === 'video' ? 'video' : 'image'}}",
         "videoUploading": "{{_computed.mediaType === 'video' && (_local.pcVideoUploadBlocked || _local.mobileVideoUploadBlocked)}}",
         "videoMissing": "{{_computed.mediaType === 'video' && !_local.form?.videos?.pc}}",
-        "youtubeMissing": "{{_computed.mediaType === 'youtube' && !(_local.form?.youtube_url ?? '').trim()}}",
         "listPosition": "{{_local.form?.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}",
         "pcSizeMismatch": "{{!!_local.form?.images?.pc?.width && (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}",
         "mobileSizeMismatch": "{{!!_local.form?.images?.mobile?.width && (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}"
@@ -234,7 +232,6 @@
                         "mobile": null
                     },
                     "media_type": "image",
-                    "youtube_url": "",
                     "videos": {
                         "pc": null,
                         "mobile": null
@@ -522,7 +519,7 @@
                                         ]
                                     },
                                     {
-                                        "comment": "미디어 종류 — 이미지(기본)·유튜브 영상·영상 파일. 어느 종류든 아래 PC 이미지는 대표 이미지로 필수다(유튜브는 방문자 동의 전,\n            영상은 받는 동안·움직임 줄이기에서 대신 보인다). 영상 파일은 이미지처럼 임시 키로 먼저 올라가고 「저장」 때 붙는다",
+                                        "comment": "미디어 종류 — 이미지(기본)·영상 파일. 어느 종류든 아래 PC 이미지는 대표 이미지로 필수다(영상은 받는 동안·움직임 줄이기에서\n            대신 보인다). 영상 파일은 이미지처럼 임시 키로 먼저 올라가고 「저장」 때 붙는다",
                                         "id": "media_card",
                                         "type": "basic",
                                         "name": "Section",
@@ -570,10 +567,6 @@
                                                                             "value": "image"
                                                                         },
                                                                         {
-                                                                            "label": "$t:sirsoft-hero_section.admin.form.media.youtube",
-                                                                            "value": "youtube"
-                                                                        },
-                                                                        {
                                                                             "label": "$t:sirsoft-hero_section.admin.form.media.video",
                                                                             "value": "video"
                                                                         }
@@ -601,84 +594,11 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
-                                                                "if": "{{_computed.mediaType === 'youtube'}}",
-                                                                "props": {
-                                                                    "className": "hs-form-hint"
-                                                                },
-                                                                "text": "$t:sirsoft-hero_section.admin.form.media.youtube_hint"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "P",
                                                                 "if": "{{_computed.mediaType === 'video'}}",
                                                                 "props": {
                                                                     "className": "hs-form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.form.media.video_hint"
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        "id": "field_youtube_url",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "if": "{{_computed.mediaType === 'youtube'}}",
-                                                        "props": {
-                                                            "id": "hero_field_youtube_url"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Label",
-                                                                "props": {
-                                                                    "className": "hs-form-label",
-                                                                    "htmlFor": "hero_youtube_url"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "text": "$t:sirsoft-hero_section.admin.form.media.youtube_url"
-                                                                    },
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "hs-text-required"
-                                                                        },
-                                                                        "text": "*"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "text",
-                                                                    "id": "hero_youtube_url",
-                                                                    "name": "youtube_url",
-                                                                    "maxLength": 2048,
-                                                                    "placeholder": "https://www.youtube.com/watch?v=...",
-                                                                    "className": "hs-input hs:w-full hs:min-w-[200px]"
-                                                                }
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "P",
-                                                                "if": "{{_local.errors?.youtube_url}}",
-                                                                "props": {
-                                                                    "className": "hs-form-error"
-                                                                },
-                                                                "text": "{{_local.errors?.youtube_url?.[0] ?? ''}}"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "P",
-                                                                "if": "{{!_local.errors?.youtube_url}}",
-                                                                "props": {
-                                                                    "className": "hs-form-hint"
-                                                                },
-                                                                "text": "$t:sirsoft-hero_section.admin.form.media.youtube_url_hint"
                                                             }
                                                         ]
                                                     },
@@ -2701,44 +2621,6 @@
                                                                         "text": "$t:sirsoft-hero_section.admin.form.save_blocked.go_pc_video"
                                                                     }
                                                                 ]
-                                                            },
-                                                            {
-                                                                "id": "save_reason_youtube",
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !!_local.form?.images?.pc && _computed.youtubeMissing}}",
-                                                                "props": {
-                                                                    "className": "hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.youtube"
-                                                                    },
-                                                                    {
-                                                                        "id": "save_reason_youtube_jump",
-                                                                        "type": "basic",
-                                                                        "name": "Button",
-                                                                        "actions": [
-                                                                            {
-                                                                                "comment": "저장이 잠긴 이유(유튜브 주소 없음)에서 그 입력 칸으로 이동한다",
-                                                                                "type": "click",
-                                                                                "handler": "scrollIntoView",
-                                                                                "params": {
-                                                                                    "selector": "#hero_field_youtube_url",
-                                                                                    "behavior": "smooth",
-                                                                                    "block": "center"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "props": {
-                                                                            "type": "button",
-                                                                            "className": "hs:underline hs:text-blue-700 hs:dark:text-blue-300"
-                                                                        },
-                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.go_youtube"
-                                                                    }
-                                                                ]
                                                             }
                                                         ]
                                                     },
@@ -2766,7 +2648,7 @@
                                                                         "auth_required": true,
                                                                         "params": {
                                                                             "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                            "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, youtube_url: _computed.mediaType === 'youtube' ? (_local.form?.youtube_url ?? '').trim() : undefined, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}"
+                                                                            "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}"
                                                                         },
                                                                         "onSuccess": [
                                                                             {
@@ -2835,7 +2717,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "aria-describedby": "hero_save_reason",
-                                                            "disabled": "{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing || _computed.youtubeMissing}}",
+                                                            "disabled": "{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}",
                                                             "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5"
                                                         },
                                                         "children": [

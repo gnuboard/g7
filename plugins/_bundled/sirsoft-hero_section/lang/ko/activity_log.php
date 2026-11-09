@@ -34,7 +34,6 @@ return [
     'fields' => [
         'position' => '노출 위치',
         'media_type' => '미디어 종류',
-        'youtube_id' => '유튜브 영상 ID',
         'is_active' => '사용 여부',
         'display_period' => '노출 기간 방식',
         'starts_at' => '노출 시작',

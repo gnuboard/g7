@@ -58,9 +58,6 @@
         "go_to": "{{n}}번째 배너로 이동",
         "pause": "자동 넘김 일시정지",
         "play": "자동 넘김 다시 시작",
-        "youtube_play": "유튜브 영상 재생",
-        "youtube_title": "유튜브 영상: {{title}}",
-        "youtube_notice": "재생하면 YouTube 에서 영상을 불러옵니다.",
         "media_play": "배너 다시 재생",
         "media_pause": "배너 일시정지",
         "carousel_role": "캐러셀",
@@ -173,7 +170,6 @@
                 "locale_missing": "{{lang}} 제목 없음",
                 "mobile_fallback": "모바일: PC 이미지 사용",
                 "button_without_link": "버튼 안 보임: 주소 없음",
-                "youtube": "유튜브",
                 "video": "영상"
             }
         },
@@ -382,7 +378,7 @@
                     "description_style": "설명 표시·색·정렬",
                     "presentation": "이미지 초점·문구 배경",
                     "link": "링크",
-                    "media": "미디어(종류·유튜브 주소·영상)",
+                    "media": "미디어(종류·영상)",
                     "pc_image": "PC 이미지",
                     "mobile_image": "모바일 이미지"
                 },
@@ -398,25 +394,19 @@
                 "pc_image": "PC 이미지를 올려야 저장할 수 있습니다.",
                 "go_pc_image": "PC 이미지 칸으로 가기",
                 "pc_video": "PC 영상을 올려야 저장할 수 있습니다.",
-                "go_pc_video": "PC 영상 칸으로 가기",
-                "youtube": "유튜브 주소를 넣어야 저장할 수 있습니다.",
-                "go_youtube": "유튜브 주소 칸으로 가기"
+                "go_pc_video": "PC 영상 칸으로 가기"
             },
             "media": {
                 "type": "미디어 종류",
                 "image": "이미지",
-                "youtube": "유튜브 영상",
                 "video": "영상 파일",
                 "image_hint": "아래에서 올린 이미지를 배너로 보여 줍니다.",
-                "youtube_hint": "유튜브 영상을 소리 없이 자동 재생하고, 영상이 끝나면 다음 배너로 넘어갑니다. 방문자가 쿠키(마케팅)에 동의하기 전에는 대표 이미지와 재생 단추만 보입니다.",
                 "video_hint": "올린 영상을 소리 없이 자동 재생하고, 영상이 끝나면 다음 배너로 넘어갑니다(배너가 하나면 반복 재생).",
-                "youtube_url": "유튜브 주소",
-                "youtube_url_hint": "영상 페이지 주소나 공유 주소를 그대로 붙여 넣으세요. 예: https://www.youtube.com/watch?v=… · https://youtu.be/… · 쇼츠 주소",
                 "pc_video": "PC 영상",
                 "pc_video_hint": "최대 {{mb}}MB · MP4·WEBM · 가로 영상(16:9 등)을 권장합니다.",
                 "mobile_video": "모바일 영상",
                 "mobile_video_hint": "선택 · 최대 {{mb}}MB · MP4·WEBM · 올리지 않으면 휴대폰에서도 PC 영상을 재생합니다.",
-                "poster_hint": "영상 배너에서는 이 이미지가 대표 이미지입니다. 영상을 받는 동안, 움직임 줄이기를 켠 방문자, (유튜브) 쿠키 동의 전에 영상 대신 보입니다."
+                "poster_hint": "영상 배너에서는 이 이미지가 대표 이미지입니다. 영상을 받는 동안과 움직임 줄이기를 켠 방문자에게 영상 대신 보입니다."
             }
         }
     }

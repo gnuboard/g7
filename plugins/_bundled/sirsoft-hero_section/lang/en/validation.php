@@ -13,9 +13,6 @@ return [
     'pc_video' => [
         'required' => 'Upload a video file (PC). Without a mobile video, the PC video is used on phones.',
     ],
-    'youtube_url' => [
-        'invalid' => 'Check the YouTube video address. Example: https://www.youtube.com/watch?v=… or https://youtu.be/…',
-    ],
     'image_selection' => [
         'invalid' => 'The selected image could not be found. Upload the image again and save.',
         'taken' => 'The selected image was just saved to another banner. If you pressed save twice, the banner is already registered — check the list.',
@@ -30,7 +27,6 @@ return [
     ],
     'attributes' => [
         'media_type' => 'media type',
-        'youtube_url' => 'YouTube address',
         'pc_video' => 'PC video',
         'mobile_video' => 'mobile video',
         'kind' => 'file type',

@@ -34,7 +34,6 @@ return [
     'fields' => [
         'position' => 'Position',
         'media_type' => 'Media type',
-        'youtube_id' => 'YouTube video ID',
         'is_active' => 'Active',
         'display_period' => 'Display period',
         'starts_at' => 'Starts at',

@@ -33,7 +33,7 @@ async function injectBanners(page: Page, autoplay = false): Promise<void> {
     const images = (body.data.banners as Array<Record<string, any>>)[0]?.images ?? { pc: null, mobile: null };
     body.data.banners = TITLES.map((title, i) => ({
       id: 990101 + i, title, description: `${title} 설명`, button_text: '', image_alt: title, title_visible: true, description_visible: true,
-      link_url: '/shop/products', link_new_window: false, images, media_type: 'image', youtube_id: null, videos: null, presentation: null,
+      link_url: '/shop/products', link_new_window: false, images, media_type: 'image', videos: null, presentation: null,
     }));
     body.data.settings = { ...body.data.settings, autoplay, effect: 'slide' };
     await route.fulfill({ response, json: body });

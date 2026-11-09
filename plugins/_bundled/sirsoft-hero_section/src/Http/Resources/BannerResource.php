@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Plugins\Sirsoft\HeroSection\Enums\BannerMediaType;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
-use Plugins\Sirsoft\HeroSection\Support\YoutubeUrl;
 
 /**
  * 배너 리소스 — 상세(수정 화면)와 목록 행 두 모양을 낸다.
@@ -49,8 +48,6 @@ class BannerResource extends BaseApiResource
             'link_new_window' => (bool) $this->link_new_window,
             'starts_at_local' => TimezoneHelper::toSiteDateTimeLocalString($this->starts_at),
             'ends_at_local' => TimezoneHelper::toSiteDateTimeLocalString($this->ends_at),
-            'youtube_id' => $this->youtube_id,
-            'youtube_url' => YoutubeUrl::watchUrl($this->youtube_id),
             'images' => [
                 'pc' => $this->image($request, $this->resource->relationLoaded('pcImage') ? $this->pcImage : null),
                 'mobile' => $this->image($request, $this->resource->relationLoaded('mobileImage') ? $this->mobileImage : null),

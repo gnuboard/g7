@@ -34,7 +34,7 @@ async function injectBanners(page: Page, settings: Record<string, unknown>): Pro
     const images = (body.data.banners as Array<Record<string, any>>)[0]?.images ?? { pc: null, mobile: null };
     body.data.banners = TITLES.map((title, i) => ({
       id: 990301 + i, title, description: '', button_text: '', image_alt: title, title_visible: true, description_visible: false,
-      link_url: null, link_new_window: false, images, media_type: 'image', youtube_id: null, videos: null, presentation: null,
+      link_url: null, link_new_window: false, images, media_type: 'image', videos: null, presentation: null,
     }));
     body.data.settings = { ...body.data.settings, effect: 'slide', ...settings };
     await route.fulfill({ response, json: body });

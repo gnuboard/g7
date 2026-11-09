@@ -58,9 +58,6 @@
         "go_to": "Go to banner {{n}}",
         "pause": "Pause auto-rotation",
         "play": "Resume auto-rotation",
-        "youtube_play": "Play YouTube video",
-        "youtube_title": "YouTube video: {{title}}",
-        "youtube_notice": "Playing loads the video from YouTube.",
         "media_play": "Resume banners",
         "media_pause": "Pause banners",
         "carousel_role": "carousel",
@@ -173,7 +170,6 @@
                 "locale_missing": "No {{lang}} title",
                 "mobile_fallback": "Mobile: uses PC image",
                 "button_without_link": "Button hidden: no URL",
-                "youtube": "YouTube",
                 "video": "Video"
             }
         },
@@ -382,7 +378,7 @@
                     "description_style": "Description visibility, color, alignment",
                     "presentation": "Image focus and text background",
                     "link": "Link",
-                    "media": "Media (type, YouTube URL, video)",
+                    "media": "Media (type, video)",
                     "pc_image": "PC image",
                     "mobile_image": "Mobile image"
                 },
@@ -398,25 +394,19 @@
                 "pc_image": "Upload a PC image to save.",
                 "go_pc_image": "Go to the PC image field",
                 "pc_video": "Upload a PC video to save.",
-                "go_pc_video": "Go to the PC video field",
-                "youtube": "Enter a YouTube address to save.",
-                "go_youtube": "Go to the YouTube address field"
+                "go_pc_video": "Go to the PC video field"
             },
             "media": {
                 "type": "Media type",
                 "image": "Image",
-                "youtube": "YouTube video",
                 "video": "Video file",
                 "image_hint": "Shows the image uploaded below as the banner.",
-                "youtube_hint": "Plays the YouTube video muted and automatically, then moves to the next banner when it ends. Before visitors consent to (marketing) cookies, only the poster image and a play button are shown.",
                 "video_hint": "Plays the uploaded video muted and automatically, then moves to the next banner when it ends (loops when there is only one banner).",
-                "youtube_url": "YouTube address",
-                "youtube_url_hint": "Paste the video page address or share link as it is. Examples: https://www.youtube.com/watch?v=… · https://youtu.be/… · Shorts links",
                 "pc_video": "PC video",
                 "pc_video_hint": "Up to {{mb}}MB · MP4, WEBM · Landscape video (16:9 etc.) recommended.",
                 "mobile_video": "Mobile video",
                 "mobile_video_hint": "Optional · Up to {{mb}}MB · MP4, WEBM · Without it, phones play the PC video.",
-                "poster_hint": "For video banners this image is the poster. It is shown instead of the video while the video loads, for visitors who reduce motion, and (YouTube) before cookie consent."
+                "poster_hint": "For video banners this image is the poster. It is shown instead of the video while the video loads and for visitors who reduce motion."
             }
         }
     }

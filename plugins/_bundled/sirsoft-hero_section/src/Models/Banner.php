@@ -64,7 +64,7 @@ class Banner extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'position', 'media_type', 'youtube_id', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at',
+        'position', 'media_type', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at',
         'title', 'eyebrow', 'description', 'button_text', 'image_alt',
         'eyebrow_visible', 'eyebrow_color',
         'title_visible', 'title_color', 'title_align',
@@ -80,7 +80,6 @@ class Banner extends Model
     public static array $activityLogFields = [
         'position' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.position', 'type' => 'text'],
         'media_type' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.media_type', 'type' => 'text'],
-        'youtube_id' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.youtube_id', 'type' => 'text'],
         'is_active' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.is_active', 'type' => 'boolean'],
         'display_period' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.display_period', 'type' => 'text'],
         'starts_at' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.starts_at', 'type' => 'datetime'],

@@ -69,7 +69,7 @@ class StoreBannerRequest extends FormRequest
     }
 
     /**
-     * 검증된 값(기간 UTC 변환, 유튜브 주소 → 영상 ID)을 반환합니다.
+     * 검증된 값(기간 UTC 변환)을 반환합니다.
      *
      * @param  string|null  $key  특정 키만 반환
      * @param  mixed  $default  기본값
@@ -116,7 +116,6 @@ class StoreBannerRequest extends FormRequest
             'pc_image_id' => __('sirsoft-hero_section::validation.attributes.pc_image'),
             'mobile_image_id' => __('sirsoft-hero_section::validation.attributes.mobile_image'),
             'media_type' => __('sirsoft-hero_section::validation.attributes.media_type'),
-            'youtube_url' => __('sirsoft-hero_section::validation.attributes.youtube_url'),
             'pc_video' => __('sirsoft-hero_section::validation.attributes.pc_video'),
             'pc_video_id' => __('sirsoft-hero_section::validation.attributes.pc_video'),
             'mobile_video_id' => __('sirsoft-hero_section::validation.attributes.mobile_video'),

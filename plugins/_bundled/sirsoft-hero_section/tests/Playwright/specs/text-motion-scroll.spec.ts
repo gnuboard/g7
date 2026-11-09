@@ -24,7 +24,7 @@ async function injectBanners(page: Page): Promise<void> {
     const response = await route.fetch();
     const body = await response.json();
     const images = (body.data.banners as Array<Record<string, any>>)[0]?.images ?? { pc: null, mobile: null };
-    const base = { button_text: '', title_visible: true, description_visible: true, link_url: null, link_new_window: false, images, media_type: 'image', youtube_id: null, videos: null };
+    const base = { button_text: '', title_visible: true, description_visible: true, link_url: null, link_new_window: false, images, media_type: 'image', videos: null };
     body.data.banners = [
       { ...base, id: 990201, title: 'E2E 떠오르기', description: '아래에서 올라오는 설명', image_alt: '', presentation: { animation: 'rise', animation_speed: 'slow' } },
       { ...base, id: 990202, title: 'E2E 글자 하나씩', description: '한 글자씩 나타나는 설명', image_alt: '', presentation: { animation: 'letters', animation_speed: 'slow' } },

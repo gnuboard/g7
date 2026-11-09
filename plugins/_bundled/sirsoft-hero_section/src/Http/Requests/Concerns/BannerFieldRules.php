@@ -22,14 +22,13 @@ use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Rules\SafeLinkUrl;
 use Plugins\Sirsoft\HeroSection\Rules\SelectableBannerImage;
-use Plugins\Sirsoft\HeroSection\Support\YoutubeUrl;
 
 /**
  * 배너 등록·수정 공통 규칙 — 두 요청이 같은 규칙을 쓰도록 한 곳에 둔다(Store/Update 대칭).
  *
  * 기간은 사이트 시간대 `datetime-local` 로 받아 검증 뒤 UTC 로 바꾼다(이커머스 쿠폰 발급 기간과 같은 규약).
- * 미디어 종류(`media_type`)는 보내지 않으면 등록은 이미지, 수정은 저장된 값 그대로다. 유튜브는 주소(`youtube_url`)로 받아
- * 검증 뒤 영상 ID(`youtube_id`)만 남기고, 영상 파일은 이미지처럼 임시 묶음에 올린 뒤 `pc_video_id`·`mobile_video_id` 로 고른다.
+ * 미디어 종류(`media_type`)는 보내지 않으면 등록은 이미지, 수정은 저장된 값 그대로다. 영상 파일은 이미지처럼 임시 묶음에 올린 뒤
+ * `pc_video_id`·`mobile_video_id` 로 고른다. 유튜브 등 제3자 영상 플랫폼은 미디어 종류에서 거절한다.
  */
 trait BannerFieldRules
 {
@@ -79,11 +78,6 @@ trait BannerFieldRules
         return [
             'position' => ['required', Rule::enum(HeroPosition::class)],
             'media_type' => ['sometimes', 'required', Rule::enum(BannerMediaType::class)],
-            'youtube_url' => ['exclude_unless:media_type,'.BannerMediaType::Youtube->value, 'required', 'string', 'max:2048', function (string $attribute, mixed $value, Closure $fail) {
-                if (! is_string($value) || YoutubeUrl::videoId($value) === null) {
-                    $fail(__('sirsoft-hero_section::validation.youtube_url.invalid'));
-                }
-            }],
             'is_active' => ['required', 'boolean'],
             'display_period' => ['required', Rule::enum(DisplayPeriod::class)],
             'starts_at' => ['exclude_unless:display_period,range', 'required', 'date'],
@@ -159,13 +153,6 @@ trait BannerFieldRules
      */
     protected function convertPeriod(array $data): array
     {
-        if (array_key_exists('media_type', $data)) {
-            $data['youtube_id'] = $data['media_type'] === BannerMediaType::Youtube->value
-                ? YoutubeUrl::videoId($data['youtube_url'] ?? null)
-                : null;
-        }
-        unset($data['youtube_url']);
-
         foreach ([...Banner::PERCENT_KEYS, 'text_width'] as $coordinate) {
             if (isset($data['presentation'][$coordinate])) {
                 $data['presentation'][$coordinate] = (int) $data['presentation'][$coordinate];

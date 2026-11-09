@@ -368,7 +368,7 @@ _단건 응답: 만든 배너 상세(조회 응답과 같은 모양)._
 
 **설명**
 
-배너 등록. 먼저 `POST /admin/banner-images` 로 같은 `temp_key` 에 PC 이미지(필수)·모바일 이미지(선택)를 올린 뒤 부른다. 본문: position, is_active, display_period(always·range), starts_at·ends_at(range 일 때 필수, 사이트 시간대 `Y-m-d\TH:i`, 종료 > 시작), title(사이트 기본 언어 필수)·description·button_text·image_alt(다국어 객체), title/description_visible·color(#RRGGBB)·align(left·center·right), link_url(`/…` 또는 http(s), `//`·`/\` 시작과 다른 스킴 거부), link_new_window, temp_key, (선택) media_type(`image` 기본·`youtube`·`video`), youtube_url(`youtube` 일 때 필수 — 주소창·공유·쇼츠·임베드 주소 또는 영상 ID, 그 밖의 호스트는 422. 저장은 영상 ID 만 `youtube_id` 로), pc_video_id·mobile_video_id(`video` 일 때 — 같은 묶음의 영상 ID, PC 영상 필수: 없으면 `pc_video` 422), (선택) pc_image_id·mobile_image_id — 같은 `temp_key` 묶음의 이미지 ID. PC 이미지는 어느 미디어 종류든 대표 이미지로 필수다. 보낸 기기는 그 이미지만 붙고(`mobile_image_id: null` 이면 모바일 없음), 보내지 않은 기기는 묶음의 가장 최근 이미지가 붙는다 — 기기마다 한 장. 다른 묶음·다른 기기 이미지는 422(「고른 이미지를 찾을 수 없습니다」). 붙지 않은 임시 이미지는 매일 정리 명령이 지운다. 위치 맨 뒤 순서로 저장된다. 훅 before/after_create 발행.
+배너 등록. 먼저 `POST /admin/banner-images` 로 같은 `temp_key` 에 PC 이미지(필수)·모바일 이미지(선택)를 올린 뒤 부른다. 본문: position, is_active, display_period(always·range), starts_at·ends_at(range 일 때 필수, 사이트 시간대 `Y-m-d\TH:i`, 종료 > 시작), title(사이트 기본 언어 필수)·description·button_text·image_alt(다국어 객체), title/description_visible·color(#RRGGBB)·align(left·center·right), link_url(`/…` 또는 http(s), `//`·`/\` 시작과 다른 스킴 거부), link_new_window, temp_key, (선택) media_type(`image` 기본·`video`, 그 밖은 422 — 유튜브 등 제3자 영상 플랫폼은 받지 않는다), pc_video_id·mobile_video_id(`video` 일 때 — 같은 묶음의 영상 ID, PC 영상 필수: 없으면 `pc_video` 422), (선택) pc_image_id·mobile_image_id — 같은 `temp_key` 묶음의 이미지 ID. PC 이미지는 어느 미디어 종류든 대표 이미지로 필수다. 보낸 기기는 그 이미지만 붙고(`mobile_image_id: null` 이면 모바일 없음), 보내지 않은 기기는 묶음의 가장 최근 이미지가 붙는다 — 기기마다 한 장. 다른 묶음·다른 기기 이미지는 422(「고른 이미지를 찾을 수 없습니다」). 붙지 않은 임시 이미지는 매일 정리 명령이 지운다. 위치 맨 뒤 순서로 저장된다. 훅 before/after_create 발행.
 
 
 ### DELETE /api/plugins/sirsoft-hero_section/admin/banners/bulk
@@ -1136,7 +1136,7 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 
 **설명**
 
-배너 수정 — 등록과 같은 규칙에 이미지 선택을 더한다. `media_type` 을 보내지 않으면 저장된 종류 그대로다. 영상 선택(`pc_video_id`·`mobile_video_id`)을 보내지 않으면 붙은 영상을 그대로 두고, `null` 로 보내면 떼어 파일까지 지운다(관리자 화면은 종류가 영상이 아니면 둘 다 `null` 을 보낸다). 유튜브가 아닌 종류로 저장하면 `youtube_id` 를 지운다. 응답에 `media_type`·`youtube_id`·`youtube_url`(보기 주소)·`videos{pc,mobile}`(업로드 응답 모양)을 더한다. 위치를 바꾸면 새 위치 맨 뒤로 가고 옛·새 위치 공개 캐시가 모두 비워진다.
+배너 수정 — 등록과 같은 규칙에 이미지 선택을 더한다. `media_type` 을 보내지 않으면 저장된 종류 그대로다. 영상 선택(`pc_video_id`·`mobile_video_id`)을 보내지 않으면 붙은 영상을 그대로 두고, `null` 로 보내면 떼어 파일까지 지운다(관리자 화면은 종류가 영상이 아니면 둘 다 `null` 을 보낸다). 응답에 `media_type`·`videos{pc,mobile}`(업로드 응답 모양)을 더한다. 위치를 바꾸면 새 위치 맨 뒤로 가고 옛·새 위치 공개 캐시가 모두 비워진다.
 
 이미지는 이 저장 때만 바뀐다. 수정 화면은 `POST /admin/banner-images` 로 임시 묶음(`temp_key`)에 올려 두고, 저장 때 화면에 남은 이미지 ID 를 보낸다.
 

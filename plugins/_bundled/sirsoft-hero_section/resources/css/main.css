@@ -263,97 +263,20 @@
 .hs-slider--mobile .hs-slider__image { object-position: var(--hs-focus-mobile, 50% 50%); }
 
 /*
- * 영상 배너 — 영상·유튜브는 대표 이미지 위에 겹친다(받는 동안·멈춘 동안은 대표 이미지가 보인다). 영상은 object-fit 으로, 유튜브
- * 플레이어는 구좌를 덮도록 16:9 를 늘려(컨테이너 단위) 가운데 맞춘다 — 비율이 달라도 검은 띠가 생기지 않는다. 손가락 넘기기·
- * 전체 링크가 플레이어에 먹히지 않게 플레이어는 누르기를 받지 않는다(재생·멈춤은 슬라이더 단추가 맡는다).
+ * 영상 배너 — 영상은 대표 이미지 위에 겹친다(받는 동안·멈춘 동안은 대표 이미지가 보인다). 영상은 구좌를 덮도록 잘라 맞추고,
+ * 전체 링크가 영상에 먹히지 않게 영상은 누르기를 받지 않는다(재생·멈춤은 슬라이더 단추가 맡는다).
  */
-.hs-slider__video,
-.hs-slider__youtube {
+.hs-slider__video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-}
-
-.hs-slider__video {
   object-fit: cover;
   object-position: var(--hs-focus-pc, 50% 50%);
 }
 
 .hs-slider--mobile .hs-slider__video { object-position: var(--hs-focus-mobile, 50% 50%); }
-
-.hs-slider__youtube {
-  overflow: hidden;
-  container-type: size;
-}
-
-.hs-slider__youtube-host {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-
-.hs-slider__youtube--ready .hs-slider__youtube-host { opacity: 1; }
-
-.hs-slider__youtube-frame {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  /* 배너를 덮는 16:9 크기 중 높이가 배너의 1.45배 이상이 되게 키운다 — 유튜브가 재생 시작 때 띄우는 위 제목·채널 띠와
-     아래 「동영상 더보기」·로고 띠(각각 플레이어 높이의 위·아래 약 15%)는 잘려 나가고 가운데 재생 표시만 잠깐 보인다.
-     가로로 긴 배너는 이미 위아래가 그만큼 잘려 크기가 그대로다 */
-  width: max(100cqw, 257.78cqh);
-  height: max(56.25cqw, 145cqh);
-  border: 0;
-  transform: translate(-50%, -50%);
-}
-
-/* 동의 전 — 대표 이미지 위 가운데 재생 단추와 안내. 단추는 전체 링크·문구 층 위에서 누르기를 받는다 */
-.hs-slider__youtube-gate {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.hs-slider__youtube-play {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border: 0;
-  border-radius: 9999px;
-  background: rgba(17, 24, 39, 0.65);
-  color: #ffffff;
-  font-size: 24px;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.hs-slider__youtube-play:focus-visible {
-  outline: 3px solid #93c5fd;
-  outline-offset: 2px;
-}
-
-.hs-slider__youtube-notice {
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: rgba(17, 24, 39, 0.55);
-  color: #ffffff;
-  font-size: 12px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hs-slider__youtube-host { transition: none; }
-}
 
 /*
  * 문구 띠 — 슬라이드 폭 전체, 높이는 문구만큼. 세로 위치(--hs-ty, 0 위 ~ 100 아래)로 띠를 올리고 내리며, 기준점과 띠 기준점이 같아

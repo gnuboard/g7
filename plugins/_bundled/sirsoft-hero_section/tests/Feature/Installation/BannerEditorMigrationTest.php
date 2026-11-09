@@ -55,6 +55,48 @@ class BannerEditorMigrationTest extends PluginTestCase
     }
 
     /**
+     * 유튜브 제거 마이그레이션은 기존 유튜브 배너를 이미지 배너로 바꾸고 `youtube_id` 컬럼을 지운다 — 대표 이미지(PC 이미지)는
+     * 유튜브 배너에도 필수였으므로 그대로 보인다. 두 번 올려도 오류가 없고, 내리면 빈 컬럼만 되살린다(바꾼 종류는 되돌리지 않는다).
+     *
+     * @scenario case=youtube_removal_migration
+     *
+     * @return void 반환값 없음
+     */
+    public function test_youtube_removal_migration_turns_youtube_banners_into_images(): void
+    {
+        $original = DB::getDefaultConnection();
+        config(['database.connections.hero_yt_smoke' => array_replace(config('database.connections.'.$original), [
+            'prefix' => 'h8_'.bin2hex(random_bytes(3)).'_', 'prefix_indexes' => true,
+        ])]);
+        DB::setDefaultConnection('hero_yt_smoke');
+        try {
+            foreach (glob(dirname(__DIR__, 3).'/database/migrations/*.php') as $file) {
+                (require $file)->up();
+            }
+            $migration = require dirname(__DIR__, 3).'/database/migrations/2026_11_09_000009_remove_youtube_from_hero_section_banners.php';
+            $this->assertFalse(Schema::hasColumn('hero_section_banners', 'youtube_id'));
+
+            $migration->down();
+            $this->assertTrue(Schema::hasColumn('hero_section_banners', 'youtube_id'));
+            $row = ['position' => 'home_hero', 'title' => '{"ko":"유튜브"}', 'created_at' => now(), 'updated_at' => now()];
+            $youtube = DB::table('hero_section_banners')->insertGetId($row + ['media_type' => 'youtube', 'youtube_id' => 'dQw4w9WgXcQ']);
+            $video = DB::table('hero_section_banners')->insertGetId($row + ['media_type' => 'video']);
+
+            $migration->up();
+            $migration->up();
+            $this->assertFalse(Schema::hasColumn('hero_section_banners', 'youtube_id'));
+            $this->assertSame('image', DB::table('hero_section_banners')->where('id', $youtube)->value('media_type'));
+            $this->assertSame('video', DB::table('hero_section_banners')->where('id', $video)->value('media_type'));
+        } finally {
+            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+                Schema::dropIfExists($table);
+            }
+            DB::setDefaultConnection($original);
+            DB::purge('hero_yt_smoke');
+        }
+    }
+
+    /**
      * 미디어 컬럼 마이그레이션의 up→down→up 에서 기존 배너·이미지 행이 이미지로 남고, 영상 관계를 읽는 Repository 가 그대로 돈다.
      *
      * @scenario case=media_migration_roundtrip

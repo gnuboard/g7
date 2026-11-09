@@ -13,9 +13,6 @@ return [
     'pc_video' => [
         'required' => '영상 파일(PC)을 올려 주세요. 휴대폰용 영상은 없으면 PC 영상을 씁니다.',
     ],
-    'youtube_url' => [
-        'invalid' => '유튜브 영상 주소를 확인해 주세요. 예: https://www.youtube.com/watch?v=… 또는 https://youtu.be/…',
-    ],
     'image_selection' => [
         'invalid' => '고른 이미지를 찾을 수 없습니다. 이미지를 다시 올린 뒤 저장하세요.',
         'taken' => '고른 이미지가 방금 다른 배너에 저장되었습니다. 저장을 두 번 눌렀다면 배너는 이미 등록되었으니 목록에서 확인하세요.',
@@ -30,7 +27,6 @@ return [
     ],
     'attributes' => [
         'media_type' => '미디어 종류',
-        'youtube_url' => '유튜브 주소',
         'pc_video' => 'PC 영상',
         'mobile_video' => '모바일 영상',
         'kind' => '파일 종류',

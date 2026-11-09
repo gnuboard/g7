@@ -44,7 +44,6 @@ return [
         'effect' => '転換効果',
         'width' => '表示幅',
         'media_type' => 'メディアの種類',
-        'youtube_id' => 'YouTube動画ID',
         'eyebrow' => 'ヘッダー',
         'header_overlay' => 'メニュー重複',
         'pagination' => 'ページング表示',

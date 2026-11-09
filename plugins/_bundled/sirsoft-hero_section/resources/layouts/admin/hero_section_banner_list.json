@@ -1814,11 +1814,11 @@
                                                             "id": "media_badge",
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "if": "{{row.media_type === 'youtube' || row.media_type === 'video'}}",
+                                                            "if": "{{row.media_type === 'video'}}",
                                                             "props": {
                                                                 "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-purple-50 hs:text-purple-700 hs:dark:bg-purple-900/30 hs:dark:text-purple-300"
                                                             },
-                                                            "text": "{{row.media_type === 'youtube' ? '$t:sirsoft-hero_section.admin.list.badge.youtube' : '$t:sirsoft-hero_section.admin.list.badge.video'}}"
+                                                            "text": "$t:sirsoft-hero_section.admin.list.badge.video"
                                                         },
                                                         {
                                                             "type": "basic",

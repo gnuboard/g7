@@ -80,7 +80,6 @@
         <field name="mobile" :value="null"/>
       </field>
       <field name="media_type" value="image"/>
-      <field name="youtube_url" value=""/>
       <field name="videos">
         <field name="pc" :value="null"/>
         <field name="mobile" :value="null"/>
@@ -102,10 +101,9 @@
   </init-local>
   <computed name="uploadMb">{{position_settings?.data?.upload?.effective_mb ?? 5}}</computed>
   <computed name="videoUploadMb">{{position_settings?.data?.upload?.video_effective_mb ?? 30}}</computed>
-  <computed name="mediaType">{{['youtube', 'video'].includes(_local.form?.media_type) ? _local.form.media_type : 'image'}}</computed>
+  <computed name="mediaType">{{_local.form?.media_type === 'video' ? 'video' : 'image'}}</computed>
   <computed name="videoUploading">{{_computed.mediaType === 'video' &amp;&amp; (_local.pcVideoUploadBlocked || _local.mobileVideoUploadBlocked)}}</computed>
   <computed name="videoMissing">{{_computed.mediaType === 'video' &amp;&amp; !_local.form?.videos?.pc}}</computed>
-  <computed name="youtubeMissing">{{_computed.mediaType === 'youtube' &amp;&amp; !(_local.form?.youtube_url ?? '').trim()}}</computed>
   <computed name="listPosition">{{_local.form?.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}</computed>
   <computed name="pcSizeMismatch">{{!!_local.form?.images?.pc?.width &amp;&amp; (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}</computed>
   <computed name="mobileSizeMismatch">{{!!_local.form?.images?.mobile?.width &amp;&amp; (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}</computed>
@@ -160,7 +158,6 @@
           <field name="mobile" :value="null"/>
         </field>
         <field name="media_type" value="image"/>
-        <field name="youtube_url" value=""/>
         <field name="videos">
           <field name="pc" :value="null"/>
           <field name="mobile" :value="null"/>
@@ -217,8 +214,8 @@
               </div>
             </div>
           </section>
-          <!-- 미디어 종류 — 이미지(기본)·유튜브 영상·영상 파일. 어느 종류든 아래 PC 이미지는 대표 이미지로 필수다(유튜브는 방문자 동의 전,
-            영상은 받는 동안·움직임 줄이기에서 대신 보인다). 영상 파일은 이미지처럼 임시 키로 먼저 올라가고 「저장」 때 붙는다 -->
+          <!-- 미디어 종류 — 이미지(기본)·영상 파일. 어느 종류든 아래 PC 이미지는 대표 이미지로 필수다(영상은 받는 동안·움직임 줄이기에서
+            대신 보인다). 영상 파일은 이미지처럼 임시 키로 먼저 올라가고 「저장」 때 붙는다 -->
           <section data-ref="media_card" class="hs-admin-card">
             <h2 class="hs-card-title">$t:sirsoft-hero_section.admin.form.section.media</h2>
             <div class="hs-row-stack">
@@ -227,23 +224,12 @@
                   <responsive on="portable" :inline="false"/>
                   <prop name="options">
                     <item label="$t:sirsoft-hero_section.admin.form.media.image" value="image"/>
-                    <item label="$t:sirsoft-hero_section.admin.form.media.youtube" value="youtube"/>
                     <item label="$t:sirsoft-hero_section.admin.form.media.video" value="video"/>
                   </prop>
                 </radio-group>
                 <p data-if="{{_local.errors?.media_type}}" class="hs-form-error">{{_local.errors?.media_type?.[0] ?? ''}}</p>
                 <p data-if="{{_computed.mediaType === 'image'}}" class="hs-form-hint">$t:sirsoft-hero_section.admin.form.media.image_hint</p>
-                <p data-if="{{_computed.mediaType === 'youtube'}}" class="hs-form-hint">$t:sirsoft-hero_section.admin.form.media.youtube_hint</p>
                 <p data-if="{{_computed.mediaType === 'video'}}" class="hs-form-hint">$t:sirsoft-hero_section.admin.form.media.video_hint</p>
-              </div>
-              <div id="hero_field_youtube_url" data-ref="field_youtube_url" data-if="{{_computed.mediaType === 'youtube'}}">
-                <label class="hs-form-label" htmlFor="hero_youtube_url">
-                  <span>$t:sirsoft-hero_section.admin.form.media.youtube_url</span>
-                  <span class="hs-text-required">*</span>
-                </label>
-                <input type="text" id="hero_youtube_url" name="youtube_url" :maxLength="2048" placeholder="https://www.youtube.com/watch?v=..." class="hs-input hs:w-full hs:min-w-[200px]"/>
-                <p data-if="{{_local.errors?.youtube_url}}" class="hs-form-error">{{_local.errors?.youtube_url?.[0] ?? ''}}</p>
-                <p data-if="{{!_local.errors?.youtube_url}}" class="hs-form-hint">$t:sirsoft-hero_section.admin.form.media.youtube_url_hint</p>
               </div>
               <div id="hero_field_pc_video" data-ref="field_pc_video" data-if="{{_computed.mediaType === 'video'}}">
                 <label class="hs-form-label">
@@ -655,24 +641,14 @@
                   $t:sirsoft-hero_section.admin.form.save_blocked.go_pc_video
                 </button>
               </span>
-              <span data-ref="save_reason_youtube" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !!_local.form?.images?.pc &amp;&amp; _computed.youtubeMissing}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
-                <span>$t:sirsoft-hero_section.admin.form.save_blocked.youtube</span>
-                <button type="button" data-ref="save_reason_youtube_jump" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
-                  <on type="click">
-                    <!-- 저장이 잠긴 이유(유튜브 주소 없음)에서 그 입력 칸으로 이동한다 -->
-                    <scroll-into-view selector="#hero_field_youtube_url" behavior="smooth" block="center"/>
-                  </on>
-                  $t:sirsoft-hero_section.admin.form.save_blocked.go_youtube
-                </button>
-              </span>
             </div>
-            <button data-ref="footer_save_button" type="button" aria-describedby="hero_save_reason" disabled="{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing || _computed.youtubeMissing}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5">
+            <button data-ref="footer_save_button" type="button" aria-describedby="hero_save_reason" disabled="{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5">
               <on type="click">
                 <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간 입력값은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다.
                   버튼 잠금(isSaving)만으로는 화면에 반영되기 전 같은 틱의 두 번째 클릭을 막지 못해 진입점 debounce 로 한 번만 보낸다 -->
                 <sequence :debounce="300">
                   <set-state target="local" :isSaving="true" :errors="null"/>
-                  <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-hero_section/admin/banners/' + route.id : '/api/plugins/sirsoft-hero_section/admin/banners'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, youtube_url: _computed.mediaType === 'youtube' ? (_local.form?.youtube_url ?? '').trim() : undefined, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}">
+                  <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-hero_section/admin/banners/' + route.id : '/api/plugins/sirsoft-hero_section/admin/banners'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}">
                     <success>
                       <set-state target="local" :isSaving="false" :hasChanges="false"/>
                       <toast type="success" message="{{response.message}}"/>
