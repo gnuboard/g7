@@ -22,7 +22,7 @@
         "url": "https://sirsoft.com"
     },
     "release_date": "2026-11-01",
-    "g7_version": ">=7.1.1",
+    "g7_version": ">=7.1.5",
     "dependencies": {
         "modules": {},
         "plugins": {}

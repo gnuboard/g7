@@ -1,0 +1,22 @@
+feature: 상품 저장 트랜잭션 안 훅 before_create_commit·before_update_commit + 파일 보상 (#883 3단계)
+
+description: |
+  `sirsoft-ecommerce.product.before_create_commit(Product, data)`·`before_update_commit(Product, data, snapshot)` 는 상품 저장
+  트랜잭션 클로저 안·마지막 저장 뒤에 돈다(기존 after_* 는 커밋 뒤 그대로). sync 리스너의 예외는 저장 전체를 되돌린다.
+  상품 임시 이미지 연결(linkTempImages)·이미지 복사(copyFromSource)·후기 삭제·후기 이미지 삭제는 StorageTransaction 으로
+  파일과 DB 가 함께 되돌아간다.
+
+axes:
+  case: [update_inside_transaction, update_listener_throws, temp_image_link_rollback, review_delete_rollback]
+
+effects:
+  - product_hook_runs_inside_transaction
+  - product_hook_exception_rolls_back_save
+  - temp_image_file_restored_on_rollback
+  - review_image_file_kept_on_rollback
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ProductSaveTransactionHookTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ProductImageLinkRollbackTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ProductReviewDeleteRollbackTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ProductInquiryNestedRollbackTest.php

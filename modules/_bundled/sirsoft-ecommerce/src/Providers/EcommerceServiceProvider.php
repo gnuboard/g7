@@ -3,6 +3,9 @@
 namespace Modules\Sirsoft\Ecommerce\Providers;
 
 use App\Extension\BaseModuleServiceProvider;
+use Modules\Sirsoft\Ecommerce\Repositories\ContentMediaRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ContentMediaRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
 use App\Helpers\ResponseHelper;
 use App\Seo\SitemapGenerator;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -170,6 +173,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // 그래서 카테고리 배선이 아니라 기본 디스크를 주입한다. 저장 경로 접두사는 종전대로
         // 서비스가 `put('images', …)` 로 넘기는 값이 정하므로 기존 행의 경로는 바뀌지 않는다.
         ClaimAttachmentService::class,
+        // 본문 미디어는 미공개 상품이면 서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않는다 (#883)
+        ContentMediaService::class,
     ];
 
     /**
@@ -223,6 +228,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         ProductLogRepositoryInterface::class => ProductLogRepository::class,
         ProductRepositoryInterface::class => ProductRepository::class,
         ProductImageRepositoryInterface::class => ProductImageRepository::class,
+        ContentMediaRepositoryInterface::class => ContentMediaRepository::class,
         ProductCommonInfoRepositoryInterface::class => ProductCommonInfoRepository::class,
         ProductLabelRepositoryInterface::class => ProductLabelRepository::class,
         ProductNoticeTemplateRepositoryInterface::class => ProductNoticeTemplateRepository::class,

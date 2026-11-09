@@ -1,0 +1,20 @@
+feature: 글 저장 트랜잭션 안 훅 before_create_commit·before_update_commit + 파일 보상 (#883 3단계)
+
+description: |
+  `sirsoft-board.post.before_create_commit(Post, slug, data, options)`·`before_update_commit(Post, slug, data, snapshot)` 는
+  트랜잭션 안·글 ID 확정·첨부 연결 뒤에 돈다(기존 after_* 는 그대로 커밋 뒤). sync 리스너의 예외는 저장 전체를 되돌리고
+  옮긴 첨부 파일도 StorageTransaction 이 제자리로 돌린다. sync 를 빼면 큐 래핑 + afterCommit 이라 커밋 뒤에 돈다.
+  수정 실패 시 정리 대상은 이 요청이 이을 수 있던 임시 첨부뿐 — 이미 연결된 첨부는 지우지 않는다(F5). catch 는 Throwable(F6).
+
+axes:
+  case: [sync_listener_sees_row, listener_throws_on_create, async_listener_runs_after_commit, update_failure_keeps_existing]
+
+effects:
+  - hook_runs_inside_transaction_after_link
+  - listener_exception_rolls_back_post_and_files
+  - async_listener_runs_after_commit
+  - update_failure_keeps_existing_attachments
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Hooks/PostSaveTransactionHookTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/TempAttachmentLinkRollbackTest.php

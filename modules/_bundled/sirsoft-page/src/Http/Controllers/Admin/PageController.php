@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Http\Controllers\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Exceptions\ContentMediaLimitExceededException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
@@ -78,6 +79,9 @@ class PageController extends AdminBaseController
                 new PageResource($page),
                 201
             );
+        } catch (ContentMediaLimitExceededException $e) {
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
         } catch (AttachmentLimitExceededException $e) {
             // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
             return $this->error(
@@ -134,6 +138,9 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.update_success',
                 new PageResource($page)
             );
+        } catch (ContentMediaLimitExceededException $e) {
+            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
+            return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
         } catch (AttachmentLimitExceededException $e) {
             // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
             return $this->error(

@@ -9,7 +9,9 @@ use App\Extension\Consent\ConsentManager;
 use App\Extension\HookManager;
 use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
+use App\Rules\ContentCustomTagsRule;
 use App\Rules\CspSourceHost;
+use App\Rules\EmbedCustomProviderRule;
 use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
@@ -18,6 +20,7 @@ use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SettingsService;
 use App\Support\AllowedExtensions;
 use App\Support\AssetUrl;
+use App\Support\Content\EmbedProviderRegistry;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\IpAccessMatcher;
@@ -535,7 +538,7 @@ class SaveSettingsRequest extends FormRequest
         $rules = [
             // 탭 식별자
             // 여기 빠진 탭 이름으로 저장하면 본문이 아무리 올바라도 422 다 — 탭을 신설하면 반드시 함께 넣는다.
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy', 'content'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -549,6 +552,24 @@ class SaveSettingsRequest extends FormRequest
             'identity' => ['sometimes', 'array'],
             'analytics' => ['sometimes', 'array'],
             'privacy' => ['sometimes', 'array'],
+            'content' => ['sometimes', 'array'],
+
+            // 본문 콘텐츠 (#883) — 허용 후보·외부 영상 서비스·운영자 추가 태그·미디어 주소 유효 시간
+            'content.allow_figure_caption' => ['nullable', 'boolean'],
+            'content.allow_uploaded_video' => ['nullable', 'boolean'],
+            'content.allow_uploaded_audio' => ['nullable', 'boolean'],
+            'content.allow_external_embed' => ['nullable', 'boolean'],
+            'content.embed_presets' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail): void {
+                foreach (array_keys(is_array($value) ? $value : []) as $key) {
+                    if (! array_key_exists($key, EmbedProviderRegistry::presets()) && ! str_starts_with((string) $key, 'ext:')) {
+                        $fail(__('validation.settings.embed_preset_unknown', ['id' => $key]));
+                    }
+                }
+            }],
+            'content.embed_presets.*' => ['boolean'],
+            'content.embed_custom_providers' => ['nullable', 'array', new EmbedCustomProviderRule],
+            'content.custom_tags' => ['nullable', 'array', new ContentCustomTagsRule],
+            'content.media_url_ttl_minutes' => ['nullable', 'integer', 'min:5', 'max:1440'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
             'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
@@ -1780,6 +1801,17 @@ class SaveSettingsRequest extends FormRequest
             'privacy.search_history_scopes.*.scope' => __('validation.attributes.privacy_search_history_scope'),
             'privacy.search_history_scopes.*.max_count' => __('validation.attributes.privacy_search_history_max_count'),
             'privacy.search_history_scopes.*.retention_days' => __('validation.attributes.privacy_search_history_retention_days'),
+            // 본문 콘텐츠 필드 (#883)
+            'content' => __('validation.attributes.content_settings'),
+            'content.allow_figure_caption' => __('validation.attributes.content_allow_figure_caption'),
+            'content.allow_uploaded_video' => __('validation.attributes.content_allow_uploaded_video'),
+            'content.allow_uploaded_audio' => __('validation.attributes.content_allow_uploaded_audio'),
+            'content.allow_external_embed' => __('validation.attributes.content_allow_external_embed'),
+            'content.embed_presets' => __('validation.attributes.content_embed_presets'),
+            'content.embed_presets.*' => __('validation.attributes.content_embed_presets'),
+            'content.embed_custom_providers' => __('validation.attributes.content_embed_custom_providers'),
+            'content.custom_tags' => __('validation.attributes.content_custom_tags'),
+            'content.media_url_ttl_minutes' => __('validation.attributes.content_media_url_ttl_minutes'),
             // 탭 묶음 자체 — 페이로드가 배열이 아닐 때 "general 필드는 배열이어야 합니다" 로
             // 키가 그대로 노출되던 자리다(운영자 화면 라벨은 한국어인데 문구만 영문 키).
             'general' => __('validation.attributes.settings_tab_general'),

@@ -7,12 +7,12 @@
 <!-- @generated:models START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
-| `Attachment` | `board_attachments` | 15 | board→Board, post→Post, creator→User | SoftDeletes |
-| `Board` | `boards` | 43 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
+| `Attachment` | `board_attachments` | 16 | board→Board, post→Post, creator→User | SoftDeletes |
+| `Board` | `boards` | 44 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
 | `BoardStat` | `board_stats` | 3 | - | - |
 | `BoardType` | `board_types` | 3 | - | HasUserOverrides |
 | `Comment` | `board_comments` | 15 | board→Board, post→Post, user→User, parent→self, replies→self | SoftDeletes |
-| `Post` | `board_posts` | 23 | board→Board, user→User, parent→self, replies→self, comments→Comment, attachments→Attachment, 외 1개 | SoftDeletes, 검색 색인 |
+| `Post` | `board_posts` | 23 | board→Board, user→User, parent→self, replies→self, comments→Comment, attachments→Attachment, 외 2개 | SoftDeletes, 검색 색인 |
 | `PostScrap` | `board_post_scraps` | 3 | user→User, post→Post, board→Board | - |
 | `Reaction` | `board_reactions` | 5 | user→User, reactionType→ReactionType, board→Board, post→Post, comment→Comment | - |
 | `ReactionType` | `board_reaction_types` | 7 | iconAttachment→Attachment, reactions→Reaction | HasUserOverrides |
@@ -57,12 +57,27 @@
 드롭하고 이름은 이력상 남아 있는 상태입니다. 신규 코드에서 이 이름을 참조하지 않습니다.
 테이블 접두어가 `board_*`와 `boards_*` 두 가지로 섞여 있는 것은 설계 의도가 아니라 이력입니다
 — 새 테이블을 추가할 때는 `board_*`(단수)를 따릅니다.
+
+`board_attachments.guest_owner_hash`(1.2.3)는 비회원 업로드 소유 쿠키(`g7_board_guest_upload`) 값의 SHA-256 입니다. 비회원이
+글에 연결되기 전의 자기 임시 첨부를 지우고 순서를 바꿀 때만 쓰고, 연결되면 지웁니다. 모델 `$hidden` 이라 응답에 실리지 않습니다.
+개인정보 동의 플러그인은 기능 쿠키 미동의 방문자의 응답에서 허용목록 밖 쿠키를 걷어내므로, 이 쿠키 이름은
+`ProvideNecessaryStorageKeysListener` 가 `cookie` 스코프 필수 키로 제공합니다(빠지면 비회원 본인 삭제가 403).
+`collection='content_media'`(예약, `Attachment::RESERVED_COLLECTIONS`)는 일반 첨부 업로드로 쓸 수 없고 첨부 개수 상한에 세지 않습니다.
+본문 미디어(`collection='content_media'`, 1.2.3)는 편집기 본문에 넣은 이미지·동영상·오디오입니다. 파일은 처음부터 최종 경로
+`{slug}/content-media/Y/m/d/{uuid}.ext` 에 두고, 행은 글에 잇기 전까지 `board_id=0` + `temp_key` 입니다(임시 첨부의 `{slug}/temp/` 범위 밖이라
+임시 키·번호 연결이 집어 가지 않습니다). 글 저장 트랜잭션 안에서 `PostContentMediaService::syncWithContent` 가 본문이 참조한 것만 DB 갱신으로
+잇고, 본문에서 빠진 것은 소프트 삭제(`trigger_type` user|admin)합니다. `Post::attachments()`·`thumbnailAttachment()`·`attachments_count` 는
+본문 미디어를 빼고, `Post::contentMedia()` 가 따로 봅니다. 게시글 삭제 연쇄·보유기간 파기는 첨부와 같이 함께 처리됩니다. 끝내 잇지 않은 임시 행은
+`sirsoft-board:prune-attachments` 의 임시 정리가 지웁니다.
+
+`boards.content_media_policy`(json, 1.2.3)는 게시판별 본문 미디어 정책 `{image|video|audio: {enabled, max_size_mb, extensions[]}, max_per_document}`
+입니다. null 이면 그 게시판 첨부 정책(파일당 크기·허용 확장자 중 이미지)으로 만든 대체 정책을 씁니다 — 동영상·오디오는 코어 「본문 콘텐츠」 스위치를 따릅니다.
 <!-- @intent END -->
 
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 46개.
+마이그레이션 48개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -112,6 +127,8 @@
 | `2026_09_23_000001_make_ip_address_nullable_in_board_posts_table.php` | - | `board_posts` | ✅ |
 | `2026_10_15_000001_add_secret_reply_visibility_to_boards_table.php` | - | `boards` | ✅ |
 | `2026_10_19_000001_add_display_order_to_boards_table.php` | - | `boards` | ✅ |
+| `2026_11_09_000001_add_guest_owner_hash_to_board_attachments_table.php` | - | `board_attachments` | ✅ |
+| `2026_11_10_000001_add_content_media_policy_to_boards_table.php` | - | `boards` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->

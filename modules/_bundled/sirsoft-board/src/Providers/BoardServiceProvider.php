@@ -38,6 +38,7 @@ use Modules\Sirsoft\Board\Repositories\ReportRepository;
 use Modules\Sirsoft\Board\Repositories\UserNotificationSettingRepository;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
 use Modules\Sirsoft\Board\Services\AttachmentService;
+use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
@@ -65,6 +66,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     protected array $storageServices = [
         AttachmentService::class,
         BoardService::class,
+        PostContentMediaService::class,
     ];
 
     /**

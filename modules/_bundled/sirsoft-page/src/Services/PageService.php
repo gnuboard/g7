@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Services;
 
 use App\Extension\HookManager;
+use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use App\Helpers\PermissionHelper;
 use App\Search\SearchPagePolicy;
 use App\Support\Query\BoundedCount;
@@ -42,10 +43,17 @@ class PageService
      */
     public const SEARCH_CURSOR_COLUMNS = ['created_at'];
 
+    /**
+     * @param  PageRepositoryInterface  $pageRepository  페이지 리포지토리
+     * @param  PageVersionRepositoryInterface  $pageVersionRepository  페이지 버전 리포지토리
+     * @param  PageAttachmentService  $pageAttachmentService  첨부 서비스
+     * @param  PageContentMediaService  $contentMediaService  본문 미디어 서비스 (#883)
+     */
     public function __construct(
         private PageRepositoryInterface $pageRepository,
         private PageVersionRepositoryInterface $pageVersionRepository,
         private PageAttachmentService $pageAttachmentService,
+        private PageContentMediaService $contentMediaService,
     ) {}
 
     /**
@@ -79,6 +87,11 @@ class PageService
         return DB::transaction(function () use ($data) {
             $userId = Auth::id();
 
+            // 본문 미디어 서명 주소는 정식 주소로 저장한다 (#883)
+            if (array_key_exists('content', $data)) {
+                $data['content'] = $this->contentMediaService->normalizeContent($data['content']);
+            }
+
             $pageData = array_merge($data, [
                 'created_by' => $userId,
                 'updated_by' => $userId,
@@ -102,6 +115,9 @@ class PageService
                     $page->id
                 );
             }
+
+            // 본문이 참조한 본문 미디어만 잇는다 — 문서당 최대 개수를 넘으면 422 로 저장 전체를 되돌린다 (#883)
+            $this->contentMediaService->syncWithContent($page, $data['temp_key'] ?? null);
 
             HookManager::doAction('sirsoft-page.page.after_create', $page, $data);
 
@@ -133,6 +149,11 @@ class PageService
         return DB::transaction(function () use ($page, $data, $snapshot) {
             $userId = Auth::id();
 
+            // 본문 미디어 서명 주소는 정식 주소로 저장한다 (#883)
+            if (array_key_exists('content', $data)) {
+                $data['content'] = $this->contentMediaService->normalizeContent($data['content']);
+            }
+
             $updateData = array_merge($data, [
                 'updated_by' => $userId,
                 'current_version' => $page->current_version + 1,
@@ -155,6 +176,9 @@ class PageService
                     $page->id
                 );
             }
+
+            // 본문 미디어 동기화 — 본문에서 빠진 것은 지우고 새로 참조한 임시 본문 미디어는 잇는다 (#883)
+            $this->contentMediaService->syncWithContent($page, $data['temp_key'] ?? null);
 
             HookManager::doAction('sirsoft-page.page.after_update', $page, $data, $snapshot);
 
@@ -469,6 +493,7 @@ class PageService
      * @param  Page  $page  페이지 모델
      * @param  int  $userId  작성자 ID
      * @param  int|null  $restoredFrom  복원 원본 버전 번호 (복원 시에만)
+     * @return void 반환값 없음
      */
     private function saveVersionSnapshot(Page $page, int $userId, ?int $restoredFrom = null): void
     {

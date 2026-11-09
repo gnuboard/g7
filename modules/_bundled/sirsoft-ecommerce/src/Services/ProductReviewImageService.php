@@ -3,11 +3,13 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
@@ -129,13 +131,16 @@ class ProductReviewImageService
     {
         HookManager::doAction('sirsoft-ecommerce.review-image.before_delete', $image);
 
-        // 스토리지에서 파일 삭제 — 행 disk 기준
-        $rowStorage = $this->storageForRow($image->disk);
-        if ($rowStorage->exists('images', $image->path)) {
-            $rowStorage->delete('images', $image->path);
-        }
+        // 레코드 삭제와 파일 삭제를 한 트랜잭션으로 묶고 파일은 커밋 뒤에 지운다 — 종전에는 파일을 먼저 지우고 레코드를
+        // 지워, 레코드 삭제가 실패하면 깨진 이미지가 남았다 (StorageTransaction, #883). 행 disk 기준
+        $result = DB::transaction(function () use ($image) {
+            $rowStorage = $this->storageForRow($image->disk);
+            if ($rowStorage->exists('images', $image->path)) {
+                StorageTransaction::deleteAfterCommit($rowStorage, 'images', $image->path);
+            }
 
-        $result = $this->repository->delete($image);
+            return $this->repository->delete($image);
+        });
 
         Log::info('리뷰 이미지 삭제 완료', ['image_id' => $image->id]);
 

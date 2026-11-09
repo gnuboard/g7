@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.5] - 2026-11-08
+
+### Added
+
+- 페이지 1.2.2 의 브라우저 실측 데이터 시더 안내(`seeders.issue162_measure.*` — 실행 조건 안내·생성·정리 완료 건수)의 일본어 번역을 추가했습니다.
+- 페이지 편집기 본문 미디어 업로드(페이지 1.2.2)의 결과 안내와 검증 항목 이름 일본어 번역을 추가했습니다.
+
 ## [1.0.4] - 2026-10-21
 
 ### Added

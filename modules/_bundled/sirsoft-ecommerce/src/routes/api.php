@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ContentMediaController as PublicContentMediaController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ContentMediaController as AdminContentMediaController;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminInquiryController;
@@ -759,8 +761,23 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
 | Admin API Routes (관리자 인증 필요)
 |--------------------------------------------------------------------------
 */
+// 본문 미디어 서빙 (#883) — 권한 미들웨어 없음(<img>·<video> 는 Bearer 없음). 게이트는 서비스가 맡는다:
+// 상품은 「전시 중 또는 관리자 또는 서명」, 공통 정보는 공개
+Route::get('content-media/{hash}', [PublicContentMediaController::class, 'show'])
+    ->middleware(['optional.sanctum', 'throttle:600,1'])
+    ->where('hash', '[a-zA-Z0-9]{12}')
+    ->name('content-media.show');
+
 // 관리자 영역 라우트
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+
+    // 본문 미디어 업로드 계약·업로드 (#883) — 상품 설명·공통 정보 편집기. 소유 종류별 권한은 컨트롤러가 다시 본다
+    Route::get('content-media/target', [AdminContentMediaController::class, 'target'])
+        ->middleware('permission:admin,sirsoft-ecommerce.products.create|sirsoft-ecommerce.products.update|sirsoft-ecommerce.product-common-infos.create|sirsoft-ecommerce.product-common-infos.update,false')
+        ->name('admin.content-media.target');
+    Route::post('content-media', [AdminContentMediaController::class, 'upload'])
+        ->middleware(['throttle:60,1', 'permission:admin,sirsoft-ecommerce.products.create|sirsoft-ecommerce.products.update|sirsoft-ecommerce.product-common-infos.create|sirsoft-ecommerce.product-common-infos.update,false'])
+        ->name('admin.content-media.upload');
 
     // 대시보드 API (관리자 대시보드 이커머스 영역)
     // GET /api/modules/sirsoft-ecommerce/admin/dashboard/overview         - 오늘 상태 배지별 주문 수

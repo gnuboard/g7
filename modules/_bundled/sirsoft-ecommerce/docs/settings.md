@@ -450,3 +450,9 @@ manifest 에는 없지만 **실제로 맞물리는 확장이 둘 더** 있습니
 모듈을 끄면 범위가 사라져 그 범위의 기록을 서버가 거부하고 엔진은 건너뜁니다. 고친 설정 값은 보존됩니다.
 이 범위를 쓰는 검색창 연결(검색 이동 앞 `<record-search-keyword scope="sirsoft-ecommerce.products" …/>` 또는 `G7Core.useSearchHistory('sirsoft-ecommerce.products')`)은 템플릿 몫입니다.
 형식 규칙: 코어 문서 「플러그인 개발 — 최근 검색어 범위(search_scopes)」.
+
+## 본문 미디어 (`product_display.content_media`, 1.3.4)
+
+상품 설명·공통 정보 편집기 본문 미디어 정책입니다(환경설정 「상품 진열」 탭). 형식은 코어 `ContentMediaPolicy` 이고, 비어 있으면(기본 null) 상품
+이미지 규칙(jpg·jpeg·png·gif·webp, 코어 첨부 최대 크기)으로 만든 대체 정책을 씁니다(동영상·오디오는 코어 「본문 콘텐츠」 스위치를 켜면 후보 형식 전부를 코어 첨부 최대 크기로). 「직접 정하기」 스위치(`use_custom`)를 끄고
+저장하면 비웁니다. 동영상·오디오는 코어 환경설정 「본문 콘텐츠」의 업로드 후보도 켜야 받습니다.

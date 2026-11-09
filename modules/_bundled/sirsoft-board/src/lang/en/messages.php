@@ -192,6 +192,11 @@ return [
     ],
 
     // Attachment operation messages
+    'content_media' => [
+        'upload_success' => 'Content media uploaded.',
+        'upload_failed' => 'Failed to upload content media.',
+    ],
+
     'attachment' => [
         'uploaded' => 'File has been uploaded.',
         'upload_success' => 'File has been uploaded.',
@@ -552,6 +557,16 @@ return [
     ],
     // Board module seeder console output
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => 'The browser measurement seeder runs only from the CLI with G7_PLAYWRIGHT_BYPASS=1.',
+            'member' => '  Member :email / :password',
+            'board_exists' => '  - :slug already exists',
+            'board_created' => '  - :slug created',
+            'posts' => '  - Sample posts ready: :count (guest password of newly created posts: :password)',
+            'media_posts' => '  - Content media sample posts created: :count (guest password: :password)',
+            'done' => 'Browser measurement data is ready',
+            'cleanup_done' => 'Browser measurement data cleaned up — :counts',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => 'No admin user found; skipping the board activity log seeder.',
             'skip_no_boards' => 'No sample boards; skipping board activity logs.',

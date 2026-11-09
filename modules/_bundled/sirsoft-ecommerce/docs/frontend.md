@@ -9,11 +9,11 @@
 완료 요약의 선택 변경은 debounce 예약 시점부터 이전 응답을 무효화한다. 다음 요청이 아직 전송되지 않았더라도 이전 성공/실패 응답이 최신 선택이나 실행 잠금을 바꾸면 안 된다. 반응형 버튼 라벨은 내부 `Span.responsive`에 둔다. Button 자체의 `responsive.text`는 `children`보다 우선하므로 함께 둔 스피너를 가린다. 회귀 검증은 예약 사이 응답 경합과 desktop/portable의 대기 표시·기존 라벨을 포함한다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 248개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 249개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 248개 |
+| `admin` | 249개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -201,6 +201,7 @@
 | `_bank_accounts_table` | `admin` | partial | - |
 | `_bank_management_modal` | `admin` | partial | - |
 | `_claim_policy_section` | `admin` | partial | - |
+| `_content_media_policy` | `admin` | partial | - |
 | `_currency_exchange_cards` | `admin` | partial | - |
 | `_currency_exchange_table` | `admin` | partial | - |
 | `_disable_international_shipping_modal` | `admin` | partial | - |
@@ -370,6 +371,10 @@
 ### 비동기 응답 뒤 오류 화면을 부르는 핸들러
 
 자기 API 를 기다린 **뒤** 오류 화면(`showErrorPage`)·이동·상태 쓰기를 하는 핸들러는 시작할 때 화면 표식을 잡아 두고(`captureRouteGeneration()` — 경로+쿼리, 엔진이 `G7Core.navigation.getRouteGeneration()` 을 내면 그 경로 세대도 함께 잡아 나갔다가 같은 주소로 돌아온 경우도 가른다), 응답이 왔을 때 `isSameRouteGeneration()` 이 거짓이면 아무것도 하지 않는다(`initClaimEdit`). 엔진 `showErrorPage` 는 부른 시점의 경로 세대를 출처로 보므로, 응답을 기다리는 사이 사용자가 다른 화면으로 옮긴 뒤 부르면 그 새 화면을 404 로 덮는다. 데이터소스 오류 처리에서 불린 핸들러가 다시 dispatch 할 때는 받은 문맥을 `G7Core.dispatch(action, { componentContext: context })` 로 넘겨, 문맥의 `data.__routeGeneration`(그 fetch 를 시작한 세대)을 엔진이 쓰게 한다(`claimApplyOrderMissing`). 코어 내부(`window.__templateApp`)는 읽지 않는다. 또 init_actions 안에서는 `showErrorPage` 를 기다리지 않는다 — 렌더 전 단계라 본문 칸이 아직 없어 서로를 기다린다.
+
+### 비회원 주문 확인 실패(무토큰 401)
+
+비회원 화면의 요청(클레임 신청·미리보기·수정, 클레임 첨부 업로드·삭제, 구매확정, 배송지 변경)은 로그인 토큰 없이 주문 조회 토큰(`X-Guest-Order-Token`)으로 주인을 증명한다. 토큰이 없거나 만료되면 서버가 401 을 주는데, 코어(engine-v1.88.2)는 토큰 없이 보낸 요청의 401 을 세션 만료로 보지 않아 로그인 화면으로 옮기지 않고 호출자에게 돌려준다. 핸들러는 4xx 화면 안내(`isUserFixableClaimError`)보다 **먼저** `resources/js/utils/guestOrderAuth.ts` 의 `isGuestOrderAuthFailure(error)`(= `G7Core.api.isAnonymousUnauthorized`)로 판정해 안내 토스트(`user.claim.guest_auth_required`·`user.guest_order.auth_required`)를 띄우고 입력을 그대로 둔다(1.3.4). 새 비회원 요청 핸들러도 같은 판정을 쓴다 — 빠지면 서버 문구 「인증이 필요합니다.」만 남거나 4xx 로 분류되어 「상품·수량을 확인하라」로 잘못 안내된다.
 
 ## 액션 핸들러
 

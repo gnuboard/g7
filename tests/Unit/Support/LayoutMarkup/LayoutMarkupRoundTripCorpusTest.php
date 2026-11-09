@@ -938,6 +938,12 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         // 관리자 회원 상세 「최근 검색어」 게시판 탭, 이커머스 환경설정 「상품 표시」 탭.
         'modules/_bundled/sirsoft-board/resources/extensions/admin-user-search-history-tab.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_product_display.g7.html',
+        // ── #883 본문 미디어·본문 콘텐츠가 저작하고 등재를 빠뜨린 4건 — 커밋 전 점검(2026-11-09)의 전체 검증이 찾았다.
+        // 게시판·쇼핑몰 「본문 미디어」 정책 조각, 관리자 환경설정 「본문 콘텐츠」 탭과 외부 영상 서비스 추가 창.
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_form/_content_media_policy.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_content_media_policy.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_embed_provider_form.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_content.g7.html',
     ];
 
     /**

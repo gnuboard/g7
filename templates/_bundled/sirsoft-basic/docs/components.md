@@ -222,7 +222,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지) | content, text, isHtml, purifyConfig |
+| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지). 코어 7.1.5+ 는 「본문 콘텐츠」 규칙(`G7Core.contentPolicy.sanitize`)으로 정화하고 외부 영상(`oembed`)을 플레이어로 바꾼다 — `purifyConfig.FORBID_TAGS` 는 규칙이 풀지 않는다. 검색엔진 정화기(`HtmlSanitizer`)와 같은 규칙을 쓴다 | content, text, isHtml, purifyConfig |
 | `HtmlEditor` | HTML/텍스트 에디터 (WYSIWYG, 미리보기) | name, value, placeholder, isHtml, showPreview, minHeight |
 | `RichTextEditor` | 리치 텍스트 에디터 | value, placeholder |
 | `ImageGallery` | 이미지 갤러리 (썸네일 + 메인 이미지) — 확대 창의 창 이름·단추 이름·「몇 장 중 몇 번째」 등 화면 읽기 이름은 `common.lightbox.*` 로 화면 언어를 따른다 | images |

@@ -19,6 +19,7 @@ import { buildLocaleTabContent } from './localeLabel';
 import { notifyEditorAssetFailure } from './editorFailureNotice';
 import { attachReadOnlySync, readOnlyFromContainer } from './readOnlySync';
 import { createG7UploadAdapterPlugin, UPLOAD_IMAGE_TYPES } from './uploadAdapter';
+import { createMediaUploadButtonsPlugin, enabledMediaButtons, MEDIA_BUTTON_NAMES } from './mediaUploadButtons';
 import {
     getTextareaFallbackValues,
     removeTextareaFallback,
@@ -75,6 +76,12 @@ interface InitEditorParams {
     placeholder?: string;
     readOnly?: boolean | string;
     imageUpload?: boolean | string;
+    /**
+     * 본문 미디어 업로드 계약 (코어 `ContentMediaUploadTarget`, #883). 화면(확장 레이아웃)이 자기 업로드 주소·정책을 넘긴다.
+     * 있으면 이 계약으로 올리고 업로드 단추도 계약 정책으로 정한다. 없으면(null·복제 템플릿) 종전 규칙 — 관리자만 이 플러그인
+     * 자체 업로드다. 객체 또는 JSON 문자열.
+     */
+    mediaUpload?: unknown;
     height?: number | string;
     toolbar?: string;
     /**
@@ -754,7 +761,7 @@ function getCurrentLocale(): string {
 /**
  * CKEditor 플러그인 목록을 toolbar 타입에 따라 반환합니다.
  */
-function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUpload: boolean): any[] {
+function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUpload: boolean, withMediaEmbed = false): any[] {
     const base = [
         CKEDITOR.Essentials,
         CKEDITOR.Bold,
@@ -795,6 +802,11 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
         );
     }
 
+    // 코어 「본문 콘텐츠」가 외부 영상 삽입을 켜면 표준 툴바에도 미디어 삽입을 싣는다 (#883)
+    if (withMediaEmbed && toolbarType !== 'full') {
+        base.push(CKEDITOR.MediaEmbed);
+    }
+
     if (withImageUpload) {
         // 업로드 어댑터는 CDN 의 SimpleUploadAdapter 가 아니라 이 플러그인의 어댑터(코어 API 클라이언트 경유)다 —
         // createEditorInstance 의 extraPlugins 로 붙인다.
@@ -810,6 +822,88 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
  */
 function buildUploadUrl(): string {
     return '/api/plugins/sirsoft-ckeditor5/upload';
+}
+
+/**
+ * 코어 「본문 콘텐츠」 규칙의 편집기 제약 — 서비스 목록·금지 태그·업로드 동영상/오디오 허용. 규칙이 없으면(옛 코어) null.
+ *
+ * @return 제약 또는 null
+ */
+export function contentEditorConstraints(): any | null {
+    try {
+        return (window as any)?.G7Core?.contentPolicy?.editorConstraints?.() ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 외부 영상 서비스를 CKEditor `mediaEmbed.extraProviders` 로 바꿉니다 — 서버가 컴파일한 정규식·플레이어 주소만 쓴다.
+ *
+ * CKEditor 기본 제공자는 쓰지 않는다(표시 허용 목록과 어긋나지 않게). 맞지 않는 주소는 CKEditor 가 「지원하지 않는 주소」로 알린다.
+ *
+ * @param providers 규칙의 서비스 목록
+ * @return CKEditor 제공자 정의
+ */
+export function mediaEmbedProviders(providers: any[]): Array<{ name: string; url: RegExp[]; html: (match: RegExpMatchArray) => string }> {
+    return (providers ?? []).map((provider: any) => ({
+        name: String(provider.id),
+        url: (provider.patterns ?? []).map((p: string) => {
+            try {
+                return new RegExp(p, 'i');
+            } catch {
+                return null;
+            }
+        }).filter((re: RegExp | null): re is RegExp => re !== null),
+        html: (match: RegExpMatchArray) => {
+            const id = match?.groups?.id ?? '';
+            const src = String(provider.player_url ?? '').replace('{id}', encodeURIComponent(id)).replace(/"/g, '&quot;');
+
+            return '<div style="position:relative;padding-bottom:56.25%;height:0;">'
+                + `<iframe src="${src}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`;
+        },
+    })).filter((p) => p.url.length > 0);
+}
+
+/**
+ * 화면이 넘긴 본문 미디어 계약을 코어 런타임으로 정규화합니다 — 형식이 틀리거나 다른 출처면 null.
+ *
+ * @param raw `mediaUpload` 값 (객체 또는 JSON 문자열)
+ * @return 정규화한 계약 또는 null
+ */
+export function resolveMediaUploadTarget(raw: unknown): any | null {
+    let value = raw;
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined' || trimmed.startsWith('{{')) {
+            return null;
+        }
+        try {
+            value = JSON.parse(trimmed);
+        } catch {
+            return null;
+        }
+    }
+    if (value === null || value === undefined || typeof value !== 'object') {
+        return null;
+    }
+
+    const normalize = (window as any)?.G7Core?.contentMedia?.normalizeTarget;
+
+    return typeof normalize === 'function' ? (normalize(value) ?? null) : null;
+}
+
+/**
+ * 계약 이미지 확장자를 CKEditor `image.upload.types`(MIME 하위 형식)로 바꿉니다.
+ *
+ * @param extensions 확장자 목록
+ * @return 형식 목록
+ */
+export function uploadTypesFromExtensions(extensions: readonly string[]): string[] {
+    const map: Record<string, string> = { jpg: 'jpeg', jpeg: 'jpeg', png: 'png', gif: 'gif', webp: 'webp', avif: 'avif' };
+    const types = extensions.map((e) => map[String(e).toLowerCase()]).filter((t): t is string => !!t);
+
+    return Array.from(new Set(types));
 }
 
 /**
@@ -839,6 +933,61 @@ function releaseDetachedRegistration(containerId: string, instanceMap: Map<strin
 }
 
 /**
+ * 지금 보는 사람이 관리자인지 판정합니다 — 이 플러그인의 업로드 주소(관리자 전용)를 쓸 수 있는지.
+ *
+ * 부팅 때 받아 둔 인증 사용자(`AuthManager.getUser()`, 사용자·관리자 템플릿 공통)를 먼저 보고, 없으면 사용자 템플릿의
+ * `_global.currentUser` 를 본다. 둘 다 없으면(비회원·옛 코어) 관리자가 아니다.
+ *
+ * @param globalState `G7Core.state.get()` 결과
+ * @return 관리자면 true
+ */
+export function viewerIsAdmin(globalState: Record<string, any>): boolean {
+    let authUser: any = null;
+    try {
+        authUser = (window as any)?.G7Core?.AuthManager?.getInstance?.()?.getUser?.() ?? null;
+    } catch {
+        authUser = null;
+    }
+
+    const user = authUser ?? globalState?._global?.currentUser ?? globalState?.currentUser;
+
+    return user?.is_admin === true;
+}
+
+/**
+ * 편집기 경고 알림(업로드 실패 등)을 코어 토스트로 보냅니다.
+ *
+ * CKEditor 의 Notification 플러그인은 경고를 네이티브 `alert` 로 띄운다 — 탭 전체가 멈추고, 자동화 도구도
+ * 대화상자에 걸려 진행하지 못했다(#883 검수 실측). 듣는 쪽이 `evt.stop()` 하면 기본 alert 가 뜨지 않는다.
+ * 코어 토스트가 없으면(옛 코어) 손대지 않아 종전 alert 가 그대로 뜬다.
+ *
+ * @param editor 방금 만든 편집기
+ */
+function routeWarningsToToast(editor: any): void {
+    const toastError = (window as any)?.G7Core?.toast?.error;
+    if (typeof toastError !== 'function') {
+        return;
+    }
+
+    let notification: any;
+    try {
+        notification = editor?.plugins?.get?.('Notification');
+    } catch {
+        return;
+    }
+
+    notification?.on?.('show:warning', (evt: any, data: { message?: unknown; title?: unknown }) => {
+        const message = typeof data?.message === 'string' && data.message !== ''
+            ? data.message
+            : (typeof data?.title === 'string' ? data.title : '');
+        if (message !== '') {
+            toastError(message);
+        }
+        evt.stop();
+    }, { priority: 'high' });
+}
+
+/**
  * 단일 CKEditor 인스턴스를 생성합니다.
  */
 async function createEditorInstance(
@@ -851,6 +1000,7 @@ async function createEditorInstance(
         height: number;
         toolbar: string;
         containerId: string;
+        mediaTarget?: any | null;
     }
 ): Promise<unknown> {
     const CKEDITOR = (window as any).CKEDITOR as CKEditorGlobal;
@@ -861,13 +1011,31 @@ async function createEditorInstance(
     const toolbarItems = TOOLBAR_PRESETS[options.toolbar] || TOOLBAR_PRESETS.standard;
 
     // 이미지 업로드 비활성화 시 uploadImage 버튼 제거
-    const finalToolbar = options.imageUpload
+    const constraints = contentEditorConstraints();
+    const withMediaEmbed = constraints?.allowExternalEmbed === true;
+    let baseToolbar = options.imageUpload
         ? toolbarItems
         : toolbarItems.filter(item => item !== 'uploadImage');
+    if (withMediaEmbed && !baseToolbar.includes('mediaEmbed')) {
+        const at = baseToolbar.indexOf('insertTable');
+        baseToolbar = [...baseToolbar.slice(0, at + 1), 'mediaEmbed', ...baseToolbar.slice(at + 1)];
+    }
+    if (constraints && !withMediaEmbed) {
+        // 외부 영상 삽입이 꺼져 있으면 넣어도 표시에서 사라진다 — 단추를 주지 않는다
+        baseToolbar = baseToolbar.filter(item => item !== 'mediaEmbed');
+    }
+
+    // 계약 정책이 동영상·오디오를 켰으면 이미지 업로드 단추 옆에 단추를 더한다 (#883)
+    const mediaButtons = enabledMediaButtons(options.mediaTarget ?? null);
+    const mediaItems = mediaButtons.map((kind) => MEDIA_BUTTON_NAMES[kind]);
+    const anchorIndex = baseToolbar.indexOf('uploadImage') >= 0 ? baseToolbar.indexOf('uploadImage') : baseToolbar.indexOf('insertTable');
+    const finalToolbar = mediaItems.length > 0
+        ? [...baseToolbar.slice(0, anchorIndex + 1), ...mediaItems, ...baseToolbar.slice(anchorIndex + 1)]
+        : baseToolbar;
 
     const editorConfig: Record<string, any> = {
         initialData: options.initialContent,
-        plugins: getPlugins(CKEDITOR, options.toolbar, options.imageUpload),
+        plugins: getPlugins(CKEDITOR, options.toolbar, options.imageUpload, withMediaEmbed),
         toolbar: { items: finalToolbar },
         table: {
             contentToolbar: [
@@ -910,7 +1078,12 @@ async function createEditorInstance(
             ],
             resizeUnit: '%' as const,
             // 파일 선택 창 accept·끌어 놓기 필터를 서버가 받는 형식으로 좁힌다(기본값은 bmp·tiff 포함)
-            upload: { types: [...UPLOAD_IMAGE_TYPES] },
+            // 계약이 있으면 그 정책의 이미지 형식, 없으면 이 플러그인 업로드가 받는 형식 (#883)
+            upload: {
+                types: options.mediaTarget
+                    ? uploadTypesFromExtensions(options.mediaTarget.policy?.image?.extensions ?? [])
+                    : [...UPLOAD_IMAGE_TYPES],
+            },
         },
         indentBlock: {
             offset: 40,
@@ -933,17 +1106,42 @@ async function createEditorInstance(
             allow: [
                 { name: /.*/, attributes: true, classes: true, styles: true },
             ],
+            // 표시 규칙이 지울 태그는 편집기도 받지 않는다 — 저장 뒤 사라지는 내용을 남기지 않게 (#883)
+            ...(constraints && (constraints.forbidTags ?? []).length > 0
+                ? { disallow: [{ name: new RegExp(`^(${(constraints.forbidTags as string[]).map((t) => t.replace(/[^a-z0-9-]/gi, '')).join('|')})$`) }] }
+                : {}),
         },
         placeholder: options.placeholder,
         language: getCurrentLocale(),
     };
 
+    if (constraints) {
+        // 미디어 삽입 저장 형식은 지금과 같은 `<figure class="media"><oembed url>` — 표시기가 정해진 플레이어로 바꾼다 (#883)
+        editorConfig.mediaEmbed = {
+            previewsInData: false,
+            providers: [],
+            extraProviders: mediaEmbedProviders(constraints.providers ?? []),
+        };
+    }
+
+    const extraPlugins: any[] = [];
     if (options.imageUpload) {
         // Bearer 부착·401 처리는 G7Core.api 가 맡는다 — 로그인 토큰을 여기서 읽지 않는다.
-        editorConfig.extraPlugins = [createG7UploadAdapterPlugin(buildUploadUrl())];
+        // 계약이 있으면 계약 경로(화면이 정한 주소·정책), 없으면 종전 경로 (#883)
+        extraPlugins.push(options.mediaTarget
+            ? createG7UploadAdapterPlugin({ target: options.mediaTarget, legacyUrl: buildUploadUrl() })
+            : createG7UploadAdapterPlugin(buildUploadUrl()));
+    }
+    if (mediaButtons.length > 0) {
+        extraPlugins.push(createMediaUploadButtonsPlugin(options.mediaTarget, mediaButtons));
+    }
+    if (extraPlugins.length > 0) {
+        editorConfig.extraPlugins = extraPlugins;
     }
 
     const editor = await CKEDITOR.ClassicEditor.create(element, editorConfig);
+
+    routeWarningsToToast(editor);
 
     // 높이 설정: 인라인 스타일은 포커스 시 CKEditor 내부에서 초기화될 수 있으므로
     // containerId 기반 CSS 규칙으로 강제 적용 (remount 시 동일 ID로 덮어씀)
@@ -1312,9 +1510,19 @@ export async function initEditorHandler(
     // 초기화 값은 마운트 시점 한 번의 평가다. 권한 확인처럼 로드 뒤에 바뀌는 값은 조각 컨테이너의
     // 상태 표식(`data-readonly="true|false"`)으로 따라간다 — 편집기를 만드는 순간에도 그 값을 쓴다.
     const readOnlyNow = (): boolean => readOnlyFromContainer(container, isReadOnly);
-    const withImageUpload = params.imageUpload !== undefined
+    const requestedImageUpload = params.imageUpload !== undefined
         ? (params.imageUpload === true || params.imageUpload === 'true')
         : (pluginSettings.imageUpload === true || pluginSettings.imageUpload === 'true');
+    // 이 플러그인의 업로드 주소는 관리자 전용이다(서버 auth:sanctum + admin). 관리자가 아닌 사람에게 단추를 주면
+    // 누르는 순간 401·403 으로 실패한다(비회원은 종전에 로그인 화면으로 옮겨져 쓰던 글이 사라졌다 — #883).
+    // 판정은 부팅 때 받아 둔 인증 사용자(AuthManager — 두 템플릿 공통)로 한다. `_global.currentUser` 는 사용자 템플릿에만
+    // 있고 그마저 화면이 그려진 뒤에 도착할 수 있어, 그것만 보면 관리자 화면의 업로드 단추까지 사라진다.
+    // 화면이 본문 미디어 계약을 넘기면(#883) 업로드 여부는 계약 정책(이미지 허용)이 정한다 — 비회원·일반 회원도 그 화면의
+    // 업로드 주소로 올린다. 계약이 없으면 종전 규칙(관리자만 이 플러그인 자체 업로드).
+    const mediaTarget = resolveMediaUploadTarget(params.mediaUpload);
+    const withImageUpload = mediaTarget
+        ? mediaTarget.policy?.image?.enabled === true
+        : requestedImageUpload && viewerIsAdmin(globalState);
     const placeholder = params.placeholder ?? '';
     const height = params.height !== undefined ? (Number(params.height) || 400) : (Number(pluginSettings.editorHeight) || 400);
     const toolbarType = (params.toolbar !== undefined ? (params.toolbar as string) : (pluginSettings.toolbar as string)) ?? 'standard';
@@ -1478,6 +1686,7 @@ export async function initEditorHandler(
         height,
         toolbar: toolbarType,
         containerId,
+        mediaTarget,
     };
 
     if (isMultilingual) {

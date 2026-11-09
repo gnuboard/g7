@@ -8,6 +8,9 @@
 
 ### Added
 
+- 이커머스 1.3.4 의 브라우저 실측 데이터 시더 안내(`seeders.issue162_measure.*` — 실행 조건 안내·생성·정리 완료 건수, 정리 건수에 본문 미디어 포함)의 일본어 번역을 추가했습니다.
+- 이커머스 1.3.4 의 상품 설명·공통 정보 편집기 본문 미디어 업로드 안내(`messages.content_media.*` 4건)·검증 항목 이름(`validation.attributes.content_media.*`·`content_media_temp_key`)·편집기 데이터 소스 이름(`editor.data_source.contentMediaTarget`)의 일본어 번역을 추가했습니다.
+- 이커머스 1.3.4 의 비회원 주문 확인 만료 안내(`user.claim.guest_auth_required`·`user.guest_order.auth_required` 「ゲスト注文の確認が必要です。…」)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 한국어로 보입니다.
 - 이커머스 1.3.4 의 회원 없이 등록한 후기(다른 쇼핑몰에서 옮겨 온 후기) 표시 「移行」(`admin/product_review.table.imported`)과 이관 후기 입력 오류 문구(`exceptions.imported_review_invalid_field` 「移行レビューの入力値が正しくありません」)의 일본어 번역을 추가했습니다.
 - 이커머스 1.3.4 의 환경설정 「상품 진열」 탭(`admin/settings.tabs.product_display` 「商品陳列」, `admin/settings.product_display.*` 관련 상품 순서·목록 유지 시간 11건)과 그 저장 검증 항목 이름 2건(`validation.attributes.product_display.*`)의 일본어 번역을 추가했습니다.
 - 이커머스 1.3.4 의 최근 검색어 범위 이름(`messages.search_history.scope_products` 「商品検索」)의 일본어 번역을 추가했습니다. 없으면 일본어 관리자 화면의 「최근 검색어」 카드에 범위 이름이 키 그대로 보입니다.

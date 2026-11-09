@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
+use Modules\Sirsoft\Ecommerce\Services\ContentMediaService;
+use Modules\Sirsoft\Ecommerce\Models\Product;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 
@@ -80,7 +82,8 @@ class ProductResource extends BaseApiResource
             'common_info_id' => $this->common_info_id,
 
             // 설명 (다국어)
-            'description' => $this->description,
+            // 본문 미디어 — 전시 중 상품은 정식 주소, 아니면 서명 주소(관리자 화면·미리보기의 <img>·<video> 는 인증 헤더가 없다) (#883)
+            'description' => app(ContentMediaService::class)->presentContent($this->description, $this->resource instanceof Product && ContentMediaService::isPublicProduct($this->resource)),
             'description_localized' => $this->getLocalizedDescription(),
             'description_mode' => $this->description_mode,
 

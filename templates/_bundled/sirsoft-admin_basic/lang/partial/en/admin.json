@@ -1602,6 +1602,7 @@
       "general": "General",
       "mail": "Mail",
       "upload": "Upload",
+      "content": "Content",
       "seo": "SEO",
       "security": "Security",
       "drivers": "Drivers",
@@ -2681,6 +2682,75 @@
         "queue_failed": "Could not queue the run.",
         "preview_failed": "Could not load the target count.",
         "editor_label": "Run privacy action now"
+      }
+    },
+    "content": {
+      "candidates": {
+        "title": "Allowed elements",
+        "description": "Turn on the elements that may remain in post, page and product description content. Elements that are off are removed when displayed and saved.",
+        "figure_caption": "Image captions",
+        "figure_caption_hint": "Keep captions under images (figure, figcaption).",
+        "uploaded_video": "Uploaded videos",
+        "uploaded_video_hint": "Play videos uploaded into content (video). Only files uploaded to this site play, and the board, page or shop content media rule must also allow videos.",
+        "uploaded_audio": "Uploaded audio",
+        "uploaded_audio_hint": "Play audio uploaded into content (audio). Only files uploaded to this site play.",
+        "external_embed": "External videos",
+        "external_embed_hint": "Show videos inserted with the editor's \"Insert media\" in the player of a service enabled below. When off, they appear as links."
+      },
+      "custom_tags": {
+        "title": "Extra tags",
+        "description": "Add tags that are not in the list above (e.g. details, summary, svg).",
+        "warning": "Security risk: added tags stay in the content as is. Script, external document and form tags cannot be added, but tags such as svg and math can also be abused — add only what you really need. Event attributes (on…) and javascript: URLs are always removed.",
+        "placeholder": "Type a tag name and press Enter"
+      },
+      "embed": {
+        "title": "External video services",
+        "description": "Services that can be inserted with \"Insert media\". Only the fixed player URL is built from the video id taken from the address — no other HTML or arbitrary iframe is inserted.",
+        "presets": "Built-in services",
+        "extension": "Services provided by extensions",
+        "extension_hint": "External video services added by installed extensions. They start turned off; only the ones you turn on are shown as players in content.",
+        "custom": "Custom services",
+        "custom_empty": "No custom services.",
+        "add": "Add service",
+        "enabled": "Enabled",
+        "preset_names": {
+          "youtube": "YouTube",
+          "vimeo": "Vimeo",
+          "tiktok": "TikTok"
+        },
+        "modal": {
+          "create_title": "Add external video service",
+          "edit_title": "Edit external video service",
+          "trust_notice": "Add only services you trust. The player site appears inside the content (in an isolated frame).",
+          "required": "Enter the name, identifier, URL formats and player URL.",
+          "name": "Name",
+          "name_placeholder": "e.g. Chzzk clips",
+          "id": "Identifier",
+          "id_hint": "2-32 characters starting with a lowercase letter (lowercase letters, digits, underscore). Cannot match a built-in service.",
+          "url_patterns": "URL formats",
+          "url_patterns_hint": "One per line (up to 5). * matches any characters except /, {id} marks the video id. A * in the host is allowed only as the leading subdomain (*.example.com).",
+          "player_url": "Player URL",
+          "player_url_hint": "Starts with https:// and contains {id} once. Fixed query parameters are allowed.",
+          "id_rule": "Id characters",
+          "id_rules": {
+            "alnum_dash": "Letters, digits, - and _",
+            "alnum": "Letters and digits",
+            "digits": "Digits only"
+          },
+          "aspect": "Aspect ratio",
+          "allow": "Permissions",
+          "sample": "Check an example URL",
+          "sample_check": "Check",
+          "preview_id": "Extracted id: {{id}}",
+          "preview_player": "Player URL: {{url}}",
+          "preview_no_match": "The URL does not match the formats.",
+          "apply": "Apply"
+        }
+      },
+      "ttl": {
+        "title": "Media URL lifetime",
+        "description": "Content media that only certain people may see (secret posts, unpublished pages) is served through short-lived URLs. If a screen stays open longer than this, reload it to play.",
+        "unit": "minutes (5-1440)"
       }
     }
   },
@@ -4363,6 +4433,7 @@
     },
     "admin_settings": {
       "identity_policy_delete_modal": "Delete Identity Verification Policy",
+      "embed_provider_form_modal": "Add or Edit External Video Service",
       "identity_policy_form_modal": "Edit Identity Verification Policy",
       "ip_restriction_rule_form_modal": "Edit IP Access Restriction Rule",
       "modal_notification_channel_off_confirm": "Confirm Turning Off Mail Channel",

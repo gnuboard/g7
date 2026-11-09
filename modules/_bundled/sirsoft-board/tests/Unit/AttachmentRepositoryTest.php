@@ -26,6 +26,11 @@ class AttachmentRepositoryTest extends ModuleTestCase
 
     private Board $board;
 
+    /**
+     * 테스트 게시판과 사용자를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -80,6 +85,15 @@ class AttachmentRepositoryTest extends ModuleTestCase
         ], $overrides));
     }
 
+    /**
+     * 번호로 이으면 임시 첨부가 실제 게시판·글로 옮겨진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_ids
+     *
+     * @effects repository_link_contract_kept
+     */
     #[Test]
     public function test_link_attachments_by_ids_moves_temp_to_real_board_id(): void
     {
@@ -120,6 +134,15 @@ class AttachmentRepositoryTest extends ModuleTestCase
         $this->assertNull($updated2->temp_key);
     }
 
+    /**
+     * 빈 번호 목록은 아무것도 잇지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_ids
+     *
+     * @effects repository_link_contract_kept
+     */
     #[Test]
     public function test_link_attachments_by_ids_with_empty_array_returns_zero(): void
     {
@@ -130,6 +153,15 @@ class AttachmentRepositoryTest extends ModuleTestCase
         $this->assertEquals(0, $result);
     }
 
+    /**
+     * 이미 글에 이어진 첨부는 번호로 다시 잇지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_ids
+     *
+     * @effects repository_link_contract_kept
+     */
     #[Test]
     public function test_link_attachments_by_ids_ignores_already_linked_attachments(): void
     {
@@ -165,6 +197,15 @@ class AttachmentRepositoryTest extends ModuleTestCase
         $this->assertEquals($this->board->id, $unchanged->board_id);
     }
 
+    /**
+     * 임시 키로 이으면 그 키의 임시 첨부가 글로 옮겨진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_temp_key
+     *
+     * @effects repository_link_contract_kept
+     */
     #[Test]
     public function test_link_temp_attachments_moves_temp_to_real_board_id(): void
     {
@@ -194,6 +235,15 @@ class AttachmentRepositoryTest extends ModuleTestCase
         $this->assertNull($updated->temp_key);
     }
 
+    /**
+     * 이어진 첨부는 게시판 기준 조회에 잡힌다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_ids
+     *
+     * @effects repository_link_contract_kept
+     */
     #[Test]
     public function test_linked_attachments_are_queryable_by_board_id(): void
     {
@@ -219,6 +269,15 @@ class AttachmentRepositoryTest extends ModuleTestCase
         $this->assertEquals($this->board->id, $result->first()->board_id);
     }
 
+    /**
+     * 임시 키 조회는 그 키의 임시 첨부를 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_temp_key
+     *
+     * @effects repository_link_contract_kept
+     */
     #[Test]
     public function test_get_by_temp_key_returns_temp_attachments(): void
     {
@@ -244,6 +303,79 @@ class AttachmentRepositoryTest extends ModuleTestCase
         $this->assertCount(2, $result);
     }
 
+    /**
+     * 임시 키 조회·번호 연결은 이 게시판 임시 경로만 본다 — 다른 게시판 임시 첨부는 빠진다 (#883).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=other_board_temp
+     *
+     * @effects other_board_temp_attachment_not_linked
+     */
+    #[Test]
+    public function test_temp_lookups_are_scoped_to_the_board_temp_path(): void
+    {
+        $own = $this->createTempAttachment(['temp_key' => 'scoped-key', 'path' => 'attach-repo-test/temp/scoped-key/a.pdf']);
+        $foreign = $this->createTempAttachment(['temp_key' => 'scoped-key', 'path' => 'other-board/temp/scoped-key/b.pdf', 'stored_filename' => 'b.pdf']);
+
+        $this->assertSame([$own->id], $this->repository->getByTempKey('attach-repo-test', 'scoped-key')->pluck('id')->all());
+
+        $linked = $this->repository->linkAttachmentsByIds('attach-repo-test', [$own->id, $foreign->id], 77);
+        $this->assertSame(1, $linked);
+        $this->assertNull($foreign->fresh()->post_id);
+    }
+
+    /**
+     * 번호로 이을 수 있는 임시 첨부 — 회원은 본인 업로드, 비회원은 비회원 업로드이면서 임시 키가 같은 것 (#883).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=guest_links_by_id_only
+     *
+     * @effects guest_id_link_requires_matching_temp_key
+     */
+    #[Test]
+    public function test_find_linkable_temp_attachment_ids_applies_owner_and_temp_key_rules(): void
+    {
+        $member = $this->createTempAttachment(['temp_key' => 'k-member', 'path' => 'attach-repo-test/temp/k-member/m.pdf']);
+        $guest = $this->createTempAttachment(['temp_key' => 'k-guest', 'path' => 'attach-repo-test/temp/k-guest/g.pdf', 'created_by' => null]);
+        $ids = [$member->id, $guest->id];
+
+        $this->assertSame([$member->id], $this->repository->findLinkableTempAttachmentIds('attach-repo-test', $ids, $this->user->id, null));
+        $this->assertSame([], $this->repository->findLinkableTempAttachmentIds('attach-repo-test', $ids, null, null));
+        $this->assertSame([], $this->repository->findLinkableTempAttachmentIds('attach-repo-test', $ids, null, 'k-other'));
+        $this->assertSame([$guest->id], $this->repository->findLinkableTempAttachmentIds('attach-repo-test', $ids, null, 'k-guest'));
+        $this->assertSame([], $this->repository->findLinkableTempAttachmentIds('other-board', $ids, $this->user->id, null));
+    }
+
+    /**
+     * 상한 집계는 예약 컬렉션(본문 미디어)을 뺀 모든 컬렉션을 센다 (#883).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=reserved_collection
+     *
+     * @effects reserved_collection_rejected
+     */
+    #[Test]
+    public function test_count_for_limit_excludes_reserved_collections_only(): void
+    {
+        $this->createTempAttachment(['temp_key' => 'k-count', 'path' => 'attach-repo-test/temp/k-count/1.pdf', 'collection' => 'attachments']);
+        $this->createTempAttachment(['temp_key' => 'k-count', 'path' => 'attach-repo-test/temp/k-count/2.pdf', 'collection' => 'post_attachments']);
+        $this->createTempAttachment(['temp_key' => 'k-count', 'path' => 'attach-repo-test/temp/k-count/3.pdf', 'collection' => Attachment::COLLECTION_CONTENT_MEDIA]);
+
+        $this->assertSame(2, $this->repository->countForLimitByTempKey('attach-repo-test', 'k-count'));
+    }
+
+    /**
+     * 임시 키의 최대 순서를 돌려준다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_temp_key
+     *
+     * @effects repository_link_contract_kept
+     */
     #[Test]
     public function test_get_max_order_by_temp_key_returns_correct_value(): void
     {
@@ -265,6 +397,15 @@ class AttachmentRepositoryTest extends ModuleTestCase
         $this->assertEquals(3, $maxOrder);
     }
 
+    /**
+     * 임시 키가 없으면 최대 순서는 0 이다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_temp_key
+     *
+     * @effects repository_link_contract_kept
+     */
     #[Test]
     public function test_get_max_order_by_temp_key_returns_zero_for_null_key(): void
     {
@@ -280,6 +421,12 @@ class AttachmentRepositoryTest extends ModuleTestCase
      *
      * `findByIds()` 는 진짜 모델 컬렉션을 반환하므로 Eloquent 선언이 정당한데, 빈 입력
      * 분기만 `collect()`(Support)를 돌려주면 분기별 타입이 갈려 호출 즉시 TypeError 다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=linked_by_ids
+     *
+     * @effects repository_link_contract_kept
      */
     #[Test]
     public function test_find_by_ids_returns_eloquent_collection_for_empty_input(): void

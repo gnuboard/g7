@@ -5,6 +5,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Rules\LocaleRequiredTranslatable;
+use App\Support\ContentMedia\ContentMediaPolicyRules;
 use App\Rules\TranslatableField;
 use App\Services\DriverRegistryService;
 use Illuminate\Foundation\Http\FormRequest;
@@ -91,6 +92,12 @@ class StoreEcommerceSettingsRequest extends FormRequest
         // (EcommerceSettingsAdminService::withPublicAssetCatalog). 화면은 받은 기본정보를 통째로 돌려보낸다.
         if (is_array($data['basic_info'] ?? null) && array_key_exists('public_asset_disk_unavailable', $data['basic_info'])) {
             unset($data['basic_info']['public_asset_disk_unavailable']);
+            $changed = true;
+        }
+
+        // 본문 미디어 정책: 「직접 정하기」가 꺼져 있으면 비운다(상품 이미지 규칙을 따름), 스위치 문자열은 불리언으로 (#883)
+        if (is_array($data['product_display'] ?? null) && array_key_exists('content_media', $data['product_display'])) {
+            $data['product_display']['content_media'] = ContentMediaPolicyRules::normalizeInput($data['product_display']['content_media']);
             $changed = true;
         }
 
@@ -598,6 +605,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'product_display' => ['sometimes', 'array'],
             'product_display.related_order' => ['nullable', 'string', Rule::in(RelatedProductOrder::values())],
             'product_display.related_cache_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
+            // 본문 미디어 정책 (#883) — 형식은 코어가 정한다. 비우면 상품 이미지 규칙(동영상·오디오는 코어 스위치)
+            ...ContentMediaPolicyRules::settingsRules('product_display.content_media'),
 
             // review_settings 섹션
             'review_settings' => ['sometimes', 'array'],

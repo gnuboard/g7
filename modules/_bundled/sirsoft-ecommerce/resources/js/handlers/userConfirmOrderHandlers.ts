@@ -8,6 +8,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { guestOrderAuthRequiredMessage, isGuestOrderAuthFailure } from '../utils/guestOrderAuth';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ConfirmOrder')) ?? {
     log: (...args: unknown[]) => console.log('[Ecom:ConfirmOrder]', ...args),
@@ -88,7 +89,9 @@ export async function confirmOrderOptionHandler(
     } catch (error: any) {
         logger.error('[confirmOrderOption] 실패:', error);
 
-        const errorMessage = error?.response?.data?.message
+        // 비회원 주문 조회 토큰이 없거나 만료된 무토큰 401 — 로그인 화면으로 옮기지 않으므로 주문 조회를 다시 하라고 알린다(#883)
+        const errorMessage = (isGuestOrderAuthFailure(error) ? guestOrderAuthRequiredMessage() : null)
+            || error?.response?.data?.message
             || error?.data?.message
             || error?.message
             || G7Core.t?.('sirsoft-ecommerce::messages.order.cannot_confirm')

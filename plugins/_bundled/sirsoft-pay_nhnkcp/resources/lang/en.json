@@ -207,6 +207,7 @@
             "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator.",
             "krw_only": "NHN KCP supports KRW payments only. ({{currency}})",
             "mobile_approval_key_failed": "Failed to get the KCP mobile approval key",
+            "mobile_guest_auth_failed": "Your order verification has expired. Please open the order lookup and try the payment again.",
             "pg_error": "KCP error [{{code}}]: {{message}}",
             "applepay_ios_only": "Apple Pay is available only for mobile payments on iOS devices.",
             "method_missing": "The payment method is missing, so the payment cannot continue. Please reopen the order form."

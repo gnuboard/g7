@@ -6,6 +6,7 @@ use App\Contracts\Extension\ConsentProviderInterface;
 use App\Exceptions\PhpExtensionUnavailableException;
 use App\Extension\Consent\ConsentManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Settings\EmbedProviderPreviewRequest;
 use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
 use App\Http\Requests\Settings\PrivacyPreviewRequest;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
@@ -84,6 +85,7 @@ class SettingsController extends AdminBaseController
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
      * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts}` (#158)
      * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
+     * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -107,6 +109,7 @@ class SettingsController extends AdminBaseController
             'queue_connection_options' => $this->queueWorkerRegistry->registrableConnections(),
             'csp' => $this->buildCspMeta(),
             'search_scopes' => $this->searchHistoryService->settingsMeta(),
+            'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
         ];
     }
 
@@ -282,6 +285,26 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
+    }
+
+    /**
+     * 외부 영상 서비스 추가 창의 예시 주소 확인 — 꺼낸 id 와 만들어질 플레이어 주소 (#883).
+     *
+     * 저장하지 않는다. 형식이 틀리면(검증 위반) 필드별 문구도 함께 돌려줘 창이 저장 전에 알려 줄 수 있게 한다.
+     *
+     * @param  EmbedProviderPreviewRequest  $request  검증된 요청
+     * @return JsonResponse `{matched, id, player_url, errors}`
+     */
+    public function embedProviderPreview(EmbedProviderPreviewRequest $request): JsonResponse
+    {
+        $preview = $this->settingsService->previewEmbedProvider((array) $request->validated('provider'), (string) $request->validated('sample_url'));
+
+        return $this->success('common.success', [
+            'matched' => $preview['matched'],
+            'id' => $preview['id'],
+            'player_url' => $preview['player_url'],
+            'errors' => (object) $preview['errors'],
+        ]);
     }
 
     /**

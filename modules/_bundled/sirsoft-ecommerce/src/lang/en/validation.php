@@ -1404,6 +1404,12 @@ return [
 
     // Field name translations (Laravel standard)
     'attributes' => [
+        'content_media' => [
+            'owner_type' => 'content media owner type',
+            'file' => 'content media file',
+            'temp_key' => 'temporary key',
+        ],
+        'content_media_temp_key' => 'content media temporary key',
         // Manual paid transition confirm items (Q13·Q14)
         'apply_stock_deduction' => 'stock deduction',
         'apply_mileage_deduction' => 'used mileage deduction',

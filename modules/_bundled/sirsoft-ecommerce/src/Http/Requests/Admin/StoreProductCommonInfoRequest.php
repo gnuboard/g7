@@ -35,6 +35,8 @@ class StoreProductCommonInfoRequest extends FormRequest
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
             'content' => ['nullable', 'array', new TranslatableField(maxLength: 65535)],
             'content_mode' => 'nullable|in:text,html',
+            // 본문 미디어 임시 키 (#883)
+            'content_media_temp_key' => ['nullable', 'string', 'uuid'],
             'is_default' => 'boolean',
             'is_active' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
@@ -67,6 +69,7 @@ class StoreProductCommonInfoRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'content_media_temp_key' => __('sirsoft-ecommerce::validation.attributes.content_media_temp_key'),
             'name' => __('sirsoft-ecommerce::validation.attributes.common_info_name'),
         ];
     }

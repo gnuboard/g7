@@ -5,6 +5,38 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.90.0] - 2026-11-08
+
+### Added
+
+- `G7Core.contentPolicy` — 본문 콘텐츠 규칙 런타임(`resources/js/core/contentPolicy`). 서버가 코어 환경설정 「본문 콘텐츠」로 계산해 `_global.settings.content.render_policy` 로 내려주는 규칙을 읽어, 템플릿 표시기와 편집기 플러그인이 태그 목록을 하드코딩하지 않고 같은 규칙을 쓴다. `getPolicy()` · `sanitize(purify, html, baseConfig)`(템플릿이 넘긴 DOMPurify 로 전용 인스턴스를 만들어 정화 — 켜진 후보 태그(`figcaption`·`video`·`audio`·`source`·`oembed`)와 운영자 추가 태그만 금지 목록에서 빼고, 후보 태그는 정해진 속성만, 미디어 `src`·`poster` 는 서빙 주소 패턴에 맞을 때만 남긴다. 호출자가 덧붙인 금지는 `G7_KEEP_FORBID_TAGS` 로 받아 규칙이 풀지 못한다. 규칙이 없으면(옛 서버) `null` 을 돌려 호출자가 종전 경로를 쓴다) · `resolveEmbed(url)` · `renderEmbeds(fragment)`(`oembed[url]` 을 켜진 서비스의 서버 컴파일 정규식에 맞춰 꺼낸 id 로만 플레이어 주소를 채운 샌드박스 iframe 으로 바꾼다 — 원본 주소는 iframe 에 넣지 않고, 맞지 않으면 `rel="noopener noreferrer nofollow"` 링크) · `editorConstraints()`(편집기용 서비스 목록·금지 태그·업로드 동영상/오디오 허용).
+
+배경: 편집기는 외부 영상(`<oembed>`)·그림 설명(`<figcaption>`)을 저장하는데 표시기(DOMPurify 기본 금지)·봇 정화기가 지워 본문에서 사라졌고, 업로드한 동영상·오디오를 재생할 태그도 통과하지 못했다. 서버 짝: `App\Support\Content\ContentHtmlPolicy`·`EmbedProviderRegistry`. 회귀 잠금: `contentPolicy/__tests__/ContentPolicyRuntime.test.ts`(3)·`embedPatternParity.test.ts`(표본 20 — PHP `EmbedProviderRegistryTest` 가 쓴 같은 사례 파일).
+
+## [engine-v1.89.0] - 2026-11-08
+
+### Added
+
+- `G7Core.contentMedia` — 본문 미디어 업로드 계약 런타임(`resources/js/core/contentMedia`). 확장(게시판·페이지·이커머스)이 확장점 `html_editor` 의 prop `mediaUpload` 로 업로드 계약(`ContentMediaUploadTarget` — 주소·폼 필드·허용 헤더·응답 경로·서빙 주소 정규식·종류별 정책)을 넘기면, 편집기 플러그인은 확장의 API 경로를 모른 채 `normalizeTarget`(형식이 틀리거나 다른 출처 주소면 null, 헤더는 허용 목록만) · `validateFile`(종류·확장자·크기 사전 판정) · `countReferences`·`isAtLimit`(문서당 개수 사전 차단) · `upload`(어댑터 선택 → `{url, id?, kind}`) 를 쓴다. 기본 어댑터는 ApiClient + FormData 이고 토큰 없이 보낸 요청의 401 은 거절 그대로 호출자에게 전달된다(engine-v1.88.2). `registerAdapter({id, priority?, supports, upload})` → 해제 함수 · `listAdapters()` 로 다른 저장 방식을 끼울 수 있다. 문구 `core.content_media.client.*`·`core.content_media.policy.*`(ko·en·ja).
+
+### Fixed
+
+- 사용자 화면의 토큰 갱신이 늘 404 로 실패하던 문제 — `AuthManager` 사용자 설정의 갱신 주소가 `/auth/refresh` 였는데 서버 라우트는 `POST /api/user/auth/refresh` 뿐이다(같은 묶음의 `/auth/user`·`/auth/logout` 은 서버에 별칭이 있다). 사용자 갱신 주소를 `/user/auth/refresh` 로 바꿨다. 관리자 `/admin/auth/refresh` 는 그대로. 회귀 잠금: `auth/__tests__/AuthManager.refreshEndpoint.test.ts`(2 — 수정 전 사용자 1 red).
+
+배경: 편집기 이미지 업로드가 플러그인 고유 경로 하나뿐이라 게시판 첨부 정책·권한·비회원 소유권과 따로 놀았고, 동영상·오디오를 넣을 길이 없었다. 서버 짝: `App\Support\ContentMedia\*`·`App\Rules\ContentMediaFile`. 회귀 잠금: `contentMedia/__tests__/ContentMediaRuntime.test.ts`(14).
+
+## [engine-v1.88.2] - 2026-11-08
+
+### Added
+
+- `G7Core.api.isAnonymousUnauthorized(error)` — 토큰 없이 보낸 요청이 401 로 거부됐는지 판정한다(`status === 401 && error.g7Auth.tokenSent === false`). 확장 핸들러가 「로그인이 필요합니다」 안내를 띄우고 입력을 그대로 두는 데 쓴다.
+
+### Fixed
+
+- 비회원이 권한 없는 기능(사용자 글쓰기 편집기의 이미지 업로드, 비회원 주문의 모바일 결제 승인키, 비회원 클레임 신청 등 `G7Core.api` 직접 호출)을 누르면 401 을 세션 만료로 보고 로그인 화면(`reason=session_expired`)으로 옮겨 쓰던 글·입력이 사라지던 문제 — ApiClient 요청 인터셉터가 Authorization 을 실었는지 요청 시점에 기록하고(`_g7AuthTokenSent`, 호출자가 직접 넣은 헤더 포함), 응답 인터셉터는 토큰을 싣지 않은 요청의 401 에 토큰 갱신·삭제·`onUnauthorized` 를 부르지 않고 `error.g7Auth = { tokenSent: false }` 를 붙여 호출자에게 돌려준다. 토큰을 실은 요청의 401 은 종전대로 갱신 → 실패 시 로그인 이동이다. 응답 시점의 토큰 유무는 판정에 쓰지 않는다(그사이 다른 요청의 갱신 실패로 지워지거나 다른 탭에서 로그인했을 수 있다).
+
+배경: `TemplateApp` 의 `setOnUnauthorized` 콜백(#301, 7859ece0da)은 「콜백 발동 = 토큰이 거부됨」을 전제로 `session_expired` 를 붙이는데, 그 전제는 데이터소스가 토큰 없으면 required 요청을 건너뛴다는 데에만 기대고 있었고 `G7Core.api` 직접 호출에는 성립하지 않았다. 발생 시점: 401 → onUnauthorized 구조 도입(2cd06d3ac7, 2025-11-11) 이후 7.1.4 까지. 회귀 잠금: `api/__tests__/ApiClient.anonymousUnauthorized.test.ts`(7 — 수정 전 5 red), `ApiClient.crossOriginResponse.test.ts` 동일 출처 401 갱신 회귀.
+
 ## [engine-v1.88.1] - 2026-11-08
 
 ### Fixed

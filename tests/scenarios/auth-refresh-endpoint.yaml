@@ -1,0 +1,15 @@
+feature: 사용자 화면 토큰 갱신 주소를 실제 라우트로 맞춘다 (#883 후속, engine-v1.89.0 Fixed)
+
+description: |
+  AuthManager 사용자 설정의 갱신 주소가 `/auth/refresh` 라 `POST /api/auth/refresh`(없는 라우트) 로 가 늘 404 였다.
+  서버 라우트 `POST /api/user/auth/refresh`(`api.user.auth.refresh`)로 맞춘다. 관리자 `/admin/auth/refresh` 는 그대로.
+
+axes:
+  auth_type: [user, admin]
+
+effects:
+  - user_refresh_hits_existing_route
+  - admin_refresh_unchanged
+
+test_files:
+  - resources/js/core/auth/__tests__/AuthManager.refreshEndpoint.test.ts

@@ -3,6 +3,11 @@
   가질 수 있어 확인 창을 거친다. -->
 <layout name="admin_ecommerce_product_common_info_index" version="1.0.0" extends="_admin_base">
   <meta leave_guard="{{_global.panelMode === 'edit' || _global.panelMode === 'create' || _global.panelMode === 'copy'}}" title="$t:sirsoft-ecommerce.admin.common_info.title" description="$t:sirsoft-ecommerce.admin.common_info.description" :scroll_restoration='{"containers":["#right_content_area","#common_info_list"],"snapshot":{"state":["_global.infiniteScroll"]}}'/>
+  <!-- 편집기 본문 미디어 업로드 계약 (#883) — 받는 종류가 없거나 권한이 없으면 null 이라 편집기는 종전대로 동작한다 -->
+  <data-source id="contentMediaTarget" label_key="$t:sirsoft-ecommerce.editor.data_source.contentMediaTarget" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/content-media/target" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params owner_type="common_info"/>
+    <fallback :data="null"/>
+  </data-source>
   <!-- 첫 20건만 받고 나머지는 목록 패널의 무한 스크롤이 이어 붙인다. 저장·삭제·기본값 변경 뒤에는 이 소스를 다시 태워 목록과 상세를 서버 값으로 맞춘다 -->
   <data-source id="commonInfos" label_key="$t:sirsoft-ecommerce.editor.data_source.commonInfos" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-common-infos" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
     <params search="{{query.search}}" :per_page="20"/>
@@ -24,6 +29,7 @@
     </error-handling>
   </data-source>
   <init-local>
+    <field name="contentMediaTempKey" value="{{$uuid()}}"/>
     <field name="form">
       <field name="name">
         <field name="ko" value=""/>

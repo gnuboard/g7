@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
@@ -442,11 +443,12 @@ class ProductReviewService
         HookManager::doAction('sirsoft-ecommerce.product-review.before_delete', $review);
 
         return DB::transaction(function () use ($review) {
-            // 이미지 파일 삭제 (StorageInterface 사용) — 행 disk 기준
+            // 이미지 파일은 커밋된 뒤에 지운다 — 뒤 단계가 실패해 레코드가 되돌아가면 파일만 사라져 깨진 이미지가 남았다
+            // (StorageTransaction, #883). 행 disk 기준
             foreach ($review->images as $image) {
                 $rowStorage = $this->storageForRow($image->disk);
                 if ($rowStorage->exists('images', $image->path)) {
-                    $rowStorage->delete('images', $image->path);
+                    StorageTransaction::deleteAfterCommit($rowStorage, 'images', $image->path);
                 }
             }
 
@@ -527,12 +529,12 @@ class ProductReviewService
         HookManager::doAction('sirsoft-ecommerce.product-review.before_bulk_delete', $ids, $reviews);
 
         return DB::transaction(function () use ($reviews, $ids, $snapshots) {
-            // 이미지 파일 일괄 삭제 — 행 disk 기준
+            // 이미지 파일 일괄 삭제 — 커밋된 뒤에 지운다 (StorageTransaction, #883). 행 disk 기준
             foreach ($reviews as $review) {
                 foreach ($review->images as $image) {
                     $rowStorage = $this->storageForRow($image->disk);
                     if ($rowStorage->exists('images', $image->path)) {
-                        $rowStorage->delete('images', $image->path);
+                        StorageTransaction::deleteAfterCommit($rowStorage, 'images', $image->path);
                     }
                 }
             }

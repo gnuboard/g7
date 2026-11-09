@@ -11,7 +11,7 @@
 |----------|---------|----------|
 | [백엔드](backend/) | 42개 | 정상 |
 | [프론트엔드](frontend/) | 50개 | 정상 |
-| [확장 시스템](extension/) | 38개 | 정상 |
+| [확장 시스템](extension/) | 39개 | 정상 |
 | 공통 | 21개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
@@ -231,7 +231,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [template-handlers.md](frontend/template-handlers.md) | 템플릿 전용 핸들러 |
 | [README.md](frontend/templates/README.md) | 템플릿별 컴포넌트·핸들러·레이아웃 문서 |
 
-### 확장 시스템 (38개)
+### 확장 시스템 (39개)
 
 | 문서 | 제목 |
 |------|------|
@@ -240,6 +240,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [cache-driver.md](extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) |
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
 | [consent-provider.md](extension/consent-provider.md) | 동의 제공자 계약 (Consent Provider) |
+| [content-media.md](extension/content-media.md) | 본문 미디어 업로드 계약 (Content Media) |
 | [editor-spec.md](extension/editor-spec.md) | 편집기 스펙 (editor-spec.json) |
 | [extension-components.md](extension/extension-components.md) | 확장 컴포넌트 (Extension Components) |
 | [extension-documentation.md](extension/extension-documentation.md) | 확장 개발자 문서 (Extension Documentation) |
@@ -348,9 +349,9 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | 확장 | 유형 | 에이전트 가이드 | 문서 목차 | 실측 집계 |
 |------|------|----------------|----------|----------|
 | `gnuboard7-hello_module` | 모듈 | [AGENTS.md](../modules/_bundled/gnuboard7-hello_module/AGENTS.md) | [docs/](../modules/_bundled/gnuboard7-hello_module/docs/README.md) | 훅 2 · 라우트 7 · 모델 1 · 레이아웃 4 |
-| `sirsoft-board` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-board/docs/README.md) | 훅 167 · 라우트 111 · 모델 12 · 레이아웃 58 |
-| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 594 · 라우트 315 · 모델 54 · 레이아웃 248 |
-| `sirsoft-page` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-page/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-page/docs/README.md) | 훅 21 · 라우트 18 · 모델 3 · 레이아웃 3 |
+| `sirsoft-board` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-board/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-board/docs/README.md) | 훅 169 · 라우트 114 · 모델 12 · 레이아웃 59 |
+| `sirsoft-ecommerce` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-ecommerce/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-ecommerce/docs/README.md) | 훅 596 · 라우트 318 · 모델 55 · 레이아웃 249 |
+| `sirsoft-page` | 모듈 | [AGENTS.md](../modules/_bundled/sirsoft-page/AGENTS.md) | [docs/](../modules/_bundled/sirsoft-page/docs/README.md) | 훅 21 · 라우트 20 · 모델 3 · 레이아웃 3 |
 | `gnuboard7-hello_plugin` | 플러그인 | [AGENTS.md](../plugins/_bundled/gnuboard7-hello_plugin/AGENTS.md) | [docs/](../plugins/_bundled/gnuboard7-hello_plugin/docs/README.md) | 훅 1 · 라우트 0 · 모델 0 · 레이아웃 1 |
 | `sirsoft-ckeditor5` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-ckeditor5/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-ckeditor5/docs/README.md) | 훅 4 · 라우트 5 · 모델 1 · 레이아웃 2 |
 | `sirsoft-daum_postcode` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-daum_postcode/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-daum_postcode/docs/README.md) | 훅 0 · 라우트 0 · 모델 0 · 레이아웃 1 |
@@ -367,7 +368,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 44 · 모델 0 · 레이아웃 189 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 44 · 모델 0 · 레이아웃 191 |
 | `sirsoft-basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 49 · 모델 0 · 레이아웃 193 |
 
 

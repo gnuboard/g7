@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 189개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 191개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 141개 |
+| `partials` | 143개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -145,6 +145,7 @@
 | `_modal_core_changelog` | `partials` | partial | - |
 | `_modal_core_update_guide` | `partials` | partial | - |
 | `_modal_core_update_result` | `partials` | partial | - |
+| `_modal_embed_provider_form` | `partials` | partial | - |
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
 | `_modal_ip_restriction_rule_form` | `partials` | partial | - |
@@ -161,6 +162,7 @@
 | `_modal_static_cache_republish` | `partials` | partial | - |
 | `_modal_unsaved_tab_switch` | `partials` | partial | - |
 | `_tab_advanced` | `partials` | partial | - |
+| `_tab_content` | `partials` | partial | - |
 | `_tab_drivers` | `partials` | partial | - |
 | `_tab_general` | `partials` | partial | - |
 | `_tab_identity` | `partials` | partial | - |
@@ -601,6 +603,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_upload.g7.html (업로드)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)
+│           ├── _tab_content.g7.html (본문 콘텐츠 — 허용 후보·추가 태그·외부 영상 서비스(프리셋 3종 유튜브·비메오·틱톡 — 공식 퍼가기 플레이어 주소가 있는 서비스만·확장 제공 `_meta.embed_extension_providers`·직접 추가)·미디어 주소 유효 시간, 코어 7.1.5)
+│           ├── _modal_embed_provider_form.g7.html (본문 콘텐츠 — 외부 영상 서비스 추가·수정 창. 폼의 `content.embed_custom_providers` 만 고치고 저장은 하단 「저장」, 예시 주소 확인은 `POST /api/admin/settings/content/embed-preview`)
 │           ├── _tab_advanced.g7.html (고급)
 │           ├── _tab_info.g7.html (시스템 정보 — PHP 확장 카드: 필수·선택(코어 SSoT)과 「확장이 요구하는 모듈」(`php_extensions.requested_by`))
 │           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)

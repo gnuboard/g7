@@ -1,0 +1,16 @@
+feature: 만료 토큰 회원의 본인 확인 실패는 세션 만료(401)로 알린다 (#883 후속)
+
+description: |
+  `optional.sanctum` 이 만료 토큰을 비회원으로 통과시키므로, 비회원 업로드 권한이 있는 게시판에서 만료 토큰 회원이 본인 글을
+  다루면 「게시글 수정 권한이 없습니다」(403)가 나왔다. 만료 토큰을 실은 요청의 본인 확인 실패는 401 `auth.token_expired`
+  로 바꿔 화면이 세션 만료 흐름을 타게 한다. 토큰 없는 비회원의 거부는 403 그대로.
+
+axes:
+  case: [expired_token_own_post]
+
+effects:
+  - expired_token_ownership_denial_is_401
+  - tokenless_denial_stays_403
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ExpiredTokenOwnershipDenialTest.php

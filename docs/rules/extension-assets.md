@@ -64,9 +64,10 @@
 | 회원 연락처 노출 | `app/Http/Resources/Traits/ExposesMemberContact.php` | 게시판, 이커머스 |
 | 사이트 주소·외부 출처 | `app/Support/SiteUrl.php`, `app/Support/TrustedScriptHosts.php` | 게시판, 이커머스, gdpr, koreaexim, 결제 4종, 본인인증 2종 |
 | 권한 | `app/Support/PermissionEscalationGuard.php`, `app/Exceptions/PermissionEscalationException.php`, `app/Support/GuestRoleResolver.php`, `app/Contracts/Repositories/PermissionRepositoryInterface.php` | 게시판 |
-| 첨부·본문 미디어 | `app/Helpers/InlineMediaPolicy.php`, `app/Rules/AttachmentFileContent.php`, `app/Services/AttachmentService.php`, `app/Contracts/Repositories/AttachmentRepositoryInterface.php`, `app/Enums/AttachmentSourceType.php`, `app/Exceptions/UnsafeStoragePathException.php` | 게시판, 이커머스, 페이지, ckeditor5 |
+| 첨부·본문 미디어 | `app/Helpers/InlineMediaPolicy.php`, `app/Rules/AttachmentFileContent.php`, `app/Services/AttachmentService.php`, `app/Contracts/Repositories/AttachmentRepositoryInterface.php`, `app/Enums/AttachmentSourceType.php`, `app/Exceptions/UnsafeStoragePathException.php`, `app/Support/ContentMedia/**`, `app/Enums/ContentMediaKind.php`, `app/Rules/ContentMediaFile.php`, `app/Exceptions/ContentMediaLimitExceededException.php` (본문 미디어 계약, 7.1.5), `app/Support/Content/**`(`ContentHtmlPolicy`·`EmbedProviderRegistry` — 「본문 콘텐츠」 규칙, 7.1.5) | 게시판, 이커머스, 페이지, ckeditor5 |
+| 파일 보상·스트림 저장소 | `app/Extension/Helpers/StorageTransaction.php`, `app/Contracts/Extension/StreamingStorageInterface.php` (7.1.5 — 위 트리거 디렉터리 안이지만 확장이 저장 트랜잭션에서 직접 쓰는 도구라 함께 적는다) | 게시판, 이커머스, 페이지 |
 | 본인인증 | `app/Enums/IdentityVerificationChannel.php`, `app/Enums/IdentityVerificationPurpose.php` | totp |
-| SEO | `app/Seo/SeoRenderRequest.php` | 게시판 |
+| SEO | `app/Seo/SeoRenderRequest.php` | 게시판, 이커머스, 페이지 |
 | 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |
 | 언어 코드·다국어 값 | `app/Support/LocaleTag.php`(BCP 47 판정·정규화·협상), `app/Support/LocalizedValue.php`(다국어 값 대체 순서, 7.1.5 `translateAll()` 알림 변수 번역 묶음) | 게시판, 이커머스, 페이지, 마케팅, gdpr, 결제 2종, 비즈뿌리오, koreaexim |
 

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services\Concerns;
 
 use App\Extension\Helpers\FilePermissionHelper;
+use App\Support\Content\ContentHtmlPolicy;
 use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\Log;
 
@@ -25,9 +26,22 @@ trait PurifiesHtml
     protected ?\HTMLPurifier $purifier = null;
 
     /**
+     * 「본문 콘텐츠」 규칙 정화기 (규칙 해시별, #883)
+     *
+     * @var array<string, \HTMLPurifier>
+     */
+    protected array $contentPurifiers = [];
+
+    /**
      * 정의 캐시 디렉토리의 소유 모듈 식별자
      */
     private const PURIFIER_MODULE_IDENTIFIER = 'sirsoft-ecommerce';
+
+    /**
+     * 기본 허용 목록 (상품 설명·이관 후기 공통). 「본문 콘텐츠」 규칙은 여기에 켜진 후보 요소를 더한다 — 설정에서 다시 읽으면
+     * HTMLPurifier 설정이 확정돼 더 쓸 수 없다.
+     */
+    private const PURIFIER_BASE_ALLOWED = 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr';
 
     /**
      * HTMLPurifier 정의 캐시 디렉토리 권한
@@ -47,15 +61,100 @@ trait PurifiesHtml
      * HTML 문자열을 허용 목록으로 정화합니다.
      *
      * @param  string  $html  정화할 HTML
+     * @param  string  $profile  정화 강도 — `baseline`(종전 허용 목록, 리뷰 등) | `content`(코어 「본문 콘텐츠」 규칙을 더함, 상품 설명)
      * @return string 정화된 HTML
      */
-    protected function purifyHtml(string $html): string
+    protected function purifyHtml(string $html, string $profile = 'baseline'): string
     {
+        // 상품 설명·공통 정보는 코어 「본문 콘텐츠」 규칙(그림 캡션·업로드 동영상·오디오·외부 영상)을 따른다 — 게시판 표시와 같은 규칙 (D20).
+        // 그 밖(이관 후기 등 외부에서 들어온 HTML)은 기존 허용 목록 그대로다(baseline).
+        if ($profile === 'content') {
+            return $this->purifyContentHtml($html);
+        }
+
         if ($this->purifier === null) {
             $this->purifier = $this->createPurifier();
         }
 
         return $this->purifier->purify($html);
+    }
+
+    /**
+     * 「본문 콘텐츠」 규칙으로 정화합니다 — 기존 허용 목록 + 켜진 후보 요소, 정화 뒤 코어 마무리(미디어 출처·외부 영상 판정).
+     *
+     * 정의 캐시는 규칙 해시(`ContentHtmlPolicy::htmlPurifierDefinition`)를 DefinitionRev 로 써서 설정이 바뀌면 다시 만든다.
+     *
+     * @param  string  $html  정화할 HTML
+     * @return string 정화된 HTML
+     */
+    protected function purifyContentHtml(string $html): string
+    {
+        $policy = ContentHtmlPolicy::current();
+        $definition = $policy->htmlPurifierDefinition();
+
+        if (! isset($this->contentPurifiers[$definition['id']])) {
+            $cachePath = $this->resolvePurifierCachePath($failure);
+            $this->noticePurifierCacheDisabled($cachePath, $failure);
+            $config = $this->buildPurifierConfig($cachePath);
+            $this->extendContentDefinition($config, $definition, $policy->customTags());
+            $this->contentPurifiers[$definition['id']] = new \HTMLPurifier($config);
+        }
+
+        return $policy->finalize($this->contentPurifiers[$definition['id']]->purify($html), 'store');
+    }
+
+    /**
+     * 켜진 후보 요소와 운영자 추가 태그를 HTMLPurifier 정의에 더합니다.
+     *
+     * 추가 태그는 게시판 표시·봇 정화기와 같은 규칙으로 남긴다(D18) — 속성은 받지 않고, 이벤트·`javascript:` 속성은
+     * `ContentHtmlPolicy::finalize` 가 한 번 더 지운다.
+     *
+     * @param  \HTMLPurifier_Config  $config  기본 설정
+     * @param  array{rev: int, id: string, elements: array<string, array<int, string>>}  $definition  규칙 정의
+     * @param  array<int, string>  $customTags  운영자 추가 태그
+     * @return void 반환값 없음
+     */
+    private function extendContentDefinition(\HTMLPurifier_Config $config, array $definition, array $customTags = []): void
+    {
+        // 후보 요소가 이미 정의한 태그는 그쪽 속성 규칙을 따른다
+        $customTags = array_values(array_diff($customTags, array_keys($definition['elements'])));
+
+        if ($definition['elements'] === [] && $customTags === []) {
+            return;
+        }
+
+        $allowed = self::PURIFIER_BASE_ALLOWED;
+        foreach ($definition['elements'] as $tag => $attributes) {
+            $allowed .= ','.$tag.($attributes !== [] ? '['.implode('|', $attributes).']' : '');
+        }
+        foreach ($customTags as $tag) {
+            $allowed .= ','.$tag;
+        }
+        $config->set('HTML.Allowed', $allowed);
+        $config->set('HTML.DefinitionID', $definition['id']);
+        $config->set('HTML.DefinitionRev', $definition['rev']);
+
+        $raw = $config->maybeGetRawHTMLDefinition();
+        if ($raw === null) {
+            return;
+        }
+
+        $types = [
+            'src' => 'URI', 'poster' => 'URI', 'url' => 'URI', 'controls' => 'Bool', 'playsinline' => 'Bool', 'default' => 'Bool',
+            'width' => 'Length', 'height' => 'Length', 'class' => 'Class',
+        ];
+        $content = ['figure' => 'Flow', 'figcaption' => 'Flow', 'video' => 'Optional: source | track | #PCDATA', 'audio' => 'Optional: source | #PCDATA',
+            'source' => 'Empty', 'track' => 'Empty', 'oembed' => 'Empty'];
+        foreach ($definition['elements'] as $tag => $attributes) {
+            $spec = [];
+            foreach ($attributes as $attribute) {
+                $spec[$attribute] = $types[$attribute] ?? 'Text';
+            }
+            $raw->addElement($tag, in_array($tag, ['source', 'track', 'oembed'], true) ? 'Inline' : 'Block', $content[$tag] ?? 'Flow', 'Common', $spec);
+        }
+        foreach ($customTags as $tag) {
+            $raw->addElement($tag, 'Block', 'Flow', 'Common', []);
+        }
     }
 
     /**
@@ -70,7 +169,20 @@ trait PurifiesHtml
     protected function createPurifier(): \HTMLPurifier
     {
         $cachePath = $this->resolvePurifierCachePath($failure);
+        $this->noticePurifierCacheDisabled($cachePath, $failure);
 
+        return new \HTMLPurifier($this->buildPurifierConfig($cachePath));
+    }
+
+    /**
+     * 정의 캐시 디렉토리를 확보하지 못했으면 프로세스당 1회 운영자 통지를 남깁니다 — 기본·「본문 콘텐츠」 정화기 공통.
+     *
+     * @param  string|null  $cachePath  확보한 캐시 경로 (null 이면 확보 실패)
+     * @param  array{reason: string, path: string}|null  $failure  확보 실패 사유와 그 대상 경로
+     * @return void 반환값 없음
+     */
+    private function noticePurifierCacheDisabled(?string $cachePath, ?array $failure): void
+    {
         if ($cachePath === null && ! self::$purifierCacheWarned) {
             self::$purifierCacheWarned = true;
 
@@ -88,8 +200,6 @@ trait PurifiesHtml
                 'impact' => 'HTML 정화(상품 설명·이관 후기)가 요청마다 정의를 다시 계산합니다. 해당 디렉토리의 쓰기 권한을 확인하세요.',
             ]);
         }
-
-        return new \HTMLPurifier($this->buildPurifierConfig($cachePath));
     }
 
     /**
@@ -101,7 +211,7 @@ trait PurifiesHtml
     protected function buildPurifierConfig(?string $cachePath): \HTMLPurifier_Config
     {
         $config = \HTMLPurifier_Config::createDefault();
-        $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr');
+        $config->set('HTML.Allowed', self::PURIFIER_BASE_ALLOWED);
         $config->set('CSS.AllowedProperties', 'color,background-color,font-size,font-weight,text-align,text-decoration,margin,padding,border,width,height');
         $config->set('Attr.AllowedFrameTargets', ['_blank']);
         $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);

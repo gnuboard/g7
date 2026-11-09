@@ -24,6 +24,16 @@ interface AxiosConfigWithDevTools extends InternalAxiosRequestConfig {
   _devToolsRequestId?: string | null;
   _retry?: boolean;
   /**
+   * 이 요청이 나갈 때 Authorization 헤더를 실었는지 (요청 인터셉터가 기록).
+   *
+   * 401 을 받았을 때 「세션이 만료됐다」고 볼 수 있는 것은 토큰을 실어 보낸 요청뿐이다.
+   * 응답 시점의 `getToken()` 은 근거가 될 수 없다 — 그사이 다른 요청의 갱신 실패로 토큰이
+   * 지워졌거나 다른 탭에서 로그인했을 수 있다.
+   *
+   * @since engine-v1.88.2
+   */
+  _g7AuthTokenSent?: boolean;
+  /**
    * IDV 428 인터셉트 시 challenge 에 사용할 인증 대상(이메일·전화).
    * axios(G7Core.api) 직접 호출 경로에서 호출자가 config 에 실어 보내면 인터셉터가 launcher 로 전달.
    * apiCall(handleApiCall) 경로의 `identity_target` 액션 속성과 동일한 역할.
@@ -164,6 +174,21 @@ class ApiClient {
   }
 
   /**
+   * 토큰 없이 보낸 요청이 401 로 거부됐는지 판정합니다.
+   *
+   * 이 오류는 세션 만료가 아니므로 ApiClient 가 로그인 화면으로 옮기지 않는다. 호출자는 이 판정으로
+   * 「로그인이 필요합니다」 같은 안내를 띄우고 입력을 그대로 둔다.
+   *
+   * @param error `G7Core.api` 호출이 reject 한 오류
+   * @returns 상태 401 이고 요청에 토큰을 싣지 않았으면 true
+   * @since engine-v1.88.2
+   */
+  isAnonymousUnauthorized(error: unknown): boolean {
+    const candidate = error as { response?: { status?: number }; g7Auth?: { tokenSent?: boolean } } | null;
+    return candidate?.response?.status === 401 && candidate?.g7Auth?.tokenSent === false;
+  }
+
+  /**
    * 토큰 삭제
    */
   removeToken(): void {
@@ -192,6 +217,12 @@ class ApiClient {
         if (token && config.headers && !this.isCrossOriginRequest(config.url)) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // 토큰을 실었는지 기록 — 호출자가 직접 넣은 Authorization 도 실은 것으로 본다.
+        // 401 갈래가 「세션 만료」와 「처음부터 로그인하지 않음」을 가르는 근거다(engine-v1.88.2).
+        const sentAuthorization = config.headers?.Authorization ?? config.headers?.authorization;
+        (config as AxiosConfigWithDevTools)._g7AuthTokenSent =
+          typeof sentAuthorization === 'string' && sentAuthorization !== '';
 
         // g7_locale이 설정되어 있으면 Accept-Language 헤더로 전송
         if (typeof window !== 'undefined' && config.headers) {
@@ -257,6 +288,15 @@ class ApiClient {
           && !shouldSkipUnauthorized
           && !this.isCrossOriginRequest(requestUrl)
         ) {
+          // 토큰 없이 보낸 요청의 401 은 세션 만료가 아니다 — 비회원이 권한 없는 기능(편집기 이미지
+          // 업로드 등)을 눌렀을 뿐이다. 갱신·토큰 삭제·로그인 이동을 하지 않고 호출자에게 돌려준다.
+          // 종전에는 이 요청도 세션 만료로 보고 로그인 화면으로 옮겨 쓰던 글이 사라졌다(#883, engine-v1.88.2).
+          if (!originalRequest?._g7AuthTokenSent) {
+            this.completeDevToolsRequest(originalRequest, error);
+            error.g7Auth = Object.freeze({ tokenSent: false });
+            return Promise.reject(error);
+          }
+
           originalRequest!._retry = true;
 
           // AuthManager를 통한 토큰 갱신 시도

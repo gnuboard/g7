@@ -254,7 +254,7 @@ null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview:
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 594개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 596개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 224개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 48개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 17개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -387,10 +387,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 732개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 297개 | `vitest.config.ts` |
+| PHPUnit | 739개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 298개 | `vitest.config.ts` |
 | Playwright | 81개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 434개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 438개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

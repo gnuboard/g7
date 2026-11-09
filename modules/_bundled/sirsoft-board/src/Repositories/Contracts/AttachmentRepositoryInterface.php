@@ -172,11 +172,45 @@ interface AttachmentRepositoryInterface
     public function linkAttachmentsByIds(string $slug, array $ids, int $postId): int;
 
     /**
+     * 주어진 ID 중 이 요청이 이 게시판 글에 이을 수 있는 임시 첨부의 ID 를 돌려줍니다.
+     *
+     * 회원은 본인 업로드, 비회원은 비회원 업로드이면서 임시 키가 같은 것만. 다른 게시판 임시 첨부는 제외.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array<int>  $ids  첨부파일 ID 배열
+     * @param  int|null  $userId  현재 사용자 ID (null 이면 비회원)
+     * @param  string|null  $tempKey  요청의 임시 업로드 키
+     * @param  string|null  $guestOwnerHash  요청의 비회원 소유 쿠키 해시 (회원의 로그인 전 업로드 연결)
+     * @return array<int, int> 이을 수 있는 임시 첨부 ID 목록
+     */
+    public function findLinkableTempAttachmentIds(string $slug, array $ids, ?int $userId, ?string $tempKey, ?string $guestOwnerHash = null): array;
+
+    /**
+     * 게시글 첨부 중 개수 상한에 세는 것의 수 (예약 컬렉션 제외).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @return int 첨부 수
+     */
+    public function countForLimitByPost(string $slug, int $postId): int;
+
+    /**
+     * 임시 키의 임시 첨부 중 개수 상한에 세는 것의 수 (이 게시판 임시 경로, 예약 컬렉션 제외).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $tempKey  임시 업로드 키
+     * @return int 첨부 수
+     */
+    public function countForLimitByTempKey(string $slug, string $tempKey): int;
+
+    /**
      * 주어진 ID 중 다른 사람이 올린 임시 첨부(아직 글에 이어지지 않은 것)의 ID 를 돌려줍니다.
      *
      * @param  array<int>  $ids  첨부파일 ID 배열
      * @param  int|null  $userId  현재 사용자 ID (null 이면 비회원 — 회원이 올린 임시 첨부가 남의 것)
      * @return array<int, int> 남이 올린 임시 첨부 ID 목록
+     *
+     * @deprecated 7.1.5 findLinkableTempAttachmentIds() 를 쓴다(#883).
      */
     public function findForeignTempAttachmentIds(array $ids, ?int $userId): array;
 
@@ -278,4 +312,61 @@ interface AttachmentRepositoryInterface
      * @return bool 삭제 성공 여부
      */
     public function forceDelete(Attachment $attachment): bool;
+
+    /**
+     * 임시 키로 올린, 아직 글에 이어지지 않은 이 게시판 본문 미디어 수 (#883)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $tempKey  임시 업로드 키
+     * @return int 개수
+     */
+    public function countTempContentMedia(string $slug, string $tempKey): int;
+
+    /**
+     * 임시 키로 올린 이 게시판 임시 본문 미디어 중 해시가 맞는 것 (#883)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $tempKey  임시 업로드 키
+     * @param  array<int, string>  $hashes  본문이 참조한 해시
+     * @return Collection<int, Attachment> 임시 본문 미디어
+     */
+    public function getTempContentMediaByHashes(string $slug, string $tempKey, array $hashes): Collection;
+
+    /**
+     * 글에 이어진 본문 미디어 (#883)
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $postId  게시글 ID
+     * @return Collection<int, Attachment> 본문 미디어
+     */
+    public function getContentMediaByPost(int $boardId, int $postId): Collection;
+
+    /**
+     * 해시로 본문 미디어를 찾습니다 — 이 게시판 글에 이어진 것 또는 이 게시판의 임시 본문 미디어 (#883)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $hash  해시
+     * @return Attachment|null 본문 미디어
+     */
+    public function findContentMediaByHash(string $slug, string $hash): ?Attachment;
+
+    /**
+     * 임시 본문 미디어를 글에 잇습니다 — DB 갱신뿐(파일은 처음부터 최종 경로) (#883)
+     *
+     * @param  Attachment  $attachment  임시 본문 미디어
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $postId  게시글 ID
+     * @param  int  $order  본문 안 순서
+     * @return void 반환값 없음
+     */
+    public function linkContentMedia(Attachment $attachment, int $boardId, int $postId, int $order): void;
+
+    /**
+     * 본문에서 빠진 본문 미디어를 소프트 삭제합니다 (#883)
+     *
+     * @param  Attachment  $attachment  본문 미디어
+     * @param  string  $triggerType  삭제 주체 (`TriggerType` 값)
+     * @return void 반환값 없음
+     */
+    public function softDeleteContentMedia(Attachment $attachment, string $triggerType): void;
 }

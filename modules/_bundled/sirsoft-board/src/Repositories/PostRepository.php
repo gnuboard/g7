@@ -2369,7 +2369,9 @@ class PostRepository implements PostRepositoryInterface
      */
     public function recalculateAttachmentsCount(int $postId): int
     {
-        $count = Attachment::where('post_id', $postId)->whereNull('deleted_at')->count();
+        // 본문 미디어(예약 컬렉션)는 첨부 개수에 세지 않는다 (#883)
+        $count = Attachment::where('post_id', $postId)->whereNull('deleted_at')
+            ->whereNotIn('collection', Attachment::RESERVED_COLLECTIONS)->count();
         Post::where('id', $postId)->update(['attachments_count' => $count]);
 
         return $count;

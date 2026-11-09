@@ -1404,6 +1404,12 @@ return [
 
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
+        'content_media' => [
+            'owner_type' => '본문 미디어 소유 종류',
+            'file' => '본문 미디어 파일',
+            'temp_key' => '임시 키',
+        ],
+        'content_media_temp_key' => '본문 미디어 임시 키',
         // 수동 결제 처리·재활성 확인 창 세 항목 (Q13·Q14)
         'apply_stock_deduction' => '재고 차감',
         'apply_mileage_deduction' => '사용 마일리지 차감',

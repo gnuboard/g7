@@ -19,7 +19,7 @@ class SettingsCliKeyResolver
      * 탭을 신설하면 그쪽 목록과 함께 고친다(테스트가 두 목록의 일치를 잠근다).
      */
     public const TAB_CATEGORIES = [
-        'general', 'mail', 'upload', 'seo', 'security', 'drivers', 'notifications', 'identity', 'analytics', 'privacy',
+        'general', 'mail', 'upload', 'seo', 'security', 'drivers', 'notifications', 'identity', 'analytics', 'privacy', 'content',
     ];
 
     /** 여러 범주를 한 폼에 모아 저장하는 탭 */

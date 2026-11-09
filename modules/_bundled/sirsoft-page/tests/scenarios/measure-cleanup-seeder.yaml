@@ -1,0 +1,14 @@
+feature: 실측 정리 시더 — 페이지 서비스와 같은 모듈 저장소에서 본문 미디어 파일을 지운다
+
+description: |
+  정리 시더는 서비스가 주입받는 모듈 인스턴스 저장소(모듈 디스크)로 파일을 지운다. 기본 디스크 드라이버를 새로 만들면
+  실제 파일을 0건 지우고 행만 지운다.
+
+axes:
+  case: [cleanup]
+
+effects:
+  - service_storage_files_deleted
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Seeders/Issue162MeasureCleanupSeederTest.php

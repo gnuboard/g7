@@ -86,6 +86,32 @@ describe('CKEditor5 업로드 어댑터', () => {
     });
 
     /**
+     * @scenario outcome=anonymous_unauthorized
+     * @effects login_required_message_shown_without_redirect
+     */
+    it('토큰 없이 보낸 업로드의 401 은 「로그인이 필요합니다」 문구로 거부한다 (#883)', async () => {
+        const anonymous401 = { response: { status: 401, data: { message: '인증이 필요합니다.' } }, g7Auth: { tokenSent: false } };
+        apiPost.mockRejectedValue(anonymous401);
+        (window as any).G7Core.api.isAnonymousUnauthorized = (e: any) => e === anonymous401;
+        (window as any).G7Core.t = (key: string) => (key === 'sirsoft-ckeditor5.editor.upload_login_required'
+            ? '이미지를 올리려면 로그인이 필요합니다. 작성 중인 내용은 그대로 있습니다.'
+            : key);
+
+        await expect(new G7UploadAdapter(makeLoader(), UPLOAD_URL).upload())
+            .rejects.toBe('이미지를 올리려면 로그인이 필요합니다. 작성 중인 내용은 그대로 있습니다.');
+    });
+
+    /**
+     * @scenario outcome=rejected
+     * @effects server_error_message_shown
+     */
+    it('토큰을 실은 401 은 종전대로 서버 문구를 넘긴다 (판정 메서드가 없는 옛 코어 포함)', async () => {
+        apiPost.mockRejectedValue({ response: { status: 401, data: { message: '인증이 필요합니다.' } } });
+
+        await expect(new G7UploadAdapter(makeLoader(), UPLOAD_URL).upload()).rejects.toBe('인증이 필요합니다.');
+    });
+
+    /**
      * @scenario outcome=rejected
      * @effects server_error_message_shown
      */

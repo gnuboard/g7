@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
+use Modules\Sirsoft\Page\Services\PageContentMediaService;
 use Illuminate\Http\Request;
 
 /**
@@ -22,7 +23,8 @@ class PageResource extends BaseApiResource
             'id' => $this->id,
             'slug' => $this->slug,
             'title' => $this->title,
-            'content' => $this->content,
+            // 미발행 페이지 본문 미디어는 서명 주소로(관리자 화면의 <img>·<video> 는 인증 헤더가 없다), 발행 페이지는 정식 주소 (#883)
+            'content' => app(PageContentMediaService::class)->presentContent($this->content, (bool) $this->published),
             'content_mode' => $this->content_mode ?? 'html',
             'published' => $this->published,
             'published_at' => $this->published_at

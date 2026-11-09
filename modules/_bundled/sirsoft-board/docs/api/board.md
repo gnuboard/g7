@@ -200,6 +200,28 @@ Content-Disposition: attachment; filename="apidoc-sample.png"
 **설명** 게시판 관리자가 첨부파일을 해시로 조회해 다운로드합니다. `auth:sanctum` + admin + 게시판별 `attachments.download` 권한이 필요하며, `AttachmentService::getByHash()`로 대상을 찾은 뒤 `download()`가 파일 스트림 응답을 생성합니다. 해시에 해당하는 첨부가 없거나 실제 파일이 없으면 404를 반환하고, JSON이 아닌 `StreamedResponse`로 파일 본문을 직접 전송합니다.
 
 
+### POST /api/modules/sirsoft-board/admin/board/{slug}/content-media
+<!-- @generated:start:api.modules.sirsoft-board.admin.board.content-media.upload -->
+- **라우트명**: `api.modules.sirsoft-board.admin.board.content-media.upload`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\ContentMediaController@upload`
+- **인증/권한**: `auth:sanctum` + `admin` + `permission:sirsoft-board.{slug}.admin.attachments.upload` · `throttle:60,1`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| slug | path | string | 예 | — | 게시판 slug |
+| file | body | file | 예 | 게시판 본문 미디어 정책 | 본문에 넣을 이미지·동영상·오디오 |
+| temp_key | body | string | 예 | UUID | 글쓰기 화면의 임시 키 |
+| post_id | body | integer | 아니오 | min 1 | 기존 글 편집 중이면 그 글 번호 — 관리자 글 수정과 같은 스코프 권한을 본다 |
+
+**응답 필드**: 사용자 업로드(`POST boards/{slug}/content-media`)와 같다(`data.id`·`data.hash`·`data.kind`·`data.url`). 서빙은 사용자 경로 `GET boards/{slug}/content-media/{hash}` 를 함께 쓴다.
+
+- 상태: `201` · `403` 스코프 밖 글 · `404` · `422` 정책 밖 파일·임시 키 없음·업로드 상한 초과
+<!-- @generated:end -->
+
+---
+
 ### PATCH /api/modules/sirsoft-board/admin/board/{slug}/attachments/reorder
 <!-- @generated:start:api.modules.sirsoft-board.admin.board.attachments.reorder -->
 - **라우트명**: `api.modules.sirsoft-board.admin.board.attachments.reorder`
@@ -835,6 +857,9 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.posts.write`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+
+
+> **본문 미디어 업로드 계약 `data.content_media`** (1.2.3) — 관리자 업로드 권한(`admin.attachments.upload`)이 있으면 관리자 업로드 주소(`admin/board/{slug}/content-media`)를 담은 계약, 없으면 `null`. 형식은 사용자 폼 메타와 같다.
 
 <!-- @generated:end -->
 

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.5] - 2026-11-08
+
+### Added
+
+- CKEditor 5 1.1.3 의 비회원 이미지 업로드 안내(`editor.upload_login_required` 「画像をアップロードするにはログインが必要です。…」)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 한국어로 보입니다.
+
 ## [1.0.4] - 2026-10-21
 
 ### Added

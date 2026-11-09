@@ -1579,6 +1579,7 @@
       "general": "一般",
       "mail": "メール",
       "upload": "アップロード",
+      "content": "本文コンテンツ",
       "seo": "SEO",
       "security": "セキュリティ",
       "drivers": "ドライバー",
@@ -2648,6 +2649,75 @@
         "preview_failed": "対象件数を読み込むことができませんでした。",
         "editor_label": "個人情報措置の職権実行"
       }
+    },
+    "content": {
+      "candidates": {
+        "title": "許可する要素",
+        "description": "投稿・ページ・商品説明の本文に残せる要素をオン・オフします。オフの要素は表示時と保存時に削除されます。",
+        "figure_caption": "画像キャプション",
+        "figure_caption_hint": "画像の下の説明(figure・figcaption)を残します。",
+        "uploaded_video": "アップロード動画",
+        "uploaded_video_hint": "本文にアップロードした動画(video)を再生します。このサイトにアップロードしたファイルのみ再生され、掲示板・ページ・ショップの本文メディアルールでも動画を許可する必要があります。",
+        "uploaded_audio": "アップロード音声",
+        "uploaded_audio_hint": "本文にアップロードした音声(audio)を再生します。このサイトにアップロードしたファイルのみ再生されます。",
+        "external_embed": "外部動画の埋め込み",
+        "external_embed_hint": "エディタの「メディア挿入」で入れた外部動画を、下で有効にしたサービスのプレーヤーで表示します。オフにするとリンクで表示されます。"
+      },
+      "custom_tags": {
+        "title": "運営者追加タグ",
+        "description": "上の候補にないタグを追加します(例: details、summary、svg)。",
+        "warning": "セキュリティ上の注意: 追加したタグはそのまま本文に残ります。スクリプト・外部文書・入力フォームのタグは追加できませんが、svg・math なども悪用される恐れがあるため、本当に必要なものだけ追加してください。イベント属性(on…)と javascript: アドレスは常に削除されます。",
+        "placeholder": "タグ名を入力して Enter"
+      },
+      "embed": {
+        "title": "外部動画サービス",
+        "description": "「メディア挿入」で入れられるサービスです。アドレスから取り出した動画 id で決まったプレーヤー URL だけを作り、他の HTML や任意の iframe は入れません。",
+        "presets": "既定のサービス",
+        "extension": "拡張機能が提供するサービス",
+        "extension_hint": "インストールした拡張機能が追加した外部動画サービスです。最初はオフで、オンにしたサービスだけが本文でプレーヤーとして表示されます。",
+        "custom": "追加したサービス",
+        "custom_empty": "追加したサービスはありません。",
+        "add": "サービスを追加",
+        "enabled": "使用",
+        "preset_names": {
+          "youtube": "YouTube",
+          "vimeo": "Vimeo",
+          "tiktok": "TikTok"
+        },
+        "modal": {
+          "create_title": "外部動画サービスを追加",
+          "edit_title": "外部動画サービスを編集",
+          "trust_notice": "信頼できるサービスのみ追加してください。プレーヤー URL のサイトが本文内(隔離された領域)に表示されます。",
+          "required": "名前・識別子・URL 形式・プレーヤー URL をすべて入力してください。",
+          "name": "名前",
+          "name_placeholder": "例: チジジク クリップ",
+          "id": "識別子",
+          "id_hint": "英小文字で始まる2〜32文字(英小文字・数字・アンダースコア)。既定のサービスと重複できません。",
+          "url_patterns": "URL 形式",
+          "url_patterns_hint": "1行に1つ(最大5つ)。* は / 以外の任意の文字、{id} は動画 id の位置です。ホストの * は先頭のサブドメイン位置(*.example.com)にのみ使えます。",
+          "player_url": "プレーヤー URL",
+          "player_url_hint": "https:// で始め、{id} を1回入れます。固定のクエリは付けられます。",
+          "id_rule": "id の文字規則",
+          "id_rules": {
+            "alnum_dash": "英字・数字・-・_",
+            "alnum": "英字・数字",
+            "digits": "数字のみ"
+          },
+          "aspect": "画面比率",
+          "allow": "許可する権限",
+          "sample": "例のアドレスを確認",
+          "sample_check": "確認",
+          "preview_id": "取り出した id: {{id}}",
+          "preview_player": "作られるプレーヤー URL: {{url}}",
+          "preview_no_match": "URL 形式と一致しません。",
+          "apply": "適用"
+        }
+      },
+      "ttl": {
+        "title": "メディア URL の有効時間",
+        "description": "秘密投稿・公開前のページなど閲覧できる人が限られる本文メディアは、短時間だけ有効な URL で配信します。画面を長く開いたままにすると、この時間を過ぎた後は再読み込みが必要です。",
+        "unit": "分 (5〜1440)"
+      }
     }
   },
   "templates": {
@@ -3538,6 +3608,7 @@
     },
     "admin_settings": {
       "identity_policy_delete_modal": "本人認証ポリシー削除確認",
+      "embed_provider_form_modal": "外部動画サービスの追加・編集",
       "identity_policy_form_modal": "本人認証ポリシー編集",
       "modal_notification_channel_off_confirm": "メールチャネルのオフ確認",
       "modal_notification_definition_reset": "通知定義デフォルト復元",

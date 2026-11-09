@@ -34,6 +34,8 @@ import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
+import { getContentMediaRuntime } from '../contentMedia';
+import { getContentPolicyRuntime } from '../contentPolicy';
 import { SEARCH_HISTORY_CHANGED_EVENT, getSearchHistoryRuntime } from '../searchHistory';
 import { useSearchHistory } from '../searchHistory/useSearchHistory';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
@@ -720,6 +722,52 @@ function initConsentAPI(G7Core: any): void {
       if (typeof listener !== 'function') return () => {};
       return G7Core.componentEvent.on(CONSENT_CHANGED_EVENT, listener);
     },
+  });
+}
+
+/**
+ * 본문 콘텐츠 규칙 API 초기화 — `G7Core.contentPolicy` (engine-v1.90.0, #883).
+ *
+ * 코어 환경설정 「본문 콘텐츠」 규칙(`_global.settings.content.render_policy`)으로 본문을 정화하고 외부 영상을 플레이어로 바꾼다.
+ * 템플릿 HtmlContent·편집기 플러그인이 쓰며, 규칙이 없으면 `sanitize` 가 null 을 돌려 호출자가 종전 경로를 쓴다.
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initContentPolicyAPI(G7Core: any): void {
+  const runtime = () => getContentPolicyRuntime();
+  G7Core.contentPolicy = Object.freeze({
+    getPolicy: () => runtime().getPolicy(),
+    sanitize: (purify: any, html: string, baseConfig: Record<string, any>) => runtime().sanitize(purify, html, baseConfig),
+    renderEmbeds: (root: any, policy?: any) => runtime().renderEmbeds(root, policy),
+    resolveEmbed: (url: string) => runtime().resolveEmbed(url),
+    editorConstraints: () => runtime().editorConstraints(),
+  });
+}
+
+/**
+ * 본문 미디어 업로드 파사드 초기화 — `G7Core.contentMedia` (engine-v1.89.0, #883)
+ *
+ * 확장(게시판·페이지·이커머스)이 확장점 `html_editor` 의 prop `mediaUpload` 로 넘긴 업로드 계약을 편집기 플러그인이
+ * 확장의 API 경로를 모른 채 쓰게 한다. 런타임은 코어 본문 미디어 런타임(`resources/js/core/contentMedia`) 하나다.
+ *
+ * - `normalizeTarget(raw)` — 형식이 틀리거나 다른 출처면 null
+ * - `validateFile(target, file)` → `{ok, kind, messageKey?, params?}`
+ * - `countReferences(html, target)` · `isAtLimit(html, target)` — 문서당 개수 사전 차단
+ * - `upload(target, file, {signal, onProgress})` → `{url, id?, kind}` (무토큰 401 은 거절 그대로 — engine-v1.88.2)
+ * - `registerAdapter(adapter)` → 해제 함수 · `listAdapters()`
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initContentMediaAPI(G7Core: any): void {
+  const runtime = () => getContentMediaRuntime();
+  G7Core.contentMedia = Object.freeze({
+    normalizeTarget: (raw: unknown) => runtime().normalizeTarget(raw),
+    validateFile: (target: any, file: any) => runtime().validateFile(target, file),
+    countReferences: (html: string | null | undefined, target: any) => runtime().countReferences(html, target),
+    isAtLimit: (html: string | null | undefined, target: any) => runtime().isAtLimit(html, target),
+    upload: (target: any, file: File, ctx?: any) => runtime().upload(target, file, ctx),
+    registerAdapter: (adapter: any) => runtime().registerAdapter(adapter),
+    listAdapters: () => runtime().listAdapters().map((a) => Object.freeze({ id: a.id, priority: a.priority ?? 0 })),
   });
 }
 
@@ -3669,6 +3717,8 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
   initConsentAPI(G7Core);
+  initContentMediaAPI(G7Core);
+  initContentPolicyAPI(G7Core);
   initSearchHistoryAPI(G7Core);
   initStateContractsAPI(G7Core);
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
