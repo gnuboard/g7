@@ -4,7 +4,6 @@ namespace Plugins\Sirsoft\HeroSection\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 
@@ -30,7 +29,7 @@ class BannerFactory extends Factory
     public function definition(): array
     {
         return [
-            'position' => HeroPosition::HomeHero->value,
+            'position' => 'home_hero',
             'is_active' => true,
             'sort_order' => 0,
             'display_period' => DisplayPeriod::Always->value,
@@ -105,14 +104,15 @@ class BannerFactory extends Factory
     }
 
     /**
-     * 노출 위치를 정합니다.
+     * 노출 자리(위치 + 대상)를 정합니다.
      *
-     * @param  HeroPosition  $position  노출 위치
-     * @return static 위치를 정한 팩토리
+     * @param  string  $position  위치 키
+     * @param  string|null  $targetKey  대상 키 (정적 위치는 null)
+     * @return static 자리를 정한 팩토리
      */
-    public function forPosition(HeroPosition $position): static
+    public function forPosition(string $position, ?string $targetKey = null): static
     {
-        return $this->state(fn () => ['position' => $position->value]);
+        return $this->state(fn () => ['position' => $position, 'target_key' => $targetKey]);
     }
 
     /**

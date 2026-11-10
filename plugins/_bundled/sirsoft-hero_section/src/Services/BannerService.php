@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
@@ -19,6 +20,7 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
  * bulk_delete · reorder, filter_create_data · filter_update_data · filter_list_params.
  * 수정 저장으로 기기별 이미지가 바뀌면 `sirsoft-hero_section.banner_image.after_change` 도 발행한다.
  * 활동 로그·공개 캐시 비우기는 after 훅을 구독하는 리스너가 한다.
+ * 순서는 자리(위치 + 대상) 단위다 — 등록은 그 자리 맨 뒤, 위치나 대상을 바꾸면 새 자리 맨 뒤로 간다.
  */
 class BannerService
 {
@@ -47,36 +49,36 @@ class BannerService
     }
 
     /**
-     * 위치별·상태별 건수를 반환합니다.
+     * 위치별·대상별·상태별 건수를 반환합니다.
      *
-     * @param  string  $position  상태별 건수를 낼 위치
-     * @return array{positions: array<string, int>, statuses: array<string, int>} 통계
+     * @param  Placement  $placement  상태별 건수를 낼 자리
+     * @return array{positions: array<string, int>, targets: array<string, int>, statuses: array<string, int>} 통계
      */
-    public function getStatistics(string $position): array
+    public function getStatistics(Placement $placement): array
     {
-        return $this->banners->statistics($position, now());
+        return $this->banners->statistics($placement, now());
     }
 
     /**
      * 지금 노출 중인 배너를 순서대로 반환합니다(관리자 미리보기).
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @return Collection<int, Banner> 노출 배너
      */
-    public function getPreview(string $position): Collection
+    public function getPreview(Placement $placement): Collection
     {
-        return $this->banners->exposedForPosition($position, now());
+        return $this->banners->exposedForPlacement($placement, now());
     }
 
     /**
-     * 위치의 배너 전체를 순서대로 반환합니다(순서 변경 창).
+     * 자리의 배너 전체를 순서대로 반환합니다(순서 변경 창).
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @return Collection<int, Banner> 배너 목록
      */
-    public function getOrderList(string $position): Collection
+    public function getOrderList(Placement $placement): Collection
     {
-        return $this->banners->listForPosition($position);
+        return $this->banners->listForPlacement($placement);
     }
 
     /**
@@ -91,7 +93,7 @@ class BannerService
     }
 
     /**
-     * 배너를 만듭니다 — 위치 맨 뒤에 놓고 임시 묶음에서 기기마다 한 장씩 붙입니다.
+     * 배너를 만듭니다 — 자리(위치 + 대상) 맨 뒤에 놓고 임시 묶음에서 기기마다 한 장씩 붙입니다.
      *
      * 이미지 ID(pc_image_id·mobile_image_id)를 보냈으면 그것을, 보내지 않은 기기는 묶음의 가장 최근 이미지를 붙인다.
      * 붙지 않은 임시 이미지는 그대로 두고 고아 임시 이미지 정리가 지운다.
@@ -112,7 +114,7 @@ class BannerService
 
         $banner = DB::transaction(function () use ($data, $tempKey, $selected, $actorId) {
             $banner = $this->banners->create($data + [
-                'sort_order' => $this->banners->nextSortOrder($data['position']),
+                'sort_order' => $this->banners->nextSortOrder(Placement::of($data['position'], $data['target_key'] ?? null)),
                 'created_by' => $actorId,
                 'updated_by' => $actorId,
             ]);
@@ -135,7 +137,7 @@ class BannerService
     }
 
     /**
-     * 배너를 고칩니다 — 위치가 바뀌면 새 위치 맨 뒤로 옮기고, 수정 화면이 고른 이미지로 바꿉니다.
+     * 배너를 고칩니다 — 위치나 대상이 바뀌면 새 자리 맨 뒤로 옮기고, 수정 화면이 고른 이미지로 바꿉니다.
      *
      * 이미지는 저장할 때만 바뀐다(수정 화면의 업로드는 임시 묶음에 머문다). 떼어 낸 옛 이미지 파일은 커밋 뒤에 지운다.
      *
@@ -160,8 +162,9 @@ class BannerService
             $selection = $this->takeImageSelection($data);
             $snapshot = $banner->toArray();
             $previousPosition = $banner->position;
-            if (isset($data['position']) && $data['position'] !== $previousPosition) {
-                $data['sort_order'] = $this->banners->nextSortOrder($data['position']);
+            $next = Placement::of($data['position'] ?? $banner->position, array_key_exists('target_key', $data) ? $data['target_key'] : $banner->target_key);
+            if (! $next->equals(Placement::of($banner->position, $banner->target_key))) {
+                $data['sort_order'] = $this->banners->nextSortOrder($next);
             }
             $images = $this->imageService->applySelection($banner, $selection);
 
@@ -255,19 +258,21 @@ class BannerService
     }
 
     /**
-     * 위치의 배너 순서를 바꿉니다(FormRequest 가 그 위치 전체 id 인지 확인했다).
+     * 자리의 배너 순서를 바꿉니다(FormRequest 가 그 자리 전체 id 인지 확인했다).
      *
-     * @param  string  $position  위치 키
+     * 훅 인자 셋째에 대상 키를 더했다(정적 위치는 null) — 앞 두 인자는 그대로라 기존 구독자는 바꾸지 않아도 된다.
+     *
+     * @param  Placement  $placement  자리
      * @param  array<int, int>  $ids  새 순서의 배너 ID 목록
      * @return void 반환값 없음
      */
-    public function reorder(string $position, array $ids): void
+    public function reorder(Placement $placement, array $ids): void
     {
-        HookManager::doAction('sirsoft-hero_section.banner.before_reorder', $position, $ids);
+        HookManager::doAction('sirsoft-hero_section.banner.before_reorder', $placement->position, $ids, $placement->targetKey);
 
         DB::transaction(fn () => $this->banners->reorder($ids));
 
-        HookManager::doAction('sirsoft-hero_section.banner.after_reorder', $position, $ids);
+        HookManager::doAction('sirsoft-hero_section.banner.after_reorder', $placement->position, $ids, $placement->targetKey);
     }
 
     /**

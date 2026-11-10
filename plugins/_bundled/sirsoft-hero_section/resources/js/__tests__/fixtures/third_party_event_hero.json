@@ -1,0 +1,41 @@
+{
+  "comment": "다른 확장(가상의 acme-event 모듈)이 자기가 더한 정적 위치 event_hero 에 히어로 슬라이더를 붙이는 조각 — docs/extension-points.md 「다른 확장이 위치를 더할 때」 예시와 같은 모양. 시험은 이 조각이 히어로 자기 조각(home_hero)과 같은 계약을 지키는지, 엔진이 실제로 그리는지 본다",
+  "extension_point": "event_hero",
+  "mode": "append",
+  "priority": 50,
+  "data_sources": [
+    {
+      "id": "acmeEventHero",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-hero_section/hero",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_mode": "optional",
+      "loading_strategy": "background",
+      "params": { "position": "event_hero" },
+      "fallback": { "data": null }
+    }
+  ],
+  "components": [
+    {
+      "id": "acmeEventHero_slider",
+      "type": "composite",
+      "name": "sirsoft-hero_section.HeroSlider",
+      "if": "{{_global.plugins?.['sirsoft-hero_section'] != null}}",
+      "responsive": {
+        "desktop": { "props": { "contentClass": "{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}" } }
+      },
+      "props": {
+        "banners": "{{acmeEventHero?.data?.banners ?? []}}",
+        "loading": "{{acmeEventHero == null}}",
+        "skeletonWidth": "{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.event_hero ?? ''}}",
+        "skeletonBanners": "{{_global.plugins?.['sirsoft-hero_section']?.slot_banners?.event_hero}}",
+        "skeletonOverlay": "{{_global.plugins?.['sirsoft-hero_section']?.slot_overlays?.event_hero}}",
+        "editable": "{{acmeEventHero?.data?.abilities?.can_update === true}}",
+        "settings": "{{acmeEventHero?.data?.settings}}",
+        "position": "event_hero",
+        "contentClass": "{{extensionPointProps?.contentClass ?? ''}}"
+      }
+    }
+  ]
+}

@@ -15,6 +15,7 @@ use Plugins\Sirsoft\HeroSection\Http\Resources\BannerCollection;
 use Plugins\Sirsoft\HeroSection\Http\Resources\BannerResource;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Services\BannerService;
+use Plugins\Sirsoft\HeroSection\Support\Positions\TargetLabels;
 
 /**
  * 관리자 배너 컨트롤러 — 목록·미리보기·순서·일괄·등록·상세·수정·삭제.
@@ -39,9 +40,9 @@ class BannerController extends AdminBaseController
      */
     public function index(BannerListRequest $request): JsonResponse
     {
-        $filters = $request->validated();
-        $collection = (new BannerCollection($this->banners->getList($filters)))
-            ->withStatistics($this->banners->getStatistics($filters['position']));
+        $placement = $request->placement();
+        $collection = (new BannerCollection($this->banners->getList($request->validated())))
+            ->withStatistics($this->banners->getStatistics($placement));
 
         return $this->success('sirsoft-hero_section::messages.banner.fetched', $collection->toArray($request));
     }
@@ -54,10 +55,11 @@ class BannerController extends AdminBaseController
      */
     public function preview(BannerPositionRequest $request): JsonResponse
     {
-        $rows = $this->banners->getPreview($request->validated()['position']);
+        $rows = $this->banners->getPreview($request->placement());
+        $labels = TargetLabels::forBanners($rows);
 
         return $this->success('sirsoft-hero_section::messages.banner.fetched', [
-            'data' => $rows->map(fn (Banner $b) => (new BannerResource($b))->toArray($request))->values()->all(),
+            'data' => $rows->map(fn (Banner $b) => (new BannerResource($b))->withTargetLabels($labels[$b->position] ?? [])->toArray($request))->values()->all(),
         ]);
     }
 
@@ -69,10 +71,11 @@ class BannerController extends AdminBaseController
      */
     public function orderList(BannerPositionRequest $request): JsonResponse
     {
-        $rows = $this->banners->getOrderList($request->validated()['position']);
+        $rows = $this->banners->getOrderList($request->placement());
+        $labels = TargetLabels::forBanners($rows);
 
         return $this->success('sirsoft-hero_section::messages.banner.fetched', [
-            'data' => $rows->map(fn (Banner $b) => (new BannerResource($b))->toListArray($request))->values()->all(),
+            'data' => $rows->map(fn (Banner $b) => (new BannerResource($b))->withTargetLabels($labels[$b->position] ?? [])->toListArray($request))->values()->all(),
         ]);
     }
 
@@ -84,8 +87,7 @@ class BannerController extends AdminBaseController
      */
     public function reorder(BannerReorderRequest $request): JsonResponse
     {
-        $data = $request->validated();
-        $this->banners->reorder($data['position'], array_map('intval', $data['ids']));
+        $this->banners->reorder($request->placement(), array_map('intval', $request->validated()['ids']));
 
         return $this->success('sirsoft-hero_section::messages.banner.reordered');
     }

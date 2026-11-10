@@ -25,7 +25,10 @@
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| position | query | string | 예 | 등록된 위치 키 | 위치 키(확장점 이름) — 위치 등록 필터가 모은 목록 |
+| target | query | string | 동적 위치면 예 | max 200 | 동적 위치의 화면 값(게시판·카테고리 slug, 상품 코드, 또는 id). slug·상품 코드를 먼저 찾고 없을 때만 숫자 id 로 찾는다(숫자 slug 가 다른 대상의 id 와 겹치면 slug 쪽). 대소문자는 모듈 화면과 같이 모듈 저장소 조회를 따른다. 정적 위치는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -42,6 +45,8 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | position | string | `home_hero` | 위치 키 |
+| target | string\|null | `free` | 해석에 쓴 화면 값 — 받은 값에서 앞뒤 공백만 걷는다(정적 위치는 null) — 조각이 SPA 이동 뒤 도착한 앞 대상 응답을 가려낸다 |
+| target_key | string\|null | `2` | 화면 값을 푼 대상 키(정적 위치·풀지 못한 값은 null) |
 | settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 그 위치 슬라이더 설정(`width`: `content` 본문 폭·`full` 화면 전체, `header_overlay`, `pagination`: `dots`·`progress`·`tabs`·`fraction`) |
 | banners[] | array | `[{"id":659,"title":"Autumn Arrivals","description":"최대 30…` | 지금 노출 중인 배너(순서대로, 0건이면 빈 배열) |
 | banners[].id | integer | `659` | 배너 식별자 |
@@ -115,14 +120,14 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Validation Error | `position` 이 없거나 `home_hero`·`shop_hero` 밖의 값 (`The selected position is invalid.`) |
+| 422 | Validation Error | `position` 이 없거나 등록되지 않은 위치(「등록되지 않은 노출 위치입니다…」), 동적 위치인데 `target` 이 없음. 모르는 대상 값은 422 가 아니라 빈 목록이다 |
 | 429 | Too Many Requests | 같은 주소에서 분당 600회 초과 |
 
 <!-- @generated:end -->
 
 **설명**
 
-사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width, header_overlay, pagination}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,direct_url,width,height}, mobile|null}, media_type, videos{pc{url,direct_url,mime}, mobile|null}|null}]}`. `videos` 는 `media_type` 이 `video` 일 때만 싣는다(종류를 바꿔도 남은 값이 사이트에 나가지 않게). `images.pc` 는 영상 배너에서도 대표 이미지다. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 600회 제한.
+사용자 템플릿 확장점(`home_hero`·`shop_hero`, 동적 위치 `board_hero`·`product_hero`·`category_hero` 와 확장이 더한 위치) 조각이 부르는 공개 API. 쿼리 `position`(필수, 등록된 위치)과 동적 위치면 `target`(화면 값 — 서버가 대상 해석기로 id 로 푼다)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width, header_overlay, pagination}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,direct_url,width,height}, mobile|null}, media_type, videos{pc{url,direct_url,mime}, mobile|null}|null}]}`. `videos` 는 `media_type` 이 `video` 일 때만 싣는다(종류를 바꿔도 남은 값이 사이트에 나가지 않게). `images.pc` 는 영상 배너에서도 대표 이미지다. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치(동적이면 위치 + 대상)·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다 — 배너를 고치면 그 대상 캐시만, 위치 슬라이더 설정을 고치면 그 위치의 모든 대상 캐시가 비워진다. 화면 값을 푼 결과도 캐시 시간 동안 기억한다(공개 요청마다 대상 테이블을 묻지 않는다). 풀지 못한 값은 기억하지 않는다 — 아무 값이나 보내 캐시를 부풀릴 수 없고, 나중에 생긴 대상은 바로 풀린다. 게시판·상품·카테고리가 생기거나 바뀌거나 지워지면(모듈 훅) 그 위치의 해석 기억을 버려, 지운 게시판의 slug 를 새 게시판이 써도 지운 게시판 배너가 나오지 않는다. 확장이 더한 동적 위치는 해석 기억이 캐시 시간만큼 남는다. 대상에 배너가 없거나 화면 값을 풀지 못하면(모르는 slug·지워진 대상) 빈 `banners` 다. 등록되지 않은 위치(위치를 더한 확장을 껐을 때)는 422 이고 그 배너는 나가지 않는다. 분당 600회 제한.
 
 
 ## 이미지 표시

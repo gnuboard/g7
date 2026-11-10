@@ -42,10 +42,14 @@ _단건 응답: 위치 목록·위치별 슬라이더 설정·업로드 한도._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| positions[] | array | `[{"key":"home_hero","extension_point":"home_hero","label_…` | 위치 목록(고정 2개) |
+| positions[] | array | `[{"key":"home_hero","extension_point":"home_hero","label_…` | 위치 목록 — 위치 등록 필터 순서(정적 → 동적 → 확장), 배너가 남은 등록되지 않은 위치는 끝에 `registered: false` |
 | positions[].key | string | `home_hero` | 위치 키 |
 | positions[].extension_point | string | `home_hero` | 템플릿 확장점 이름(위치 키와 같음) |
-| positions[].label_key | string | `sirsoft-hero_section.admin.position.h…` | 화면 이름 번역 키 |
+| positions[].label_key | string\|null | `sirsoft-hero_section.admin.position.h…` | 화면 이름 번역 키(확장이 언어별 이름을 줬으면 null) |
+| positions[].label | string\|null | `null` | 확장이 준 언어별 이름을 현재 언어로 고른 값(번역 키로 받았으면 null, 등록되지 않은 위치는 위치 키) |
+| positions[].registered | boolean | `true` | 지금 등록된 위치인지 |
+| positions[].dynamic | boolean | `false` | 대상마다 배너를 따로 두는 동적 위치인지 |
+| positions[].target | object\|null | `null` | 동적 위치의 대상 정의 `{type, label_key, label}` — 정적 위치는 null |
 | positions[].settings | object | `{"autoplay":true,"interval_seconds":5,"effect":"slide","width":"content"}` | `autoplay`·`interval_seconds`(3·5·7)·`effect`(`slide`·`fade`·`cube`·`flip`·`coverflow`·`creative`·`none`)·`width`(`content`·`full`)·`header_overlay`(boolean)·`pagination`(`dots`·`progress`·`tabs`·`fraction`), 저장 전이면 기본값 |
 | upload.max_mb | integer | `5` | 플러그인 설정의 이미지 최대 용량(MB) |
 | upload.server_limit_mb | integer | `2` | PHP `upload_max_filesize`·`post_max_size` 중 작은 값(MB) |
@@ -122,7 +126,7 @@ HTTP/1.1 200
 
 위치 목록(`key` = 확장점 이름 `home_hero`·`shop_hero`, `label_key`)과 위치별 슬라이더 설정(저장 행이 없으면 기본값 autoplay=true·5초·slide·본문 폭 content), 업로드 한도 `upload{max_mb, server_limit_mb, effective_mb}` — 플러그인 설정 API 권한이 없는 배너 담당자도 화면 안내에 쓸 수 있게 여기서 준다.
 
-`editor.preview_frame` 은 편집 미리보기의 구좌 틀이다 — `{template, stylesheets[], positions{home_hero|shop_hero: {layout, path, chain[{className, responsive{키: className}}], content{className, responsive{desktop: className}} | null} | null}}`. 활성 사용자 템플릿에서 그 확장점을 가진 레이아웃(상속 병합본)을 찾아 루트부터 확장점까지의 상자 클래스(바인딩 `{{…}}` 토큰은 뺀 정적 클래스)와 반응형 덮어쓰기를 담고(덮어쓰기가 없으면 빈 배열 `[]`), `stylesheets` 는 그 템플릿의 `components.css` 주소(확장 캐시 버전 포함)다. 편집기 견본(`editor-spec.json`)은 버전이 바뀌는 주소 대신 빈 `stylesheets` 를 둔다. 확장점이 없는 위치는 null, 활성 사용자 템플릿이 없으면 `template: null`·`stylesheets: []` 이고 `positions` 의 각 위치가 null 이다. `content` 는 확장점이 넘긴 본문 상자 클래스다(속성 `contentClass` → `className`, `contentClassDesktop` → `responsive.desktop`, 바인딩 토큰은 뺀다) — 미리보기가 표시 폭이 본문 폭이면 슬라이더 바깥, 화면 전체면 문구 층에 이 상자를 쓴다. 확장점이 넘기지 않았으면 null 이다. 결과는 템플릿 식별자·확장 캐시 버전별로 1시간 캐시한다. `path` 는 그 레이아웃을 쓰는 활성 사용자 템플릿 라우트의 사이트 주소(모듈 주소 접두어를 푼 값)로, 목록의 「사이트에서 보기」가 쓴다 — 매개변수(`:slug`)·와일드카드가 든 주소이거나 라우트가 없으면 null 이고, 라우트 목록을 읽지 못하면 주소만 null 로 두고 오류 로그를 남긴다. 주소는 캐시 밖에서 매번 붙인다.
+`editor.preview_frame` 은 편집 미리보기의 구좌 틀이다 — `{template, stylesheets[], positions{위치 키: {layout, path, chain[{className, responsive{키: className}}], content{className, responsive{desktop: className}} | null} | null}}`. 활성 사용자 템플릿에서 그 확장점을 가진 레이아웃(상속 병합본)을 찾아 루트부터 확장점까지의 상자 클래스(바인딩 `{{…}}` 토큰은 뺀 정적 클래스)와 반응형 덮어쓰기를 담고(덮어쓰기가 없으면 빈 배열 `[]`), `stylesheets` 는 그 템플릿의 `components.css` 주소(확장 캐시 버전 포함)다. 편집기 견본(`editor-spec.json`)은 버전이 바뀌는 주소 대신 빈 `stylesheets` 를 둔다. 확장점이 없는 위치는 null, 활성 사용자 템플릿이 없으면 `template: null`·`stylesheets: []` 이고 `positions` 의 각 위치가 null 이다. `content` 는 확장점이 넘긴 본문 상자 클래스다(속성 `contentClass` → `className`, `contentClassDesktop` → `responsive.desktop`, 바인딩 토큰은 뺀다) — 미리보기가 표시 폭이 본문 폭이면 슬라이더 바깥, 화면 전체면 문구 층에 이 상자를 쓴다. 확장점이 넘기지 않았으면 null 이다. 위치는 위치 등록 필터의 등록 위치 전부다(동적 위치도 같은 확장점을 찾는다). 결과는 템플릿 식별자·확장 캐시 버전·위치 목록별로 1시간 캐시한다 — 모듈을 켜고 꺼 위치 목록이 바뀌면 새로 찾는다. 동적 위치의 `path` 는 매개변수 주소라 null 이고, 목록의 「사이트에서 보기」는 대상 목록 API 의 `selected.site_url` 을 쓴다. `path` 는 그 레이아웃을 쓰는 활성 사용자 템플릿 라우트의 사이트 주소(모듈 주소 접두어를 푼 값)로, 목록의 「사이트에서 보기」가 쓴다 — 매개변수(`:slug`)·와일드카드가 든 주소이거나 라우트가 없으면 null 이고, 라우트 목록을 읽지 못하면 주소만 null 로 두고 오류 로그를 남긴다. 주소는 캐시 밖에서 매번 붙인다.
 
 ```json
 "preview_frame": {
@@ -201,7 +205,7 @@ _단건 응답: 저장한 위치 설정._
 
 **설명**
 
-위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·cube·flip·coverflow·creative·none), `width`(선택, `content` 본문 폭·`full` 화면 전체 — 빼면 지금 값을 유지하고 처음 저장이면 `content`), `header_overlay`(선택 boolean, 메뉴 겹치기 — 빼면 지금 값을 유지하고 처음 저장이면 `false`. 사이트에는 `full` 일 때만 적용되지만 저장은 받는다), `pagination`(선택, 페이징 모양 `dots` 점·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호 — 빼면 지금 값을 유지하고 처음 저장이면 `dots`). 처음 저장하면 행을 만든다. 모르는 위치는 404. 그 위치 공개 캐시는 즉시 비워진다.
+위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·cube·flip·coverflow·creative·none), `width`(선택, `content` 본문 폭·`full` 화면 전체 — 빼면 지금 값을 유지하고 처음 저장이면 `content`), `header_overlay`(선택 boolean, 메뉴 겹치기 — 빼면 지금 값을 유지하고 처음 저장이면 `false`. 사이트에는 `full` 일 때만 적용되지만 저장은 받는다), `pagination`(선택, 페이징 모양 `dots` 점·`progress` 진행 막대 점·`tabs` 배너 이름 탭·`fraction` 번호 — 빼면 지금 값을 유지하고 처음 저장이면 `dots`). 처음 저장하면 행을 만든다. 등록되지 않은 위치(모르는 키·확장이 꺼진 위치)는 404. 동적 위치도 위치 단위 설정이라 그 위치의 모든 대상에 함께 적용된다. 그 위치(모든 대상)의 공개 캐시는 즉시 비워진다.
 
 
 ## 편집 화면 메타

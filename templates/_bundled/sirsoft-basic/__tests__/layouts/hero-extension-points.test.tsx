@@ -130,4 +130,20 @@ describe('히어로 확장점', () => {
       expect(result.media).toBe(0);
     });
   });
+
+  // @scenario surface=dynamic_layouts_have_hero_slots
+  it('게시판 목록·상품 상세·카테고리 목록도 본문 상자 밖(page_top)에 자기 히어로 자리를 하나씩 두고, 쇼핑몰 메인과 같은 본문 상자 클래스를 넘긴다', () => {
+    const main = mainContent();
+    for (const [file, name] of [['board/index.json', 'board_hero'], ['shop/show.json', 'product_hero'], ['shop/category.json', 'category_hero']]) {
+      const layout = load(file);
+      expect(slotsNamed(layout, name), file).toHaveLength(1);
+      const top = layout.slots.page_top as Node[];
+      expect(top).toHaveLength(1);
+      expect(top[0]).toMatchObject({ type: 'extension_point', name, id: `${name}_slot`, default: [] });
+      // 대상은 확장점이 넘기지 않는다 — 플러그인 조각이 화면 주소 값을 읽어야 SPA 이동 때 다시 받는다
+      expect(top[0].props).toEqual({ contentClass: 'px-4', contentClassDesktop: 'max-w-7xl mx-auto px-8' });
+      expect(main.props.className).toContain(top[0].props.contentClass);
+      expect(main.responsive.desktop.props.className).toContain(top[0].props.contentClassDesktop);
+    }
+  });
 });

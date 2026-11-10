@@ -26,6 +26,7 @@ return [
         'fetched' => '노출 위치 설정을 불러왔습니다.',
         'updated' => '슬라이더 설정을 저장했습니다.',
         'not_found' => '노출 위치를 찾을 수 없습니다.',
+        'targets_fetched' => '대상 목록을 불러왔습니다.',
     ],
     'console' => [
         'prune_temp_images' => [

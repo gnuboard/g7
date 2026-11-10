@@ -1,5 +1,5 @@
 /**
- * E2E: 관리자가 배너를 다루면 사이트 홈(순서 변경은 쇼핑몰 메인) 상단 슬라이더에 그대로 반영된다 (#810)
+ * E2E: 관리자가 배너를 다루면 사이트 홈(순서 변경은 배너가 없는 게시판) 상단 슬라이더에 그대로 반영된다 (#810)
  *
  * @scenario-manifest tests/scenarios/e2e-flows.yaml
  * @effects user_screen_reflects_admin_change, test_data_cleaned_up
@@ -12,7 +12,7 @@ import {
   test, expect, authenticatePage, createBanner, gotoUser, slider, slideTitles, uniqueTitle,
   ADMIN_LIST, API, PNG_1X1, VIEWPORTS, auth,
 } from '../fixtures/hero-auth';
-import type { Page } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 
 // 관리자 조작 → 사용자 화면 확인을 한 시험에서 여러 번 오가므로 기본 30초로는 개발 PC 에서 빠듯하다
 test.setTimeout(90_000);
@@ -22,10 +22,11 @@ test.setTimeout(90_000);
  *
  * @param page 페이지
  * @param position 위치 키(기본 사이트 홈)
+ * @param target 동적 위치의 대상 키
  */
-async function gotoAdminList(page: Page, position = 'home_hero'): Promise<void> {
+async function gotoAdminList(page: Page, position = 'home_hero', target?: string): Promise<void> {
   await page.setViewportSize(VIEWPORTS.desktop);
-  await page.goto(`${ADMIN_LIST}?position=${position}`);
+  await page.goto(`${ADMIN_LIST}?position=${position}${target ? `&target=${target}` : ''}`);
   await expect(page.locator('#hero_banner_datagrid')).toBeAttached({ timeout: 30_000 });
 }
 
@@ -47,6 +48,26 @@ async function homeTitles(page: Page, viewport: keyof typeof VIEWPORTS, position
     .toBeGreaterThan(0).catch(() => undefined);
   await page.waitForTimeout(500);
   return slideTitles(page);
+}
+
+/**
+ * 배너가 하나도 없는 게시판(게시판 목록 위치의 대상)을 찾는다 — 순서 저장은 그 자리(위치 + 대상)의 배너 전부를 다시 쓰므로
+ * 운영 배너가 있는 자리에서 돌리면 그 배너의 수정 시각까지 바뀐다. 개발 DB 의 배너 상태에 기대지 않게 시험 때마다 고른다.
+ *
+ * @param request API 요청 문맥
+ * @param token 관리자 토큰
+ * @returns 대상 키(게시판 id)·게시판 slug
+ */
+async function emptyBoardSlot(request: APIRequestContext, token: string): Promise<{ key: string; slug: string }> {
+  const targets = await request.get(`${API}/admin/positions/board_hero/targets`, { headers: auth(token) });
+  expect(targets.ok(), '게시판 목록 위치가 있어야 한다(게시판 모듈 켜짐)').toBe(true);
+  for (const target of (await targets.json()).data.items as Array<{ key: string; hint: string }>) {
+    const order = await request.get(`${API}/admin/banners/order?position=board_hero&target_key=${target.key}`, { headers: auth(token) });
+    if ((await order.json()).data.data.length === 0) {
+      return { key: target.key, slug: target.hint };
+    }
+  }
+  throw new Error('배너가 없는 게시판이 없다 — 배너 없는 게시판을 하나 남겨 두어야 순서 변경을 시험할 수 있다');
 }
 
 // @scenario flow=double_click_save_creates_one, viewport=desktop
@@ -136,27 +157,28 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       expect(titles).not.toContain(later);
     });
 
-    // @scenario flow=reorder_reflected_on_shop_main, viewport=desktop
-    // @scenario flow=reorder_reflected_on_shop_main, viewport=mobile
+    // @scenario flow=reorder_reflected_on_site, viewport=desktop
+    // @scenario flow=reorder_reflected_on_site, viewport=mobile
     // @effects user_screen_reflects_admin_change, test_data_cleaned_up
-    test(`[순서 변경] 창에서 바꾼 순서가 쇼핑몰 메인 슬라이더 순서가 된다 (${viewport})`, async ({ page, request, managerToken, created }) => {
-      // 순서 저장은 위치의 배너 전부를 다시 쓴다(빠진 배너가 있으면 거부) — 운영 배너가 있는 위치에서 돌리면 그 배너의
-      // 수정 시각까지 바뀐다. 그래서 배너가 없는 쇼핑몰 메인 위치에서 이 사양이 만든 배너만으로 순서를 바꾼다.
-      const position = 'shop_hero';
-      const path = '/shop/products';
+    test(`[순서 변경] 창에서 바꾼 순서가 사이트 슬라이더 순서가 된다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+      // 순서 저장은 자리의 배너 전부를 다시 쓴다(빠진 배너가 있으면 거부) — 운영 배너를 건드리지 않게, 배너가 없는 게시판을
+      // 시험 때 골라 이 사양이 만든 배너만으로 순서를 바꾼다(순서는 자리 단위라 다른 게시판 배너와 섞이지 않는다)
+      const position = 'board_hero';
+      const slot = await emptyBoardSlot(request, managerToken);
+      const path = `/board/${slot.slug}`;
       const first = uniqueTitle('첫째');
       const second = uniqueTitle('둘째');
-      created.push(await createBanner(request, managerToken, { position, title: { ko: first } }));
-      const secondId = await createBanner(request, managerToken, { position, title: { ko: second } });
+      created.push(await createBanner(request, managerToken, { position, target_key: slot.key, title: { ko: first } }));
+      const secondId = await createBanner(request, managerToken, { position, target_key: slot.key, title: { ko: second } });
       created.push(secondId);
-      const order = await request.get(`${API}/admin/banners/order?position=${position}`, { headers: auth(managerToken) });
-      expect((await order.json()).data.data.map((b: { id: number }) => b.id), '쇼핑몰 메인 위치에 사양 밖 배너가 있으면 그 배너까지 다시 저장된다').toEqual(created);
+      const order = await request.get(`${API}/admin/banners/order?position=${position}&target_key=${slot.key}`, { headers: auth(managerToken) });
+      expect((await order.json()).data.data.map((b: { id: number }) => b.id), '고른 게시판에 사양 밖 배너가 있으면 그 배너까지 다시 저장된다').toEqual(created);
 
       const before = await homeTitles(page, viewport, position, path);
       expect(before.indexOf(first)).toBeLessThan(before.indexOf(second));
 
       await authenticatePage(page, managerToken);
-      await gotoAdminList(page, position);
+      await gotoAdminList(page, position, slot.key);
       await page.locator('#reorder_button').click();
       const modal = page.getByRole('dialog', { name: '배너 순서 변경' });
       await expect(modal).toBeVisible({ timeout: 20_000 });

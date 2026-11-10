@@ -1,5 +1,5 @@
 {
-    "comment": "히어로섹션 관리 목록 — 위치(사이트 홈·쇼핑몰 메인)별 배너. 위치·상태·검색·정렬·쪽은 전부 URL 쿼리라 새로고침·뒤로 가기에도\n  같은 조건이 다시 열린다. 위쪽에 지금 노출 중인 배너 미리보기와 그 위치의 슬라이더 설정, 아래쪽에 표·일괄 작업·순서 변경 창이 있다.\n  노출 상태 필터·정렬은 서버가 기간 조건으로 처리한다(화면에서 거르지 않는다). 선택 묶음은 위치·필터·쪽이 바뀌면 비운다 —\n  다른 위치 배너가 일괄 작업에 섞이지 않게.",
+    "comment": "히어로섹션 관리 목록 — 위치별 배너. 위치 탭은 위치 레지스트리(내장 정적·동적 위치, 제3 확장이 더한 위치) 그대로다. 동적 위치(게시판마다·\n  상품마다·카테고리마다)는 대상을 먼저 고르고(`query.target`), 목록·미리보기·순서·등록이 그 대상만 다룬다. 위치·대상·상태·검색·정렬·쪽은 전부\n  URL 쿼리라 새로고침·뒤로 가기·주소 공유에도 같은 조건이 다시 열린다. 확장이 꺼져 등록되지 않은 위치에 배너가 남았으면 끝에 그 탭이 보이고,\n  그 탭에서는 목록 확인·수정·삭제만 된다. 위쪽에 지금 노출 중인 배너 미리보기와 그 위치의 슬라이더 설정, 아래쪽에 표·일괄 작업·순서 변경 창이 있다.\n  노출 상태 필터·정렬은 서버가 기간 조건으로 처리한다(화면에서 거르지 않는다). 선택 묶음은 위치·필터·쪽이 바뀌면 비운다 —\n  다른 위치 배너가 일괄 작업에 섞이지 않게.",
     "version": "1.0.0",
     "layout_name": "hero_section_banner_list",
     "extends": "_admin_base",
@@ -20,6 +20,7 @@
             "loading_strategy": "progressive",
             "params": {
                 "position": "{{query.position || 'home_hero'}}",
+                "target_key": "{{query.target}}",
                 "status": "{{query.status}}",
                 "search": "{{query.search}}",
                 "sort_by": "{{query.sort_by || 'sort_order'}}",
@@ -72,9 +73,25 @@
             "auth_required": true,
             "refetchOnMount": true,
             "params": {
-                "position": "{{query.position || 'home_hero'}}"
+                "position": "{{query.position || 'home_hero'}}",
+                "target_key": "{{query.target}}"
             },
             "comment": "지금 노출 중인 배너 — 목록 위 미리보기"
+        },
+        {
+            "id": "target_info",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.target_info",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/admin/positions/{{query.position || 'home_hero'}}/targets",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "if": "{{!!query.target}}",
+            "params": {
+                "key": "{{query.target}}"
+            },
+            "comment": "고른 대상의 이름·사이트 주소·존재 여부 — 동적 위치에서 대상을 골랐을 때만 받는다. 지워진 대상이면 exists=false(「없는 대상」).\n    화면은 `_computed.selectedTarget` 으로만 읽는다 — 응답의 위치·대상이 주소와 맞을 때만 쓴다. target 이 빠진 탭으로 옮기면 다시 받지 않아 앞 탭 응답이 남고,\n    다른 대상을 고른 직후 새 응답을 받는 동안에도 앞 응답이 남는다(게시판 2번 이름이 상품 2번 자리에 보이지 않게)"
         },
         {
             "id": "position_settings",
@@ -95,7 +112,8 @@
         },
         "previewDevice": "pc",
         "sliderForm": null,
-        "sliderSaving": false
+        "sliderSaving": false,
+        "targetSearchResults": []
     },
     "initGlobal": {
         "bulkSelectedIds": [],
@@ -110,7 +128,20 @@
     },
     "computed": {
         "currentPosition": "{{query.position || 'home_hero'}}",
-        "sitePath": "{{position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? ''}}",
+        "currentDef": "{{(position_settings?.data?.positions ?? []).find(p => p.key === (query.position || 'home_hero')) ?? null}}",
+        "isDynamic": "{{_computed.currentDef?.dynamic === true}}",
+        "isUnregistered": "{{_computed.currentDef?.registered === false}}",
+        "currentTarget": "{{_computed.isDynamic ? (query.target || '') : ''}}",
+        "selectedTarget": "{{_computed.currentTarget && target_info?.data?.position === _computed.currentPosition && String(target_info?.data?.selected?.key ?? '') === _computed.currentTarget ? target_info.data.selected : null}}",
+        "targetReady": "{{!_computed.isDynamic || !!_computed.currentTarget}}",
+        "targetMissing": "{{_computed.selectedTarget?.exists === false}}",
+        "positionLabel": "{{_computed.currentDef ? (_computed.currentDef.label ?? $t(_computed.currentDef.label_key)) : $t('sirsoft-hero_section.admin.position.' + (query.position || 'home_hero'))}}",
+        "targetTypeLabel": "{{_computed.currentDef?.target ? (_computed.currentDef.target.label ?? $t(_computed.currentDef.target.label_key)) : ''}}",
+        "canWrite": "{{banners?.data?.abilities?.can_update === true && !_computed.isUnregistered}}",
+        "canCreate": "{{banners?.data?.abilities?.can_create === true && !_computed.isUnregistered && _computed.targetReady && !_computed.targetMissing}}",
+        "placementCount": "{{_computed.isDynamic ? (banners?.data?.statistics?.targets?.[_computed.currentTarget] ?? 0) : (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0)}}",
+        "targetOptions": "{{[...(_computed.selectedTarget ? [{value: _computed.selectedTarget.key, label: _computed.selectedTarget.label ?? $t('sirsoft-hero_section.admin.target.missing_label', {key: _computed.selectedTarget.key})}] : []), ...(_local.targetSearchResults ?? []).filter(o => o.position === _computed.currentPosition && o.value !== query.target)]}}",
+        "sitePath": "{{_computed.isDynamic ? (_computed.selectedTarget?.site_url ?? '') : (position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? '')}}",
         "currentSettings": "{{(position_settings?.data?.positions ?? []).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots'} }}"
     },
     "permissions": [
@@ -216,10 +247,10 @@
                                 "id": "create_button",
                                 "type": "basic",
                                 "name": "A",
-                                "if": "{{banners?.data?.abilities?.can_create === true}}",
+                                "if": "{{_computed.canCreate}}",
                                 "actions": [
                                     {
-                                        "comment": "보던 목록 조건(상태·검색·쪽)을 이고 간다 — 등록 화면이 저장·취소 뒤 같은 목록으로 돌아온다",
+                                        "comment": "보던 목록 조건(대상·상태·검색·쪽)을 이고 간다 — 등록 화면이 그 대상으로 등록하고, 저장·취소 뒤 같은 목록으로 돌아온다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -252,7 +283,7 @@
                         ]
                     },
                     {
-                        "comment": "위치 탭 — 다른 위치로 가는 것은 화면 이동이라 링크다(가운데 클릭·새 탭 가능). 건수는 서버 통계",
+                        "comment": "위치 탭 — 위치 레지스트리 순서(정적 → 동적 → 제3 확장)대로, 배너가 남은 등록되지 않은 위치는 끝에 붙는다. 다른 위치로 가는 것은 화면 이동이라\n        링크다(가운데 클릭·새 탭 가능). 건수는 서버 통계. 위치를 옮기면 대상(`target`)을 떼어 낸다 — 대상은 위치마다 다르다",
                         "id": "position_tabs",
                         "type": "basic",
                         "name": "Nav",
@@ -262,12 +293,16 @@
                         },
                         "children": [
                             {
-                                "id": "position_tab_home",
+                                "id": "position_tab_{{tab.key}}",
                                 "type": "basic",
                                 "name": "A",
+                                "iteration": {
+                                    "source": "{{position_settings?.data?.positions ?? []}}",
+                                    "item_var": "tab"
+                                },
                                 "actions": [
                                     {
-                                        "comment": "사이트 홈 위치로 — 앞 위치에서 고른 배너가 새 위치 목록의 일괄 작업에 섞이지 않게 선택을 비우고 링크 주소로 옮긴다",
+                                        "comment": "그 위치로 — 앞 위치에서 고른 배너가 새 위치 목록의 일괄 작업에 섞이지 않게 선택을 비우고 링크 주소로 옮긴다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -285,15 +320,33 @@
                                     }
                                 ],
                                 "props": {
-                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position=home_hero",
-                                    "aria-current": "{{_computed.currentPosition === 'home_hero' ? 'page' : undefined}}",
-                                    "className": "hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === 'home_hero' ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}"
+                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position={{tab.key}}",
+                                    "aria-current": "{{_computed.currentPosition === tab.key ? 'page' : undefined}}",
+                                    "className": "hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === tab.key ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : (tab.registered === false ? 'hs:bg-white hs:text-amber-700 hs:border-amber-300 hs:border-dashed hs:dark:bg-gray-800 hs:dark:text-amber-300 hs:dark:border-amber-600' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600')}}"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{tab.registered === false}}",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "hs:mr-1 hs:text-xs"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
                                         "name": "Span",
-                                        "text": "$t:sirsoft-hero_section.admin.position.home_hero"
+                                        "text": "{{tab.label ?? $t(tab.label_key)}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{tab.registered === false}}",
+                                        "props": {
+                                            "className": "hs:ml-1 hs:text-xs"
+                                        },
+                                        "text": "($t:sirsoft-hero_section.admin.position.unregistered)"
                                     },
                                     {
                                         "type": "basic",
@@ -301,51 +354,7 @@
                                         "props": {
                                             "className": "hs:ml-1 hs:tabular-nums"
                                         },
-                                        "text": "{{banners?.data?.statistics?.positions?.home_hero ?? ''}}"
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "position_tab_shop",
-                                "type": "basic",
-                                "name": "A",
-                                "actions": [
-                                    {
-                                        "comment": "쇼핑몰 메인 위치로 — 위와 같이 선택을 비우고 링크 주소로 옮긴다",
-                                        "type": "click",
-                                        "handler": "sequence",
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "bulkSelectedIds": []
-                                                }
-                                            },
-                                            {
-                                                "handler": "navigate"
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "props": {
-                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position=shop_hero",
-                                    "aria-current": "{{_computed.currentPosition === 'shop_hero' ? 'page' : undefined}}",
-                                    "className": "hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === 'shop_hero' ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600'}}"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:sirsoft-hero_section.admin.position.shop_hero"
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "props": {
-                                            "className": "hs:ml-1 hs:tabular-nums"
-                                        },
-                                        "text": "{{banners?.data?.statistics?.positions?.shop_hero ?? ''}}"
+                                        "text": "{{banners?.data?.statistics?.positions?.[tab.key] ?? ''}}"
                                     }
                                 ]
                             }
@@ -360,11 +369,200 @@
                         "text": "$t:sirsoft-hero_section.admin.position.hint"
                     },
                     {
+                        "comment": "등록되지 않은 위치(D7) — 사이트에 나가지 않는 이유와 이 탭에서 할 수 있는 일",
+                        "id": "unregistered_notice",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isUnregistered}}",
+                        "props": {
+                            "role": "status",
+                            "className": "hs-alert-warning hs:mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.position.unregistered_notice"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "동적 위치 대상 고르기 — 이름으로 찾아 고르면 주소(`target`)에 담겨 목록·미리보기·순서·등록이 그 대상만 다룬다. 후보는 히어로 조회 권한으로\n        받는다(게시판·상품 관리 권한이 없어도 고를 수 있다)",
+                        "id": "target_picker",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isDynamic}}",
+                        "props": {
+                            "className": "hs:flex hs:flex-wrap hs:items-center hs:gap-3 hs:mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "id": "hero_target_picker_label",
+                                    "className": "hs:text-sm hs:font-medium hs:text-gray-700 hs:dark:text-gray-300"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.target.picker_label|target={{_computed.targetTypeLabel}}"
+                            },
+                            {
+                                "id": "target_dropdown",
+                                "type": "composite",
+                                "name": "SearchableDropdown",
+                                "actions": [
+                                    {
+                                        "comment": "이름으로 찾기 — 입력할 때마다(300ms 로 묶어) 대상 목록 API 를 부른다. 실패하면 후보를 비운다(검색어와 맞지 않는 목록이 남지 않게).\n              후보에 찾은 위치를 달아 두고 고르기 칸은 지금 위치 후보만 쓴다 — 탭을 옮긴 뒤 앞 위치 후보로 다른 종류 대상 키를 고르지 않게. 검색어는 서버 한도(100자)로 자른다",
+                                        "event": "onSearch",
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-hero_section/admin/positions/{{_computed.currentPosition}}/targets",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "GET",
+                                            "query": {
+                                                "keyword": "{{String($args[0] ?? '').trim().slice(0, 100)}}"
+                                            }
+                                        },
+                                        "debounce": 300,
+                                        "onSuccess": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "targetSearchResults": "{{(response?.data?.items ?? []).map(t => ({ value: t.key, label: t.label, description: t.hint, position: response?.data?.position }))}}"
+                                            }
+                                        },
+                                        "onError": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "targetSearchResults": []
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "comment": "대상을 고르면 주소에 담아 그 대상 목록을 연다 — 앞 대상의 선택 묶음·쪽·필터는 비운다(다른 대상 배너가 일괄 작업에 섞이지 않게)",
+                                        "type": "change",
+                                        "event": "onChange",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkSelectedIds": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/plugins/sirsoft-hero_section/banners",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "target": "{{$args[0] || undefined}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "aria-labelledby": "hero_target_picker_label",
+                                    "options": "{{_computed.targetOptions ?? []}}",
+                                    "value": "{{_computed.currentTarget}}",
+                                    "triggerLabel": "$t:sirsoft-hero_section.admin.target.trigger|target={{_computed.targetTypeLabel}}",
+                                    "searchPlaceholder": "$t:sirsoft-hero_section.admin.target.search_placeholder|target={{_computed.targetTypeLabel}}",
+                                    "noResultsText": "$t:sirsoft-hero_section.admin.target.no_results|target={{_computed.targetTypeLabel}}",
+                                    "initialText": "$t:sirsoft-hero_section.admin.target.search_initial",
+                                    "className": "hs:w-72"
+                                }
+                            },
+                            {
+                                "id": "target_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!!_computed.currentTarget}}",
+                                "props": {
+                                    "className": "hs:text-sm hs:text-gray-500 hs:dark:text-gray-400 hs:tabular-nums"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.target.count|count={{_computed.placementCount}}"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "대상을 고르기 전 — 목록·미리보기는 비어 있고 등록·순서 변경은 막혀 있다. 왜 비었는지 알린다",
+                        "id": "target_pick_first",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isDynamic && !_computed.currentTarget}}",
+                        "props": {
+                            "role": "status",
+                            "className": "hs-alert-info hs:mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "circle-info",
+                                    "className": "hs:text-xl hs:text-blue-600 hs:dark:text-blue-400 hs:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "hs:text-sm hs:text-blue-800 hs:dark:text-blue-200"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.target.pick_first|target={{_computed.targetTypeLabel}}"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "「없는 대상」(D7) — 고른 대상이 지워졌다. 배너는 남아 목록에서 고치거나 지울 수 있고, 새 등록은 막는다",
+                        "id": "target_missing_notice",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.targetMissing}}",
+                        "props": {
+                            "role": "alert",
+                            "className": "hs-alert-warning hs:mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "className": "hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200"
+                                },
+                                "text": "$t:sirsoft-hero_section.admin.target.missing|target={{_computed.targetTypeLabel}}"
+                            }
+                        ]
+                    },
+                    {
                         "comment": "활성 사용자 템플릿에 이 위치 자리(확장점)가 없으면 등록해도 사이트에 보이지 않는다 — 미리보기는 그대로 그리되 따로 알린다",
                         "id": "slot_missing_notice",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{position_settings?.data?.editor?.preview_frame?.positions?.[_computed.currentPosition] === null}}",
+                        "if": "{{!_computed.isUnregistered && position_settings?.data?.editor?.preview_frame?.positions?.[_computed.currentPosition] === null}}",
                         "props": {
                             "role": "status",
                             "className": "hs-alert-warning hs:mb-6"
@@ -540,7 +738,7 @@
                                             "device": "{{_local.previewDevice}}",
                                             "frame": "{{position_settings?.data?.editor?.preview_frame ?? null}}",
                                             "position": "{{_computed.currentPosition}}",
-                                            "emptyText": "{{preview === undefined ? '' : ((banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) > 0 ? $t('sirsoft-hero_section.admin.preview.empty_with_counts', { scheduled: banners?.data?.statistics?.statuses?.scheduled ?? 0, inactive: banners?.data?.statistics?.statuses?.inactive ?? 0, ended: banners?.data?.statistics?.statuses?.ended ?? 0 }) : $t('sirsoft-hero_section.admin.preview.empty'))}}"
+                                            "emptyText": "{{!_computed.targetReady ? $t('sirsoft-hero_section.admin.target.pick_first', {target: _computed.targetTypeLabel}) : preview === undefined ? '' : (_computed.placementCount > 0 ? $t('sirsoft-hero_section.admin.preview.empty_with_counts', { scheduled: banners?.data?.statistics?.statuses?.scheduled ?? 0, inactive: banners?.data?.statistics?.statuses?.inactive ?? 0, ended: banners?.data?.statistics?.statuses?.ended ?? 0 }) : $t('sirsoft-hero_section.admin.preview.empty'))}}"
                                         }
                                     }
                                 ]
@@ -569,12 +767,25 @@
                                                 "text": "$t:sirsoft-hero_section.admin.slider.title"
                                             },
                                             {
+                                                "id": "slider_scope",
                                                 "type": "basic",
                                                 "name": "P",
+                                                "if": "{{!_computed.isDynamic}}",
                                                 "props": {
                                                     "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1"
                                                 },
-                                                "text": "$t:sirsoft-hero_section.admin.slider.scope|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}"
+                                                "text": "$t:sirsoft-hero_section.admin.slider.scope|position={{_computed.positionLabel}}"
+                                            },
+                                            {
+                                                "comment": "동적 위치는 슬라이더 설정이 위치 단위라 그 위치의 모든 대상에 함께 적용된다(D6)",
+                                                "id": "slider_scope_dynamic",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{_computed.isDynamic}}",
+                                                "props": {
+                                                    "className": "hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mt-1"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.slider.scope_dynamic|position={{_computed.positionLabel}}|target={{_computed.targetTypeLabel}}"
                                             }
                                         ]
                                     },
@@ -610,7 +821,7 @@
                                                     "id": "hero_slider_autoplay",
                                                     "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
                                                     "checked": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).autoplay}}",
-                                                    "disabled": "{{banners?.data?.abilities?.can_update !== true}}"
+                                                    "disabled": "{{!_computed.canWrite}}"
                                                 }
                                             }
                                         ]
@@ -646,7 +857,7 @@
                                                     "id": "hero_slider_interval",
                                                     "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                     "value": "{{String((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).interval_seconds)}}",
-                                                    "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
+                                                    "disabled": "{{!_computed.canWrite}}",
                                                     "options": [
                                                         {
                                                             "value": "3",
@@ -696,7 +907,7 @@
                                                     "id": "hero_slider_effect",
                                                     "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                     "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).effect}}",
-                                                    "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
+                                                    "disabled": "{{!_computed.canWrite}}",
                                                     "options": [
                                                         {
                                                             "value": "slide",
@@ -763,7 +974,7 @@
                                                     "id": "hero_slider_pagination",
                                                     "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                     "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).pagination ?? 'dots'}}",
-                                                    "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
+                                                    "disabled": "{{!_computed.canWrite}}",
                                                     "options": [
                                                         {
                                                             "value": "dots",
@@ -826,7 +1037,7 @@
                                                     "id": "hero_slider_width",
                                                     "className": "hs:px-3 hs:py-2 hs:bg-white hs:dark:bg-gray-700 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:rounded-lg hs:text-sm",
                                                     "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content'}}",
-                                                    "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
+                                                    "disabled": "{{!_computed.canWrite}}",
                                                     "options": [
                                                         {
                                                             "value": "content",
@@ -882,7 +1093,7 @@
                                                     "id": "hero_slider_header_overlay",
                                                     "className": "hs:h-4 hs:w-4 hs:rounded hs:text-blue-600",
                                                     "checked": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true}}",
-                                                    "disabled": "{{banners?.data?.abilities?.can_update !== true}}"
+                                                    "disabled": "{{!_computed.canWrite}}"
                                                 }
                                             }
                                         ]
@@ -911,7 +1122,7 @@
                                         "id": "slider_save_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "if": "{{banners?.data?.abilities?.can_update === true}}",
+                                        "if": "{{_computed.canWrite}}",
                                         "actions": [
                                             {
                                                 "comment": "설정 저장 — 진행 깃발은 성공·실패 양쪽에서 푼다. 작업본은 비우지 않는다: 다시 받은 서버 값과 같아지면 저장 버튼이 저절로 잠긴다(비우면 재조회 도착 전 옛 값이 잠깐 보인다). 작업본은 위치를 함께 들고 있어 다른 위치 탭에서는 쓰이지 않는다",
@@ -1151,10 +1362,10 @@
                                 "id": "reorder_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "if": "{{banners?.data?.abilities?.can_update === true && (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) > 1}}",
+                                "if": "{{_computed.canWrite && _computed.targetReady && _computed.placementCount > 1}}",
                                 "actions": [
                                     {
-                                        "comment": "순서 변경 창 열기 — 이 위치 배너 전체를 받아 작업본·원본으로 담는다",
+                                        "comment": "순서 변경 창 열기 — 이 자리(위치 + 고른 대상) 배너 전체를 받아 작업본·원본으로 담는다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1167,7 +1378,7 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "target": "/api/plugins/sirsoft-hero_section/admin/banners/order?position={{_computed.currentPosition}}",
+                                                "target": "/api/plugins/sirsoft-hero_section/admin/banners/order?position={{_computed.currentPosition}}{{_computed.currentTarget ? '&target_key=' + encodeURIComponent(_computed.currentTarget) : ''}}",
                                                 "auth_required": true,
                                                 "params": {
                                                     "method": "GET"
@@ -1538,7 +1749,7 @@
                         "id": "empty_position_card",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{banners !== undefined && (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) === 0}}",
+                        "if": "{{banners !== undefined && _computed.targetReady && _computed.placementCount === 0}}",
                         "props": {
                             "className": "hs:flex hs:flex-col hs:items-center hs:gap-3 hs:mb-4 hs:px-4 hs:py-8 hs:text-center hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:border hs:border-dashed hs:border-gray-300 hs:dark:border-gray-600"
                         },
@@ -1557,7 +1768,7 @@
                                 "props": {
                                     "className": "hs:text-base hs:font-medium hs:text-gray-900 hs:dark:text-white"
                                 },
-                                "text": "$t:sirsoft-hero_section.admin.list.empty_position.title|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}"
+                                "text": "$t:sirsoft-hero_section.admin.list.empty_position.title|position={{_computed.isDynamic ? (_computed.selectedTarget?.label ?? _computed.positionLabel) : _computed.positionLabel}}"
                             },
                             {
                                 "type": "basic",
@@ -1571,10 +1782,10 @@
                                 "id": "empty_create_link",
                                 "type": "basic",
                                 "name": "A",
-                                "if": "{{banners?.data?.abilities?.can_create === true}}",
+                                "if": "{{_computed.canCreate}}",
                                 "actions": [
                                     {
-                                        "comment": "빈 위치에서 등록 화면으로 — 지금 목록 주소의 쿼리(위치)를 이어 붙인다",
+                                        "comment": "빈 위치(동적이면 빈 대상)에서 등록 화면으로 — 지금 목록 주소의 쿼리(위치·대상)를 이어 붙인다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -1809,6 +2020,16 @@
                                                                 "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:border hs:border-dashed hs:border-amber-400 hs:text-amber-700 hs:dark:border-amber-500 hs:dark:text-amber-300"
                                                             },
                                                             "text": "$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{_global.appConfig?.localeNames?.[locale] ?? locale.toUpperCase()}}"
+                                                        },
+                                                        {
+                                                            "comment": "등록되지 않은 위치 탭은 대상을 가리지 않고 보이므로 행마다 저장된 대상 키를 단다",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{row.position_registered === false && !!row.target_key}}",
+                                                            "props": {
+                                                                "className": "hs:px-1.5 hs:py-0.5 hs:text-[11px] hs:rounded hs:bg-gray-100 hs:text-gray-600 hs:dark:bg-gray-700 hs:dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:defer:sirsoft-hero_section.admin.list.badge.target_key|key={{row.target_key}}"
                                                         },
                                                         {
                                                             "id": "media_badge",
@@ -2339,6 +2560,7 @@
                                             "method": "PUT",
                                             "body": {
                                                 "position": "{{_computed.currentPosition}}",
+                                                "target_key": "{{_computed.currentTarget || undefined}}",
                                                 "ids": "{{(_global.reorderItems ?? []).map(i => i.id)}}"
                                             }
                                         },

@@ -8,7 +8,11 @@
             "position_settings": "Positions and slider settings",
             "upload_limit": "Upload limit",
             "heroSectionHome": "Site home banners",
-            "heroSectionShop": "Shop main banners"
+            "heroSectionShop": "Shop main banners",
+            "target_info": "Chosen target",
+            "heroSectionBoard": "Board list banners",
+            "heroSectionProduct": "Product detail banners",
+            "heroSectionCategory": "Category list banners"
         },
         "state": {
             "with_data": "With banners",
@@ -69,12 +73,31 @@
     },
     "admin": {
         "title": "Hero Section",
-        "description": "Manage the banners shown at the top of the site home and shop main pages, by position.",
+        "description": "Manage the banners shown at the top of the site home, shop main, board, product, category and other pages, by position.",
         "position": {
             "tabs_label": "Display position",
             "home_hero": "Site home",
             "shop_hero": "Shop main",
-            "hint": "A position is a hero section slot (extension point) provided by the user template."
+            "hint": "A position is a hero section slot (extension point) provided by the user template.",
+            "board_hero": "Board list",
+            "product_hero": "Product detail",
+            "category_hero": "Category list",
+            "unregistered": "Unregistered position",
+            "unregistered_notice": "The extension (module or plugin) that adds this position is turned off, so these banners are not shown on the site. They are kept, and appear again when the extension is turned back on. On this tab you can only review, edit and delete them."
+        },
+        "target": {
+            "board": "Board",
+            "product": "Product",
+            "category": "Category",
+            "picker_label": "Choose {{target}}",
+            "trigger": "Choose a {{target}}",
+            "search_placeholder": "Search {{target}} by name",
+            "search_initial": "Type a name to search",
+            "no_results": "No matching {{target}}",
+            "pick_first": "Choose a {{target}} first. Banners appear only on the chosen {{target}} page.",
+            "missing": "The chosen {{target}} could not be found (it may have been deleted). Its banners are kept but not shown on the site, and new banners cannot be added.",
+            "missing_label": "Missing target ({{key}})",
+            "count": "{{count}} banners"
         },
         "status": {
             "all": "All",
@@ -126,7 +149,8 @@
                 "tabs": "Banner name tabs",
                 "fraction": "Number (01 / 05)"
             },
-            "pagination_hint": "Shown when there are two or more banners. The progress bar shows the time left until the next banner; banner name tabs show only bars on phones."
+            "pagination_hint": "Shown when there are two or more banners. The progress bar shows the time left until the next banner; banner name tabs show only bars on phones.",
+            "scope_dynamic": "Applies to every {{target}} in the {{position}} position."
         },
         "list": {
             "create": "Add banner",
@@ -170,7 +194,8 @@
                 "locale_missing": "No {{lang}} title",
                 "mobile_fallback": "Mobile: uses PC image",
                 "button_without_link": "Button hidden: no URL",
-                "video": "Video"
+                "video": "Video",
+                "target_key": "Target {{key}}"
             }
         },
         "reorder": {
@@ -204,6 +229,10 @@
             },
             "position": "Display position",
             "position_hint": "A hero section slot provided by the current user template.",
+            "target": "Target",
+            "target_hint": "This banner appears only on the chosen {{target}} page.",
+            "target_missing": "The {{target}} of this banner could not be found (it may have been deleted). You can still save it, but it is not shown on the site until you choose another {{target}}.",
+            "position_unregistered": "This position is not registered — the extension that adds it is turned off, so the banner is not shown on the site. You can still edit it or move it to another position.",
             "is_active": "Active",
             "is_active_hint": "When off, the banner is hidden on the user page regardless of its period (inactive).",
             "locale_hint": "You can enter text for each language enabled on the site. Empty languages show the site default language text.",
@@ -394,7 +423,9 @@
                 "pc_image": "Upload a PC image to save.",
                 "go_pc_image": "Go to the PC image field",
                 "pc_video": "Upload a PC video to save.",
-                "go_pc_video": "Go to the PC video field"
+                "go_pc_video": "Go to the PC video field",
+                "target": "Choose a {{target}} to save.",
+                "go_target": "Go to target"
             },
             "media": {
                 "type": "Media type",

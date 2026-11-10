@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\BannerController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\BannerImageController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\PositionSettingController;
+use Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\PositionTargetController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Public\BannerImageController as PublicBannerImageController;
 use Plugins\Sirsoft\HeroSection\Http\Controllers\Public\HeroController;
 
@@ -51,4 +52,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
 
     Route::get('/position-settings', [PositionSettingController::class, 'index'])->middleware($read)->name('position-settings.index');
     Route::put('/position-settings/{position}', [PositionSettingController::class, 'update'])->middleware($update)->name('position-settings.update');
+    Route::get('/positions/{position}/targets', [PositionTargetController::class, 'index'])
+        ->where('position', '[a-z][a-z0-9_]{1,49}')->middleware($read)->name('positions.targets');
 });

@@ -5,10 +5,10 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Public;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
+use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
@@ -388,7 +388,7 @@ class HeroControllerTest extends PluginTestCase
         Carbon::setTestNow($before);
         $this->assertSame([], $this->hero()->json('data.banners'));
         $this->assertSame('2026-12-01 09:00:00', $this->actingAs($admin)->getJson($this->api('/admin/banners/'.$id))->json('data.starts_at_display'));
-        $this->assertSame(1, app(PublicHeroService::class)->ttlSeconds(HeroPosition::HomeHero, $before, 10), '캐시는 시작 1초 전까지만');
+        $this->assertSame(1, app(PublicHeroService::class)->ttlSeconds(Placement::of('home_hero'), $before, 10), '캐시는 시작 1초 전까지만');
 
         Carbon::setTestNow(Carbon::parse('2026-12-01 00:00:00', 'UTC'));
         $this->assertSame([$id], array_column($this->hero()->json('data.banners'), 'id'));

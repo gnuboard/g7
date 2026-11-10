@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Http\Resources;
 use App\Http\Resources\BaseApiCollection;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Plugins\Sirsoft\HeroSection\Support\Positions\TargetLabels;
 
 /**
  * 배너 목록 컬렉션 — 목록 행·쪽·컬렉션 능력·통계.
@@ -54,7 +55,7 @@ class BannerCollection extends BaseApiCollection
     public function toArray(Request $request): array
     {
         $result = [
-            'data' => $this->collection->map(fn ($banner) => (new BannerResource($banner))->toListArray($request))->values()->all(),
+            'data' => $this->rows($request),
             'abilities' => $this->resolveCollectionAbilities($request),
             'statistics' => $this->statistics,
         ];
@@ -72,5 +73,25 @@ class BannerCollection extends BaseApiCollection
         }
 
         return $result;
+    }
+
+    /**
+     * 목록 행을 만듭니다 — 동적 위치의 대상 이름은 위치마다 한 번에 푼다(행마다 대상 테이블을 묻지 않게).
+     *
+     * @param  Request  $request  요청
+     * @return array<int, array<string, mixed>> 목록 행
+     */
+    private function rows(Request $request): array
+    {
+        $labels = TargetLabels::forBanners($this->collection);
+
+        return $this->collection->map(function ($banner) use ($request, $labels) {
+            $resource = new BannerResource($banner);
+            if (isset($labels[$banner->position])) {
+                $resource->withTargetLabels($labels[$banner->position]);
+            }
+
+            return $resource->toListArray($request);
+        })->values()->all();
     }
 }

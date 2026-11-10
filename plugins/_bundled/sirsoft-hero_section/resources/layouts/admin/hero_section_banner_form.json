@@ -1,5 +1,5 @@
 {
-    "comment": "히어로섹션 배너 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 둘의 차이는 폼을 무엇으로\n  채우느냐뿐이다. 이미지는 둘 다 화면에 들어올 때 만든 임시 키(`_global.tempKey`)로 먼저 올리고 「저장」 때만 배너에 붙는다 — 저장은\n  화면에 남은 이미지 ID(`pc_image_id`·`mobile_image_id`)를 함께 보내고, 저장하지 않고 나가면 사이트 화면은 그대로다(남은 임시\n  이미지는 정리 명령이 지운다). 입력은 전부 `_local.form` 한 그릇에 모이고\n  오른쪽 미리보기는 저장 전 입력값과 별도로 고른 콘텐츠 언어를 사용자 슬라이더로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자\n  화면을 떠나지 않게 미리보기 자리로 바꾼다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지\n  않는다), 기간 안내는 서버 기준 시각과 사이트 시간대로 계산하며 실제 노출 상태는 서버가 판정한다.",
+    "comment": "히어로섹션 배너 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 둘의 차이는 폼을 무엇으로\n  채우느냐뿐이다. 이미지는 둘 다 화면에 들어올 때 만든 임시 키(`_global.tempKey`)로 먼저 올리고 「저장」 때만 배너에 붙는다 — 저장은\n  화면에 남은 이미지 ID(`pc_image_id`·`mobile_image_id`)를 함께 보내고, 저장하지 않고 나가면 사이트 화면은 그대로다(남은 임시\n  이미지는 정리 명령이 지운다). 입력은 전부 `_local.form` 한 그릇에 모이고\n  오른쪽 미리보기는 저장 전 입력값과 별도로 고른 콘텐츠 언어를 사용자 슬라이더로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자\n  화면을 떠나지 않게 미리보기 자리로 바꾼다. 위치는 위치 레지스트리 목록에서 고르고, 동적 위치(게시판마다·상품마다 등)면 대상도 고른다 —\n  위치를 바꾸면 대상을 비운다(대상 키는 위치마다 다른 공간이다). 등록은 목록에서 보던 위치·대상(`query.position`·`query.target`)으로 시작한다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지\n  않는다), 기간 안내는 서버 기준 시각과 사이트 시간대로 계산하며 실제 노출 상태는 서버가 판정한다.",
     "version": "1.0.0",
     "layout_name": "hero_section_banner_form",
     "extends": "_admin_base",
@@ -78,11 +78,30 @@
                 "data": null
             },
             "comment": "업로드 한도 — 플러그인 설정 API 는 설정 관리 권한이라 배너 담당자가 못 읽을 수 있어, 배너 조회 권한으로 열리는 위치 설정 응답의 `upload` 를 쓴다. 못 받으면 기본 5MB 로 안내한다"
+        },
+        {
+            "id": "form_target_info",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.target_info",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/admin/positions/{{query.position || 'home_hero'}}/targets",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{!route.id && !!query.target}}",
+            "loading_strategy": "background",
+            "params": {
+                "key": "{{query.target}}"
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "목록에서 고른 대상으로 등록하러 왔을 때 그 대상 이름 — 수정은 배너 응답(target_label)이 이름을 준다"
         }
     ],
     "initLocal": {
         "form": {
             "position": "home_hero",
+            "target_key": null,
             "is_active": true,
             "display_period": "always",
             "starts_at_local": "",
@@ -148,7 +167,17 @@
         "mediaType": "{{_local.form?.media_type === 'video' ? 'video' : 'image'}}",
         "videoUploading": "{{_computed.mediaType === 'video' && (_local.pcVideoUploadBlocked || _local.mobileVideoUploadBlocked)}}",
         "videoMissing": "{{_computed.mediaType === 'video' && !_local.form?.videos?.pc}}",
-        "listPosition": "{{_local.form?.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}",
+        "formPositions": "{{(position_settings?.data?.positions ?? []).filter(p => p.registered !== false || p.key === _local.form?.position)}}",
+        "formDef": "{{(position_settings?.data?.positions ?? []).find(p => p.key === _local.form?.position) ?? null}}",
+        "formDynamic": "{{_computed.formDef?.dynamic === true}}",
+        "formTargetTypeLabel": "{{_computed.formDef?.target ? (_computed.formDef.target.label ?? $t(_computed.formDef.target.label_key)) : ''}}",
+        "targetUnpicked": "{{_computed.formDynamic && !_local.form?.target_key}}",
+        "formTargetMissing": "{{_computed.formDynamic && !!_local.form?.target_key && _local.form?.target_key === banner?.data?.target_key && _local.form?.position === banner?.data?.position && banner?.data?.target_exists === false}}",
+        "formTargetLabel": "{{_local.formTargetLabel ?? (_local.form?.target_key === banner?.data?.target_key ? banner?.data?.target_label : null) ?? (_local.form?.target_key === form_target_info?.data?.selected?.key ? form_target_info?.data?.selected?.label : null) ?? (_local.form?.target_key ? $t('sirsoft-hero_section.admin.target.missing_label', {key: _local.form.target_key}) : '')}}",
+        "formTargetOptions": "{{[...(_local.form?.target_key ? [{value: _local.form.target_key, label: _computed.formTargetLabel}] : []), ...(_local.formTargetResults ?? []).filter(o => o.position === _local.form?.position && o.value !== _local.form?.target_key)]}}",
+        "listPosition": "{{_local.form?.position || query.position || 'home_hero'}}",
+        "listTarget": "{{_computed.formDynamic ? (_local.form?.target_key || undefined) : undefined}}",
+        "samePlacement": "{{_computed.listPosition === (query.position || 'home_hero') && (_computed.listTarget ?? '') === (query.target ?? '')}}",
         "pcSizeMismatch": "{{!!_local.form?.images?.pc?.width && (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}",
         "mobileSizeMismatch": "{{!!_local.form?.images?.mobile?.width && (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}"
     },
@@ -173,11 +202,13 @@
                 "conflictBase": null,
                 "conflictLoading": false,
                 "conflictLoadError": false,
+                "formTargetLabel": null,
+                "formTargetResults": [],
                 "previewLocale": ""
             }
         },
         {
-            "comment": "등록 진입: 수정 화면에서 SPA 로 넘어오면 `_local` 이 남으므로 폼을 기본값으로 되돌리고, 위치는 목록에서 보던 탭(쿼리 position)으로 시작한다",
+            "comment": "등록 진입: 수정 화면에서 SPA 로 넘어오면 `_local` 이 남으므로 폼을 기본값으로 되돌리고, 위치·대상은 목록에서 보던 탭(쿼리 position·target)으로 시작한다",
             "handler": "setState",
             "if": "{{!route.id}}",
             "params": {
@@ -191,7 +222,8 @@
             "params": {
                 "target": "local",
                 "form": {
-                    "position": "{{query.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}",
+                    "position": "{{query.position || 'home_hero'}}",
+                    "target_key": "{{query.target || null}}",
                     "is_active": true,
                     "display_period": "always",
                     "starts_at_local": "",
@@ -447,6 +479,7 @@
                                                                 ]
                                                             },
                                                             {
+                                                                "id": "position_radio",
                                                                 "type": "composite",
                                                                 "name": "RadioGroup",
                                                                 "responsive": {
@@ -456,19 +489,27 @@
                                                                         }
                                                                     }
                                                                 },
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "위치를 바꾸면 대상을 비운다 — 대상 키는 위치마다 다른 공간이라(게시판 2번과 상품 2번은 다르다) 그대로 두면 엉뚱한 대상에 붙는다",
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.position": "{{$event.target.value}}",
+                                                                            "form.target_key": null,
+                                                                            "formTargetLabel": null,
+                                                                            "formTargetResults": [],
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ],
                                                                 "props": {
                                                                     "name": "position",
-                                                                    "inline": true,
-                                                                    "options": [
-                                                                        {
-                                                                            "label": "$t:sirsoft-hero_section.admin.position.home_hero",
-                                                                            "value": "home_hero"
-                                                                        },
-                                                                        {
-                                                                            "label": "$t:sirsoft-hero_section.admin.position.shop_hero",
-                                                                            "value": "shop_hero"
-                                                                        }
-                                                                    ]
+                                                                    "autoBinding": false,
+                                                                    "value": "{{_local.form?.position}}",
+                                                                    "options": "{{(_computed.formPositions ?? []).map(p => ({ label: (p.label ?? $t(p.label_key)) + (p.registered === false ? ' (' + $t('sirsoft-hero_section.admin.position.unregistered') + ')' : ''), value: p.key }))}}",
+                                                                    "inline": true
                                                                 }
                                                             },
                                                             {
@@ -488,6 +529,139 @@
                                                                     "className": "hs-form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.form.position_hint"
+                                                            },
+                                                            {
+                                                                "id": "position_unregistered_notice",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_computed.formDef?.registered === false}}",
+                                                                "props": {
+                                                                    "role": "status",
+                                                                    "className": "hs:mt-1 hs:text-sm hs:text-amber-700 hs:dark:text-amber-300"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.position_unregistered"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "comment": "대상 — 동적 위치만. 이름으로 찾아 고른다(히어로 조회 권한으로 받는 대상 목록)",
+                                                        "id": "field_target",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{_computed.formDynamic}}",
+                                                        "props": {
+                                                            "id": "hero_field_target"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "id": "hero_form_target_label",
+                                                                    "className": "hs-form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "{{_computed.formTargetTypeLabel}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "hs-text-required"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "form_target_dropdown",
+                                                                "type": "composite",
+                                                                "name": "SearchableDropdown",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "이름으로 찾기 — 입력할 때마다(300ms 로 묶어) 지금 고른 위치의 대상 목록을 받는다. 실패하면 후보를 비운다",
+                                                                        "event": "onSearch",
+                                                                        "handler": "apiCall",
+                                                                        "target": "/api/plugins/sirsoft-hero_section/admin/positions/{{_local.form?.position}}/targets",
+                                                                        "auth_required": true,
+                                                                        "params": {
+                                                                            "method": "GET",
+                                                                            "query": {
+                                                                                "keyword": "{{String($args[0] ?? '').trim().slice(0, 100)}}"
+                                                                            }
+                                                                        },
+                                                                        "debounce": 300,
+                                                                        "onSuccess": {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "formTargetResults": "{{(response?.data?.items ?? []).map(t => ({ value: t.key, label: t.label, description: t.hint, position: response?.data?.position }))}}"
+                                                                            }
+                                                                        },
+                                                                        "onError": {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "formTargetResults": []
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "comment": "고른 대상을 폼에 담는다 — 이름은 후보에서 찾아 두어 고르기 칸 글자로 쓴다",
+                                                                        "type": "change",
+                                                                        "event": "onChange",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.target_key": "{{$args[0] || null}}",
+                                                                            "formTargetLabel": "{{(_local.formTargetResults ?? []).find(o => o.value === $args[0])?.label ?? null}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "aria-labelledby": "hero_form_target_label",
+                                                                    "options": "{{_computed.formTargetOptions ?? []}}",
+                                                                    "value": "{{_local.form?.target_key ?? ''}}",
+                                                                    "triggerLabel": "$t:sirsoft-hero_section.admin.target.trigger|target={{_computed.formTargetTypeLabel}}",
+                                                                    "searchPlaceholder": "$t:sirsoft-hero_section.admin.target.search_placeholder|target={{_computed.formTargetTypeLabel}}",
+                                                                    "noResultsText": "$t:sirsoft-hero_section.admin.target.no_results|target={{_computed.formTargetTypeLabel}}",
+                                                                    "initialText": "$t:sirsoft-hero_section.admin.target.search_initial",
+                                                                    "disabled": "{{_local.isSaving}}",
+                                                                    "className": "hs:w-full hs:max-w-md"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.target_key}}",
+                                                                "props": {
+                                                                    "className": "hs-form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.target_key?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!_local.errors?.target_key && !_computed.formTargetMissing}}",
+                                                                "props": {
+                                                                    "className": "hs-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.target_hint|target={{_computed.formTargetTypeLabel}}"
+                                                            },
+                                                            {
+                                                                "id": "form_target_missing",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_computed.formTargetMissing}}",
+                                                                "props": {
+                                                                    "role": "status",
+                                                                    "className": "hs:mt-1 hs:text-sm hs:text-amber-700 hs:dark:text-amber-300"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.target_missing|target={{_computed.formTargetTypeLabel}}"
                                                             }
                                                         ]
                                                     },
@@ -2496,20 +2670,21 @@
                                                 "name": "A",
                                                 "actions": [
                                                     {
-                                                        "comment": "목록으로 — 보던 조건(상태·검색·쪽)을 이고 가되 위치는 폼에서 고른 탭으로. 위치를 바꿨으면 앞 위치의 쪽 번호는 버린다",
+                                                        "comment": "목록으로 — 보던 조건(상태·검색·쪽)을 이고 가되 위치·대상은 폼에서 고른 것으로. 위치나 대상을 바꿨으면 앞 목록의 쪽 번호는 버린다",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "mergeQuery": true,
                                                             "query": {
                                                                 "position": "{{_computed.listPosition}}",
-                                                                "page": "{{_computed.listPosition === (query.position || 'home_hero') ? query.page : undefined}}"
+                                                                "target": "{{_computed.listTarget}}",
+                                                                "page": "{{_computed.samePlacement ? query.page : undefined}}"
                                                             }
                                                         }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position={{_computed.listPosition}}",
+                                                    "href": "/admin/plugins/sirsoft-hero_section/banners?position={{_computed.listPosition}}{{_computed.listTarget ? '&target=' + encodeURIComponent(_computed.listTarget) : ''}}",
                                                     "mergeQuery": true,
                                                     "className": "hs-button hs-flex-center hs:shrink-0 hs:whitespace-nowrap hs:gap-2 hs:px-4 hs:py-2 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:text-gray-700 hs:dark:text-gray-200 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:hover:bg-gray-50 hs:dark:hover:bg-gray-700 hs:font-medium hs:transition-colors"
                                                 },
@@ -2540,6 +2715,44 @@
                                                         },
                                                         "children": [
                                                             {
+                                                                "id": "save_reason_target",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && _computed.targetUnpicked}}",
+                                                                "props": {
+                                                                    "className": "hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.target|target={{_computed.formTargetTypeLabel}}"
+                                                                    },
+                                                                    {
+                                                                        "id": "save_reason_target_jump",
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "저장이 잠긴 이유(대상 없음)에서 대상 칸으로 이동한다",
+                                                                                "type": "click",
+                                                                                "handler": "scrollIntoView",
+                                                                                "params": {
+                                                                                    "selector": "#hero_field_target",
+                                                                                    "behavior": "smooth",
+                                                                                    "block": "center"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "hs:underline hs:text-blue-700 hs:dark:text-blue-300"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.go_target"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
                                                                 "id": "save_reason_uploading",
                                                                 "type": "basic",
                                                                 "name": "Span",
@@ -2550,7 +2763,7 @@
                                                                 "id": "save_reason_pc_image",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !_local.form?.images?.pc}}",
+                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !_computed.targetUnpicked && !_local.form?.images?.pc}}",
                                                                 "props": {
                                                                     "className": "hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2"
                                                                 },
@@ -2588,7 +2801,7 @@
                                                                 "id": "save_reason_pc_video",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !!_local.form?.images?.pc && _computed.videoMissing}}",
+                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !_computed.targetUnpicked && !!_local.form?.images?.pc && _computed.videoMissing}}",
                                                                 "props": {
                                                                     "className": "hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2"
                                                                 },
@@ -2648,7 +2861,7 @@
                                                                         "auth_required": true,
                                                                         "params": {
                                                                             "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                            "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}"
+                                                                            "body": "{{({ position: _local.form?.position, target_key: _computed.formDynamic ? (_local.form?.target_key ?? null) : null, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}"
                                                                         },
                                                                         "onSuccess": [
                                                                             {
@@ -2674,7 +2887,8 @@
                                                                                     "mergeQuery": true,
                                                                                     "query": {
                                                                                         "position": "{{_computed.listPosition}}",
-                                                                                        "page": "{{_computed.listPosition === (query.position || 'home_hero') ? query.page : undefined}}"
+                                                                                        "target": "{{_computed.listTarget}}",
+                                                                                        "page": "{{_computed.samePlacement ? query.page : undefined}}"
                                                                                     }
                                                                                 }
                                                                             }
@@ -2717,7 +2931,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "aria-describedby": "hero_save_reason",
-                                                            "disabled": "{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}",
+                                                            "disabled": "{{_local.isSaving || _computed.targetUnpicked || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}",
                                                             "className": "hs-btn hs-btn-primary hs-flex-center hs:gap-1.5"
                                                         },
                                                         "children": [

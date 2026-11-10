@@ -117,4 +117,39 @@ class ActivityLogDescriptionResolverTest extends PluginTestCase
 
         $this->assertSame('앞선 필터 값', $params['banner_title']);
     }
+
+    /**
+     * 목록 한 줄에서 자리를 알아보게 위치 키를 위치 이름으로 바꾸고, 동적 위치면 기록 시점 대상 이름을 덧붙이는지 확인합니다.
+     * 대상 이름 스냅샷이 없으면(기록 때 이미 지워진 대상) 대상 키를 쓰고, 정적 위치·예전 기록은 덧붙이지 않습니다.
+     *
+     * @scenario surface=placement_named_in_summary
+     *
+     * @effects banner_title_resolved
+     *
+     * @return void 반환값 없음
+     */
+    public function test_summary_names_position_and_target(): void
+    {
+        $resolver = new ActivityLogDescriptionResolver;
+        $key = 'sirsoft-hero_section::activity_log.description.';
+
+        $created = $resolver->resolveDescriptionParams(['banner_id' => 1, 'position' => 'board_hero', 'target_key' => '2'], $key.'hero_banner_create', ['name' => '가을 신상품', 'target' => '자유게시판']);
+        $this->assertSame('히어로섹션 배너 「가을 신상품」을(를) 등록했습니다. (대상: 자유게시판)', __($key.'hero_banner_create', $created));
+
+        $gone = $resolver->resolveDescriptionParams(['banner_id' => 1, 'position' => 'board_hero', 'target_key' => '10'], $key.'hero_banner_delete', ['name' => '가을 신상품', 'target' => null]);
+        $this->assertSame('히어로섹션 배너 「가을 신상품」을(를) 삭제했습니다. (대상: 10)', __($key.'hero_banner_delete', $gone));
+
+        $reorder = $resolver->resolveDescriptionParams(['position' => 'board_hero', 'count' => 2, 'target_key' => '2'], $key.'hero_banner_reorder', ['target' => '자유게시판']);
+        $this->assertSame('히어로섹션 게시판 목록 위치의 배너 2개 순서를 바꿨습니다. (대상: 자유게시판)', __($key.'hero_banner_reorder', $reorder));
+
+        $static = $resolver->resolveDescriptionParams(['position' => 'home_hero'], $key.'hero_position_update', []);
+        $this->assertSame('히어로섹션 사이트 홈 위치의 슬라이더 설정을 바꿨습니다.', __($key.'hero_position_update', $static));
+
+        // 대상 키가 없는 예전 기록에 자리 표시(:target_note)가 그대로 남지 않는다
+        $old = $resolver->resolveDescriptionParams(['banner_id' => 1, 'position' => 'home_hero'], $key.'hero_banner_bulk_hide', ['name' => '가을 신상품']);
+        $this->assertSame('히어로섹션 배너 「가을 신상품」을(를) 비노출로 바꿨습니다.', __($key.'hero_banner_bulk_hide', $old));
+
+        // 위치를 더한 확장이 꺼져 이름을 모르는 위치는 키를 그대로 둔다
+        $this->assertSame('gone_hero', $resolver->resolveDescriptionParams(['position' => 'gone_hero'], $key.'hero_position_update', [])['position']);
+    }
 }

@@ -26,6 +26,7 @@ return [
         'fetched' => 'Position settings loaded.',
         'updated' => 'Slider settings saved.',
         'not_found' => 'Position not found.',
+        'targets_fetched' => 'Fetched the target list.',
     ],
     'console' => [
         'prune_temp_images' => [

@@ -10,6 +10,7 @@ use App\Services\TemplateService;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
+use Plugins\Sirsoft\HeroSection\Tests\Concerns\PinsActiveModules;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 use RuntimeException;
 use Throwable;
@@ -22,6 +23,20 @@ use Throwable;
  */
 class PreviewFrameResolverTest extends PluginTestCase
 {
+    use PinsActiveModules;
+
+    /**
+     * 테스트 준비 — 모듈을 끈 상태(정적 위치 두 개)로 고정합니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->pinActiveModules([]);
+    }
+
     /**
      * 테스트 뒤 목 객체를 정리합니다.
      *

@@ -3,7 +3,8 @@
   화면에 남은 이미지 ID(`pc_image_id`·`mobile_image_id`)를 함께 보내고, 저장하지 않고 나가면 사이트 화면은 그대로다(남은 임시
   이미지는 정리 명령이 지운다). 입력은 전부 `_local.form` 한 그릇에 모이고
   오른쪽 미리보기는 저장 전 입력값과 별도로 고른 콘텐츠 언어를 사용자 슬라이더로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자
-  화면을 떠나지 않게 미리보기 자리로 바꾼다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지
+  화면을 떠나지 않게 미리보기 자리로 바꾼다. 위치는 위치 레지스트리 목록에서 고르고, 동적 위치(게시판마다·상품마다 등)면 대상도 고른다 —
+  위치를 바꾸면 대상을 비운다(대상 키는 위치마다 다른 공간이다). 등록은 목록에서 보던 위치·대상(`query.position`·`query.target`)으로 시작한다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지
   않는다), 기간 안내는 서버 기준 시각과 사이트 시간대로 계산하며 실제 노출 상태는 서버가 판정한다. -->
 <layout name="hero_section_banner_form" version="1.0.0" extends="_admin_base">
   <meta leave_guard="{{_local.hasChanges === true}}" title="{{route.id ? '$t:sirsoft-hero_section.admin.form.edit_title' : '$t:sirsoft-hero_section.admin.form.create_title'}}"/>
@@ -37,9 +38,15 @@
   <data-source id="position_settings" label_key="$t:sirsoft-hero_section.editor.data_source.position_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
     <fallback :data="null"/>
   </data-source>
+  <!-- 목록에서 고른 대상으로 등록하러 왔을 때 그 대상 이름 — 수정은 배너 응답(target_label)이 이름을 준다 -->
+  <data-source id="form_target_info" label_key="$t:sirsoft-hero_section.editor.data_source.target_info" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/positions/{{query.position || 'home_hero'}}/targets" method="GET" :auto_fetch="true" :auth_required="true" if="{{!route.id &amp;&amp; !!query.target}}" loading_strategy="background">
+    <params key="{{query.target}}"/>
+    <fallback :data="null"/>
+  </data-source>
   <init-local>
     <field name="form">
       <field name="position" value="home_hero"/>
+      <field name="target_key" :value="null"/>
       <field name="is_active" :value="true"/>
       <field name="display_period" value="always"/>
       <field name="starts_at_local" value=""/>
@@ -104,7 +111,17 @@
   <computed name="mediaType">{{_local.form?.media_type === 'video' ? 'video' : 'image'}}</computed>
   <computed name="videoUploading">{{_computed.mediaType === 'video' &amp;&amp; (_local.pcVideoUploadBlocked || _local.mobileVideoUploadBlocked)}}</computed>
   <computed name="videoMissing">{{_computed.mediaType === 'video' &amp;&amp; !_local.form?.videos?.pc}}</computed>
-  <computed name="listPosition">{{_local.form?.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}</computed>
+  <computed name="formPositions">{{(position_settings?.data?.positions ?? []).filter(p =&gt; p.registered !== false || p.key === _local.form?.position)}}</computed>
+  <computed name="formDef">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === _local.form?.position) ?? null}}</computed>
+  <computed name="formDynamic">{{_computed.formDef?.dynamic === true}}</computed>
+  <computed name="formTargetTypeLabel">{{_computed.formDef?.target ? (_computed.formDef.target.label ?? $t(_computed.formDef.target.label_key)) : ''}}</computed>
+  <computed name="targetUnpicked">{{_computed.formDynamic &amp;&amp; !_local.form?.target_key}}</computed>
+  <computed name="formTargetMissing">{{_computed.formDynamic &amp;&amp; !!_local.form?.target_key &amp;&amp; _local.form?.target_key === banner?.data?.target_key &amp;&amp; _local.form?.position === banner?.data?.position &amp;&amp; banner?.data?.target_exists === false}}</computed>
+  <computed name="formTargetLabel">{{_local.formTargetLabel ?? (_local.form?.target_key === banner?.data?.target_key ? banner?.data?.target_label : null) ?? (_local.form?.target_key === form_target_info?.data?.selected?.key ? form_target_info?.data?.selected?.label : null) ?? (_local.form?.target_key ? $t('sirsoft-hero_section.admin.target.missing_label', {key: _local.form.target_key}) : '')}}</computed>
+  <computed name="formTargetOptions">{{[...(_local.form?.target_key ? [{value: _local.form.target_key, label: _computed.formTargetLabel}] : []), ...(_local.formTargetResults ?? []).filter(o =&gt; o.position === _local.form?.position &amp;&amp; o.value !== _local.form?.target_key)]}}</computed>
+  <computed name="listPosition">{{_local.form?.position || query.position || 'home_hero'}}</computed>
+  <computed name="listTarget">{{_computed.formDynamic ? (_local.form?.target_key || undefined) : undefined}}</computed>
+  <computed name="samePlacement">{{_computed.listPosition === (query.position || 'home_hero') &amp;&amp; (_computed.listTarget ?? '') === (query.target ?? '')}}</computed>
   <computed name="pcSizeMismatch">{{!!_local.form?.images?.pc?.width &amp;&amp; (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}</computed>
   <computed name="mobileSizeMismatch">{{!!_local.form?.images?.mobile?.width &amp;&amp; (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}</computed>
   <permissions>
@@ -112,12 +129,13 @@
   </permissions>
   <init>
     <!-- 들어올 때마다 「고친 것 있음」 과 직전 오류를 지운다 — 같은 레이아웃의 다른 배너로 넘어와도 앞 화면 표시가 남지 않게 -->
-    <set-state target="local" :hasChanges="false" :errors="null" :isSaving="false" :pcUploadBlocked="false" :mobileUploadBlocked="false" :pcVideoUploadBlocked="false" :mobileVideoUploadBlocked="false" :conflict="false" :conflictLatest="null" :conflictBase="null" :conflictLoading="false" :conflictLoadError="false" previewLocale=""/>
-    <!-- 등록 진입: 수정 화면에서 SPA 로 넘어오면 `_local` 이 남으므로 폼을 기본값으로 되돌리고, 위치는 목록에서 보던 탭(쿼리 position)으로 시작한다 -->
+    <set-state target="local" :hasChanges="false" :errors="null" :isSaving="false" :pcUploadBlocked="false" :mobileUploadBlocked="false" :pcVideoUploadBlocked="false" :mobileVideoUploadBlocked="false" :conflict="false" :conflictLatest="null" :conflictBase="null" :conflictLoading="false" :conflictLoadError="false" :formTargetLabel="null" :formTargetResults="[]" previewLocale=""/>
+    <!-- 등록 진입: 수정 화면에서 SPA 로 넘어오면 `_local` 이 남으므로 폼을 기본값으로 되돌리고, 위치·대상은 목록에서 보던 탭(쿼리 position·target)으로 시작한다 -->
     <set-state if="{{!route.id}}" target="local" :form="null"/>
     <set-state if="{{!route.id}}" target="local">
       <field name="form">
-        <field name="position" value="{{query.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}"/>
+        <field name="position" value="{{query.position || 'home_hero'}}"/>
+        <field name="target_key" value="{{query.target || null}}"/>
         <field name="is_active" :value="true"/>
         <field name="display_period" value="always"/>
         <field name="starts_at_local" value=""/>
@@ -198,15 +216,44 @@
                   <span>$t:sirsoft-hero_section.admin.form.position</span>
                   <span class="hs-text-required">*</span>
                 </label>
-                <radio-group data-type="composite" name="position" :inline="true">
+                <radio-group data-type="composite" data-ref="position_radio" name="position" :autoBinding="false" value="{{_local.form?.position}}" options="{{(_computed.formPositions ?? []).map(p =&gt; ({ label: (p.label ?? $t(p.label_key)) + (p.registered === false ? ' (' + $t('sirsoft-hero_section.admin.position.unregistered') + ')' : ''), value: p.key }))}}" :inline="true">
                   <responsive on="portable" :inline="false"/>
-                  <prop name="options">
-                    <item label="$t:sirsoft-hero_section.admin.position.home_hero" value="home_hero"/>
-                    <item label="$t:sirsoft-hero_section.admin.position.shop_hero" value="shop_hero"/>
-                  </prop>
+                  <on type="change">
+                    <!-- 위치를 바꾸면 대상을 비운다 — 대상 키는 위치마다 다른 공간이라(게시판 2번과 상품 2번은 다르다) 그대로 두면 엉뚱한 대상에 붙는다 -->
+                    <set-state target="local" form.position="{{$event.target.value}}" :form.target_key="null" :formTargetLabel="null" :formTargetResults="[]" :hasChanges="true"/>
+                  </on>
                 </radio-group>
                 <p data-if="{{_local.errors?.position}}" class="hs-form-error">{{_local.errors?.position?.[0] ?? ''}}</p>
                 <p data-if="{{!_local.errors?.position}}" class="hs-form-hint">$t:sirsoft-hero_section.admin.form.position_hint</p>
+                <p data-ref="position_unregistered_notice" data-if="{{_computed.formDef?.registered === false}}" role="status" class="hs:mt-1 hs:text-sm hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.form.position_unregistered</p>
+              </div>
+              <!-- 대상 — 동적 위치만. 이름으로 찾아 고른다(히어로 조회 권한으로 받는 대상 목록) -->
+              <div id="hero_field_target" data-ref="field_target" data-if="{{_computed.formDynamic}}">
+                <label id="hero_form_target_label" class="hs-form-label">
+                  <span>{{_computed.formTargetTypeLabel}}</span>
+                  <span class="hs-text-required">*</span>
+                </label>
+                <searchable-dropdown data-type="composite" data-ref="form_target_dropdown" aria-labelledby="hero_form_target_label" options="{{_computed.formTargetOptions ?? []}}" value="{{_local.form?.target_key ?? ''}}" triggerLabel="$t:sirsoft-hero_section.admin.target.trigger|target={{_computed.formTargetTypeLabel}}" searchPlaceholder="$t:sirsoft-hero_section.admin.target.search_placeholder|target={{_computed.formTargetTypeLabel}}" noResultsText="$t:sirsoft-hero_section.admin.target.no_results|target={{_computed.formTargetTypeLabel}}" initialText="$t:sirsoft-hero_section.admin.target.search_initial" disabled="{{_local.isSaving}}" class="hs:w-full hs:max-w-md">
+                  <on event="onSearch">
+                    <!-- 이름으로 찾기 — 입력할 때마다(300ms 로 묶어) 지금 고른 위치의 대상 목록을 받는다. 실패하면 후보를 비운다 -->
+                    <api-call :debounce="300" :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/positions/{{_local.form?.position}}/targets" method="GET">
+                      <success>
+                        <set-state target="local" formTargetResults="{{(response?.data?.items ?? []).map(t =&gt; ({ value: t.key, label: t.label, description: t.hint, position: response?.data?.position }))}}"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :formTargetResults="[]"/>
+                      </fail>
+                      <query keyword="{{String($args[0] ?? '').trim().slice(0, 100)}}"/>
+                    </api-call>
+                  </on>
+                  <on type="change" event="onChange">
+                    <!-- 고른 대상을 폼에 담는다 — 이름은 후보에서 찾아 두어 고르기 칸 글자로 쓴다 -->
+                    <set-state target="local" form.target_key="{{$args[0] || null}}" formTargetLabel="{{(_local.formTargetResults ?? []).find(o =&gt; o.value === $args[0])?.label ?? null}}" :hasChanges="true"/>
+                  </on>
+                </searchable-dropdown>
+                <p data-if="{{_local.errors?.target_key}}" class="hs-form-error">{{_local.errors?.target_key?.[0] ?? ''}}</p>
+                <p data-if="{{!_local.errors?.target_key &amp;&amp; !_computed.formTargetMissing}}" class="hs-form-hint">$t:sirsoft-hero_section.admin.form.target_hint|target={{_computed.formTargetTypeLabel}}</p>
+                <p data-ref="form_target_missing" data-if="{{_computed.formTargetMissing}}" role="status" class="hs:mt-1 hs:text-sm hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.form.target_missing|target={{_computed.formTargetTypeLabel}}</p>
               </div>
               <div data-ref="field_is_active">
                 <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.is_active" name="is_active"/>
@@ -608,11 +655,11 @@
             </div>
           </div>
           <div data-ref="footer_buttons" class="hs-sticky-footer-buttons-between">
-            <a href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.listPosition}}" :mergeQuery="true" data-ref="footer_cancel_button" class="hs-button hs-flex-center hs:shrink-0 hs:whitespace-nowrap hs:gap-2 hs:px-4 hs:py-2 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:text-gray-700 hs:dark:text-gray-200 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:hover:bg-gray-50 hs:dark:hover:bg-gray-700 hs:font-medium hs:transition-colors">
+            <a href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.listPosition}}{{_computed.listTarget ? '&amp;target=' + encodeURIComponent(_computed.listTarget) : ''}}" :mergeQuery="true" data-ref="footer_cancel_button" class="hs-button hs-flex-center hs:shrink-0 hs:whitespace-nowrap hs:gap-2 hs:px-4 hs:py-2 hs:border hs:border-gray-300 hs:dark:border-gray-600 hs:text-gray-700 hs:dark:text-gray-200 hs:bg-white hs:dark:bg-gray-800 hs:rounded-lg hs:hover:bg-gray-50 hs:dark:hover:bg-gray-700 hs:font-medium hs:transition-colors">
               <on type="click">
-                <!-- 목록으로 — 보던 조건(상태·검색·쪽)을 이고 가되 위치는 폼에서 고른 탭으로. 위치를 바꿨으면 앞 위치의 쪽 번호는 버린다 -->
+                <!-- 목록으로 — 보던 조건(상태·검색·쪽)을 이고 가되 위치·대상은 폼에서 고른 것으로. 위치나 대상을 바꿨으면 앞 목록의 쪽 번호는 버린다 -->
                 <navigate :mergeQuery="true">
-                  <query position="{{_computed.listPosition}}" page="{{_computed.listPosition === (query.position || 'home_hero') ? query.page : undefined}}"/>
+                  <query position="{{_computed.listPosition}}" target="{{_computed.listTarget}}" page="{{_computed.samePlacement ? query.page : undefined}}"/>
                 </navigate>
               </on>
               <span>$t:sirsoft-hero_section.admin.form.cancel</span>
@@ -620,8 +667,18 @@
             <div class="hs:flex hs:flex-wrap hs:items-center hs:justify-end hs:gap-x-3 hs:gap-y-1 hs:min-w-0">
             <!-- 저장이 잠긴 이유 — 저장 중이 아닐 때 잠긴 경우와 늘 짝이다(올리는 중이 먼저). 저장 단추의 설명으로 읽힌다 -->
             <div id="hero_save_reason" data-ref="save_reason" role="status" class="hs:text-sm hs:text-gray-600 hs:dark:text-gray-300 hs:text-right">
+              <span data-ref="save_reason_target" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; _computed.targetUnpicked}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
+                <span>$t:sirsoft-hero_section.admin.form.save_blocked.target|target={{_computed.formTargetTypeLabel}}</span>
+                <button type="button" data-ref="save_reason_target_jump" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
+                  <on type="click">
+                    <!-- 저장이 잠긴 이유(대상 없음)에서 대상 칸으로 이동한다 -->
+                    <scroll-into-view selector="#hero_field_target" behavior="smooth" block="center"/>
+                  </on>
+                  $t:sirsoft-hero_section.admin.form.save_blocked.go_target
+                </button>
+              </span>
               <span data-ref="save_reason_uploading" data-if="{{!_local.isSaving &amp;&amp; (_local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading)}}">$t:sirsoft-hero_section.admin.form.upload_pending</span>
-              <span data-ref="save_reason_pc_image" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; !_local.form?.images?.pc}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
+              <span data-ref="save_reason_pc_image" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; !_computed.targetUnpicked &amp;&amp; !_local.form?.images?.pc}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
                 <span>$t:sirsoft-hero_section.admin.form.save_blocked.pc_image</span>
                 <button type="button" data-ref="save_reason_pc_image_jump" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
                   <on type="click">
@@ -631,7 +688,7 @@
                   $t:sirsoft-hero_section.admin.form.save_blocked.go_pc_image
                 </button>
               </span>
-              <span data-ref="save_reason_pc_video" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; !!_local.form?.images?.pc &amp;&amp; _computed.videoMissing}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
+              <span data-ref="save_reason_pc_video" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_computed.videoUploading &amp;&amp; !_computed.targetUnpicked &amp;&amp; !!_local.form?.images?.pc &amp;&amp; _computed.videoMissing}}" class="hs:inline-flex hs:flex-wrap hs:items-center hs:gap-x-2">
                 <span>$t:sirsoft-hero_section.admin.form.save_blocked.pc_video</span>
                 <button type="button" data-ref="save_reason_pc_video_jump" class="hs:underline hs:text-blue-700 hs:dark:text-blue-300">
                   <on type="click">
@@ -642,18 +699,18 @@
                 </button>
               </span>
             </div>
-            <button data-ref="footer_save_button" type="button" aria-describedby="hero_save_reason" disabled="{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5">
+            <button data-ref="footer_save_button" type="button" aria-describedby="hero_save_reason" disabled="{{_local.isSaving || _computed.targetUnpicked || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing}}" class="hs-btn hs-btn-primary hs-flex-center hs:gap-1.5">
               <on type="click">
                 <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간 입력값은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다.
                   버튼 잠금(isSaving)만으로는 화면에 반영되기 전 같은 틱의 두 번째 클릭을 막지 못해 진입점 debounce 로 한 번만 보낸다 -->
                 <sequence :debounce="300">
                   <set-state target="local" :isSaving="true" :errors="null"/>
-                  <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-hero_section/admin/banners/' + route.id : '/api/plugins/sirsoft-hero_section/admin/banners'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}">
+                  <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-hero_section/admin/banners/' + route.id : '/api/plugins/sirsoft-hero_section/admin/banners'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ position: _local.form?.position, target_key: _computed.formDynamic ? (_local.form?.target_key ?? null) : null, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}">
                     <success>
                       <set-state target="local" :isSaving="false" :hasChanges="false"/>
                       <toast type="success" message="{{response.message}}"/>
                       <navigate :bypassLeaveGuard="true" path="/admin/plugins/sirsoft-hero_section/banners" :mergeQuery="true">
-                        <query position="{{_computed.listPosition}}" page="{{_computed.listPosition === (query.position || 'home_hero') ? query.page : undefined}}"/>
+                        <query position="{{_computed.listPosition}}" target="{{_computed.listTarget}}" page="{{_computed.samePlacement ? query.page : undefined}}"/>
                       </navigate>
                     </success>
                     <fail>

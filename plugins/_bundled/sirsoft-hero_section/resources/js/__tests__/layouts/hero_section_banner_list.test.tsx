@@ -13,23 +13,40 @@ import list from '../../../layouts/admin/hero_section_banner_list.json';
 import ko from '../../../lang/ko.json';
 import en from '../../../lang/en.json';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
-import { actionsOf, collect, findById, pick, strings, translationKeys } from './helpers';
+import { actionsOf, collect, evaluateBinding, evaluateComputed, findById, pick, strings, translationKeys } from './helpers';
 
 const json = (node: unknown) => JSON.stringify(node);
+
+/** 위치 설정 응답 — 정적 두 위치, 동적 게시판 위치, (원하면) 등록되지 않은 위치. */
+const positionSettings = (extra: any[] = []) => ({
+  data: {
+    positions: [
+      { key: 'home_hero', label_key: 'sirsoft-hero_section.admin.position.home_hero', label: null, registered: true, dynamic: false, target: null },
+      { key: 'shop_hero', label_key: 'sirsoft-hero_section.admin.position.shop_hero', label: null, registered: true, dynamic: false, target: null },
+      { key: 'board_hero', label_key: 'sirsoft-hero_section.admin.position.board_hero', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'sirsoft-hero_section.admin.target.board', label: null } },
+      ...extra,
+    ],
+    editor: { preview_frame: { positions: { home_hero: { path: '/' }, shop_hero: { path: '/shop/products' }, board_hero: { path: null } } } },
+  },
+});
 
 describe('히어로섹션 목록 화면', () => {
   // @scenario surface=list_position_tabs_are_links
   // @effects navigation_uses_links
-  it('위치 탭은 주소가 있는 링크이고 누르면 선택 묶음을 비운 뒤 그 주소로 간다', () => {
-    for (const [id, position] of [['position_tab_home', 'home_hero'], ['position_tab_shop', 'shop_hero']]) {
-      const tab = findById(list, id)!;
-      expect(tab.name).toBe('A');
-      expect(tab.props.href).toBe(`/admin/plugins/sirsoft-hero_section/banners?position=${position}`);
-      expect(json(tab.props['aria-current'] ?? tab.props.ariaCurrent)).toContain("'page'");
-      const sets = actionsOf(tab, 'setState');
-      expect(json(sets)).toContain('"bulkSelectedIds":[]');
-      expect(actionsOf(tab, 'navigate')).toHaveLength(1);
-    }
+  it('위치 탭은 위치 레지스트리를 도는 링크이고, 누르면 선택 묶음을 비운 뒤 그 주소로 간다 — 등록되지 않은 위치 탭은 표식을 단다', () => {
+    const tab = findById(list, 'position_tab_{{tab.key}}')!;
+    expect(tab.name).toBe('A');
+    expect(tab.iteration.source).toContain('position_settings?.data?.positions');
+    expect(tab.iteration.item_var).toBe('tab');
+    expect(tab.props.href).toBe('/admin/plugins/sirsoft-hero_section/banners?position={{tab.key}}');
+    expect(json(tab.props['aria-current'] ?? tab.props.ariaCurrent)).toContain("'page'");
+    expect(json(actionsOf(tab, 'setState'))).toContain('"bulkSelectedIds":[]');
+    expect(actionsOf(tab, 'navigate')).toHaveLength(1);
+    // 이름은 서버가 준 문구 키(내장) 또는 확장이 준 이름, 등록되지 않은 위치는 표식·안내 문구
+    expect(json(tab)).toContain('tab.label ?? $t(tab.label_key)');
+    const marks = collect(tab, (n) => n.if === '{{tab.registered === false}}');
+    expect(marks.length).toBe(2);
+    expect(json(marks)).toContain('admin.position.unregistered');
   });
 
   // @scenario surface=list_empty_message_hidden_while_loading
@@ -38,7 +55,7 @@ describe('히어로섹션 목록 화면', () => {
   it('표 빈 문구는 받는 중엔 비우고, 조건으로 걸러 0건이면 「조건에 맞는 배너 없음」, 위치에 배너가 아예 없으면 첫 등록 안내 카드에 맡긴다', () => {
     const grid = findById(list, 'hero_banner_datagrid')!;
     const message = (banners: any, query: any) =>
-      Function('banners', 'query', '_computed', '$t', `return (${grid.props.emptyMessage.slice(2, -2)})`)(banners, query, { currentPosition: query.position || 'home_hero' }, (key: string) => key);
+      Function('banners', 'query', '_computed', '$t', `return (${grid.props.emptyMessage.slice(2, -2)})`)(banners, query, evaluateComputed(list as any, { banners, query, position_settings: positionSettings() }), (key: string) => key);
     const stats = (n: number) => ({ data: { statistics: { positions: { home_hero: n, shop_hero: 0 } } } });
     expect(message(undefined, {})).toBe('');
     expect(message(stats(3), { status: 'scheduled' })).toBe('sirsoft-hero_section.admin.list.empty_filtered');
@@ -46,15 +63,22 @@ describe('히어로섹션 목록 화면', () => {
     expect(message(stats(0), {})).toBe('');
     // 위치에 배너가 없을 때만 첫 등록 카드 — 권장 크기와 등록 링크(등록 권한이 있을 때)
     const card = findById(list, 'empty_position_card')!;
-    const cardShown = (banners: any) => Function('banners', '_computed', `return (${card.if.slice(2, -2)})`)(banners, { currentPosition: 'home_hero' });
+    const cardShown = (banners: any, query: any = {}) =>
+      evaluateBinding(card.if, { banners }, evaluateComputed(list as any, { banners, query, position_settings: positionSettings() }));
     expect(cardShown(undefined)).toBe(false);
     expect(cardShown(stats(0))).toBe(true);
     expect(cardShown(stats(2))).toBe(false);
+    // 동적 위치는 대상을 고른 뒤 그 대상의 건수로 본다 — 고르기 전에는 카드 대신 「먼저 고르세요」 안내
+    const boardStats = (targets: Record<string, number>) => ({ data: { statistics: { positions: { board_hero: 5 }, targets } } });
+    expect(cardShown(boardStats({ 2: 5 }), { position: 'board_hero' })).toBe(false);
+    expect(cardShown(boardStats({ 2: 5 }), { position: 'board_hero', target: '9' })).toBe(true);
+    expect(cardShown(boardStats({ 2: 5 }), { position: 'board_hero', target: '2' })).toBe(false);
     expect(json(card)).toContain('admin.list.empty_position.sizes');
     const create = findById(card, 'empty_create_link')!;
     expect(create.name).toBe('A');
-    expect(create.if).toBe('{{banners?.data?.abilities?.can_create === true}}');
+    expect(create.if).toBe('{{_computed.canCreate}}');
     expect(create.props.href).toBe('/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}');
+    expect(create.props.mergeQuery).toBe(true);
   });
 
   // @scenario surface=list_row_readiness_flags
@@ -97,14 +121,18 @@ describe('히어로섹션 목록 화면', () => {
     expect(link.props.rel).toBe('noopener noreferrer');
     expect(link.if).toBe('{{!!_computed.sitePath}}');
     expect(link.props.href).toBe('{{_computed.sitePath}}');
-    const computed = (list as any).computed.sitePath.slice(2, -2);
-    const path = (positions: any, position?: string) =>
-      Function('position_settings', 'query', `return (${computed})`)({ data: { editor: { preview_frame: { positions } } } }, { position });
-    expect(path({ home_hero: { path: '/' }, shop_hero: { path: '/shop/products' } })).toBe('/');
-    expect(path({ home_hero: { path: '/' }, shop_hero: { path: '/shop/products' } }, 'shop_hero')).toBe('/shop/products');
-    expect(path({ home_hero: null })).toBe('');
+    const path = (query: any, targetInfo?: any, settings: any = positionSettings()) =>
+      evaluateComputed(list as any, { position_settings: settings, query, target_info: targetInfo }).sitePath;
+    expect(path({})).toBe('/');
+    expect(path({ position: 'shop_hero' })).toBe('/shop/products');
+    expect(path({}, undefined, { data: { positions: [], editor: { preview_frame: { positions: { home_hero: null } } } } })).toBe('');
+    // 동적 위치는 고른 대상의 실제 화면 주소(서버가 해석기로 푼 값), 고르기 전·없는 대상은 비어 있다
+    expect(path({ position: 'board_hero', target: '2' }, { data: { position: 'board_hero', selected: { key: '2', exists: true, site_url: '/board/free' } } })).toBe('/board/free');
+    expect(path({ position: 'board_hero' })).toBe('');
+    expect(path({ position: 'board_hero', target: '9' }, { data: { position: 'board_hero', selected: { key: '9', exists: false, site_url: null } } })).toBe('');
     const notice = findById(list, 'slot_missing_notice')!;
-    const noticeShown = (settings: any) => Function('position_settings', '_computed', `return (${notice.if.slice(2, -2)})`)(settings, { currentPosition: 'home_hero' });
+    const noticeShown = (settings: any) =>
+      evaluateBinding(notice.if, { position_settings: settings }, evaluateComputed(list as any, { position_settings: settings, query: {} }));
     expect(noticeShown(undefined)).toBe(false);
     expect(noticeShown({ data: { editor: { preview_frame: { positions: { home_hero: null } } } } })).toBe(true);
     expect(noticeShown({ data: { editor: { preview_frame: { positions: { home_hero: { layout: 'home', path: '/' } } } } } })).toBe(false);
@@ -146,12 +174,14 @@ describe('히어로섹션 목록 화면', () => {
   // @scenario surface=list_buttons_follow_abilities
   // @effects abilities_gate_actions
   it('등록·순서 변경·일괄 노출/비노출·일괄 삭제·설정 저장 단추는 응답 abilities 로 보인다', () => {
-    expect(findById(list, 'create_button')!.if).toContain('abilities?.can_create === true');
-    expect(findById(list, 'reorder_button')!.if).toContain('abilities?.can_update === true');
+    expect(findById(list, 'create_button')!.if).toBe('{{_computed.canCreate}}');
+    expect((list as any).computed.canCreate).toContain('abilities?.can_create === true');
+    expect(findById(list, 'reorder_button')!.if).toContain('_computed.canWrite');
+    expect((list as any).computed.canWrite).toContain('abilities?.can_update === true');
     expect(findById(list, 'bulk_show_button')!.if).toContain('can_update === true');
     expect(findById(list, 'bulk_hide_button')!.if).toContain('can_update === true');
     expect(findById(list, 'bulk_delete_button')!.if).toContain('can_delete === true');
-    expect(findById(list, 'slider_save_button')!.if).toContain('can_update === true');
+    expect(findById(list, 'slider_save_button')!.if).toBe('{{_computed.canWrite}}');
     const grid = findById(list, 'hero_banner_datagrid')!;
     const actions = grid.props.rowActions as Array<Record<string, unknown>>;
     expect(actions.find((a) => a.id === 'edit')!.disabledField).toBe('abilities.can_update');
@@ -270,7 +300,7 @@ describe('히어로섹션 목록 화면', () => {
     // 서버 Enum(SlidePagination)과 같은 4개
     expect(select.props.options.map((o: { value: string }) => o.value)).toEqual(['dots', 'progress', 'tabs', 'fraction']);
     expect(select.props.value).toContain("pagination ?? 'dots'");
-    expect(select.props.disabled).toContain('can_update !== true');
+    expect(select.props.disabled).toBe('{{!_computed.canWrite}}');
     expect(json(actionsOf(select, 'setState'))).toContain('pagination: $event.target.value');
     const button = findById(list, 'slider_save_button')!;
     expect(json(actionsOf(button, 'apiCall')[0])).toContain("\"pagination\":\"{{_local.sliderForm.pagination ?? 'dots'}}\"");
@@ -288,13 +318,17 @@ describe('히어로섹션 목록 화면', () => {
   it('미리보기는 받는 중에는 빈 문구를 비우고, 노출 중인 배너가 0건이면 안내를 보인다 — 배너는 있는데 지금 노출이 없으면 예약·비노출·종료 건수를 함께', () => {
     const preview = findById(list, 'hero_preview')!;
     expect(preview.name).toBe('sirsoft-hero_section.HeroBannerPreview');
-    const text = (previewData: any, banners: any) =>
-      Function('preview', 'banners', '_computed', '$t', `return (${preview.props.emptyText.slice(2, -2)})`)(previewData, banners, { currentPosition: 'home_hero' }, (key: string, params?: any) => (params ? `${key}:${JSON.stringify(params)}` : key));
+    const text = (previewData: any, banners: any, query: any = {}) =>
+      evaluateBinding(preview.props.emptyText, { preview: previewData, banners }, evaluateComputed(list as any, { banners, preview: previewData, query, position_settings: positionSettings() }));
     const banners = (total: number, statuses: Record<string, number>) => ({ data: { statistics: { positions: { home_hero: total }, statuses } } });
     expect(text(undefined, banners(0, {}))).toBe('');
     expect(text({ data: { data: [] } }, banners(0, {}))).toBe('sirsoft-hero_section.admin.preview.empty');
     expect(text({ data: { data: [] } }, banners(3, { scheduled: 2, inactive: 1, ended: 0 }))).toBe(
       'sirsoft-hero_section.admin.preview.empty_with_counts:{"scheduled":2,"inactive":1,"ended":0}',
+    );
+    // 동적 위치에서 대상을 고르기 전에는 받는 중이 아니라 「먼저 고르세요」다
+    expect(text({ data: { data: [] } }, banners(0, {}), { position: 'board_hero' })).toBe(
+      'sirsoft-hero_section.admin.target.pick_first:{"target":"sirsoft-hero_section.admin.target.board"}',
     );
     expect((ko as any).admin.preview.empty).toBeTruthy();
     expect((en as any).admin.preview.empty).toBeTruthy();
@@ -383,6 +417,89 @@ describe('히어로섹션 목록 화면', () => {
       if (key === 'admin.position' || key === 'admin.status') continue;
       expect(pick(ko, key), `ko ${key}`).toBeTruthy();
       expect(pick(en, key), `en ${key}`).toBeTruthy();
+    }
+  });
+
+  // @scenario case=admin_target_picker
+  it('대상 찾기 후보는 찾은 위치를 달고, 고르기 칸은 지금 위치의 후보만 보인다 — 게시판에서 찾은 「자유게시판」이 상품 탭에 남아 상품 키로 골리지 않게', () => {
+    const dropdown = findById(list, 'target_dropdown')!;
+    const success = actionsOf(dropdown, 'setState')
+      .find((a: any) => typeof a.params?.targetSearchResults === 'string');
+    const found = evaluateBinding(success.params.targetSearchResults, { response: { data: { position: 'board_hero', items: [{ key: '2', label: '자유게시판', hint: 'free' }] } } });
+    expect(found).toEqual([{ value: '2', label: '자유게시판', description: 'free', position: 'board_hero' }]);
+    // 검색어는 서버 한도(100자)로 잘라 보낸다 — 넘치면 422 로 「결과 없음」 대신 빈 실패가 된다
+    const keyword = actionsOf(dropdown, 'apiCall')[0].params.query.keyword;
+    expect(evaluateBinding(keyword, { $args: ['  ' + '가'.repeat(101)] })).toHaveLength(100);
+
+    const product = [{ key: 'product_hero', label_key: null, label: '상품 상세', registered: true, dynamic: true, target: { type: 'product', label_key: null, label: '상품' } }];
+    const c = (query: any) => evaluateComputed(list as any, { query, _local: { targetSearchResults: found }, position_settings: positionSettings(product) });
+    expect(c({ position: 'board_hero' }).targetOptions.map((o: any) => o.value)).toEqual(['2']);
+    expect(c({ position: 'product_hero' }).targetOptions).toEqual([]);
+
+    // 고른 대상 응답(target_info)은 주소에서 target 이 빠지면 다시 받지 않아 앞 탭 응답이 남는다 — 위치·대상이 주소와 맞을 때만 쓴다
+    // (상품 탭으로 옮긴 직후, 또는 상품 2번을 골라 새 응답을 받는 동안 게시판 2번 「자유게시판」 응답이 상품 대상으로 보이지 않게)
+    const stale = { data: { position: 'board_hero', items: [], selected: { key: '2', label: '자유게시판', exists: true, site_url: '/board/free' } } };
+    const s = (query: any) => evaluateComputed(list as any, { query, target_info: stale, _local: { targetSearchResults: [] }, position_settings: positionSettings(product) });
+    expect(s({ position: 'product_hero' }).targetOptions).toEqual([]);
+    expect(s({ position: 'product_hero', target: '2' }).targetOptions).toEqual([]);
+    expect(s({ position: 'product_hero', target: '2' }).sitePath).toBe('');
+    expect(s({ position: 'product_hero', target: '2' }).targetMissing).toBe(false);
+    expect(s({ position: 'board_hero', target: '3' }).targetOptions).toEqual([]);
+    expect(s({ position: 'board_hero', target: '2' }).targetOptions.map((o: any) => o.label)).toEqual(['자유게시판']);
+    expect(s({ position: 'board_hero', target: '2' }).sitePath).toBe('/board/free');
+  });
+
+  // @scenario case=admin_target_picker
+  it('동적 위치는 대상을 먼저 고른다 — 고르기 칸은 대상 목록 API 로 찾고, 고르면 주소(target)에 담아 선택 묶음을 비우며, 목록·미리보기·순서가 그 대상을 싣는다', () => {
+    const picker = findById(list, 'target_picker')!;
+    expect(picker.if).toBe('{{_computed.isDynamic}}');
+    const dropdown = findById(list, 'target_dropdown')!;
+    expect(dropdown.name).toBe('SearchableDropdown');
+    expect(dropdown.props.value).toBe('{{_computed.currentTarget}}');
+    const search = actionsOf(dropdown, 'apiCall')[0];
+    expect(search.target).toBe('/api/plugins/sirsoft-hero_section/admin/positions/{{_computed.currentPosition}}/targets');
+    expect(json(search)).toContain('keyword');
+    const navigate = actionsOf(dropdown, 'navigate')[0];
+    expect(json(navigate)).toContain('"target":"{{$args[0] || undefined}}"');
+    expect(json(actionsOf(dropdown, 'setState'))).toContain('"bulkSelectedIds":[]');
+
+    const sources = Object.fromEntries(asArray((list as any).data_sources).map((d: any) => [d.id, d]));
+    expect(sources.banners.params.target_key).toBe('{{query.target}}');
+    expect(sources.preview.params.target_key).toBe('{{query.target}}');
+    expect(sources.target_info.if).toBe('{{!!query.target}}');
+    expect(sources.target_info.params.key).toBe('{{query.target}}');
+    const reorder = findById(list, 'reorder_button')!;
+    expect(actionsOf(reorder, 'apiCall')[0].target).toContain('target_key=');
+    expect(json(findById(list, 'hero_reorder_modal'))).toContain('"target_key":"{{_computed.currentTarget || undefined}}"');
+
+    // 고르기 전·없는 대상·등록되지 않은 위치에서는 등록을 막고 이유를 보인다
+    const c = (query: any, targetInfo?: any, extra: any[] = []) =>
+      evaluateComputed(list as any, { query, target_info: targetInfo, position_settings: positionSettings(extra), banners: { data: { abilities: { can_create: true, can_update: true } } } });
+    expect(c({ position: 'board_hero' }).canCreate).toBe(false);
+    expect(c({ position: 'board_hero', target: '2' }, { data: { position: 'board_hero', selected: { key: '2', exists: true } } }).canCreate).toBe(true);
+    expect(c({ position: 'board_hero', target: '9' }, { data: { position: 'board_hero', selected: { key: '9', exists: false } } }).canCreate).toBe(false);
+    expect(c({ position: 'board_hero', target: '9' }, { data: { position: 'board_hero', selected: { key: '9', exists: false } } }).targetMissing).toBe(true);
+    const gone = [{ key: 'gone_hero', label_key: null, label: 'gone_hero', registered: false, dynamic: false, target: null }];
+    expect(c({ position: 'gone_hero' }, undefined, gone).canCreate).toBe(false);
+    expect(c({ position: 'gone_hero' }, undefined, gone).canWrite).toBe(false);
+    expect(c({ position: 'home_hero', target: '2' }).currentTarget).toBe('');
+    expect(findById(list, 'target_pick_first')!.if).toBe('{{_computed.isDynamic &amp;&amp; !_computed.currentTarget}}'.replace(/&amp;/g, '&'));
+    expect(findById(list, 'target_missing_notice')!.if).toBe('{{_computed.targetMissing}}');
+    expect(findById(list, 'unregistered_notice')!.if).toBe('{{_computed.isUnregistered}}');
+    // 고른 대상이 지워졌으면 고르기 칸 글자는 「없는 대상(키)」다
+    expect(c({ position: 'board_hero', target: '9' }, { data: { position: 'board_hero', selected: { key: '9', label: null, exists: false } } }).targetOptions[0]).toEqual({
+      value: '9', label: 'sirsoft-hero_section.admin.target.missing_label:{"key":"9"}',
+    });
+    // 슬라이더 설정은 위치 단위다 — 동적 위치는 모든 대상에 함께 적용된다고 알린다
+    expect(findById(list, 'slider_scope_dynamic')!.text).toContain('admin.slider.scope_dynamic');
+    expect(findById(list, 'slider_scope_dynamic')!.if).toBe('{{_computed.isDynamic}}');
+    expect(findById(list, 'slider_scope')!.if).toBe('{{!_computed.isDynamic}}');
+    for (const lang of [ko, en] as any[]) {
+      for (const key of ['picker_label', 'trigger', 'search_placeholder', 'search_initial', 'no_results', 'pick_first', 'missing', 'missing_label', 'count', 'board', 'product', 'category']) {
+        expect(lang.admin.target[key]).toBeTruthy();
+      }
+      expect(lang.admin.slider.scope_dynamic).toContain('{{target}}');
+      expect(lang.admin.position.unregistered_notice).toBeTruthy();
     }
   });
 });

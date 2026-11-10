@@ -13,7 +13,6 @@ use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
 use Plugins\Sirsoft\HeroSection\Enums\BannerMediaType;
 use Plugins\Sirsoft\HeroSection\Enums\BannerTone;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Enums\TextAlign;
 use Plugins\Sirsoft\HeroSection\Enums\TextAnimation;
@@ -29,9 +28,12 @@ use Plugins\Sirsoft\HeroSection\Rules\SelectableBannerImage;
  * 기간은 사이트 시간대 `datetime-local` 로 받아 검증 뒤 UTC 로 바꾼다(이커머스 쿠폰 발급 기간과 같은 규약).
  * 미디어 종류(`media_type`)는 보내지 않으면 등록은 이미지, 수정은 저장된 값 그대로다. 영상 파일은 이미지처럼 임시 묶음에 올린 뒤
  * `pc_video_id`·`mobile_video_id` 로 고른다. 유튜브 등 제3자 영상 플랫폼은 미디어 종류에서 거절한다.
+ * 위치·대상은 `PlacementRules` 가 맡는다(동적 위치는 대상 필수 + 실제로 있는 대상).
  */
 trait BannerFieldRules
 {
+    use PlacementRules;
+
     /**
      * 다국어 문구 필드
      *
@@ -76,7 +78,7 @@ trait BannerFieldRules
         $strict = $stored === null;
 
         return [
-            'position' => ['required', Rule::enum(HeroPosition::class)],
+            ...$this->placementRules(true, $stored),
             'media_type' => ['sometimes', 'required', Rule::enum(BannerMediaType::class)],
             'is_active' => ['required', 'boolean'],
             'display_period' => ['required', Rule::enum(DisplayPeriod::class)],

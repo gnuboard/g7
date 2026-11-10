@@ -7,7 +7,7 @@
 <!-- @generated:models START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
-| `Banner` | `hero_section_banners` | 25 | images→BannerImage | - |
+| `Banner` | `hero_section_banners` | 26 | images→BannerImage | - |
 | `BannerImage` | `hero_section_banner_images` | 13 | banner→Banner | - |
 | `PositionSetting` | `hero_section_position_settings` | 8 | - | - |
 <!-- @generated:models END -->
@@ -35,7 +35,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 9개.
+마이그레이션 10개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -48,6 +48,7 @@
 | `2026_10_31_000007_add_eyebrow_and_header_overlay_to_hero_section.php` | - | `hero_section_banners`, `hero_section_position_settings` | ✅ |
 | `2026_11_02_000008_add_pagination_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
 | `2026_11_09_000009_remove_youtube_from_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
+| `2026_11_10_000010_add_target_key_to_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -65,7 +66,6 @@
 | `BannerStatus` | `string` | 4 | `active`, `scheduled`, `ended`, `inactive` |
 | `BannerTone` | `string` | 2 | `dark`, `light` |
 | `DisplayPeriod` | `string` | 2 | `always`, `range` |
-| `HeroPosition` | `string` | 2 | `home_hero`, `shop_hero` |
 | `MediaKind` | `string` | 2 | `image`, `video` |
 | `SlideEffect` | `string` | 7 | `slide`, `fade`, `cube`, `flip`, `coverflow`, `creative`, `none` |
 | `SlidePagination` | `string` | 4 | `dots`, `progress`, `tabs`, `fraction` |
@@ -76,7 +76,9 @@
 <!-- @generated:enums END -->
 
 <!-- @intent START -->
-위치(`home_hero`·`shop_hero`), 상태(노출중·예약·종료·비활성), 노출 기간(상시·기간 지정), 정렬(좌·중·우), 전환 효과(slide·fade·cube·flip·coverflow·creative·none), 기기(pc·mobile)를 Enum 으로 둔다. 위치 Enum 이 노출 위치 목록의 SSoT 다.
+상태(노출중·예약·종료·비활성), 노출 기간(상시·기간 지정), 정렬(좌·중·우), 전환 효과(slide·fade·cube·flip·coverflow·creative·none), 기기(pc·mobile)를 Enum 으로 둔다. 노출 위치는 Enum 이 아니다 — 확장이 더할 수 있는 열린 목록이라 위치 등록 필터(`sirsoft-hero_section.position.registered_positions`, `PositionRegistry`)가 SSoT 다(docs/extension-points.md). 검증은 `RegisteredPosition`·`ValidTarget` 규칙이 맡는다.
+
+배너는 자리(위치 + 대상)에 속한다 — `hero_section_banners.target_key`(string 100, null 가능)는 동적 위치의 대상 키(게시판·상품·카테고리 id 등)이고 정적 위치는 null 이다. 순서(`sort_order`)·노출·통계는 자리 단위라 인덱스도 `(position, target_key, sort_order)`·`(position, target_key, is_active, display_period, starts_at, ends_at)` 이다. 대상 테이블에 외래 키를 걸지 않는다 — 대상은 다른 모듈의 것이고, 대상이 지워져도 배너는 남아 관리자에게 「없는 대상」으로 보인다(사이트에는 나가지 않는다). 위치를 더한 확장이 꺼져도 배너·위치 설정 행은 지우지 않는다(「등록되지 않은 위치」).
 <!-- @intent END -->
 
 ## Repository

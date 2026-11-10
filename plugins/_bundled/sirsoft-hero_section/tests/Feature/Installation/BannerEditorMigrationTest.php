@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /** 신규 설치·기설치 컬럼 보강과 실제 Repository의 결합을 확인합니다. */
@@ -226,6 +227,58 @@ class BannerEditorMigrationTest extends PluginTestCase
             }
             DB::setDefaultConnection($original);
             DB::purge('hero_page_smoke');
+        }
+    }
+
+    /**
+     * 대상 키 마이그레이션의 up→down→up — 기존 배너는 대상 null(정적 위치)로 남고, 순서·노출 후보 인덱스가 위치 + 대상으로 바뀌며,
+     * 내리면 옛 위치 인덱스가 돌아온다. 두 번 올려도 오류가 없고, 자리 단위 Repository 조회가 그대로 돈다.
+     *
+     * @scenario case=target_key_migration_roundtrip
+     *
+     * @return void 반환값 없음
+     */
+    public function test_target_key_migration_roundtrip(): void
+    {
+        $original = DB::getDefaultConnection();
+        config(['database.connections.hero_target_smoke' => array_replace(config('database.connections.'.$original), [
+            'prefix' => 'h10_'.bin2hex(random_bytes(3)).'_', 'prefix_indexes' => true,
+        ])]);
+        DB::setDefaultConnection('hero_target_smoke');
+        try {
+            foreach (glob(dirname(__DIR__, 3).'/database/migrations/*.php') as $file) {
+                (require $file)->up();
+            }
+            $migration = require dirname(__DIR__, 3).'/database/migrations/2026_11_10_000010_add_target_key_to_hero_section_banners.php';
+            $this->assertTrue(Schema::hasIndex('hero_section_banners', 'hero_banners_placement_order_idx'));
+            $this->assertFalse(Schema::hasIndex('hero_section_banners', 'hero_banners_position_order_idx'));
+
+            $migration->down();
+            $this->assertFalse(Schema::hasColumn('hero_section_banners', 'target_key'));
+            $this->assertTrue(Schema::hasIndex('hero_section_banners', 'hero_banners_position_order_idx'));
+            $this->assertTrue(Schema::hasIndex('hero_section_banners', 'hero_banners_exposure_idx'));
+            $this->assertFalse(Schema::hasIndex('hero_section_banners', 'hero_banners_placement_exposure_idx'));
+
+            // 대상 열이 없던 때의 배너 — 다시 올리면 정적 위치(대상 null)로 남는다
+            $bannerId = DB::table('hero_section_banners')->insertGetId(['position' => 'home_hero', 'title' => '{"ko":"기존"}', 'sort_order' => 0, 'created_at' => now(), 'updated_at' => now()]);
+
+            $migration->up();
+            $migration->up();
+            $this->assertTrue(Schema::hasColumn('hero_section_banners', 'target_key'));
+            $this->assertNull(DB::table('hero_section_banners')->where('id', $bannerId)->value('target_key'));
+            $this->assertTrue(Schema::hasIndex('hero_section_banners', 'hero_banners_placement_exposure_idx'));
+            $this->assertFalse(Schema::hasIndex('hero_section_banners', 'hero_banners_exposure_idx'));
+
+            $repository = app(BannerRepositoryInterface::class);
+            $this->assertSame([$bannerId], $repository->idsForPlacement(Placement::of('home_hero')));
+            $this->assertSame(1, $repository->nextSortOrder(Placement::of('home_hero')));
+            $this->assertSame(0, $repository->nextSortOrder(Placement::of('board_hero', '2')));
+        } finally {
+            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+                Schema::dropIfExists($table);
+            }
+            DB::setDefaultConnection($original);
+            DB::purge('hero_target_smoke');
         }
     }
 }

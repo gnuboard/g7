@@ -4,6 +4,13 @@ return [
     'link_url' => [
         'unsafe' => 'Links must be a site path (starting with /) or an http(s) address. Addresses starting with // and schemes such as javascript: are not allowed.',
     ],
+    'position' => [
+        'unregistered' => 'This exposure position is not registered. If the extension (module or plugin) that adds it is turned off, turn it back on and try again.',
+    ],
+    'target' => [
+        'not_allowed' => 'The :position position does not take a target.',
+        'not_found' => 'The chosen target could not be found. It may have been deleted, so choose the target again.',
+    ],
     'order' => [
         'incomplete' => 'Reordering must include every banner in the position. Reload the list and try again.',
     ],
@@ -26,6 +33,9 @@ return [
         'dimensions' => 'Image width and height must be 4000 pixels or less.',
     ],
     'attributes' => [
+        'target_key' => 'target',
+        'target' => 'target',
+        'keyword' => 'keyword',
         'media_type' => 'media type',
         'pc_video' => 'PC video',
         'mobile_video' => 'mobile video',

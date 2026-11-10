@@ -6,7 +6,6 @@ use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Plugin;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
@@ -211,13 +210,13 @@ class HeroCacheListenerTest extends PluginTestCase
     public function test_position_change_clears_old_and_new_positions(): void
     {
         $banner = Banner::factory()->withImages()->create(['title' => ['ko' => '이동']]);
-        $this->assertSame(['이동'], $this->titles(HeroPosition::HomeHero));
-        $this->assertSame([], $this->titles(HeroPosition::ShopHero));
+        $this->assertSame(['이동'], $this->titles('home_hero'));
+        $this->assertSame([], $this->titles('shop_hero'));
 
         $this->actingAs($this->admin)->putJson($this->api('/admin/banners/'.$banner->id), $this->bannerPayload(['position' => 'shop_hero', 'title' => ['ko' => '이동']]))->assertOk();
 
-        $this->assertSame([], $this->titles(HeroPosition::HomeHero));
-        $this->assertSame(['이동'], $this->titles(HeroPosition::ShopHero));
+        $this->assertSame([], $this->titles('home_hero'));
+        $this->assertSame(['이동'], $this->titles('shop_hero'));
     }
 
     /**
@@ -232,32 +231,32 @@ class HeroCacheListenerTest extends PluginTestCase
     public function test_other_position_change_keeps_cache(): void
     {
         $home = Banner::factory()->withImages()->create(['title' => ['ko' => '홈']]);
-        $this->assertSame(['홈'], $this->titles(HeroPosition::HomeHero));
+        $this->assertSame(['홈'], $this->titles('home_hero'));
         DB::table('hero_section_banners')->where('id', $home->id)->update(['title' => json_encode(['ko' => '바뀐 홈'])]);
 
         $this->createBannerViaApi($this->admin, ['position' => 'shop_hero'])->assertCreated();
 
-        $this->assertSame(['홈'], $this->titles(HeroPosition::HomeHero), '쇼핑 메인 변경은 홈 캐시를 비우지 않는다');
+        $this->assertSame(['홈'], $this->titles('home_hero'), '쇼핑 메인 변경은 홈 캐시를 비우지 않는다');
     }
 
     /**
      * 공개 응답 본문을 반환합니다.
      *
-     * @param  HeroPosition  $position  위치
+     * @param  string  $position  위치 키
      * @return array<string, mixed> 공개 응답
      */
-    private function payload(HeroPosition $position = HeroPosition::HomeHero): array
+    private function payload(string $position = 'home_hero'): array
     {
-        return app(PublicHeroService::class)->forPosition($position, 'ko');
+        return app(PublicHeroService::class)->forPosition($position, null, 'ko');
     }
 
     /**
      * 공개 응답의 배너 제목 목록을 반환합니다.
      *
-     * @param  HeroPosition  $position  위치
+     * @param  string  $position  위치 키
      * @return array<int, string> 제목 목록
      */
-    private function titles(HeroPosition $position = HeroPosition::HomeHero): array
+    private function titles(string $position = 'home_hero'): array
     {
         return array_column($this->payload($position)['banners'], 'title');
     }

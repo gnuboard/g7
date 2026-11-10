@@ -1,0 +1,64 @@
+feature: 히어로섹션 노출 위치 확장 (위치 등록 필터·동적 위치·대상)
+
+description: |
+  노출 위치 목록은 필터 `sirsoft-hero_section.position.registered_positions` 로 모은다. 히어로가 내장 위치를 맨 앞에 넣고
+  (사이트 홈·쇼핑몰 메인, 게시판 모듈이 켜져 있으면 게시판 목록, 이커머스 모듈이 켜져 있으면 상품 상세·카테고리 목록), 다른 확장이
+  같은 필터로 더한다. 어긋난 정의는 버리고 경고를 남긴다. 동적 위치는 배너가 대상(게시판·상품·카테고리)마다 따로이고, 대상 해석기가
+  화면 값(slug·상품 코드·id)을 저장 키(id)로 푼다. 순서·노출·통계·공개 캐시는 자리(위치 + 대상) 단위이고, 슬라이더 설정은 위치 단위다(D6).
+  대상에 배너가 없으면 사이트에 아무것도 그리지 않는다(D3). 위치를 더한 확장을 끄거나 대상을 지워도 배너는 남아 관리자에게만
+  「등록되지 않은 위치」·「없는 대상」으로 보인다(D7). 동적 위치는 첫 로드 힌트가 없어 브라우저 기억이 「배너 있음」일 때만 스켈레톤을 그린다(D8).
+  모듈 DB 상태에 기대지 않도록 PHPUnit 은 켜진 모듈을 고정하고(`PinsActiveModules`), 동적 위치는 시험용 위치 `fake_hero`(가짜 해석기)로 본다 —
+  제3 확장이 위치를 더하는 길과 같다. 내장 해석기 3종은 모듈 저장소를 목으로 바꿔 따로 본다 — 화면 값은 slug·상품 코드를 먼저 찾고 없을 때만 숫자 id 로 찾는다(숫자 slug 가 다른 대상 id 와 겹치면 slug 쪽). 위치를 더한 확장이 자기 화면에 두는 조각은
+  문서 예시와 같은 시험용 조각으로 히어로 자기 조각과의 계약 일치·엔진 실제 렌더·히어로 꺼짐을 본다.
+
+axes:
+  case:
+    - builtin_static_positions
+    - builtin_dynamic_positions_follow_modules
+    - third_party_position_added
+    - third_party_fragment_contract
+    - third_party_fragment_renders
+    - invalid_position_definitions_dropped
+    - builtin_target_resolvers
+    - target_value_prefers_slug
+    - overview_follows_registry
+    - unregistered_position_setting_rejected
+    - store_placement_validation
+    - sort_order_per_target
+    - list_preview_order_per_target
+    - reorder_per_target
+    - unregistered_position_banners_kept
+    - missing_target_banners_kept
+    - target_picker_endpoint
+    - activity_log_records_target
+    - target_labels_resolved_once
+    - public_unresolved_target_not_cached
+    - public_target_change_forgets_resolution
+    - public_exposes_target_banners_only
+    - public_empty_or_invalid_target
+    - public_hides_unregistered_and_missing
+    - public_cache_per_target
+    - slot_hints_static_only
+    - target_key_migration_roundtrip
+    - admin_target_picker
+    - admin_form_position_target
+    - dynamic_fragments_pass_route_target
+    - dynamic_skeleton_needs_memory
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Positions/PositionRegistryTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Positions/TargetResolversTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionSettingControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerPlacementTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Public/HeroTargetTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Installation/BannerEditorMigrationTest.php
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_extensions.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/third_party_fragments.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/dynamic-positions.spec.ts
+
+effects:
+  - user_screen_reflects_admin_change
+  - test_data_cleaned_up

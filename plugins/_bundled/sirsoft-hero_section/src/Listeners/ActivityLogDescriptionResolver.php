@@ -4,13 +4,17 @@ namespace Plugins\Sirsoft\HeroSection\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Support\LocalizedValue;
+use Illuminate\Support\Facades\Lang;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 
 /**
  * 히어로섹션 활동 로그 설명 해석기
  *
  * 활동 로그에는 배너 id 만 저장하고, 화면에 보일 때 이름으로 바꿉니다. 이 플러그인의 설명 키만 처리하고
  * 다른 확장의 키는 그대로 돌려줍니다. 해석 순서는 기록 시점 스냅샷(`properties.name`) → DB 의 현재 제목 → 「ID: {id}」 입니다.
+ * 목록 한 줄에서 자리를 알아보게 위치 키는 위치 이름으로 바꾸고, 동적 위치면 기록 시점 대상 이름(`properties.target`, 없으면 대상 키)을
+ * `target_note` 로 덧붙입니다 — 대상 키가 없는 정적 위치·예전 기록은 빈 글자라 자리 표시가 남지 않습니다.
  */
 class ActivityLogDescriptionResolver implements HookListenerInterface
 {
@@ -44,7 +48,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     public function handle(...$args): void {}
 
     /**
-     * 설명 파라미터의 배너 id 를 사람이 읽을 이름으로 바꿉니다.
+     * 설명 파라미터의 배너 id·위치 키를 사람이 읽을 이름으로 바꾸고 대상 이름을 덧붙입니다.
      *
      * @param  array  $params  앞선 필터가 넘긴 설명 파라미터
      * @param  string  $descriptionKey  활동 로그 설명 키
@@ -56,6 +60,8 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
         if (! str_starts_with($descriptionKey, self::KEY_PREFIX)) {
             return $params;
         }
+
+        $params = $this->placement($params, $properties);
 
         if (! empty($params['banner_title']) || ! array_key_exists('banner_id', $params)) {
             return $params;
@@ -71,6 +77,44 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
         $params['banner_title'] = $name !== '' ? $name : 'ID: '.$params['banner_id'];
 
         return $params;
+    }
+
+    /**
+     * 위치 키를 위치 이름으로 바꾸고 대상 덧붙임(`target_note`)을 채웁니다.
+     *
+     * @param  array  $params  설명 파라미터
+     * @param  array  $properties  로그 기록 시점 속성
+     * @return array 위치 이름·대상 덧붙임을 채운 설명 파라미터
+     */
+    private function placement(array $params, array $properties): array
+    {
+        if (is_string($params['position'] ?? null) && $params['position'] !== '') {
+            $params['position'] = $this->positionName($params['position']);
+        }
+
+        $targetKey = (string) ($params['target_key'] ?? '');
+        $target = $this->text($properties['target'] ?? null);
+        $params['target_note'] = $targetKey === '' ? '' : ' ('.__('sirsoft-hero_section::activity_log.fields.target_key').': '.($target !== '' ? $target : $targetKey).')';
+
+        return $params;
+    }
+
+    /**
+     * 위치 이름을 반환합니다 — 언어별 이름으로 등록한 위치는 그 이름, 내장 위치는 문구, 모르는 위치(확장을 껐을 때)는 키 그대로.
+     *
+     * @param  string  $position  위치 키
+     * @return string 위치 이름
+     */
+    private function positionName(string $position): string
+    {
+        $label = app(PositionRegistry::class)->find($position)?->label();
+        if (is_string($label) && $label !== '') {
+            return $label;
+        }
+
+        $key = 'sirsoft-hero_section::activity_log.positions.'.$position;
+
+        return Lang::has($key) ? (string) __($key) : $position;
     }
 
     /**

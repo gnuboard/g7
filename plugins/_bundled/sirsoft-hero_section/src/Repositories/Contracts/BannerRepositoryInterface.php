@@ -7,31 +7,48 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
+use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
 
 /**
  * 배너 Repository 인터페이스 — 배너 쿼리는 모두 여기서 만든다.
  *
  * 노출 상태 필터·정렬·공개 노출·다음 전환 시각은 같은 기간 조건을 쓴다(상태는 저장하지 않는다).
+ * 순서·노출·통계는 자리(위치 + 대상, `Placement`) 단위다.
  */
 interface BannerRepositoryInterface
 {
     /**
-     * 관리자 목록을 조회합니다 — 위치·상태·제목 검색·정렬을 SQL 에서 처리합니다.
+     * 관리자 목록을 조회합니다 — 위치·대상·상태·제목 검색·정렬을 SQL 에서 처리합니다.
      *
-     * @param  array<string, mixed>  $filters  검증된 목록 필터 (position, status, search, sort_by, sort_order, per_page)
+     * @param  array<string, mixed>  $filters  검증된 목록 필터 (position, target_key, all_targets, status, search, sort_by, sort_order, per_page)
      * @param  CarbonInterface  $now  상태 판정 기준 시각
      * @return LengthAwarePaginator 배너 목록 (PC 이미지 포함)
      */
     public function paginateForAdmin(array $filters, CarbonInterface $now): LengthAwarePaginator;
 
     /**
-     * 위치별 건수와 한 위치의 상태별 건수를 반환합니다.
+     * 위치별 건수(저장된 모든 위치 키), 그 위치의 대상별 건수, 한 자리의 상태별 건수를 반환합니다.
      *
-     * @param  string  $position  상태별 건수를 낼 위치
+     * @param  Placement  $placement  상태별 건수를 낼 자리
      * @param  CarbonInterface  $now  상태 판정 기준 시각
-     * @return array{positions: array<string, int>, statuses: array<string, int>} 통계
+     * @return array{positions: array<string, int>, targets: array<string, int>, statuses: array<string, int>} 통계
      */
-    public function statistics(string $position, CarbonInterface $now): array;
+    public function statistics(Placement $placement, CarbonInterface $now): array;
+
+    /**
+     * 배너가 있는 위치 키를 모두 반환합니다(등록되지 않은 위치 포함) — 「등록되지 않은 위치」 탭을 찾을 때 쓴다.
+     *
+     * @return array<int, string> 위치 키
+     */
+    public function positionKeys(): array;
+
+    /**
+     * 위치에 배너가 하나라도 있는지 반환합니다 — 등록되지 않은 위치의 관리자 목록을 열 때 쓴다.
+     *
+     * @param  string  $position  위치 키
+     * @return bool 있으면 true
+     */
+    public function hasBannersAt(string $position): bool;
 
     /**
      * id 로 배너를 찾습니다(이미지 포함).
@@ -109,28 +126,28 @@ interface BannerRepositoryInterface
     public function deleteMany(array $ids): int;
 
     /**
-     * 위치의 맨 뒤 순서 값을 반환합니다.
+     * 자리의 맨 뒤 순서 값을 반환합니다.
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @return int 다음 순서 값
      */
-    public function nextSortOrder(string $position): int;
+    public function nextSortOrder(Placement $placement): int;
 
     /**
-     * 위치의 배너 전체를 순서대로 반환합니다(순서 변경 창용, PC 이미지 포함).
+     * 자리의 배너 전체를 순서대로 반환합니다(순서 변경 창용, PC 이미지 포함).
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @return Collection<int, Banner> 배너 목록
      */
-    public function listForPosition(string $position): Collection;
+    public function listForPlacement(Placement $placement): Collection;
 
     /**
-     * 위치에 속한 배너 id 목록을 반환합니다.
+     * 자리에 속한 배너 id 목록을 반환합니다.
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @return array<int, int> 배너 ID 목록
      */
-    public function idsForPosition(string $position): array;
+    public function idsForPlacement(Placement $placement): array;
 
     /**
      * 주어진 id 순서대로 sort_order 를 0 부터 다시 매깁니다.
@@ -153,36 +170,36 @@ interface BannerRepositoryInterface
     /**
      * 지금 노출 중인 배너를 순서대로 반환합니다(이미지 포함).
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @param  CarbonInterface  $now  기준 시각
      * @return Collection<int, Banner> 노출 배너
      */
-    public function exposedForPosition(string $position, CarbonInterface $now): Collection;
+    public function exposedForPlacement(Placement $placement, CarbonInterface $now): Collection;
 
     /**
      * 캐시에 담을 노출 후보(사용 중이고 아직 끝나지 않은 배너)를 순서대로 반환합니다(이미지 포함).
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @param  CarbonInterface  $now  기준 시각
      * @return Collection<int, Banner> 노출 후보
      */
-    public function exposureCandidatesForPosition(string $position, CarbonInterface $now): Collection;
+    public function exposureCandidatesForPlacement(Placement $placement, CarbonInterface $now): Collection;
 
     /**
-     * 위치에 노출 후보(사용 중이고 아직 끝나지 않은 배너, 예약 포함)가 있는지 반환합니다.
+     * 자리에 노출 후보(사용 중이고 아직 끝나지 않은 배너, 예약 포함)가 있는지 반환합니다.
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @param  CarbonInterface  $now  기준 시각
      * @return bool 있으면 true
      */
-    public function hasExposureCandidates(string $position, CarbonInterface $now): bool;
+    public function hasExposureCandidates(Placement $placement, CarbonInterface $now): bool;
 
     /**
-     * 위치에서 다음으로 노출 상태가 바뀌는 시각을 반환합니다(예약 시작 또는 종료).
+     * 자리에서 다음으로 노출 상태가 바뀌는 시각을 반환합니다(예약 시작 또는 종료).
      *
-     * @param  string  $position  위치 키
+     * @param  Placement  $placement  자리
      * @param  CarbonInterface  $now  기준 시각
      * @return CarbonInterface|null 다음 전환 시각 (없으면 null)
      */
-    public function nextTransitionAt(string $position, CarbonInterface $now): ?CarbonInterface;
+    public function nextTransitionAt(Placement $placement, CarbonInterface $now): ?CarbonInterface;
 }

@@ -1,13 +1,17 @@
 /**
  * @file hero_extensions.test.tsx
  * @description 사용자 화면 주입 조각 — 홈·쇼핑 조각이 각자의 확장점을 겨냥하고, 공개 API 로 받은 배너가 있을 때만 슬라이더를
- * 그리며(0건·받기 실패면 숨김), data-source 이름은 플러그인 접두를 쓴다. (매니페스트 user-extension.yaml)
+ * 그리며(0건·받기 실패면 숨김), data-source 이름은 플러그인 접두를 쓴다. 동적 위치(게시판·상품·카테고리) 조각은 화면 주소 값을 대상으로
+ * 넘긴다. (매니페스트 user-extension.yaml · position-registry.yaml)
  *
  * @vitest-environment node
  */
 import { describe, expect, it } from 'vitest';
 import home from '../../../extensions/home_hero.json';
 import shop from '../../../extensions/shop_hero.json';
+import board from '../../../extensions/board_hero.json';
+import product from '../../../extensions/product_hero.json';
+import category from '../../../extensions/category_hero.json';
 import ko from '../../../lang/ko.json';
 import en from '../../../lang/en.json';
 import { pick, strings } from './helpers';
@@ -100,6 +104,47 @@ describe('사용자 화면 주입 조각', () => {
       expect(slider.responsive.desktop.props.contentClass).toBe("{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}");
       // 표시 폭은 공개 API 설정(settings.width)으로 받는다
       expect(slider.props.settings).toMatch(/\?\.data\?\.settings}}$/);
+    }
+  });
+
+  // @scenario case=dynamic_fragments_pass_route_target
+  it('동적 위치 조각은 화면 주소 값을 대상으로 받아 오고, 응답이 지금 주소 값의 것일 때만 배너를 넘긴다 — 첫 로드 힌트는 넘기지 않는다(D8)', () => {
+    const dynamic = [
+      { doc: board as any, point: 'board_hero', source: 'heroSectionBoard', route: 'route?.slug' },
+      { doc: product as any, point: 'product_hero', source: 'heroSectionProduct', route: 'route?.product_code' },
+      { doc: category as any, point: 'category_hero', source: 'heroSectionCategory', route: 'route?.slug' },
+    ];
+    for (const { doc, point, source, route } of dynamic) {
+      expect(doc.extension_point).toBe(point);
+      const ds = doc.data_sources[0];
+      expect(ds.id).toBe(source);
+      expect(ds.endpoint).toBe('/api/plugins/sirsoft-hero_section/hero');
+      // 경로 값을 파라미터로 읽어야 엔진이 SPA 이동 때 다시 부른다(마운트 때 한 번 부르는 방식은 이동 뒤 다시 부르지 않았다 — 06 §5 실측)
+      expect(ds.params).toEqual({ position: point, target: `{{${route}}}` });
+      expect(ds.auth_mode).toBe('optional');
+      const slider = doc.components[0];
+      expect(slider.props.position).toBe(point);
+      expect(slider.props.target).toBe(`{{String(${route} ?? '')}}`);
+      // 「관리자에서 수정」 단추는 정적 위치와 같이 응답의 수정 권한으로 그린다
+      expect(slider.props.editable).toBe(`{{${source}?.data?.abilities?.can_update === true}}`);
+      expect(slider.props.skeletonWidth).toBeUndefined();
+      expect(slider.props.skeletonBanners).toBeUndefined();
+      expect(slider.props.skeletonOverlay).toBeUndefined();
+      const value = (expr: string, data: unknown, routeValues: Record<string, string>) =>
+        Function(source, 'route', `return (${expr.slice(2, -2)})`)(data, routeValues);
+      const routeKey = route.replace('route?.', '');
+      const here = { [routeKey]: 'free' };
+      const matching = { data: { target: 'free', banners: [{ id: 1 }] } };
+      const stale = { data: { target: 'event', banners: [{ id: 9 }] } };
+      // 지금 주소 값의 응답만 그리고, 앞 대상 응답이 남아 있는 동안은 받는 중이다(앞 대상 배너가 보이지 않게)
+      expect(value(slider.props.banners, matching, here)).toEqual([{ id: 1 }]);
+      expect(value(slider.props.banners, stale, here)).toEqual([]);
+      expect(value(slider.props.loading, stale, here)).toBe(true);
+      expect(value(slider.props.loading, matching, here)).toBe(false);
+      expect(value(slider.props.loading, undefined, here)).toBe(true);
+      // 받기 실패(빈 값)는 받는 중이 아니다 — 숨는다
+      expect(value(slider.props.loading, { data: null }, here)).toBe(false);
+      for (const lang of [ko, en] as any[]) expect(lang.editor.data_source[source]).toBeTruthy();
     }
   });
 });

@@ -154,8 +154,14 @@ export interface HeroSliderProps {
   /** 위치 슬라이더 설정 */
   settings?: HeroSliderSettings;
 
-  /** 위치 키 (`home_hero`·`shop_hero`) — 오버라이드·테스트 식별용 */
+  /** 위치 키 (`home_hero`·`shop_hero`·`board_hero` 등) — 오버라이드·테스트 식별용, 브라우저 기억 키 */
   position?: string;
+
+  /**
+   * 동적 위치의 대상 — 확장점 조각이 화면 경로 값(게시판 slug·상품 코드 등)을 넘긴다. 주면 브라우저 기억을 위치 + 대상마다 따로 두고,
+   * 기억이 「배너 있음」일 때만 받는 동안 스켈레톤을 그린다(대상마다 첫 로드 힌트를 줄 수 없어 첫 방문은 자리를 잡지 않는다).
+   */
+  target?: string;
 
   /**
    * 미리보기용 기기 고정 — 지정하면 화면 폭과 관계없이 그 기기 이미지·영상·모양을 쓴다(mobile 이면 루트에 `hs-slider--mobile`·
@@ -375,6 +381,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   banners: givenBanners = [],
   settings = {},
   position,
+  target,
   forceDevice,
   contentClass = '',
   loading = false,
@@ -392,17 +399,19 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const count = banners.length;
   // Swiper CSS 가 실리기 전에는 장들이 세로로 쌓였다가 펴지며 아래 본문을 밀어내므로 같은 자리의 스켈레톤을 둔다
   const stylesReady = useSwiperStyles();
-  // 직전 방문의 그 위치 모양(배너 유무·표시 폭) — 받는 동안의 스켈레톤을 실제와 같은 폭으로, 0건 위치는 아예 그리지 않게
-  const remembered = useMemo(() => readMemory(position), [position]);
+  // 직전 방문의 그 위치(동적이면 위치 + 대상) 모양(배너 유무·표시 폭) — 받는 동안의 스켈레톤을 실제와 같은 폭으로, 0건 자리는 아예 그리지 않게
+  const dynamic = target !== undefined;
+  const slot = memorySlot(position, target);
+  const remembered = useMemo(() => readMemory(slot), [slot]);
   const width = settings.width;
   const overlaySetting = settings.header_overlay === true;
   const firstTone = toneOf(banners[0]);
   useEffect(() => {
     // 응답이 온 때만 기억한다(공개 API 는 늘 표시 폭을 함께 준다) — 받기에 실패한 방문을 「0건」으로 기억하면 다음 방문에 스켈레톤 없이 배너가 끼어든다
     if (!loading && width !== undefined) {
-      writeMemory(position, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone });
+      writeMemory(slot, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone });
     }
-  }, [loading, position, count, width, overlaySetting, firstTone]);
+  }, [loading, slot, count, width, overlaySetting, firstTone]);
   const full = settings.width === 'full';
   const box = contentClass.trim();
   // 화면 전체 폭이면 문구·넘김 단추를 본문 상자에 맞춘다 — 넓은 화면에서 글이 화면 끝에 붙지 않고 본문과 같은 줄에 선다
@@ -452,8 +461,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   // 받는 동안에는 힌트(없으면 직전 방문 모양)를 따르고, 바탕 밝기는 직전 첫 장(없으면 사이트 다크 모드면 어두움)으로 둔다
   const skeletonFull = (skeletonWidth || remembered?.width) === 'full';
   // 첫 로드 힌트와 직전 방문 기억 중 하나라도 「없음」이면 자리를 잡지 않는다 — 첫 접속은 기억이 없어 힌트가 막고, 기간이 끝나 힌트가
-  // 낡아도(저장이 있어야 갱신된다) 저장소를 쓸 수 있는 재방문은 기억이 막는다. 틀려도 배너는 그대로 그려지고 스켈레톤만 건너뛴다
-  const waiting = count === 0 && loading && skeletonBanners !== false && remembered?.banners !== 0;
+  // 낡아도(저장이 있어야 갱신된다) 저장소를 쓸 수 있는 재방문은 기억이 막는다. 틀려도 배너는 그대로 그려지고 스켈레톤만 건너뛴다.
+  // 동적 위치는 힌트가 없으므로 그 대상의 기억이 「배너 있음」일 때만 잡는다 — 배너 없는 게시판마다 빈 자리가 깜빡이지 않게
+  const waiting = count === 0 && loading && skeletonBanners !== false && (dynamic ? (remembered?.banners ?? 0) > 0 : remembered?.banners !== 0);
   const overlayOn = !forceDevice && (waiting
     ? skeletonFull && (skeletonOverlay ?? remembered?.overlay === true)
     : full && overlaySetting && count > 0);
@@ -867,17 +877,35 @@ interface SlotMemory {
 const MEMORY_KEY = `${PLUGIN}:slot:`;
 
 /**
- * 위치의 직전 모양을 읽습니다 — 저장소를 쓸 수 없거나(개인정보 동의 전 차단·사생활 모드) 값이 없으면 null.
+ * 기억 자리 이름 — 정적 위치는 위치 키 그대로(옛 기억과 같은 키), 동적 위치는 `{위치}:{대상}`.
  *
  * @param position 위치 키
+ * @param target 동적 위치의 대상 (정적 위치는 undefined)
+ * @returns 기억 자리 이름 (위치가 없거나 동적 위치의 대상이 비었으면 undefined — 기억하지 않는다)
+ */
+function memorySlot(position?: string, target?: string): string | undefined {
+  if (!position) {
+    return undefined;
+  }
+  if (target === undefined) {
+    return position;
+  }
+
+  return target === '' ? undefined : `${position}:${target}`;
+}
+
+/**
+ * 자리의 직전 모양을 읽습니다 — 저장소를 쓸 수 없거나(개인정보 동의 전 차단·사생활 모드) 값이 없으면 null.
+ *
+ * @param slot 기억 자리 이름 ({@link memorySlot})
  * @returns 직전 모양
  */
-function readMemory(position?: string): SlotMemory | null {
-  if (!position || typeof window === 'undefined') {
+function readMemory(slot?: string): SlotMemory | null {
+  if (!slot || typeof window === 'undefined') {
     return null;
   }
   try {
-    const value = JSON.parse(window.localStorage.getItem(MEMORY_KEY + position) ?? 'null');
+    const value = JSON.parse(window.localStorage.getItem(MEMORY_KEY + slot) ?? 'null');
     return value && typeof value.banners === 'number'
       ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content', overlay: value.overlay === true, tone: value.tone === 'light' ? 'light' : 'dark' }
       : null;
@@ -887,17 +915,17 @@ function readMemory(position?: string): SlotMemory | null {
 }
 
 /**
- * 위치의 지금 모양을 기억합니다 — 저장할 수 없으면 조용히 넘긴다(다음 방문은 기본 스켈레톤).
+ * 자리의 지금 모양을 기억합니다 — 저장할 수 없으면 조용히 넘긴다(다음 방문은 기본 스켈레톤).
  *
- * @param position 위치 키
+ * @param slot 기억 자리 이름 ({@link memorySlot})
  * @param memory 지금 모양
  */
-function writeMemory(position: string | undefined, memory: SlotMemory): void {
-  if (!position || typeof window === 'undefined') {
+function writeMemory(slot: string | undefined, memory: SlotMemory): void {
+  if (!slot || typeof window === 'undefined') {
     return;
   }
   try {
-    window.localStorage.setItem(MEMORY_KEY + position, JSON.stringify(memory));
+    window.localStorage.setItem(MEMORY_KEY + slot, JSON.stringify(memory));
   } catch {
     // 저장소 차단·용량 초과 — 기억 없이도 동작한다
   }

@@ -8,9 +8,11 @@ use App\Models\Template;
 use App\Models\TemplateLayout;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
+use Plugins\Sirsoft\HeroSection\Tests\Concerns\PinsActiveModules;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
@@ -18,6 +20,8 @@ use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
  */
 class PositionSettingControllerTest extends PluginTestCase
 {
+    use PinsActiveModules;
+
     /**
      * 관리자
      */
@@ -63,6 +67,7 @@ class PositionSettingControllerTest extends PluginTestCase
      */
     public function test_defaults_when_missing(): void
     {
+        $this->pinActiveModules([]);
         $positions = $this->actingAs($this->admin)->getJson($this->api('/admin/position-settings'))->assertOk()->json('data.positions');
 
         $this->assertSame(['home_hero', 'shop_hero'], array_column($positions, 'key'));
@@ -81,6 +86,7 @@ class PositionSettingControllerTest extends PluginTestCase
      */
     public function test_editor_meta_carries_preview_frame(): void
     {
+        $this->pinActiveModules([]);
         $frame = $this->actingAs($this->adminWith(['sirsoft-hero_section.banners.read']))
             ->getJson($this->api('/admin/position-settings'))->assertOk()->json('data.editor.preview_frame');
 
@@ -88,6 +94,52 @@ class PositionSettingControllerTest extends PluginTestCase
         $this->assertArrayHasKey('template', $frame);
         $this->assertIsArray($frame['stylesheets']);
         $this->assertSame(['home_hero', 'shop_hero'], array_keys($frame['positions']));
+    }
+
+    /**
+     * 개요는 위치 레지스트리를 따른다 — 켜진 모듈의 동적 위치가 정적 위치 뒤에 대상 정보와 함께 서고, 미리보기 틀에도 그 위치가 있다.
+     * 배너가 남은 등록되지 않은 위치(확장을 껐을 때)는 `registered: false` 로 맨 뒤에 붙는다(D7).
+     *
+     * @scenario case=overview_follows_registry
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overview_follows_registry_with_dynamic_and_unregistered_positions(): void
+    {
+        $this->pinActiveModules(['sirsoft-board']);
+        Banner::factory()->forPosition('gone_hero')->create();
+
+        $data = $this->actingAs($this->admin)->getJson($this->api('/admin/position-settings'))->assertOk()->json('data');
+        $positions = collect($data['positions'])->keyBy('key');
+
+        $this->assertSame(['home_hero', 'shop_hero', 'board_hero', 'gone_hero'], $positions->keys()->all());
+        $this->assertFalse($positions['home_hero']['dynamic']);
+        $this->assertNull($positions['home_hero']['target']);
+        $this->assertSame('sirsoft-hero_section.admin.position.home_hero', $positions['home_hero']['label_key']);
+        $this->assertTrue($positions['board_hero']['dynamic']);
+        $this->assertTrue($positions['board_hero']['registered']);
+        $this->assertSame('board', $positions['board_hero']['target']['type']);
+        $this->assertSame('sirsoft-hero_section.admin.target.board', $positions['board_hero']['target']['label_key']);
+        $this->assertFalse($positions['gone_hero']['registered']);
+        $this->assertSame('gone_hero', $positions['gone_hero']['label']);
+        $this->assertSame(['home_hero', 'shop_hero', 'board_hero'], array_keys($data['editor']['preview_frame']['positions']));
+    }
+
+    /**
+     * 등록되지 않은 위치의 슬라이더 설정은 저장하지 않는다(404) — 위치를 더한 확장이 꺼져 있으면 설정 화면도 없다.
+     *
+     * @scenario case=unregistered_position_setting_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unregistered_position_setting_update_is_not_found(): void
+    {
+        $this->pinActiveModules([]);
+
+        $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/board_hero'), [
+            'autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide',
+        ])->assertNotFound();
+        $this->assertDatabaseMissing('hero_section_position_settings', ['position' => 'board_hero']);
     }
 
     /**

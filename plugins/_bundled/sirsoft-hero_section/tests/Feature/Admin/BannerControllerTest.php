@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Services\BannerService;
@@ -60,8 +59,8 @@ class BannerControllerTest extends PluginTestCase
      */
     public function test_list_filters_by_position(): void
     {
-        $home = Banner::factory()->forPosition(HeroPosition::HomeHero)->create();
-        $shop = Banner::factory()->forPosition(HeroPosition::ShopHero)->create();
+        $home = Banner::factory()->forPosition('home_hero')->create();
+        $shop = Banner::factory()->forPosition('shop_hero')->create();
 
         $ids = $this->actingAs($this->admin)->getJson($this->api('/admin/banners?position=shop_hero'))
             ->assertOk()->json('data.data.*.id');
@@ -210,7 +209,7 @@ class BannerControllerTest extends PluginTestCase
     {
         Banner::factory()->count(2)->create();
         Banner::factory()->scheduled()->create();
-        Banner::factory()->forPosition(HeroPosition::ShopHero)->create();
+        Banner::factory()->forPosition('shop_hero')->create();
 
         $stats = $this->actingAs($this->admin)->getJson($this->api('/admin/banners?position=home_hero'))->assertOk()->json('data.statistics');
 
@@ -361,7 +360,7 @@ class BannerControllerTest extends PluginTestCase
      */
     public function test_update_moves_to_end_of_new_position(): void
     {
-        Banner::factory()->forPosition(HeroPosition::ShopHero)->create(['sort_order' => 2]);
+        Banner::factory()->forPosition('shop_hero')->create(['sort_order' => 2]);
         $banner = Banner::factory()->withImages()->create(['sort_order' => 0]);
 
         $data = $this->actingAs($this->admin)->putJson($this->api('/admin/banners/'.$banner->id), $this->bannerPayload(['position' => 'shop_hero']))
@@ -594,7 +593,7 @@ class BannerControllerTest extends PluginTestCase
     public function test_reorder_rejects_other_position_id(): void
     {
         $home = Banner::factory()->create();
-        $shop = Banner::factory()->forPosition(HeroPosition::ShopHero)->create();
+        $shop = Banner::factory()->forPosition('shop_hero')->create();
 
         $this->actingAs($this->admin)->putJson($this->api('/admin/banners/order'), ['position' => 'home_hero', 'ids' => [$home->id, $shop->id]])
             ->assertStatus(422)->assertJsonValidationErrors(['ids']);

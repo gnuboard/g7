@@ -6,6 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
+use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Plugins\Sirsoft\HeroSection\Services\PositionSettingService;
 use Throwable;
 
@@ -47,6 +48,11 @@ class SlotWidthHintListener implements HookListenerInterface
             'core.plugin_settings.after_reset' => ['method' => 'onPluginEvent', 'priority' => 20, 'sync' => true],
             'core.plugins.after_activate' => ['method' => 'onPluginEvent', 'priority' => 20, 'sync' => true],
             'core.plugins.after_update' => ['method' => 'onPluginEvent', 'priority' => 20, 'sync' => true],
+            // 다른 확장을 켜고 끄면 필터로 더한 정적 위치가 생기거나 빠진다 — 위치 목록이 바뀌었을 때만 힌트를 다시 맞춘다
+            'core.plugins.after_deactivate' => ['method' => 'onPluginEvent', 'priority' => 20, 'sync' => true],
+            'core.modules.after_activate' => ['method' => 'onExtensionEvent', 'priority' => 20, 'sync' => true],
+            'core.modules.after_deactivate' => ['method' => 'onExtensionEvent', 'priority' => 20, 'sync' => true],
+            'core.modules.after_update' => ['method' => 'onExtensionEvent', 'priority' => 20, 'sync' => true],
         ];
     }
 
@@ -134,7 +140,7 @@ class SlotWidthHintListener implements HookListenerInterface
     }
 
     /**
-     * 이 플러그인의 설정 초기화·활성화·업데이트 뒤 힌트를 다시 맞춥니다.
+     * 이 플러그인의 설정 초기화·활성화·업데이트 뒤 힌트를 다시 맞춥니다. 다른 플러그인 사건이면 정적 위치 목록이 바뀌었을 때만 맞춥니다.
      *
      * @param  mixed  ...$args  코어 훅 인자 (첫 인자: 플러그인 식별자)
      * @return void 반환값 없음
@@ -142,6 +148,39 @@ class SlotWidthHintListener implements HookListenerInterface
     public function onPluginEvent(...$args): void
     {
         if (($args[0] ?? null) === self::PLUGIN) {
+            $this->sync();
+
+            return;
+        }
+
+        $this->onExtensionEvent(...$args);
+    }
+
+    /**
+     * 다른 모듈·플러그인을 켜고 끄고 업데이트한 뒤, 저장된 힌트의 위치 목록과 지금 정적 위치 목록이 다르면 힌트를 다시 맞춥니다.
+     * 맞추지 않으면 확장이 더한 정적 위치는 첫 배너를 등록하기 전까지 힌트가 없다(첫 방문에 받는 동안 스켈레톤이 비쳤다 사라짐).
+     *
+     * @param  mixed  ...$args  코어 훅 인자 (첫 인자: 확장 식별자)
+     * @return void 반환값 없음
+     */
+    public function onExtensionEvent(...$args): void
+    {
+        // 위치 목록은 요청 단위로 기억된다 — 켜고 끈 뒤의 목록으로 다시 모은다
+        app()->forgetInstance(PositionRegistry::class);
+
+        try {
+            $saved = app(PluginSettingsService::class)->get(self::PLUGIN, 'slot_widths');
+            $savedKeys = is_array($saved) ? array_keys($saved) : [];
+            $currentKeys = array_keys($this->positions->slotWidths());
+        } catch (Throwable $e) {
+            Log::warning('히어로섹션 위치 목록 대조 실패 — 힌트는 다음 배너·위치 설정 저장 때 맞춰진다', ['error' => $e->getMessage()]);
+
+            return;
+        }
+
+        sort($savedKeys);
+        sort($currentKeys);
+        if ($savedKeys !== $currentKeys) {
             $this->sync();
         }
     }

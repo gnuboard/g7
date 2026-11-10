@@ -188,7 +188,12 @@
                     "position": {
                         "type": "string",
                         "required": false,
-                        "description": "위치 키 (`home_hero`·`shop_hero`) — 오버라이드·테스트 식별용"
+                        "description": "위치 키 (`home_hero`·`shop_hero`·`board_hero` 등) — 오버라이드·테스트 식별용, 브라우저 기억 키"
+                    },
+                    "target": {
+                        "type": "string",
+                        "required": false,
+                        "description": "동적 위치의 대상 — 확장점 조각이 화면 경로 값(게시판 slug·상품 코드 등)을 넘긴다. 주면 브라우저 기억을 위치 + 대상마다 따로 두고, 기억이 「배너 있음」일 때만 받는 동안 스켈레톤을 그린다(대상마다 첫 로드 힌트를 줄 수 없어 첫 방문은 자리를 잡지 않는다)."
                     },
                     "forceDevice": {
                         "type": "'pc' | 'mobile'",

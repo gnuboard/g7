@@ -69,7 +69,7 @@ class StoreBannerRequest extends FormRequest
     }
 
     /**
-     * 검증된 값(기간 UTC 변환)을 반환합니다.
+     * 검증된 값(기간 UTC 변환, 대상 키를 위치에 맞춤)을 반환합니다.
      *
      * @param  string|null  $key  특정 키만 반환
      * @param  mixed  $default  기본값
@@ -79,7 +79,7 @@ class StoreBannerRequest extends FormRequest
     {
         $data = parent::validated($key, $default);
 
-        return $key === null ? $this->convertPeriod($data) : $data;
+        return $key === null ? $this->normalizePlacement($this->convertPeriod($data), null) : $data;
     }
 
     /**
@@ -93,6 +93,7 @@ class StoreBannerRequest extends FormRequest
             'presentation' => __('sirsoft-hero_section::validation.attributes.presentation'),
             'presentation.*' => __('sirsoft-hero_section::validation.attributes.presentation'),
             'position' => __('sirsoft-hero_section::validation.attributes.position'),
+            'target_key' => __('sirsoft-hero_section::validation.attributes.target_key'),
             'is_active' => __('sirsoft-hero_section::validation.attributes.is_active'),
             'display_period' => __('sirsoft-hero_section::validation.attributes.display_period'),
             'starts_at' => __('sirsoft-hero_section::validation.attributes.starts_at'),

@@ -5,21 +5,28 @@ namespace Plugins\Sirsoft\HeroSection\Services;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use Illuminate\Support\Facades\DB;
-use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Enums\SlideWidth;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Support\Positions\Placement;
+use Plugins\Sirsoft\HeroSection\Support\Positions\PositionDefinition;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
 
 /**
  * 위치별 슬라이더 설정 서비스
  *
- * 위치 목록은 `HeroPosition`(고정 목록, 위치 키 = 확장점 이름)이고, 저장된 행이 없으면 기본값을 쓴다.
+ * 위치 목록은 위치 레지스트리(`PositionRegistry`, 위치 키 = 확장점 이름)가 정하고, 저장된 행이 없으면 기본값을 쓴다. 설정은 위치 단위다 —
+ * 동적 위치(게시판마다·상품마다 등)도 대상마다 따로 두지 않는다(D6). 첫 로드 힌트(`slot_*`)는 정적 위치만 낸다 — 대상마다 값을 줄 수 없다(D8).
  */
 class PositionSettingService
 {
+    /**
+     * 대상 고르기 목록 최대 건수 — 고르기 칸은 검색으로 좁힌다.
+     */
+    private const TARGET_LIMIT = 20;
+
     /**
      * PositionSettingService 생성자
      *
@@ -36,18 +43,43 @@ class PositionSettingService
     /**
      * 위치 목록과 위치별 설정, 업로드 한도를 반환합니다(관리자 화면용).
      *
+     * 위치는 탭 순서(등록 순서)대로 내고, 배너가 남은 등록되지 않은 위치(위치를 더한 확장을 껐을 때)를 `registered: false` 로 뒤에 붙인다(D7).
+     * 이름은 문구 키(`label_key`, 화면이 번역) 또는 확장이 언어별로 준 이름(`label`, 현재 언어로 고른 값) 중 하나다.
+     *
      * @return array{positions: array<int, array<string, mixed>>, upload: array<string, int|float>} 위치·설정·업로드 한도
      */
     public function overview(): array
     {
         $saved = $this->settings->allKeyed();
+        $settingsOf = fn (string $key) => isset($saved[$key]) ? $saved[$key]->toSettings() : PositionSetting::DEFAULTS;
 
-        $positions = array_map(fn (HeroPosition $position) => [
-            'key' => $position->value,
-            'extension_point' => $position->value,
-            'label_key' => $position->labelKey(),
-            'settings' => isset($saved[$position->value]) ? $saved[$position->value]->toSettings() : PositionSetting::DEFAULTS,
-        ], HeroPosition::cases());
+        $positions = array_values(array_map(fn (PositionDefinition $definition) => [
+            'key' => $definition->key,
+            'extension_point' => $definition->key,
+            'label_key' => $definition->labelKey(),
+            'label' => $definition->label(),
+            'registered' => true,
+            'dynamic' => $definition->isDynamic(),
+            'target' => $definition->isDynamic() ? [
+                'type' => $definition->targetType,
+                'label_key' => $definition->targetLabelKey(),
+                'label' => $definition->targetLabel(),
+            ] : null,
+            'settings' => $settingsOf($definition->key),
+        ], $this->registry()->all()));
+
+        foreach (array_diff($this->banners->positionKeys(), $this->registry()->keys()) as $key) {
+            $positions[] = [
+                'key' => $key,
+                'extension_point' => $key,
+                'label_key' => null,
+                'label' => $key,
+                'registered' => false,
+                'dynamic' => false,
+                'target' => null,
+                'settings' => $settingsOf($key),
+            ];
+        }
 
         return [
             'positions' => $positions,
@@ -67,7 +99,7 @@ class PositionSettingService
     }
 
     /**
-     * 위치별 표시 폭을 반환합니다(행이 없으면 content) — 사용자 화면이 첫 로드 때 받는 플러그인 설정 힌트(`slot_widths`)의 원본.
+     * 정적 위치별 표시 폭을 반환합니다(행이 없으면 content) — 사용자 화면이 첫 로드 때 받는 플러그인 설정 힌트(`slot_widths`)의 원본.
      *
      * @return array<string, string> 위치 키 => content|full
      */
@@ -75,15 +107,15 @@ class PositionSettingService
     {
         $saved = $this->settings->allKeyed();
         $widths = [];
-        foreach (HeroPosition::cases() as $position) {
-            $widths[$position->value] = isset($saved[$position->value]) ? $saved[$position->value]->toSettings()['width'] : PositionSetting::DEFAULTS['width'];
+        foreach ($this->staticKeys() as $key) {
+            $widths[$key] = isset($saved[$key]) ? $saved[$key]->toSettings()['width'] : PositionSetting::DEFAULTS['width'];
         }
 
         return $widths;
     }
 
     /**
-     * 위치별로 사이트 상단 메뉴를 배너 위에 겹치는지 반환합니다 — 메뉴 겹치기를 켰고 화면 전체 폭일 때만 true. 사용자 화면이
+     * 정적 위치별로 사이트 상단 메뉴를 배너 위에 겹치는지 반환합니다 — 메뉴 겹치기를 켰고 화면 전체 폭일 때만 true. 사용자 화면이
      * 첫 로드 때 받는 플러그인 설정 힌트(`slot_overlays`)의 원본이다(받는 동안의 스켈레톤도 메뉴 밑으로 들어가 배너가 와도 밀리지 않게).
      *
      * @return array<string, bool> 위치 키 => 겹침 여부
@@ -92,16 +124,16 @@ class PositionSettingService
     {
         $saved = $this->settings->allKeyed();
         $overlays = [];
-        foreach (HeroPosition::cases() as $position) {
-            $settings = isset($saved[$position->value]) ? $saved[$position->value]->toSettings() : PositionSetting::DEFAULTS;
-            $overlays[$position->value] = $settings['header_overlay'] && $settings['width'] === SlideWidth::Full->value;
+        foreach ($this->staticKeys() as $key) {
+            $settings = isset($saved[$key]) ? $saved[$key]->toSettings() : PositionSetting::DEFAULTS;
+            $overlays[$key] = $settings['header_overlay'] && $settings['width'] === SlideWidth::Full->value;
         }
 
         return $overlays;
     }
 
     /**
-     * 위치별로 노출 후보 배너(노출 중·예약)가 있는지 반환합니다 — 첫 로드 때 받는 플러그인 설정 힌트(`slot_banners`)의 원본이다.
+     * 정적 위치별로 노출 후보 배너(노출 중·예약)가 있는지 반환합니다 — 첫 로드 때 받는 플러그인 설정 힌트(`slot_banners`)의 원본이다.
      * 첫 접속은 브라우저에 직전 모양 기억이 없으므로, 이 힌트가 없으면 배너가 없는 위치도 응답 전까지 스켈레톤을 그린다.
      * 기간이 끝나 저절로 빠진 배너는 다음 저장 때 반영된다 — 그 사이 저장소를 쓸 수 있는 재방문자는 브라우저 기억이 스켈레톤을 막고, 첫 방문자·저장소가 막힌 방문자에게는 잠깐 보인다.
      *
@@ -111,39 +143,81 @@ class PositionSettingService
     {
         $now = now();
         $banners = [];
-        foreach (HeroPosition::cases() as $position) {
-            $banners[$position->value] = $this->banners->hasExposureCandidates($position->value, $now);
+        foreach ($this->staticKeys() as $key) {
+            $banners[$key] = $this->banners->hasExposureCandidates(Placement::of($key), $now);
         }
 
         return $banners;
     }
 
     /**
+     * 동적 위치의 대상 고르기 목록과 이미 고른 대상의 이름·사이트 주소를 반환합니다.
+     *
+     * 고른 대상이 지워졌으면(「없는 대상」) `exists: false` 로 낸다(D7 — 배너는 남는다).
+     *
+     * @param  string  $position  위치 키
+     * @param  string  $keyword  검색어 (비면 앞에서부터)
+     * @param  string|null  $key  이미 고른 대상 키
+     * @return array{position: string, items: array<int, array{key: string, label: string, hint: string}>, selected: array{key: string, label: string|null, exists: bool, site_url: string|null}|null}|null 대상 목록 (동적 위치가 아니면 null)
+     */
+    public function targets(string $position, string $keyword, ?string $key): ?array
+    {
+        $resolver = $this->registry()->resolver($position);
+        if ($resolver === null) {
+            return null;
+        }
+
+        $label = $key === null ? null : ($resolver->labels([$key])[$key] ?? null);
+
+        return [
+            'position' => $position,
+            'items' => $resolver->search($keyword, self::TARGET_LIMIT),
+            'selected' => $key === null ? null : [
+                'key' => $key,
+                'label' => $label,
+                'exists' => $label !== null,
+                'site_url' => $label !== null ? $resolver->siteUrl($key) : null,
+            ],
+        ];
+    }
+
+    /**
+     * 위치가 지금 등록돼 있는지 반환합니다 — 등록되지 않은 위치(확장을 껐을 때)의 설정은 저장하지 않는다.
+     *
+     * @param  string  $position  위치 키
+     * @return bool 등록돼 있으면 true
+     */
+    public function isRegistered(string $position): bool
+    {
+        return $this->registry()->isRegistered($position);
+    }
+
+    /**
      * 한 위치의 설정 값을 반환합니다(행이 없으면 기본값).
      *
-     * @param  HeroPosition  $position  위치
+     * @param  string  $position  위치 키
      * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool, pagination: string} 설정 값
      */
-    public function settingsFor(HeroPosition $position): array
+    public function settingsFor(string $position): array
     {
-        return $this->settings->findByPosition($position->value)?->toSettings() ?? PositionSetting::DEFAULTS;
+        return $this->settings->findByPosition($position)?->toSettings() ?? PositionSetting::DEFAULTS;
     }
 
     /**
      * 위치 설정을 저장합니다.
      *
-     * @param  HeroPosition  $position  위치
+     * @param  string  $position  위치 키 (등록 위치 — 컨트롤러가 확인했다)
      * @param  array{autoplay: bool, interval_seconds: int, effect: string, width?: string, header_overlay?: bool, pagination?: string}  $data  검증된 설정 값 (width·header_overlay·pagination 을 빼면 지금 값 유지)
      * @param  int|null  $actorId  바꾼 회원 ID
      * @return PositionSetting 저장된 설정 행
      */
-    public function update(HeroPosition $position, array $data, ?int $actorId): PositionSetting
+    public function update(string $position, array $data, ?int $actorId): PositionSetting
     {
         // 행을 먼저 보장하고 잠가 고친다 — 같은 위치를 동시에 처음 저장하면 둘 다 「행 없음」으로 보고 만들다가 유일 키 충돌(500)이 났다.
         // 처음 저장의 「바뀌기 전」은 기본값 행이고, 겹친 저장은 앞 저장이 끝난 값을 「바뀌기 전」으로 본다
-        $this->settings->ensureExists($position->value);
+        $this->settings->ensureExists($position);
         [$setting, $snapshot] = DB::transaction(function () use ($position, $data, $actorId) {
-            $before = $this->settings->findForUpdate($position->value);
+            $before = $this->settings->findForUpdate($position);
             $snapshot = $before->toArray();
 
             return [$this->settings->update($before, $data + ['updated_by' => $actorId]), $snapshot];
@@ -152,5 +226,26 @@ class PositionSettingService
         HookManager::doAction('sirsoft-hero_section.position_setting.after_update', $setting, $snapshot);
 
         return $setting;
+    }
+
+    /**
+     * 첫 로드 힌트를 내는 정적 위치 키를 반환합니다.
+     *
+     * @return array<int, string> 위치 키
+     */
+    private function staticKeys(): array
+    {
+        return array_values(array_keys(array_filter($this->registry()->all(), fn (PositionDefinition $definition) => ! $definition->isDynamic())));
+    }
+
+    /**
+     * 위치 레지스트리를 꺼냅니다 — 생성자에서 쥐지 않는다. 레지스트리는 요청 단위로 공유되므로, 오래 사는 객체(라우트가 기억한 컨트롤러·
+     * 작업자)가 옛 위치 목록을 붙들지 않게 쓸 때마다 컨테이너에서 받는다.
+     *
+     * @return PositionRegistry 위치 레지스트리
+     */
+    private function registry(): PositionRegistry
+    {
+        return app(PositionRegistry::class);
     }
 }

@@ -81,8 +81,15 @@
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
 없음.
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
+| 확장 | 유형 | 버전 제약 | 번들 |
+|---|---|---|---|
+| `sirsoft-board` | 모듈 | `*` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `*` | ✅ |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
-다른 확장에 의존하지 않는다. sirsoft-basic 의 `home_hero`·`shop_hero` 는 템플릿 계약 확장점이라 의존 선언 대상이 아니다.
+다른 확장에 의존하지 않는다(`dependencies` 없음). 게시판·이커머스 모듈은 `integrations`(선택 연동)다 — 켜져 있으면 히어로가 게시판 목록·상품 상세·카테고리 목록 위치를 스스로 등록하고(모듈 저장소 계약만 쓴다, 모듈 코드는 고치지 않는다), 꺼져 있으면 그 위치가 빠질 뿐 플러그인은 그대로 돈다. sirsoft-basic 의 `home_hero`·`shop_hero`·`board_hero`·`product_hero`·`category_hero` 는 템플릿 계약 확장점이라 의존 선언 대상이 아니다.
 <!-- @intent END -->

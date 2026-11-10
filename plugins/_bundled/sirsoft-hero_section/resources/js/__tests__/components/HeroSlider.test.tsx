@@ -865,6 +865,34 @@ describe('HeroSlider', () => {
       expect(skeleton.querySelector('.hs-slider__text--boxed > .hs-slider__box.px-8 .hs-slider__skeleton-lines')).not.toBeNull();
     });
 
+    // @scenario case=dynamic_skeleton_needs_memory
+    it('동적 위치(대상 있음)는 기억을 위치 + 대상마다 따로 두고, 첫 방문에는 스켈레톤을 그리지 않으며 그 대상의 기억이 「배너 있음」일 때만 그린다(D8)', () => {
+      // 첫 방문 — 기억이 없으면 받는 동안에도 자리를 잡지 않는다(배너 없는 게시판마다 빈 자리가 깜빡이지 않게)
+      const first = render(<HeroSlider banners={[]} loading position="board_hero" target="free" />);
+      expect(first.container.innerHTML).toBe('');
+      first.rerender(<HeroSlider banners={[banner(1)]} loading={false} settings={{ width: 'content' }} position="board_hero" target="free" />);
+      first.unmount();
+      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:board_hero:free')!)).toEqual({ banners: 1, width: 'content', overlay: false, tone: 'dark' });
+      expect(window.localStorage.getItem('sirsoft-hero_section:slot:board_hero')).toBeNull();
+
+      // 같은 게시판을 다시 찾으면 스켈레톤, 다른 게시판(기억 없음)은 그리지 않는다
+      const again = render(<HeroSlider banners={[]} loading position="board_hero" target="free" />);
+      expect(again.container.querySelector('section.hs-slider--skeleton')).not.toBeNull();
+      again.unmount();
+      const other = render(<HeroSlider banners={[]} loading position="board_hero" target="event" />);
+      expect(other.container.innerHTML).toBe('');
+      other.unmount();
+
+      // 0건으로 기억된 대상도 그리지 않는다. 대상 값이 비었으면 기억하지 않는다
+      window.localStorage.setItem('sirsoft-hero_section:slot:board_hero:gallery', JSON.stringify({ banners: 0, width: 'content' }));
+      expect(render(<HeroSlider banners={[]} loading position="board_hero" target="gallery" />).container.innerHTML).toBe('');
+      render(<HeroSlider banners={[banner(2)]} loading={false} settings={{ width: 'content' }} position="board_hero" target="" />).unmount();
+      expect(Object.keys(window.localStorage).filter((k) => k.startsWith('sirsoft-hero_section:slot:board_hero'))).toEqual(
+        expect.arrayContaining(['sirsoft-hero_section:slot:board_hero:free', 'sirsoft-hero_section:slot:board_hero:gallery']),
+      );
+      expect(window.localStorage.getItem('sirsoft-hero_section:slot:board_hero:')).toBeNull();
+    });
+
     // @scenario surface=loading_skeleton_remembers_slot
     // @effects loading_skeleton_reserves_slot
     it('받기에 실패하면(설정 없이 끝남) 기억을 남기지 않아, 다음 방문에도 스켈레톤이 자리를 잡는다', () => {

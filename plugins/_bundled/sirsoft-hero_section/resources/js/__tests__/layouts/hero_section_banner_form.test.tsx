@@ -14,7 +14,7 @@ import form from '../../../layouts/admin/hero_section_banner_form.json';
 import ko from '../../../lang/ko.json';
 import en from '../../../lang/en.json';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
-import { actionsOf, collect, findById, pick, translationKeys } from './helpers';
+import { actionsOf, collect, evaluateBinding, evaluateComputed, findById, pick, translationKeys } from './helpers';
 
 const json = (node: unknown) => JSON.stringify(node);
 const layout = form as any;
@@ -28,7 +28,9 @@ describe('배너 등록·수정 화면', () => {
   it('등록 진입은 폼을 기본값으로 되돌리고 위치를 쿼리에서, 임시 키를 새로 만든다', () => {
     const init = asArray<any>(layout.init_actions);
     const reset = init.find((a) => a.if === '{{!route.id}}' && a.params?.form && typeof a.params.form === 'object');
-    expect(reset.params.form.position).toBe("{{query.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}");
+    // 위치·대상은 목록에서 보던 탭·대상 그대로 — 위치 목록은 레지스트리라 화면이 위치를 고정하지 않는다(서버가 등록 위치인지 본다)
+    expect(reset.params.form.position).toBe("{{query.position || 'home_hero'}}");
+    expect(reset.params.form.target_key).toBe('{{query.target || null}}');
     expect(reset.params.form.images).toEqual({ pc: null, mobile: null });
     // 임시 키는 등록·수정 모두 들어올 때마다 새로 만든다
     const temp = init.find((a) => a.params?.target === 'global' && a.params?.tempKey === '{{$uuid()}}');
@@ -83,7 +85,7 @@ describe('배너 등록·수정 화면', () => {
   // @effects banner_images_apply_on_save
   it('실제 업로드 상태 식이 대기·압축·진행·실패를 막고 완료·제거 뒤 저장을 연다', () => {
     const disabled = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
-    const isDisabled = (state: any) => Function('_local', `return (${disabled})`)(state);
+    const isDisabled = (state: any) => Function('_local', '_computed', `return (${disabled})`)(state, {});
     for (const device of ['pc', 'mobile']) {
       const uploader = findById(form, `${device}_image_uploader`)!;
       expect(uploader.props.disabled).toBe('{{_local.isSaving}}');
@@ -315,13 +317,14 @@ describe('배너 등록·수정 화면', () => {
   it('저장 단추가 잠기면 그 옆에 이유를 보인다 — 저장 중이 아닐 때 잠긴 경우와 이유가 늘 짝이다', () => {
     const disabledExpr = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
     // 레이아웃 계산값(_computed)을 선언 순서대로 구해 식에 넘긴다
-    const computedOf = (state: any) => Object.entries((form as any).computed as Record<string, string>).reduce((acc: Record<string, unknown>, [name, expr]) => {
-      acc[name] = Function('_local', '_computed', 'position_settings', 'query', `return (${expr.slice(2, -2)})`)(state, acc, null, {});
-      return acc;
-    }, {});
+    const settings = { data: { positions: [
+      { key: 'home_hero', label_key: 'sirsoft-hero_section.admin.position.home_hero', label: null, registered: true, dynamic: false, target: null },
+      { key: 'board_hero', label_key: 'sirsoft-hero_section.admin.position.board_hero', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'sirsoft-hero_section.admin.target.board', label: null } },
+    ] } };
+    const computedOf = (state: any) => evaluateComputed(form as any, { _local: state, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
     const evaluate = (expr: string, state: any) => Function('_local', '_computed', `return (${expr})`)(state, computedOf(state));
     const isDisabled = (state: any) => evaluate(disabledExpr, state);
-    const reasonIds = ['save_reason_uploading', 'save_reason_pc_image', 'save_reason_pc_video'];
+    const reasonIds = ['save_reason_uploading', 'save_reason_target', 'save_reason_pc_image', 'save_reason_pc_video'];
     const shown = (state: any) => reasonIds.filter((id) => evaluate(findById(form, id)!.if.slice(2, -2), state));
     const states = [
       { form: { images: { pc: null } } },
@@ -336,6 +339,10 @@ describe('배너 등록·수정 화면', () => {
       { form: { images: { pc: { id: 1 } }, media_type: 'image', videos: { pc: null } }, pcVideoUploadBlocked: true },
       // 더는 받지 않는 종류(옛 유튜브)는 이미지로 본다 — 저장을 막지 않는다
       { form: { images: { pc: { id: 1 } }, media_type: 'youtube' } },
+      // 동적 위치는 대상을 골라야 저장된다 — 대상 이유가 PC 이미지·영상 이유보다 먼저, 올리는 중보다는 뒤다
+      { form: { position: 'board_hero', images: { pc: null } } },
+      { form: { position: 'board_hero', images: { pc: { id: 1 } } }, pcUploadBlocked: true },
+      { form: { position: 'board_hero', target_key: '2', images: { pc: { id: 1 } } } },
     ];
     for (const state of states) {
       const reasons = shown(state);
@@ -350,6 +357,9 @@ describe('배너 등록·수정 화면', () => {
     expect(isDisabled(states[7])).toBe(false);
     expect(isDisabled(states[8])).toBe(false);
     expect(isDisabled(states[9])).toBe(false);
+    expect(shown(states[10])).toEqual(['save_reason_target']);
+    expect(shown(states[11])).toEqual(['save_reason_uploading']);
+    expect(isDisabled(states[12])).toBe(false);
     // 이유는 저장 단추의 설명으로 읽히고, PC 이미지 칸으로 가는 단추가 함께 있다
     const save = findById(form, 'footer_save_button')!;
     expect(save.props['aria-describedby']).toBe('hero_save_reason');
@@ -436,5 +446,61 @@ describe('배너 등록·수정 화면', () => {
       expect(pick(ko, key), `ko ${key}`).toBeTruthy();
       expect(pick(en, key), `en ${key}`).toBeTruthy();
     }
+  });
+
+  // @scenario case=admin_form_position_target
+  it('위치는 레지스트리 목록에서 고르고, 동적 위치면 대상을 고른다 — 위치를 바꾸면 대상을 비우고, 저장 본문·목록 복귀가 대상을 싣는다', () => {
+    const radio = findById(form, 'position_radio')!;
+    expect(radio.props.autoBinding).toBe(false);
+    expect(radio.props.options).toContain('(_computed.formPositions ?? [])');
+    const change = actionsOf(radio, 'setState')[0];
+    expect(json(change)).toContain('"form.target_key":null');
+    expect(json(change)).toContain('"form.position":"{{$event.target.value}}"');
+    const field = findById(form, 'field_target')!;
+    expect(field.if).toBe('{{_computed.formDynamic}}');
+    const dropdown = findById(form, 'form_target_dropdown')!;
+    expect(actionsOf(dropdown, 'apiCall')[0].target).toBe('/api/plugins/sirsoft-hero_section/admin/positions/{{_local.form?.position}}/targets');
+    expect(json(actionsOf(dropdown, 'setState'))).toContain('form.target_key');
+    expect(json(saveCall())).toContain('target_key: _computed.formDynamic ? (_local.form?.target_key ?? null) : null');
+
+    const settings = { data: { positions: [
+      { key: 'home_hero', label_key: 'k.home', label: null, registered: true, dynamic: false, target: null },
+      { key: 'board_hero', label_key: 'k.board', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'k.target.board', label: null } },
+      { key: 'gone_hero', label_key: null, label: 'gone_hero', registered: false, dynamic: false, target: null },
+    ] } };
+    const c = (formState: any, extra: any = {}) => evaluateComputed(form as any, { _local: { form: formState }, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined, ...extra });
+    // 등록되지 않은 위치는 그 배너가 거기 있을 때만 고를 수 있게 남는다
+    expect(c({ position: 'home_hero' }).formPositions.map((p: any) => p.key)).toEqual(['home_hero', 'board_hero']);
+    expect(c({ position: 'gone_hero' }).formPositions.map((p: any) => p.key)).toEqual(['home_hero', 'board_hero', 'gone_hero']);
+    expect(c({ position: 'board_hero' }).targetUnpicked).toBe(true);
+    expect(c({ position: 'board_hero', target_key: '2' }).listTarget).toBe('2');
+    expect(c({ position: 'home_hero', target_key: '2' }).listTarget).toBeUndefined();
+    // 수정하는 배너의 대상이 지워졌으면(「없는 대상」) 그대로 저장은 되지만 알린다
+    const missing = c({ position: 'board_hero', target_key: '9' }, { banner: { data: { position: 'board_hero', target_key: '9', target_label: null, target_exists: false } } });
+    expect(missing.formTargetMissing).toBe(true);
+    expect(missing.targetUnpicked).toBe(false);
+    // 목록 복귀는 폼의 위치·대상으로, 자리가 바뀌었으면 쪽 번호를 버린다
+    const back = actionsOf(findById(form, 'footer_cancel_button'), 'navigate')[0];
+    expect(json(back)).toContain('"target":"{{_computed.listTarget}}"');
+    expect(json(back)).toContain('_computed.samePlacement ? query.page : undefined');
+  });
+
+  // @scenario case=admin_form_position_target
+  it('대상 찾기 후보는 찾은 위치를 달고, 고르기 칸은 폼의 지금 위치 후보만 보인다 — 위치를 바꾼 뒤 늦게 온 앞 위치 응답이 섞이지 않게', () => {
+    const dropdown = findById(form, 'form_target_dropdown')!;
+    const success = actionsOf(dropdown, 'setState').find((a: any) => typeof a.params?.formTargetResults === 'string');
+    const found = evaluateBinding(success.params.formTargetResults, { response: { data: { position: 'board_hero', items: [{ key: '2', label: '자유게시판', hint: 'free' }] } } });
+    expect(found).toEqual([{ value: '2', label: '자유게시판', description: 'free', position: 'board_hero' }]);
+    // 검색어는 서버 한도(100자)로 잘라 보낸다 — 넘치면 422 로 「결과 없음」 대신 빈 실패가 된다
+    const keyword = actionsOf(dropdown, 'apiCall')[0].params.query.keyword;
+    expect(evaluateBinding(keyword, { $args: ['  ' + '가'.repeat(101)] })).toHaveLength(100);
+
+    const settings = { data: { positions: [
+      { key: 'board_hero', label_key: 'k.board', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'k.target.board', label: null } },
+      { key: 'product_hero', label_key: 'k.product', label: null, registered: true, dynamic: true, target: { type: 'product', label_key: 'k.target.product', label: null } },
+    ] } };
+    const c = (position: string) => evaluateComputed(form as any, { _local: { form: { position }, formTargetResults: found }, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
+    expect(c('board_hero').formTargetOptions.map((o: any) => o.value)).toEqual(['2']);
+    expect(c('product_hero').formTargetOptions).toEqual([]);
   });
 });
