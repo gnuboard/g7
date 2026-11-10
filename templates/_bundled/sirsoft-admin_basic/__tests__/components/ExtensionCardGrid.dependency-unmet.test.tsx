@@ -31,11 +31,11 @@ function renderCard(viewMode: 'gallery' | 'list') {
       viewMode={viewMode}
       items={[
         {
-          id: 'heujung-apt_rebuilding',
-          name: '재건축 단지 소통',
+          id: 'sample-template',
+          name: '샘플 템플릿',
           dependencies: [
             { type: 'module', name: '게시판' },
-            { type: 'module', name: '재건축 단지 소통', unmet: true, reason: '버전 미달 0.1.0 → >=9.9.9' },
+            { type: 'module', name: '샘플 모듈', unmet: true, reason: '버전 미달 0.1.0 → >=9.9.9' },
           ],
         },
       ]}
@@ -55,7 +55,7 @@ describe('카드 의존 배지 — 미충족 표시', () => {
     expect(node.className).toContain('text-red-600');
     expect(node.className).toContain('dark:text-red-400');
     expect(node.getAttribute('title')).toBe('버전 미달 0.1.0 → >=9.9.9');
-    expect(node.getAttribute('aria-label')).toBe('재건축 단지 소통 — 버전 미달 0.1.0 → >=9.9.9');
+    expect(node.getAttribute('aria-label')).toBe('샘플 모듈 — 버전 미달 0.1.0 → >=9.9.9');
     expect(node.querySelector('.fa-exclamation-triangle')).not.toBeNull();
   });
 
