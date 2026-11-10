@@ -41,14 +41,21 @@
                 }
             },
             "props": {
-                "className": "sso:flex sso:flex-col sso:gap-2 sso:md:flex-row sso:md:items-center"
+                "className": "sso:flex sso:gap-2 sso:flex-row sso:items-center"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "sso:w-32 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400 sso:mb-0 sso:shrink-0 sso:flex sso:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso:block sso:mb-2 sso:w-32 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400 sso:md:mb-0 sso:shrink-0 sso:md:flex sso:md:items-center"
+                        "className": "sso:block sso:mb-2 sso:w-32 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400 sso:shrink-0"
                     },
                     "text": "$t:sirsoft-sso.admin.user_list.filter_label"
                 },

@@ -450,6 +450,21 @@ cd modules/_bundled/sirsoft-ecommerce && npm run test:e2e -- specs/<대상>.spec
      그림은 `dist/vendor/flag-icons/7.2.3/`(MIT)에 동봉한 두 글자 국가 코드 SVG 다. 템플릿의 국기 라이브러리 클래스(`fi`)는 쓰지 않는다.
 4. **다크 모드는 `ecommerce:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
    `.dark` 를 손 CSS 선택자에 쓰지 않는다.
+5. **화면 폭 분기는 반응형 접두(`ecommerce:md:w-64`) 대신 엔진 `responsive` 로 쓴다.** 기본 클래스는 가장 좁은
+   폭의 값으로 두고, 넓어지는 구간의 클래스 전체를 `<responsive on="768-" class="ecommerce:w-64"/>` 처럼 덮어쓴다
+   (구간 키는 `mobile`·`tablet`·`desktop`·`portable` 또는 `768-`·`640-1023` 같은 숫자 범위). 엔진은 고른 구간의
+   className 으로 통째로 바꾸므로 그 구간 값에는 기본 클래스도 함께 적는다. 식(`{{ }}`) 안 클래스 문자열에도
+   반응형 접두를 쓰지 않는다 — 폭마다 다른 값이 필요하면 구간마다 식을 따로 적는다. 정적 검사
+   (`layout-no-tailwind-breakpoint-variant`)가 `.g7.html` 과 짝 `.json` 의 반응형 접두를 막는다.
+   폭 조건을 품은 의미 클래스 사본(`ecommerce-filter-row`·`ecommerce-grid-2col-responsive`·`ecommerce-page-title`·
+   `ecommerce-search-bar`·`ecommerce-sticky-tab-nav-responsive`·`ecommerce-admin-page-content-responsive` 등)도 쓰지 않고,
+   그 모양을 `ecommerce:` 유틸리티와 구간 값으로 펼쳐 적는다(예 필터 줄: 기본 `ecommerce:flex ecommerce:flex-col ecommerce:gap-2`,
+   `768-` 구간 `ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center`). 필터 라벨(`ecommerce-filter-label`)·화면 머리
+   (`ecommerce-page-header(-padded)`)·머리 단추 묶음(`ecommerce-page-actions` — 직계 자식에 `ecommerce:shrink-0 ecommerce:whitespace-nowrap`)·
+   목록과 상세 3열 격자(`ecommerce-grid-cols-1-lg-3`·`ecommerce-col-span-1-lg`·`-2-lg`)·나눈 입력 칸(`ecommerce-input-split`)·넓은 화면 표
+   (`ecommerce-table-desktop`)도 기본 모양까지 펼친다. 이 사본들의 정의는 사이트에서 직접 고친 레이아웃의 호환을 위해 폐지 예정으로
+   남아 있을 뿐이다 — 새 레이아웃은 쓰지 않는다. 곁 라벨이 입력 칸 이름으로 이어지는 것은 템플릿 클래스(`filter-field-label`·`form-label`, 폐지 예정 `filter-label`)
+   와 `Label` 뿐이라, 필터의 목록형 선택칸에는 `aria-label` 을 단다. 알림 바로 뒤 2열 격자에 붙던 형제 규칙 여백(`ecommerce-alert-*:has(+…)`)은 펼치면 사라지므로 알림에 `ecommerce:mb-4` 를 직접 준다.
 
 정적 검사가 레이아웃·조각의 클래스 앞글자와 `dist/css` 실재를, CSS 선택자의 앞글자와 `.dark` 사용을 대조한다.
 규약 전문은 `docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」이다.

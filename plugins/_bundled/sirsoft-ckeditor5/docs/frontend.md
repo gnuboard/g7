@@ -30,6 +30,10 @@
 
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan plugin:update sirsoft-ckeditor5 --force`
 로 반영합니다.
+
+화면 폭에 따라 배치가 바뀌는 곳(설정 화면의 칸 나눔)은 Tailwind 반응형 접두(`ckeditor:md:…` 등) 대신 엔진 `<responsive on="…">` 덮어쓰기로 씁니다. 덮어쓰기는 className 을 통째로 바꾸므로 그 구간에서 살아 있는 클래스를 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`ckeditor-grid-3col-responsive`·`ckeditor-grid-2col-responsive`·`ckeditor-page-title`·`ckeditor-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="ckeditor:grid ckeditor:grid-cols-1 ckeditor:gap-4 ckeditor:items-start"` 에 `<responsive on="1024-" class="ckeditor:grid ckeditor:grid-cols-3 ckeditor:gap-4 ckeditor:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`ckeditor:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

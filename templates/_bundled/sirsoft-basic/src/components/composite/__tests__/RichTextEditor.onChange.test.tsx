@@ -7,7 +7,6 @@
  * 실행된다(사례 26). 종전에는 `useEffect([content, onChange])` 에서 불러 마운트와 콜백이 바뀌는 리렌더마다 불렸다.
  * 사용자가 내용을 바꿀 때만 부른다.
  */
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import RichTextEditor from '../RichTextEditor';

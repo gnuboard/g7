@@ -14,6 +14,7 @@
  *
  * 시맨틱 클래스 정의 (templates/_bundled/sirsoft-admin_basic/src/styles/main.css):
  *   .grid-3col-responsive → @apply grid grid-cols-1 lg:grid-cols-3 gap-4 items-start
+ *     (폭 미디어를 품은 이 클래스는 이제 쓰지 않는다 — 같은 값을 접두 유틸과 엔진 responsive `1024-` 구간으로 쓴다)
  *   .section-heading-md   → @apply text-base font-semibold text-gray-900 dark:text-white
  *   .text-error-strong    → @apply text-sm font-medium text-red-800 dark:text-red-200
  *   .text-error-soft      → @apply text-sm text-red-700 dark:text-red-300
@@ -42,6 +43,17 @@ function collect(node: unknown, predicate: (n: Node) => boolean, acc: Node[] = [
   return acc;
 }
 
+/** 3열 그리드 입력 줄 — 좁은 폭 1열, 1024px 이상 3열 */
+const GRID3_BASE = 'paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start';
+const GRID3_WIDE = 'paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start';
+
+/** 노드의 1024px 이상 구간(`1024-`) 클래스 */
+function wideClassNameOf(node: Node | undefined): string {
+  const responsive = (node?.responsive ?? {}) as Record<string, { props?: Record<string, unknown> }>;
+  const value = responsive['1024-']?.props?.className;
+  return typeof value === 'string' ? value : '';
+}
+
 function classNameOf(node: Node | undefined): string {
   const props = (node?.props ?? {}) as Record<string, unknown>;
   return typeof props.className === 'string' ? props.className : '';
@@ -64,7 +76,7 @@ describe('plugin_settings 시맨틱 클래스 매핑', () => {
     it.each(GRID_FIELD_IDS)('%s 는 grid-3col-responsive 를 가져야 한다', (id) => {
       const [node] = collect(pluginSettingsLayout, (n) => n.id === id);
       expect(node).toBeDefined();
-      expect(classNameOf(node)).toBe(`${NS}grid-3col-responsive`);
+      expect({ base: classNameOf(node), wide: wideClassNameOf(node) }).toEqual({ base: GRID3_BASE, wide: GRID3_WIDE });
     });
 
     // @scenario case=semantic_c02
@@ -73,11 +85,11 @@ describe('plugin_settings 시맨틱 클래스 매핑', () => {
       for (const id of GRID_FIELD_IDS) {
         const [parent] = collect(pluginSettingsLayout, (n) => n.id === id);
         const children = (parent?.children ?? []) as Node[];
-        const spans = children.map(classNameOf).filter((c) => c.includes('col-span'));
+        const spans = children.flatMap((c) => [classNameOf(c), wideClassNameOf(c), String(((c.responsive ?? {}) as Record<string, { props?: Record<string, unknown> }>).desktop?.props?.className ?? '')]).filter((c) => c.includes('col-span'));
 
         // col-span 을 쓰는 자식이 있다면 부모는 반드시 그리드여야 한다.
         if (spans.length > 0) {
-          expect(classNameOf(parent)).toBe(`${NS}grid-3col-responsive`);
+          expect({ base: classNameOf(parent), wide: wideClassNameOf(parent) }).toEqual({ base: GRID3_BASE, wide: GRID3_WIDE });
         }
       }
     });

@@ -8,7 +8,47 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.common.confirm",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "variant": "secondary",
+                    "className": "ecommerce-btn ecommerce-btn-outline",
+                    "data-testid": "additional-clear-cancel"
+                },
+                "text": "$t:sirsoft-ecommerce.common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.clearAdditionalOptions"
+                    },
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "variant": "danger",
+                    "className": "ecommerce-btn ecommerce-btn-danger",
+                    "data-testid": "additional-clear-confirm"
+                },
+                "text": "$t:sirsoft-ecommerce.common.confirm"
+            }
+        ]
     },
     "children": [
         {
@@ -34,53 +74,6 @@
                         "className": "ecommerce-text-secondary"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.options.additional_clear_confirm"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "variant": "secondary",
-                        "className": "ecommerce-btn ecommerce-btn-outline",
-                        "data-testid": "additional-clear-cancel"
-                    },
-                    "text": "$t:sirsoft-ecommerce.common.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sirsoft-ecommerce.clearAdditionalOptions"
-                        },
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "variant": "danger",
-                        "className": "ecommerce-btn ecommerce-btn-danger",
-                        "data-testid": "additional-clear-confirm"
-                    },
-                    "text": "$t:sirsoft-ecommerce.common.confirm"
                 }
             ]
         }

@@ -81,7 +81,7 @@
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isModuleManualInstalling}}">
         <on type="click">
           <!-- 취소 — 입력·오류·탭을 처음 상태로 되돌린다. 창을 다시 열었을 때 지난번 파일이
@@ -125,6 +125,6 @@
         <icon data-if="{{_global.isModuleManualInstalling}}" name="spinner" class="animate-spin" size="sm"/>
         <span>{{_global.isModuleManualInstalling ? '$t:admin.modules.installing' : '$t:admin.modules.actions.install'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

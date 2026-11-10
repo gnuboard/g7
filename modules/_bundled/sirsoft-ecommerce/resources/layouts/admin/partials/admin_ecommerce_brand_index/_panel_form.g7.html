@@ -106,7 +106,8 @@
         <toggle data-type="composite" data-ref="form_toggle" label="$t:sirsoft-ecommerce.admin.brand.form.is_active" name="is_active" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}"/>
       </div>
       <div data-ref="form_timestamps_section" data-if="{{_global.panelMode === 'edit'}}" class="ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
-        <div class="ecommerce-grid-2col-responsive">
+        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
           <div>
             <div>
               <label class="ecommerce-text-tertiary ecommerce:block ecommerce:font-medium">$t:sirsoft-ecommerce.common.created_at</label>

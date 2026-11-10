@@ -30,7 +30,8 @@
           </div>
           <hr class="ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:mb-4"/>
           <div class="ecommerce-row-stack">
-            <div class="ecommerce-grid-2col-responsive">
+            <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+              <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
               <!-- 결제수단 칸 — id 는 PG 플러그인과의 약속이다. 간편결제 이름을 값에 덧붙이려고 이 id 로만 찾는다(칸 이름 글자는 관리자 언어마다 다르다). 첫 칸이 이름, 다음 칸이 값이다. -->
               <div data-ref="payment_method_block_{{payIdx}}">
                 <span class="ecommerce-text-tertiary ecommerce:block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method</span>
@@ -44,7 +45,8 @@
                 <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block">{{payment.requested_at_formatted}}</span>
               </div>
             </div>
-            <div class="ecommerce-grid-2col-responsive">
+            <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+              <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
               <div data-if="{{payment.paid_at_formatted}}">
                 <span class="ecommerce-text-tertiary ecommerce:block">$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_date</span>
                 <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block">{{payment.paid_at_formatted}}</span>

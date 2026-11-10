@@ -254,6 +254,9 @@
                                     "name": "Img",
                                     "props": {
                                         "src": "{{claimImage.download_url ?? ''}}",
+                                        "thumbPreset": "md",
+                                        "loading": "lazy",
+                                        "decoding": "async",
                                         "alt": "{{claimImage.original_name ?? ''}}",
                                         "className": "w-full h-full object-cover"
                                     }

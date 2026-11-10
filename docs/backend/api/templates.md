@@ -2128,7 +2128,14 @@ HTTP/1.1 200
                             "type": "layout",
                             "name": "Grid",
                             "props": {
-                                "className": "grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                                "className": "grid grid-cols-1 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                            },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                                    }
+                                }
                             }
                         }
                     },
@@ -2161,7 +2168,14 @@ HTTP/1.1 200
                             "type": "basic",
                             "name": "Section",
                             "props": {
-                                "className": "min-h-[40px] p-4 sm:p-6 border border-dashed border-gray-300 dark:border-gray-600"
+                                "className": "min-h-[40px] p-4 border border-dashed border-gray-300 dark:border-gray-600"
+                            },
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "min-h-[40px] p-6 border border-dashed border-gray-300 dark:border-gray-600"
+                                    }
+                                }
                             }
                         }
                     },
@@ -2196,7 +2210,14 @@ HTTP/1.1 200
                             "type": "basic",
                             "name": "H1",
                             "props": {
-                                "className": "text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white"
+                                "className": "text-xl font-semibold text-gray-900 dark:text-white"
+                            },
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                    }
+                                }
                             },
                             "text": "$t:layout_editor.palette.h1.default_text"
                         }
@@ -98492,7 +98513,104 @@ HTTP/1.1 200
 
 
 
-**설명** 템플릿의 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 분할 스펙은 manifest + `$include` 블록을 합본한 단일 spec으로(활성 디렉토리 기준) 반환하며, 파일 미존재 시 `spec=null`로 폴백합니다. 인증이 필요 없습니다.
+**설명** 템플릿의 편집기 스펙(editor-spec.json)을 서빙하는 공개 엔드포인트입니다. 분할 스펙은 manifest + `$include` 블록을 합본한 단일 spec으로(활성 디렉토리 기준) 반환하며, 파일 미존재 시 `spec=null`로 폴백합니다. 인증이 필요 없습니다. 7.2.0 부터 코어 레이아웃 편집기는 이 엔드포인트 대신 아래 묶음 엔드포인트(`editor-spec-bundle`)를 부릅니다. 이 엔드포인트는 응답 모양 그대로 남아 있고, 묶음 엔드포인트의 `template` 항목과 같은 판정 메서드(`EditorSpecBundleService::templateEditorSpec`)를 씁니다.
+
+
+### GET /api/templates/{identifier}/editor-spec-bundle
+<!-- @generated:start:api.public.templates.editor_spec_bundle -->
+- **라우트명**: `api.public.templates.editor_spec_bundle`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicTemplateController@serveEditorSpecBundle`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | path | string | 예 | 영숫자·`_`·`-`·`.` (최대 100자, `..` 불가) | 편집 대상 템플릿 식별자. 묶음의 마지막 항목(`kind=template`)이 된다 |
+| modules | query | array | 아니오 | 최대 200개 | 스펙을 받을 모듈 식별자 목록(`modules[]=a&modules[]=b`). 편집기는 `window.G7Config.activeModules` 순서로 보낸다 |
+| modules.* | query | string | 예 | 영숫자·`_`·`-`·`.` (최대 100자, `..` 불가) | 모듈 식별자 |
+| plugins | query | array | 아니오 | 최대 200개 | 스펙을 받을 플러그인 식별자 목록(`plugins[]=a`). 편집기는 `window.G7Config.activePlugins` 순서로 보낸다 |
+| plugins.* | query | string | 예 | 영숫자·`_`·`-`·`.` (최대 100자, `..` 불가) | 플러그인 식별자 |
+
+**요청 예시**
+
+```http
+GET /api/templates/sirsoft-admin_basic/editor-spec-bundle?modules[]=sirsoft-board&plugins[]=sirsoft-ckeditor5 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| identifier | string | `sirsoft-admin_basic` | 편집 대상 템플릿 식별자 |
+| items | array | `[{"kind":"module",…}, …]` | 스펙 항목 목록. 순서는 모듈(요청 순서) → 플러그인(요청 순서) → 템플릿이며, 편집기는 이 순서로 병합한다(뒤가 우선). 같은 식별자를 두 번 보내면 한 번만 담긴다 |
+| items[].kind | string | `module` | 항목 종류 — `module` · `plugin` · `template` |
+| items[].identifier | string | `sirsoft-board` | 확장 식별자 |
+| items[].status | integer | `200` | 항목 판정. `200` 정상(스펙 파일 미작성이면 `spec=null`), `404` 비활성·미존재 확장(개별 엔드포인트가 404 를 내는 경우와 같다), `500` 그 항목의 스펙 판정 중 예외(서버 로그 경고). 한 항목이 실패해도 다른 항목과 응답 상태(200)는 그대로다 |
+| items[].spec | object \| null | `{"controls":{…},"sampleData":{…}}` | 합본된 편집기 스펙. 개별 엔드포인트(`/api/{modules\|plugins\|templates}/{identifier}/editor-spec`)의 `data.spec` 과 같은 값이다. 실패 항목은 `null` |
+| items[].error | string \| null | `null` | 실패 사유 코드 — `module_not_found` · `plugin_not_found` · `spec_load_failed`. 정상 항목은 `null` |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "편집기 스펙을 조회했습니다.",
+    "data": {
+        "identifier": "sirsoft-admin_basic",
+        "items": [
+            {
+                "kind": "module",
+                "identifier": "sirsoft-board",
+                "status": 200,
+                "spec": {
+                    "states": {"groups": ["…"]},
+                    "sampleData": {"byDataSourceId": {"…": "…"}}
+                },
+                "error": null
+            },
+            {
+                "kind": "plugin",
+                "identifier": "sirsoft-ckeditor5",
+                "status": 404,
+                "spec": null,
+                "error": "plugin_not_found"
+            },
+            {
+                "kind": "template",
+                "identifier": "sirsoft-admin_basic",
+                "status": 200,
+                "spec": {
+                    "templateId": "sirsoft-admin_basic",
+                    "...": "(합본 스펙 전체)"
+                },
+                "error": null
+            }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 식별자 형식 위반(경로 구분자, `..`, 100자 초과), `modules`·`plugins` 가 배열이 아니거나 200개 초과 (`error.errors` 에 필드별 메시지) |
+| 429 | Too Many Requests | 공개 lane 속도 제한 초과 — 비로그인은 IP, 로그인은 사용자 단위로 분당 `auth.throttle.public`(기본 600회, `.env` `THROTTLE_PUBLIC`) · 접두사 `public_ext`. `Retry-After` 헤더 동봉 (KVE-2026-2336) |
+
+<!-- @generated:end -->
+
+
+
+**설명** 레이아웃 편집기가 편집 대상 템플릿과 활성 모듈·플러그인의 편집기 스펙을 **한 요청으로** 받는 공개 엔드포인트입니다(7.2.0). 종전 편집기는 확장마다 개별 엔드포인트를 불러 편집기를 열 때 요청이 확장 수만큼 나갔습니다. 항목마다 개별 엔드포인트와 같은 판정을 합니다 — 모듈·플러그인은 활성 상태만 내고 설치본만 읽으며(`ModuleService::getEditorSpec`·`PluginService::getEditorSpec`), 템플릿은 설치본 파일만 읽습니다. 서버 캐시를 두지 않고 요청마다 확장 상태와 파일을 새로 읽으므로 확장 활성화·비활성화·업데이트가 다음 요청에 바로 반영됩니다(개별 엔드포인트와 같다). 인증이 필요 없고 개별 엔드포인트와 같은 공개 lane 속도 제한을 받습니다. 개별 엔드포인트(`GET /api/templates/{identifier}/editor-spec`, `GET /api/modules/{identifier}/editor-spec`, `GET /api/plugins/{identifier}/editor-spec`)는 서드파티 호환을 위해 이름과 응답 모양 그대로 남아 있습니다.
 
 
 ### GET /api/templates/{identifier}/lang/{locale}
@@ -98698,7 +98816,14 @@ HTTP/1.1 200
                             "type": "layout",
                             "name": "Grid",
                             "props": {
-                                "className": "grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                                "className": "grid grid-cols-1 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                            },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4 min-h-[40px] p-2 border border-dashed border-gray-300 dark:border-gray-600"
+                                    }
+                                }
                             }
                         }
                     },
@@ -98731,7 +98856,14 @@ HTTP/1.1 200
                             "type": "basic",
                             "name": "Section",
                             "props": {
-                                "className": "min-h-[40px] p-4 sm:p-6 border border-dashed border-gray-300 dark:border-gray-600"
+                                "className": "min-h-[40px] p-4 border border-dashed border-gray-300 dark:border-gray-600"
+                            },
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "min-h-[40px] p-6 border border-dashed border-gray-300 dark:border-gray-600"
+                                    }
+                                }
                             }
                         }
                     },
@@ -98766,7 +98898,14 @@ HTTP/1.1 200
                             "type": "basic",
                             "name": "H1",
                             "props": {
-                                "className": "text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white"
+                                "className": "text-xl font-semibold text-gray-900 dark:text-white"
+                            },
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                    }
+                                }
                             },
                             "text": "$t:layout_editor.palette.h1.default_text"
                         }
@@ -190368,6 +190507,8 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 | --- | --- | --- | --- | --- | --- |
 | identifier | path | string | 예 | — | 대상 리소스의 식별자 |
 | attachment | path | string | 예 | — | 대상 attachment의 식별자 |
+| size | query | string | 아니오 | 정의된 썸네일 규격 이름 | 래스터 이미지면 그 규격 썸네일을 낸다. `w` 보다 우선 |
+| w | query | integer | 아니오 | 1~10000 | 요청 가로 — 「숫자 요청 대상」 규격 중 가로가 이 값 이상인 가장 작은 규격으로 올려 맞춘다 |
 
 **요청 예시**
 
@@ -190392,6 +190533,19 @@ ETag: "9f2c1a4e8b7d3c5f"
 (첨부 이미지 파일의 원본 바이트)
 ```
 
+썸네일 요청(`?size=sm`) — 공개 썸네일 디스크가 비공개 디스크(`thumbnails`, 기본)일 때:
+
+```http
+HTTP/1.1 200
+Content-Type: image/png
+Cache-Control: public, max-age=86400
+X-G7-Thumbnail: miss
+
+(썸네일 바이트)
+```
+
+공개 썸네일 디스크가 공개 자산 디스크(public·S3·CDN)일 때는 `302` + `Location: {썸네일 직접 URL}` + `X-G7-Thumbnail: hit|miss` 입니다. 썸네일을 낼 수 없으면 원본 200 에 `X-G7-Thumbnail: bypass:{사유}` 가 붙습니다.
+
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
@@ -190401,6 +190555,8 @@ ETag: "9f2c1a4e8b7d3c5f"
 <!-- @generated:end -->
 
 **설명** 레이아웃 첨부 이미지 파일을 서빙하는 공개 엔드포인트입니다. 발행된 배경 이미지가 일반 방문자에게도 로드되어야 하므로 인증 없이 노출하며, 비공개 attachments 디스크의 파일을 캐싱 헤더와 함께 스트림합니다(래스터 이미지만 인라인, 그 밖은 다운로드 + nosniff). 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404입니다. 인증이 필요 없습니다.
+
+**썸네일 (`?size=` · `?w=`)** 래스터 이미지에 `?size={규격}` 또는 `?w={가로}` 를 붙이면 환경설정 업로드 탭의 규격으로 줄인 썸네일을 냅니다. 레이아웃 첨부는 완전 공개 원본이라 공개 썸네일 디스크(`upload.thumbnail_disk_public`)에 저장하고, 그 디스크가 공개 자산 디스크면 직접 URL 로 302 를 냅니다. 응답 헤더 `X-G7-Thumbnail` 은 `hit`(저장본)·`miss`(이번에 만듦)·`bypass:{사유}`(원본을 냄 — `disabled`·`no-engine`·`not-raster`·`animated`·`unknown-preset`·`smaller-than-preset`·`rate-limited`·`too-large`·`error`) 중 하나입니다.
 
 
 ### GET /api/templates/{identifier}/routes

@@ -1,6 +1,7 @@
 <partial description="Claim Detail - Reason / Attachments / Admin Memo (2 columns) — S9a">
   <!-- 신청사유(+첨부) 와 관리자 메모를 2단으로 둔다 (§6-4). 섹션이 아니라 `#section_claim_info` 안의 블록이므로 `data-section-id` 를 갖지 않는다 — scrollSpy 가 탭 없는 섹션 id 를 잡으면 활성 탭이 어긋난다. -->
-  <div data-ref="claim_reason_row" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:md:grid-cols-2 ecommerce:gap-6 ecommerce:mt-6">
+  <div data-ref="claim_reason_row" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-6 ecommerce:mt-6">
+    <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-6 ecommerce:mt-6"/>
     <div data-ref="claim_reason_card" class="ecommerce-admin-card">
       <div class="ecommerce-flex-between ecommerce:gap-3 ecommerce:mb-6">
         <h2 class="ecommerce:text-lg ecommerce:font-bold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.detail.reason.title</h2>

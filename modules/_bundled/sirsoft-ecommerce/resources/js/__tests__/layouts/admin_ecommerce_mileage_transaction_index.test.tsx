@@ -25,6 +25,7 @@ function findFirst(node: any, predicate: (n: any) => boolean): any | null {
   if (predicate(node)) return node;
   const kids = [
     ...asArray(node?.children),
+    ...asArray(node?.props?.footer), // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     ...(node.columns ?? []),
     ...(node.cellChildren ?? []),
     ...(node.expandChildren ?? []),
@@ -47,6 +48,7 @@ function findAll(node: any, predicate: (n: any) => boolean): any[] {
   if (predicate(node)) out.push(node);
   const kids = [
     ...asArray(node?.children),
+    ...asArray(node?.props?.footer), // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     ...(node.columns ?? []),
     ...(node.cellChildren ?? []),
     ...(node.expandChildren ?? []),
@@ -219,13 +221,21 @@ describe('마일리지 내역 메인 레이아웃', () => {
    *
    * @effects page_header_uses_common_util_classes
    */
-  it('콘텐츠/헤더가 admin 공통 유틸 클래스(p-6/page-header/page-title/page-description)를 사용한다', () => {
+  it('콘텐츠/헤더가 admin 공통 유틸 클래스(p-6/화면 머리/화면 제목/page-description)를 사용한다', () => {
     const content = mainLayout.slots.content[0];
     expect(content.props.className).toContain('p-6');
     expect(content.props.className).not.toContain('sm:p-6 lg:p-8');
     const header = findFirst(content, (n) => n.id === 'page_header');
-    expect(header.props.className).toBe('ecommerce-page-header');
-    expect(findFirst(header, (n) => String(n.props?.className).includes('page-title'))).toBeTruthy();
+    // 화면 머리는 폭 조건을 품은 의미 클래스(ecommerce-page-header) 대신 유틸리티로 펼쳤다 — 640px 이하에서 세로로 쌓인다
+    expect(header.props.className).not.toMatch(/(?<![\w:-])ecommerce-page-header(?![\w-])/);
+    expect(header.props.className.split(/\s+/)).toEqual(expect.arrayContaining(['ecommerce:flex', 'ecommerce:justify-between', 'ecommerce:mb-6', 'ecommerce:flex-col', 'ecommerce:items-start', 'ecommerce:gap-4']));
+    expect(String(header.responsive?.['641-']?.props?.className).split(/\s+/)).toEqual(expect.arrayContaining(['ecommerce:flex', 'ecommerce:items-center', 'ecommerce:justify-between', 'ecommerce:mb-6']));
+    expect(String(header.responsive?.['641-']?.props?.className)).not.toContain('ecommerce:flex-col');
+    // 화면 제목은 폭 조건을 품은 의미 클래스 대신 유틸리티로 펼쳤다 — 640px 이상에서 글자가 커진다
+    const title = findFirst(header, (n) => n.name === 'H1');
+    expect(title).toBeTruthy();
+    expect(String(title.props?.className)).toContain('ecommerce:text-xl');
+    expect(String(title.responsive?.['640-']?.props?.className)).toContain('ecommerce:text-2xl');
     expect(findFirst(header, (n) => String(n.props?.className).includes('page-description'))).toBeTruthy();
   });
 
@@ -236,9 +246,9 @@ describe('마일리지 내역 메인 레이아웃', () => {
    *
    * @effects page_header_uses_common_util_classes
    */
-  it('타이틀(page-title)에 아이콘이 없다 (주문/리뷰 헤더 일관 — 타이틀 아이콘 제거)', () => {
+  it('타이틀(H1)에 아이콘이 없다 (주문/리뷰 헤더 일관 — 타이틀 아이콘 제거)', () => {
     const header = findFirst(mainLayout.slots.content[0], (n) => n.id === 'page_header');
-    const title = findFirst(header, (n) => String(n.props?.className).includes('page-title'));
+    const title = findFirst(header, (n) => n.name === 'H1');
     expect(title).toBeTruthy();
     // H1 은 text 속성만 가지고 Icon 자식이 없다
     const icon = findFirst(title, (n) => n.name === 'Icon');

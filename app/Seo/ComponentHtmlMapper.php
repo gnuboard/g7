@@ -4,6 +4,7 @@ namespace App\Seo;
 
 use App\Support\AssetUrl;
 use App\Support\SiteUrl;
+use App\Thumbnails\ThumbnailUrl;
 
 class ComponentHtmlMapper
 {
@@ -104,6 +105,7 @@ class ComponentHtmlMapper
     private array $attrMap = [
         'className' => 'class',
         'htmlFor' => 'for',
+        'srcSet' => 'srcset',
     ];
 
     /**
@@ -1075,7 +1077,12 @@ class ComponentHtmlMapper
             return e($content);
         }
 
-        return $this->htmlSanitizer()->sanitize($content);
+        // 본문 이미지는 일반 화면 HtmlContent 와 같은 계약으로 썸네일 주소·srcset·sizes·지연 로딩을 받는다
+        $imageSizes = isset($props['imageSizes']) && is_string($props['imageSizes'])
+            ? $evaluator->evaluate($props['imageSizes'], $context)
+            : null;
+
+        return $this->htmlSanitizer()->sanitizeContent($content, $imageSizes);
     }
 
     /**
@@ -1906,6 +1913,14 @@ class ComponentHtmlMapper
         // 정적 링크는 템플릿 A 컴포넌트와 같은 규칙으로 이미 푼 값을 쓴다 (7.1.1)
         $preset = $tag === 'a' ? $this->presetAnchorAttributes($props, $context, $evaluator) : [];
 
+        // 이미지 썸네일 규격 (템플릿 Img 의 `thumbPreset` 과 같은 계약) — 그 자체는 속성으로 내지 않는다
+        $thumbPreset = '';
+        if ($tag === 'img' && isset($props['thumbPreset']) && is_string($props['thumbPreset'])) {
+            $thumbPreset = trim($evaluator->evaluate($props['thumbPreset'], $context));
+        }
+        $hasExplicitSrcset = array_key_exists('srcSet', $props) || array_key_exists('srcset', $props);
+        $thumbSrcset = '';
+
         foreach ($props as $key => $value) {
             $htmlAttr = $this->attrMap[$key] ?? $key;
 
@@ -1970,13 +1985,42 @@ class ComponentHtmlMapper
                 // 이미 배선된 셋만 스스로를 확인하는 자기충족이었다 (16차 G3 라운드 A-1).
                 if ($htmlAttr === 'src') {
                     $evaluated = $this->siteAssetUrl($evaluated);
+
+                    // 썸네일 규격 — 같은 출처 + 등록된 서빙 경로만 바뀐다(외부·정적·data: 는 그대로).
+                    // srcset 을 레이아웃이 직접 적었으면 그 값을 존중한다(사람 화면 Img 와 같다).
+                    if ($thumbPreset !== '' && $evaluated !== '') {
+                        $original = $evaluated;
+                        $evaluated = ThumbnailUrl::for($original, $thumbPreset);
+
+                        if (! $hasExplicitSrcset && in_array('srcset', $this->allowedAttrs)) {
+                            $srcset = ThumbnailUrl::srcset($original, $thumbPreset);
+
+                            if ($srcset !== '') {
+                                $thumbSrcset = $srcset;
+                            }
+                        }
+                    }
                 }
 
                 if ($evaluated !== '') {
                     $attrs .= " {$htmlAttr}=\"".e($evaluated).'"';
                 }
+
+                if ($htmlAttr === 'src' && $thumbSrcset !== '') {
+                    $attrs .= ' srcset="'.e($thumbSrcset).'"';
+                    $thumbSrcset = '';
+                }
             } elseif (is_bool($value) && $value) {
                 $attrs .= " {$htmlAttr}";
+            }
+        }
+
+        // 템플릿 Img 의 기본값 — 명시하지 않으면 지연 로딩·비동기 디코딩 (허용 속성일 때만 나간다)
+        if ($tag === 'img') {
+            foreach (['loading' => 'lazy', 'decoding' => 'async'] as $htmlAttr => $default) {
+                if (! array_key_exists($htmlAttr, $props) && in_array($htmlAttr, $this->allowedAttrs)) {
+                    $attrs .= " {$htmlAttr}=\"{$default}\"";
+                }
             }
         }
 

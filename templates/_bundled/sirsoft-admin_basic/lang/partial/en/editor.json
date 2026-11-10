@@ -167,6 +167,9 @@
     "img_alt": {
       "label": "Alt text"
     },
+    "img_thumb_preset": {
+      "label": "Thumbnail Preset"
+    },
     "link_href": {
       "label": "Link URL"
     },
@@ -1680,6 +1683,7 @@
     "admin_menu": "Admin Menu",
     "appKey": "App Key",
     "auto_deactivated_banner": "Auto-deactivated Notice",
+    "thumbnailStats": "Thumbnail usage by storage",
     "unplaced_bundled_notice": "Unplaced Official Bundle Notice",
     "availableChannels": "Available Channels",
     "clone_source": "Clone Source",

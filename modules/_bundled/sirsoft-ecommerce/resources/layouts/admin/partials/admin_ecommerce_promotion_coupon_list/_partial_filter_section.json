@@ -30,12 +30,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -62,8 +62,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type"
                         },
@@ -244,8 +251,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('issueStatus') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 2,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -272,8 +286,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status"
                         },
@@ -414,8 +435,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 3,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -442,8 +470,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at"
                         },
@@ -714,8 +749,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('benefitAmount') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 4,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -742,8 +784,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount"
                         },
@@ -859,8 +908,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('issueMethod') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 5,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -887,8 +943,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method"
                         },
@@ -1069,8 +1132,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('issueCondition') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 6,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1097,8 +1167,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition"
                         },
@@ -1319,8 +1396,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('minOrderAmount') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 7,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1347,8 +1431,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount"
                         },
@@ -1399,8 +1490,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('validPeriod') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 8,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1427,8 +1525,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period"
                         },
@@ -1509,8 +1614,15 @@
                     "name": "Div",
                     "slot": "{{(_local.visibleFilters || []).includes('issuePeriod') ? 'basic_filters' : 'detail_filters'}}",
                     "slotOrder": 9,
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -1537,8 +1649,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period"
                         },
@@ -1622,12 +1741,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
@@ -1654,8 +1773,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator"
                         },

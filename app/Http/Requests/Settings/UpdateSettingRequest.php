@@ -40,6 +40,23 @@ class UpdateSettingRequest extends FormRequest
     ];
 
     /**
+     * 탭 저장으로만 쓰는 설정 키 (단건 저장 금지)
+     *
+     * `upload.thumbnail_presets` — 썸네일 규격 표. 탭 저장이 행마다 검증(이름 형식·예약어·잠긴 행)하고
+     * 고정 슬롯을 보충해 병합(`ThumbnailPresetSettings::mergeForSave`)한다. 단건 경로는 그 둘을 건너뛰어
+     * 고정 슬롯이 빠진 표나 잠긴 행 이름이 바뀐 표가 저장된다.
+     * 썸네일 저장 디스크·본문 규격·이미지 엔진도 탭 저장의 허용 목록 검사(공개 자산 카탈로그·켜진 규격·이 서버에서
+     * 쓸 수 있는 엔진)를 지나야 한다 — 단건 경로로 `settings` 같은 다른 용도 디스크를 넣으면 그 트리에 파생본이 쓰인다.
+     */
+    public const TAB_ONLY_KEYS = [
+        'upload.thumbnail_presets',
+        'upload.thumbnail_disk_public',
+        'upload.thumbnail_disk_gated',
+        'upload.thumbnail_content_preset',
+        'drivers.image_driver',
+    ];
+
+    /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool 권한 체크는 permission 미들웨어 체인이 담당하므로 항상 true 반환
@@ -155,6 +172,12 @@ class UpdateSettingRequest extends FormRequest
         if (in_array($this->route('key'), self::SERVER_ONLY_KEYS, true)) {
             $rules['value'] = ['present', function (string $attribute, mixed $value, callable $fail): void {
                 $fail(__('validation.setting.value.server_only'));
+            }];
+        }
+
+        if (in_array($this->route('key'), self::TAB_ONLY_KEYS, true)) {
+            $rules['value'] = ['present', function (string $attribute, mixed $value, callable $fail): void {
+                $fail(__('validation.setting.value.tab_only'));
             }];
         }
 

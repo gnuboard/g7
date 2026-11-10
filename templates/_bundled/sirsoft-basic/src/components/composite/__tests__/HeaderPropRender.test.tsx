@@ -13,8 +13,7 @@
  * @vitest-environment jsdom
  */
 
-import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Header from '../Header';
 
@@ -22,7 +21,7 @@ const navigate = vi.fn();
 
 beforeEach(() => {
   (window as any).G7Core = {
-    t: (key: string, params?: Record<string, unknown>) => {
+    t: (key: string) => {
       const map: Record<string, string> = {
         'common.search_placeholder': '검색어를 입력하세요...',
         'common.language': '언어',
@@ -58,11 +57,15 @@ const boards = [
 ];
 
 describe('Header prop 렌더링 — 편집기 속성이 사용자 화면에 반영', () => {
+  // @scenario prop=site_name
+  // @effects header_prop_renders_in_dom
   it('siteName prop 이 로고 영역 텍스트로 렌더된다 (logo 없을 때)', () => {
     render(<Header siteName="우리 사이트" availableLocales={['ko', 'en']} currentLocale="ko" />);
     expect(screen.getByText('우리 사이트')).toBeInTheDocument();
   });
 
+  // @scenario prop=logo
+  // @effects header_prop_renders_in_dom
   it('logo prop 이 있으면 img 의 src/alt 로 렌더된다', () => {
     render(
       <Header siteName="우리 사이트" logo="/custom-logo.png" availableLocales={['ko', 'en']} currentLocale="ko" />,
@@ -72,6 +75,8 @@ describe('Header prop 렌더링 — 편집기 속성이 사용자 화면에 반�
     expect(img.getAttribute('src')).toBe('/custom-logo.png');
   });
 
+  // @scenario prop=max_visible_boards
+  // @effects header_prop_renders_in_dom
   it('maxVisibleBoards prop 이 탭에 표시되는 게시판 수를 제한한다', () => {
     const { container } = render(
       <Header
@@ -90,12 +95,16 @@ describe('Header prop 렌더링 — 편집기 속성이 사용자 화면에 반�
     expect(navText).toContain('질문답변');
   });
 
+  // @scenario prop=available_locales
+  // @effects language_selector_shown_only_for_multiple_locales
   it('availableLocales 가 2개 이상이면 언어 선택기(현재 로케일 코드)가 렌더된다', () => {
     render(<Header siteName="S" availableLocales={['ko', 'en']} currentLocale="en" />);
     // 현재 로케일 코드가 uppercase 로 트리거에 표시
     expect(screen.getByText('en')).toBeInTheDocument();
   });
 
+  // @scenario prop=available_locales
+  // @effects language_selector_shown_only_for_multiple_locales
   it('availableLocales 가 1개 이하이면 언어 선택기가 렌더되지 않는다', () => {
     const { container } = render(<Header siteName="S" availableLocales={['ko']} currentLocale="ko" />);
     // globe 아이콘(언어 트리거)이 없어야 함
@@ -103,6 +112,8 @@ describe('Header prop 렌더링 — 편집기 속성이 사용자 화면에 반�
     expect(langTrigger).toBeNull();
   });
 
+  // @scenario prop=header_currency_slot
+  // @effects currency_slot_container_rendered
   it('header_currency 슬롯 컨테이너가 렌더된다 (모듈 통화 셀렉터 주입 지점)', () => {
     // SlotContainer 는 빈 슬롯이면 null 이지만, 컴포넌트가 마운트되어 슬롯을 구독해야 한다.
     // 슬롯 등록분이 생기면 즉시 렌더되도록 SlotContext 구독이 성립함을 보장(번들 포함 회귀 차단은

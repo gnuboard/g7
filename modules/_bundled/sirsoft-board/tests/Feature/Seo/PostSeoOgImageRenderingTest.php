@@ -164,9 +164,9 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
 
         $this->assertStringContainsString('og:image', $body, 'og:image 메타태그 출력 필수');
         $this->assertMatchesRegularExpression(
-            '#<meta property="og:image" content="https?://[^"]+/api/modules/sirsoft-board/[^"]*/preview"#',
+            '#<meta property="og:image" content="https?://[^"]+/api/modules/sirsoft-board/[^"]*/preview\?size=og"#',
             $body,
-            'og:image 는 절대 URL + attachment preview 경로'
+            'og:image 는 절대 URL + attachment preview 경로 + og 썸네일 규격(?size=og)'
         );
     }
 }

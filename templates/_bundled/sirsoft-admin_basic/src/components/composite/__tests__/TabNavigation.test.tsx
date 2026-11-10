@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TabNavigation, Tab } from '../TabNavigation';
 import { IconName } from '../../basic/IconTypes';
+import type { ResponsiveContextValue } from '@core/template-engine/ResponsiveContext';
 
 /**
  * window.G7Core.useResponsive mock
  *
  * 기본값은 데스크톱 (1024px). 모바일 케이스는 `mockUseResponsive.mockReturnValueOnce({...})`로 개별 오버라이드.
  */
-const mockUseResponsive = vi.fn(() => ({
+const mockUseResponsive = vi.fn((): ResponsiveContextValue => ({
   width: 1024,
   isMobile: false,
   isTablet: false,
@@ -543,8 +544,6 @@ describe('TabNavigation', () => {
    * 박스를 측정할 수 있도록, editorAttrs(data-editor-path) 주입 시 각 탭 버튼에
    * data-editor-item-path="<node path>.props.tabs.<i>" 를 부여한다. 런타임(editorAttrs
    * 미주입)에는 마커가 없어야 사용자 페이지에 무영향.
-   * @scenario unit=item_path_marker
-   * @effects tabnavigation_emits_item_path_marker_only_in_editor_mode, core_measures_data_editor_item_path_markers_into_cellboxes
    */
   describe('편집 모드 인플레이스 측정 마커(data-editor-item-path)', () => {
     /**

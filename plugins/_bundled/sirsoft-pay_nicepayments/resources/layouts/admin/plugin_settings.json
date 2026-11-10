@@ -74,8 +74,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "paynicepayments:p-6 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "paynicepayments:p-8 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "paynicepayments:p-4 paynicepayments:sm:p-6 paynicepayments:lg:p-8 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900"
+                    "className": "paynicepayments:p-4 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -326,15 +338,26 @@
                                         "id": "field_live_mid",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nicepayments-grid-3col-responsive"
+                                            "className": "paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynicepayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynicepayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -358,8 +381,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynicepayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynicepayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -406,15 +433,26 @@
                                         "id": "field_live_merchant_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nicepayments-grid-3col-responsive"
+                                            "className": "paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynicepayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynicepayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -438,8 +476,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynicepayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynicepayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -497,15 +539,26 @@
                                         "id": "field_redirect_success_url",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nicepayments-grid-3col-responsive"
+                                            "className": "paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynicepayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynicepayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -529,8 +582,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynicepayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynicepayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -552,15 +609,26 @@
                                         "id": "field_redirect_fail_url",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nicepayments-grid-3col-responsive"
+                                            "className": "paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynicepayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynicepayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -584,8 +652,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynicepayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynicepayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {

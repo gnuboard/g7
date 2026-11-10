@@ -162,7 +162,7 @@
             <h3 class="font-semibold text-gray-900 dark:text-white mb-3">$t:shop.order_complete.ordered_items</h3>
             <div class="space-y-3">
               <div data-each="item, idx in {{orderData?.data?.options ?? []}}" class="flex gap-3">
-                <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{$localized(item.product_name)}}" class="w-16 h-16 object-cover rounded"/>
+                <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$localized(item.product_name)}}" class="w-16 h-16 object-cover rounded"/>
                 <div data-if="{{!item.thumbnail_url}}" class="shrink-0 w-16 h-16 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                   <icon name="image" class="text-xl text-gray-500 dark:text-gray-400"/>
                 </div>

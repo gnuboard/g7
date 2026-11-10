@@ -53,12 +53,12 @@ describe('ApiClient', () => {
     mockedAxios.create.mockReturnValue({
       interceptors: {
         request: {
-          use: vi.fn((onFulfilled) => {
+          use: vi.fn(() => {
             return 0;
           }),
         },
         response: {
-          use: vi.fn((onFulfilled, onRejected) => {
+          use: vi.fn(() => {
             return 0;
           }),
         },
@@ -330,8 +330,8 @@ describe('ApiClient', () => {
     });
   });
 
-  // @scenario consumer=product, disk_setting=fake_cdn, e2e=drivers_tab_card, hook=unregistered, override=follow_core, row_state=new_remote_row
-  // @effects cross_origin_asset_request_omits_session_token
+  // 교차 출처 요청의 인증 헤더 차단. 이 단위가 재는 축(디스크, 소비처, 훅)만 각 시험에 표식하고,
+  // 화면 축(e2e, override, row_state)까지 든 전체 조합은 화면에서 재는 public-asset-storage.spec.ts 가 맡는다.
   describe('교차 출처 요청의 인증 헤더 차단', () => {
     /**
      * 요청 인터셉터를 캡처해 임의 config 로 실행합니다.

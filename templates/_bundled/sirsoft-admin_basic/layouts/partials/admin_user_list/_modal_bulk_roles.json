@@ -10,7 +10,139 @@
     "name": "Modal",
     "props": {
         "title": "{{_global.userBulkRoleMode === 'remove' ? '$t:admin.users.bulk_roles.remove_title' : '$t:admin.users.bulk_roles.add_title'}}",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.isProcessing}}",
+                    "className": "btn btn-secondary"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.userBulkRoleResult ? $t:admin.users.bulk_roles.close : $t:common.cancel}}"
+                    }
+                ]
+            },
+            {
+                "id": "bulk_roles_apply",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!_global.userBulkRoleResult}}",
+                "actions": [
+                    {
+                        "comment": "역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —\n               제외되거나 이미 반영되어 바뀌지 않은 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 창 닫기를 목록 재요청보다 먼저 둔다 — 재요청을\n               기다리는 동안 닫힐 창에 결과 카드가 잠깐 비치지 않게 한다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아\n               300ms 디바운스로 연타를 한 번으로 모은다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isProcessing": true,
+                                    "userBulkRoleError": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/users/bulk-roles",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PATCH",
+                                    "body": {
+                                        "uuids": "{{_global.selectedIds_admin_users ?? []}}",
+                                        "role_ids": "{{_global.userBulkRoleIds ?? []}}",
+                                        "mode": "{{_global.userBulkRoleMode ?? 'add'}}"
+                                    }
+                                },
+                                "onSuccess": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": false,
+                                                "selectedIds_admin_users": [],
+                                                "userBulkRoleResult": "{{response.data}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "if": "{{(response.data?.skipped_count ?? 0) === 0 && (response.data?.unchanged_count ?? 0) === 0}}"
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "users"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProcessing": false,
+                                        "userBulkRoleError": "{{error.errors?.role_ids?.[0] ?? error.errors?.uuids?.[0] ?? error.message ?? '$t:errors.server_error'}}"
+                                    }
+                                },
+                                "errorHandling": {
+                                    "403": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": false,
+                                            "userBulkRoleError": "{{error.message ?? '$t:auth.permission_denied'}}"
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "debounce": 300
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.isProcessing || (_global.userBulkRoleIds ?? []).length === 0}}",
+                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isProcessing}}",
+                        "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "spin": true
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isProcessing ? $t:common.processing : $t:admin.users.bulk_roles.apply}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -260,145 +392,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "disabled": "{{_global.isProcessing}}",
-                        "className": "btn btn-secondary"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.userBulkRoleResult ? $t:admin.users.bulk_roles.close : $t:common.cancel}}"
-                        }
-                    ]
-                },
-                {
-                    "id": "bulk_roles_apply",
-                    "type": "basic",
-                    "name": "Button",
-                    "if": "{{!_global.userBulkRoleResult}}",
-                    "actions": [
-                        {
-                            "comment": "역할 일괄 변경 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 성공하면 선택을 비우고 목록을 다시 받는다 —\n               제외되거나 이미 반영되어 바뀌지 않은 회원이 없으면 창을 닫고, 있으면 결과를 보여 준 채 둔다. 창 닫기를 목록 재요청보다 먼저 둔다 — 재요청을\n               기다리는 동안 닫힐 창에 결과 카드가 잠깐 비치지 않게 한다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아\n               300ms 디바운스로 연타를 한 번으로 모은다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isProcessing": true,
-                                        "userBulkRoleError": null
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/users/bulk-roles",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "PATCH",
-                                        "body": {
-                                            "uuids": "{{_global.selectedIds_admin_users ?? []}}",
-                                            "role_ids": "{{_global.userBulkRoleIds ?? []}}",
-                                            "mode": "{{_global.userBulkRoleMode ?? 'add'}}"
-                                        }
-                                    },
-                                    "onSuccess": {
-                                        "handler": "sequence",
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isProcessing": false,
-                                                    "selectedIds_admin_users": [],
-                                                    "userBulkRoleResult": "{{response.data}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "success",
-                                                    "message": "{{response.message}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "closeModal",
-                                                "if": "{{(response.data?.skipped_count ?? 0) === 0 && (response.data?.unchanged_count ?? 0) === 0}}"
-                                            },
-                                            {
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                    "dataSourceId": "users"
-                                                }
-                                            }
-                                        ]
-                                    },
-                                    "onError": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isProcessing": false,
-                                            "userBulkRoleError": "{{error.errors?.role_ids?.[0] ?? error.errors?.uuids?.[0] ?? error.message ?? '$t:errors.server_error'}}"
-                                        }
-                                    },
-                                    "errorHandling": {
-                                        "403": {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": false,
-                                                "userBulkRoleError": "{{error.message ?? '$t:auth.permission_denied'}}"
-                                            }
-                                        }
-                                    }
-                                }
-                            ],
-                            "debounce": 300
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "disabled": "{{_global.isProcessing || (_global.userBulkRoleIds ?? []).length === 0}}",
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isProcessing}}",
-                            "props": {
-                                "name": "spinner",
-                                "size": "sm",
-                                "spin": true
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isProcessing ? $t:common.processing : $t:admin.users.bulk_roles.apply}}"
                         }
                     ]
                 }

@@ -43,7 +43,7 @@ import {
   disconnectParamAllLocales,
 } from './inlineBindingApi';
 import { removeParamBinding, bindingChipLabel, hasSettingsRef, toValueChipTokens } from '../../spec/inlineBindingUtils';
-import { parseBindingExpression, buildBindingExpression } from '../../spec/bindingCandidates';
+import { parseBindingExpression } from '../../spec/bindingCandidates';
 import { isTemplateSettingsBinding, TemplateSettingsOpenLink } from './boundValueGuard';
 import type { BindingCandidate } from '../../spec/bindingCandidates';
 import {

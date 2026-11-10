@@ -6,17 +6,16 @@
  * 함께 사라지는 것을 막는다. 이 컴포넌트는 게시글·페이지 본문을 그대로 innerHTML
  * 로 넣으므로, 여기서 새는 것이 곧 저장형 XSS 다.
  *
- * @effects script_tag_blocked, event_handler_attr_blocked, javascript_url_blocked,
+ * 효과 요약(마커 아님, 평문): script_tag_blocked, event_handler_attr_blocked, javascript_url_blocked,
  *          embedded_frame_blocked, safe_markup_preserved, plain_text_mode_escapes_html
  */
-// @scenario content_kind=script_injection, mode=html
-// @scenario content_kind=event_handler, mode=html
-// @scenario content_kind=javascript_url, mode=html
-// @scenario content_kind=embedded_frame, mode=html
-// @scenario content_kind=safe_markup, mode=html
-// @scenario content_kind=script_injection, mode=text
+// 조합 요약(마커 아님, 평문): content_kind=script_injection, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=event_handler, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=javascript_url, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=embedded_frame, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=safe_markup, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=script_injection, mode=text
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { HtmlContent } from '../HtmlContent';

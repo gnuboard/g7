@@ -24,6 +24,7 @@ const saveCall = () => actionsOf(findById(form, 'footer_save_button'), 'apiCall'
 
 describe('배너 등록·수정 화면', () => {
   // @scenario surface=form_create_uses_query_position_and_temp_key
+  // @effects banner_form_initializes_from_entry
   it('등록 진입은 폼을 기본값으로 되돌리고 위치를 쿼리에서, 임시 키를 새로 만든다', () => {
     const init = asArray<any>(layout.init_actions);
     const reset = init.find((a) => a.if === '{{!route.id}}' && a.params?.form && typeof a.params.form === 'object');
@@ -36,6 +37,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_edit_initializes_once
+  // @effects banner_form_initializes_from_entry
   it('수정 진입은 원본을 initLocal 로 한 번만 심고, 받기 성공 콜백에서 폼을 다시 쓰지 않는다', () => {
     const source = layout.data_sources.find((s: any) => s.id === 'banner');
     expect(source.if).toBe('{{!!route.id}}');
@@ -53,6 +55,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_period_inputs_toggle
+  // @effects banner_period_sent_only_when_scheduled
   it('시작·종료 입력은 「기간 지정」일 때만 보이고, 저장은 그 값을 starts_at·ends_at 으로 보낸다', () => {
     const range = findById(form, 'period_range')!;
     expect(range.if).toBe("{{_local.form?.display_period === 'range'}}");
@@ -65,6 +68,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_multilingual_tabs_active_locales
+  // @effects multilingual_fields_follow_active_locales
   it('머리글·제목·설명·버튼 문구·대체 텍스트는 언어 탭 입력이고(사이트 활성 언어), 제목만 필수다', () => {
     const inputs = collect(form, (n) => n.name === 'MultilingualInput');
     expect(inputs.map((n) => n.props.name)).toEqual(['eyebrow', 'title', 'description', 'button_text', 'image_alt']);
@@ -76,6 +80,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_images_apply_on_save
+  // @effects banner_images_apply_on_save
   it('실제 업로드 상태 식이 대기·압축·진행·실패를 막고 완료·제거 뒤 저장을 연다', () => {
     const disabled = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
     const isDisabled = (state: any) => Function('_local', `return (${disabled})`)(state);
@@ -96,6 +101,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_images_apply_on_save
+  // @effects banner_images_apply_on_save
   it('업로드는 등록·수정 모두 임시 키로만 보내고, 빼기는 화면에서만 — 이미지는 저장 요청의 이미지 ID 로 바뀐다', () => {
     for (const [id, device] of [['pc_image_uploader', 'pc'], ['mobile_image_uploader', 'mobile']]) {
       const uploader = findById(form, id)!;
@@ -118,6 +124,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_save_double_click_sends_once
+  // @effects banner_save_sent_once
   it('저장을 빠르게 두 번 눌러도 한 번만 보낸다 — 잠금(isSaving)이 화면에 반영되기 전 같은 틱의 두 번째 클릭은 진입점 debounce 가 합친다', () => {
     const click = asArray<any>(findById(form, 'footer_save_button')!.actions).find((a) => a.type === 'click');
     expect(click.handler).toBe('sequence');
@@ -128,6 +135,7 @@ describe('배너 등록·수정 화면', () => {
 
   describe('[case:components-misc-basic-component-missing-in-template] 템플릿에 없는 기본 컴포넌트', () => {
     // @scenario surface=form_preview_renders_admin_component
+    // @effects banner_form_preview_renders
     it('미리보기 칸은 관리자 템플릿에 있는 기본 컴포넌트(Section)로 그린다 — 없는 이름(Aside)은 화면에서 조용히 빠진다', () => {
       const card = findById(form, 'preview_card')!;
       expect(card.name).toBe('Section');
@@ -138,6 +146,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_link_example_path_exists
+  // @effects link_example_points_to_real_page
   it('링크 칸 예시의 사이트 안 주소는 번들 사용자 템플릿(sirsoft-basic)에 실제로 있는 화면이다 — 예시대로 넣으면 404 로 가지 않는다', () => {
     const routes = JSON.parse(readFileSync(resolve(__dirname, '../../../../../../../templates/_bundled/sirsoft-basic/routes.json'), 'utf8'));
     // 쇼핑몰 경로는 이커머스 기본 경로(shop)로 펼친다
@@ -167,6 +176,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_upload_limit_uses_effective_mb
+  // @effects upload_limit_matches_server
   it('업로더 최대 용량과 안내 문구는 설정·서버 한도 중 작은 값(effective_mb)을 쓴다', () => {
     const upload = layout.computed.uploadMb as string;
     expect(upload).toBe('{{position_settings?.data?.upload?.effective_mb ?? 5}}');
@@ -179,6 +189,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_recommended_size_warning
+  // @effects size_warning_does_not_block_save
   it('올린 이미지가 권장 크기와 다르면 노란 안내만 보이고 저장은 막지 않는다', () => {
     expect(layout.computed.pcSizeMismatch).toContain('1920');
     expect(layout.computed.pcSizeMismatch).toContain('640');
@@ -190,6 +201,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_validation_errors_render
+  // @effects validation_errors_shown_and_save_flag_cleared
   it('422 는 칸 아래 사유와 위쪽 요약으로 보이고, 저장 진행 깃발은 성공·실패 양쪽에서 꺼진다', () => {
     const call = saveCall();
     const text = json(call);
@@ -217,6 +229,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_images_apply_on_save
+  // @effects banner_images_apply_on_save
   it('업로드 값은 화면 갈래(등록/수정)를 가리지 않는다', () => {
     for (const id of ['pc_image_uploader', 'mobile_image_uploader']) {
       expect(findById(form, id)!.props.uploadParams).not.toContain('route.id');
@@ -266,6 +279,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=preview_frame_slot_inside_device_viewport
+  // @effects preview_matches_site_slot
   it('편집 미리보기는 활성 사용자 템플릿 구좌 틀과 폼의 위치를 넘긴다', () => {
     const preview = findById(form, 'form_preview')!;
     expect(preview.props.frame).toBe('{{position_settings?.data?.editor?.preview_frame ?? null}}');
@@ -273,16 +287,27 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_section_order_image_first
+  // @effects form_guides_operator_before_save
   it('입력 순서는 기본 정보 → 미디어 → 이미지 → 이미지 표시 → 문구 → 문구 위치·효과 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
     const sections = asArray<any>(findById(form, 'form_sections')!.children).map((n) => n.id).filter((id) => String(id).endsWith('_card'));
     expect(sections).toEqual(['basic_card', 'media_card', 'image_card', 'presentation_card', 'text_card', 'text_layout_card', 'link_card', 'period_card']);
   });
 
   // @scenario surface=form_preview_first_on_mobile
+  // @effects form_guides_operator_before_save
   it('좁은 화면에서는 미리보기가 입력 위에 오고, 넓은 화면에서는 오른쪽 열에 고정된다', () => {
     const preview = findById(form, 'preview_card')!;
+    // 폭 분기는 엔진 responsive 로 한다 — 기본(좁은 화면)은 맨 앞에 고정 없이, desktop 은 맨 뒤에 고정(sticky).
+    // 폭 미디어로 고정을 풀던 의미 클래스(hs-editor-preview)는 쓰지 않는다.
     const classes = String(preview.props.className).split(/\s+/);
-    expect(classes).toEqual(expect.arrayContaining(['hs:order-first', 'hs:lg:order-last', 'hs-editor-preview']));
+    expect(classes).toEqual(expect.arrayContaining(['hs:order-first']));
+    expect(classes).not.toEqual(expect.arrayContaining(['hs:order-last']));
+    expect(classes).not.toContain('hs:sticky');
+    expect(classes).not.toContain('hs-editor-preview');
+    const wide = String(preview.responsive?.desktop?.props?.className).split(/\s+/);
+    expect(wide).toEqual(expect.arrayContaining(['hs:order-last', 'hs:sticky', 'hs:top-[84px]']));
+    expect(wide).not.toContain('hs:order-first');
+    expect(wide).not.toContain('hs-editor-preview');
   });
 
   // @scenario surface=form_save_blocked_reason
@@ -381,6 +406,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_button_needs_link_warning
+  // @effects form_guides_operator_before_save
   it('버튼 문구가 어느 언어든 있는데 이동 주소가 비면 「주소를 넣어야 버튼이 보입니다」를 보인다', () => {
     const expr = findById(form, 'button_link_warning')!.if.slice(2, -2);
     const warn = (formState: any) => Function('_local', `return (${expr})`)({ form: formState });
@@ -393,6 +419,7 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_link_behavior_summary
+  // @effects form_guides_operator_before_save
   it('링크 칸 아래에 배너를 누르면 어떻게 되는지 한 줄로 요약한다(버튼만 / 배너 전체 / 이동 안 함)', () => {
     const ids = ['link_behavior_button', 'link_behavior_whole', 'link_behavior_none'];
     const shown = (formState: any) => ids.filter((id) => Function('_local', `return (${findById(form, id)!.if.slice(2, -2)})`)({ form: formState }));

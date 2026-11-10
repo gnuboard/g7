@@ -1,0 +1,28 @@
+feature: CardGrid 기본 계약 — 렌더 상태·클래스·페이지네이션·스켈레톤·조건 판정 위임
+
+description: |
+  관리자 카드 목록이 쓰는 CardGrid 의 컴포넌트 단위 기본 계약. 카드 수(`gridColumns`·`responsiveColumns`)가
+  Tailwind 반응형 접두 클래스 대신 렌더 폭으로 고른 `grid-cols-N` 하나로 바뀌며 기존 단위 테스트의 클래스 단언이
+  새 표기로 갱신되었다. 그 파일의 테스트를 기능 영역 축으로 묶는다. 폭별 카드 수·resize·미리보기 폭은
+  `admin-component-width-classes.yaml`, 카드 메뉴 실행은 `card-grid-action-dispatch.yaml`, 셀 렌더 환경은
+  `preview-render-environment.yaml` 이 소유한다.
+
+axes:
+  area:
+    - render                 # 렌더, 데이터 undefined 스켈레톤, 빈 배열 안내, 카드 렌더 호출 수, 빈 안내 문구
+    - classes                # gridColumns·gap·responsiveColumns·className·cardClassName 의 클래스 반영
+    - pagination             # 클라이언트·서버 페이지네이션 단추, 이동, 비활성, 항상 표시, 단추 문구, 마지막 페이지를 모르는 서버 목록(serverHasMorePages)
+    - skeleton               # cellChildren·skeletonCellChildren 기반 스켈레톤 생성과 개수·반복·조건 처리
+    - condition_delegation   # 셀 조건 판정을 G7Core.evaluateCondition 에 위임
+
+effects:
+  - card_grid_renders_states                    # 데이터 상태별(undefined·빈 배열·데이터)로 스켈레톤·안내·카드를 그린다
+  - card_grid_layout_props_to_classes           # 카드 수·간격·사용자 클래스가 접두 없는 클래스로 반영된다
+  - card_grid_pagination_controls               # 페이지네이션 단추와 이동·비활성·표시 조건
+  - card_grid_unbounded_pagination_follows_server_has_more  # 마지막 페이지가 null 이면 1 로 채우지 않고 「다음」 을 서버의 다음 여부로 연다(DataGrid 와 같은 규칙)
+  - card_grid_skeleton_from_cell_children       # 셀 정의에서 스켈레톤을 만든다
+  - card_grid_condition_delegated_to_engine     # 조건 판정은 엔진에 맡기고 API 가 없으면 표시로 처리한다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CardGrid.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CardGrid.unboundedPagination.test.tsx

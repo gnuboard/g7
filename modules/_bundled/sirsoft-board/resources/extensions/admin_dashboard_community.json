@@ -78,16 +78,40 @@
             "id": "community_section_wrapper",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "tablet": {
+                    "props": {
+                        "className": "board:mb-6"
+                    }
+                },
+                "desktop": {
+                    "props": {
+                        "className": "board:mb-8"
+                    }
+                }
+            },
             "props": {
-                "className": "board:mb-4 board:md:mb-6 board:lg:mb-8"
+                "className": "board:mb-4"
             },
             "children": [
                 {
                     "id": "community_section_grid",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "tablet": {
+                            "props": {
+                                "className": "board:grid board:grid-cols-2 board:gap-4"
+                            }
+                        },
+                        "desktop": {
+                            "props": {
+                                "className": "board:grid board:grid-cols-4 board:gap-5"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "board:grid board:grid-cols-1 board:md:grid-cols-2 board:lg:grid-cols-4 board:gap-3 board:md:gap-4 board:lg:gap-5"
+                        "className": "board:grid board:grid-cols-1 board:gap-3"
                     },
                     "children": [
                         {
@@ -98,8 +122,20 @@
                                 "enabled": true,
                                 "data_sources": "board_overview"
                             },
+                            "responsive": {
+                                "tablet": {
+                                    "props": {
+                                        "className": "board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-2"
+                                    }
+                                },
+                                "desktop": {
+                                    "props": {
+                                        "className": "board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "board:flex board:items-center board:flex-wrap board:gap-2 board:md:col-span-2 board:lg:col-span-4"
+                                "className": "board:flex board:items-center board:flex-wrap board:gap-2"
                             },
                             "children": [
                                 {
@@ -167,16 +203,30 @@
                                     "board_post_graph"
                                 ]
                             },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:col-span-2 board:h-full board:flex board:flex-col"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:md:p-6 board:rounded-xl board:md:rounded-2xl board:md:col-span-2 board:h-full board:flex board:flex-col"
+                                "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col"
                             },
                             "children": [
                                 {
                                     "id": "post_graph_header",
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "board:flex board:gap-2 board:flex-row board:items-center board:justify-between board:mb-6"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "board:flex board:flex-col board:gap-2 board:md:flex-row board:md:items-center board:md:justify-between board:mb-4 board:md:mb-6"
+                                        "className": "board:flex board:flex-col board:gap-2 board:mb-4"
                                     },
                                     "children": [
                                         {
@@ -258,8 +308,15 @@
                                     "id": "post_graph_stats",
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "board:flex board:gap-8 board:mb-6"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "board:flex board:gap-4 board:md:gap-8 board:mb-4 board:md:mb-6"
+                                        "className": "board:flex board:gap-4 board:mb-4"
                                     },
                                     "children": [
                                         {
@@ -288,8 +345,15 @@
                                                             "id": "total_posts_value",
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "responsive": {
+                                                                "768-": {
+                                                                    "props": {
+                                                                        "className": "board:text-2xl board:font-bold board:text-slate-900 board:dark:text-white"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "board:text-lg board:md:text-2xl board:font-bold board:text-slate-900 board:dark:text-white"
+                                                                "className": "board:text-lg board:font-bold board:text-slate-900 board:dark:text-white"
                                                             },
                                                             "text": "{{board_post_graph?.data?.total_posts ?? 0 | number}}"
                                                         },
@@ -332,8 +396,15 @@
                                                             "id": "total_comments_value",
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "responsive": {
+                                                                "768-": {
+                                                                    "props": {
+                                                                        "className": "board:text-2xl board:font-bold board:text-slate-900 board:dark:text-white"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "board:text-lg board:md:text-2xl board:font-bold board:text-slate-900 board:dark:text-white"
+                                                                "className": "board:text-lg board:font-bold board:text-slate-900 board:dark:text-white"
                                                             },
                                                             "text": "{{board_post_graph?.data?.total_comments ?? 0 | number}}"
                                                         },
@@ -384,8 +455,15 @@
                                 "enabled": true,
                                 "data_sources": "board_recent_posts"
                             },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:h-full board:flex board:flex-col"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:md:p-6 board:rounded-xl board:md:rounded-2xl board:h-full board:flex board:flex-col"
+                                "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col"
                             },
                             "children": [
                                 {
@@ -505,8 +583,15 @@
                                 "enabled": true,
                                 "data_sources": "board_pending_reports"
                             },
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:h-full board:flex board:flex-col"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:md:p-6 board:rounded-xl board:md:rounded-2xl board:h-full board:flex board:flex-col"
+                                "className": "board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col"
                             },
                             "children": [
                                 {

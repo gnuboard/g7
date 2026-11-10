@@ -211,7 +211,9 @@
     @apply w-full h-full object-cover;
   }
 
+  /* 번들 레이아웃은 이 클래스를 쓰지 않는다(사용자 이름 칸의 숨김·표시는 엔진 responsive 로 나눈다). 폐지 예정 */
   .user_info {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     @apply hidden md:block;
   }
 

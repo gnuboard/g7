@@ -112,8 +112,15 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{user?.data?.ecommerce_mileage?.enabled}}",
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "ecommerce:grid ecommerce:grid-cols-4 ecommerce:gap-4 ecommerce:mb-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:lg:grid-cols-4 ecommerce:gap-4 ecommerce:mb-4"
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-4"
                                     },
                                     "children": [
                                         {

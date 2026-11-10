@@ -1,27 +1,36 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 
+/**
+ * 그누보드7 Core 에서 이 컴포넌트가 쓰는 부분만 적은 모양.
+ * 전역 Window 를 넓히지 않는다 — 코어의 Window.G7Core 선언과 합쳐지면 코어 쪽 속성(TemplateEngine 등)이 가려진다(#869).
+ */
+interface G7CoreLike {
+  createLogger?: (name: string) => {
+    log: (...args: unknown[]) => void;
+    warn: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => void;
+  };
+  AuthManager?: { getInstance: () => AuthManagerLike };
+}
+
+/** 그누보드7 Core 의 AuthManager 인스턴스에서 이 컴포넌트가 쓰는 부분 */
+interface AuthManagerLike {
+  getUser: () => { uuid: string; [key: string]: any } | null;
+}
+
+/**
+ * window.G7Core 를 이 파일의 지역 타입으로 읽는다.
+ *
+ * @returns 코어 전역 객체, 코어가 아직 없으면 undefined
+ */
+const G7Core = (): G7CoreLike | undefined => (window as unknown as { G7Core?: G7CoreLike }).G7Core;
+
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
-const logger = ((window as any).G7Core?.createLogger?.('Comp:FilterVisibility')) ?? {
+const logger = G7Core()?.createLogger?.('Comp:FilterVisibility') ?? {
     log: (...args: unknown[]) => console.log('[Comp:FilterVisibility]', ...args),
     warn: (...args: unknown[]) => console.warn('[Comp:FilterVisibility]', ...args),
     error: (...args: unknown[]) => console.error('[Comp:FilterVisibility]', ...args),
 };
-
-/**
- * 전역 window 타입 확장
- * 그누보드7 Core의 AuthManager에 접근하기 위한 타입 선언
- */
-declare global {
-  interface Window {
-    G7Core?: {
-      AuthManager?: {
-        getInstance: () => {
-          getUser: () => { uuid: string; [key: string]: any } | null;
-        };
-      };
-    };
-  }
-}
 
 export interface FilterVisibilitySelectorProps {
   /** 컴포넌트 고유 ID (localStorage 키 생성에 사용) */
@@ -78,7 +87,7 @@ export const FilterVisibilitySelector: React.FC<FilterVisibilitySelectorProps> =
   // 그누보드7 Core의 AuthManager를 통해 현재 로그인한 사용자 ID 가져오기
   const userId = useMemo(() => {
     try {
-      const authManager = window.G7Core?.AuthManager?.getInstance();
+      const authManager = G7Core()?.AuthManager?.getInstance();
       if (authManager) {
         const user = authManager.getUser();
         return user?.uuid;

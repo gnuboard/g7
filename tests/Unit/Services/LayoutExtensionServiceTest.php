@@ -247,6 +247,358 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
+     * Modal 고정 하단(`props.footer`)과 제목 앞뒤 붙임(`titlePrefix`·`titleSuffix`) 안의 확장점도 채워지는지 검증한다(#869).
+     *
+     * 이 세 자리는 `children` 이 아니라 Modal 의 props 에 실린다. 알림 템플릿 편집 창은 바닥 단추 줄에
+     * `notification_template_form_footer_actions` 확장점을 두는데, 그 줄을 고정 하단으로 옮기면 서버가 확장점을
+     * 걷지 않아 확장이 넣는 단추(테스트 발송 등)가 사라졌다. 레이아웃 `modals` 갈래의 창도 같은 규칙이다.
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects applies_extension_points_inside_modal_footer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_applies_extension_points_inside_modal_footer_and_title_affixes(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'notification_template_form_footer_actions',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'extension_point' => 'notification_template_form_footer_actions',
+                'components' => [
+                    ['type' => 'basic', 'name' => 'Button', 'text' => 'SEND_TEST'],
+                ],
+                'data_sources' => [
+                    ['id' => 'sms_quota', 'endpoint' => '/api/sms/quota'],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $slot = ['type' => 'extension_point', 'name' => 'notification_template_form_footer_actions'];
+        $modal = [
+            'id' => 'modal_notification_template_form',
+            'type' => 'composite',
+            'name' => 'Modal',
+            'props' => [
+                'title' => '알림 템플릿',
+                'titleSuffix' => [$slot],
+                'footer' => [
+                    ['type' => 'basic', 'name' => 'Button', 'text' => '$t:common.cancel'],
+                    $slot,
+                    ['type' => 'basic', 'name' => 'Button', 'text' => '$t:common.save'],
+                ],
+            ],
+            'children' => [['type' => 'basic', 'name' => 'Div']],
+        ];
+        $layout = [
+            'layout_name' => 'admin_settings',
+            'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div', 'children' => [$modal]]],
+            'modals' => [$modal],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        foreach (['본문 트리' => $result['components'][0]['children'][0], 'modals 갈래' => $result['modals'][0]] as $where => $node) {
+            $footer = $node['props']['footer'];
+            $this->assertSame('extension_point', $footer[1]['type'], $where);
+            $this->assertSame('SEND_TEST', $footer[1]['children'][0]['text'] ?? null, "{$where}: 고정 하단 안 확장점에 조각이 주입되어야 한다");
+            $this->assertSame('$t:common.save', $footer[2]['text'], "{$where}: 확장점 밖 단추는 그대로");
+            $this->assertSame('SEND_TEST', $node['props']['titleSuffix'][0]['children'][0]['text'] ?? null, "{$where}: 제목 뒤 붙임 안 확장점");
+        }
+
+        // 조각의 데이터 소스는 레이아웃에 한 번 병합된다
+        $this->assertContains('sms_quota', array_column($result['data_sources'], 'id'));
+    }
+
+    /**
+     * 실제 번들 알림 템플릿 편집 창(관리자 환경설정)의 고정 하단 확장점에 확장 단추가 주입되는지 검증한다(#869).
+     *
+     * 창의 바닥 줄(미리보기, 취소, 확장 슬롯, 저장)을 Modal 고정 하단으로 옮겼다. 확장 슬롯
+     * `notification_template_form_footer_actions` 는 알림톡·SMS 채널이 「테스트 발송」 같은 단추를 넣는 자리라,
+     * 서버가 고정 하단을 걷지 않으면 그 단추가 사라진다. 배포 JSON 을 그대로 읽어 잰다.
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects applies_extension_points_inside_modal_footer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bundled_notification_template_modal_footer_slot_receives_extension_buttons(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'notification_template_form_footer_actions',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'extension_point' => 'notification_template_form_footer_actions',
+                'components' => [['id' => 'ext_send_test', 'type' => 'basic', 'name' => 'Button', 'text' => 'SEND_TEST']],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $path = base_path('templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_notification_template_form.json');
+        $modal = json_decode((string) file_get_contents($path), true);
+        $this->assertSame('Modal', $modal['name'] ?? null);
+
+        $result = $this->service->applyExtensions([
+            'layout_name' => 'admin_settings',
+            'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div']],
+            'modals' => [$modal],
+        ], $this->template->id);
+
+        $footer = $result['modals'][0]['props']['footer'] ?? [];
+        $slot = collect($footer)->firstWhere('type', 'extension_point');
+        $this->assertNotNull($slot, '고정 하단에 확장 슬롯이 없습니다');
+        $this->assertSame('notification_template_form_footer_actions', $slot['name']);
+        $this->assertSame('ext_send_test', $slot['children'][0]['id'] ?? null, '고정 하단 확장 슬롯에 확장 단추가 주입되지 않았습니다');
+        // 주입 단추는 확장점 props(정의·템플릿 등)를 받는다
+        $this->assertArrayHasKey('stateKey', $slot['children'][0]['extensionPointProps'] ?? []);
+    }
+
+    /**
+     * 오버레이(`target_id` 주입·`inject_props`)가 Modal 고정 하단(`props.footer`) 안의 노드도 찾는지 검증한다(#869).
+     *
+     * 확인 창 바닥 단추를 고정 하단으로 모으자 그 단추는 `children` 이 아니라 Modal props 아래에 놓였다. 대상 찾기가
+     * `children` 만 따라가면 「저장 단추 뒤에 단추 하나 더」 같은 오버레이가 조용히 빠진다.
+     *
+     * @scenario kind=overlay, merge_target=components
+     *
+     * @effects overlay_targets_nodes_inside_modal_footer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overlay_targets_nodes_inside_modal_footer(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_detail',
+                'injections' => [
+                    [
+                        'target_id' => 'confirm_save_button',
+                        'position' => 'append',
+                        'components' => [['id' => 'ext_extra_button', 'type' => 'basic', 'name' => 'Button', 'text' => 'EXTRA']],
+                    ],
+                    [
+                        'target_id' => 'confirm_cancel_button',
+                        'position' => 'inject_props',
+                        'props' => ['className' => 'btn btn-secondary ext-marked'],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        // 본문 트리에 놓인 창으로 잰다(`modals` 갈래 창은 아래 test_overlay_targets_nodes_inside_modals_branch_and_its_footer 가 잰다)
+        $layout = [
+            'layout_name' => 'admin_user_detail',
+            'components' => [[
+                'id' => 'page',
+                'type' => 'basic',
+                'name' => 'Div',
+                'children' => [[
+                    'id' => 'confirm_modal',
+                    'type' => 'composite',
+                    'name' => 'Modal',
+                    'props' => [
+                        'footer' => [
+                            ['id' => 'confirm_cancel_button', 'type' => 'basic', 'name' => 'Button', 'props' => ['className' => 'btn btn-secondary']],
+                            ['id' => 'confirm_save_button', 'type' => 'basic', 'name' => 'Button'],
+                        ],
+                    ],
+                    'children' => [['type' => 'basic', 'name' => 'P', 'text' => '확인']],
+                ]],
+            ]],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $footer = $result['components'][0]['children'][0]['props']['footer'];
+
+        $this->assertSame(['confirm_cancel_button', 'confirm_save_button', 'ext_extra_button'], array_column($footer, 'id'), '고정 하단 단추 뒤 주입이 빠졌습니다');
+        $this->assertStringContainsString('ext-marked', $footer[0]['props']['className'] ?? '', '고정 하단 단추의 props 주입이 빠졌습니다');
+    }
+
+    /**
+     * 오버레이가 레이아웃 `modals` 갈래 창의 노드(본문과 고정 하단)도 겨누는지 검증한다(#869 C2).
+     *
+     * 페이지 레이아웃의 확인 창은 대부분 `modals` 갈래에 있다. 대상 찾기가 `components` 트리만 걸으면 그 창의 단추
+     * 뒤에 붙이는 주입과 props 주입이 경고 로그만 남기고 빠진다. `components` 를 먼저 찾고, 없을 때만 `modals` 를 찾는다.
+     *
+     * @scenario kind=overlay, merge_target=modals
+     *
+     * @effects overlay_targets_nodes_inside_modals_branch
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overlay_targets_nodes_inside_modals_branch_and_its_footer(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_list',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_list',
+                'injections' => [
+                    [
+                        'target_id' => 'delete_confirm_message',
+                        'position' => 'append',
+                        'components' => [['id' => 'ext_notice', 'type' => 'basic', 'name' => 'P', 'text' => 'NOTICE']],
+                    ],
+                    [
+                        'target_id' => 'delete_confirm_button',
+                        'position' => 'append',
+                        'components' => [['id' => 'ext_footer_button', 'type' => 'basic', 'name' => 'Button', 'text' => 'EXTRA']],
+                    ],
+                    [
+                        'target_id' => 'delete_cancel_button',
+                        'position' => 'inject_props',
+                        'props' => ['className' => 'btn btn-secondary ext-marked'],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_user_list',
+            'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div', 'children' => []]],
+            'modals' => [[
+                'id' => 'delete_confirm_modal',
+                'type' => 'composite',
+                'name' => 'Modal',
+                'props' => [
+                    'footer' => [
+                        ['id' => 'delete_cancel_button', 'type' => 'basic', 'name' => 'Button', 'props' => ['className' => 'btn btn-secondary']],
+                        ['id' => 'delete_confirm_button', 'type' => 'basic', 'name' => 'Button'],
+                    ],
+                ],
+                'children' => [['id' => 'delete_confirm_message', 'type' => 'basic', 'name' => 'P', 'text' => '지울까요?']],
+            ]],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $modal = $result['modals'][0];
+
+        $this->assertSame(['delete_confirm_message', 'ext_notice'], array_column($modal['children'], 'id'), 'modals 갈래 창 본문 주입이 빠졌습니다');
+        $this->assertSame(['delete_cancel_button', 'delete_confirm_button', 'ext_footer_button'], array_column($modal['props']['footer'], 'id'), 'modals 갈래 창 고정 하단 주입이 빠졌습니다');
+        $this->assertStringContainsString('ext-marked', $modal['props']['footer'][0]['props']['className'] ?? '', 'modals 갈래 창 단추 props 주입이 빠졌습니다');
+    }
+
+    /**
+     * 같은 id 가 `components` 와 `modals` 양쪽에 있으면 `components` 쪽 첫 노드 하나에만 주입하는지 검증한다(#869 C2).
+     *
+     * overlay 는 트리에서 `target_id` 가 일치하는 첫 노드 하나에만 들어간다(종전 규칙). `modals` 를 찾는 범위에 더해도
+     * 본문 트리가 먼저이고, 두 곳에 함께 들어가 같은 조각이 두 번 그려지지 않는다.
+     *
+     * @scenario kind=overlay, merge_target=modals
+     *
+     * @effects overlay_prefers_components_over_modals_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overlay_prefers_components_when_same_id_also_in_modals(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_list',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_list',
+                'injections' => [[
+                    'target_id' => 'shared_anchor',
+                    'position' => 'append',
+                    'components' => [['id' => 'ext_once', 'type' => 'basic', 'name' => 'Span']],
+                ]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_user_list',
+            'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div', 'children' => [['id' => 'shared_anchor', 'type' => 'basic', 'name' => 'Span']]]],
+            'modals' => [['id' => 'm', 'type' => 'composite', 'name' => 'Modal', 'children' => [['id' => 'shared_anchor', 'type' => 'basic', 'name' => 'Span']]]],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        $this->assertSame(['shared_anchor', 'ext_once'], array_column($result['components'][0]['children'], 'id'));
+        $this->assertSame(['shared_anchor'], array_column($result['modals'][0]['children'], 'id'), 'components 에서 찾았는데 modals 에도 들어갔습니다');
+    }
+
+    /**
+     * 편집 모드에서 확장이 주입한 Modal 의 고정 하단·제목 붙임 자식에도 출처 메타가 붙는지 검증한다(#869 C3).
+     *
+     * 출처 메타 부여가 `children` 만 걸으면 주입된 창의 바닥 단추에는 `__source` 가 없어, 편집기가 그 단추를
+     * 호스트 노드로 보고 호스트 레이아웃에 저장해 버린다.
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects source_meta_reaches_modal_surface_children
+     *
+     * @return void 반환값 없음
+     */
+    public function test_source_meta_reaches_injected_modal_footer_and_title_affix_children(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'admin.dashboard.widgets',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-support',
+            'content' => [
+                'extension_point' => 'admin.dashboard.widgets',
+                'components' => [[
+                    'id' => 'support_modal',
+                    'type' => 'composite',
+                    'name' => 'Modal',
+                    'props' => [
+                        'titlePrefix' => [['id' => 'support_title_icon', 'type' => 'basic', 'name' => 'Icon']],
+                        'footer' => [['id' => 'support_footer_button', 'type' => 'basic', 'name' => 'Button', 'children' => [['id' => 'support_footer_label', 'type' => 'basic', 'name' => 'Span']]]],
+                    ],
+                    'children' => [['id' => 'support_body', 'type' => 'basic', 'name' => 'P']],
+                ]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_dashboard',
+            'components' => [['id' => 'dashboard_widgets', 'type' => 'extension_point', 'name' => 'admin.dashboard.widgets', 'default' => []]],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id, true);
+        $modal = $result['components'][0]['children'][0];
+
+        $this->assertSame('sirsoft-support', $modal['children'][0]['__source']['extensionIdentifier'] ?? null);
+        $this->assertSame('sirsoft-support', $modal['props']['footer'][0]['__source']['extensionIdentifier'] ?? null, '고정 하단 단추에 출처 메타가 없습니다');
+        $this->assertSame('sirsoft-support', $modal['props']['footer'][0]['children'][0]['__source']['extensionIdentifier'] ?? null, '고정 하단 단추의 자식에 출처 메타가 없습니다');
+        $this->assertSame('sirsoft-support', $modal['props']['titlePrefix'][0]['__source']['extensionIdentifier'] ?? null, '제목 앞 붙임에 출처 메타가 없습니다');
+    }
+
+    /**
      * 같은 파일이 유형별 갈래 세 곳에 include 되고 그 안의 반복 행에 놓인 확장점도 모든 자리가 채워지는지 검증한다.
      *
      * 사용자 게시판은 글쓰기·상세 화면이 같은 조각을 basic·gallery·card 갈래에 세 번 넣고, 목록은 세 유형 파일을

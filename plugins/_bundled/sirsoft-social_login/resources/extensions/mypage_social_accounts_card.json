@@ -219,8 +219,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{socialAccounts?.data?.has_password === false}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:gap-2 sl:flex-row sl:items-center"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:flex-col sl:gap-2 sl:sm:flex-row sl:sm:items-center"
+                                "className": "sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:flex-col sl:gap-2"
                             },
                             "children": [
                                 {
@@ -378,8 +385,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{_global.socialLoginUnlinkLastMethod === true}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:gap-2 sl:flex-row sl:items-center"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:flex-col sl:gap-2 sl:sm:flex-row sl:sm:items-center",
+                                "className": "sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:flex-col sl:gap-2",
                                 "role": "alert"
                             },
                             "children": [

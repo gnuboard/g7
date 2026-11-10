@@ -269,7 +269,7 @@ describe('convert-layout-classes', () => {
     expect(lines[1]).toBe('@import "tailwindcss/theme.css" layer(theme) prefix(paydemo);');
     expect(lines[2]).toBe('@import "tailwindcss/utilities.css" layer(utilities) prefix(paydemo) source(none);');
     expect(lines[3]).toBe('@import "./g7-extension.generated.css";');
-    expect(main).toContain('@source "../layouts";\n@source "../extensions";\n@source "../js";\n@source "../../src";');
+    expect(main).toContain('@source "../layouts";\n@source "../extensions";\n@source "../js";\n@source not "../js/**/__tests__";\n@source "../../src";');
     expect(main).toContain('@theme {\n  --font-sans: \'Fixture Sans\', ui-sans-serif, sans-serif;\n  --color-primary-500: #3b82f6;\n}');
     expect(main).toContain('@plugin "@tailwindcss/typography";');
     expect(main).toContain(`@custom-variant dark (&${A7});`);

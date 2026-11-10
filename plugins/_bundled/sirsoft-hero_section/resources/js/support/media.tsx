@@ -24,8 +24,20 @@ const YOUTUBE_ORIGIN = 'https://www.youtube-nocookie.com';
 /** 재생 명령 뒤 「재생 중」 신호를 기다리는 시간 — 넘으면 재생할 수 없는 것으로 보고 간격 넘김으로 돌린다 */
 const YOUTUBE_START_TIMEOUT_MS = 10_000;
 
-/** 휴대폰 화면 판정 — 이미지 `<source media>` 와 같은 경계 */
-const NARROW_QUERY = '(max-width: 767px)';
+/**
+ * 기기 판정 경계(px, 이하) — 엔진 반응형 프리셋 mobile(0~767)·portable(0~1023)과 같은 값이다(support/editor.ts 의 프리셋 표,
+ * 시험이 같은지 잠근다). 슬라이더의 주 이미지(PC·모바일)도 이 판정으로 고른다.
+ */
+export const SCREEN_MAX_WIDTH = { mobile: 767, portable: 1023 } as const;
+
+/** 미리보기 기기 고정 값 */
+export type HeroForcedDevice = 'pc' | 'mobile';
+
+/** 기기 판정 — 휴대폰(0~767px)·휴대 기기(0~1023px, 휴대폰 포함) */
+export interface HeroScreen {
+  mobile: boolean;
+  portable: boolean;
+}
 
 interface ConsentSnapshotLike {
   status?: string;
@@ -75,23 +87,57 @@ export function useMarketingConsent(): boolean {
 }
 
 /**
- * 휴대폰 폭인지 구독합니다 — 화면을 돌리거나 창 폭을 바꾸면 영상 파일도 그 기기 것으로 바꾼다.
+ * 화면 폭을 지켜봅니다 — 엔진 반응형 폭(`G7Core.useResponsive()`, 레이아웃 편집기 미리보기에서는 기기 폭)이 먼저고, 훅이 없을 때만
+ * 창 폭(`window.innerWidth`, 창 폭이 바뀌면 다시 읽는다). `matchMedia` 는 편집기 미리보기에서도 창 폭을 보고 소수 배율 화면의 경계
+ * 폭에서 1px 어긋나 쓰지 않는다(docs/frontend/responsive-layout.md 「레이아웃 편집기 미리보기에서의 화면 폭」).
  *
- * @returns 휴대폰 폭이면 true
+ * @returns 화면 폭(px)
  */
-export function useNarrowScreen(): boolean {
-  return useSyncExternalStore(
-    (notify) => {
-      if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-        return () => {};
-      }
-      const query = window.matchMedia(NARROW_QUERY);
-      query.addEventListener?.('change', notify);
-      return () => query.removeEventListener?.('change', notify);
-    },
-    () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(NARROW_QUERY).matches,
-    () => false,
-  );
+export function useScreenWidth(): number {
+  const useResponsive = (window as { G7Core?: { useResponsive?: () => { width?: number } | null } }).G7Core?.useResponsive;
+  // G7Core 는 페이지가 뜰 때 한 번 정해진다 — 렌더마다 훅 호출 여부가 바뀌지 않는다
+  const responsive = useResponsive?.();
+  const engineWidth = typeof responsive?.width === 'number' ? responsive.width : null;
+  const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : SCREEN_MAX_WIDTH.portable + 1));
+
+  useEffect(() => {
+    if (engineWidth !== null || typeof window === 'undefined') {
+      return undefined;
+    }
+    const onResize = () => setWindowWidth(window.innerWidth);
+    onResize();
+    window.addEventListener('resize', onResize);
+
+    return () => window.removeEventListener('resize', onResize);
+  }, [engineWidth !== null]);
+
+  return engineWidth ?? windowWidth;
+}
+
+/**
+ * 기기를 판정합니다 — 미리보기 기기 고정이 있으면 그 기기(PC 고정은 휴대 기기도 아니다 — PC 미리보기 iframe 1366px 와 같다), 없으면 폭.
+ *
+ * @param width 화면 폭(px)
+ * @param forceDevice 미리보기 기기 고정
+ * @returns 기기 판정
+ */
+export function screenOf(width: number, forceDevice?: HeroForcedDevice): HeroScreen {
+  if (forceDevice) {
+    const mobile = forceDevice === 'mobile';
+    return { mobile, portable: mobile };
+  }
+
+  return { mobile: width <= SCREEN_MAX_WIDTH.mobile, portable: width <= SCREEN_MAX_WIDTH.portable };
+}
+
+/**
+ * 지금 기기를 구독합니다 — 화면을 돌리거나 창 폭(편집기 미리보기 기기)을 바꾸면 슬라이더 모양·영상 파일도 그 기기 것으로 바꾼다.
+ *
+ * @param forceDevice 미리보기 기기 고정
+ * @returns 기기 판정
+ */
+export function useHeroScreen(forceDevice?: HeroForcedDevice): HeroScreen {
+  return screenOf(useScreenWidth(), forceDevice);
 }
 
 /**
@@ -169,8 +215,7 @@ interface HeroVideoMediaProps extends MediaCallbacks {
  */
 export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, posters, playing, active, loop, eager, onEnded, onFailed }) => {
   const ref = useRef<HTMLVideoElement>(null);
-  const narrow = useNarrowScreen();
-  const mobile = forceDevice ? forceDevice === 'mobile' : narrow;
+  const { mobile } = useHeroScreen(forceDevice);
   const source = (mobile ? sources.mobile ?? sources.pc : sources.pc) ?? null;
   // 대표 이미지는 지금·다음 장만 단다 — poster 는 lazy 그림과 달리 바로 받으므로 먼 장의 이미지까지 첫 화면에 받게 된다
   const poster = eager || active ? (mobile ? posters?.mobile ?? posters?.pc : posters?.pc) : undefined;

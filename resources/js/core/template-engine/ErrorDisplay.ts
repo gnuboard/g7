@@ -14,6 +14,18 @@ const BUILTIN_TEXT: Record<string, Record<'ko' | 'en' | 'ja', string>> = {
     'core.errors.page_load_failed': { ko: '페이지 로딩 실패', en: 'Page failed to load', ja: 'ページの読み込みに失敗しました' },
     'core.errors.init_failed': { ko: '초기화 실패', en: 'Initialization failed', ja: '初期化に失敗しました' },
     'core.errors.reload': { ko: '새로고침', en: 'Reload', ja: '再読み込み' },
+    // 인증 확인을 다시 묻는 동안의 확인 중 표시 — 번역 파일을 받기 전(부팅 중)에도 보여야 한다 (engine-v1.89.0, 설계 확정 2026-11-08)
+    'core.errors.auth_checking': {
+        ko: '로그인 상태를 확인하는 중입니다. 잠시만 기다려 주세요.',
+        en: 'Checking your sign-in status. Please wait a moment.',
+        ja: 'ログイン状態を確認しています。しばらくお待ちください。',
+    },
+    // 인증 확인 불가 화면(서버 일시 오류) — 번역 파일마저 받지 못하는 순간에도 문구가 보여야 한다 (engine-v1.89.0, #869 N5)
+    'core.errors.api_request_failed': {
+        ko: '요청을 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.',
+        en: 'The request could not be processed. Please try again in a moment.',
+        ja: 'リクエストを処理できませんでした。しばらくしてからもう一度お試しください。',
+    },
     'core.errors.layout_forbidden': {
         ko: '이 화면을 볼 권한이 없습니다.',
         en: 'You do not have permission to view this page.',

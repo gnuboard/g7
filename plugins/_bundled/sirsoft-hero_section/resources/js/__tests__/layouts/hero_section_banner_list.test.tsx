@@ -34,6 +34,7 @@ describe('히어로섹션 목록 화면', () => {
 
   // @scenario surface=list_empty_message_hidden_while_loading
   // @scenario surface=list_empty_states_distinguished
+  // @effects empty_message_matches_load_state
   it('표 빈 문구는 받는 중엔 비우고, 조건으로 걸러 0건이면 「조건에 맞는 배너 없음」, 위치에 배너가 아예 없으면 첫 등록 안내 카드에 맡긴다', () => {
     const grid = findById(list, 'hero_banner_datagrid')!;
     const message = (banners: any, query: any) =>
@@ -58,6 +59,7 @@ describe('히어로섹션 목록 화면', () => {
 
   // @scenario surface=list_row_readiness_flags
   // @scenario surface=list_badge_names_language
+  // @effects row_readiness_flags_shown
   it('제목 칸에 제작 상태를 보인다 — 모바일 이미지 없음(PC 이미지 사용), 버튼 문구만 있고 주소 없음, 제목이 빈 사이트 언어', () => {
     const grid = findById(list, 'hero_banner_datagrid')!;
     // 표 행마다 반복되는 배지는 id 가 없어야 한다(행마다 같은 HTML id 가 생긴다) — 문구 키로 찾는다
@@ -87,6 +89,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_site_link_and_missing_slot
+  // @effects site_link_opens_position_slot
   it('미리보기 옆 「사이트에서 보기」는 그 위치 자리가 있는 사이트 주소를 새 창으로 열고, 자리가 없으면 안내만 보인다', () => {
     const link = findById(list, 'site_link')!;
     expect(link.name).toBe('A');
@@ -156,6 +159,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_status_filter_and_sort_go_to_query
+  // @effects list_filters_go_through_query
   it('상태 필터·검색·정렬은 화면에서 거르지 않고 주소 쿼리를 바꿔 서버가 다시 거르게 한다', () => {
     const named = (list as any).named_actions.searchBanners;
     expect(json(named)).toContain('"page":1');
@@ -172,6 +176,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_bulk_bar_shows_selection_count
+  // @effects bulk_selection_scoped_to_position
   it('일괄 줄은 선택이 있을 때만 보이고 「N개 선택됨」을 센다', () => {
     const bar = findById(list, 'bulk_action_bar')!;
     expect(bar.if).toContain('bulkSelectedIds');
@@ -185,6 +190,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_selection_cleared_on_tab_or_filter_change
+  // @effects bulk_selection_scoped_to_position
   it('위치 탭·필터·정렬이 바뀌면 선택 묶음을 비운다(다른 위치 배너가 일괄 처리에 섞이지 않게)', () => {
     const named = (list as any).named_actions.searchBanners;
     expect(json(named)).toContain('"bulkSelectedIds":[]');
@@ -194,6 +200,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_slider_settings_save_and_error
+  // @effects slider_settings_saved_per_position
   it('슬라이더 설정 저장은 그 위치 주소로 PUT 하고, 성공·실패 양쪽에서 진행 깃발을 끈다', () => {
     const button = findById(list, 'slider_save_button')!;
     const call = actionsOf(button, 'apiCall')[0];
@@ -256,6 +263,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=admin_pagination_setting
+  // @effects pagination_follows_position_setting
   it('페이징 모양(점·진행 막대 점·배너 이름 탭·번호)을 고르면 작업본에 담겨 미리보기가 저장 전에 따라가고, 저장 본문에 실리며 바뀐 것이 없으면 잠긴다', () => {
     const select = collect(list, (n) => n.props?.id === 'hero_slider_pagination')[0];
     expect(select.name).toBe('Select');
@@ -276,6 +284,7 @@ describe('히어로섹션 목록 화면', () => {
 
   // @scenario surface=list_preview_empty_message
   // @scenario surface=list_empty_states_distinguished
+  // @effects empty_message_matches_load_state
   it('미리보기는 받는 중에는 빈 문구를 비우고, 노출 중인 배너가 0건이면 안내를 보인다 — 배너는 있는데 지금 노출이 없으면 예약·비노출·종료 건수를 함께', () => {
     const preview = findById(list, 'hero_preview')!;
     expect(preview.name).toBe('sirsoft-hero_section.HeroBannerPreview');
@@ -294,6 +303,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_preview_empty_message
+  // @effects preview_survives_multilingual_fields
   it('미리보기에 넘기는 배너는 다국어 문구(제목·설명·버튼·대체 텍스트)를 모두 글자로 바꾼다 — 객체를 그리면 화면이 깨진다', () => {
     const banners = findById(list, 'hero_preview')!.props.banners as string;
     expect(banners).toContain('title: b.title_localized');
@@ -323,6 +333,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=preview_frame_slot_inside_device_viewport
+  // @effects preview_matches_site_slot
   it('목록 미리보기도 활성 사용자 템플릿 구좌 틀과 보고 있는 위치를 넘긴다', () => {
     const preview = findById(list, 'hero_preview')!;
     expect(preview.props.frame).toBe('{{position_settings?.data?.editor?.preview_frame ?? null}}');
@@ -330,6 +341,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=reorder_modal_loads_position_items
+  // @effects reorder_saves_only_changes
   it('[순서 변경]은 그 위치 전체를 받아 작업본·원본으로 담고 창을 연다(받는 중 스피너)', () => {
     const button = findById(list, 'reorder_button')!;
     expect(button.if).toContain('> 1');
@@ -355,6 +367,7 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=reorder_save_disabled_when_unchanged
+  // @effects reorder_saves_only_changes
   it('순서 창 [저장]은 원본과 순서가 같으면 잠기고, 실패하면 창 안에 사유를 남긴다', () => {
     const modal = findById(list, 'hero_reorder_modal')!;
     const save = collect(modal, (n) => n.name === 'Button' && json(n).includes('/admin/banners/order') && json(n).includes('PUT'))[0];
@@ -371,5 +384,45 @@ describe('히어로섹션 목록 화면', () => {
       expect(pick(ko, key), `ko ${key}`).toBeTruthy();
       expect(pick(en, key), `en ${key}`).toBeTruthy();
     }
+  });
+});
+
+describe('관리 화면 배너 이미지의 썸네일 규격 (#869)', () => {
+  // 배너 이미지 서빙 경로는 썸네일 서빙 지점이다 — 목록 칸(96×32)과 순서 변경 창(64×24)이 원본(최대 1920px 안팎) 대신 썸네일을 받는다.
+  // 배너는 가로로 긴 이미지라 정사각 자르기(sm)는 가운데 1/3 만 남긴다 — 이 플러그인이 코어에 등록한 확장 규격 sirsoft-hero_section.list(가로 240, 가로만 맞춤) 한 장 — 2배 화면에서도 칸 폭의 2배 이상이고, md(640)처럼 과하지 않다.
+  // @scenario surface=list_image_thumbnail_preset
+  // @effects list_image_uses_width_fit_thumbnail
+  it('목록·순서 변경 창의 배너 <img> 는 확장 규격 thumb(sirsoft-hero_section.list) 파이프로 받고 면제 주석이 남지 않는다', () => {
+    const images = collect(list, (n) => n.name === 'Img' && typeof (n.props as Record<string, unknown> | undefined)?.src === 'string'
+      && String((n.props as Record<string, unknown>).src).includes('row.thumbnail'));
+    expect(images.length).toBe(2);
+    for (const image of images) {
+      const props = image.props as Record<string, unknown>;
+      expect(String(props.src).endsWith(" | thumb('sirsoft-hero_section.list')}}")).toBe(true);
+      expect(props.thumbPreset).toBeUndefined();
+      expect(props.loading).toBe('lazy');
+      expect(props.decoding).toBe('async');
+      expect(String(image.comment ?? '')).not.toContain('thumb-exempt');
+    }
+
+    const source = readFileSync(resolve(__dirname, '../../../layouts/admin/hero_section_banner_list.g7.html'), 'utf-8');
+    expect(source).not.toContain('thumb-exempt');
+  });
+
+  // @scenario surface=list_modal_footer_fixed
+  // @effects modal_buttons_in_fixed_footer
+  it('확인 창과 순서 변경 창의 바닥 단추는 Modal 직속 고정 하단(props.footer)에 두고 본문에는 바닥 줄을 남기지 않는다 — 본문이 길어도 단추가 함께 스크롤되지 않고 640px 이하에서 세로로 쌓인다', () => {
+    for (const id of ['hero_delete_modal', 'hero_bulk_delete_modal', 'hero_reorder_modal']) {
+      const modal = findById(list, id)!;
+      expect(modal.name, id).toBe('Modal');
+      const footer = modal.props.footer as Array<Record<string, any>>;
+      expect(Array.isArray(footer) && footer.length >= 2, `${id} 고정 하단 단추`).toBe(true);
+      expect(footer.every((node) => node.name === 'Button'), `${id} 고정 하단은 단추만`).toBe(true);
+      expect(collect(modal.children ?? [], (node) => String(node.props?.className ?? '').includes('hs-modal-footer-buttons')), `${id} 본문 바닥 줄`).toHaveLength(0);
+    }
+    // 저장 단추도 고정 하단에 있다(본문 상자 안이 아니다)
+    const reorder = findById(list, 'hero_reorder_modal')!;
+    expect((reorder.props.footer as Array<Record<string, any>>).some((node) => node.props?.['data-testid'] === 'hero-reorder-save')).toBe(true);
+    expect(collect(reorder.children ?? [], (node) => node.props?.['data-testid'] === 'hero-reorder-save')).toHaveLength(0);
   });
 });

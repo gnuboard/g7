@@ -5,7 +5,6 @@
  * (`appConfig.localeNames`)을 먼저 쓴다.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MultilingualInput } from '../MultilingualInput';
 

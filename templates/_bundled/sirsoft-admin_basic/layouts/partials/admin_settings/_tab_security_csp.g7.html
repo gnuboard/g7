@@ -11,7 +11,9 @@
     <div class="row-stack">
       <div data-ref="field_csp_mode" class="">
         <label class="form-label">$t:admin.settings.security.csp.mode</label>
-        <select name="security.csp_mode" disabled="{{_computed.isReadOnly || !!_local.form?._meta?.csp?.override}}" class="w-full sm:w-80" error="{{_local.errors?.['security.csp_mode']?.[0] ?? ''}}" options="{{[{value: 'off', label: $t('admin.settings.security.csp.mode_off')}, {value: 'report_only', label: $t('admin.settings.security.csp.mode_report_only')}, {value: 'enforce', label: $t('admin.settings.security.csp.mode_enforce')}]}}"/>
+        <select name="security.csp_mode" disabled="{{_computed.isReadOnly || !!_local.form?._meta?.csp?.override}}" class="w-full" error="{{_local.errors?.['security.csp_mode']?.[0] ?? ''}}" options="{{[{value: 'off', label: $t('admin.settings.security.csp.mode_off')}, {value: 'report_only', label: $t('admin.settings.security.csp.mode_report_only')}, {value: 'enforce', label: $t('admin.settings.security.csp.mode_enforce')}]}}">
+          <responsive on="640-" class="w-80"/>
+        </select>
         <p class="text-hint mt-1">$t:admin.settings.security.csp.mode_desc</p>
         <!-- 강제는 위반 스크립트를 막는다 — 점검만으로 위반이 없는지 먼저 보게 한다. 잠김 상태에서는 잠금 문구가 대신한다. -->
         <p data-ref="csp_enforce_warning" data-if="{{(_local.form?.security?.csp_mode ?? 'off') === 'enforce' &amp;&amp; !_local.form?._meta?.csp?.override}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.enforce_warning</p>

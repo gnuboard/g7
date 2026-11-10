@@ -15,7 +15,8 @@
     </div>
     <div data-ref="page_root" data-if="{{_computed.canReadIdentityPolicies !== false}}" class="admin-card">
       <div class="card-description">$t:admin.identity.policies.purposes_section_description</div>
-      <div data-ref="page_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
+      <div data-ref="page_header" class="flex flex-col gap-2 mb-6">
+        <responsive on="768-" class="flex gap-2 flex-row items-center justify-between mb-6"/>
         <div>
           <h3 class="section-title">$t:admin.identity.policies.page_title</h3>
           <p class="text-label-subtle">$t:admin.identity.policies.page_description</p>
@@ -66,9 +67,11 @@
           <span data-if="{{identityPurposes !== undefined &amp;&amp; (identityPurposes?.data ?? []).filter(p => p.source_type === 'core').length === 0}}" class="text-tertiary italic">$t:admin.identity.policies.purposes_empty</span>
         </div>
       </div>
-      <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center">
+      <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2">
+        <responsive on="768-" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex gap-2 flex-row items-center"/>
         <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다. -->
-        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+          <responsive on="768-" class="text-primary w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"/>
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -89,7 +92,8 @@
             </navigate>
           </on>
         </select>
-        <select name="filter.source_type" aria-label="$t:admin.identity.policies.col.source_type" :autoBinding="false" value="{{query.source_type ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <select name="filter.source_type" aria-label="$t:admin.identity.policies.col.source_type" :autoBinding="false" value="{{query.source_type ?? ''}}" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+          <responsive on="768-" class="text-primary w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"/>
           <options>
             <option value="">$t:admin.identity.policies.all_sources</option>
             <option value="core">$t:admin.identity.policies.source.core</option>
@@ -111,7 +115,8 @@
           </on>
         </select>
         <!-- 검색 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 검색어가 설정 폼 상태(filter.search)에 남아 초기화 후에도 입력창에 되살아나고, 설정 dirty 판정까지 오염시킨다. -->
-        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input md:flex-1 md:min-w-[200px]">
+        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input">
+          <responsive on="768-" class="input flex-1 min-w-[200px]"/>
           <on type="change">
             <!-- 검색어는 로컬 상태에만 담아 둔다(자동바인딩을 끈 대신 직접 받는다) — 실제 조회는 아래 Enter 블록이 이 값을 쿼리로 실을 때 일어난다. -->
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>

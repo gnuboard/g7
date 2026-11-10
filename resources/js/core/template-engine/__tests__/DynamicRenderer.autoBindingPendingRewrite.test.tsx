@@ -119,6 +119,45 @@ const text = (id: string): string => (document.querySelector(`[data-testid="${id
 const settle = (ms = 40): Promise<void> => new Promise((r) => setTimeout(r, ms));
 const input = (name: string): HTMLInputElement => document.querySelector(`[data-testid="input-${name}"]`) as HTMLInputElement;
 
+/**
+ * 칸의 디바운스 예약(300ms)이 실제로 끝날 때까지 기다린다.
+ *
+ * 종전에는 500ms 를 기다린 뒤 화면을 읽었다. 여러 시험 파일을 함께 돌리는 부하에서는 타이머가 늦게 터지고, 그 뒤의 다시 그리기
+ * (동적 import 뒤 startTransition)도 늦어 상태는 맞는데 화면이 앞 렌더인 채로 깨졌다. 예약이 끝났는지는 디스패처의 대기 목록으로 본다.
+ */
+async function debounceFired(): Promise<void> {
+    await waitFor(() => expect(engine.getActionDispatcher()!.hasPendingDebounce()).toBe(false), { timeout: 5_000 });
+}
+
+/**
+ * 상태가 기대 값이 된 뒤, 그 상태를 실은 렌더가 화면에 닿을 때까지 기다린다. 닿은 뒤 한 번 더 쉬고 다시 읽어 되돌아가지 않는지도 본다.
+ *
+ * @param check 화면 단언
+ */
+async function screenSettles(check: () => void): Promise<void> {
+    await waitFor(check, { timeout: 5_000 });
+    await settle(60);
+    check();
+}
+
+/**
+ * 가짜 시계를 멈춘 채로 조건이 설 때까지 실제 이벤트 루프를 돌린다.
+ *
+ * Testing Library 의 waitFor 는 가짜 setTimeout 위에서 제 간격 타이머가 돌지 않아 쓸 수 없고, vi.waitFor 는 확인마다 가짜 시계를
+ * 앞으로 돌려 디바운스 예약을 끝내 버린다. 여기서는 지금 시각에 걸린 예약만 실행하고 시계는 그대로 둔다.
+ *
+ * @param cond 기다릴 조건
+ * @param label 시한을 넘겼을 때 알릴 이름
+ */
+async function untilWithClockHeld(cond: () => boolean, label: string): Promise<void> {
+    const start = Date.now();
+    while (!cond()) {
+        if (Date.now() - start > 4_000) throw new Error(`${label} 를 4초 안에 보지 못했다`);
+        await vi.advanceTimersByTimeAsync(0);
+        await new Promise<void>((r) => setImmediate(r));
+    }
+}
+
 /** 코드 칸 — change 동작이 같은 칸을 다시 쓴다 */
 const codeForm = (writeBack: string): Node[] => [
     {
@@ -146,11 +185,13 @@ describe('[case:state-setstate-54] 디바운스 칸의 대기 값이 다시 쓰�
     it('change 동작이 같은 칸을 대문자로 다시 쓰면 칸도 다시 쓴 값을 보인다', async () => {
         m = await mount(codeForm('{{String($event.target.value).toUpperCase()}}'), { form: { code: '', memo: '' } });
         fireEvent.change(input('code'), { target: { value: 'abc' } });
-        await settle(500);
+        await debounceFired();
 
-        expect(m.app.getGlobalState()._local.form.code).toBe('ABC');
-        expect(text('code')).toBe('ABC');
-        expect(input('code').value).toBe('ABC');
+        await waitFor(() => expect(m!.app.getGlobalState()._local.form.code).toBe('ABC'));
+        await screenSettles(() => {
+            expect(text('code')).toBe('ABC');
+            expect(input('code').value).toBe('ABC');
+        });
     });
 
     /**
@@ -160,10 +201,10 @@ describe('[case:state-setstate-54] 디바운스 칸의 대기 값이 다시 쓰�
     it('change 동작이 같은 칸을 입력 전 값으로 되돌리면 칸도 되돌린 값을 보인다', async () => {
         m = await mount(codeForm('old'), { form: { code: 'old', memo: '' } });
         fireEvent.change(input('code'), { target: { value: 'oldx' } });
-        await settle(500);
+        await debounceFired();
 
-        expect(m.app.getGlobalState()._local.form.code).toBe('old');
-        expect(input('code').value).toBe('old');
+        await waitFor(() => expect(m!.app.getGlobalState()._local.form.code).toBe('old'));
+        await screenSettles(() => expect(input('code').value).toBe('old'));
     });
 
     /**
@@ -175,10 +216,10 @@ describe('[case:state-setstate-54] 디바운스 칸의 대기 값이 다시 쓰�
         fireEvent.change(input('memo'), { target: { value: 'm1' } });
         await settle(60);
         fireEvent.change(input('memo'), { target: { value: 'm12' } });
-        await settle(500);
+        await debounceFired();
 
         expect(m.app.getGlobalState()._local.form.memo).toBe('m12');
-        expect(input('memo').value).toBe('m12');
+        await screenSettles(() => expect(input('memo').value).toBe('m12'));
     });
 
 });
@@ -202,20 +243,34 @@ describe('[case:state-closure-dropped-debounce-display-edges] 경로 이동으�
             { id: 'gform', type: 'basic', name: 'Div', dataKey: '_global.search', debounce: 300, children: [
                 { id: 'q', type: 'basic', name: 'Input', props: { name: 'q' } },
             ] },
+            // 루트 다시 그리기 표지 — 경로 이동 뒤 전역 쓰기를 실은 렌더가 커밋됐는지 이 값으로 본다
+            show('tick', 'String(_global.__tick ?? 0)'),
         ], {});
         m.app.setGlobalState({ search: { q: 'old' } });
-        await settle(100);
-        expect(input('q').value).toBe('old');
+        await waitFor(() => expect(input('q').value).toBe('old'), { timeout: 5_000 });
 
-        fireEvent.change(input('q'), { target: { value: 'abc' } });
+        // 「친 뒤 대기 중에」 경로가 바뀌는 순서를 고정한다. 실제 시간 60ms 로 두면 부하로 프로세스가 300ms 넘게 멈췄을 때 디바운스가 경로
+        // 변경 전 /a 에서 먼저 써(정상 동작) 전제가 깨졌다(저장소 'abc'). 타이머만 가짜로 돌리고, 경로 변경 뒤 다시 그리기의 커밋까지 시계를
+        // 멈춰 둔다(렌더 일정은 실제 그대로). 그 뒤 시계를 넘겨 버린 예약이 /b 에서 실행돼도 쓰지 않는지 본다.
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        try {
+            fireEvent.change(input('q'), { target: { value: 'abc' } });
+            await vi.advanceTimersByTimeAsync(60);
+            expect(engine.getActionDispatcher()!.hasPendingDebounce(), '경로 변경 전 아직 대기 중').toBe(true);
+            window.history.pushState({}, '', '/b');
+            m.app.setGlobalState({ __tick: 1 });
+            // 그 다시 그리기의 커밋을 기다린다(고정 100ms 로는 부하에서 커밋 전 앞 렌더의 대기 값 「abc」를 읽었다)
+            await untilWithClockHeld(() => text('tick') === '1', '경로 변경 뒤 다시 그리기 커밋');
+
+            expect(m.app.getGlobalState().search.q).toBe('old');
+            expect(input('q').value).toBe('old');
+            // 버린 예약이 끝난 뒤에도 그대로인지 본다
+            await vi.advanceTimersByTimeAsync(400);
+            expect(engine.getActionDispatcher()!.hasPendingDebounce()).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
         await settle(60);
-        window.history.pushState({}, '', '/b');
-        m.app.setGlobalState({ __tick: 1 });
-        await settle(100);
-
-        expect(m.app.getGlobalState().search.q).toBe('old');
-        expect(input('q').value).toBe('old');
-        await settle(400);
         expect(m.app.getGlobalState().search.q).toBe('old');
         expect(input('q').value).toBe('old');
     });

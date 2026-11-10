@@ -26,6 +26,23 @@ const SIZE_CLASSES: Record<AvatarSize, string> = {
 } as const;
 
 /**
+ * 사이즈별 썸네일 규격 — 표시 크기 32px 이하는 `xs`(64), 40px 이상은 `sm`(160). 규칙은 「2배 밀도에서 필요한 가로
+ * (칸의 두 배)가 규격 가로 안에 드는 가장 작은 규격」이다 — 40px 원은 80px 가 필요해 64 인 xs 로는 늘려 그려진다.
+ * 2000px 원본이 24px 원에 내려가던 것을 막는다.
+ */
+const SIZE_THUMB_PRESETS: Record<AvatarSize, 'xs' | 'sm'> = {
+  xs: 'xs',
+  sm: 'xs',
+  md: 'sm',
+  lg: 'sm',
+  xl: 'sm',
+  '2xl': 'sm',
+  '3xl': 'sm',
+  '4xl': 'sm',
+  '5xl': 'sm',
+};
+
+/**
  * 기본 컨테이너 스타일 (공통)
  */
 const BASE_CONTAINER_CLASSES = 'rounded-full overflow-hidden flex-shrink-0 border border-gray-200 dark:border-gray-700';
@@ -196,6 +213,8 @@ export const Avatar: React.FC<AvatarProps> = ({
           src={actualAvatar}
           alt={actualName}
           className="w-full h-full object-cover"
+          thumbPreset={SIZE_THUMB_PRESETS[size] ?? 'xs'}
+          loading="lazy"
         />
       ) : (
         renderContent()

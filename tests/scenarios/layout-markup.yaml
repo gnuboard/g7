@@ -478,6 +478,9 @@ effects:
   - bundled_extension_screens_call_no_template_handler
   - portable_mixed_with_split_presets_is_warned
   - consistent_breakpoints_are_not_warned
+  # 한 노드의 열린 커스텀 구간이 다른 열린 구간·프리셋과 같은 폭에 함께 맞으면 엔진이 하나만 골라 나머지 값을 버린다.
+  - open_responsive_range_overlap_is_warned
+  - disjoint_or_closed_responsive_ranges_are_not_warned
   - standalone_layout_firing_toast_without_host_is_warned
   - standalone_layout_with_toast_host_is_not_warned
   - extends_layout_delegates_host_to_base

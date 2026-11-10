@@ -13,7 +13,7 @@ description: |
 axes:
   path_shape: [plain, trailing_slash, double_slash, root]
   entry: [initial, navigate, popstate]
-  auth: [public, auth_required_guest, auth_required_member]
+  auth: [public, auth_required_guest, auth_required_member, auth_check_unavailable]
 
 effects:
   - routes_loaded_from_api_with_cache_version   # routes API 응답을 받아 라우트 목록을 채운다(?v= 캐시 버전)
@@ -22,6 +22,7 @@ effects:
   - auth_required_route_redirects_guest_to_login  # 미인증이면 로그인 주소로, 인증이면 routeChange
   - array_query_params_parsed_into_route_query  # key[]·반복 키를 배열로 파싱한다
   - client_router_normalizes_address_with_replace_state  # 끝·연속 슬래시 주소를 정규형으로 replaceState (공개#156)
+  - auth_unavailable_does_not_redirect_to_login  # 인증 확인이 서버 일시 오류로 끝나면 로그인 대신 authUnavailable (받는 쪽 없으면 종전대로 로그인) (engine-v1.89.0)
 
 test_files:
   - resources/js/core/routing/__tests__/Router.test.ts

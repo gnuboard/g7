@@ -10,8 +10,8 @@
  * 기간 칸 밖으로도 넓혀, 훅의 「라벨 하나 뒤 칸 둘 이상」 판정을 시험 함수로 옮겨 레이아웃 전체
  * (확장 주입 조각 포함)에서 그런 칸이 칸마다 이름을 갖는지 고정한다.
  *
- * @effects board_range_inputs_have_aria_label
- * @effects board_label_group_controls_named
+ * 효과 요약(마커 아님, 평문): board_range_inputs_have_aria_label
+ * 효과 요약(마커 아님, 평문): board_label_group_controls_named
  */
 
 import fs from 'node:fs';
@@ -80,7 +80,7 @@ const childrenOf = (n: LayoutNode | undefined): LayoutNode[] =>
 const isControl = (n: LayoutNode | undefined): boolean =>
     !!n && CONTROL_NAMES.has(n.name ?? '') && n.props?.type !== 'hidden' && !/\bsr-only\b/.test(classOf(n));
 const isLabelEl = (n: LayoutNode | undefined): boolean =>
-    !!n && (n.name === 'Label' || /\b(form-label|filter-label|text-heading)\b/.test(classOf(n)));
+    !!n && (n.name === 'Label' || /\b(form-label|filter-field-label|filter-label|text-heading)\b/.test(classOf(n)));
 
 /**
  * props 를 뺀 하위 트리에서 조건에 맞는 노드가 있는지 본다.

@@ -9,7 +9,7 @@
  * 판정 근거는 페이지 루트 `#app[data-template-id]` 다 — 다른 템플릿이면 손님 번들이다.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { ActionDispatcher } from '@core/template-engine/ActionDispatcher';
 
 const registerLauncher = vi.fn();
@@ -55,7 +55,7 @@ function mountAppRoot(templateId: string | null): void {
 describe('sirsoft-admin_basic 번들 부트스트랩 — 페이지 템플릿 판정', () => {
   const HOST = 'acme-admin_theme';
   let dispatcher: ActionDispatcher;
-  let warnSpy: ReturnType<typeof vi.spyOn>;
+  let warnSpy: MockInstance<Console['warn']>;
   const hostSetTheme = vi.fn();
   const hostHandlerMap = { setTheme: hostSetTheme };
 

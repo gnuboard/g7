@@ -16,14 +16,21 @@
                 }
             },
             "props": {
-                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center"
+                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce:block ecommerce:mb-2 ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:md:mb-0 ecommerce:shrink-0 ecommerce:md:flex ecommerce:md:items-center"
+                        "className": "ecommerce:block ecommerce:mb-2 ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:shrink-0"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.user_filter.mileage"
                 },

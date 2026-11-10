@@ -146,11 +146,24 @@ use App\Services\UniqueIdService;
 use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivilegedDatabaseAccounts;
+use App\Thumbnails\ImageProcessorResolver;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailPurgeBuffer;
+use App\Thumbnails\ThumbnailResponder;
+use App\Thumbnails\ThumbnailSourceProviders;
+use App\Thumbnails\ThumbnailStore;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Application as ArtisanApplication;
+use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Console\Commands\PruneExpired;
 
@@ -182,7 +195,53 @@ class CoreServiceProvider extends ServiceProvider
         $this->registerRepositoryBindings();
         $this->registerExtensionManagers();
         $this->registerBenchmarkAxes();
+        $this->registerThumbnailServices();
         // ActivityLogManager 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
+    }
+
+    /**
+     * 썸네일 서비스(규격·저장소·퍼지 묶음·엔진 해석기)를 요청 단위 싱글턴으로 등록합니다.
+     *
+     * 퍼지 묶음은 요청 하나 동안 모은 접두를 끝에 한 번 발화해야 하므로 싱글턴이어야 한다.
+     *
+     * @return void 반환값 없음
+     */
+    private function registerThumbnailServices(): void
+    {
+        $this->app->singleton(ThumbnailPurgeBuffer::class);
+        $this->app->singleton(ThumbnailPresetRegistry::class);
+        $this->app->singleton(ThumbnailSourceProviders::class);
+        $this->app->singleton(ThumbnailStore::class);
+        $this->app->singleton(ImageProcessorResolver::class);
+    }
+
+    /**
+     * 썸네일 퍼지 묶음의 비우는 시점과 생성 제한을 겁니다.
+     *
+     * HTTP 는 응답 뒤(`terminating`), 큐는 작업 하나가 끝날 때마다 비운다. 콘솔·테스트는 묶음이 즉시 비운다.
+     *
+     * @return void 반환값 없음
+     */
+    private function bootThumbnailServices(): void
+    {
+        $this->app->terminating(function () {
+            $this->app->make(ThumbnailPurgeBuffer::class)->flush();
+        });
+
+        Event::listen(JobProcessing::class, fn () => $this->app->make(ThumbnailPurgeBuffer::class)->setProcessingJob(true));
+
+        foreach ([JobProcessed::class, JobFailed::class] as $event) {
+            Event::listen($event, function () {
+                $buffer = $this->app->make(ThumbnailPurgeBuffer::class);
+                $buffer->setProcessingJob(false);
+                $buffer->flush();
+            });
+        }
+
+        // 미생성 썸네일 주소를 대량으로 찍어 CPU 를 쓰게 하는 요청 제한 (IP 단위, 분당)
+        RateLimiter::for(ThumbnailResponder::RATE_LIMITER, fn (Request $request) => Limit::perMinute(
+            max(1, (int) config('core.thumbnail.generate_per_minute', 120))
+        )->by($request->ip() ?? 'unknown'));
     }
 
     /**
@@ -495,6 +554,9 @@ class CoreServiceProvider extends ServiceProvider
 
         // 시스템 라우트 주입 (프리뷰 등 코어 전역 라우트)
         $this->registerSystemRouteFilters();
+
+        // 썸네일 퍼지 묶음 비우기 시점·생성 제한 (DB 무관)
+        $this->bootThumbnailServices();
 
         // .env 파일이 없으면 스킵 (인스톨러 실행 전)
         if (! File::exists(base_path('.env'))) {

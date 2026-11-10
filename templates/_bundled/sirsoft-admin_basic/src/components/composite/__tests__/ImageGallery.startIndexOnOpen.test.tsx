@@ -9,7 +9,6 @@
  * @scenario-manifest tests/scenarios/image-gallery-start-index-on-open.yaml
  */
 
-import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ImageGallery } from '../ImageGallery';

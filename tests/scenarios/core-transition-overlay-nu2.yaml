@@ -1,0 +1,27 @@
+feature: 레이아웃 전환 덮개(transition_overlay) 단위 검사
+
+description: |
+  레이아웃의 transition_overlay 는 페이지 전환 중 앞 화면 DOM 이 비치지 않게 덮개를 띄운다. target 이 없으면 body 에
+  fixed 덮개를, target 이 있으면 <head> 에 ::after 규칙을 주입한다. 스타일(opaque, blur, fade)과 다크 모드에 따라
+  배경이 달라지고, skeleton 은 필요한 설정이 없으면 opaque 로 폴백한다. spinner 는 target, fallback_target, #app 순으로
+  대상을 찾아 그 안에 컨테이너를 넣고, 모두 없으면 opaque 덮개로 폴백한다. 시험은 실제 TemplateApp 의
+  showTransitionOverlay 와 hideTransitionOverlay 를 부른다(#869: 종전에는 시험 안 사본만 검사했다).
+  기본 스피너의 다크 모드 색은 CSS 변수(--g7-overlay-bg, --g7-spinner-color)에 맡기는데 이 변수를 정의하는 곳이 아직 없다.
+
+axes:
+  area: [config, dom_overlay, target_css, dark_mode, lifecycle, skeleton, spinner, spinner_fallback]
+
+effects:
+  - overlay_config_normalized
+  - overlay_dom_fallback_rendered
+  - overlay_target_css_injected
+  - overlay_style_colors
+  - overlay_removed_cleanly
+  - overlay_not_duplicated
+  - overlay_skeleton_fallback
+  - spinner_overlay_mounted_in_target
+  - spinner_default_rendered
+  - spinner_target_fallback_chain
+
+test_files:
+  - resources/js/core/__tests__/transitionOverlay.test.ts

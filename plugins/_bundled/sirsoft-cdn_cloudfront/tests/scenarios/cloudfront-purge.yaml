@@ -1,0 +1,66 @@
+feature: sirsoft-cdn_cloudfront 썸네일 퍼지 → CloudFront 캐시 무효화와 실패 재시도
+
+description: |
+  코어가 썸네일 파생본을 지운 뒤 요청(또는 큐 작업) 단위로 묶어 한 번 발화하는 액션 core.thumbnail.after_purge 를
+  받아, CDN 호스트를 가리키는 경로만 골라 CreateInvalidation 을 보낸다(한 요청에 들어가면 한 번, 넘으면 나눠서). 원본 하나의 파생본 디렉터리는
+  와일드카드, 공개 디스크 원본은 그 경로 그대로(원본을 디렉터리째 지웠으면 그 디렉터리 와일드카드)다. 무효화 자격
+  (배포 ID·무효화용 키)·CDN 주소가 비거나 자동 무효화가 꺼져 있으면 보내지 않는다. 실패하면 첫 시도의 호출자 참조와
+  함께 대기열에 넣고, 5분마다 도는 정기 작업이 시각이 된 대기 건을 합쳐 다시 보낸다. 합친 요청이 거절되면 횟수를 쓰지
+  않고 건별로 다시 보내 불량 건만 5·10·20·40분 간격으로 실패를 세며 5번째 실패에서 멈춘다. 진행 중 한도·호출 제한 오류는
+  시도 횟수로 세지 않는다. 와일드카드 상한을 넘는 묶음은 첫 세그먼트 안에서만 접고, 그래도 넘으면 요청을 나눈다. 배포
+  전체(`/*`)는 어떤 경우에도 보내지 않는다. CloudFront 는 SDK 가짜 처리기(Aws\MockHandler)로만 부른다.
+
+axes:
+  case:
+    - wildcard_and_original     # 와일드카드 + 원본 경로, CDN 밖 호스트 제외, 묶음 1회
+    - dedupe_and_cover          # 중복·상위 디렉터리에 덮인 경로 정리
+    - encoding                  # 공백·한글 경로 인코딩, 괄호·+ 등은 그대로
+    - collapse                  # 상한 초과 묶음 접기 — 첫 세그먼트 안에서만, 배포 전체 금지
+    - split                     # 접어도 넘으면 요청 분할, 실패한 요청만 대기열
+    - original_directory        # 원본 디렉터리째 삭제 → 원본도 와일드카드
+    - nothing_on_host           # CDN 호스트 경로 0 → 보내지 않음
+    - credentials_missing       # 자격·CDN 주소 없음·자동 무효화 끔 → 호출 0, 재시도도 대기
+    - failure_queued            # 실패 → 대기열, 대기열 쓰기 실패도 밖으로 내지 않음
+    - retry_success             # 재시도 성공 → 대기열 삭제, 첫 시도와 같은 호출자 참조, 스케줄 선언
+    - retry_merge               # 시각이 된 대기 건을 합쳐 다시 접고 한 번만 보냄
+    - retry_isolation           # 병합 거절 → 횟수 미증가, 건별 재전송으로 불량 건만 격리
+    - throttled                 # 진행 중 한도·호출 제한 → 시도 횟수 그대로
+    - retry_exhausted           # 지수 대기, 5회 실패 뒤 중단
+    - core_integration          # 코어 purgePrefix → after_purge → 리스너 → CreateInvalidation 본문
+
+effects:
+  - single_invalidation_per_batch
+  - wildcard_per_source_and_original_path
+  - duplicates_and_covered_paths_removed
+  - paths_url_encoded_once
+  - only_unsafe_characters_encoded
+  - oversized_batch_collapsed_to_common_directory
+  - collapse_folds_directories_only
+  - collapse_stays_inside_first_segment
+  - distribution_root_never_invalidated
+  - requests_split_within_limits
+  - merged_retry_splits_requests
+  - merged_failure_isolates_bad_row
+  - internal_error_detail_not_exposed
+  - old_abandoned_rows_pruned
+  - original_directory_invalidated_with_wildcard
+  - fold_is_idempotent
+  - no_paths_when_nothing_on_cdn_host
+  - no_call_without_purge_credentials
+  - failure_enqueued_for_retry
+  - queue_write_failure_contained
+  - retry_resends_due_and_clears_on_success
+  - caller_reference_kept_across_retries
+  - retry_merges_due_rows_into_one_request
+  - throttled_retry_does_not_consume_attempts
+  - backoff_doubles_and_stops_after_five_failures
+  - retry_schedule_declared
+  - core_purge_prefix_reaches_create_invalidation
+
+test_files:
+  - plugins/_bundled/sirsoft-cdn_cloudfront/tests/Unit/InvalidationPathsTest.php
+  - plugins/_bundled/sirsoft-cdn_cloudfront/tests/Feature/PurgeTest.php
+  - plugins/_bundled/sirsoft-cdn_cloudfront/tests/Unit/ScheduleDeclarationTest.php
+
+notes: |
+  e2e_browser=partial — 실제 CloudFront 배포에 대한 무효화 상태 Completed 확인은 운영자 계정이 주어질 때의 실측 단계에서 한다.

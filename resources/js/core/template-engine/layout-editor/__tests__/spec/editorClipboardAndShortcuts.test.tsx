@@ -2,12 +2,11 @@
  * editorClipboardAndShortcuts.test.tsx — 클립보드 버퍼 + 단축키 디스패처 + 단축키 맵 모달
  *
  *
- * @scenario shortcut_clipboard, shortcut_dispatch, shortcut_help_modal
- * @effects clipboard_session_roundtrip_strips_internal_meta, clipboard_read_returns_fresh_copy, shortcut_dispatch_guards_input_and_modal, shortcut_escape_branches_deselect_vs_exit_by_selection, shortcut_requires_selection_guard, shortcut_help_modal_lists_all_groups_from_ssot, paste_across_layouts_via_session_storage
+ * 효과 요약(마커 아님, 평문): 클립보드 세션 왕복, 단축키 디스패처 가드, 단축키 맵 모달.
+ * 효과 표식은 각 시험 docblock 에 있다.
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, renderHook } from '@testing-library/react';
 import { writeClipboard, readClipboard, hasClipboard, clearClipboard } from '../../utils/editorClipboard';
@@ -42,6 +41,10 @@ describe('editorClipboard — sessionStorage round-trip', () => {
     expect(a).toEqual(b);
   });
 
+  /**
+   * @scenario behavior=clipboard_empty_reads_null
+   * @effects clipboard_empty_reads_null
+   */
   it('빈 클립보드 → null', () => {
     expect(readClipboard()).toBeNull();
     expect(hasClipboard()).toBe(false);
@@ -66,6 +69,10 @@ describe('useEditorShortcuts — 디스패치/가드', () => {
     return e;
   }
 
+  /**
+   * @scenario behavior=shortcut_mod_c_calls_copy
+   * @effects shortcut_mod_c_calls_copy
+   */
   it('mod+c → copy 핸들러 호출', () => {
     const copy = vi.fn();
     setup({ copy }, true);
@@ -106,17 +113,26 @@ describe('useEditorShortcuts — 디스패치/가드', () => {
 
   /** @effects shortcut_escape_branches_deselect_vs_exit_by_selection */
   it('Escape: 선택 있으면 deselect, 없으면 exit', () => {
+    // 두 분기 모두 deselect/exit 를 함께 넘겨 반대 분기 핸들러가 불리지 않는지까지 잰다.
     const deselect = vi.fn();
-    const { unmount } = setup({ deselect }, true);
+    const exit = vi.fn();
+    const { unmount } = setup({ deselect, exit }, true);
     key('Escape');
     expect(deselect).toHaveBeenCalledTimes(1);
+    expect(exit).not.toHaveBeenCalled();
     unmount();
-    const exit = vi.fn();
-    setup({ exit }, false);
+    const deselect2 = vi.fn();
+    const exit2 = vi.fn();
+    setup({ deselect: deselect2, exit: exit2 }, false);
     key('Escape');
-    expect(exit).toHaveBeenCalledTimes(1);
+    expect(exit2).toHaveBeenCalledTimes(1);
+    expect(deselect2).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario behavior=shortcut_paste_works_without_selection
+   * @effects shortcut_paste_works_without_selection
+   */
   it('paste 는 선택 없어도 동작(requiresSelection 아님)', () => {
     const paste = vi.fn();
     setup({ paste }, false);
@@ -137,6 +153,10 @@ describe('ShortcutHelpModal — SSoT 기반 렌더', () => {
     expect(screen.getByTestId('g7le-shortcut-row-save')).toBeTruthy();
   });
 
+  /**
+   * @scenario behavior=shortcut_help_modal_close_calls_on_close
+   * @effects shortcut_help_modal_close_calls_on_close
+   */
   it('닫기 버튼 → onClose', () => {
     const onClose = vi.fn();
     render(<ShortcutHelpModal t={t} onClose={onClose} isMac={false} />);
@@ -144,6 +164,10 @@ describe('ShortcutHelpModal — SSoT 기반 렌더', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * @scenario behavior=shortcut_help_modal_mac_symbols
+   * @effects shortcut_help_modal_mac_symbols
+   */
   it('Mac 표기 ⌘ 적용', () => {
     render(<ShortcutHelpModal t={t} onClose={vi.fn()} isMac={true} />);
     const row = screen.getByTestId('g7le-shortcut-row-save');

@@ -65,6 +65,7 @@ describe('AuthManager', () => {
     it('유효한 토큰이면 true를 반환하고 사용자 정보를 저장해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };
@@ -425,6 +426,7 @@ describe('AuthManager', () => {
     it('로그인 성공 시 토큰을 저장하고 사용자 정보를 반환해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };
@@ -472,6 +474,7 @@ describe('AuthManager', () => {
     it('options.headers가 있으면 ApiClient.post에 전달해야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };
@@ -504,6 +507,7 @@ describe('AuthManager', () => {
     it('options가 없으면 ApiClient.post에 config를 전달하지 않아야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };
@@ -606,6 +610,7 @@ describe('AuthManager', () => {
     it('코드 확인에 성공하면 토큰을 저장하고 로그인 상태가 되어야 합니다', async () => {
       const mockUser: AuthUser = {
         id: 1,
+        uuid: 'test-user-uuid',
         name: 'Test User',
         email: 'test@example.com',
       };

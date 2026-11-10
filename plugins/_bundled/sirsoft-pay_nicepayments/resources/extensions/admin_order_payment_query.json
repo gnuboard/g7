@@ -182,8 +182,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "paynicepayments:grid paynicepayments:grid-cols-2 paynicepayments:gap-3"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:sm:grid-cols-2 paynicepayments:gap-3"
+                                                "className": "paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-3"
                                             },
                                             "children": [
                                                 {
@@ -296,8 +303,12 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
-                                                    "props": {
-                                                        "className": "paynicepayments:sm:col-span-2"
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "paynicepayments:col-span-2"
+                                                            }
+                                                        }
                                                     },
                                                     "children": [
                                                         {
@@ -473,8 +484,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 pay-nicepayments-hidden paynicepayments:inline"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden paynicepayments:sm:inline"
+                                        "className": "paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_nicepayments.admin.order_verify_description"
                                 }
@@ -834,8 +852,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 pay-nicepayments-hidden paynicepayments:inline"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden paynicepayments:sm:inline"
+                                        "className": "paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_nicepayments.admin.vbank_noti_description"
                                 },

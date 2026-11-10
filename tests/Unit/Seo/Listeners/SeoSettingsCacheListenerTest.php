@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Seo\Listeners;
 
+use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Listeners\SeoExtensionCacheListener;
 use App\Listeners\SeoSettingsCacheListener;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use Illuminate\Support\Facades\DB;
@@ -201,6 +203,113 @@ class SeoSettingsCacheListenerTest extends TestCase
         $this->listener->onSettingsSave(null);
 
         $this->addToAssertionCount(1);
+    }
+
+    // ─── 업로드 탭 썸네일 설정 (#869) ──────────────────────────
+
+    /**
+     * 업로드 탭에서 썸네일 값이 실제로 바뀌면 SEO 캐시를 비웁니다.
+     *
+     * 봇 화면의 og:image 와 본문 이미지 주소에 규격(`?size=`)이 구워져 있어, 바꾼 뒤에도 캐시가 남으면
+     * 봇이 옛 규격 주소를 계속 받는다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_tab_clears_cache_when_thumbnail_values_change(): void
+    {
+        app(ConfigRepositoryInterface::class)->saveCategory('upload', ['max_file_size' => 10, 'thumbnail_enabled' => true]);
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onBeforeSettingsSave(['_tab' => 'upload', 'upload' => ['thumbnail_enabled' => false]]);
+        $this->listener->onSettingsSave('upload', ['max_file_size' => 10, 'thumbnail_enabled' => false], true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 업로드 탭의 다른 칸만 바꾼 저장은 SEO 캐시를 비우지 않습니다 — 저장할 때마다 전체 캐시를 다시 만들지 않는다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_tab_keeps_cache_when_only_other_values_change(): void
+    {
+        app(ConfigRepositoryInterface::class)->saveCategory('upload', ['max_file_size' => 10, 'thumbnail_enabled' => true]);
+        $this->cacheMock->shouldNotReceive('clearAll');
+
+        $this->listener->onBeforeSettingsSave(['_tab' => 'upload', 'upload' => ['max_file_size' => 20]]);
+
+        // after_save 는 저장소 값(기본값 병합)에 보낸 값을 덮은 결과를 넘긴다 — SettingsService::saveSettings 와 같게 만든다.
+        $merged = array_merge(app(ConfigRepositoryInterface::class)->getCategory('upload'), ['max_file_size' => 20]);
+        $this->listener->onSettingsSave('upload', $merged, true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 저장 전 사본이 없으면(before_save 를 거치지 않은 발화) 바뀌었는지 알 수 없어 비웁니다. 실패한 저장은 비우지 않습니다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_tab_without_snapshot_clears_and_failed_save_does_not(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        // 앞선 사본이 남아 있지 않게 다른 탭 before_save 로 비운다
+        $this->listener->onBeforeSettingsSave(['_tab' => 'general']);
+        $this->listener->onSettingsSave('upload', ['thumbnail_enabled' => true], true);
+        $this->listener->onSettingsSave('upload', ['thumbnail_enabled' => false], false);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 단건 저장으로 썸네일 키를 바꿔도 비웁니다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_setting_set_clears_cache_for_upload_thumbnail_key(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onSettingSet('upload.thumbnail_content_preset', 'md', true);
+        $this->listener->onSettingSet('upload.max_file_size', 20, true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 확장 활성·비활성(규격과 서빙 경로 패턴이 바뀐다)은 확장 리스너가 이미 전체를 비웁니다 — 이 리스너가 다시 구독하지 않는다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_lifecycle_is_covered_by_extension_listener(): void
+    {
+        $extensionHooks = SeoExtensionCacheListener::getSubscribedHooks();
+
+        foreach (['core.modules.after_activate', 'core.modules.after_deactivate', 'core.plugins.after_activate', 'core.plugins.after_deactivate'] as $hook) {
+            $this->assertArrayHasKey($hook, $extensionHooks);
+            $this->assertArrayNotHasKey($hook, SeoSettingsCacheListener::getSubscribedHooks(), '한 사건에 SEO 캐시를 두 번 비우게 됩니다.');
+        }
     }
 
     // ─── 예외 처리 ──────────────────────────────────────

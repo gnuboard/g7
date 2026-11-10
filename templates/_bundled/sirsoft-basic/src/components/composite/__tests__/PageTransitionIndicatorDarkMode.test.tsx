@@ -9,7 +9,6 @@
  * @vitest-environment jsdom
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { PageTransitionIndicator } from '../PageTransitionIndicator';

@@ -63,7 +63,7 @@
         <div data-if="{{(_local.claimImages ?? []).length > 0}}" class="mt-3 space-y-2">
           <div data-each="claimImage in {{_local.claimImages ?? []}}" class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-2 min-w-0">
-              <img src="{{claimImage.download_url ?? ''}}" alt="{{claimImage.original_name ?? ''}}" class="w-10 h-10 rounded object-cover bg-gray-100 dark:bg-gray-700"/>
+              <img src="{{claimImage.download_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{claimImage.original_name ?? ''}}" class="w-10 h-10 rounded object-cover bg-gray-100 dark:bg-gray-700"/>
               <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{claimImage.original_name ?? ''}}</span>
             </div>
             <!-- 운영자가 올린 사진은 고객이 지울 수 없다(서버도 거절한다) — 삭제 버튼 대신 누가 올렸는지를 보여 준다. -->

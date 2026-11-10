@@ -7,7 +7,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "ecommerce:p-0 ecommerce:md:p-0"
+        "className": "ecommerce:p-0"
     },
     "children": [
         {
@@ -241,16 +241,34 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "ecommerce:aspect-square ecommerce:w-20 ecommerce:h-20 ecommerce:flex-shrink-0 {{row.thumbnail_url ? '' : 'ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:flex ecommerce:items-center ecommerce:justify-center'}}"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce:w-full ecommerce:aspect-square ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:flex-shrink-0 {{row.thumbnail_url ? '' : 'ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:flex ecommerce:items-center ecommerce:justify-center'}}"
+                                    "className": "ecommerce:w-full ecommerce:aspect-square ecommerce:flex-shrink-0 {{row.thumbnail_url ? '' : 'ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:flex ecommerce:items-center ecommerce:justify-center'}}"
                                 },
                                 "children": [
                                     {
+                                        "comment": "상품 대표 이미지 — 넓은 화면은 80px 칸이라 sm(160 정사각)을 받는다. 767px 이하는 DataGrid 가 카드로 바꾸고 칸이 w-full\n                 aspect-square 로 카드 폭(휴대폰 300px 대)을 채워 sm 이 흐려지므로 가로 640 맞춤 md 를 받고 정사각 자르기는 object-cover 가 한다.\n                 이미지 분기는 바깥 칸의 크기 분기(768px 부터 80px)와 같은 경계 0-767 을 쓴다 — 칸이 80px 인 768px 이상은 sm 을 받는다.\n                 프리셋 mobile 대신 숫자 키인 것은 이 문서의 다른 노드가 portable 을 쓰고 한 문서에 portable 과 mobile 을 섞지 않는 규칙 때문이다.",
                                         "type": "basic",
                                         "name": "Img",
                                         "if": "{{row.thumbnail_url}}",
+                                        "responsive": {
+                                            "0-767": {
+                                                "props": {
+                                                    "thumbPreset": "md"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "src": "{{row.thumbnail_url}}",
+                                            "thumbPreset": "sm",
+                                            "loading": "lazy",
+                                            "decoding": "async",
                                             "alt": "{{row.name_localized ?? ''}}",
                                             "className": "ecommerce:w-full ecommerce:h-full ecommerce:aspect-square ecommerce:object-cover ecommerce:rounded"
                                         }

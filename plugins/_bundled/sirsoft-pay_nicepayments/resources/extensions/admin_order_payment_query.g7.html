@@ -25,7 +25,8 @@
             <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">TID:</span>
             <span class="paynicepayments:font-mono paynicepayments:text-xs paynicepayments:text-gray-900 paynicepayments:dark:text-gray-100">{{payment.transaction_id}}</span>
           </div>
-          <div class="paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:sm:grid-cols-2 paynicepayments:gap-3">
+          <div class="paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-3">
+            <responsive on="640-" class="paynicepayments:grid paynicepayments:grid-cols-2 paynicepayments:gap-3"/>
             <div>
               <label class="paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400 paynicepayments:block paynicepayments:text-xs paynicepayments:font-medium paynicepayments:mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company</label>
               <input type="text" aria-label="$t:common.row_cell|row={{payment.transaction_id}}|column={{$t('sirsoft-pay_nicepayments.admin.escrow_delivery_company')}}" placeholder="$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company_placeholder" class="paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:w-full paynicepayments:px-3 paynicepayments:py-2 paynicepayments:border paynicepayments:border-gray-300 paynicepayments:dark:border-gray-600 paynicepayments:rounded-lg paynicepayments:bg-white paynicepayments:dark:bg-gray-700 paynicepayments:text-sm paynicepayments:focus:ring-2 paynicepayments:focus:ring-emerald-500 paynicepayments:focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
@@ -53,7 +54,8 @@
                 </on>
               </input>
             </div>
-            <div class="paynicepayments:sm:col-span-2">
+            <div>
+              <responsive on="640-" class="paynicepayments:col-span-2"/>
               <label class="paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400 paynicepayments:block paynicepayments:text-xs paynicepayments:font-medium paynicepayments:mb-1">$t:sirsoft-pay_nicepayments.admin.escrow_buyer_address</label>
               <input type="text" aria-label="$t:common.row_cell|row={{payment.transaction_id}}|column={{$t('sirsoft-pay_nicepayments.admin.escrow_buyer_address')}}" class="paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:w-full paynicepayments:px-3 paynicepayments:py-2 paynicepayments:border paynicepayments:border-gray-300 paynicepayments:dark:border-gray-600 paynicepayments:rounded-lg paynicepayments:bg-white paynicepayments:dark:bg-gray-700 paynicepayments:text-sm paynicepayments:focus:ring-2 paynicepayments:focus:ring-emerald-500 paynicepayments:focus:border-transparent" disabled="{{order?.data?.abilities?.can_update !== true}}">
                 <on type="change">
@@ -93,7 +95,7 @@
       <div data-ref="nicepay_verify_header" class="paynicepayments:flex paynicepayments:items-center paynicepayments:gap-2 paynicepayments:mb-4">
         <div class="paynicepayments:w-1.5 paynicepayments:h-4 paynicepayments:bg-blue-500 paynicepayments:rounded-full paynicepayments:flex-shrink-0"/>
         <h3 class="paynicepayments:text-sm paynicepayments:font-semibold paynicepayments:text-gray-800 paynicepayments:dark:text-gray-200">$t:sirsoft-pay_nicepayments.admin.order_verify_title</h3>
-        <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden paynicepayments:sm:inline">$t:sirsoft-pay_nicepayments.admin.order_verify_description</span>
+        <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden"><responsive on="640-" class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 pay-nicepayments-hidden paynicepayments:inline"/>$t:sirsoft-pay_nicepayments.admin.order_verify_description</span>
       </div>
       <!-- 간편결제 서비스명 — 이커머스 주문 상세의 결제수단 칸은 기본 결제수단(신용카드)만 안다. 이 결제의 원 수단(카카오페이 등)은 거래 조회(nicepay_status)가 주는 원 수단 코드를 번역 키로 풀어 여기서 밝힌다. 종전에는 주입 스크립트가 이커머스 결제수단 칸의 글자를 직접 고쳐 썼다(#639). -->
       <div data-ref="nicepay_easy_pay_row" data-if="{{(['naverpay','kakaopay','samsungpay','applepay','payco','skpay','ssgpay','lpay']).includes(nicepay_status.data?._embedded_pg_provider)}}" class="paynicepayments:flex paynicepayments:items-center paynicepayments:gap-2 paynicepayments:mb-4">
@@ -157,7 +159,7 @@
       <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:gap-2 paynicepayments:mb-4">
         <div class="paynicepayments:w-1.5 paynicepayments:h-4 paynicepayments:bg-emerald-500 paynicepayments:rounded-full paynicepayments:flex-shrink-0"/>
         <h3 class="paynicepayments:text-sm paynicepayments:font-semibold paynicepayments:text-gray-800 paynicepayments:dark:text-gray-200">$t:sirsoft-pay_nicepayments.admin.vbank_noti_title</h3>
-        <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden paynicepayments:sm:inline">$t:sirsoft-pay_nicepayments.admin.vbank_noti_description</span>
+        <span class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 paynicepayments:hidden pay-nicepayments-hidden"><responsive on="640-" class="paynicepayments:text-xs paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400 pay-nicepayments-hidden paynicepayments:inline"/>$t:sirsoft-pay_nicepayments.admin.vbank_noti_description</span>
         <button type="button" disabled="{{_local._vbankNotiLoading === true}}" class="paynicepayments:flex paynicepayments:items-center paynicepayments:ml-auto paynicepayments:gap-1.5 paynicepayments:px-3 paynicepayments:py-1.5 paynicepayments:text-xs paynicepayments:font-medium paynicepayments:bg-emerald-700 pay-nicepayments-btn-emerald paynicepayments:text-white paynicepayments:rounded paynicepayments:transition-colors paynicepayments:disabled:opacity-50 paynicepayments:disabled:cursor-not-allowed">
           <on type="click">
             <!-- 가상계좌 입금통보 재조회 — PG 에 현재 통보 상태를 다시 물어 화면을 갱신한다 -->

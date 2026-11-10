@@ -14,7 +14,8 @@
     <div data-ref="inquiry_board_hints" class="board:space-y-3">
       <p data-ref="inquiry_board_hint_secret" class="board:text-xs board:text-gray-500 board:dark:text-gray-400">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret</p>
       <p data-ref="inquiry_board_hint_category" class="board:text-xs board:text-gray-500 board:dark:text-gray-400">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_category</p>
-      <div data-ref="inquiry_board_actions" data-if="{{!!(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}" class="board:flex board:flex-col board:gap-2 board:md:flex-row">
+      <div data-ref="inquiry_board_actions" data-if="{{!!(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}" class="board:flex board:flex-col board:gap-2">
+        <responsive on="768-" class="board:flex board:gap-2 board:flex-row"/>
         <div data-ref="inquiry_board_go_edit_card" class="board:flex board:flex-col board:justify-between board:gap-3 board:flex-1 board:p-3 board:bg-gray-50 board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg">
           <p class="board:flex board:items-start board:gap-1.5 board:text-xs board:text-gray-500 board:dark:text-gray-400">
             <icon name="gear" class="board:text-xs board:shrink-0 board:mt-0.5"/>

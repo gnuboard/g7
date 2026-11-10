@@ -829,6 +829,9 @@
                                                 "if": "{{!!row.thumbnail_url}}",
                                                 "props": {
                                                     "src": "{{row.thumbnail_url}}",
+                                                    "thumbPreset": "sm",
+                                                    "loading": "lazy",
+                                                    "decoding": "async",
                                                     "alt": "{{row.product_name ?? ''}}",
                                                     "className": "ecommerce:w-12 ecommerce:h-12 ecommerce:rounded ecommerce:object-cover ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                                                 }

@@ -48,7 +48,7 @@
       <div data-ref="page_header" class="ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6">
         <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-6"/>
         <div data-ref="page_header_left">
-          <h1 class="ecommerce-page-title ecommerce:mb-1">$t:sirsoft-ecommerce.admin.brand.title</h1>
+          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"/>$t:sirsoft-ecommerce.admin.brand.title</h1>
           <p class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.brand.description</p>
         </div>
         <div data-ref="page_header_actions" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0">
@@ -83,7 +83,8 @@
           </button>
         </div>
       </div>
-      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="ecommerce-grid-cols-1-lg-3">
+      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-6">
+        <responsive on="1024-" class="ecommerce:grid ecommerce:gap-6 ecommerce:grid-cols-3"/>
         <include src="partials/admin_ecommerce_brand_index/_panel_brand_list.g7.html"/>
         <include src="partials/admin_ecommerce_brand_index/_panel_detail.g7.html"/>
       </div>

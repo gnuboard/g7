@@ -58,7 +58,7 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
   it('closeModal 직후 openModal 은 최신 창 목록에 쌓아 닫힌 창을 되살리지 않는다', async () => {
     globalState = { modalStack: ['force_modal'], activeModal: 'force_modal' };
 
-    await dispatcher.executeAction({
+    await dispatcher['executeAction']({
       handler: 'sequence',
       actions: [
         { handler: 'closeModal' },
@@ -84,7 +84,7 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
   it('openModal 직후 closeModal 은 방금 연 창을 닫는다', async () => {
     globalState = { modalStack: ['base_modal'], activeModal: 'base_modal' };
 
-    await dispatcher.executeAction({
+    await dispatcher['executeAction']({
       handler: 'sequence',
       actions: [
         { handler: 'openModal', target: 'child_modal' },
@@ -110,7 +110,7 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
   it('전역 사본이 없는 문맥의 openModal 은 종전대로 빈 스택에서 시작한다', async () => {
     globalState = { modalStack: ['parent_modal'], activeModal: 'parent_modal' };
 
-    await dispatcher.executeAction(
+    await dispatcher['executeAction'](
       { handler: 'openModal', target: 'identity-challenge-modal' } as any,
       { state: {}, setState: vi.fn(), data: { sidebarOpen: true } } as any,
     );
@@ -128,13 +128,13 @@ describe('ActionDispatcher 창 스택 — sequence 안의 closeModal/openModal',
     globalState = { modalStack: ['a'], activeModal: 'a' };
     const ctx = () => ({ state: {}, setState: vi.fn(), data: { _global: { ...globalState } } });
 
-    await dispatcher.executeAction({ handler: 'openModal', target: 'b' } as any, ctx() as any);
+    await dispatcher['executeAction']({ handler: 'openModal', target: 'b' } as any, ctx() as any);
     expect(globalState.modalStack).toEqual(['a', 'b']);
 
-    await dispatcher.executeAction({ handler: 'openModal', target: 'b' } as any, ctx() as any);
+    await dispatcher['executeAction']({ handler: 'openModal', target: 'b' } as any, ctx() as any);
     expect(globalState.modalStack).toEqual(['a', 'b']);
 
-    await dispatcher.executeAction({ handler: 'closeModal' } as any, ctx() as any);
+    await dispatcher['executeAction']({ handler: 'closeModal' } as any, ctx() as any);
     expect(globalState.modalStack).toEqual(['a']);
     expect(globalState.activeModal).toBe('a');
   });

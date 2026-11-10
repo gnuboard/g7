@@ -79,7 +79,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 203개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 레이아웃 | 206개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 29개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -135,6 +135,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `CodeEditor` 에서 심기(prime)보다 먼저 `<Editor>` 를 렌더하거나 `loader.init()` 호출 | 심기가 끝난 뒤에 렌더·init 한다(`primed` 게이트) | `<Editor>` 는 렌더되자마자 자기 effect 에서 `init()` 을 부른다. 먼저 불리면 라이브러리가 **자기 AMD 로더 스크립트를 따로 주입**해 `_amdLoaderGlobal` 이 두 번 선언되고 그 판의 `require` 가 통째로 죽는다 (S3-D12) |
 | `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
 | 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
+| 크기 변형 클래스(`.btn-sm` 등)를 기본 클래스(`.btn`)보다 앞에 선언 | 변형은 기본 바로 뒤에 둔다 | 같은 `@layer components`·같은 명시도라 원문 순서가 승패를 정한다 — 앞에 두면 `btn btn-sm` 이 늘 기본 여백으로 그려진다. 확장 화면 CSS 도 이 순서를 복사한다. 가드: `src/__tests__/styles/sizeModifierOrder.test.ts` |
+| 레이아웃에서 폭에 따라 모양이 바뀌는 의미 클래스(`grid-2col-responsive`·`filter-row`·`page-title`·`admin-page-content-responsive` 등, 정의 안에 `sm:`·`md:`·`lg:`)를 쓰기 | 기본 모양은 접두 없는 유틸(또는 폭과 무관한 의미 클래스 — 필터 줄 라벨은 `filter-field-label`, 곁 라벨 잇기 표식을 겸한다), 폭별 모양은 엔진 `responsive` 구간 값 | 폭 판정이 CSS 미디어 쿼리와 엔진 두 곳으로 갈려 편집기 미리보기 폭·검색 봇 렌더와 어긋난다. 그 클래스들(`filter-label`, 층 밖 폭 미디어의 `page-header`·`page-header-padded`·`page-header-fullbleed`·`page-actions`·`input-split`·`grid-cols-1-lg-3`·`col-span-1-lg`·`col-span-2-lg`·`table-desktop`·`responsive-grid` 포함)은 사이트에서 직접 고친 레이아웃과 확장 화면 CSS 사본의 호환을 위해 폭 부분까지 폐지 예정으로 남아 있고(감사 면제 표식), 다음 출시 이후 제거된다 |
 | 메뉴·목록 단추에 `w-full`·`flex-1` 로 폭을 주면서 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다(`text-left` 만으로는 부족) | 기본 `Button` 의 `.button` 클래스가 `inline-flex items-center justify-center` 라, 넓어진 단추의 글·아이콘이 가운데로 간다 — 언어 선택·다국어 입력 목록이 이렇게 가운데로 갔다 |
 <!-- @intent END -->
 

@@ -150,7 +150,7 @@ describe('Form 컴포넌트', () => {
     // @scenario component=form
     // @effects form_renders_element_and_children
     it('여러 input 요소를 포함한다', () => {
-      const { container } = render(
+      render(
         <Form>
           <input type="text" name="username" placeholder="사용자명" />
           <input type="password" name="password" placeholder="비밀번호" />
@@ -216,8 +216,6 @@ describe('Form 컴포넌트', () => {
  * 스파이가 실제로 불렸음을 함께 단언한다 — 값만 재면 위임 줄 삭제가 드러나지 않는다
  * (16차 G3 라운드 A9).
  */
-// @scenario base_path=subpath, navigation_direction=request
-// @effects template_form_component_applies_base_prefix
 describe.each([
   ['G7Core 없음 (G7Config.basePath 폴백)', false],
   ['G7Core 있음 (G7Core.url.api 위임)', true],

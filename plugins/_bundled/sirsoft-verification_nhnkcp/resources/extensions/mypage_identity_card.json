@@ -64,8 +64,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-2 verificationnhnkcp:gap-y-3 verificationnhnkcp:gap-x-6 verificationnhnkcp:text-sm"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:sm:grid-cols-2 verificationnhnkcp:gap-y-3 verificationnhnkcp:gap-x-6 verificationnhnkcp:text-sm"
+                                "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-y-3 verificationnhnkcp:gap-x-6 verificationnhnkcp:text-sm"
                             },
                             "children": [
                                 {

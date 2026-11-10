@@ -357,8 +357,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-2 sso:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-2col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4"
                             },
                             "children": [
                                 {
@@ -434,8 +441,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso:grid sso:grid-cols-1 sso:md:grid-cols-3 sso:gap-4"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4"
                             },
                             "children": [
                                 {
@@ -536,15 +550,26 @@
                                 "item_var": "field"
                             },
                             "dataKey": "{{field.key}}",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-3col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -569,8 +594,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -780,15 +809,29 @@
                                         "item_var": "row"
                                     },
                                     "dataKey": "{{row.key}}",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sso:flex sso:flex-row sso:items-center sso:gap-2"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "sso:flex sso:flex-col sso:sm:flex-row sso:sm:items-center sso:gap-2"
+                                        "className": "sso:flex sso:flex-col sso:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:w-40 sso:flex-shrink-0"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:sm:w-40 sso:flex-shrink-0"
+                                                "className": "sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:flex-shrink-0"
                                             },
                                             "text": "{{row.label}}"
                                         },
@@ -831,8 +874,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "sso:inline"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "sso:hidden sso-hidden sso:sm:inline"
+                                                        "className": "sso:hidden"
                                                     },
                                                     "text": "$t:sirsoft-sso.admin.common.copy"
                                                 }
@@ -847,8 +897,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{_local.idpForm?.protocol === 'saml'}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:flex sso:flex-row sso:items-center sso:gap-2"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:flex sso:flex-col sso:sm:flex-row sso:sm:items-center sso:gap-2"
+                                "className": "sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:flex sso:flex-col sso:gap-2"
                             },
                             "children": [
                                 {
@@ -928,15 +985,26 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-3col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -960,8 +1028,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -998,15 +1070,26 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-3col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -1030,8 +1113,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-2 sso:space-y-2"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "sso:lg:col-span-2 sso:space-y-2"
+                                        "className": "sso:space-y-2"
                                     },
                                     "children": [
                                         {
@@ -1285,15 +1375,26 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-3col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -1317,8 +1418,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -1423,13 +1528,27 @@
                                 "index_var": "index"
                             },
                             "dataKey": "{{'attr-' + index}}",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "sso:flex sso:flex-row sso:items-center sso:gap-2"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso:flex sso:flex-col sso:md:flex-row sso:md:items-center sso:gap-2"
+                                "className": "sso:flex sso:flex-col sso:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "sso-input sso:w-48"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "회원 쪽 칸 이름 — 이 줄만 바꾼다",
@@ -1443,7 +1562,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "sso-input sso:md:w-48",
+                                        "className": "sso-input",
                                         "value": "{{rule.field}}",
                                         "placeholder": "name / attr:department",
                                         "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.attribute_field",
@@ -1453,6 +1572,13 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "sso-input sso:w-48"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "IdP 가 주는 속성 이름 — 이 줄만 바꾼다",
@@ -1466,7 +1592,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "sso-input sso:md:w-48",
+                                        "className": "sso-input",
                                         "value": "{{rule.source}}",
                                         "placeholder": "displayName",
                                         "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.attribute_source",
@@ -1476,6 +1602,13 @@
                                 {
                                     "type": "basic",
                                     "name": "Select",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "sso:w-48"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "동기화 방식(덮어쓰고 잠금·매 로그인 덮어쓰기·처음만·가져오지 않음) — 이 줄만 바꾼다",
@@ -1488,7 +1621,6 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "sso:md:w-48",
                                         "value": "{{rule.mode ?? 'sync'}}",
                                         "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.attribute_mode",
                                         "disabled": "{{!_computed.canUpdate}}"
@@ -1627,7 +1759,7 @@
                             "if": "{{_local.idpForm?.abilities?.role_rules_locked === true}}",
                             "props": {
                                 "role": "status",
-                                "className": "sso-alert-warning"
+                                "className": "sso-alert-warning sso:mb-4"
                             },
                             "children": [
                                 {
@@ -1651,8 +1783,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-2 sso:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-2col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4"
                             },
                             "children": [
                                 {
@@ -1769,8 +1908,15 @@
                             "id": "group_compare_options",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "sso:flex sso:flex-row sso:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso:flex sso:flex-col sso:sm:flex-row sso:gap-4"
+                                "className": "sso:flex sso:flex-col sso:gap-4"
                             },
                             "children": [
                                 {
@@ -1840,13 +1986,27 @@
                                 "index_var": "index"
                             },
                             "dataKey": "{{'role-' + index}}",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "sso:flex sso:flex-row sso:items-center sso:gap-2"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso:flex sso:flex-col sso:md:flex-row sso:md:items-center sso:gap-2"
+                                "className": "sso:flex sso:flex-col sso:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "sso-input sso:flex-1"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "IdP 그룹 이름 — 이 줄만 바꾼다",
@@ -1860,7 +2020,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "sso-input sso:md:flex-1",
+                                        "className": "sso-input",
                                         "value": "{{rule.group}}",
                                         "placeholder": "$t:sirsoft-sso.admin.settings.idp.placeholders.group",
                                         "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.role_group",
@@ -1870,6 +2030,13 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "sso-input sso:w-48"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "붙일 역할 식별자 — 관리자 역할 줄은 최고관리자만 고친다",
@@ -1883,7 +2050,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "sso-input sso:md:w-48",
+                                        "className": "sso-input",
                                         "value": "{{rule.role}}",
                                         "placeholder": "manager",
                                         "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.role_role",
@@ -1985,15 +2152,26 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-3col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -2017,8 +2195,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -2063,15 +2245,26 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-3col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -2095,8 +2288,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -2195,15 +2392,26 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-3col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -2227,8 +2435,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -2304,8 +2516,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sso:flex sso:flex-row sso:items-center sso:gap-2"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "sso:flex sso:flex-col sso:sm:flex-row sso:sm:items-center sso:gap-2"
+                                                "className": "sso:flex sso:flex-col sso:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -2352,8 +2571,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "sso:grid sso:grid-cols-2 sso:gap-4"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "sso-grid-2col-responsive"
+                                                "className": "sso:grid sso:grid-cols-1 sso:gap-4"
                                             },
                                             "children": [
                                                 {
@@ -2560,8 +2786,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "sso:flex sso:w-full sso:flex-row sso:items-center sso:gap-2"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "sso:flex sso:w-full sso:flex-col sso:sm:flex-row sso:sm:items-center sso:gap-2"
+                                                        "className": "sso:flex sso:w-full sso:flex-col sso:gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -2663,8 +2896,12 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
-                                            "props": {
-                                                "className": "sso:sm:w-40"
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sso:w-40"
+                                                    }
+                                                }
                                             },
                                             "children": [
                                                 {
@@ -2741,15 +2978,26 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso-grid-3col-responsive"
+                                "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -2773,8 +3021,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sso:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -2915,13 +3167,27 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "sso:flex sso:flex-row sso:gap-2"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "sso:flex sso:flex-col sso:sm:flex-row sso:gap-2"
+                                        "className": "sso:flex sso:flex-col sso:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sso-input sso:w-1/3"
+                                                    }
+                                                }
+                                            },
                                             "actions": [
                                                 {
                                                     "comment": "시험할 디렉터리 계정 식별자 — 화면 상태에만 둔다",
@@ -2935,7 +3201,7 @@
                                             ],
                                             "props": {
                                                 "type": "text",
-                                                "className": "sso-input sso:sm:w-1/3",
+                                                "className": "sso-input",
                                                 "value": "{{_local.ldapTestId ?? ''}}",
                                                 "autoComplete": "off",
                                                 "aria-label": "$t:sirsoft-sso.admin.idp.ldap_test_identifier"
@@ -2944,6 +3210,13 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "sso-input sso:w-1/3"
+                                                    }
+                                                }
+                                            },
                                             "actions": [
                                                 {
                                                     "comment": "시험용 비밀번호 — 화면 상태에만 두고 시험이 끝나면 비운다",
@@ -2957,7 +3230,7 @@
                                             ],
                                             "props": {
                                                 "type": "password",
-                                                "className": "sso-input sso:sm:w-1/3",
+                                                "className": "sso-input",
                                                 "value": "{{_local.ldapTestPw ?? ''}}",
                                                 "autoComplete": "new-password",
                                                 "aria-label": "$t:sirsoft-sso.admin.idp.ldap_test_password"

@@ -9,7 +9,52 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.create.modal.confirm.title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "창을 먼저 닫고 재생성한다 — 조합이 많으면 만드는 동안 화면이 멈춘 것처럼 보이기 때문이다. 확인을 이미 받았으므로 핸들러의 재확인은 건너뛴다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal"
+                            },
+                            {
+                                "handler": "sirsoft-ecommerce.generateOptions",
+                                "params": {
+                                    "skipConfirm": true,
+                                    "isCreate": "{{!route.itemCode}}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-warning"
+                },
+                "text": "$t:sirsoft-ecommerce.common.confirm"
+            }
+        ]
     },
     "children": [
         {
@@ -58,58 +103,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-outline"
-                            },
-                            "text": "$t:sirsoft-ecommerce.common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "창을 먼저 닫고 재생성한다 — 조합이 많으면 만드는 동안 화면이 멈춘 것처럼 보이기 때문이다. 확인을 이미 받았으므로 핸들러의 재확인은 건너뛴다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "sirsoft-ecommerce.generateOptions",
-                                            "params": {
-                                                "skipConfirm": true,
-                                                "isCreate": "{{!route.itemCode}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-warning"
-                            },
-                            "text": "$t:sirsoft-ecommerce.common.confirm"
                         }
                     ]
                 }

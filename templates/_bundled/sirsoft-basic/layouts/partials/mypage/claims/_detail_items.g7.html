@@ -14,7 +14,7 @@
         <!-- 신청분 — 원 주문 상품. -->
         <div class="flex gap-3">
           <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-            <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
+            <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
             <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
               <icon name="image" class="text-2xl text-gray-500 dark:text-gray-400"/>
             </div>

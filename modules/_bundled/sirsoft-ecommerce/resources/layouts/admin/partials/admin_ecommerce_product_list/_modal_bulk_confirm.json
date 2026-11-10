@@ -9,7 +9,57 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline",
+                    "disabled": "{{_global.isProcessing}}"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.bulkUpdate"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-primary",
+                    "data-testid": "bulk-confirm-submit",
+                    "disabled": "{{_global.isProcessing || ((!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) && (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0))}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isProcessing}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm ecommerce:mr-1"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isProcessing ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.common.confirm'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -231,63 +281,6 @@
                                 "item_var": "error_message"
                             },
                             "text": "{{error_message}}"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-outline",
-                        "disabled": "{{_global.isProcessing}}"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sirsoft-ecommerce.bulkUpdate"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-primary",
-                        "data-testid": "bulk-confirm-submit",
-                        "disabled": "{{_global.isProcessing || ((!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) && (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0))}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isProcessing}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "ecommerce-spinner-sm ecommerce:mr-1"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isProcessing ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.common.confirm'}}"
                         }
                     ]
                 }

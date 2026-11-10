@@ -197,11 +197,62 @@ async function typeFast(name: string, values: string[]): Promise<void> {
         await settle(40);
     }
 }
+/**
+ * typeFast 와 같은 입력을 가짜 타이머 위에서 친다 — 「아직 디바운스 대기 중」 을 재는 사례용.
+ *
+ * 실제 시간으로 치면 부하로 프로세스가 250ms 넘게 멈췄을 때 300ms 디바운스가 다음 글자나 단언보다 먼저 끝나 대기 중 단언이 깨졌다.
+ * 타이머만 가짜로 돌려 글자 간격과 디바운스의 순서를 고정한다(렌더 일정은 실제 그대로). 끝나면 실제 타이머로 돌려놓는다 — 그 뒤
+ * waitFor 는 실제 타이머가 필요하다. 가짜 타이머로 건 디바운스 예약은 그 안에서 시간을 넘기거나, 뒤의 액션 flush 로 끝낸다.
+ *
+ * @param name 칸 이름
+ * @param values 차례로 칠 값
+ * @param during 가짜 타이머가 켜진 동안 할 일(단언 등)
+ */
+async function withFakeTyping(name: string, values: string[], during: () => Promise<void> | void): Promise<void> {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+        for (const v of values) {
+            fireEvent.change(input(name), { target: { value: v } });
+            await vi.advanceTimersByTimeAsync(40);
+        }
+        await during();
+    } finally {
+        vi.useRealTimers();
+    }
+}
 const clickLabel = (label: string): void => {
     const b = Array.from(document.querySelectorAll('button')).find((x) => (x.textContent ?? '') === label) as HTMLElement;
     fireEvent.click(b);
 };
 const liveLocal = (app: any): Record<string, any> => app.getGlobalState()._local;
+
+/**
+ * 칸의 디바운스 예약이 실제로 끝날 때까지 기다린다.
+ *
+ * 종전에는 「디바운스(300ms)가 끝났을 것」 으로 보고 400ms 를 기다렸다. 여러 시험 파일을 함께 돌리는 부하에서는 타이머가 그보다 늦게
+ * 터져 아직 쓰지 않은 저장소를 읽고 깨졌다. 예약이 끝났는지는 디스패처의 대기 목록으로 본다(타이머 콜백이 목록에서 지운 뒤 같은 틱에 쓴다).
+ */
+async function debounceFired(): Promise<void> {
+    await waitFor(() => expect(engine.getActionDispatcher()!.hasPendingDebounce()).toBe(false), { timeout: 5_000 });
+}
+
+/**
+ * 가짜 시계를 멈춘 채로 조건이 설 때까지 실제 이벤트 루프를 돌린다.
+ *
+ * Testing Library 의 waitFor 는 가짜 setTimeout 위에서 제 간격 타이머가 돌지 않아 쓸 수 없고, vi.waitFor 는 확인마다 가짜 시계를
+ * 앞으로 돌려 디바운스 예약을 끝내 버린다. 여기서는 지금 시각에 걸린 예약만 실행하고 시계는 그대로 둔다.
+ *
+ * @param cond 기다릴 조건
+ * @param label 시한을 넘겼을 때 알릴 이름
+ */
+async function untilWithClockHeld(cond: () => boolean, label: string): Promise<void> {
+    const start = Date.now();
+    while (!cond()) {
+        if (Date.now() - start > 4_000) throw new Error(`${label} 를 4초 안에 보지 못했다`);
+        await vi.advanceTimersByTimeAsync(0);
+        await new Promise<void>((r) => setImmediate(r));
+    }
+}
 
 describe('[case:state-setstate-51] 디바운스 폼 — 디바운스가 끝나기 전에 누른 액션이 화면 입력과 같은 값을 읽는다 (engine-v1.81.2, 7.1.1)', () => {
     let m: Mounted | null = null;
@@ -219,8 +270,9 @@ describe('[case:state-setstate-51] 디바운스 폼 — 디바운스가 끝나�
      */
     it('정가를 빠르게 친 뒤 300ms 안에 「저장」(sequence) 하면 본문에 마지막 입력이 실린다', async () => {
         m = await mount();
-        await typeFast('list_price', ['10001', '100012', '1000123']);
-        expect(liveLocal(m.app).form.list_price, '아직 디바운스 대기 중').toBe('1000');
+        await withFakeTyping('list_price', ['10001', '100012', '1000123'], () => {
+            expect(liveLocal(m!.app).form.list_price, '아직 디바운스 대기 중').toBe('1000');
+        });
 
         clickLabel('save');
         await waitFor(() => expect(captured.length).toBe(1));
@@ -255,17 +307,35 @@ describe('[case:state-setstate-51] 디바운스 폼 — 디바운스가 끝나�
      */
     it('두 칸이 대기 중일 때 「저장」 하면 두 칸의 대기 쓰기와 change 동작이 한 번씩만 실행되고 본문에 둘 다 실린다(안쪽 flush 재진입)', async () => {
         m = await mount();
-        fireEvent.change(input('list_price'), { target: { value: '81' } });
-        await settle(20);
-        fireEvent.change(input('memo'), { target: { value: '메모81' } });
-        await settle(20);
-        expect(changed).toEqual([]);
+        // 두 칸이 모두 디바운스 대기 중인 창(첫 입력 뒤 300ms 안)에서 「저장」 한다. 실제 시간으로 재면 부하로 프로세스가 300ms 넘게
+        // 멈췄을 때 정가 칸 타이머가 먼저 끝나 「아직 대기 중」 단언이 깨졌다. 타이머만 가짜로 돌려 두 입력과 클릭을 그 창 안에 고정한다
+        // (렌더 일정은 실제 그대로). 시계는 클릭 뒤에도 멈춰 두어 대기 쓰기를 타이머가 아니라 flush 가 실행했음을 보이고, 끝에 디바운스
+        // 길이를 넘겨 시계를 돌려 flush 가 지우지 못한 예약이 남았으면 같은 change 동작이 다시 불리는 것을 잡는다.
+        // 칸의 change 동작은 runWithoutDebounceFlush 안에서 불려 안쪽 flush 를 부르지 않는다. 안쪽 flush 의 「이미 실행한 항목 건너뛰기」 는
+        // ActionDispatcher.debounceFlush.test.ts 의 다른 화면 navigate 사례가 잠근다.
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        try {
+            fireEvent.change(input('list_price'), { target: { value: '81' } });
+            await vi.advanceTimersByTimeAsync(20);
+            fireEvent.change(input('memo'), { target: { value: '메모81' } });
+            await vi.advanceTimersByTimeAsync(20);
+            expect(changed).toEqual([]);
+            expect(engine.getActionDispatcher()!.hasPendingDebounce(), '두 칸 모두 대기 중').toBe(true);
 
-        clickLabel('save');
-        await waitFor(() => expect(captured.length).toBe(1));
-        expect(captured[0].body).toMatchObject({ list_price: '81', memo: '메모81' });
-        await settle(400);
-        expect(changed.slice().sort()).toEqual(['list_price', 'memo']);
+            clickLabel('save');
+            await untilWithClockHeld(() => captured.length === 1, '저장 본문 캡처');
+            expect(captured[0].body).toMatchObject({ list_price: '81', memo: '메모81' });
+            await untilWithClockHeld(() => changed.length >= 2, '두 칸의 change 동작');
+            expect(changed.slice().sort()).toEqual(['list_price', 'memo']);
+            expect(engine.getActionDispatcher()!.hasPendingDebounce()).toBe(false);
+
+            // 한 번씩만 — 디바운스 길이를 넘겨 시계를 돌려도 같은 동작이 다시 불리지 않는다
+            await vi.advanceTimersByTimeAsync(400);
+            expect(changed.slice().sort()).toEqual(['list_price', 'memo']);
+            expect(captured.length).toBe(1);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     /**
@@ -274,18 +344,25 @@ describe('[case:state-setstate-51] 디바운스 폼 — 디바운스가 끝나�
      */
     it('앞 칸의 디바운스가 끝나며 부른 change 동작은, 아직 치고 있는 다른 칸의 대기 쓰기를 앞당기지 않는다(관리자 상품 정가 → 판매가)', async () => {
         m = await mount();
-        fireEvent.change(input('list_price'), { target: { value: '91' } });
-        await settle(150);
-        fireEvent.change(input('memo'), { target: { value: '메모91' } });
-        // 정가 칸 타이머(300ms)가 끝나 그 칸의 change 동작이 불린 직후 — 메모 칸은 아직 디바운스 안
-        await settle(200);
-        expect(liveLocal(m.app).form.list_price).toBe('91');
-        expect(changed).toEqual(['list_price']);
-        expect(liveLocal(m.app).form.memo, '메모 칸의 대기 쓰기가 앞당겨지면 안 된다').toBe('');
+        // 두 칸 타이머 사이(정가 300ms 끝 ~ 메모 450ms 끝)의 150ms 창을 잰다. 실제 시간으로 재면 부하에서 앞 대기가 100ms 넘게 밀려
+        // 메모 타이머까지 끝난 뒤에 읽어 깨졌다 — 타이머만 가짜로 돌려 두 예약의 순서와 간격을 고정한다(렌더 일정은 실제 그대로)
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        try {
+            fireEvent.change(input('list_price'), { target: { value: '91' } });
+            await vi.advanceTimersByTimeAsync(150);
+            fireEvent.change(input('memo'), { target: { value: '메모91' } });
+            // 정가 칸 타이머(300ms)가 끝나 그 칸의 change 동작이 불린 직후 — 메모 칸은 아직 디바운스 안
+            await vi.advanceTimersByTimeAsync(200);
+            expect(liveLocal(m.app).form.list_price).toBe('91');
+            expect(changed).toEqual(['list_price']);
+            expect(liveLocal(m.app).form.memo, '메모 칸의 대기 쓰기가 앞당겨지면 안 된다').toBe('');
 
-        await settle(250);
-        expect(liveLocal(m.app).form.memo).toBe('메모91');
-        expect(changed).toEqual(['list_price', 'memo']);
+            await vi.advanceTimersByTimeAsync(250);
+            expect(liveLocal(m.app).form.memo).toBe('메모91');
+            expect(changed).toEqual(['list_price', 'memo']);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     /**
@@ -334,13 +411,15 @@ describe('[case:state-setstate-51] 디바운스 폼 — 디바운스가 끝나�
      */
     it('키 필터가 맞지 않는 키는 대기 쓰기를 앞당기지 않는다(디바운스 유지) — 대기 값은 디바운스 뒤 반영된다', async () => {
         m = await mount();
-        await typeFast('list_price', ['4']);
-        fireEvent.keyDown(input('list_price'), { key: 'a' });
-        await settle(10);
-        expect(liveLocal(m.app).form.list_price).toBe('1000');
+        await withFakeTyping('list_price', ['4'], async () => {
+            fireEvent.keyDown(input('list_price'), { key: 'a' });
+            await vi.advanceTimersByTimeAsync(10);
+            expect(liveLocal(m!.app).form.list_price).toBe('1000');
 
-        await settle(400);
-        expect(liveLocal(m.app).form.list_price).toBe('4');
+            await vi.advanceTimersByTimeAsync(300);
+            expect(engine.getActionDispatcher()!.hasPendingDebounce()).toBe(false);
+            expect(liveLocal(m!.app).form.list_price).toBe('4');
+        });
         expect(captured.length).toBe(0);
     });
 
@@ -351,14 +430,16 @@ describe('[case:state-setstate-51] 디바운스 폼 — 디바운스가 끝나�
     it('디바운스가 끝난 뒤 저장은 종전처럼 정상이고, 두 칸을 이어 친 대기 값도 모두 실린다', async () => {
         m = await mount();
         await typeFast('list_price', ['5', '55']);
-        await settle(400);
+        await debounceFired();
         await typeFast('memo', ['메', '메모']);
 
         clickLabel('save');
         await waitFor(() => expect(captured.length).toBe(1));
         expect(captured[0].body).toMatchObject({ list_price: '55', memo: '메모' });
-        expect(input('list_price').value).toBe('55');
-        expect(input('memo').value).toBe('메모');
+        await waitFor(() => {
+            expect(input('list_price').value).toBe('55');
+            expect(input('memo').value).toBe('메모');
+        }, { timeout: 5_000 });
     });
 
     /**
@@ -367,10 +448,12 @@ describe('[case:state-setstate-51] 디바운스 폼 — 디바운스가 끝나�
      */
     it('액션이 없으면 디바운스 동안 저장소에 쓰지 않고, 디바운스 뒤 반영된다(종전 디바운스)', async () => {
         m = await mount();
-        await typeFast('list_price', ['6', '66']);
-        expect(liveLocal(m.app).form.list_price).toBe('1000');
-        await settle(400);
-        expect(liveLocal(m.app).form.list_price).toBe('66');
-        expect(input('list_price').value).toBe('66');
+        await withFakeTyping('list_price', ['6', '66'], async () => {
+            expect(liveLocal(m!.app).form.list_price).toBe('1000');
+            await vi.advanceTimersByTimeAsync(300);
+            expect(engine.getActionDispatcher()!.hasPendingDebounce()).toBe(false);
+            expect(liveLocal(m!.app).form.list_price).toBe('66');
+        });
+        await waitFor(() => expect(input('list_price').value).toBe('66'), { timeout: 5_000 });
     });
 });

@@ -20,7 +20,7 @@
       </div>
     </div>
     <p class="ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.admin.common_info.modal.delete.irreversible</p>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
         <on type="click">
           <close-modal/>
@@ -49,6 +49,6 @@
         <icon data-if="{{_global.isDeleting}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.isDeleting ? '$t:sirsoft-ecommerce.common.deleting' : '$t:sirsoft-ecommerce.admin.common_info.button.delete'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

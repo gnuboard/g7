@@ -130,6 +130,10 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 무관). 단추 잠금과 추가 확인은 `_global.appConfig?.siteLocale ?? $locale ?? 'ko'` 칸으로 판단합니다. 서버는 이름 오류를
 필드 전체 키 `name` 이나 언어 키 `name.{언어}` 로 돌려주므로 칸의 `error` 는 `name.{사이트 기본 언어}` 를 먼저, `name` 을 다음으로
 읽습니다. 문구는 MultilingualInput 이 칸 아래에 직접 그리므로 같은 문구를 담는 별도 문단을 두지 않습니다.
+
+화면 폭에 따라 배치가 바뀌는 곳은 Tailwind 반응형 접두(`board:md:…` 등) 대신 엔진 `<responsive on="…">` 덮어쓰기로 씁니다. 덮어쓰기는 className 을 통째로 바꾸므로 그 구간에서 살아 있는 클래스를 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`board-grid-3col-responsive`·`board-grid-2col-responsive`·`board-page-title`·`board-admin-page-content-responsive`·`board-filter-label`·`board-page-header-fullbleed` 등)과 모듈 CSS 의 폭 규칙 클래스(`board-category-select`)도 쓰지 않습니다. 이 사본들의 정의는 사이트에서 직접 고친 레이아웃의 호환을 위해 폭 부분까지 폐지 예정으로 남아 있고 다음 출시 이후 제거됩니다 — 새 레이아웃은 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="board:grid board:grid-cols-1 board:gap-4 board:items-start"` 에 `<responsive on="1024-" class="board:grid board:grid-cols-3 board:gap-4 board:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`board:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

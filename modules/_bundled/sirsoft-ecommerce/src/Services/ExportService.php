@@ -11,6 +11,7 @@ use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Helpers\TimezoneHelper;
 use App\Models\User;
+use App\Support\ExecutionEnvironment;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -319,6 +320,31 @@ class ExportService
     }
 
     /**
+     * 내보내기 임시 파일을 만들 디렉터리 — 호스팅이 `sys_get_temp_dir()` 를 막거나 그 폴더에 쓸 수 없으면
+     * 앱 저장소 아래 임시 디렉터리를 쓴다.
+     *
+     * @return string 디렉터리 경로
+     */
+    private static function temporaryDirectory(): string
+    {
+        if (ExecutionEnvironment::hasFunction('sys_get_temp_dir')) {
+            $directory = sys_get_temp_dir();
+
+            if (is_dir($directory) && is_writable($directory)) {
+                return $directory;
+            }
+        }
+
+        $fallback = storage_path('app/tmp/exports');
+
+        if (! is_dir($fallback)) {
+            @mkdir($fallback, 0775, true);
+        }
+
+        return $fallback;
+    }
+
+    /**
      * 내보내기 파일을 담는 디스크가 공개인지 (D17 — 차단하지 않고 경고만)
      *
      * 디스크 설정의 visibility 가 public 이거나 공개 URL 이 설정돼 있으면 공개로 본다.
@@ -552,9 +578,14 @@ class ExportService
                 app()->instance('user_timezone', $export->timezone);
             }
             // 큐 sync 일 때 응답 뒤 실행 — 사용자가 창을 닫아도 끝까지, 실행 시간은 잡 제한만큼
+            // 호스팅이 두 함수를 막으면 건너뛴다 — PHP 8 은 막힌 함수를 부르면 치명 오류다
             if ($this->isQueueSync()) {
-                ignore_user_abort(true);
-                @set_time_limit(self::JOB_TIMEOUT_SECONDS);
+                if (ExecutionEnvironment::hasFunction('ignore_user_abort')) {
+                    ignore_user_abort(true);
+                }
+                if (ExecutionEnvironment::hasFunction('set_time_limit')) {
+                    @set_time_limit(self::JOB_TIMEOUT_SECONDS);
+                }
             }
 
             $requester = $export->requested_by ? $this->users->findById((int) $export->requested_by) : null;
@@ -591,7 +622,7 @@ class ExportService
             $total = $type->countRows($query, $unit, $export->cutoff_at);
             $this->exports->update($export, ['total_rows' => $total]);
 
-            $tempPath = tempnam(sys_get_temp_dir(), 'g7export_');
+            $tempPath = tempnam(self::temporaryDirectory(), 'g7export_');
             $writer = $format->createWriter($tempPath);
             $writer->writeHeader($columns);
 
@@ -986,6 +1017,7 @@ class ExportService
      *
      * @throws ExportException 내려받을 수 없는 상태·파일 없음
      */
+    // thumbnail-exempt: 내보내기 파일(엑셀·CSV) 다운로드 통로다 — 이미지가 아니어서 썸네일 대상이 아니다.
     public function download(Export $export, User $user, ?string $ip, ?string $userAgent): StreamedResponse
     {
         if (! $export->isDownloadable()) {

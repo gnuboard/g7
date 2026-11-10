@@ -43,12 +43,19 @@
                     "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.load_failed"
                 },
                 {
-                    "comment": "메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열). 라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list-2(admin_basic 자산).",
+                    "comment": "메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (좁은 폭 2칸, 640 이상 4칸). 라벨 칸을 맞춰 값이 한 줄로 시작하게 gdpr-kv-list 격자에 담고, 640 이상의 4칸 열 값은 responsive 구간에 적는다.",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{gdprPolicyVersionSnapshot?.data?.data}}",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "gdpr-kv-list gdpr:grid-cols-[max-content_minmax(0,1fr)_max-content_minmax(0,1fr)] gdpr:gap-y-2 gdpr:text-xs gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md gdpr:p-3 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "gdpr-kv-list-2 gdpr:gap-y-2 gdpr:text-xs gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md gdpr:p-3 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"
+                        "className": "gdpr-kv-list gdpr:gap-y-2 gdpr:text-xs gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md gdpr:p-3 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"
                     },
                     "children": [
                         {

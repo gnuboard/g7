@@ -45,7 +45,7 @@
         <span data-if="{{$parent._local.emailErrors?.message}}" class="ecommerce-form-error-xs ecommerce:mt-1 ecommerce:block">{{$parent._local.emailErrors?.message?.[0]}}</span>
       </div>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{$parent._local.isSending}}">
         <on type="click">
           <close-modal/>
@@ -76,6 +76,6 @@
         <icon data-if="{{$parent._local.isSending}}" name="spinner" class="ecommerce:animate-spin" size="sm"/>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.send</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

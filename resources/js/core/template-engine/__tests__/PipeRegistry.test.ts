@@ -6,7 +6,6 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  PipeRegistry,
   pipeRegistry,
   parsePipeExpression,
   splitPipes,
@@ -416,6 +415,55 @@ describe('PipeRegistry', () => {
     });
   });
 
+  describe('내장 파이프 - thumb/thumbSrcset (engine-v1.89.0)', () => {
+    const presets = [
+      { name: 'xs', width: 64, height: 64, fit: 'cover', numeric: false },
+      { name: 'sm', width: 160, height: 160, fit: 'cover', numeric: false },
+      { name: 'md', width: 640, height: null, fit: 'width', numeric: true },
+      { name: 'lg', width: 1280, height: null, fit: 'width', numeric: true },
+    ];
+
+    beforeEach(() => {
+      (window as any).G7Config = {
+        settings: { upload: { thumbnail_presets_public: presets, thumbnail_url_patterns: ['/api/attachment/*'] } },
+      };
+    });
+
+    afterEach(() => {
+      delete (window as any).G7Config;
+    });
+
+    /** @effects thumb_pipe_appends_preset_to_serving_urls */
+    it('thumb 는 서빙 경로에 규격을 붙이고 기본 규격은 sm 이다', () => {
+      expect(pipeRegistry.execute('thumb', '/api/attachment/abc', ['md'])).toBe('/api/attachment/abc?size=md');
+      expect(pipeRegistry.execute('thumb', '/api/attachment/abc')).toBe('/api/attachment/abc?size=sm');
+    });
+
+    /** @effects thumb_pipe_leaves_non_targets_untouched */
+    it('thumb 는 외부·정적 주소와 비문자열 값을 그대로 둔다', () => {
+      expect(pipeRegistry.execute('thumb', 'https://cdn.example.com/a.png', ['sm'])).toBe('https://cdn.example.com/a.png');
+      expect(pipeRegistry.execute('thumb', '/storage/a.png', ['sm'])).toBe('/storage/a.png');
+      expect(pipeRegistry.execute('thumb', null, ['sm'])).toBeNull();
+      expect(pipeRegistry.execute('thumb', undefined, ['sm'])).toBeUndefined();
+    });
+
+    /** @effects thumb_srcset_pipe_emits_density_candidates */
+    it('thumbSrcset 은 1x·2x 를, 대상이 아니면 빈 문자열을 낸다', () => {
+      expect(pipeRegistry.execute('thumbSrcset', '/api/attachment/abc', ['md'])).toBe(
+        '/api/attachment/abc?size=md 1x, /api/attachment/abc?size=lg 2x',
+      );
+      expect(pipeRegistry.execute('thumbSrcset', '/storage/a.png', ['md'])).toBe('');
+      expect(pipeRegistry.execute('thumbSrcset', null, ['md'])).toBe('');
+    });
+
+    /** @effects thumb_pipes_listed_as_builtin */
+    it('내장 목록에 두 파이프가 있다', () => {
+      const names = pipeRegistry.list().map((p) => p.name);
+      expect(names).toContain('thumb');
+      expect(names).toContain('thumbSrcset');
+    });
+  });
+
   describe('executePipeChain', () => {
     /** @effects pipe_expression_parsing */
     it('파이프 체인 순차 실행', () => {
@@ -453,7 +501,7 @@ describe('PipeRegistry', () => {
 
     /** @effects custom_pipes_registered_and_listed */
     it('내장 파이프 덮어쓰기 불가', () => {
-      pipeRegistry.register('date', (value) => 'custom');
+      pipeRegistry.register('date', () => 'custom');
       // 여전히 내장 파이프가 사용됨
       expect(pipeRegistry.execute('date', '2024-01-01')).not.toBe('custom');
     });

@@ -32,6 +32,22 @@ enum LayoutMarkupLintCode: string
     case ResponsiveBreakpointMix = 'responsive_breakpoint_mix';
 
     /**
+     * 한 노드의 `responsive` 에서 열린 커스텀 구간(`768-`·`-1023` 처럼 한쪽 끝이 없는 키)이 다른 열린 커스텀
+     * 구간이나 프리셋과 같은 폭에서 함께 맞음.
+     *
+     * 엔진(ResponsiveManager::getMatchingKey)은 맞는 키 하나만 고른다 — 커스텀은 넓이와 상관없이 프리셋보다 먼저,
+     * 커스텀끼리는 좁은 구간이 먼저, 위가 열린 구간끼리는 넓이가 둘 다 무한이라 가리지 못해 먼저 적은 키다. 그 키의
+     * 값만 기본값 위에 덮어 쓰므로(props 는 얕은 병합, children·text·if·iteration 은 교체) 다른 키의 값은 그 폭에서
+     * 쓰이지 않는다. 그래서 Tailwind `md:`·`lg:` 처럼 겹쳐 쌓이리라 기대하고 적으면 엉뚱한 값이 나온다
+     * (`768-` 과 `1024-` 를 그 순서로 적으면 `1024-` 값은 어느 폭에서도 쓰이지 않는다).
+     * 닫힌 커스텀이 낀 쌍은 판정하지 않는다. 닫힌 구간끼리·닫힌 구간과 열린 구간은 좁은 쪽이 이기고, 프리셋보다
+     * 좁은 닫힌 구간을 함께 두는 것(`mobile` 안의 `0-480` 등)은 의도된 덮어쓰기라 경고하지 않는다. 닫힌 커스텀이
+     * 프리셋 구간을 다 덮으면 그 프리셋 값은 쓰이지 않는데, 이것은 이 경고의 범위 밖이다.
+     * 문서 단위의 프리셋 혼용은 `ResponsiveBreakpointMix` 가 따로 본다.
+     */
+    case ResponsiveOpenRangeOverlap = 'responsive_open_range_overlap';
+
+    /**
      * 독립 레이아웃(extends 없음)이 toast·openModal 을 발화하면서 그 전역 상태를 받는 자리를 두지 않음 —
      * 핸들러는 success 로 기록되나 화면에 아무것도 나오지 않는 silent failure.
      *

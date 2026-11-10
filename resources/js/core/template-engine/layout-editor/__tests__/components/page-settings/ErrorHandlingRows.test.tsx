@@ -11,7 +11,6 @@
  *  ⑥ clear → 코드 키 제거
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ErrorHandlingRows } from '../../../components/page-settings/ErrorHandlingRows';
@@ -21,6 +20,10 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('ErrorHandlingRows', () => {
+  /**
+   * @scenario subject=error_handling_rows
+   * @effects error_rows_codes_build_rows_with_badges
+   */
   it('codes 로 행 생성 + badge 모드 출처 배지', () => {
     render(
       <ErrorHandlingRows
@@ -38,6 +41,10 @@ describe('ErrorHandlingRows', () => {
     expect(screen.getByTestId('g7le-error-rows-default-warn-default')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=error_handling_rows
+   * @effects error_rows_inherited_override_revert_cover
+   */
   it('상속/템플릿 출처 행 — 오버라이드 안내 + [되돌림]/[덮기] (W7 L2829)', () => {
     const onChange = vi.fn();
     render(
@@ -67,11 +74,19 @@ describe('ErrorHandlingRows', () => {
     expect(onChange).toHaveBeenLastCalledWith({ '403': { handler: 'showErrorPage' }, '404': { handler: 'toast' }, '500': {} });
   });
 
+  /**
+   * @scenario subject=error_handling_rows
+   * @effects error_rows_local_mode_no_badges
+   */
   it('local 모드 — 출처 배지 부재(데이터소스 단순)', () => {
     render(<ErrorHandlingRows value={{ '500': { handler: 'toast' } }} onChange={vi.fn()} t={t} codes={['500']} mode="local" />);
     expect(screen.queryByTestId('g7le-error-rows-source-500')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=error_handling_rows
+   * @effects error_rows_delegates_action_list_render
+   */
   it('renderActionList 위임 — 동작별 입력 폼 렌더', () => {
     render(
       <ErrorHandlingRows
@@ -85,6 +100,10 @@ describe('ErrorHandlingRows', () => {
     expect(screen.getByTestId('custom-editor-401')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=error_handling_rows
+   * @effects error_handling_rows_clear_drops_code_key
+   */
   it('clear → 코드 키 제거', () => {
     const onChange = vi.fn();
     render(<ErrorHandlingRows value={{ '403': { handler: 'showErrorPage' } }} onChange={onChange} t={t} codes={['403']} />);
@@ -92,6 +111,10 @@ describe('ErrorHandlingRows', () => {
     expect(onChange).toHaveBeenCalledWith({});
   });
 
+  /**
+   * @scenario subject=error_handling_rows
+   * @effects error_rows_value_keys_build_rows
+   */
   it('codes 미지정 시 value 키로 행 생성', () => {
     render(<ErrorHandlingRows value={{ '404': { handler: 'toast' }, '500': { handler: 'toast' } }} onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-error-rows-row-404')).toBeInTheDocument();

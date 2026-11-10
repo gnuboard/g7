@@ -592,6 +592,9 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{review.images[0].download_url}}",
+                                                "thumbPreset": "sm",
+                                                "loading": "lazy",
+                                                "decoding": "async",
                                                 "alt": "",
                                                 "className": "w-full h-full object-cover"
                                             }
@@ -642,6 +645,9 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{review.images[1].download_url}}",
+                                                "thumbPreset": "sm",
+                                                "loading": "lazy",
+                                                "decoding": "async",
                                                 "alt": "",
                                                 "className": "w-full h-full object-cover"
                                             }
@@ -692,6 +698,9 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{review.images[2].download_url}}",
+                                                "thumbPreset": "sm",
+                                                "loading": "lazy",
+                                                "decoding": "async",
                                                 "alt": "",
                                                 "className": "w-full h-full object-cover"
                                             }
@@ -742,6 +751,9 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{review.images[3].download_url}}",
+                                                "thumbPreset": "sm",
+                                                "loading": "lazy",
+                                                "decoding": "async",
                                                 "alt": "",
                                                 "className": "w-full h-full object-cover"
                                             }
@@ -792,6 +804,9 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{review.images[3].download_url}}",
+                                                "thumbPreset": "sm",
+                                                "loading": "lazy",
+                                                "decoding": "async",
                                                 "alt": "",
                                                 "className": "w-full h-full object-cover"
                                             }

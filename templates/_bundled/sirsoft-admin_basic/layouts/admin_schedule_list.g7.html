@@ -305,7 +305,9 @@
     </set-state>
   </init>
   <slot name="content">
-    <div data-ref="schedule_list_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="schedule_list_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <filter-visibility-selector data-type="composite" data-ref="filter_visibility_selector" id="admin_schedule_filters" visibleFilters="{{_local.visibleFilters}}">
         <prop name="defaultFilters">
           <item>searchField</item>
@@ -399,7 +401,9 @@
       </page-header>
       <!-- 탭 바 — 본문 안쪽 여백을 음수 여백으로 덮어 끝까지 붙인다. 본문 여백이 폭에 따라 p-4·p-6·p-8 로 바뀌므로 탭 바도
            같은 단계의 -responsive 짝을 쓴다(템플릿 관리·환경설정과 같다 — 고정 -mx-6 은 좁은 화면에서 8px 넘쳤다). -->
-      <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav-responsive">
+      <div data-ref="tab_navigation_wrapper" class="sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+        <responsive on="640-1023" class="sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
+        <responsive on="1024-" class="sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"/>
         <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeScheduleTab || (route.path === '/admin/schedules/queue' ? 'queue' : 'schedules')}}" variant="default">
           <prop name="tabs">
             <item id="schedules" href="/admin/schedules" label="$t:admin.schedules.tabs.schedules"/>

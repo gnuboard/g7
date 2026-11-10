@@ -69,20 +69,20 @@
           <p class="ecommerce-tone-info-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.modal.save_template.info</p>
         </div>
       </div>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:mt-6">
-        <button type="button" class="ecommerce-btn ecommerce-btn-outline">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:sirsoft-ecommerce.common.cancel
-        </button>
-        <button type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{!_global.ui.saveTemplateData?.name}}">
-          <on type="click">
-            <action handler="sirsoft-ecommerce.confirmSaveNoticeTemplate"/>
-          </on>
-          $t:sirsoft-ecommerce.admin.product.modal.save_template.save_button
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.common.cancel
+      </button>
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{!_global.ui.saveTemplateData?.name}}">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.confirmSaveNoticeTemplate"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.save_template.save_button
+      </button>
+    </footer>
   </modal>
 </partial>

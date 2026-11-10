@@ -21,6 +21,7 @@ type LayoutNode = {
     name?: string;
     text?: string;
     props?: { className?: string };
+    responsive?: Record<string, { props?: { className?: string } }>;
     children?: LayoutNode[];
 };
 
@@ -48,6 +49,20 @@ function flatten(node: unknown): LayoutNode[] {
 
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode) => (typeof n.props?.className === 'string' ? n.props.className : '');
+
+/**
+ * 3열 그리드 입력 줄인지 — 좁은 폭 1열, 1024px 이상 3열을 접두 유틸과 엔진 responsive(`1024-` 구간)로 쓴다.
+ * 폭 미디어를 품은 옛 의미 클래스(`grid-3col-responsive`)는 쓰지 않는다.
+ */
+const GRID3_BASE = 'verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start';
+const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string } }> }) =>
+    (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
+    String(n.responsive?.['1024-']?.props?.className ?? '').split(/\s+/).includes('verificationkginicis:grid-cols-3');
+/** 넓은 화면(1024px 이상) 갈래의 클래스 토큰에 접두를 뗀 유틸리티(`col-span-1` 등)가 있는지 — 화면 폭 분기는 엔진 responsive(desktop)로 쓴다 */
+const hasDesktopUtility = (n: LayoutNode, utility: string) => {
+    const c = n.responsive?.desktop?.props?.className;
+    return typeof c === 'string' && c.split(/\s+/).some((t) => t.split(':').pop() === utility);
+};
 const HEADINGS = ['H2', 'H3', 'H4'];
 
 describe('KG이니시스 본인인증 환경설정 — 의미 클래스 위치', () => {
@@ -59,11 +74,11 @@ describe('KG이니시스 본인인증 환경설정 — 의미 클래스 위치',
     it('라벨(1칸)·입력(2칸)으로 나뉜 입력 줄은 3열 그리드 클래스를 쓴다', () => {
         const rows = nodes.filter((n) => {
             const kids = Array.isArray(n.children) ? n.children : [];
-            return kids.some((k) => cls(k).includes('lg:col-span-1')) && kids.some((k) => cls(k).includes('lg:col-span-2'));
+            return kids.some((k) => hasDesktopUtility(k, 'col-span-1')) && kids.some((k) => hasDesktopUtility(k, 'col-span-2'));
         });
         expect(rows.length).toBeGreaterThanOrEqual(2);
         for (const row of rows) {
-            expect({ id: row.id, className: cls(row).split(' ')[0] }).toEqual({ id: row.id, className: `${NS}grid-3col-responsive` });
+            expect({ id: row.id, grid3col: isGrid3col(row), legacy: cls(row).includes(`${NS}grid-3col-responsive`) }).toEqual({ id: row.id, grid3col: true, legacy: false });
         }
     });
 
@@ -104,7 +119,7 @@ describe('KG이니시스 본인인증 환경설정 — 의미 클래스 위치',
         const headingMisuse = nodes.filter((n) => cls(n) === `${NS}section-heading-md` && !HEADINGS.includes(n.name ?? ''));
         expect(headingMisuse.map((n) => n.id ?? n.name)).toEqual([]);
 
-        const gridOnLi = nodes.filter((n) => n.name === 'Li' && cls(n).startsWith(`${NS}grid-3col-responsive`));
+        const gridOnLi = nodes.filter((n) => n.name === 'Li' && isGrid3col(n));
         expect(gridOnLi.map((n) => n.text)).toEqual([]);
     });
 });

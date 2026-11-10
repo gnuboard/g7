@@ -878,7 +878,7 @@ return [
 
     // IP 허용 목록 (웹 크론 호출 제한 — App\Rules\ValidIpAllowList)
     'ip_allow_list' => [
-        'invalid' => '":value" 은(는) 올바른 IP 주소나 대역 표기가 아닙니다. 한 줄에 하나씩 또는 쉼표로 구분해 적어 주세요.',
+        'invalid' => '올바른 IP 주소나 대역 표기가 아닙니다: ":value". 한 줄에 하나씩 또는 쉼표로 구분해 적어 주세요.',
     ],
 
     // 설정값 검증 메시지
@@ -892,6 +892,7 @@ return [
             'max' => '설정 값은 :max자를 초과할 수 없습니다.',
             'array_max' => '설정 값의 크기가 :max자를 초과할 수 없습니다.',
             'server_only' => '이 설정은 서버가 기록하는 값이라 직접 저장할 수 없습니다.',
+            'tab_only' => '이 설정은 환경설정 화면의 탭 저장으로만 바꿀 수 있습니다.',
             'env_locked' => '이 설정은 .env 가 값을 정하고 있어 여기서 바꿀 수 없습니다. .env 의 :env 를 고치세요.',
         ],
     ],
@@ -1196,6 +1197,29 @@ return [
 
         // 공개 자산 디스크 설정
         'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
+
+        // 이미지 처리 엔진, 이미지 썸네일 (#869)
+        'image_driver_invalid' => '올바른 이미지 처리 엔진을 선택해주세요.',
+        'thumbnail_presets_array' => '썸네일 규격 표 형식이 올바르지 않습니다.',
+        'thumbnail_presets_max' => '썸네일 규격은 최대 :max개까지 둘 수 있습니다(고정 규격과 확장 규격 포함).',
+        'thumbnail_preset_name_required' => '규격 이름을 입력해주세요.',
+        'thumbnail_preset_name_distinct' => '같은 이름의 규격이 이미 있습니다.',
+        'thumbnail_preset_name_reserved' => "기본 규격 이름(':name')이라 쓸 수 없습니다.",
+        'thumbnail_preset_name_literal' => "레이아웃 파이프가 문자열로 읽지 않는 낱말(':name')이라 규격 이름으로 쓸 수 없습니다.",
+        'thumbnail_preset_name_format' => '규격 이름은 영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄(_)만 써서 2~32자로 입력해주세요.',
+        'thumbnail_preset_name_locked' => '기본 규격과 확장 규격은 이름을 바꿀 수 없습니다.',
+        'thumbnail_preset_extension_unknown' => "':name' 규격을 등록한 확장이 켜져 있지 않습니다.",
+        'thumbnail_preset_width_required' => '가로 크기를 입력해주세요.',
+        'thumbnail_preset_height_required' => '자르기나 맞추기에는 세로 크기가 필요합니다.',
+        'thumbnail_preset_size_integer' => '크기는 정수(px)로 입력해주세요.',
+        'thumbnail_preset_size_range' => '크기는 :min~:max px 사이로 입력해주세요.',
+        'thumbnail_preset_quality_range' => '품질은 :min~:max 사이 정수로 입력하거나 비워 두세요.',
+        'thumbnail_preset_fit_invalid' => '맞춤 방식을 선택해주세요.',
+        'thumbnail_preset_anchor_invalid' => '올바른 기준점을 선택해주세요.',
+        'thumbnail_preset_format_invalid' => '올바른 저장 형식을 선택해주세요.',
+        'thumbnail_content_preset_invalid' => '사용 중인 규격 중에서 본문 이미지 규격을 선택해주세요.',
+        'thumbnail_disk_public_invalid' => '공개 이미지 썸네일 저장 위치를 목록에서 선택해주세요.',
+        'thumbnail_disk_gated_invalid' => '권한이 걸린 이미지 썸네일은 서버 비공개 저장소나 Amazon S3 에만 둘 수 있습니다.',
 
         // 드라이버 조건부 필수 메시지 (선택 드라이버에 따라 필수)
         's3_bucket_required' => 'S3 버킷 이름은 필수입니다.',
@@ -1605,5 +1629,33 @@ return [
         'queue_job_log_enabled' => '큐 처리 기록 사용',
         'queue_record_retention_days' => '큐 처리 기록 보관 기간',
         'public_asset_disk' => '공개 자산 디스크',
+        // 이미지 처리 엔진, 이미지 썸네일 (#869)
+        'image_driver' => '이미지 처리 엔진',
+        'thumbnail_enabled' => '이미지 썸네일 사용',
+        'thumbnail_prune_enabled' => '썸네일 자동 정리',
+        'thumbnail_animated_original' => '움직이는 이미지 원본 사용',
+        'thumbnail_presets' => '썸네일 규격',
+        'thumbnail_preset_row' => '썸네일 규격 행',
+        'thumbnail_preset_name' => '규격 이름',
+        'thumbnail_preset_source' => '규격 출처',
+        'thumbnail_preset_width' => '가로',
+        'thumbnail_preset_height' => '세로',
+        'thumbnail_preset_fit' => '맞춤',
+        'thumbnail_preset_anchor' => '기준점',
+        'thumbnail_preset_quality' => '품질',
+        'thumbnail_preset_format' => '형식',
+        'thumbnail_preset_upscale' => '확대',
+        'thumbnail_preset_pregenerate' => '등록 시 생성',
+        'thumbnail_preset_numeric' => '숫자 요청',
+        'thumbnail_preset_enabled' => '사용',
+        'thumbnail_content_preset' => '본문 이미지 규격',
+        'thumbnail_disk_public' => '공개 이미지 썸네일 저장 위치',
+        'thumbnail_disk_gated' => '권한이 걸린 이미지 썸네일 저장 위치',
+        'thumbnail_generate_per_minute' => '1분에 새로 만드는 썸네일 수 (IP 하나)',
+        'thumbnail_lock_wait_seconds' => '썸네일 생성 대기 시간',
+        'thumbnail_max_source_pixels' => '썸네일을 만들 원본의 최대 픽셀 수',
+        'thumbnail_pregenerate_batch' => '한 번에 만드는 원본 수',
+        'thumbnail_pregenerate_time_budget' => '한 번 호출의 시간 예산',
+        'thumbnail_purge_time_budget' => '비우기 한 번 호출의 시간 예산',
     ],
 ];

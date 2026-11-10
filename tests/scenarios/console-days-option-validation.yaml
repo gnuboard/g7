@@ -8,9 +8,10 @@ description: |
   (`DataRetentionCommandsTest::test_retention_floor_is_enforced_below_the_command`, core-gc-schedules 매니페스트).
 
   대상: notification-delivery:prune · notification-log:prune · schedules:prune-history · seo:prune-stats · seo:stats ·
-  identity:prune-logs · activity-log:prune · analytics:prune · attachments:prune-orphans · storage:prune-leftovers(--days·--backup-days).
+  identity:prune-logs · activity-log:prune · analytics:prune · attachments:prune-orphans · storage:prune-leftovers(--days·--backup-days) ·
+  thumbnails:prune(7.2.0, #869 — 하한 1: 0일은 캐시 전체 비우기와 같아 관리자 「비우기」에 맡긴다).
 
-  축 case 는 검증 갈래다 — 잘못된 값(`abc`·`-5`·`1.5`)을 11개 커맨드·옵션 전부에 넣는 데이터 프로바이더 행(33건)과,
+  축 case 는 검증 갈래다 — 잘못된 값(`abc`·`-5`·`1.5`)을 12개 커맨드·옵션 전부에 넣는 데이터 프로바이더 행(36건)과,
   지울 행이 있는 상태에서 오타가 아무것도 지우지 않고 올바른 값은 종전대로 지우는지 보는 행이다.
 
 axes:

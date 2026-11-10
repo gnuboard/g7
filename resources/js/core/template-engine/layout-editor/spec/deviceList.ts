@@ -127,7 +127,7 @@ export function collectDeviceKeys(components: EditorNode[] | undefined | null): 
  * @return children 교체 구성 키 배열(발견 순)
  */
 export function collectDefinedDeviceBranches(
-  node: { responsive?: Record<string, { children?: unknown }> } | undefined | null,
+  node: { responsive?: Record<string, { children?: unknown; [key: string]: unknown }> } | undefined | null,
   currentBp?: string,
 ): string[] {
   const responsive = node?.responsive;

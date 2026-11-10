@@ -6,6 +6,7 @@ import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
 import { getDefaultTheme } from '../../handlers/setThemeHandler';
+import { escapeToClose } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
 // 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
@@ -119,6 +120,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   const [currentMode, setCurrentMode] = useState<ThemeMode>(initialTheme);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  // 메뉴를 여는 단추 — 메뉴 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   /**
    * 컴포넌트 마운트 시 즉시 테마 적용
@@ -177,10 +180,13 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   return (
-    <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs}>
+    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
+    <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showMenu, () => setShowMenu(false), toggleRef)}>
       {/* 테마 토글 버튼 */}
       <Button
+        ref={toggleRef}
         onClick={() => setShowMenu(!showMenu)}
+        aria-haspopup="menu"
         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
         // 언어와 무관하게 「Toggle theme」 이던 이름을 번역한다(7.1.0 실측). 번역이 없을 때의 대체 문구는
         // 다른 기본 문구와 같이 영어다(컴포넌트 다국어 규칙 — 한국어 기본값 금지)

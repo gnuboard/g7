@@ -258,6 +258,7 @@ return [
             'success' => 'テンプレート「:template」の無効化完了',
             'not_active' => 'テンプレート「:template」は有効化されていません。',
             'no_active_warning' => '現在有効化されている:typeテンプレートがありません。',
+            'last_active_force_hint' => 'それでも無効化するには --force を付けて再実行してください: php artisan template:deactivate :template --force',
         ],
         'uninstall' => [
             'success' => 'テンプレート「:template」の削除完了',

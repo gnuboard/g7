@@ -79,7 +79,7 @@
     <div data-ref="shipping_policy_list_content" class="ecommerce-admin-page-content">
       <div data-ref="page_header" class="ecommerce-flex-between ecommerce:mb-6">
         <div>
-          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.shipping_policy.title</h1>
+          <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.shipping_policy.title</h1>
           <p class="ecommerce-text-label-subtle ecommerce:mt-1">$t:sirsoft-ecommerce.admin.shipping_policy.description</p>
         </div>
         <a href="/admin/ecommerce/shipping-policies/create" :mergeQuery="true" class="ecommerce-button ecommerce-btn ecommerce-btn-primary ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed" disabled="{{shipping_policies?.data?.abilities?.can_create !== true}}">

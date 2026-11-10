@@ -136,6 +136,8 @@ return [
         'template:refresh-layout' => 'テンプレートのレイアウトを更新します（ビルドせずにレイアウトのみ DB に同期）',
         'template:uninstall' => 'テンプレートを削除します',
         'template:update' => 'テンプレートを最新バージョンにアップデートします',
+        'thumbnails:pregenerate' => 'アップロード済みの画像のサムネイルを事前に作成します (既にあるサムネイルはスキップ)',
+        'thumbnails:prune' => '規格が変わったか元画像がなくなったサムネイルファイルを整理します',
         'trusted-proxy:status' => 'リバースプロキシの信頼設定（TRUSTED_PROXIES）の状態を点検します',
         'user:reset-password' => '会員のパスワードをサーバーのターミナルで再設定します（メールなしで管理者アカウントを復旧）',
         'vendor-bundle:build-all' => 'コア + すべての _bundled モジュール/プラグインの vendor バンドルを一括ビルドします',

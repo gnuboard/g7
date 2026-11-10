@@ -288,6 +288,7 @@ return [
             'success' => 'Template ":template" deactivated successfully',
             'not_active' => 'Template ":template" is not active.',
             'no_active_warning' => 'No active :type template currently.',
+            'last_active_force_hint' => 'To deactivate it anyway, run again with --force: php artisan template:deactivate :template --force',
         ],
         'uninstall' => [
             'success' => 'Template ":template" uninstalled successfully',

@@ -41,8 +41,8 @@ export interface LoginFormProps {
   emailInvalidError?: string;
   /** 비밀번호 필수 입력 에러 메시지 */
   passwordRequiredError?: string;
-  /** 폼 제출 핸들러 */
-  onSubmit?: (data: { email: string; password: string }) => void;
+  /** 폼 제출 핸들러 — 클라이언트 검증을 통과한 폼 제출 이벤트를 그대로 받는다(ActionDispatcher 가 만든 핸들러가 FormData 를 꺼낸다) */
+  onSubmit?: (e: FormEvent<HTMLFormElement>) => void | Promise<void>;
   /** 로딩 액션 맵 (ActionDispatcher에서 전달) */
   loadingActions?: Record<string, boolean>;
   /** 외부에서 직접 로딩 상태 제어 */
@@ -164,7 +164,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       // onSubmit은 ActionDispatcher.createHandler가 생성한 핸들러
       // 내부적으로 event.preventDefault(), FormData 추출, API 호출을 처리함
       // onError 핸들러에서 setError를 사용하면 apiError prop이 업데이트됨
-      await (onSubmit as any)(e);
+      await onSubmit(e);
     } else {
       // onSubmit이 없으면 기본 동작 방지
       e.preventDefault();

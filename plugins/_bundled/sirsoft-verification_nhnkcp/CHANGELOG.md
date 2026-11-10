@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 코어 7.2.0 이상이 필요합니다(`g7_version >=7.2.0`).
 - 화면 스타일을 플러그인 자체 CSS 로 제공합니다 — 템플릿의 CSS 라이브러리와 무관하게 표시됩니다. 환경설정 화면과 다른 화면에 붙는 조각(본인인증 설정의 공급자 카드, 마이페이지 본인인증 카드)의 클래스가 모두 이 플러그인 앞글자(`verificationnhnkcp:`·`verification-nhnkcp-`)로 바뀌었고, 다크 모드는 코어의 중립 표식을 따릅니다. 화면 모양은 이전과 같습니다.
 - 사이트를 문서 루트 하위 폴더(예: `https://example.com/g7/`)에 설치하는 배치를 지원합니다 — 본인인증 창이 돌아갈 주소를 받지 못했을 때 문서 루트가 아니라 사이트의 홈으로 돌아갑니다.
+- 화면 폭 분기를 Tailwind 반응형 접두와 폭 미디어를 품은 관리자 화면 의미 클래스(`verification-nhnkcp-grid-3col-responsive` 등) 대신 엔진 responsive 로 바꿨습니다(화면 변화 없음).
 
 ### Fixed
 

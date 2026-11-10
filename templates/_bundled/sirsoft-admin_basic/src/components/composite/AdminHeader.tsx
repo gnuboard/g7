@@ -5,6 +5,8 @@ import { Img } from '../basic/Img';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { classAtWidth } from '../layout/widthBreakpoints';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -73,6 +75,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   onLogoutClick,
   className = '',
 }) => {
+  // 사용자 이름 묶음을 보일지 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
+  const renderWidth = useRenderWidth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -191,13 +195,14 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
               src={user.avatar}
               alt={user.name}
               className="w-8 h-8 rounded-full object-cover"
+              thumbPreset="xs"
             />
           ) : (
             <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
               <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </Div>
           )}
-          <Div className="hidden md:block text-left">
+          <Div className={`${classAtWidth(renderWidth, 'md', 'block', 'hidden')} text-left`}>
             <Div className="font-semibold text-gray-900 dark:text-white text-sm">{user.name}</Div>
             {user.role && (
               <Div className="text-gray-500 dark:text-gray-300 text-xs">{user.role}</Div>

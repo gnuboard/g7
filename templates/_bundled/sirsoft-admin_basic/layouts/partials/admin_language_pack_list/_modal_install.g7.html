@@ -79,7 +79,7 @@
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isLanguagePackInstalling}}">
         <on type="click">
           <!-- 취소는 창을 닫는 것으로 끝나지 않는다 — 입력값·오류·탭을 처음 상태로 되돌린다. 이 값들이 전역이라 그냥 닫으면 다음에 열 때 지난 내용이 그대로 남는다. -->
@@ -116,6 +116,6 @@
         <icon data-if="{{_global.isLanguagePackInstalling}}" name="spinner" class="animate-spin" size="sm"/>
         <span>{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -9,7 +9,119 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.menus.modals.editing_title",
-        "size": "medium"
+        "size": "medium",
+        "footer": [
+            {
+                "id": "menu_editing_continue_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "계속 편집 — 대기 값만 비우고 창을 닫는다(고친 값·편집 판은 그대로)",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "pendingMenuId": null,
+                                    "pendingMenu": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:admin.menus.modals.editing_continue"
+                    }
+                ]
+            },
+            {
+                "id": "menu_editing_discard_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "입력을 버리고 대기 메뉴로 — 주소부터 갈아끼우고(대기 값을 비우기 전에) 선택을 옮긴다. 목록 응답에는 하위 메뉴의 역할이\n            실려 있지 않아 보통 선택처럼 단건을 받아 채운다. 창 닫기는 맨 뒤다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "replaceUrl",
+                                "if": "{{!!_global.pendingMenu?.slug}}",
+                                "params": {
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "menu": "{{_global.pendingMenu?.slug}}",
+                                        "mode": "view"
+                                    }
+                                }
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedMenuId": "{{_global.pendingMenuId}}",
+                                    "selectedMenu": "{{_global.pendingMenu}}",
+                                    "panelMode": "view",
+                                    "formErrors": null,
+                                    "hasChanges": false
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/menus/{{_global.pendingMenuId}}",
+                                "if": "{{!!_global.pendingMenuId}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "GET"
+                                },
+                                "onSuccess": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedMenu": "{{response.data}}"
+                                    }
+                                }
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "pendingMenuId": null,
+                                    "pendingMenu": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:admin.menus.modals.editing_discard"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -64,125 +176,6 @@
                                     "text": "$t:admin.menus.modals.editing_confirm_message"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "id": "menu_editing_continue_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "계속 편집 — 대기 값만 비우고 창을 닫는다(고친 값·편집 판은 그대로)",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "pendingMenuId": null,
-                                        "pendingMenu": null
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.menus.modals.editing_continue"
-                        }
-                    ]
-                },
-                {
-                    "id": "menu_editing_discard_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "입력을 버리고 대기 메뉴로 — 주소부터 갈아끼우고(대기 값을 비우기 전에) 선택을 옮긴다. 목록 응답에는 하위 메뉴의 역할이\n            실려 있지 않아 보통 선택처럼 단건을 받아 채운다. 창 닫기는 맨 뒤다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "replaceUrl",
-                                    "if": "{{!!_global.pendingMenu?.slug}}",
-                                    "params": {
-                                        "mergeQuery": true,
-                                        "query": {
-                                            "menu": "{{_global.pendingMenu?.slug}}",
-                                            "mode": "view"
-                                        }
-                                    }
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "selectedMenuId": "{{_global.pendingMenuId}}",
-                                        "selectedMenu": "{{_global.pendingMenu}}",
-                                        "panelMode": "view",
-                                        "formErrors": null,
-                                        "hasChanges": false
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/menus/{{_global.pendingMenuId}}",
-                                    "if": "{{!!_global.pendingMenuId}}",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "GET"
-                                    },
-                                    "onSuccess": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "selectedMenu": "{{response.data}}"
-                                        }
-                                    }
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "pendingMenuId": null,
-                                        "pendingMenu": null
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.menus.modals.editing_discard"
                         }
                     ]
                 }

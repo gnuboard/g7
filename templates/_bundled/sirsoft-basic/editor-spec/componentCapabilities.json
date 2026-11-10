@@ -163,7 +163,8 @@
     "label": "$t:editor.component.img",
     "propControls": [
       "imgSrc",
-      "imgAlt"
+      "imgAlt",
+      "imgThumbPreset"
     ],
     "styleControls": [
       "width",

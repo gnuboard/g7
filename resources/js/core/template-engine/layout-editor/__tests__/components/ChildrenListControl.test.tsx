@@ -14,11 +14,10 @@
  * `$t:custom.*` SSoT(useCustomTranslation → useInlineEdit CRUD)로 일원화됐다. 따라서 본 스위트는
  * I18nTextField 미리보기 입력칸(`*-preview`)·🌐 토글(`*-toggle`)·펼침 폼(`*-expand`)을 대상으로 한다.
  *
- * @effects children_capability_declared_on_ul_ol_nav_form_li_both_templates, children_editor_registered_via_registercoreeditors_kind_agnostic, property_modal_dispatches_children_node_editor_in_props_tab_by_kind_not_name, add_item_appends_childcomponent_defaultnode_to_children, add_item_patches_whole_node_so_props_survive_patch_layout, remove_item_drops_only_that_child_from_children, move_up_down_swaps_adjacent_children_with_boundary_guard, canvas_drag_drop_and_list_editor_share_same_children_array, plain_item_blur_creates_custom_key_and_replaces_text_with_dollar_t_custom, existing_custom_key_blur_updates_current_locale_value_keeps_key, existing_custom_key_expand_shows_ko_en_ja_bulk_form, structural_child_without_text_shows_component_name_label_only, unchanged_blur_is_noop_no_crud_call, missing_child_component_capability_shows_misconfigured_notice, live_add_li_edit_text_reorder_save_persists_to_user_page
+ * 효과 요약(마커 아님 — 평문, 시험별 표식으로 옮김): children_capability_declared_on_ul_ol_nav_form_li_both_templates, children_editor_registered_via_registercoreeditors_kind_agnostic, property_modal_dispatches_children_node_editor_in_props_tab_by_kind_not_name, add_item_appends_childcomponent_defaultnode_to_children, add_item_patches_whole_node_so_props_survive_patch_layout, remove_item_drops_only_that_child_from_children, move_up_down_swaps_adjacent_children_with_boundary_guard, canvas_drag_drop_and_list_editor_share_same_children_array, plain_item_blur_creates_custom_key_and_replaces_text_with_dollar_t_custom, existing_custom_key_blur_updates_current_locale_value_keeps_key, existing_custom_key_expand_shows_ko_en_ja_bulk_form, structural_child_without_text_shows_component_name_label_only, unchanged_blur_is_noop_no_crud_call, missing_child_component_capability_shows_misconfigured_notice, live_add_li_edit_text_reorder_save_persists_to_user_page
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
@@ -104,6 +103,10 @@ function previewInput(idx: number): HTMLInputElement {
 }
 
 describe('ChildrenListControl — 구조 자식 편집', () => {
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_renders_text_items_as_preview_rows
+   */
   it('children 텍스트 항목을 I18nTextField 미리보기 행으로 렌더한다', () => {
     const node = ulNode([
       { type: 'basic', name: 'Li', text: '첫째' },
@@ -123,6 +126,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(previewInput(1).value).toBe('둘째');
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_empty_children_shows_notice
+   */
   it('빈 children → 안내 표시', () => {
     render(
       <ChildrenListControl
@@ -135,6 +142,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(screen.getByTestId('g7le-children-empty')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_add_appends_default_node, add_item_appends_childcomponent_defaultnode_to_children, add_item_patches_whole_node_so_props_survive_patch_layout
+   */
   it('"추가" → params.childComponent defaultNode 가 children 끝에 append (노드 전체 교체)', () => {
     const onPatchNode = vi.fn();
     const node = ulNode([{ type: 'basic', name: 'Li', text: '첫째' }]);
@@ -151,6 +162,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(kids[1].text).toBe('layout_editor.list_editor.new_item');
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_void_default_node_not_text_seeded
+   */
   it('text 미선언 defaultNode(Input 등 void 컴포넌트) → 기본 텍스트 시드 금지 — React #137 회귀', () => {
     // Form→Input: Input defaultNode 는 text 를 선언하지 않는다(void element).
     // 시드를 강제하면 <input>새 항목</input> 렌더 → React error #137 크래시.
@@ -181,6 +196,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(kids[0].text).toBeUndefined();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_manifest_fallback_not_text_seeded
+   */
   it('manifest 폴백(스펙 defaultNode 부재)도 text 미선언이면 시드 금지', () => {
     const onPatchNode = vi.fn();
     const spec = { componentPalette: { entries: {} } } as never;
@@ -203,6 +222,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(kids[0].text).toBeUndefined();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_remove_patches_without_item, remove_item_drops_only_that_child_from_children
+   */
   it('삭제 → 해당 항목 제거된 children 으로 패치', () => {
     const onPatchNode = vi.fn();
     const node = ulNode([
@@ -218,6 +241,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(kids[0].text).toBe('둘째');
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_move_down_swaps_order, move_up_down_swaps_adjacent_children_with_boundary_guard
+   */
   it('아래로 이동 → 항목 순서 교환', () => {
     const onPatchNode = vi.fn();
     const node = ulNode([
@@ -232,6 +259,33 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(kids.map((k) => k.text)).toEqual(['B', 'A']);
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects canvas_drag_drop_and_list_editor_share_same_children_array
+   */
+  it('캔버스 드래그로 바뀐 node.children 을 목록이 그대로 따르고, 이어진 편집도 그 배열 위에서 패치한다', () => {
+    const onPatchNode = vi.fn();
+    const a: EditorNode = { type: 'basic', name: 'Li', text: 'A' };
+    const b: EditorNode = { type: 'basic', name: 'Li', text: 'B' };
+    const c: EditorNode = { type: 'basic', name: 'Li', text: 'C' };
+    const { rerender } = render(
+      <ChildrenListControl {...baseProps} node={ulNode([a, b, c])} params={{ childComponent: 'Li' }} onPatchNode={onPatchNode} />,
+    );
+    // 캔버스 드롭은 같은 노드의 children 을 바꿔 다시 내려준다(별도 사본 없음) — C 를 맨 앞으로.
+    rerender(
+      <ChildrenListControl {...baseProps} node={ulNode([c, a, b])} params={{ childComponent: 'Li' }} onPatchNode={onPatchNode} />,
+    );
+    expect([0, 1, 2].map((i) => previewInput(i).value)).toEqual(['C', 'A', 'B']);
+    // 목록 편집기 삭제는 드롭 뒤 순서 기준으로 그 항목만 뺀다(옛 순서로 되돌아가지 않음).
+    fireEvent.click(screen.getByTestId('g7le-children-remove-1'));
+    const kids = (onPatchNode.mock.calls.at(-1)![0] as EditorNode).children as EditorNode[];
+    expect(kids.map((k) => k.text)).toEqual(['C', 'B']);
+  });
+
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_row_is_two_line_layout
+   */
   it('행은 2줄 구조다 (입력 윗줄 / 액션 버튼 아랫줄) — 겹침·가로 스크롤 차단', () => {
     const node = ulNode([{ type: 'basic', name: 'Li', text: 'A' }]);
     render(
@@ -247,6 +301,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(actionLine).toContainElement(screen.getByTestId('g7le-children-remove-0'));
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_boundary_move_buttons_disabled, move_up_down_swaps_adjacent_children_with_boundary_guard
+   */
   it('경계 가드 — 첫 행 위로/마지막 행 아래로 비활성', () => {
     const node = ulNode([
       { type: 'basic', name: 'Li', text: 'A' },
@@ -259,6 +317,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(screen.getByTestId('g7le-children-down-1')).toBeDisabled();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_textless_child_shows_component_label, structural_child_without_text_shows_component_name_label_only
+   */
   it('텍스트 없는 구조 자식(자손도 텍스트 없음) → 컴포넌트명 라벨(정렬/삭제만)', () => {
     const node = ulNode([{ type: 'basic', name: 'Div', children: [{ type: 'basic', name: 'Img', props: { src: 'x' } }] }]);
     render(
@@ -268,6 +330,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(screen.queryByTestId('g7le-children-i18n-0-preview')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_descendant_text_is_edit_target
+   */
   it('자손에 텍스트가 있는 항목(Li > [Span("•"), Span("텍스트")]) → 의미 텍스트 자손을 편집 대상으로', () => {
     const node = ulNode([
       {
@@ -287,6 +353,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
     expect(screen.queryByTestId('g7le-children-label-0')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_descendant_plain_edit_creates_key
+   */
   it('자손 텍스트 편집 평문 입력 → createCustomKey 후 **그 자손** text 만 `$t:custom.*` 로 치환', async () => {
     createCustomKey.mockResolvedValue({
       kind: 'ok',
@@ -321,6 +391,10 @@ describe('ChildrenListControl — 구조 자식 편집', () => {
 });
 
 describe('ChildrenListControl — 항목 다국어(I18nTextField SSoT)', () => {
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_plain_item_edit_creates_custom_key, plain_item_blur_creates_custom_key_and_replaces_text_with_dollar_t_custom
+   */
   it('평문 항목 입력(변경) → createCustomKey 후 항목 text 를 `$t:custom.*` 로 치환', async () => {
     createCustomKey.mockResolvedValue({
       kind: 'ok',
@@ -342,6 +416,10 @@ describe('ChildrenListControl — 항목 다국어(I18nTextField SSoT)', () => {
     expect(kids[0].text).toBe('$t:custom.login.9');
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_existing_key_updates_locale, existing_custom_key_blur_updates_current_locale_value_keeps_key
+   */
   it('기존 커스텀 키 항목 입력(변경) → updateCustomKeyValue(현재 로케일), text 키 유지', async () => {
     updateCustomKeyValue.mockResolvedValue({ kind: 'ok' });
     const onPatchNode = vi.fn();
@@ -361,6 +439,10 @@ describe('ChildrenListControl — 항목 다국어(I18nTextField SSoT)', () => {
     expect(createCustomKey).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects existing_custom_key_expand_shows_ko_en_ja_bulk_form
+   */
   it('기존 커스텀 키 → 🌐 펼침 시 ko/en/ja 일괄 편집 폼 노출(I18nTextField B)', async () => {
     findCustomKeyRow.mockResolvedValue({
       id: 1,
@@ -380,6 +462,10 @@ describe('ChildrenListControl — 항목 다국어(I18nTextField SSoT)', () => {
     expect(screen.getByTestId('g7le-translation-missing-ja')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_unchanged_blur_is_noop, unchanged_blur_is_noop_no_crud_call
+   */
   it('변경 없는 blur → CRUD 미호출(no-op)', async () => {
     const node = ulNode([{ type: 'basic', name: 'Li', text: '그대로' }]);
     render(
@@ -394,6 +480,10 @@ describe('ChildrenListControl — 항목 다국어(I18nTextField SSoT)', () => {
     expect(updateCustomKeyValue).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_binding_item_read_only
+   */
   it('바인딩식 항목 → 읽기전용 디그레이드(편집 차단)', () => {
     const node = ulNode([{ type: 'basic', name: 'Li', text: '{{post.title}}' }]);
     render(
@@ -406,6 +496,10 @@ describe('ChildrenListControl — 항목 다국어(I18nTextField SSoT)', () => {
 });
 
 describe('ChildrenListControl — 잘못된 capability', () => {
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_missing_child_component_notice, missing_child_component_capability_shows_misconfigured_notice
+   */
   it('childComponent 미선언 → 안내(misconfigured)', () => {
     render(
       <ChildrenListControl {...baseProps} node={ulNode([])} params={{}} onPatchNode={vi.fn()} />,
@@ -445,6 +539,10 @@ describe('ChildrenListControl — 스펙 주도 childTemplate/itemFields', () =>
     return { type: 'basic', name: 'Form', children };
   }
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_child_template_add_seeds_label_only
+   */
   it('"추가" → childTemplate 골격(라벨+입력칸 묶음)이 append, 라벨 Span 에만 기본 텍스트 시드', () => {
     const onPatchNode = vi.fn();
     render(
@@ -465,6 +563,10 @@ describe('ChildrenListControl — 스펙 주도 childTemplate/itemFields', () =>
     );
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_add_button_uses_child_label
+   */
   it('추가 버튼 명칭 = childLabel (childComponent 폴백 아님)', () => {
     render(
       <ChildrenListControl {...baseProps} node={formNode([])} params={bundleParams} onPatchNode={vi.fn()} />,
@@ -474,6 +576,10 @@ describe('ChildrenListControl — 스펙 주도 childTemplate/itemFields', () =>
     );
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_item_fields_render_label_and_hint
+   */
   it('itemFields 선언 항목 행 → 라벨 + 안내 문구 두 필드(캡션 포함) 렌더', () => {
     const item: EditorNode = {
       type: 'basic',
@@ -494,6 +600,10 @@ describe('ChildrenListControl — 스펙 주도 childTemplate/itemFields', () =>
     expect(screen.getByTestId('g7le-children-caption-prop-placeholder-0').textContent).toBe('안내 문구');
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_prop_field_plain_edit_creates_key
+   */
   it('prop 필드 평문 입력 → createCustomKey 후 그 자손의 props[prop] 만 키 토큰으로 치환', async () => {
     createCustomKey.mockResolvedValue({
       kind: 'ok',
@@ -526,6 +636,10 @@ describe('ChildrenListControl — 스펙 주도 childTemplate/itemFields', () =>
     expect((inputNode.props as Record<string, unknown>).type).toBe('email');
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_no_placeholder_renders_label_only
+   */
   it('placeholder 없는 항목(체크박스 행 등) → 라벨 필드만 렌더(안내 문구 필드 미노출)', () => {
     const item: EditorNode = {
       type: 'basic',
@@ -539,6 +653,10 @@ describe('ChildrenListControl — 스펙 주도 childTemplate/itemFields', () =>
     expect(screen.queryByTestId('g7le-children-prop-placeholder-0-preview')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_no_editable_field_shows_name_only
+   */
   it('편집 가능 필드가 전무한 구조 자식(text·placeholder 모두 없음) → 컴포넌트명 라벨만', () => {
     const item: EditorNode = { type: 'basic', name: 'Input', props: { type: 'checkbox' } };
     render(
@@ -547,6 +665,10 @@ describe('ChildrenListControl — 스펙 주도 childTemplate/itemFields', () =>
     expect(screen.getByTestId('g7le-children-label-0').textContent).toBe('Input');
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_no_item_fields_keeps_single_field
+   */
   it('itemFields 미선언 → 종전 동작(텍스트 1필드, 캡션 없음) 그대로', () => {
     const node = ulNode([{ type: 'basic', name: 'Li', text: '첫째' }]);
     render(
@@ -566,6 +688,10 @@ describe('ChildrenListControl — 항목 후보 풀 전달', () => {
     path: 'name', shape: 'scalar' as const, preview: '홍길동',
   };
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_candidates_show_data_button
+   */
   it('candidates 전달 시 평문 항목 텍스트 칸에 +데이터 버튼 노출', () => {
     const node = ulNode([{ type: 'basic', name: 'Li', text: '첫째' }]);
     render(
@@ -580,6 +706,10 @@ describe('ChildrenListControl — 항목 후보 풀 전달', () => {
     expect(screen.getByTestId('g7le-children-i18n-0-plus-data-btn')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=children_list_control
+   * @effects children_list_no_candidates_hides_data_button
+   */
   it('candidates 미전달 시 +데이터 버튼 미노출 (디그레이드)', () => {
     const node = ulNode([{ type: 'basic', name: 'Li', text: '첫째' }]);
     render(
@@ -590,62 +720,166 @@ describe('ChildrenListControl — 항목 후보 풀 전달', () => {
 });
 
 /*
- * 시나리오 cross-product 커버리지 마킹 — test-scenario-coverage 룰용.
- * 본 단위 스위트(ChildrenListControl)가 control 로직을, coverage 스위트가 컴포넌트별 capability
- * 선언을, children-list-editor.spec.ts(E2E)가 라이브 영속을 잠근다. 아래 마킹은 axes cross
- * product 와 effects 를 그 테스트군에 귀속시킨다.
+ * 부모 컴포넌트 축(component) — 목록 편집기는 node.name 이 아니라 params.childComponent 로 동작한다. 다섯 부모
+ * (Ul, Ol, Nav, Form, Li)에서 같은 조작이 같은 children 패치를 내는지 부모마다 돌려 잰다. 조합은 그 조작을 재는
+ * it.each 바로 앞에 둔다. 템플릿 축은 이 위젯이 템플릿 무관 코어 컴포넌트라 두 템플릿 조합을 같은 시험에 병기한다
+ * (sirsoft-basic 의 Ol 은 매니페스트 exclusions). capability 선언은 basicPropControlCoverage, 라이브 영속은
+ * children-list-editor.spec.ts(E2E)가 잰다.
  */
-// @scenario component=Ul, item_text_kind=plain_new, operation=add, template=sirsoft-basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=remove, template=sirsoft-basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=move_up, template=sirsoft-basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=move_down, template=sirsoft-basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=edit_text, template=sirsoft-basic
-// @scenario component=Ul, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Ul, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-basic
-// @scenario component=Ul, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Ol, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
-// @scenario component=Ol, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
-// @scenario component=Ol, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
-// @scenario component=Ol, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
-// @scenario component=Ol, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Ol, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=add, template=sirsoft-basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=remove, template=sirsoft-basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=move_up, template=sirsoft-basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=move_down, template=sirsoft-basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=edit_text, template=sirsoft-basic
-// @scenario component=Nav, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Nav, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-basic
-// @scenario component=Nav, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Form, item_text_kind=plain_new, operation=add, template=sirsoft-basic
-// @scenario component=Form, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
-// @scenario component=Form, item_text_kind=plain_new, operation=remove, template=sirsoft-basic
-// @scenario component=Form, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
-// @scenario component=Form, item_text_kind=plain_new, operation=move_up, template=sirsoft-basic
-// @scenario component=Form, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
-// @scenario component=Form, item_text_kind=plain_new, operation=move_down, template=sirsoft-basic
-// @scenario component=Form, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
-// @scenario component=Form, item_text_kind=plain_new, operation=edit_text, template=sirsoft-basic
-// @scenario component=Form, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Form, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-basic
-// @scenario component=Form, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Li, item_text_kind=plain_new, operation=add, template=sirsoft-basic
-// @scenario component=Li, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
-// @scenario component=Li, item_text_kind=plain_new, operation=remove, template=sirsoft-basic
-// @scenario component=Li, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
-// @scenario component=Li, item_text_kind=plain_new, operation=move_up, template=sirsoft-basic
-// @scenario component=Li, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
-// @scenario component=Li, item_text_kind=plain_new, operation=move_down, template=sirsoft-basic
-// @scenario component=Li, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
-// @scenario component=Li, item_text_kind=plain_new, operation=edit_text, template=sirsoft-basic
-// @scenario component=Li, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
-// @scenario component=Li, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-basic
-// @scenario component=Li, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
+const PARENTS = ['Ul', 'Ol', 'Nav', 'Form', 'Li'] as const;
+
+function parentNode(name: string, children: EditorNode[]): EditorNode {
+  return { type: 'basic', name, children };
+}
+
+describe('ChildrenListControl — 부모 컴포넌트 축', () => {
+  // @scenario component=Ul, item_text_kind=plain_new, operation=add, template=sirsoft-basic
+  // @scenario component=Ul, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
+  // @scenario component=Ol, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=add, template=sirsoft-basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=add, template=sirsoft-basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=add, template=sirsoft-basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=add, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=children_list_control
+   * @effects add_item_appends_childcomponent_defaultnode_to_children
+   */
+  it.each(PARENTS)('%s: 추가 → childComponent 골격이 children 끝에 붙는다', (parent) => {
+    const onPatchNode = vi.fn();
+    const node = parentNode(parent, [{ type: 'basic', name: 'Li', text: '첫째' }]);
+    render(<ChildrenListControl {...baseProps} node={node} params={{ childComponent: 'Li' }} onPatchNode={onPatchNode} />);
+    fireEvent.click(screen.getByTestId('g7le-children-add'));
+    const patched = onPatchNode.mock.calls[0][0] as EditorNode;
+    expect(patched.name).toBe(parent);
+    expect((patched.children as EditorNode[]).map((k) => k.name)).toEqual(['Li', 'Li']);
+  });
+
+  // @scenario component=Ul, item_text_kind=plain_new, operation=remove, template=sirsoft-basic
+  // @scenario component=Ul, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
+  // @scenario component=Ol, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=remove, template=sirsoft-basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=remove, template=sirsoft-basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=remove, template=sirsoft-basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=remove, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=children_list_control
+   * @effects remove_item_drops_only_that_child_from_children
+   */
+  it.each(PARENTS)('%s: 삭제 → 그 항목만 빠진다', (parent) => {
+    const onPatchNode = vi.fn();
+    const node = parentNode(parent, [
+      { type: 'basic', name: 'Li', text: 'A' },
+      { type: 'basic', name: 'Li', text: 'B' },
+    ]);
+    render(<ChildrenListControl {...baseProps} node={node} params={{ childComponent: 'Li' }} onPatchNode={onPatchNode} />);
+    fireEvent.click(screen.getByTestId('g7le-children-remove-0'));
+    expect(((onPatchNode.mock.calls[0][0] as EditorNode).children as EditorNode[]).map((k) => k.text)).toEqual(['B']);
+  });
+
+  // @scenario component=Ul, item_text_kind=plain_new, operation=move_up, template=sirsoft-basic
+  // @scenario component=Ul, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
+  // @scenario component=Ol, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=move_up, template=sirsoft-basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=move_up, template=sirsoft-basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=move_up, template=sirsoft-basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=move_up, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=children_list_control
+   * @effects move_up_down_swaps_adjacent_children_with_boundary_guard
+   */
+  it.each(PARENTS)('%s: 위로 이동 → 앞 항목과 자리를 바꾼다', (parent) => {
+    const onPatchNode = vi.fn();
+    const node = parentNode(parent, [
+      { type: 'basic', name: 'Li', text: 'A' },
+      { type: 'basic', name: 'Li', text: 'B' },
+    ]);
+    render(<ChildrenListControl {...baseProps} node={node} params={{ childComponent: 'Li' }} onPatchNode={onPatchNode} />);
+    fireEvent.click(screen.getByTestId('g7le-children-up-1'));
+    expect(((onPatchNode.mock.calls[0][0] as EditorNode).children as EditorNode[]).map((k) => k.text)).toEqual(['B', 'A']);
+  });
+
+  // @scenario component=Ul, item_text_kind=plain_new, operation=move_down, template=sirsoft-basic
+  // @scenario component=Ul, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
+  // @scenario component=Ol, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=move_down, template=sirsoft-basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=move_down, template=sirsoft-basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=move_down, template=sirsoft-basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=move_down, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=children_list_control
+   * @effects move_up_down_swaps_adjacent_children_with_boundary_guard
+   */
+  it.each(PARENTS)('%s: 아래로 이동 → 뒤 항목과 자리를 바꾼다', (parent) => {
+    const onPatchNode = vi.fn();
+    const node = parentNode(parent, [
+      { type: 'basic', name: 'Li', text: 'A' },
+      { type: 'basic', name: 'Li', text: 'B' },
+    ]);
+    render(<ChildrenListControl {...baseProps} node={node} params={{ childComponent: 'Li' }} onPatchNode={onPatchNode} />);
+    fireEvent.click(screen.getByTestId('g7le-children-down-0'));
+    expect(((onPatchNode.mock.calls[0][0] as EditorNode).children as EditorNode[]).map((k) => k.text)).toEqual(['B', 'A']);
+  });
+
+  // @scenario component=Ul, item_text_kind=plain_new, operation=edit_text, template=sirsoft-basic
+  // @scenario component=Ul, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
+  // @scenario component=Ol, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=edit_text, template=sirsoft-basic
+  // @scenario component=Nav, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=edit_text, template=sirsoft-basic
+  // @scenario component=Form, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=edit_text, template=sirsoft-basic
+  // @scenario component=Li, item_text_kind=plain_new, operation=edit_text, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=children_list_control
+   * @effects plain_item_blur_creates_custom_key_and_replaces_text_with_dollar_t_custom
+   */
+  it.each(PARENTS)('%s: 평문 항목 편집 → createCustomKey 후 text 가 $t:custom 키로 바뀐다', async (parent) => {
+    createCustomKey.mockResolvedValue({
+      kind: 'ok',
+      resource: { id: 7, translation_key: 'custom.login.9', values: { ko: '바뀐값' }, lock_version: 0 },
+    });
+    const onPatchNode = vi.fn();
+    const node = parentNode(parent, [{ type: 'basic', name: 'Li', text: '원래값' }]);
+    render(<ChildrenListControl {...baseProps} node={node} params={{ childComponent: 'Li' }} onPatchNode={onPatchNode} />);
+    const input = previewInput(0);
+    fireEvent.change(input, { target: { value: '바뀐값' } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(onPatchNode).toHaveBeenCalled());
+    const last = onPatchNode.mock.calls.at(-1)![0] as EditorNode;
+    expect(last.name).toBe(parent);
+    expect((last.children as EditorNode[])[0].text).toBe('$t:custom.login.9');
+  });
+
+  // @scenario component=Ul, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-basic
+  // @scenario component=Ul, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
+  // @scenario component=Ol, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
+  // @scenario component=Nav, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-basic
+  // @scenario component=Nav, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
+  // @scenario component=Form, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-basic
+  // @scenario component=Form, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
+  // @scenario component=Li, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-basic
+  // @scenario component=Li, item_text_kind=existing_custom_key, operation=edit_text, template=sirsoft-admin_basic
+  /**
+   * @scenario subject=children_list_control
+   * @effects existing_custom_key_blur_updates_current_locale_value_keeps_key
+   */
+  it.each(PARENTS)('%s: 기존 커스텀 키 항목 편집 → 현재 로케일 값만 갱신, 키 유지', async (parent) => {
+    updateCustomKeyValue.mockResolvedValue({ kind: 'ok' });
+    const onPatchNode = vi.fn();
+    const node = parentNode(parent, [{ type: 'basic', name: 'Li', text: '$t:custom.login.1' }]);
+    render(<ChildrenListControl {...baseProps} node={node} params={{ childComponent: 'Li' }} onPatchNode={onPatchNode} />);
+    const input = previewInput(0);
+    fireEvent.change(input, { target: { value: '수정값' } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(updateCustomKeyValue).toHaveBeenCalledWith('sirsoft-basic', 'custom.login.1', 'ko', '수정값'));
+    expect(createCustomKey).not.toHaveBeenCalled();
+  });
+});

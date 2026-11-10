@@ -207,8 +207,15 @@
                     "id": "reported_content_grid",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "desktop": {
+                            "props": {
+                                "className": "board:grid board:grid-cols-2 board:gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "board:grid board:grid-cols-1 board:lg:grid-cols-2 board:gap-4"
+                        "className": "board:grid board:grid-cols-1 board:gap-4"
                     },
                     "children": [
                         {
@@ -651,8 +658,15 @@
                                             "id": "card_inner_grid_{{reporterIdx}}",
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "desktop": {
+                                                    "props": {
+                                                        "className": "board-grid-2col board:grid-cols-5"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "board-grid-2col board:lg:grid-cols-5"
+                                                "className": "board-grid-2col"
                                             },
                                             "children": [
                                                 {
@@ -772,8 +786,12 @@
                                                     "id": "reporter_item_reason_{{reporterIdx}}",
                                                     "type": "basic",
                                                     "name": "Div",
-                                                    "props": {
-                                                        "className": "board:md:col-span-2"
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "board:col-span-2"
+                                                            }
+                                                        }
                                                     },
                                                     "children": [
                                                         {

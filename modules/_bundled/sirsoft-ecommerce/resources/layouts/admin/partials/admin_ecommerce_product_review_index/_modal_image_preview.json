@@ -155,6 +155,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "thumb-exempt: 확대 보기 원본",
                                     "type": "basic",
                                     "name": "Img",
                                     "props": {

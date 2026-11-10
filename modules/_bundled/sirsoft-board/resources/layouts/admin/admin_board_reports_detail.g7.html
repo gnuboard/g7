@@ -81,7 +81,7 @@
           </on>
         </textarea>
       </div>
-      <div class="board-modal-footer-buttons">
+      <footer>
         <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
           <on type="click">
             <close-modal/>
@@ -117,7 +117,7 @@
           </on>
           <span>{{_global.isSaving ? $t:common.saving : $t:common.confirm}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
 </layout>

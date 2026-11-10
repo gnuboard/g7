@@ -6,7 +6,6 @@
  * 권한 없는 운영자에게 편집·추가·삭제·대표 지정이 살아 있다(저장만 403). 여기서는 컴포넌트가
  * `disabled` 를 받으면 쓰기 동작을 모두 막는지를 잠근다.
  */
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { HtmlEditor } from '../HtmlEditor';

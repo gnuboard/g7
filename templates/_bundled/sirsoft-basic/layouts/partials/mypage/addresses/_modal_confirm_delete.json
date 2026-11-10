@@ -10,7 +10,138 @@
     "name": "Modal",
     "props": {
         "title": "$t:mypage.addresses.delete_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "type": "button",
+                            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        }
+                    }
+                },
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "type": "button",
+                            "className": "flex-1 px-4 py-2.5 bg-red-600 dark:bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                            "disabled": "{{_local.isDeleting ?? false}}"
+                        }
+                    }
+                },
+                "actions": [
+                    {
+                        "comment": "삭제 확정 — 먼저 버튼을 잠근다(응답이 늦을 때 연타로 같은 요청이 여러 번 나가지 않게)",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "isDeleting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-ecommerce/user/addresses/{{_global.deletingAddressId}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "addresses"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "isDeleting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:mypage.addresses.deleted"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "isDeleting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                    "disabled": "{{_local.isDeleting ?? false}}"
+                },
+                "children": [
+                    {
+                        "comment": "스피너",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.isDeleting}}",
+                        "props": {
+                            "className": "w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{!_local.isDeleting}}",
+                        "text": "$t:common.delete"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{_local.isDeleting}}",
+                        "text": "$t:common.processing"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -42,151 +173,6 @@
                                 "className": "text-sm text-gray-700 dark:text-gray-300"
                             },
                             "text": "$t:mypage.addresses.delete_confirm"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "responsive": {
-                        "portable": {
-                            "props": {
-                                "className": "flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700"
-                            }
-                        }
-                    },
-                    "props": {
-                        "className": "flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "responsive": {
-                                "portable": {
-                                    "props": {
-                                        "type": "button",
-                                        "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                    }
-                                }
-                            },
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "responsive": {
-                                "portable": {
-                                    "props": {
-                                        "type": "button",
-                                        "className": "flex-1 px-4 py-2.5 bg-red-600 dark:bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-                                        "disabled": "{{_local.isDeleting ?? false}}"
-                                    }
-                                }
-                            },
-                            "actions": [
-                                {
-                                    "comment": "삭제 확정 — 먼저 버튼을 잠근다(응답이 늦을 때 연타로 같은 요청이 여러 번 나가지 않게)",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "isDeleting": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-ecommerce/user/addresses/{{_global.deletingAddressId}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "addresses"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:mypage.addresses.deleted"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
-                                "disabled": "{{_local.isDeleting ?? false}}"
-                            },
-                            "children": [
-                                {
-                                    "comment": "스피너",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{_local.isDeleting}}",
-                                    "props": {
-                                        "className": "w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!_local.isDeleting}}",
-                                    "text": "$t:common.delete"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_local.isDeleting}}",
-                                    "text": "$t:common.processing"
-                                }
-                            ]
                         }
                     ]
                 }

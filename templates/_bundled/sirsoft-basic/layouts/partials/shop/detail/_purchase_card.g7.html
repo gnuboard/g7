@@ -134,7 +134,8 @@
         <span class="text-sm text-gray-700 dark:text-gray-300">$t:shop.product.no_purchasable_option</span>
       </div>
       <!-- === 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) === -->
-      <div class="grid md:grid-cols-2 gap-2">
+      <div class="grid gap-2">
+        <responsive on="768-" class="grid grid-cols-2 gap-2"/>
         <p data-if="{{product.data?.abilities?.can_order === false}}" class="text-xs text-amber-700 dark:text-amber-400 mb-2">$t:shop.order_permission_denied</p>
         <!-- 바로구매 버튼 — 판매 중인 옵션이 하나도 없는 상품은 잠근다(서버가 422 로 거절하는 상품). 옵션이 둘 이상인 상품은 선택한 옵션 라인 수량의 **합계**로 구매 한도를 판정한다. 라인별 max 만으로는 여러 라인을 합쳐 한도를 넘길 수 있다. 옵션이 없거나 하나뿐인 상품은 옵션 칸 대신 수량 선택기가 서고(위 분기와 같은 기준) 그 min/max 가 이미 막으므로 조건을 걸지 않는다 — option_groups 로 가르면 옵션 하나짜리 상품이 합계 0 으로 영영 잠긴다. -->
         <button type="button" data-testid="buy-now" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.isOrdering || (Array.isArray(product.data?.options) &amp;&amp; product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 &amp;&amp; (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))) || product.data?.abilities?.can_order !== true}}">
@@ -158,6 +159,8 @@
               <else>
                 <sequence>
                   <set-state target="local" :isOrdering="true"/>
+                  <!-- 장바구니 키를 갖춘다 — 첫 방문 비회원의 키 발급이 init 상한(3초)을 넘겨 아직 없으면 그 발급을 기다리거나 다시 요청한다 -->
+                  <action handler="ensureCartKey"/>
                   <!-- 바로 구매: 장바구니 미경유 — direct_items 로 바로 체크아웃(장바구니 오염 없음) -->
                   <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/checkout" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1 }] }}}">
                     <success>
@@ -178,9 +181,6 @@
                       <set-state target="local" :isOrdering="false"/>
                       <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
                     </fail>
-                    <field name="headers">
-                      <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
-                    </field>
                   </api-call>
                 </sequence>
               </else>
@@ -214,6 +214,8 @@
               <else>
                 <sequence>
                   <set-state target="local" :isAddingToCart="true"/>
+                  <!-- 장바구니 키를 갖춘다 — 첫 방문 비회원의 키 발급이 init 상한(3초)을 넘겨 아직 없으면 그 발급을 기다리거나 다시 요청한다 -->
+                  <action handler="ensureCartKey"/>
                   <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1 }] }}}">
                     <success>
                       <!-- 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) -->
@@ -226,9 +228,6 @@
                       <set-state target="local" :isAddingToCart="false"/>
                       <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
                     </fail>
-                    <field name="headers">
-                      <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
-                    </field>
                   </api-call>
                 </sequence>
               </else>

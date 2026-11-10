@@ -20,8 +20,18 @@ type LayoutNode = {
     name?: string;
     text?: string;
     props?: { className?: string; value?: string; name?: string; options?: unknown };
+    responsive?: Record<string, { props?: { className?: string } }>;
     children?: LayoutNode[];
 };
+
+/**
+ * 3열 그리드 입력 줄인지 — 좁은 폭 1열, 1024px 이상 3열을 접두 유틸과 엔진 responsive(`1024-` 구간)로 쓴다.
+ * 폭 미디어를 품은 옛 의미 클래스(`grid-3col-responsive`)는 쓰지 않는다.
+ */
+const GRID3_BASE = 'daumpostcode:grid daumpostcode:grid-cols-1 daumpostcode:gap-4 daumpostcode:items-start';
+const isGrid3col = (n: { props?: { className?: string }; responsive?: Record<string, { props?: { className?: string } }> }) =>
+    (typeof n.props?.className === 'string' ? n.props.className : '').startsWith(GRID3_BASE) &&
+    String(n.responsive?.['1024-']?.props?.className ?? '').split(/\s+/).includes('daumpostcode:grid-cols-3');
 
 /**
  * 레이아웃 트리의 모든 노드를 펼친다.
@@ -95,9 +105,10 @@ describe('우편번호 환경설정 — 의미 클래스 위치', () => {
         const fields = nodes.filter((n) => typeof n.id === 'string' && n.id.startsWith('field_'));
         expect(fields.length).toBeGreaterThanOrEqual(4);
         for (const field of fields) {
-            expect({ id: field.id, className: field.props?.className }).toEqual({
+            expect({ id: field.id, className: field.props?.className, wide: field.responsive?.['1024-']?.props?.className }).toEqual({
                 id: field.id,
-                className: 'daumpostcode-grid-3col-responsive',
+                className: GRID3_BASE,
+                wide: 'daumpostcode:grid daumpostcode:grid-cols-3 daumpostcode:gap-4 daumpostcode:items-start',
             });
         }
     });
@@ -109,7 +120,7 @@ describe('우편번호 환경설정 — 의미 클래스 위치', () => {
         expect(item?.props?.className).toBe('daumpostcode-text-error-soft');
 
         const misplaced = nodes.filter(
-            (n) => n.props?.className === 'daumpostcode-grid-3col-responsive' && !(typeof n.id === 'string' && n.id.startsWith('field_')),
+            (n) => (isGrid3col(n) || String(n.props?.className ?? '').includes('daumpostcode-grid-3col-responsive')) && !(typeof n.id === 'string' && n.id.startsWith('field_')),
         );
         expect(misplaced.map((n) => n.name ?? n.id)).toEqual([]);
     });

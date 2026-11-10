@@ -216,4 +216,37 @@ describe('createLayoutTest — 실제 앱과 같은 렌더 컨텍스트', () => 
     expect(test.getModalStack()).toEqual(['m1']);
     expect(screen.getByTestId('modal').getAttribute('data-open')).toBe('true');
   });
+
+  /**
+   * @scenario item=t11_state_alias
+   * @effects tool_context_matches_app
+   */
+  it('T11: 레이아웃 state 는 실제 앱처럼 initLocal 이 없을 때만 쓰는 하위 호환 별칭이고, 시험이 준 initialState 를 덮지 않는다', async () => {
+    const stateOnly = makeTest(textLayout('{{_local.a}}-{{_local.b}}', { state: { a: 'layout', b: 'layout' } }), {
+      initialState: { _local: { a: 'seed' } },
+    });
+    await stateOnly.render();
+    expect(screen.getByTestId('probe').textContent).toBe('seed-layout');
+    stateOnly.cleanup();
+
+    const both = makeTest(textLayout('{{_local.a}}-{{_local.b ?? "none"}}', {
+      initLocal: { a: 'init' },
+      state: { a: 'legacy', b: 'legacy' },
+    }));
+    await both.render();
+    expect(screen.getByTestId('probe').textContent).toBe('init-none');
+  });
+
+  /**
+   * @scenario item=t12_null_seed_merge
+   * @effects tool_context_matches_app
+   */
+  it('T12: 레이아웃 초기값이 null 인 키에 initialState 가 객체를 주면 그 객체로 채운다(병합이 멈추지 않는다)', async () => {
+    const test = makeTest(textLayout('{{_local.form.name}}', { initLocal: { form: null } }), {
+      initialState: { _local: { form: { name: '홍길동' } } },
+    });
+    await test.render();
+
+    expect(screen.getByTestId('probe').textContent).toBe('홍길동');
+  });
 });

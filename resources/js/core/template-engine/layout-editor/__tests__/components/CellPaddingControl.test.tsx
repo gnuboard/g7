@@ -5,12 +5,11 @@
  * 검증: 프리셋 단계 칩 + 자유 px 입력 렌더, 단계 클릭 시 px 인라인 콜백(없음=빈값),
  * 자유 px 입력 후 blur/Enter 적용, 현재 padding 에 따른 활성 표시.
  *
- * @scenario cell_padding_visual_picker
- * @effects cell_padding_step_applies_inline_px, cell_padding_none_clears, cell_padding_free_px_input, cell_padding_reverse_resolves_active
+ * 소속 슬러그(마커 아님 — 평문): cell_padding_visual_picker
+ * 효과 요약(마커 아님 — 평문, 시험별 표식으로 옮김): cell_padding_step_applies_inline_px, cell_padding_none_clears, cell_padding_free_px_input, cell_padding_reverse_resolves_active
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { CellPaddingControl, type CellPaddingCatalog } from '../../components/property-controls/CellPaddingControl';
@@ -29,6 +28,10 @@ const catalog: CellPaddingCatalog = {
 afterEach(() => cleanup());
 
 describe('CellPaddingControl — 렌더', () => {
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_renders_step_chips_and_px_input
+   */
   it('카탈로그 공급 → 단계 칩 + 자유 px 입력 렌더', () => {
     render(<CellPaddingControl catalog={catalog} t={t} onChange={vi.fn()} />);
     expect(screen.getByTestId('g7le-cell-padding-step-none')).toBeTruthy();
@@ -38,6 +41,10 @@ describe('CellPaddingControl — 렌더', () => {
 });
 
 describe('CellPaddingControl — 적용(인라인 px SSoT)', () => {
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_step_normal_emits_8px, cell_padding_step_applies_inline_px
+   */
   it('단계 normal(8px) 클릭 → onChange("8px")', () => {
     const onChange = vi.fn();
     render(<CellPaddingControl catalog={catalog} t={t} onChange={onChange} />);
@@ -45,6 +52,10 @@ describe('CellPaddingControl — 적용(인라인 px SSoT)', () => {
     expect(onChange).toHaveBeenCalledWith('8px');
   });
 
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_step_none_emits_empty, cell_padding_none_clears
+   */
   it('단계 none 클릭 → onChange("")', () => {
     const onChange = vi.fn();
     render(<CellPaddingControl catalog={catalog} paddingStyle="8px" t={t} onChange={onChange} />);
@@ -52,6 +63,10 @@ describe('CellPaddingControl — 적용(인라인 px SSoT)', () => {
     expect(onChange).toHaveBeenCalledWith('');
   });
 
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_free_px_blur_emits_value, cell_padding_free_px_input
+   */
   it('자유 px 입력 후 blur → onChange("20px")', () => {
     const onChange = vi.fn();
     render(<CellPaddingControl catalog={catalog} t={t} onChange={onChange} />);
@@ -61,6 +76,10 @@ describe('CellPaddingControl — 적용(인라인 px SSoT)', () => {
     expect(onChange).toHaveBeenCalledWith('20px');
   });
 
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_free_zero_emits_empty, cell_padding_none_clears
+   */
   it('자유 px 0 입력 → onChange("")(여백 제거)', () => {
     const onChange = vi.fn();
     render(<CellPaddingControl catalog={catalog} t={t} onChange={onChange} />);
@@ -72,17 +91,29 @@ describe('CellPaddingControl — 적용(인라인 px SSoT)', () => {
 });
 
 describe('CellPaddingControl — 역해석(활성 표시)', () => {
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_8px_activates_normal_step, cell_padding_reverse_resolves_active
+   */
   it('현재 8px → normal 단계 활성', () => {
     render(<CellPaddingControl catalog={catalog} paddingStyle="8px" t={t} onChange={vi.fn()} />);
     expect((screen.getByTestId('g7le-cell-padding-step-normal') as HTMLButtonElement).getAttribute('aria-pressed')).toBe('true');
     expect((screen.getByTestId('g7le-cell-padding-step-narrow') as HTMLButtonElement).getAttribute('aria-pressed')).toBe('false');
   });
 
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_empty_activates_none_step, cell_padding_reverse_resolves_active
+   */
   it('빈 padding → none 단계 활성', () => {
     render(<CellPaddingControl catalog={catalog} paddingStyle="" t={t} onChange={vi.fn()} />);
     expect((screen.getByTestId('g7le-cell-padding-step-none') as HTMLButtonElement).getAttribute('aria-pressed')).toBe('true');
   });
 
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_custom_value_shown_in_free_input, cell_padding_reverse_resolves_active
+   */
   it('프리셋에 없는 자유값(20px) → 자유 입력칸에 표시, 모든 단계 비활성', () => {
     render(<CellPaddingControl catalog={catalog} paddingStyle="20px" t={t} onChange={vi.fn()} />);
     expect((screen.getByTestId('g7le-cell-padding-free') as HTMLInputElement).value).toBe('20');
@@ -92,6 +123,10 @@ describe('CellPaddingControl — 역해석(활성 표시)', () => {
   // 회귀: 다른 셀 선택 시 paddingStyle prop 이 바뀌면 자유 px
   // 입력칸이 그 셀 값으로 재동기화돼야 한다. 종전엔 useState 초기값이 마운트 1회뿐이라 셀을
   // 바꿔도 이전 셀의 자유 px(예 20)가 입력칸에 stale 하게 남았다.
+  /**
+   * @scenario subject=cell_padding_control
+   * @effects cell_padding_resyncs_free_input_on_prop_change
+   */
   it('paddingStyle prop 변화(셀 전환) → 자유 입력칸 재동기화', () => {
     const { rerender } = render(<CellPaddingControl catalog={catalog} paddingStyle="20px" t={t} onChange={vi.fn()} />);
     expect((screen.getByTestId('g7le-cell-padding-free') as HTMLInputElement).value).toBe('20');

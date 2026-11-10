@@ -57,6 +57,15 @@
 - 서버 명령이 차단된 환경에서 Composer 실행이 불가능함을 알리는 문구의 일본어 번역을 추가했습니다 (`settings.core_update.composer_unavailable`, `vendor.composer_unavailable`).
 - 코어 업데이트 실행·성공·실패 활동 기록 문구의 일본어 번역을 추가했습니다 (`activity_log.description.core_update_*` 3건과 동작 라벨 3건).
 - 명령줄 코어 업데이트(`php artisan core:update`), 확장 업데이트, 제거 명령(`module:`, `plugin:`, `template:` 의 `update`, `uninstall`, `language-pack:uninstall`), 되돌릴 수 없는 운영 명령(`analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`, `settings:migrate-to-json`)이 확인 질문에 답할 수 없는 실행에서 작업을 시작하지 않을 때 내는 사유와 다시 실행 안내(`settings.core_update.console.confirm_unavailable`, `confirm_unavailable_hint`, `modules`, `plugins`, `templates` 의 `commands.update.*`, `commands.uninstall.*`, `language_packs.commands.uninstall.*`, `analytics.console.anonymize.*`, `purge.*`, `purge_extension.*`, `common.console.hotfix_rollback_stale_files.*`, `settings.console.migrate_to_json.*` 의 같은 이름 키)의 일본어 번역을 추가했습니다.
+- 이미지 처리 엔진(GD·Imagick) 선택과 썸네일 설정 검증 문구(움직이는 이미지 원본 사용 포함), 썸네일 저장 디스크 이름, 레이아웃 편집기 썸네일 규격 위젯의 일본어 번역을 추가했습니다.
+- 썸네일 서버 보호 값 여섯(1분에 새로 만드는 썸네일 수, 생성 대기 시간, 원본 최대 픽셀 수, 한 번에 처리하는 원본 수, 한 번 호출의 시간 예산, 비우기 한 번 호출의 시간 예산)의 검증 항목 이름 일본어 번역을 추가했습니다.
+- 이미지 썸네일 관리 API 응답과 명령 출력, 썸네일 명령 설명 2건, 썸네일 정리 스케줄 이름, 단건 저장 거부 문구의 일본어 번역을 추가했습니다.
+- 이미지 썸네일 실측 샘플 시더의 콘솔 출력(표 제목, 머리글, 정리 건수 이름)과 실행 거부 사유의 일본어 번역을 추가했습니다 (`common.console.seeders.thumbnail_measure.*`).
+- 레이아웃 굽기 경고 「한 부품의 반응형 구간에서 열린 구간이 다른 열린 구간이나 프리셋과 같은 폭에 함께 맞음」(`exceptions.layout_markup_lint.responsive_open_range_overlap`)의 일본어 번역을 추가했습니다.
+- 서버가 잠깐 답하지 않아 로그인 상태를 다시 확인하는 동안 화면 위쪽에 띄우는 안내(`core.errors.auth_checking`)의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기 미리보기 줌의 「実際のサイズ」 토글 이름과 안내 문구 2건(`layout_editor.zoom.actual_size`, `actual_size_hint`)의 일본어 번역을 추가했습니다.
+- `template:deactivate` 가 유형의 마지막 활성 템플릿을 끄지 않을 때 `--force` 로 다시 실행하라는 안내(`templates.commands.deactivate.last_active_force_hint`)의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기가 편집기 정보(컴포넌트 목록, 스타일 설정, 상태 전환)를 받지 못했을 때 띄우는 알림과 다시 시도 단추 문구(`layout_editor.chrome.spec_load_error.*` 4건)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

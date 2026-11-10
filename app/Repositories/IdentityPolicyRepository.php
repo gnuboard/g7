@@ -20,6 +20,11 @@ use Illuminate\Support\Facades\Schema;
  */
 class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
 {
+    /**
+     * IdentityPolicyRepository 생성자
+     *
+     * @param  CacheInterface  $cache  코어 캐시 (정책 색인)
+     */
     public function __construct(
         protected CacheInterface $cache,
     ) {}
@@ -314,10 +319,50 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
     }
 
     /**
+     * hook scope 정책의 훅 이름 인덱스를 캐시 기반으로 반환합니다.
+     *
+     * route 인덱스와 같은 태그로 캐시하므로 정책 저장·삭제와 확장 활성화·비활성화가 함께 비운다. 훅 이름은 정책 target 과
+     * 1:1 이다(brace expansion 없음 — 리스너가 target 을 그대로 비교한다).
+     *
+     * @return array<string, Collection> 훅 이름 => 정책 컬렉션 매핑
+     */
+    public function getHookScopeIndex(): array
+    {
+        $ttl = (int) g7_core_settings('cache.identity_policy_ttl', 3600);
+
+        return $this->cache->remember(
+            IdentityPolicy::HOOK_SCOPE_CACHE_KEY,
+            function (): array {
+                $query = IdentityPolicy::query()
+                    ->where('scope', 'hook')
+                    ->where('enabled', true);
+
+                $this->applyActiveExtensionScope($query);
+
+                $index = [];
+                foreach ($query->orderByDesc('priority')->orderBy('id')->get() as $policy) {
+                    $hookName = (string) $policy->target;
+                    if ($hookName === '') {
+                        continue;
+                    }
+                    $bucket = $index[$hookName] ?? new Collection;
+                    $bucket->push($policy);
+                    $index[$hookName] = $bucket;
+                }
+
+                return $index;
+            },
+            $ttl,
+            [IdentityPolicy::ROUTE_SCOPE_CACHE_TAG],
+        );
+    }
+
+    /**
      * brace expansion — 'api.admin.{modules,plugins}.uninstall' → ['api.admin.modules.uninstall', 'api.admin.plugins.uninstall'].
      * 단일 그룹만 지원 (중첩/다중 그룹은 정책 키를 분리해서 정의하는 편이 명확).
      *
-     * @return list<string>
+     * @param  string  $target  정책 target (라우트명, brace 표현 가능)
+     * @return list<string> 펼친 라우트명 목록
      */
     protected function expandTargetBraces(string $target): array
     {

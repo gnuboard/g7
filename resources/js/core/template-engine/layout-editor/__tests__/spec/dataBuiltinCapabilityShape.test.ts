@@ -1,5 +1,5 @@
-// @scenario aspect=capability_attach
-// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+// 소속 조합(마커 아님 — 평문): 시험마다 aspect=capability_attach 조합이 붙어 있다.
+// 종전의 파일 머리 소속 표기는 시험에 붙지 않아 커버로 세지 않으므로 평문으로 내렸다(#869).
 
 // e2e:allow-shape 게이트(데이터 표면 누락 0 잠금)만 추가한다.
 // 데이터 빌트인의 라이브 동작(추가/편집→저장→실사용자화면 렌더)은 8-b 가 작성한
@@ -22,7 +22,7 @@
  *
  * @since engine-v1.50.0, 누락 0 게이트 추가
  *
- * @effects data_builtin_capability_attached_to_8a_targets_both_templates,
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): data_builtin_capability_attached_to_8a_targets_both_templates,
  *   array_editor_newitem_shape_matches_component_read_shape,
  *   review_group_chipcheckbox_value_covered_by_propcontrol_not_dataprop
  */
@@ -122,7 +122,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
   describe('newItem shape ↔ 컴포넌트 read shape 정합(1-c-verify-4 결함#7 회귀 가드)', () => {
     /**
      * @scenario aspect=capability_attach
-     * @effects data_builtin_capability_attached_to_8a_targets_both_templates
+     * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
      */
     it('DonutChart newItem 은 name/value/color (컴포넌트 read shape)', () => {
       const ni = (admin.DonutChart as Cap).nodeEditor?.params?.newItem;
@@ -133,7 +133,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
 
     /**
      * @scenario aspect=capability_attach
-     * @effects data_builtin_capability_attached_to_8a_targets_both_templates
+     * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
      */
     it('BarChart datasets newItem 은 label/data:[]/backgroundColor', () => {
       const groups = (admin.BarChart as Cap).nodeEditor?.params?.groups as any[];
@@ -145,7 +145,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
 
     /**
      * @scenario aspect=capability_attach
-     * @effects data_builtin_capability_attached_to_8a_targets_both_templates
+     * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
      */
     it('CardGrid newItem 은 id + 빈 cellChildren 배열', () => {
       const ni = (admin.CardGrid as Cap).nodeEditor?.params?.newItem;
@@ -155,7 +155,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
 
     /**
      * @scenario aspect=capability_attach
-     * @effects data_builtin_capability_attached_to_8a_targets_both_templates
+     * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
      */
     it('DynamicFieldList newItem 은 key/type/label/placeholder', () => {
       const ni = (admin.DynamicFieldList as Cap).nodeEditor?.params?.newItem;
@@ -168,7 +168,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
   describe('검토군 판정(8-a (E) #6) — 데이터 편집 비대상 회귀 가드', () => {
     /**
      * @scenario aspect=capability_attach
-     * @effects data_builtin_capability_attached_to_8a_targets_both_templates
+     * @effects data_builtin_capability_attached_to_8a_targets_both_templates, review_group_chipcheckbox_value_covered_by_propcontrol_not_dataprop
      */
     it('ChipCheckbox.value 는 propControl ccValue 로 커버(nodeEditor/dataProps 없음)', () => {
       const cap = admin.ChipCheckbox as Cap;

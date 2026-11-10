@@ -295,10 +295,14 @@
           </div>
           <div data-ref="geoip_last_updated_block" class="row-stack">
             <span class="text-heading block">$t:admin.settings.advanced.geoip_last_updated_at</span>
-            <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-2 md:space-y-0">
-              <input type="text" :disabled="true" value="{{_local.form?.advanced?.geoip_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+            <div class="flex flex-col gap-2">
+              <responsive on="768-" class="flex flex-row items-center gap-2 space-y-0"/>
+              <input type="text" :disabled="true" value="{{_local.form?.advanced?.geoip_last_updated_at ?? '-'}}" class="dark:bg-gray-900 text-gray-700 dark:text-gray-300">
+                <responsive on="768-" class="flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
+              </input>
               <!-- GeoIP 데이터베이스를 내려받아 갱신한다. 파일이 커서 시간이 걸리므로 진행 중에는 버튼을 잠근다 -->
-              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+                <responsive on="768-" class="w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"/>
                 <on type="click">
                   <set-state target="local" :geoipUpdating="true" :errors="{}">
                     <success>
@@ -336,28 +340,34 @@
       <h3 class="card-title">$t:admin.settings.advanced.trusted_proxy</h3>
       <div class="card-description">$t:admin.settings.advanced.trusted_proxy_desc</div>
       <div class="row-stack">
-        <div data-ref="trusted_proxy_status_row" class="flex-between-responsive">
+        <div data-ref="trusted_proxy_status_row" class="flex flex-col gap-0.5">
+          <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_status</span>
           <!-- 상태 배지는 업데이트 탭의 「최신 버전」 배지와 같은 `StatusBadge` 자산을 쓴다 — 손으로 조립한 span 은 색만 비슷하고 아이콘·테두리·크기가 다른 화면과 어긋난다. -->
           <status-badge data-type="composite" data-ref="trusted_proxy_status_badge" status="{{trustedProxy?.data?.status === 'warning' ? 'warning' : (trustedProxy?.data?.status === 'ok' ? 'success' : 'default')}}" label="{{trustedProxy?.data?.status === 'warning' ? $t('admin.settings.advanced.trusted_proxy_status_warning') : (trustedProxy?.data?.status === 'ok' ? $t('admin.settings.advanced.trusted_proxy_status_ok') : $t('admin.settings.advanced.trusted_proxy_status_not_applicable'))}}"/>
         </div>
-        <div class="flex-between-responsive">
+        <div class="flex flex-col gap-0.5">
+          <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_configured</span>
           <span class="text-heading">{{trustedProxy?.data?.trusted_configured ? (trustedProxy?.data?.configured_proxies ?? '-') : $t('admin.settings.advanced.trusted_proxy_not_configured')}}</span>
         </div>
-        <div class="flex-between-responsive">
+        <div class="flex flex-col gap-0.5">
+          <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_forwarded_headers</span>
           <span class="text-heading">{{(trustedProxy?.data?.forwarded_headers ?? []).length > 0 ? trustedProxy?.data.forwarded_headers.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none')}}</span>
         </div>
-        <div class="flex-between-responsive">
+        <div class="flex flex-col gap-0.5">
+          <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_is_secure</span>
           <span class="text-heading">{{trustedProxy?.data?.is_secure === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (trustedProxy?.data?.is_secure === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-')}}</span>
         </div>
-        <div class="flex-between-responsive">
+        <div class="flex flex-col gap-0.5">
+          <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_client_ip</span>
           <span class="text-heading">{{trustedProxy?.data?.client_ip ?? '-'}}</span>
         </div>
-        <div class="flex-between-responsive">
+        <div class="flex flex-col gap-0.5">
+          <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_remote_addr</span>
           <span class="text-heading">{{trustedProxy?.data?.remote_addr ?? '-'}}</span>
         </div>
@@ -442,21 +452,24 @@
           <div data-ref="trusted_proxy_probe_result" data-if="{{_local.trustedProxyProbe}}" class="mt-2 p-3 rounded-md border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <p class="text-heading mb-2">$t:admin.settings.advanced.trusted_proxy_probe_title</p>
             <div class="row-stack">
-              <div class="flex-between-responsive">
+              <div class="flex flex-col gap-0.5">
+                <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
                 <span class="text-label">$t:admin.settings.advanced.trusted_proxy_probe_client_ip</span>
                 <div class="text-right">
                   <span data-if="{{(_local.trustedProxyProbe?.current?.client_ip ?? '-') !== (_local.trustedProxyProbe?.result?.client_ip ?? '-')}}" class="line-through text-gray-400 dark:text-gray-500 mr-2">{{(_local.trustedProxyProbe?.current?.client_ip ?? '-')}}</span>
                   <span class="text-heading">{{(_local.trustedProxyProbe?.result?.client_ip ?? '-')}}</span>
                 </div>
               </div>
-              <div class="flex-between-responsive">
+              <div class="flex flex-col gap-0.5">
+                <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
                 <span class="text-label">$t:admin.settings.advanced.trusted_proxy_probe_is_secure</span>
                 <div class="text-right">
                   <span data-if="{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.current?.is_secure) !== (v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.result?.is_secure)}}" class="line-through text-gray-400 dark:text-gray-500 mr-2">{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.current?.is_secure)}}</span>
                   <span class="text-heading">{{(v => v === true ? $t('admin.settings.advanced.trusted_proxy_is_secure_yes') : (v === false ? $t('admin.settings.advanced.trusted_proxy_is_secure_no') : '-'))(_local.trustedProxyProbe?.result?.is_secure)}}</span>
                 </div>
               </div>
-              <div class="flex-between-responsive">
+              <div class="flex flex-col gap-0.5">
+                <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
                 <span class="text-label">$t:admin.settings.advanced.trusted_proxy_probe_trusted</span>
                 <div class="text-right">
                   <span class="text-heading">{{((_local.trustedProxyProbe?.result?.trusted ?? []).length > 0 ? _local.trustedProxyProbe.result.trusted.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none'))}}</span>

@@ -61,6 +61,8 @@ effects:
   - public_asset_disk_validation_follows_the_catalog_attach_gate
   - core_storage_driver_put_get_delete_roundtrip
   - public_asset_disk_injection_is_skipped_in_testing_env
+  # #869 매핑 부채: 카탈로그에 있는 디스크를 저장하면 drivers 카테고리에 그 값이 남는다(422 판정의 짝)
+  - catalog_public_asset_disk_saved_to_drivers_category
 
 test_files:
   - tests/Unit/Extension/Storage/CoreStorageDriverTest.php

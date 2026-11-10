@@ -35,6 +35,40 @@ export interface ModalProps {
     closeOnEscape?: boolean;
     children?: React.ReactNode;
     /**
+     * 본문 스크롤 밖 고정 하단에 그릴 컴포넌트 배열(확인·취소 단추). `.g7.html` 의 `<footer>`(`<prop-footer>`).
+     *
+     * 본문 자식과 같은 데이터 컨텍스트·상태 범위로 그린다 — 단추가 창을 연 뒤 입력한 값을 읽는다.
+     * 렌더 폭 640px 이하에서는 세로로 쌓고 폭을 채운다(관리자 템플릿 Modal 과 같은 계약, #869).
+     */
+    footer?: any[];
+    /** DynamicRenderer용 데이터 컨텍스트 (내부 사용) */
+    __dataContext?: Record<string, any>;
+    /** DynamicRenderer용 번역 컨텍스트 (내부 사용) */
+    __translationContext?: any;
+    /**
+     * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 (내부 사용) — 렌더 환경(레이아웃 편집기 미리보기의 레지스트리·
+     * dispatcher·편집 모드)과 Modal 노드의 확장 데이터 컨텍스트를 실어 온다.
+     */
+    __componentContext?: {
+        renderEnvRef?: {
+            current: {
+                componentRegistry?: any;
+                bindingEngine?: any;
+                translationEngine?: any;
+                actionDispatcher?: any;
+                isEditMode?: boolean;
+            } | null;
+        };
+        /** Modal 노드의 확장 데이터 컨텍스트 — 본문 자식이 받는 dataContext 와 같은 객체 */
+        parentDataContext?: Record<string, any>;
+        /**
+         * Modal 노드의 편집기 경로(레이아웃 편집기 미리보기에서만 값이 있다). footer 단추마다
+         * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(#141).
+         */
+        componentPath?: string;
+        [key: string]: any;
+    };
+    /**
      * 이름 있는 크기 단계 — `width` 를 직접 적지 않고 고르는 자리.
      *
      * `width` 를 함께 주면 `width` 가 이긴다(기존 `width` 사용처 무영향). 알 수 없는 값은

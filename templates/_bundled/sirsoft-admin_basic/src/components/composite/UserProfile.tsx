@@ -10,6 +10,7 @@ import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING, escapeToClose } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
 // 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
@@ -126,6 +127,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  // 메뉴를 여는 단추 — 메뉴 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
   /**
    * 외부 클릭 감지
@@ -243,8 +246,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   };
 
   return (
-    <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs}>
+    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
+    <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showProfileMenu, () => setShowProfileMenu(false), menuTriggerRef)}>
       <Button
+        ref={menuTriggerRef}
         onClick={() => setShowProfileMenu(!showProfileMenu)}
         aria-label={dropdownOnly ? tOr('common.user_menu', 'User menu') : undefined}
         aria-haspopup="menu"
@@ -260,6 +265,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 src={user.avatar}
                 alt={user.name}
                 className="w-8 h-8 rounded-full object-cover"
+                thumbPreset="xs"
               />
             ) : (
               <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
@@ -295,8 +301,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             </a>
           ) : (
             <Div
-              className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className={`px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${FOCUS_VISIBLE_RING}`}
               onClick={openUserDetail}
+              // 주소 링크가 없을 때의 내 정보 칸 — 키보드로도 회원 상세로 간다(#869 키보드 접근)
+              {...keyboardActivationProps(openUserDetail)}
             >
               {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
               <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>

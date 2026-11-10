@@ -115,8 +115,10 @@
         한 순간만 초기화가 계산해 둔 값을 쓴다). 한 칸을 고치면 다른 칸은 화면에 보이던 값을 잇고,
         시작이 끝보다 늦어지면 그 하루로 줄인다 — 뒤집힌 기간은 서버가 422 로 거절한다. 비운 칸은 기간을 바꾸지 않는다.
         좁은 화면에서는 두 칸이 카드 폭을 나눠 쓴다(고정 폭 두 칸이 390px 카드 안쪽보다 넓다). -->
-      <div data-ref="period_dates" class="flex items-center gap-1 w-full sm:w-auto">
-        <input data-ref="period_from" name="analytics_period_from" type="date" class="input flex-1 min-w-0 sm:flex-none sm:w-40" value="{{_computed.periodFrom || ''}}" aria-label="$t:admin.analytics.period.from">
+      <div data-ref="period_dates" class="flex items-center gap-1 w-full">
+        <responsive on="640-" class="flex items-center gap-1 w-auto"/>
+        <input data-ref="period_from" name="analytics_period_from" type="date" class="input flex-1 min-w-0" value="{{_computed.periodFrom || ''}}" aria-label="$t:admin.analytics.period.from">
+          <responsive on="640-" class="input min-w-0 flex-none w-40"/>
           <on type="change">
             <!-- 달력을 직접 고치면 프리셋 표시가 빠진다 — 버튼이 만든 범위를 손으로 바꾼 순간 그 버튼은 지금 조건이 아니다.
                  키보드로 날짜를 치면 브라우저는 칸이 유효한 날짜가 될 때마다 change 를 낸다(일 「28」 → 02 → 28). 바로 이동하면
@@ -129,7 +131,8 @@
           </on>
         </input>
         <span class="text-gray-500 dark:text-gray-400">~</span>
-        <input data-ref="period_to" name="analytics_period_to" type="date" class="input flex-1 min-w-0 sm:flex-none sm:w-40" value="{{_computed.periodTo || ''}}" aria-label="$t:admin.analytics.period.to">
+        <input data-ref="period_to" name="analytics_period_to" type="date" class="input flex-1 min-w-0" value="{{_computed.periodTo || ''}}" aria-label="$t:admin.analytics.period.to">
+          <responsive on="640-" class="input min-w-0 flex-none w-40"/>
           <on type="change">
             <!-- 끝 날짜를 고치면 시작 칸은 화면에 보이던 값을 잇되, 새 끝보다 늦으면 끝 날짜 하루로 당긴다(시작 칸 쪽과 짝을 이루는 규칙).
                  비운 값으로는 이동하지 않는다.
@@ -202,14 +205,16 @@
         넘겨 준 것이고, 원장 화면(실시간·방문자 등)은 그 값을 두지 않아 이 줄이 숨는다. 문구는 스케줄러가 살아 있으면
         매시 자동 집계, 없고 화면 열 때 집계가 켜져 있으면 1분 간격 재집계, 둘 다 아니면 시각만(오늘이 아니면 날짜까지).
         시각 문자열은 서버가 사이트 표준시 `Y-m-d H:i:s` 로 주므로 잘라 쓴다(형식 파이프 의존 없음). -->
-      <span data-ref="period_freshness" data-if="{{!!_computed.archiveFreshness?.last_run_at}}" class="text-hint text-xs w-full sm:w-auto">
+      <span data-ref="period_freshness" data-if="{{!!_computed.archiveFreshness?.last_run_at}}" class="text-hint text-xs w-full">
+        <responsive on="640-" class="text-hint text-xs w-auto"/>
         <span data-if="{{_computed.archiveFreshness?.scheduler?.alive === true}}">$t:admin.analytics.freshness.scheduled|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
         <span data-if="{{_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled === true}}">$t:admin.analytics.freshness.on_view|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
         <span data-if="{{_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled !== true &amp;&amp; _computed.archiveFreshness?.is_today === true}}">$t:admin.analytics.freshness.plain_time|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
         <span data-if="{{_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled !== true &amp;&amp; _computed.archiveFreshness?.is_today !== true}}">$t:admin.analytics.freshness.plain_date|month={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(5, 7))}}|day={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(8, 10))}}|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
       </span>
       <!-- 모바일에서는 기간 바 아래 전폭 — 390px 에서 칩 사이에 끼면 눌리는 면적이 칩 하나만 해진다(계획서 §4.11). -->
-      <button data-ref="csv_download_button" data-if="{{!!_computed.csvUrl}}" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 w-full sm:w-auto">
+      <button data-ref="csv_download_button" data-if="{{!!_computed.csvUrl}}" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 w-full">
+        <responsive on="640-" class="btn btn-secondary btn-sm flex-center gap-1.5 w-auto"/>
         <on type="click">
           <!-- CSV 는 토큰이 실리는 blob 요청으로 받는다 — `<a href>` 는 Authorization 이 없어 401 이다. -->
           <action handler="downloadAttachment" url="{{_computed.csvUrl}}" filename="{{_computed.csvFilename ?? 'analytics.csv'}}"/>

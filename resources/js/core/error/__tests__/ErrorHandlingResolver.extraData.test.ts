@@ -8,20 +8,23 @@
  * @since engine-v1.80.0
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { ErrorHandlingResolver } from '../ErrorHandlingResolver';
 import type { ErrorContext, ErrorHandlerConfig } from '../../types/ErrorHandling';
 import { Logger } from '../../utils/Logger';
 
+/** setActionExecutor 가 받는 실행기 시그니처 */
+type ActionExecutor = Parameters<ErrorHandlingResolver['setActionExecutor']>[0];
+
 describe('ErrorHandlingResolver — 추가 실행 문맥 (#753)', () => {
   let resolver: ErrorHandlingResolver;
-  let mockExecutor: ReturnType<typeof vi.fn>;
+  let mockExecutor: Mock<ActionExecutor>;
 
   beforeEach(() => {
     ErrorHandlingResolver.resetInstance();
     Logger.getInstance().setDebug(false);
     resolver = ErrorHandlingResolver.getInstance();
-    mockExecutor = vi.fn().mockResolvedValue({ success: true });
+    mockExecutor = vi.fn<ActionExecutor>().mockResolvedValue({ success: true });
     resolver.setActionExecutor(mockExecutor);
   });
 

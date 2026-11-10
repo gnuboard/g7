@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
     createLayoutTest,
     createMockComponentRegistryWithBasics,
@@ -308,21 +308,37 @@ describe('_cart_list.json — 빈 장바구니 (T8 에지)', () => {
 describe('_cart_list.json — 카운터 표시식 정적 가드 (#92)', () => {
     const counterTexts = collectStringsContaining(cartListPartial, '/{{cartItems');
 
+    /**
+     * @scenario mount_path=initial_load, selection=all
+     * @effects counter_matches_checked_state
+     */
     it('카운터 표시식이 존재한다', () => {
         expect(counterTexts.length, '카운터 표시식을 찾지 못했다').toBeGreaterThan(0);
     });
 
+    /**
+     * @scenario mount_path=initial_load, selection=all
+     * @effects counter_matches_checked_state
+     */
     it('초기화되지 않는 _local.selectedCount 를 더 이상 참조하지 않는다', () => {
         const json = JSON.stringify(cartListPartial);
         expect(json).not.toContain('_local.selectedCount');
     });
 
+    /**
+     * @scenario mount_path=initial_load, selection=all
+     * @effects counter_matches_checked_state
+     */
     it('선택 개수는 SSoT(selectedItems) 파생 + 0 폴백으로 표시한다', () => {
         const counter = counterTexts.find((t) => t.startsWith('('));
         expect(counter, '`(선택/전체)` 형태의 카운터가 없다').toBeTruthy();
         expect(counter).toContain('_local.selectedItems?.length ?? 0');
     });
 
+    /**
+     * @scenario mount_path=initial_load, selection=all
+     * @effects counter_matches_summary_panel
+     */
     it('분모는 주문 요약과 동일한 item_count 폴백을 쓴다', () => {
         const counter = counterTexts.find((t) => t.startsWith('('));
         expect(counter).toContain('cartItems.data.item_count ?? 0');

@@ -713,6 +713,19 @@ HTML 콘텐츠와 일반 텍스트를 안전하게 렌더링하는 컴포넌트�
 | `isHtml` | `boolean` | ❌ | `true` | HTML 렌더링 여부 |
 | `className` | `string` | ❌ | `''` | 컨테이너 CSS 클래스 |
 | `purifyConfig` | `object` | ❌ | - | DOMPurify 커스텀 설정 (isHtml=true 시만) |
+| `imageSizes` | `string` | ❌ | `"(min-width: 1024px) 768px, 100vw"` | 본문 이미지 srcset 의 `sizes` 값 (isHtml=true 시만) |
+
+### 본문 이미지 표시
+
+저장된 본문은 바꾸지 않고 표시 직전에만 고친다. 봇 화면(`HtmlSanitizer::sanitizeContent`)도 같은 규칙이다.
+
+| 대상 | 처리 |
+|------|------|
+| 서빙 경로 이미지(같은 출처 + 등록 패턴) | `src` → 본문 이미지 규격(환경설정 「본문 이미지 규격」, 기본 `lg`), `srcset` → 이미지에 정수 `width` 가 있으면 그 가로 이하의 숫자 요청 대상 규격(`640w`·`1280w`·`1920w` 중)만, 모르면 넣지 않음, `sizes` → `srcset` 을 넣을 때만 `imageSizes`(작성자가 적지 않았을 때만), `loading="lazy"`·`decoding="async"`(작성자가 적지 않았을 때만) |
+| 외부·`/storage/...`·`data:` 이미지 | 변경 없음 |
+| 링크(`<a>`) 밖 이미지 | `role="button"`·`tabindex="0"`·다국어 `aria-label`. 클릭·Enter·Space 로 확대 보기(ImageGallery)가 원본 주소로 열리고, 슬라이드는 같은 본문의 확대 대상 이미지 전부, 시작은 누른 이미지 |
+| 링크 안 이미지 | 링크 이동 (확대 보기 없음) |
+| 편집 캔버스(`editorAttrs` 주입) | 썸네일만, 확대 보기 표식 없음 |
 
 ### isHtml에 따른 렌더링 분기
 
@@ -795,7 +808,7 @@ G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'
 | `aria-label` | string | - | 트리거 단추 이름. 단추는 「{이름} {현재 값}」(예: 「작성자 홍길동」)으로 읽힌다. 고른 값이 없으면(값이 빈 문자열이거나 옵션에 없는 값도 포함) 안내 글자(`triggerLabel`)는 잇지 않고 이름만 읽힌다 |
 | `aria-labelledby` | string | - | 이름이 될 요소 id. 단추는 「{그 요소 글자} {현재 값}」으로 읽힌다 |
 
-둘 다 없으면 단추 앞의 곁 라벨(`form-label`·`filter-label` 등)을 이름으로 잇고 현재 값을 뒤에 붙인다. 곁 라벨도 없으면 고른 값만 읽혀 무엇을 고르는 칸인지 알 수 없으므로, 라벨 없는 자리에서는 `aria-label` 을 준다. 펼친 목록의 검색칸은 「검색」으로 읽힌다.
+둘 다 없으면 단추 앞의 곁 라벨(`form-label`·`filter-field-label` 등)을 이름으로 잇고 현재 값을 뒤에 붙인다. 곁 라벨도 없으면 고른 값만 읽혀 무엇을 고르는 칸인지 알 수 없으므로, 라벨 없는 자리에서는 `aria-label` 을 준다. 펼친 목록의 검색칸은 「검색」으로 읽힌다.
 
 ---
 

@@ -38,6 +38,17 @@ effects:
   - clear_modal_empties_additional_options # 확인 시 [] + 모달 닫기
   - has_additional_options_serialized_zero # 직렬화 0회
   - submit_contract_neutral                # 계약 중립(검증 규칙 없음)
+  # 같은 레이아웃 회귀 파일(productOptionsAdditionalToggle)이 함께 지키는 추가옵션 편집 화면 계약
+  - additional_option_name_input_debounced          # 추가옵션명 입력 debounce 300
+  - additional_option_required_uses_toggle          # 필수 여부는 Toggle (raw checkbox 없음)
+  - additional_option_values_editor_controls        # 선택지명·추가금·기본·활성·추가·삭제 컨트롤과 핸들러
+  - additional_option_values_currency_preview_always # 추가금 0원이어도 환율통화 환산 표시
+  - additional_option_values_row_aligned_by_width   # 640px 이상 선택지 행 가로 배치·상단 정렬, 라벨 없는 컨트롤 mt-6 (엔진 responsive 640- 구간)
+  - additional_option_value_allow_custom_text_toggle # 선택지 단위 직접입력 토글 + 번역 라벨
+  - additional_option_empty_values_error_shown      # 빈 선택지 그룹 강조 테두리 + 하단 메시지
+  - product_save_sequence_syncs_images              # 저장 sequence emitEvent → form.images → apiCall
+  - save_template_modal_footer_in_children          # 공지 템플릿 저장 모달 취소·저장 단추가 Modal 고정 하단(props.footer)에 있다(#869 P1, 종전 children 말미)
+  - product_create_navigates_by_id                  # 생성 후 이동은 id 기반 경로
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productOptionsAdditionalToggle.test.tsx

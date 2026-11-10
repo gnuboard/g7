@@ -7,7 +7,6 @@
  *  - FlexEditor — 컨테이너/아이템/auto(make-flex) 모드.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
@@ -85,6 +84,8 @@ const SPEC: EditorSpec = {
 };
 
 describe('RecipePickerControls', () => {
+  // @scenario area=recipe_pickers
+  // @effects page_picker_free_input_without_candidates
   it('page-picker 자유입력(후보 없음) → onChange', () => {
     const onChange = vi.fn();
     render(<PagePickerControl control={{}} value={undefined} onChange={onChange} t={t} />);
@@ -112,6 +113,8 @@ describe('RecipePickerControls', () => {
 
   // (이슈2)목록 선택 모드에서 [✎] 명시 버튼으로 텍스트 편집 복귀(드롭다운
   // "직접 입력" 옵션 의존 제거). 후보 매칭 값이면 select 모드 → [✎] 클릭 → 자유 입력(칩) 모드.
+  // @scenario area=recipe_pickers
+  // @effects datasource_picker_edit_button_to_free_input
   it('(이슈2) 목록 선택 모드 → [✎] 버튼으로 텍스트 편집 복귀', () => {
     const onChange = vi.fn();
     render(
@@ -134,6 +137,8 @@ describe('RecipePickerControls', () => {
     expect(screen.getByTestId('g7le-widget-datasource-picker-input-input')).toBeInTheDocument();
   });
 
+  // @scenario area=recipe_pickers
+  // @effects recipe_i18n_text_control_keyifies_plain
   it('i18n-text 입력 — 공통 위젯(I18nTextField) 평문 입력 → createCustomKey 토큰을 onChange', async () => {
     s7CreateCustomKey.mockReset();
     s7CreateCustomKey.mockResolvedValue({ kind: 'ok', resource: { translation_key: 'custom.x.1' } });
@@ -159,6 +164,8 @@ describe('ActionRecipeEditor', () => {
     expect(screen.getByTestId('g7le-action-no-events')).toBeInTheDocument();
   });
 
+  // @scenario area=action_editor
+  // @effects action_editor_add_writes_top_level_actions
   it('events 슬롯 표시 + 동작 추가 → onPatchNode(navigate)', () => {
     const onPatch = vi.fn();
     render(
@@ -176,6 +183,8 @@ describe('ActionRecipeEditor', () => {
     expect(actions?.[0]).toMatchObject({ type: 'click', handler: 'navigate' });
   });
 
+  // @scenario area=action_editor
+  // @effects action_editor_page_picker_lists_routes
   it('goToPage 동작의 page-picker 가 라우트 후보를 드롭다운으로 노출 + 선택 시 navigate ', () => {
     const onPatch = vi.fn();
     // 이미 goToPage 액션이 있는 노드(역해석으로 친화 편집 진입) — 최상위 actions + type:'click'.
@@ -204,6 +213,8 @@ describe('ActionRecipeEditor', () => {
     expect(actions?.[0]).toMatchObject({ type: 'click', handler: 'navigate', params: { path: '/login' } });
   });
 
+  // @scenario area=action_editor
+  // @effects action_editor_page_picker_degrades_to_input
   it('pageCandidates 미주입 시 page-picker 가 자유 path 입력으로 디그레이드', () => {
     const withAction: EditorNode = { name: 'Button', actions: [{ type: 'click', handler: 'navigate', params: { path: '/board' } }] };
     render(
@@ -259,6 +270,8 @@ describe('ActionRecipeEditor', () => {
     expect((patched as { props?: { actions?: unknown } }).props?.actions).toBeUndefined();
   });
 
+  // @scenario area=action_editor
+  // @effects action_editor_add_writes_top_level_actions
   it('onHover 이벤트 → type:mouseenter 로 저장', () => {
     const onPatch = vi.fn();
     render(<ActionRecipeEditor node={node} spec={SPEC} capability={{ events: ['onHover'] }} t={t} onPatchNode={onPatch} pageCandidates={[]} />);
@@ -272,6 +285,8 @@ describe('ActionRecipeEditor', () => {
 describe('ConditionBuilder', () => {
   const node: EditorNode = { name: 'Div', props: {} };
 
+  // @scenario area=condition_builder
+  // @effects condition_recipe_wraps_entire_combined_expression_in_single_braces
   it('친화 조건 추가(AND) → onPatchNode(최상위 node.if, 단일 {{ }})', () => {
     const onPatch = vi.fn();
     render(<ConditionBuilder node={node} spec={SPEC} t={t} onPatchNode={onPatch} />);
@@ -283,6 +298,8 @@ describe('ConditionBuilder', () => {
     expect((patched as { props?: { if?: unknown } }).props?.if).toBeUndefined();
   });
 
+  // @scenario area=condition_builder
+  // @effects condition_builder_reverse_matches_single_preset
   it('최상위 if 역해석 → 조건 선택 복원', () => {
     const node2: EditorNode = { name: 'Div', if: '{{ _global?.currentUser?.uuid }}', props: {} };
     render(<ConditionBuilder node={node2} spec={SPEC} t={t} onPatchNode={vi.fn()} />);
@@ -290,6 +307,8 @@ describe('ConditionBuilder', () => {
     expect(screen.getByTestId('g7le-condition-preview')).toBeInTheDocument();
   });
 
+  // @scenario area=condition_builder
+  // @effects condition_builder_legacy_props_if_migrates
   it('legacy props.if 역호환 — 읽어서 복원 후 저장 시 최상위로 이관', () => {
     const onPatch = vi.fn();
     const legacy: EditorNode = { name: 'Div', props: { if: '{{ _global?.currentUser?.uuid }}' } };
@@ -314,6 +333,8 @@ describe('ConditionBuilder', () => {
     expect(screen.getByTestId('g7le-condition-advanced-expr').textContent).toContain('custom.weird');
   });
 
+  // @scenario area=condition_builder
+  // @effects condition_builder_device_scope_inherits_base_if
   it('tablet scope — base if 가 override 없을 때 상속 노출', () => {
     // base 에 recipe 매칭 조건이 있고 tablet override 가 없으면, tablet 탭에서도 base
     // 조건이 절로 복원돼 노출돼야 한다(빈 빌더로 가려지지 않음 — getEffectiveScopedIf).
@@ -335,6 +356,8 @@ describe('ConditionBuilder', () => {
     expect(screen.getByTestId('g7le-condition-clause-0')).toBeInTheDocument();
   });
 
+  // @scenario area=condition_builder
+  // @effects base_if_unchanged_when_device_if_edited
   it('tablet scope 조건 편집 → responsive.tablet.if 로 기록, base.if 불변', () => {
     const onPatch = vi.fn();
     // 상속된 base 조건(isLoggedIn)이 tablet 탭에 노출된 상태에서 OR 절을 추가하면,
@@ -357,6 +380,8 @@ describe('ConditionBuilder', () => {
     expect(patched.if).toBe('{{ _global?.currentUser?.uuid }}'); // base 불변
   });
 
+  // @scenario area=condition_builder
+  // @effects condition_builder_device_scope_reads_own_if
   it('tablet scope 는 responsive.tablet.if 에서 역해석 (base.if 무시)', () => {
     const node2: EditorNode = {
       name: 'Div',
@@ -380,12 +405,16 @@ describe('ConditionBuilder', () => {
 describe('FlexEditor', () => {
   const node: EditorNode = { name: 'Flex', props: {} };
 
+  // @scenario area=flex_editor
+  // @effects flex_editor_container_role_shows_controls
   it('container 역할 → 컨테이너 컨트롤 노출', () => {
     render(<FlexEditor node={node} spec={SPEC} capability={{ flexEditor: 'container' }} t={t} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-flex-container-section')).toBeInTheDocument();
     expect(screen.getByTestId('g7le-control-flexDirection')).toBeInTheDocument();
   });
 
+  // @scenario area=flex_editor
+  // @effects flex_make_box_button_when_not_rendered_as_flex
   it('auto + 비-flex DOM → "정렬 박스로 만들기" 버튼', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'block' } as CSSStyleDeclaration);
     const el = document.createElement('div');
@@ -394,6 +423,8 @@ describe('FlexEditor', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario area=flex_editor
+  // @effects flex_editor_make_flex_applies_token
   it('make-flex 클릭 → onPatchNode(flex 토큰 적용)', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'block' } as CSSStyleDeclaration);
     const onPatch = vi.fn();
@@ -405,6 +436,8 @@ describe('FlexEditor', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario area=flex_editor
+  // @effects flex_editor_item_role_shows_item_controls
   it('item 역할 → 아이템 컨트롤 섹션', () => {
     render(<FlexEditor node={{ name: 'Card', props: {} }} spec={SPEC} capability={{ flexEditor: 'item' }} t={t} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-flex-item-section')).toBeInTheDocument();
@@ -413,6 +446,8 @@ describe('FlexEditor', () => {
 
   // §항목A — 노드 파생 판정: 노드가 이미 flex 토큰을 가지면 liveElement(DOM)가
   // stale(block)이어도 컨테이너 컨트롤 + 해제 버튼을 노출한다(make-flex 버튼 아님).
+  // @scenario area=flex_editor
+  // @effects scope_flex_judgment_uses_node_derivation_not_computed_style
   it('auto + 노드에 flex 토큰 (liveElement stale=block) → 컨테이너 컨트롤 + 해제 버튼', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'block' } as CSSStyleDeclaration);
     const staleEl = document.createElement('div'); // 패치 직전 DOM 모사(block)
@@ -432,6 +467,8 @@ describe('FlexEditor', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario area=flex_editor
+  // @effects flex_editor_disable_removes_flex_token
   it('정렬 박스 해제 클릭 → onPatchNode(flex 토큰 제거)', () => {
     const onPatch = vi.fn();
     render(
@@ -471,6 +508,8 @@ describe('FlexEditor', () => {
     } as EditorSpec['controls'],
   };
 
+  // @scenario area=flex_editor
+  // @effects flex_editor_device_scope_enable_writes_branch
   it('mobile scope + base flex → 모바일 해제 시 responsive.mobile.props.className 에 off 토큰(block) (D7)', () => {
     const onPatch = vi.fn();
     render(
@@ -491,6 +530,8 @@ describe('FlexEditor', () => {
     expect(patched.props?.className).toBe('flex'); // base 불변
   });
 
+  // @scenario area=flex_editor
+  // @effects device_flex_disable_writes_explicit_off_token_breaking_base_inheritance
   it('mobile scope flex override 후 해제 → off 토큰(block) 기록(base 상속 차단)', () => {
     const onPatch = vi.fn();
     render(

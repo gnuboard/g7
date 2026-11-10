@@ -47,9 +47,16 @@
                     "id": "social_login_reconsent_link",
                     "type": "basic",
                     "name": "A",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "sl:mt-3 sl:inline-flex sl:items-center sl:justify-center sl:w-full sl:px-4 sl:py-2 sl:text-sm sl:font-medium sl:rounded-lg sl:bg-amber-600 sl:hover:bg-amber-700 sl:text-white sl:dark:bg-amber-500 sl:dark:hover:bg-amber-600 sl:dark:text-gray-900"
+                            }
+                        }
+                    },
                     "props": {
                         "href": "{{((socialProviders?.data ?? []).find(p => p.key === query.provider)?.start_url ?? '') + '?reconsent=1' + (typeof query.redirect === 'string' && query.redirect.startsWith('/') && !query.redirect.startsWith('/', 1) && !query.redirect.startsWith('\\\\', 1) ? '&redirect=' + encodeURIComponent(query.redirect) : '')}}",
-                        "className": "sl:mt-3 sl:inline-flex sl:items-center sl:justify-center sl:w-full sl:px-4 sl:py-3 sl:sm:py-2 sl:text-sm sl:font-medium sl:rounded-lg sl:bg-amber-600 sl:hover:bg-amber-700 sl:text-white sl:dark:bg-amber-500 sl:dark:hover:bg-amber-600 sl:dark:text-gray-900"
+                        "className": "sl:mt-3 sl:inline-flex sl:items-center sl:justify-center sl:w-full sl:px-4 sl:py-3 sl:text-sm sl:font-medium sl:rounded-lg sl:bg-amber-600 sl:hover:bg-amber-700 sl:text-white sl:dark:bg-amber-500 sl:dark:hover:bg-amber-600 sl:dark:text-gray-900"
                     },
                     "text": "$t:sirsoft-social_login.buttons.reconsent_with|provider={{(socialProviders?.data ?? []).find(p => p.key === query.provider)?.label ?? ''}}"
                 }

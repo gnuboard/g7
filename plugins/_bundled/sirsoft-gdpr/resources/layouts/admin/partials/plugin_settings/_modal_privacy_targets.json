@@ -11,7 +11,24 @@
     "props": {
         "title": "{{_global.privacyTargets?.title ?? ''}}",
         "width": "800px",
-        "className": "gdpr:max-w-[calc(100vw-2rem)]"
+        "className": "gdpr:max-w-[calc(100vw-2rem)]",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "gdpr-btn gdpr-btn-secondary"
+                },
+                "text": "$t:sirsoft-gdpr.annual_notice.targets.close"
+            }
+        ]
     },
     "children": [
         {
@@ -299,31 +316,6 @@
                             "text": "$t:sirsoft-gdpr.annual_notice.targets.empty"
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "privacy_targets_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "gdpr:flex gdpr:justify-end gdpr:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "gdpr-btn gdpr-btn-secondary"
-                    },
-                    "text": "$t:sirsoft-gdpr.annual_notice.targets.close"
                 }
             ]
         }

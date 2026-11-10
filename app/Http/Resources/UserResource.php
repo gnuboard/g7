@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\ConsentType;
 use App\Enums\IdentityVerificationPurpose;
+use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Extension\HookManager;
@@ -206,6 +207,7 @@ class UserResource extends BaseApiResource
         // JSON 에 `{}` 로 나갔다(modules_count·consents·terms_consent 등 9개, #703).
         $data = $this->resolve($request ?? request());
         $data['locked_fields'] = app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE);
+        $data['can_edit_layouts'] = $this->canEditLayouts();
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합 (toProfileArray 와 동일)
         return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
@@ -227,7 +229,24 @@ class UserResource extends BaseApiResource
         return array_merge($this->resolve($request ?? request()), [
             'is_super' => $this->resource->isSuperAdmin(),
             'locked_fields' => app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN),
+            'can_edit_layouts' => $this->canEditLayouts(),
         ]);
+    }
+
+    /**
+     * 본인이 레이아웃 편집기에 들어갈 수 있는지 판정합니다.
+     *
+     * 운영 화면의 편집 진입 단추가 이 값을 읽는다(#869). 편집기 API 가드
+     * (`permission:admin,core.templates.layouts.edit`)와 같은 판정이다 — 응답의 `permissions` 목록은
+     * 사용 중지한 역할의 권한까지 담아 그것으로 판정하면 편집기에서 거절될 사람에게도 단추가 보인다.
+     * 남의 계정이 담기는 목록 응답(toArray)에는 싣지 않는다.
+     *
+     * @return bool 레이아웃 편집 권한 보유 여부
+     */
+    private function canEditLayouts(): bool
+    {
+        return $this->resource instanceof User
+            && $this->resource->hasPermission('core.templates.layouts.edit', PermissionType::Admin);
     }
 
     /**

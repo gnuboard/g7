@@ -1,0 +1,17 @@
+feature: 메뉴 정렬 항목 — 마우스로 고를 수 있으면 키보드로도 고른다
+
+description: |
+  `/admin/menus` 의 항목은 일반 모드에서 덮는 링크(`<a href>`)라 Tab 과 Enter 로 고른다. 일괄 선택 모드에서는 체크박스가
+  받는데 Space 로만 토글되고 Enter 로는 고를 수 없었다(#869, 결정 「키보드 접근 전부」). 체크박스가 Enter 도 받는다.
+  끌기 정렬은 목록의 KeyboardSensor(Space 들기, 화살표 이동, Space 놓기, Esc 취소)가 맡는다.
+
+# axis 의미:
+#   mode — link 일반 모드(덮는 링크), selectable 일괄 선택 모드(체크박스).
+axes:
+  mode: [link, selectable]
+
+effects:
+  - menu_item_selectable_by_keyboard   # 두 모드 모두 키보드로 항목을 고른다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/SortableMenuItem.keyboard.test.tsx

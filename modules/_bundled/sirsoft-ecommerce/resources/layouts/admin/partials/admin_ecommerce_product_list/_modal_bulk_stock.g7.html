@@ -37,7 +37,7 @@
         <span data-ref="stock_preview_set" data-if="{{(_local.bulkStockMethod || 'increase') === 'set'}}" class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_set|value={{_local.bulkStockValue || 0}}</span>
       </div>
     </div>
-    <div data-ref="bulk_stock_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6">
+    <footer>
       <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <close-modal/>
@@ -54,6 +54,6 @@
         </on>
         $t:sirsoft-ecommerce.admin.product.modal.common.change
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

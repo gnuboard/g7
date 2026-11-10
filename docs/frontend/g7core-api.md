@@ -37,6 +37,7 @@
 5. [네비게이션 (G7Core.navigation)](#네비게이션-g7corenavigation)
 6. [스타일 헬퍼 (G7Core.style)](#스타일-헬퍼-g7corestyle)
 7. [주소 조립 (G7Core.url)](#주소-조립-g7coreurl)
+   - [이미지 썸네일 주소 (G7Core.thumbnail)](#이미지-썸네일-주소-g7corethumbnail)
 8. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
 9. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
 10. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
@@ -59,6 +60,7 @@
 | 네비게이션 | `G7Core.navigation` | 페이지 전환 상태 | 현재 문서 |
 | 스타일 | `G7Core.style` | Tailwind 클래스 병합 | 현재 문서 |
 | 주소 | `G7Core.url` | 마운트 접두사 붙이기/벗기기 (확장 공용) | 현재 문서 |
+| 썸네일 주소 | `G7Core.thumbnail` | 이미지 서빙 주소에 썸네일 규격·srcset 붙이기 (확장 공용) | 현재 문서 |
 | 플러그인 | `G7Core.plugin` | 플러그인 설정 조회 | 현재 문서 |
 | 모듈 | `G7Core.module` | 모듈 설정 조회 | 현재 문서 |
 | 다국어 | `G7Core.locale`, `G7Core.t` | 로케일 관리, 번역 | [고급 API](g7core-api-advanced.md) |
@@ -860,6 +862,55 @@ if (/^\/shop\/orders\/([^/]+)\/complete$/.test(routePath(window.location.pathnam
 `routePath()`/`stripBasePrefix()` 의 결과가 `/` 하나로 시작한다는 보장은 없다 — `/g7//evil.com` 을 벗기면 `//evil.com` 이다(접두사 뒤 나머지를 그대로 돌려준다). 그 값을 `navigate` 에 넘기면 사이트 밖 목적지로 판정돼 이동하지 않지만(engine-v1.87.0), `location.href` 대입처럼 라우터를 거치지 않는 통로에 넘기면 그 방어가 없다. 벗긴 값은 대조에만 쓰고 이동 주소로 재사용하지 않는다.
 
 경계 판정의 기대표(입력 24종 × 붙이기/벗기기 + 접두사 정규화 변종)는 `tests/Fixtures/AssetUrl/base-prefix-boundary.json` 하나이며 서버 `AssetUrlTest` 와 프론트 `assetUrl.test.ts` 가 같은 파일을 읽는다. 규칙을 바꾸면 양쪽 구현과 그 표를 함께 바꾼다.
+
+---
+
+## 이미지 썸네일 주소 (G7Core.thumbnail)
+
+> engine-v1.89.0+
+
+업로드 이미지 서빙 주소에 `?size={규격}` 을 붙이면 서버가 환경설정의 규격으로 줄인 썸네일을 내준다. 붙여도 되는 주소는 **같은 출처 + 등록된 서빙 경로**(환경설정이 내려 주는 `upload.thumbnail_url_patterns`)뿐이고, 외부·CDN 직접 주소·`/storage/...`·`data:`·`blob:` 는 그대로 둔다. 확장 번들은 코어 모듈을 import 할 수 없으므로 판정과 덧붙임 규칙은 이 API 하나로 쓴다 — 규칙 사본을 두면 서명 주소가 깨지거나 외부 주소에 `size` 가 붙는다.
+
+레이아웃에서는 `<img thumbPreset="sm">`(Img 컴포넌트) 또는 파이프 `{{url | thumb('sm')}}`·`{{url | thumbSrcset('md')}}` 를 쓴다([내장 파이프](data-binding.md#내장-파이프-함수)).
+
+### API 목록
+
+| 메서드 | 반환 | 설명 |
+|--------|------|------|
+| `isThumbnailable(url)` | `boolean` | 같은 출처 + 등록된 서빙 경로인지 (기능이 꺼져 있으면 항상 false) |
+| `url(url, preset)` | `string` | 규격을 붙인 주소. 기존 쿼리는 원문 그대로 두고 `size`·`w` 만 바꾼다(`#` 앞). 대상이 아니면 입력 그대로 |
+| `srcset(url, preset)` | `string` | 1x·2x srcset. 2x 는 같은 맞춤·같은 비율 중 가로 1.5배 이상인 가장 작은 규격(없으면 1x 만). 대상이 아니면 빈 문자열 |
+| `contentSrcset(url)` | `string` | 본문 이미지용 — 숫자 요청 대상 규격 전부를 `w` 기술자로 |
+| `contentSrcsetWithin(url, maxWidth, options?)` | `string` | `contentSrcset` 후보 중 원본 가로(`maxWidth`)를 넘지 않는 것만. 기본은 원본 가로 **이하** 후보, `{ includeOriginal: true }` 면 원본보다 **작은** 후보 + 원본(`{url} {maxWidth}w`). 가로는 내림한 정수로 보고, 가로를 모르거나(1 이상의 유한수가 아님) 남는 후보가 없으면 빈 문자열 |
+| `contentPreset()` | `string` | 환경설정 「본문 이미지 규격」(기본 `lg`) |
+| `strip(url)` | `string` | `size`·`w` 를 걷어낸 원본 주소 (확대 보기용) |
+| `presets()` | `array` | 사용 중인 공개 규격 목록 `{name, width, height, fit, numeric, format}` |
+
+### 확장에서의 사용
+
+```ts
+const thumbnail = (window as any).G7Core?.thumbnail;
+const src = thumbnail ? thumbnail.url(image.download_url, 'sm') : image.download_url;
+const srcSet = thumbnail ? thumbnail.srcset(image.download_url, 'sm') || undefined : undefined;
+```
+
+API 가 없는 코어(구버전)에서는 원 주소를 그대로 쓰면 된다 — 원본이 나가는 것은 종전 동작과 같다.
+
+### 원본 가로를 아는 이미지의 srcset
+
+서버는 원본보다 큰 규격을 키우지 않고 원본을 보낸다. 원본이 750px 인데 후보에 `1280w` 가 있으면 브라우저는 1280px 짜리로 알고 골라 그만큼 작게 그린다. 원본 가로를 아는 자리는 `contentSrcset` 대신 `contentSrcsetWithin` 으로 후보를 원본 가로 안으로 줄인다.
+
+| 자리 | 호출 | 원본 750px, 숫자 규격 md 640·lg 1280·xl 1920 일 때 |
+|------|------|------|
+| 본문 HTML 이미지(`<img width>`) | `contentSrcsetWithin(src, width)` | `…?size=md 640w` (원본 가로 이하. 봇 화면 `HtmlSanitizer` 와 같은 규칙) |
+| 원본을 함께 싣는 이미지(배너·팝업) | `contentSrcsetWithin(src, width, { includeOriginal: true })` | `…?size=md 640w, {src} 750w` (원본과 같은 가로의 후보는 원본과 기술자가 겹쳐 뺀다) |
+
+```ts
+const thumbnail = (window as any).G7Core?.thumbnail;
+const srcSet = typeof thumbnail?.contentSrcsetWithin === 'function'
+  ? thumbnail.contentSrcsetWithin(image.url, image.width, { includeOriginal: true }) || undefined
+  : undefined;
+```
 
 ---
 

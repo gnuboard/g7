@@ -50,7 +50,7 @@ function layoutWith(opts: {
     ...(opts.initGlobal ? { initGlobal: opts.initGlobal } : {}),
     ...(opts.state ? { state: opts.state } : {}),
     components: [
-      { id: 'probe', type: 'basic', name: 'Span', text: '상태 주입 테스트' },
+      { id: 'probe', type: 'basic' as const, name: 'Span', text: '상태 주입 테스트' },
     ],
   };
 }
@@ -72,6 +72,10 @@ describe('초기 상태(initLocal) 상속 병합 런타임 주입', () => {
     testUtils = null;
   });
 
+  /**
+   * @scenario roundtrip=initial_state
+   * @effects initial_state_child_overrides_parent_shallow
+   */
   it('① 자식 덮은 키=자식 값, 미덮은 부모 키=부모 값으로 _local 주입 (shallow)', async () => {
     const child = {
       keyword: '검색', // 부모 키 덮음
@@ -90,6 +94,10 @@ describe('초기 상태(initLocal) 상속 병합 런타임 주입', () => {
     expect(local.page).toBe(3); // 자식 고유
   });
 
+  /**
+   * @scenario roundtrip=initial_state
+   * @effects initial_state_nested_object_replaced_with_depth
+   */
   it('② 중첩 객체는 통째 교체(shallow)되며 depth 가 보존된다 (JSON 깊은 복사)', async () => {
     // 자식이 filter 를 통째 교체(shallow merge 는 중첩 deep merge 아님).
     const child = {
@@ -109,6 +117,10 @@ describe('초기 상태(initLocal) 상속 병합 런타임 주입', () => {
     expect(local.filter.extra.pinned).toBe(true);
   });
 
+  /**
+   * @scenario roundtrip=initial_state
+   * @effects initial_state_deep_value_injected
+   */
   it('②-b 3-depth 중첩 값(a.b.c)도 무손실 주입된다 (depth 무제한)', async () => {
     // 엔진은 JSON 깊은 복사로 depth 제한 없이 주입한다(TemplateApp.ts:1133).
     const merged = mergeShallow(parentInitLocal(), {
@@ -125,6 +137,10 @@ describe('초기 상태(initLocal) 상속 병합 런타임 주입', () => {
     expect((local.manualAddress as any).recipient.phone.mobile).toBe('010');
   });
 
+  /**
+   * @scenario roundtrip=initial_state
+   * @effects initial_state_reverted_key_uses_parent
+   */
   it('③ 되돌린 키(자식 키 제거)는 재마운트 시 부모 값으로 주입된다', async () => {
     // 덮음 상태
     const overridden = mergeShallow(parentInitLocal(), { keyword: '검색' });
@@ -144,6 +160,10 @@ describe('초기 상태(initLocal) 상속 병합 런타임 주입', () => {
     expect(testUtils.getState()._local.keyword).toBe('');
   });
 
+  /**
+   * @scenario roundtrip=initial_state
+   * @effects initial_state_legacy_state_alias_injected
+   */
   it('④ legacy `state` 선언도 initLocal 과 동일하게 _local 로 주입된다 (별칭)', async () => {
     // 자식이 옛 이름 `state` 로 선언 — 엔진은 initLocal 별칭으로 주입.
     const merged = mergeShallow(parentInitLocal(), { tab: 'profile' });
@@ -159,6 +179,10 @@ describe('초기 상태(initLocal) 상속 병합 런타임 주입', () => {
     expect(local.filter).toEqual({ status: 'all', sort: 'recent' });
   });
 
+  /**
+   * @scenario roundtrip=initial_state
+   * @effects initial_state_global_merged_injected
+   */
   it('⑤ initGlobal 병합본은 _global 로 주입된다 (shallow)', async () => {
     const parentGlobal = { theme: 'light', sidebar: 'expanded' };
     const childGlobal = { theme: 'dark' }; // 부모 theme 덮음

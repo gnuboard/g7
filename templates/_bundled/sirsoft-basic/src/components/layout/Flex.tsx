@@ -1,6 +1,7 @@
 import React from 'react';
 import { Div } from '../basic/Div';
 import type { EditorAttrs } from '../../types';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 export interface FlexProps {
   /**
@@ -166,13 +167,18 @@ export const Flex: React.FC<FlexProps> = ({
     classes.push(`flex-shrink-${shrink}`);
   }
 
+  // 클릭을 받으면 손 모양 커서 — 눌러 쓰는 요소는 손 모양 커서를 준다(#869 κ). 레이아웃 className 이 뒤에 와서 다른 커서를 주면 그 값이 남는다
+  if (onClick) {
+    classes.push('cursor-pointer', FOCUS_VISIBLE_RING);
+  }
+
   // 사용자 정의 클래스 추가
   if (className) {
     classes.push(className);
   }
 
   return (
-    <Div id={id} className={classes.join(' ')} style={style} onClick={onClick} {...editorAttrs}>
+    <Div id={id} className={classes.join(' ')} style={style} onClick={onClick} {...keyboardActivationProps(onClick)} {...editorAttrs}>
       {children}
     </Div>
   );

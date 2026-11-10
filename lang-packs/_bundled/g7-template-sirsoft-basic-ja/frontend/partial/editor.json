@@ -206,6 +206,9 @@
     "img_alt": {
       "label": "代替テキスト"
     },
+    "img_thumb_preset": {
+      "label": "サムネイル規格"
+    },
     "link_href": {
       "label": "リンクURL"
     },

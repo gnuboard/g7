@@ -276,6 +276,21 @@ class ParameterDescriber
         'image_quality' => '이미지 리사이즈 시 압축 품질 (1~100)',
         'image_max_width' => '이미지 리사이즈 최대 너비 (px)',
         'image_max_height' => '이미지 리사이즈 최대 높이 (px)',
+        // 이미지 썸네일 (근거: Settings\SaveSettingsRequest upload.thumbnail_*, #869)
+        'thumbnail_enabled' => '이미지 썸네일 사용 여부 (끄면 모든 이미지를 원본으로 낸다)',
+        'thumbnail_presets' => '썸네일 규격 표 (고정 5행·og·켜진 확장 규격·운영자 규격, 최대 settings_limits.upload_thumbnail_presets_max 행)',
+        'thumbnail_content_preset' => '본문 이미지에 쓸 썸네일 규격 이름 (사용 중인 규격만)',
+        'thumbnail_disk_public' => '공개 이미지 썸네일 저장 디스크 (thumbnails + 공개 자산 디스크)',
+        'thumbnail_disk_gated' => '권한이 걸린 이미지 썸네일 저장 디스크 (thumbnails/s3)',
+        'thumbnail_prune_enabled' => '썸네일 정리 스케줄(thumbnails:prune --scheduled) 사용 여부',
+        'thumbnail_animated_original' => '움직이는 이미지(GIF·WebP·APNG)를 썸네일 대신 원본으로 낼지 (끄면 첫 프레임 썸네일, 기본 true)',
+        'thumbnail_generate_per_minute' => 'IP 하나가 1분에 새로 만들게 할 수 있는 썸네일 수 (1~10000, 비우면 .env G7_THUMBNAIL_GENERATE_PER_MINUTE 또는 120)',
+        'thumbnail_lock_wait_seconds' => '같은 썸네일을 다른 요청이 만들고 있을 때 기다리는 시간(초, 1~30, 비우면 .env G7_THUMBNAIL_LOCK_WAIT_SECONDS 또는 10)',
+        'thumbnail_max_source_pixels' => '썸네일을 만들 원본의 픽셀 수 상한 (1000000~100000000, 비우면 .env G7_THUMBNAIL_MAX_SOURCE_PIXELS 또는 16000000)',
+        'thumbnail_pregenerate_batch' => '「기존 이미지 썸네일 만들기」 한 번 호출이 처리하는 원본 수 (1~500, 비우면 .env G7_THUMBNAIL_PREGENERATE_BATCH 또는 20)',
+        'thumbnail_pregenerate_time_budget' => '「기존 이미지 썸네일 만들기」 한 번 호출의 시간 예산(초, 1~60, 비우면 .env G7_THUMBNAIL_PREGENERATE_TIME_BUDGET 또는 15)',
+        'thumbnail_purge_time_budget' => '썸네일 「비우기」 한 번 호출의 시간 예산(초, 1~60, 비우면 .env G7_THUMBNAIL_PURGE_TIME_BUDGET 또는 10)',
+        'image_driver' => '이미지 처리 엔진 (gd/imagick + 플러그인 등록 엔진, 이 서버에서 쓸 수 없는 코어 엔진은 422)',
 
         // 사이트 기본 정보 (근거: Settings general 그룹)
         'site_url' => '사이트 기본 URL',
@@ -368,6 +383,26 @@ class ParameterDescriber
                 'title' => 'SEO 메타 제목 (검색엔진/소셜 공유 표시 제목)',
                 'description' => 'SEO 메타 설명 (검색엔진/소셜 공유 표시 요약)',
                 'keywords' => 'SEO 메타 키워드 (검색엔진 노출 키워드, 쉼표 구분)',
+                default => null,
+            };
+        }
+
+        // 썸네일 규격 행 (근거: SaveSettingsRequest upload.thumbnail_presets.*.*, #869) — leaf 만으로는
+        // name·width 가 일반 「이름」「너비」로 축소된다.
+        if (str_ends_with($parent, 'thumbnail_presets.*')) {
+            return match ($leaf) {
+                'name' => '썸네일 규격 이름 (?size= 값, 운영자 규격은 ^[a-z][a-z0-9_]{1,31}$ · 예약어 xs/sm/md/lg/xl/og 제외, 고정·확장 행은 이름 고정)',
+                'source' => '썸네일 규격 출처 (core/custom/확장 식별자)',
+                'width' => '썸네일 가로 (px, 16~4096 — og 행 제외)',
+                'height' => '썸네일 세로 (px, 16~4096, fit=width 면 비움)',
+                'fit' => '맞춤 방식 (cover/contain/width)',
+                'anchor' => '자르기 기준점 (center/top/bottom/left/right)',
+                'quality' => '인코딩 품질 (1~100, 비우면 업로드 탭 이미지 품질)',
+                'format' => '출력 형식 (original/webp/avif)',
+                'upscale' => '원본이 규격보다 작을 때 확대 여부',
+                'pregenerate' => '원본 등록 직후 미리 생성 여부',
+                'numeric' => '?w= 숫자 요청 후보 여부',
+                'enabled' => '규격 사용 여부',
                 default => null,
             };
         }

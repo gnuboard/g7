@@ -14,7 +14,7 @@
       <div data-ref="copy_source_info" class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg ecommerce:p-4">
         <div class="ecommerce-flex-center ecommerce:gap-3">
           <div data-if="{{$parent._local.productList.copyTargetProduct?.thumbnail_url}}" class="ecommerce:w-12 ecommerce:h-12 ecommerce:rounded-lg ecommerce:overflow-hidden ecommerce:flex-shrink-0">
-            <img src="{{$parent._local.productList.copyTargetProduct?.thumbnail_url}}" alt="{{$localized($parent._local.productList.copyTargetProduct?.name)}}" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
+            <img src="{{$parent._local.productList.copyTargetProduct?.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$localized($parent._local.productList.copyTargetProduct?.name)}}" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
           </div>
           <div data-if="{{!$parent._local.productList.copyTargetProduct?.thumbnail_url}}" class="ecommerce-flex-center ecommerce:w-12 ecommerce:h-12 ecommerce:rounded-lg ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:justify-center ecommerce:flex-shrink-0">
             <icon name="image" class="ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
@@ -133,25 +133,25 @@
           <p class="ecommerce-tone-info-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.modal.copy.note</p>
         </div>
       </div>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3">
-        <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
-          <on type="click">
-            <close-modal target="modal_copy_product"/>
-          </on>
-          <span>$t:sirsoft-ecommerce.common.cancel</span>
-        </button>
-        <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
-          <on type="click">
-            <!-- 복사 실행. 처리중 표시만 `_global` 에 두는데, 위 선택값들과 달리 이 플래그는 창의 두 버튼만 읽기 때문이다. 실제 복사는 핸들러가 서버에 맡긴다. -->
-            <sequence>
-              <set-state target="global" :isCopyingProduct="true"/>
-              <action handler="sirsoft-ecommerce.copyProduct"/>
-            </sequence>
-          </on>
-          <icon data-if="{{_global.isCopyingProduct}}" name="spinner" class="ecommerce-spinner-sm"/>
-          <span>{{_global.isCopyingProduct ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.copy.submit'}}</span>
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
+        <on type="click">
+          <close-modal target="modal_copy_product"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.common.cancel</span>
+      </button>
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
+        <on type="click">
+          <!-- 복사 실행. 처리중 표시만 `_global` 에 두는데, 위 선택값들과 달리 이 플래그는 창의 두 버튼만 읽기 때문이다. 실제 복사는 핸들러가 서버에 맡긴다. -->
+          <sequence>
+            <set-state target="global" :isCopyingProduct="true"/>
+            <action handler="sirsoft-ecommerce.copyProduct"/>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isCopyingProduct}}" name="spinner" class="ecommerce-spinner-sm"/>
+        <span>{{_global.isCopyingProduct ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.copy.submit'}}</span>
+      </button>
+    </footer>
   </modal>
 </partial>

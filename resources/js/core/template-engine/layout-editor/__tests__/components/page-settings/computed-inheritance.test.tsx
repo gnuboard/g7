@@ -12,7 +12,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ComputedForm } from '../../../components/page-settings/ComputedForm';
@@ -41,6 +40,10 @@ beforeEach(() => {
 });
 
 describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', () => {
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_parent_only_common_badge_editable
+   */
   it('C1: 부모만 computed(자식 0) → 부모 키 전부 표시 + 〔공통〕배지, 전부 편집 가능(🔒 아님)', () => {
     // filterDefault 프리셋 매칭 식 → [편집] 버튼 노출(편집 가능 = 🔒 아님 검증).
     const computed = { isReadOnly: "{{ _local.x ?? query.y ?? '' }}" };
@@ -61,6 +64,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.getByTestId('g7le-computed-edit-isReadOnly')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_child_only_no_badge_editable
+   */
   it('C2: 자식만 computed(부모 0) → 자식 키만, 무배지, 편집 가능', () => {
     const computed = { searchField: "{{ _local.search ?? query.q ?? '' }}" };
     render(
@@ -78,6 +85,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.getByTestId('g7le-computed-edit-searchField')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_distinct_keys_badge_by_source
+   */
   it('C3: 부모+자식 다른 키 → 부모=〔공통〕/자식=무배지, 병합본 모든 키 표시', () => {
     const computed = { isReadOnly: "{{ 1 }}", filterField: "{{ 'all' }}" };
     render(
@@ -98,6 +109,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.queryByTestId('g7le-computed-source-filterField')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_child_override_promoted_badge
+   */
   it('C4: 부모+자식 같은 키(자식이 덮음) → source=route-override → 〔이 페이지에서 덮음〕 승격 배지(〔공통〕부재)', () => {
     // 병합본은 자식 식(부모 덮음). 백엔드 buildComputedSourceMap 은 부모+자식 동시 선언 키를
     // 'route-override' 로 표기(D-2a) → 승격 배지 노출. 순수 자식('route')과 구분.
@@ -119,6 +134,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.getByTestId('g7le-computed-preview-isReadOnly')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_pure_child_key_no_override_badge
+   */
   it('C4b: 순수 자식 키(부모 미선언) → source=route → 무배지(승격 배지/되돌리기 부재)', () => {
     const computed = { searchField: "{{ _local.search ?? query.q ?? '' }}" };
     render(
@@ -138,6 +157,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.queryByTestId('g7le-computed-source-searchField')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_edit_parent_key_shows_override_notice
+   */
   it('C5: 부모만(키 K) → 부모 키 K [편집] 진입 시 덮어쓰기 안내 노출', () => {
     const computed = { isReadOnly: "{{ _local.x ?? query.y ?? '' }}" };
     render(
@@ -155,6 +178,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.getByTestId('g7le-computed-override-notice-isReadOnly')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_edit_parent_key_patches_child_expr
+   */
   it('C6: 부모 키 K 편집 확정 → patchKey(같은 키) 호출(자식 승격), 병합본 K=자식 식', () => {
     const onChange = vi.fn();
     // filterDefault 프리셋 매칭 식(부모) — 편집 시 param 변경으로 식 재생성.
@@ -180,6 +207,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(next.filterDefault).toContain('forced');
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_revert_button_calls_on_revert
+   */
   it('C7: 부모 키 덮은 상태(route-override) → 전용 [되돌리기] 버튼 클릭 → onRevert(key) 호출(자식 정의만 제거)', () => {
     // D-2b: 별도 [되돌리기] 버튼으로 자식 정의만 제거(병합본 전체 patch 인 onChange 와 분리).
     // 셸이 __editor.original.computed 에서 그 키만 빼 부모 값 재노출하는 책임을 onRevert 로 진다.
@@ -202,6 +233,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(onRevert).toHaveBeenCalledWith('isReadOnly');
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_revert_hidden_without_on_revert
+   */
   it('C7b: route-override 라도 onRevert 미전달 시 되돌리기 버튼 미노출(독립 RTL 디그레이드)', () => {
     const computed = { isReadOnly: "{{ _local.forced }}" };
     render(
@@ -219,6 +254,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.queryByTestId('g7le-computed-revert-isReadOnly')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_delete_child_key_keeps_parent
+   */
   it('C8: 부모+자식 → 자식 고유 키 삭제 시 자식 키만 patch, 부모 키 불변', () => {
     const onChange = vi.fn();
     const computed = { isReadOnly: "{{ 1 }}", filterField: "{{ 'all' }}" };
@@ -237,6 +276,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(onChange).toHaveBeenLastCalledWith({ isReadOnly: "{{ 1 }}" });
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_new_key_same_as_parent_allowed
+   */
   it('C9: 부모(키 K) 있음 → 새 키 추가 시 이름 K 입력 = 의도적 덮어쓰기 허용(거부 안 함)', () => {
     const onChange = vi.fn();
     // 직접 만들기로 부모 키와 동일 이름(filterField) 입력 → 자식 내 중복(이미 자식에 있음)만 거부.
@@ -264,6 +307,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect((screen.getByTestId('g7le-computed-custom-commit') as HTMLButtonElement).disabled).toBe(false);
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_save_payload_has_override_expr
+   */
   it('C10: 자식 저장(💾) — onChange 페이로드는 병합본(호스트가 부모 미덮은 키 strip), 덮은 키는 자식 식 포함', () => {
     const onChange = vi.fn();
     const computed = { isReadOnly: "{{ 1 }}", filterField: "{{ 'all' }}" };
@@ -284,6 +331,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(next.filterField).toBe("{{ 'all' }}");
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_base_mode_no_common_badge
+   */
   it('C11: base 편집 모드(부모 직접) → 자기 레이어 편집 시 〔공통〕배지 부재', () => {
     // base 편집 모드에서는 호스트가 출처를 'route'(자기 레이어)로 주입 → 〔공통〕배지 부재.
     // filterDefault 프리셋 매칭 식 → [편집] 버튼 노출(자기 레이어 편집 가능 검증).
@@ -303,6 +354,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.getByTestId('g7le-computed-edit-isReadOnly')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_parent_advanced_key_readonly_preview
+   */
   it('C12: 부모(고급 보존 식)+자식 → 부모 고급 키도 〔공통〕+키명+평가값(편집 폼 부재)', () => {
     // 미환원(고급) 식이 부모 유래 → 〔공통〕 배지 + 평가 미리보기, 편집 부재.
     const computed = { weird: '{{ custom.weird && tree(x) }}' };
@@ -325,6 +380,10 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     expect(screen.getByTestId('g7le-computed-preview-weird')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_three_level_nearest_layer_wins
+   */
   it('C13: 3단 상속(조부모→부모→자식) → 같은 키 다단 선언 시 최하위(자식) 유효, 상위는 〔공통〕', () => {
     // 호스트가 출처 맵을 가장 가까운 선언 레이어로 표기. 부모 유래=base, 자식 유래=route.
     const computed = { common: "{{ 'grand' }}", overridden: "{{ 'child' }}" };
@@ -341,8 +400,17 @@ describe('computed-inheritance — 부모/자식 상속 매트릭스 (C1~C14)', 
     // 상위 유래(common)=〔공통〕, 최하위 덮음(overridden)=무배지.
     expect(screen.getByTestId('g7le-computed-source-common')).toBeInTheDocument();
     expect(screen.queryByTestId('g7le-computed-source-overridden')).not.toBeInTheDocument();
+    // 최하위(자식) 유효 — 덮은 키의 미리보기는 자식 식 값, 상위 유래 키는 상위 식 값으로 평가된다.
+    const overriddenValue = screen.getByTestId('g7le-computed-preview-overridden-eval-value').textContent ?? '';
+    expect(overriddenValue).toContain('child');
+    expect(overriddenValue).not.toContain('grand');
+    expect(screen.getByTestId('g7le-computed-preview-common-eval-value').textContent).toContain('grand');
   });
 
+  /**
+   * @scenario subject=computed_inheritance
+   * @effects computed_inherit_cross_ref_preview_uses_merged
+   */
   it('C14: P6(_computed 상호 참조) 부모 키를 자식이 덮음 → 병합본 기준 미리보기(자식 식 평가)', () => {
     // 자식이 덮은 식이 병합본에 들어가 미리보기는 자식 식 기준으로 평가됨.
     const computed = { total: "{{ products.data.data.length }}" };

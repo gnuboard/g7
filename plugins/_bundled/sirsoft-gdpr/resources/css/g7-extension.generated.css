@@ -192,11 +192,6 @@
     }
   }
 
-  .gdpr-btn-sm {
-    padding-inline: calc(.25rem * 3);
-    padding-block: calc(.25rem * 1.5);
-  }
-
   .gdpr-button {
     cursor: pointer;
     justify-content: center;
@@ -233,6 +228,11 @@
   .gdpr-btn[aria-disabled=true] {
     cursor: not-allowed;
     opacity: .5;
+  }
+
+  .gdpr-btn-sm {
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 1.5);
   }
 
   .gdpr-btn-primary {
@@ -1180,6 +1180,14 @@
 
   :where(.gdpr-divider-list>:not(:last-child):is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))) {
     border-color: oklch(37.3% .034 259.733);
+  }
+
+  .gdpr-kv-list {
+    align-items: baseline;
+    column-gap: calc(.25rem * 4);
+    row-gap: calc(.25rem * 1);
+    grid-template-columns: max-content minmax(0,1fr);
+    display: grid;
   }
 
   .gdpr-kv-list-2 {

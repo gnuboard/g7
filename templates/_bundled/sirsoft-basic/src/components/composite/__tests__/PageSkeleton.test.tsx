@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PageSkeleton } from '../PageSkeleton';
+import { responsiveManager } from '@core/template-engine/ResponsiveManager';
 
 describe('PageSkeleton', () => {
     const defaultOptions = { animation: 'pulse' as const, iteration_count: 3 };
@@ -612,7 +613,7 @@ describe('PageSkeleton', () => {
 
     // @scenario case=skeleton_c29
     // @effects page_skeleton_renders_placeholders
-    it('Grid 컴포넌트의 반응형 cols props를 Tailwind 클래스로 변환해야 한다', () => {
+    it('Grid 컴포넌트의 반응형 cols props를 현재 폭의 열 클래스 하나로 변환해야 한다', () => {
         Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true });
 
         const components = [
@@ -637,11 +638,10 @@ describe('PageSkeleton', () => {
 
         const grid = container.querySelector('.grid');
         expect(grid).toBeTruthy();
-        expect(grid!.className).toContain('grid-cols-1');
         expect(grid!.className).toContain('gap-6');
-        // 반응형 접두사는 resolveResponsiveDisplay에서 처리됨
-        // sm:grid-cols-2, md:grid-cols-3은 뷰포트에 따라 해석
-        expect(grid!.className).toContain('grid-cols-4'); // lg:grid-cols-4 → 1280px에서 적용
+        // responsive prop 은 Grid 부품과 같은 폭 판정 — 1280px 은 lg 값 하나만(접두 클래스 없음)
+        expect(grid!.className.split(/\s+/).filter((t) => /^grid-cols-\d+$/.test(t))).toEqual(['grid-cols-4']);
+        expect(grid!.className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):/);
 
         Object.defineProperty(window, 'innerWidth', { value: 0, writable: true });
     });
@@ -1533,5 +1533,163 @@ describe('PageSkeleton', () => {
         // Pagination 존재
         const paginationBtns = status.querySelectorAll('.w-8.h-8');
         expect(paginationBtns.length).toBe(5);
+    });
+});
+
+/**
+ * 엔진 responsive 키 판정 — 스켈레톤도 엔진(ResponsiveManager.getMatchingKey)과 같은 키를 고른다.
+ * 프리셋(mobile·tablet·desktop·portable)과 커스텀 구간(min-max·min-·-max) 모두, 덮어쓰기는 props 얕은 병합·나머지 교체.
+ */
+describe('PageSkeleton — 엔진 responsive 키', () => {
+    const options = { animation: 'none' as const, iteration_count: 2 };
+    let savedG7Core: any;
+
+    /** 편집기 미리보기 폭처럼 useResponsive 가 주는 폭으로 그린다 */
+    const renderAt = (width: number, components: any[]) => {
+        (window as any).G7Core = {
+            ...(savedG7Core ?? {}),
+            useResponsive: () => ({ width }),
+            ResponsiveManager: responsiveManager,
+        };
+        return render(<PageSkeleton components={components} options={options} />);
+    };
+
+    beforeEach(() => {
+        savedG7Core = (window as any).G7Core;
+    });
+    afterEach(() => {
+        (window as any).G7Core = savedG7Core;
+    });
+
+    const grid = (responsive: Record<string, any>) => [{
+        name: 'Div',
+        type: 'basic',
+        props: { className: 'grid grid-cols-1 gap-4' },
+        responsive,
+        children: [{ name: 'P', type: 'basic' }, { name: 'P', type: 'basic' }],
+    }];
+
+    // @scenario case=skeleton_c55
+    // @effects page_skeleton_renders_placeholders
+    it('커스텀 열린 구간(768-)의 className 을 그 폭에서 쓴다', () => {
+        const { container } = renderAt(900, grid({ '768-': { props: { className: 'grid grid-cols-2 gap-4' } } }));
+        expect(container.querySelector('.grid-cols-2')).toBeTruthy();
+        expect(container.querySelector('.grid-cols-1')).toBeNull();
+    });
+
+    // @scenario case=skeleton_c56
+    // @effects page_skeleton_renders_placeholders
+    it('구간 밖 폭에서는 기본 className 을 쓴다', () => {
+        const { container } = renderAt(700, grid({ '768-': { props: { className: 'grid grid-cols-2 gap-4' } } }));
+        expect(container.querySelector('.grid-cols-1')).toBeTruthy();
+        expect(container.querySelector('.grid-cols-2')).toBeNull();
+    });
+
+    // @scenario case=skeleton_c57
+    // @effects page_skeleton_renders_placeholders
+    it('닫힌 구간과 -max 구간, 프리셋 mobile·portable 도 엔진과 같은 키를 고른다', () => {
+        const r = {
+            '-639': { props: { className: 'grid grid-cols-1' } },
+            '640-1023': { props: { className: 'grid grid-cols-3' } },
+            '1024-': { props: { className: 'grid grid-cols-4' } },
+        };
+        expect(renderAt(500, grid(r)).container.querySelector('.grid-cols-1')).toBeTruthy();
+        expect(renderAt(800, grid(r)).container.querySelector('.grid-cols-3')).toBeTruthy();
+        expect(renderAt(1300, grid(r)).container.querySelector('.grid-cols-4')).toBeTruthy();
+
+        // mobile 에서 숨김 → 자리 표시도 없다
+        const hiddenOnMobile = grid({ mobile: { props: { className: 'hidden' } } });
+        expect(renderAt(375, hiddenOnMobile).container.querySelectorAll('.h-3\\.5').length).toBe(0);
+        expect(renderAt(1280, hiddenOnMobile).container.querySelectorAll('.h-3\\.5').length).toBe(2);
+
+        // portable(0-1023) 과 커스텀 구간이 함께 맞으면 커스텀이 이긴다(엔진 규칙)
+        const mixed = grid({ portable: { props: { className: 'grid grid-cols-2' } }, '768-1023': { props: { className: 'grid grid-cols-3' } } });
+        expect(renderAt(900, mixed).container.querySelector('.grid-cols-3')).toBeTruthy();
+        expect(renderAt(600, mixed).container.querySelector('.grid-cols-2')).toBeTruthy();
+    });
+
+    // @scenario case=skeleton_c58
+    // @effects page_skeleton_renders_placeholders
+    it('구간이 children 을 바꾸면 그 children 으로 자리 표시를 만든다', () => {
+        const components = [{
+            name: 'Div',
+            type: 'basic',
+            props: { className: 'flex' },
+            children: [{ name: 'P', type: 'basic' }],
+            responsive: {
+                desktop: { children: [{ name: 'Input', type: 'basic' }, { name: 'Input', type: 'basic' }] },
+            },
+        }];
+        expect(renderAt(1280, components).container.querySelectorAll('.h-9').length).toBe(2);
+        expect(renderAt(500, components).container.querySelectorAll('.h-9').length).toBe(0);
+    });
+});
+
+/**
+ * Grid 부품의 responsive prop({sm, md, lg, xl, 2xl}) — 스켈레톤도 Grid 부품과 같은 폭 판정으로
+ * 접두 없는 grid-cols-N 하나만 낸다(Tailwind 접두를 내면 편집기 미리보기 폭을 따르지 못한다).
+ */
+describe('PageSkeleton — Grid responsive prop 폭 판정', () => {
+    const options = { animation: 'none' as const, iteration_count: 2 };
+    let savedG7Core: any;
+
+    const renderAt = (width: number, components: any[]) => {
+        (window as any).G7Core = {
+            ...(savedG7Core ?? {}),
+            useResponsive: () => ({ width }),
+            ResponsiveManager: responsiveManager,
+        };
+        return render(<PageSkeleton components={components} options={options} />);
+    };
+
+    beforeEach(() => {
+        savedG7Core = (window as any).G7Core;
+    });
+    afterEach(() => {
+        (window as any).G7Core = savedG7Core;
+    });
+
+    const gridNode = (props: Record<string, any>) => [{
+        name: 'Grid',
+        type: 'layout',
+        props,
+        children: [{ name: 'P', type: 'basic' }, { name: 'P', type: 'basic' }],
+    }];
+
+    /** 스켈레톤 안의 Grid 자리 div 의 grid-cols-N 토큰 */
+    const colsAt = (width: number, props: Record<string, any>): string[] => {
+        const { container } = renderAt(width, gridNode(props));
+        const el = container.querySelector('[role="status"] > .grid') as HTMLElement | null;
+        expect(el).toBeTruthy();
+        return el!.className.split(/\s+/).filter((t) => /^grid-cols-\d+$/.test(t));
+    };
+
+    // @scenario case=skeleton_c59
+    // @effects page_skeleton_renders_placeholders
+    it.each([
+        [639, 'grid-cols-1'],
+        [640, 'grid-cols-2'],
+        [767, 'grid-cols-2'],
+        [768, 'grid-cols-3'],
+        [1023, 'grid-cols-3'],
+        [1024, 'grid-cols-4'],
+        [1279, 'grid-cols-4'],
+        [1280, 'grid-cols-1'],
+        [1535, 'grid-cols-1'],
+        [1536, 'grid-cols-2'],
+    ])('폭 %ipx 에서 %s 하나만 낸다', (width, expected) => {
+        // 스켈레톤은 5열 이상을 절반으로 줄여 그리므로 구간 구분은 4열 이하 값으로 한다
+        expect(colsAt(width, { cols: 1, responsive: { sm: 2, md: 3, lg: 4, xl: 1, '2xl': 2 } })).toEqual([expected]);
+    });
+
+    // @scenario case=skeleton_c60
+    // @effects page_skeleton_renders_placeholders
+    it('지정하지 않은 구간은 아래 구간 값을 이어받고 접두 클래스를 내지 않는다', () => {
+        expect(colsAt(767, { cols: 2, responsive: { md: 3 } })).toEqual(['grid-cols-2']);
+        expect(colsAt(1600, { cols: 2, responsive: { md: 3 } })).toEqual(['grid-cols-3']);
+
+        const { container } = renderAt(1600, gridNode({ cols: 1, responsive: { sm: 2, md: 3, lg: 4, xl: 5, '2xl': 6 }, gap: 4 }));
+        const el = container.querySelector('[role="status"] > .grid') as HTMLElement;
+        expect(el.className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):/);
     });
 });

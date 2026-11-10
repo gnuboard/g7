@@ -633,7 +633,7 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 | 무리 | 예 | 하는 일 |
 |---|---|---|
 | 상품 편집 | `updateProductField` · `toggleOption` · `loadExpandedOptions` | 옵션이 많은 상품 폼의 부분 상태 갱신 |
-| 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산. 원화 표기(`formatCurrency`)는 서버 `messages.currency.prefix/suffix.KRW` 와 같은 구성의 `currency.krw_prefix`·`krw_suffix` 번역을 따른다 — 문구에 금액과 단위를 붙인 문형을 두지 않는다 |
+| 통화 | `calculateCurrencyPrices` · `initPreferredCurrency` | 표시 통화 전환과 통화별 가격 재계산. `initPreferredCurrency` 의 화면 언어 기반 통화 추정은 게스트용이라 관리자 인증 문맥에서는 돌리지 않는다(관리자 헤더는 브라우저 저장값, 없으면 기본 통화) — 관리자 화면 언어를 바꿔도 표시 통화가 따라 바뀌지 않는다. 원화 표기(`formatCurrency`)는 서버 `messages.currency.prefix/suffix.KRW` 와 같은 구성의 `currency.krw_prefix`·`krw_suffix` 번역을 따른다 — 문구에 금액과 단위를 붙인 문형을 두지 않는다 |
 | 취소·환불 | `updateCancelQuantity` · `estimateRefundAmount` · `changeRefundPriority` | 옵션 단위 취소 수량 조정과 예상 환불액 조회 (관리자·구매자 두 벌) |
 | 배송정책·주소 | `testShippingApi` · `updateExtraFeeField` · `changeShippingAddress` | 외부 배송비 API 시험 호출과 주소 변경 |
 | 클레임 | `claimHandlers.ts` · `claimListHandlers.ts` · `claimApplyHandlers.ts` · `claimImageHandlers.ts` 의 핸들러 | 관리자 일괄 전이·완료 모달, **신청서 단위 전이**(`executeClaimStatusTransition`), 환불신청서 수동 접수(`storeClaimRefundRequest`), 운영자 대리 첨부(업로드는 `composite/FileUploader` 가 직접 하고 핸들러는 `refreshClaimAttachments` · `clearClaimImages` 로 목록만 되읽는다), 구매자 신청서 작성(교환 상품 선택·실시간 요약)·첨부 업로드 — 템플릿 화면도 이 핸들러를 쓴다 |

@@ -35,13 +35,13 @@
         </div>
       </div>
     </div>
-    <div data-ref="preset_footer" class="ecommerce:mt-4">
+    <footer>
       <button data-ref="preset_save_new_button" type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:w-full ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
         <on type="click">
           <open-modal target="modal_preset_save"/>
         </on>
         $t:sirsoft-ecommerce.admin.product.modal.preset_manage.add_new
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -22,6 +22,7 @@ use App\Models\Template;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery;
 use Mockery\MockInterface;
@@ -317,8 +318,13 @@ class ExtensionLifecycleNonInteractiveConfirmTest extends TestCase
 
         $repository = Mockery::mock(TemplateRepositoryInterface::class);
         $repository->shouldReceive('findByIdentifier')->andReturn(
-            (new Template)->forceFill(['identifier' => self::IDENTIFIER, 'status' => 'active', 'version' => '1.0.0'])
+            (new Template)->forceFill(['identifier' => self::IDENTIFIER, 'type' => 'admin', 'status' => 'active', 'version' => '1.0.0'])
         );
+        // 제거 명령의 「유형의 마지막 활성 템플릿」 거절(TemplateLastActiveGuard)은 이 시험의 관심 밖이다 — 같은 유형에
+        // 다른 활성 템플릿이 있는 것으로 두어 확인 질문 단계까지 가게 한다
+        $repository->shouldReceive('getActiveByType')->andReturn(new EloquentCollection([
+            (new Template)->forceFill(['identifier' => 'other-active-template', 'type' => 'admin', 'status' => 'active']),
+        ]));
         $this->app->instance(TemplateRepositoryInterface::class, $repository);
 
         return $manager;

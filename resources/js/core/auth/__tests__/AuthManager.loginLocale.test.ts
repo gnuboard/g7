@@ -24,7 +24,7 @@ describe('로그인 직후 회원 언어 처리', () => {
    * @param language 회원 언어
    */
   function mockLogin(language: string): void {
-    const user: AuthUser = { id: 1, name: 'QA', email: 'qa@example.com', language } as AuthUser;
+    const user: AuthUser = { id: 1, uuid: 'qa-user-uuid', name: 'QA', email: 'qa@example.com', language };
     (ApiClientModule.getApiClient as any).mockReturnValue({
       getToken: vi.fn(),
       setToken: vi.fn(),

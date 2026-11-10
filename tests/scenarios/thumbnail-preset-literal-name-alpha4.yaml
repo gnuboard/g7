@@ -1,0 +1,29 @@
+# 썸네일 규격 이름 — 파이프 리터럴 낱말(true, false, null, undefined) 예약
+# #869 이월 0 회차(α4): 규격 이름이 이 네 낱말이면 레이아웃 thumb('true') 가 규격 대신 원본을 내던 문제의 회귀 시험을 소유한다.
+# 축 layer 는 시험이 재는 층이다(파이프 해석, 레지스트리, 저장 요청).
+feature: thumbnail_preset_literal_name_alpha4
+
+description: |
+  파이프 인자 해석(사람 화면 PipeRegistry.ts parseArgValue, 봇 화면 App\Seo\PipeRegistry)은 따옴표를 벗긴 뒤 true, false, null,
+  undefined 를 불리언, null, undefined 로 바꾼다. 그래서 운영자 규격 이름이 이 낱말이면 thumb('true') 가 size 를 붙이지 못해 원본을,
+  thumb('undefined') 는 기본 sm 을 냈다. 코어는 이 네 이름을 규격 이름으로 받지 않는다(ThumbnailPresetRegistry::LITERAL_NAMES,
+  저장 422, 저장 목록에 남은 행은 레지스트리가 싣지 않음). 파이프 해석은 그대로 두고, 그 동작이 예약의 근거임을 시험으로 잠근다.
+
+axes:
+  layer: [pipe_parse, registry, save_request]
+
+effects:
+  - pipe_quoted_literal_word_loses_string_type        # 따옴표로 감싼 네 낱말이 문자열이 아닌 값으로 넘어간다(엔진 현재 동작)
+  - literal_word_preset_name_never_reaches_size_query # 그래서 thumb 가 그 이름을 size 로 붙이지 못한다
+  - literal_word_preset_name_rejected                 # 네 낱말은 운영자 규격 이름 검사와 저장 검증에서 거절된다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/thumbPipeLiteralPresetName.test.ts
+  - tests/Unit/Thumbnails/ThumbnailPresetRegistryTest.php
+  - tests/Feature/Settings/ThumbnailSettingsSaveTest.php
+
+validation:
+  note: |
+    fail-first: ThumbnailPresetRegistryTest::test_pipe_literal_words_are_not_custom_names 1 오류(상수 없음),
+    ThumbnailSettingsSaveTest::pipe_literal_word_preset_name_is_rejected 4 실패(200 ≠ 422) → 수정 뒤 5 통과.
+    pipe_parse 두 효과는 엔진 현재 동작 기록이라 처음부터 통과한다.

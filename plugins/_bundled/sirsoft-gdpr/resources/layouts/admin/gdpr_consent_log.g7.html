@@ -79,7 +79,7 @@
     <div data-ref="gdpr_consent_log_content" class="gdpr-admin-page-content">
       <div data-ref="page_header" class="gdpr-flex-between gdpr:mb-6">
         <div>
-          <h1 class="gdpr-page-title">$t:sirsoft-gdpr.admin.consent_log.title</h1>
+          <h1 class="gdpr:text-xl gdpr:font-semibold gdpr:text-gray-900 gdpr:dark:text-white"><responsive on="640-" class="gdpr:text-2xl gdpr:font-semibold gdpr:text-gray-900 gdpr:dark:text-white"/>$t:sirsoft-gdpr.admin.consent_log.title</h1>
           <p class="gdpr-text-label-subtle gdpr:mt-1">$t:sirsoft-gdpr.admin.consent_log.description</p>
         </div>
         <div class="gdpr-flex-center gdpr:gap-2">
@@ -125,8 +125,11 @@
           </div>
         </div>
         <div data-ref="filter_grid" class="gdpr-filter-grid">
-          <div data-ref="consent_key_filter" class="gdpr-filter-row">
-            <span class="gdpr-filter-label gdpr:w-32">$t:sirsoft-gdpr.admin.consent_log.filter.consent_key_label</span>
+          <div data-ref="consent_key_filter" class="gdpr:flex gdpr:flex-col gdpr:gap-2">
+            <responsive on="768-" class="gdpr:flex gdpr:flex-row gdpr:gap-2 gdpr:items-center"/>
+            <span class="gdpr:text-sm gdpr:text-gray-600 gdpr:block gdpr:mb-2 gdpr:dark:text-gray-400 gdpr:w-32">
+              <responsive on="768-" class="gdpr:text-sm gdpr:text-gray-600 gdpr:dark:text-gray-400 gdpr:mb-0 gdpr:shrink-0 gdpr:flex gdpr:items-center gdpr:w-32"/>
+$t:sirsoft-gdpr.admin.consent_log.filter.consent_key_label</span>
             <div class="gdpr-flex-center gdpr:flex-wrap gdpr:gap-2">
               <label class="gdpr-inline-clickable">
                 <input type="checkbox" class="gdpr-checkbox" checked="{{!_local.filter.consentKeys || _local.filter.consentKeys.length === 0}}">
@@ -190,8 +193,11 @@
               </label>
             </div>
           </div>
-          <div data-ref="action_filter" class="gdpr-filter-row">
-            <span class="gdpr-filter-label gdpr:w-32">$t:sirsoft-gdpr.admin.consent_log.filter.action_label</span>
+          <div data-ref="action_filter" class="gdpr:flex gdpr:flex-col gdpr:gap-2">
+            <responsive on="768-" class="gdpr:flex gdpr:flex-row gdpr:gap-2 gdpr:items-center"/>
+            <span class="gdpr:text-sm gdpr:text-gray-600 gdpr:block gdpr:mb-2 gdpr:dark:text-gray-400 gdpr:w-32">
+              <responsive on="768-" class="gdpr:text-sm gdpr:text-gray-600 gdpr:dark:text-gray-400 gdpr:mb-0 gdpr:shrink-0 gdpr:flex gdpr:items-center gdpr:w-32"/>
+$t:sirsoft-gdpr.admin.consent_log.filter.action_label</span>
             <div class="gdpr-flex-center gdpr:flex-wrap gdpr:gap-2">
               <label class="gdpr-inline-clickable">
                 <input type="checkbox" class="gdpr-checkbox" checked="{{!_local.filter.actions || _local.filter.actions.length === 0}}">
@@ -244,8 +250,11 @@
               </label>
             </div>
           </div>
-          <div data-ref="source_filter" class="gdpr-filter-row">
-            <span class="gdpr-filter-label gdpr:w-32">$t:sirsoft-gdpr.admin.consent_log.filter.source_label</span>
+          <div data-ref="source_filter" class="gdpr:flex gdpr:flex-col gdpr:gap-2">
+            <responsive on="768-" class="gdpr:flex gdpr:flex-row gdpr:gap-2 gdpr:items-center"/>
+            <span class="gdpr:text-sm gdpr:text-gray-600 gdpr:block gdpr:mb-2 gdpr:dark:text-gray-400 gdpr:w-32">
+              <responsive on="768-" class="gdpr:text-sm gdpr:text-gray-600 gdpr:dark:text-gray-400 gdpr:mb-0 gdpr:shrink-0 gdpr:flex gdpr:items-center gdpr:w-32"/>
+$t:sirsoft-gdpr.admin.consent_log.filter.source_label</span>
             <div class="gdpr-flex-center gdpr:flex-wrap gdpr:gap-2">
               <label class="gdpr-inline-clickable">
                 <input type="checkbox" class="gdpr-checkbox" checked="{{!_local.filter.sources || _local.filter.sources.length === 0}}">
@@ -347,7 +356,8 @@
         <blur-until-loaded sources="gdprConsentLog"/>
         <expand>
           <div class="gdpr:p-4 gdpr:bg-gray-50 gdpr:dark:bg-gray-900 gdpr:space-y-3">
-            <div class="gdpr-grid-2col-responsive">
+            <div class="gdpr:grid gdpr:grid-cols-1 gdpr:gap-4">
+              <responsive on="768-" class="gdpr:grid gdpr:grid-cols-2 gdpr:gap-4"/>
               <div>
                 <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.session_id_label</span>
                 <span class="gdpr:block gdpr:text-xs gdpr:font-mono gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:break-all gdpr-break-all gdpr:mt-0.5">{{row.session_id ?? '-'}}</span>
@@ -356,7 +366,8 @@
                 <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.user_agent_label</span>
                 <span class="gdpr:block gdpr:text-xs gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:break-all gdpr-break-all gdpr:mt-0.5">{{row.user_agent ?? '-'}}</span>
               </div>
-              <div data-if="{{(row.categories_snapshot?.length ?? 0) > 0}}" class="gdpr:md:col-span-2">
+              <div data-if="{{(row.categories_snapshot?.length ?? 0) > 0}}">
+                <responsive on="768-" class="gdpr:col-span-2"/>
                 <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide gdpr:mb-1">$t:sirsoft-gdpr.admin.consent_log.detail.categories_label</span>
                 <span class="gdpr:block gdpr-text-tertiary gdpr:mb-2">$t:sirsoft-gdpr.admin.consent_log.detail.categories_hint</span>
                 <div class="gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded gdpr:divide-y gdpr:divide-gray-200 gdpr:dark:divide-gray-700">

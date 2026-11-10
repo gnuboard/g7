@@ -94,7 +94,7 @@ describe('IdentityGuardInterceptor', () => {
     // @scenario host_header=canonical, sink=front_identity_retry
     // @effects identity_guard_existing_flow_preserved
     it('replays return_request and appends verification_token query when verified', async () => {
-      const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('{}', { status: 200 }));
       vi.stubGlobal('fetch', fetchMock);
 
       IdentityGuardInterceptor.setLauncher(async () => ({ status: 'verified', token: 'tok-abc-123' }));
@@ -111,7 +111,7 @@ describe('IdentityGuardInterceptor', () => {
     // @scenario host_header=canonical, sink=front_identity_retry
     // @effects identity_guard_existing_flow_preserved
     it('preserves existing query string when appending verification_token', async () => {
-      const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('{}', { status: 200 }));
       vi.stubGlobal('fetch', fetchMock);
 
       IdentityGuardInterceptor.setLauncher(async () => ({ status: 'verified', token: 'tok-xyz' }));
@@ -134,7 +134,7 @@ describe('IdentityGuardInterceptor', () => {
     // @scenario host_header=canonical, sink=front_identity_retry
     // @effects identity_guard_existing_flow_preserved
     it('replays request preserving original body and headers when verified', async () => {
-      const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('{}', { status: 200 }));
       vi.stubGlobal('fetch', fetchMock);
 
       IdentityGuardInterceptor.setLauncher(async () => ({ status: 'verified', token: 'tok-abc-123' }));

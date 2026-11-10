@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-11-05
+
+### Added
+
+- Hello 모듈 0.3.0 의 확장 썸네일 규격 이름(「Hello 모듈 샘플」, 환경설정 업로드 탭 「썸네일 규격」 표)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 식별자가 그대로 보입니다.
+
 ## [1.0.3] - 2026-11-01
 
 ### Added

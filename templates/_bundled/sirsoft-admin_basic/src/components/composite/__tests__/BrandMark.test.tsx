@@ -4,13 +4,9 @@
  * @description 결제 브랜드 마크(색 배지 / 인라인 SVG) 데이터 기반 렌더 + SVG 화이트리스트 sanitize 검증.
  * 이커머스 관리자 결제수단 목록이 이 컴포넌트로 배지를 그린다(#639 — PG 플러그인 주입 스크립트가 DOM 을 고치던 방식을 대체).
  *
- * @effects badge_renders_text_and_color, svg_renders_inline_logo, svg_dangerous_content_sanitized, none_form_falls_back_to_icon
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
  */
-// @scenario mark_form=badge, requires_ios=false, device=non_ios
-// @scenario mark_form=svg, requires_ios=false, device=non_ios
-// @scenario mark_form=none, requires_ios=false, device=non_ios
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { BrandMark } from '../BrandMark';

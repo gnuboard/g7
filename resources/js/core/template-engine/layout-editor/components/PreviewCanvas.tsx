@@ -17,7 +17,7 @@
  * @since engine-v1.50.0
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import DynamicRenderer, { type ComponentDefinition } from '../../DynamicRenderer';
 import { ResponsiveProvider } from '../../ResponsiveContext';
 import { DataBindingEngine } from '../../DataBindingEngine';
@@ -30,7 +30,7 @@ import { useLayoutDocumentContext } from '../LayoutDocumentContext';
 import { EditorCanvasOverlay } from './EditorCanvasOverlay';
 import type { ComponentManifest } from './ComponentPalette';
 import type { NestingSpec, ComponentPaletteSpec, EditorSpec } from '../spec/specTypes';
-import { useDevicePreview } from '../hooks/useDevicePreview';
+import { useDevicePreview, resolveNextAvailableWidth } from '../hooks/useDevicePreview';
 import { useSampleData } from '../hooks/useSampleData';
 import { useEditorTemplateAssets } from '../hooks/useEditorTemplateAssets';
 import { useTranslation } from '../../TranslationContext';
@@ -174,16 +174,57 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     onNavigateToDestination,
     onSessionAddedPathsChange,
   } = props;
-  const { state } = useLayoutEditor();
+  const { state, dispatch } = useLayoutEditor();
 
   // Provider 가 있으면 그 인스턴스, 없으면 자체 hook 호출(레거시 호환 — Chrome 미연결 시).
   const docCtxValue = useLayoutDocumentContext();
-  const standalone = useLayoutDocument();
+  // Provider 가 있으면 사본 훅은 요청하지 않는다 — 같은 레이아웃을 두 번 받던 중복(편집기 첫 적재 지연, #869).
+  const standalone = useLayoutDocument({ enabled: docCtxValue === null });
   const { document, isLoading, error } = docCtxValue ?? standalone;
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [frameEl, setFrameEl] = useState<HTMLDivElement | null>(null);
-  const { deviceWidth, scale, colorScheme } = useDevicePreview();
+  const { deviceWidth, scale, scaledWidth, colorScheme, actualSize } = useDevicePreview();
+  // 캔버스 가용 폭 측정 — 미리보기 배율(맞춤 줌)의 입력. 편집기 상태에 넣어 캔버스·오버레이
+  // 리사이즈 환산·줌 표시가 같은 배율을 쓴다. 조기 반환(로딩/빈 상태)보다 앞에 둬 훅 순서를 고정한다.
+  const [canvasEl, setCanvasEl] = useState<HTMLDivElement | null>(null);
+  const availableWidthRef = useRef<number | null>(state.previewAvailableWidth ?? null);
+  availableWidthRef.current = state.previewAvailableWidth ?? null;
+  // 실제 크기 동안은 캔버스 안쪽 여백이 넓어진다(ACTUAL_SIZE_CANVAS_PADDING). 그 여백으로 잰 폭은 맞춤 배율의
+  // 입력이 아니므로 재지 않는다 — 재 두면 실제 크기를 끈 첫 렌더가 좁은 값으로 한 프레임 작아진다.
+  const actualSizeRef = useRef(actualSize);
+  actualSizeRef.current = actualSize;
+  useLayoutEffect(() => {
+    if (!canvasEl) return;
+    const measure = (): void => {
+      if (actualSizeRef.current) return;
+      const prev = availableWidthRef.current;
+      const next = resolveNextAvailableWidth(prev, measureCanvasAvailableWidth(canvasEl));
+      if (next === prev) return;
+      // 다음 측정이 같은 프레임 안에 와도 방금 넣은 값을 기준으로 판정한다.
+      availableWidthRef.current = next;
+      dispatch({ type: 'SET_PREVIEW_AVAILABLE_WIDTH', width: next });
+    };
+    // 첫 측정은 그리기 전에 동기로 — 측정 전 배율(줌 그대로)로 넘친 한 프레임이 보이지 않게 한다.
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    // 관찰 콜백 안에서 바로 dispatch 하면 배율 변화가 캔버스 높이를 바꿔 같은 프레임에 관찰이 다시
+    // 울린다(ResizeObserver loop 경고). 다음 프레임으로 미뤄 묶는다. 값이 같으면 reducer 가 상태를
+    // 바꾸지 않아 리렌더도 없다.
+    let rafId: number | null = null;
+    const observer = new ResizeObserver(() => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        measure();
+      });
+    });
+    observer.observe(canvasEl);
+    return () => {
+      observer.disconnect();
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, [canvasEl, dispatch]);
   // 병합 editor-spec 의 sampleData(byDataSourceId / bySource / byEndpointPattern)를
   // 샘플 프로바이더에 연결한다. Chrome 이 loadEditorSpecBundle 결과를 `spec` prop 으로
   // 주입하므로 이를 그대로 전달 — 미전달(standalone/테스트)이면 undefined 로 폴백(코어
@@ -1118,17 +1159,28 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     <div
       className="g7le-preview-canvas"
       data-testid="g7le-preview-canvas"
+      ref={setCanvasEl}
       style={{
         // 캔버스 패널 자체는 스크롤하지 않는다 — 레이아웃(frame)이 길면 패널이 콘텐츠
         // 높이만큼 늘어나고, 세로 스크롤은 편집기 셸(문서 흐름) → 브라우저 창에서 한 번만
         // 일어난다. 종전 `flex:1 + overflow:auto` 는 패널을 뷰포트 잔여 높이에 가두어
         // 캔버스 영역에 별도 스크롤바를 만들었다("별도 스크롤 없이 전체 화면을
         // 한번에 보며 편집"). overflow:visible 로 두어 frame 전체가 한 흐름에 노출된다.
-        overflow: 'visible',
+        // 실제 크기(1:1) 보기만 예외 — 넘친 가로 폭을 캔버스 안에서만 스크롤한다(툴바·트리는 제자리,
+        // 설계 확정 2026-11-08). 세로는 내용 높이만큼 늘어 캔버스 세로 스크롤바는 생기지 않는다.
+        ...(actualSize ? { overflowX: 'auto' as const, overflowY: 'hidden' as const } : { overflow: 'visible' as const }),
         background: '#f1f5f9',
-        padding: 24,
+        // 실제 크기에서는 캔버스가 가로 스크롤 상자(overflow-x:auto)라 세로도 자기 상자 밖을 잘라낸다.
+        // 선택 노드 밖으로 나가는 어포던스(잠금 배지 위 50px, 아래 56px, 삽입 단추·ⓘ 30px)가 잘리지 않도록
+        // 여백을 넓힌다(브라우저 실측: 맨 위 Header 의 「위에 넣기 +」 6px, 「공통 레이아웃 편집」 2px 잘림).
+        padding: actualSize ? ACTUAL_SIZE_CANVAS_PADDING : PREVIEW_CANVAS_PADDING,
+        // 편집기 본문 grid 열이 `minmax(0, 1fr)` 라 캔버스 폭은 내용(미리보기)과 무관하게 남은 폭이다.
+        // 그 폭을 재서 배율을 맞추므로 내용이 캔버스 폭을 밀어 올리면 안 된다(측정이 갇힌다).
+        // 실제 크기 보기에서도 캔버스 폭은 그대로 두고 안에서 가로 스크롤한다(측정값도 그대로 유효).
+        minWidth: 0,
         display: 'flex',
-        justifyContent: 'center',
+        // 실제 크기로 넘칠 때 가운데 정렬이면 왼쪽 넘침이 스크롤로 닿지 않는다 — 시작 정렬로 둔다.
+        justifyContent: actualSize ? 'flex-start' : 'center',
         alignItems: 'flex-start',
         // 콘텐츠가 짧아도 패널이 헤더 아래 가시영역을 가득 채우도록 최소 높이 = 뷰포트에서
         // sticky 헤더를 뺀 값. frame 이 더 길면 자연 확장(브라우저 스크롤).
@@ -1136,20 +1188,103 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
         boxSizing: 'border-box',
       }}
     >
-      {/* frame 래퍼 — frame(overflow:hidden) 과 오버레이 레이어(overflow:visible)를
-          같은 좌표 원점/transform 아래 형제로 둔다. 오버레이가 frame 안에 있으면
-          frame 의 hidden 클리핑으로 박스 옆 어포던스 버튼(작은 요소 outside 배치)이
- 잘리므로, 오버레이를 frame 밖 형제 레이어로 분리한다.
-          래퍼에 transform/width 를 두면 frame·오버레이가 동일 위치·스케일을 공유한다. */}
-      <div
-        className="g7le-preview-frame-wrapper"
-        data-testid="g7le-preview-frame-wrapper"
-        style={{
-          position: 'relative',
-          width: deviceWidth,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top center',
-        }}
+      {/* 미리보기 무대 — 축소 반영 폭(deviceWidth * scale)을 레이아웃 폭으로 잡는다(PreviewStage 주석).
+          그 안의 frame 래퍼는 deviceWidth 그대로 두고 transform 으로만 줄인다. */}
+      <PreviewStage
+        deviceWidth={deviceWidth}
+        scale={scale}
+        scaledWidth={scaledWidth}
+        overlay={
+          <>
+            {/* EditorCanvasOverlay — frame 래퍼의 형제 레이어(배율 transform 밖). 오버레이 좌표는
+                measureOverlay·boxIntersectsFrame·dropSlots 모두 getBoundingClientRect 기준 화면 좌표
+                (frame 화면 좌상단 기준)라, 레이어가 transform 밖에 있어야 축소 상태에서도 박스가 노드에
+                맞는다(종전에는 레이어가 래퍼 안에 있어 축소 시 배율을 두 번 맞아 어긋났다).
+                무대 좌상단 = frame 화면 좌상단이다. overflow:visible 이라 박스 옆 outside 어포던스가 잘리지 않는다. */}
+            <div
+              className="g7le-overlay-layer"
+              data-testid="g7le-overlay-layer"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: scaledWidth,
+                height: frameEl ? frameEl.getBoundingClientRect().height : '100%',
+                overflow: 'visible',
+                pointerEvents: 'none',
+              }}
+            >
+              <EditorCanvasOverlay
+                frameEl={frameEl}
+                manifest={manifest}
+                nesting={nesting}
+                componentPalette={componentPalette}
+                spec={spec}
+                permissionCandidates={permissionCandidates}
+                resolveRouteMatch={resolveRouteMatch}
+                onNavigateToDestination={onNavigateToDestination}
+                onSessionAddedPathsChange={onSessionAddedPathsChange}
+              />
+            </div>
+            {/* 확장 편집 폴백 오버레이. frame 을 언마운트하지 않고 위를 불투명하게
+                덮어 안내를 띄운다 — frame DOM 이 유지되어야 렌더 검증(extensionRenderVisible)이
+                안정되고 글쓰기↔안내 무한 깜빡임이 발생하지 않는다. 검증 중
+                (extensionRenderVisible=null)에도 'gated-no-state' 로 덮어 호스트 라이브 노출을 가린다.
+                오버레이 레이어보다 뒤에 둬(z-index 50) 핸들·박스까지 덮는다. 무대 기준(화면 좌표)이다. */}
+            {extensionFallbackReason !== null && (
+              <div
+                className="g7le-preview-canvas--extension-fallback"
+                data-testid="g7le-preview-extension-fallback"
+                data-fallback-reason={extensionFallbackReason}
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  right: 0,
+                  // 오버레이는 frame 전체 높이를 덮어 호스트 라이브 노출을 가린다(긴 폼도 전부 가림).
+                  bottom: 0,
+                  minHeight: frameEl ? frameEl.getBoundingClientRect().height : 400,
+                  background: '#f1f5f9',
+                  display: 'flex',
+                  // 안내 문구는 frame 중앙(아래쪽)이 아니라 **뷰포트 가시영역 상단 기준 중앙**에
+                  // 둔다 — 긴 폼이면 frame 높이가 화면보다 길어 alignItems:center 가 문구를 화면
+                  // 밖 아래로 밀어낸다. align:flex-start + sticky 카드로 가시영역 중앙 유지.
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  padding: 24,
+                  boxSizing: 'border-box',
+                  pointerEvents: 'auto',
+                  zIndex: 50,
+                }}
+              >
+                <div
+                  className="g7le-extension-fallback-card"
+                  style={{
+                    maxWidth: 440,
+                    textAlign: 'center',
+                    // 긴 frame 에서도 안내가 화면 가시영역 중앙에 머물도록 sticky. 헤더 높이만큼
+                    // 내려 가시영역 세로 중앙 부근에 위치(40vh 여백). frame 이 짧으면 그대로 상단.
+                    position: 'sticky',
+                    top: 'calc(40vh - var(--g7le-header-h, 0px))',
+                  }}
+                >
+                  <p className="g7le-extension-fallback-title" style={{ fontWeight: 600, marginBottom: 8, color: '#0f172a' }}>
+                    {extensionFallbackReason === 'no-injection'
+                      ? t('layout_editor.preview.extension_no_injection_title')
+                      : t('layout_editor.preview.extension_gated_title')}
+                  </p>
+                  <p className="g7le-extension-fallback-desc" style={{ color: '#475569', lineHeight: 1.6 }}>
+                    {extensionFallbackReason === 'no-injection'
+                      ? t('layout_editor.preview.extension_no_injection_desc')
+                      : state.availableStates.length > 1
+                        ? t('layout_editor.preview.extension_gated_desc_with_states')
+                        : t('layout_editor.preview.extension_gated_desc')}
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        }
       >
         <div
           // 프리뷰 색상 테마 — dark 면 프레임에 `.g7le-preview-dark` 마커 부여.
@@ -1239,91 +1374,159 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
             ))}
           </ResponsiveProvider>
         </div>
-        {/* EditorCanvasOverlay — frame 의 형제 레이어. frame 과 동일 좌표 원점(래퍼 기준
-            inset:0)·동일 width 에 절대배치되어 measureOverlay(frame 기준 상대좌표)와
-            정렬이 일치한다. overflow:visible 이라 박스 옆 outside 어포던스가 잘리지 않는다. */}
-        <div
-          className="g7le-overlay-layer"
-          data-testid="g7le-overlay-layer"
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width: deviceWidth,
-            height: frameEl ? frameEl.getBoundingClientRect().height / (scale || 1) : '100%',
-            overflow: 'visible',
-            pointerEvents: 'none',
-          }}
-        >
-          <EditorCanvasOverlay
-            frameEl={frameEl}
-            manifest={manifest}
-            nesting={nesting}
-            componentPalette={componentPalette}
-            spec={spec}
-            permissionCandidates={permissionCandidates}
-            resolveRouteMatch={resolveRouteMatch}
-            onNavigateToDestination={onNavigateToDestination}
-            onSessionAddedPathsChange={onSessionAddedPathsChange}
-          />
-        </div>
-        {/* 확장 편집 폴백 오버레이. frame 을 언마운트하지 않고 위를 불투명하게
-            덮어 안내를 띄운다 — frame DOM 이 유지되어야 렌더 검증(extensionRenderVisible)이
- 안정되고 글쓰기↔안내 무한 깜빡임이 발생하지 않는다. 검증 중
-            (extensionRenderVisible=null)에도 'gated-no-state' 로 덮어 호스트 라이브 노출을 가린다. */}
-        {extensionFallbackReason !== null && (
-          <div
-            className="g7le-preview-canvas--extension-fallback"
-            data-testid="g7le-preview-extension-fallback"
-            data-fallback-reason={extensionFallbackReason}
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              right: 0,
-              // 오버레이는 frame 전체 높이를 덮어 호스트 라이브 노출을 가린다(긴 폼도 전부 가림).
-              bottom: 0,
-              minHeight: frameEl ? frameEl.getBoundingClientRect().height / (scale || 1) : 400,
-              background: '#f1f5f9',
-              display: 'flex',
-              // 안내 문구는 frame 중앙(아래쪽)이 아니라 **뷰포트 가시영역 상단 기준 중앙**에
-              // 둔다 — 긴 폼이면 frame 높이가 화면보다 길어 alignItems:center 가 문구를 화면
-              // 밖 아래로 밀어낸다. align:flex-start + sticky 카드로 가시영역 중앙 유지.
-              alignItems: 'flex-start',
-              justifyContent: 'center',
-              padding: 24,
-              boxSizing: 'border-box',
-              pointerEvents: 'auto',
-              zIndex: 50,
-            }}
-          >
-            <div
-              className="g7le-extension-fallback-card"
-              style={{
-                maxWidth: 440,
-                textAlign: 'center',
-                // 긴 frame 에서도 안내가 화면 가시영역 중앙에 머물도록 sticky. 헤더 높이만큼
-                // 내려 가시영역 세로 중앙 부근에 위치(40vh 여백). frame 이 짧으면 그대로 상단.
-                position: 'sticky',
-                top: 'calc(40vh - var(--g7le-header-h, 0px))',
-              }}
-            >
-              <p className="g7le-extension-fallback-title" style={{ fontWeight: 600, marginBottom: 8, color: '#0f172a' }}>
-                {extensionFallbackReason === 'no-injection'
-                  ? t('layout_editor.preview.extension_no_injection_title')
-                  : t('layout_editor.preview.extension_gated_title')}
-              </p>
-              <p className="g7le-extension-fallback-desc" style={{ color: '#475569', lineHeight: 1.6 }}>
-                {extensionFallbackReason === 'no-injection'
-                  ? t('layout_editor.preview.extension_no_injection_desc')
-                  : state.availableStates.length > 1
-                    ? t('layout_editor.preview.extension_gated_desc_with_states')
-                    : t('layout_editor.preview.extension_gated_desc')}
-              </p>
-            </div>
-          </div>
-        )}
+      </PreviewStage>
+    </div>
+  );
+}
+
+/** 캔버스 안쪽 여백(px) — 가용 폭 계산에서 뺀다. */
+export const PREVIEW_CANVAS_PADDING = 24;
+
+/**
+ * 실제 크기(1:1) 보기의 캔버스 안쪽 여백(px). 캔버스가 가로 스크롤 상자가 되어 바깥을 잘라내므로, 선택 노드
+ * 밖으로 가장 멀리 나가는 어포던스(ElementOverlay 아래 잠금 배지 `bottom: -56`, 위 `top: -50`)보다 넓게 둔다.
+ */
+export const ACTUAL_SIZE_CANVAS_PADDING = 64;
+
+/**
+ * 캔버스 요소가 미리보기에 내줄 수 있는 가로 폭(px)을 잰다.
+ *
+ * clientWidth 에서 좌우 안쪽 여백을 빼고 내림한다(서브픽셀 반올림으로 1px 넘쳐 가로 스크롤이
+ * 생기지 않게). 레이아웃이 없는 환경(jsdom, clientWidth 0)이나 폭이 0 이하이면 null — 배율은
+ * 줌을 그대로 쓴다.
+ *
+ * @param el 캔버스 요소(`g7le-preview-canvas`)
+ * @returns 가용 폭(px) 또는 null
+ */
+export function measureCanvasAvailableWidth(el: HTMLElement): number | null {
+  let padLeft = PREVIEW_CANVAS_PADDING;
+  let padRight = PREVIEW_CANVAS_PADDING;
+  try {
+    const cs = window.getComputedStyle(el);
+    const l = parseFloat(cs.paddingLeft);
+    const r = parseFloat(cs.paddingRight);
+    if (Number.isFinite(l)) padLeft = l;
+    if (Number.isFinite(r)) padRight = r;
+  } catch {
+    // 계산 스타일을 못 읽으면 선언값을 쓴다.
+  }
+  return resolveCanvasAvailableWidth(el.clientWidth, padLeft, padRight);
+}
+
+/**
+ * 캔버스 가용 폭 계산(순수 함수) — `measureCanvasAvailableWidth` 의 계산부.
+ *
+ * @param clientWidth 캔버스 clientWidth(px, 안쪽 여백 포함·스크롤바 제외)
+ * @param padLeft 왼쪽 안쪽 여백(px)
+ * @param padRight 오른쪽 안쪽 여백(px)
+ * @returns 내림한 가용 폭(px). 0 이하·비정상이면 null
+ */
+export function resolveCanvasAvailableWidth(
+  clientWidth: number,
+  padLeft: number,
+  padRight: number,
+): number | null {
+  if (!Number.isFinite(clientWidth) || clientWidth <= 0) return null;
+  const width = Math.floor(clientWidth - padLeft - padRight);
+  return width > 0 ? width : null;
+}
+
+/**
+ * 무대 높이 계산(순수 함수) — 축소 상태에서만 래퍼 레이아웃 높이 × 배율, 그 밖에는 자동.
+ *
+ * `transform: scale` 은 레이아웃 크기를 바꾸지 않아, 높이를 잡지 않으면 축소한 만큼 캔버스 아래에
+ * 빈 공간이 남는다. 배율 1(축소 없음)은 종전과 같게 자동 높이로 둔다.
+ *
+ * @param scale 미리보기 배율
+ * @param wrapperLayoutHeight 래퍼의 레이아웃 높이(px, transform 전). 아직 모르면 null
+ * @returns 무대 높이(px) 또는 undefined(자동)
+ */
+export function resolvePreviewStageHeight(
+  scale: number,
+  wrapperLayoutHeight: number | null,
+): number | undefined {
+  if (!(scale > 0) || scale >= 1) return undefined;
+  if (wrapperLayoutHeight === null || !(wrapperLayoutHeight > 0)) return undefined;
+  return wrapperLayoutHeight * scale;
+}
+
+interface PreviewStageProps {
+  deviceWidth: number;
+  scale: number;
+  scaledWidth: number;
+  /** 래퍼 밖(배율 transform 밖) 형제로 그릴 레이어 — 오버레이, 확장 폴백 덮개 */
+  overlay: React.ReactNode;
+  /** 래퍼 안(배율 transform 안)에 그릴 frame */
+  children: React.ReactNode;
+}
+
+/**
+ * 미리보기 무대 — 축소 반영 폭을 레이아웃 폭으로 잡는 상자.
+ *
+ * 종전에는 frame 래퍼가 `width: deviceWidth` + `transform: scale(zoom)` 이라 화면에는 줄어도
+ * 레이아웃 폭은 deviceWidth 로 남아(transform 은 레이아웃을 바꾸지 않는다) 줌을 내려도 문서
+ * 가로 스크롤이 사라지지 않았다. 무대가 `deviceWidth * scale` 폭(축소 시 높이도 × scale)을
+ * 차지하고, 그 안의 래퍼는 deviceWidth 그대로 좌상단 기준으로 줄인다. frame 레이아웃 폭과
+ * ResponsiveProvider 폭은 deviceWidth 라 미리보기 안 반응형 판정은 그대로다.
+ *
+ * - 래퍼는 늘 frame 의 부모다(`frameEl.parentElement` 를 쓰는 코드 호환). 무대는 래퍼와 오버레이의
+ *   공통 조상이라 캔버스 클릭 capture 리스너를 단다(`data-g7le-preview-stage`).
+ * - `isolation: isolate` — 오버레이 자식의 z-index 가 무대 밖(sticky 헤더 z-index 20 등)과 겨루지
+ *   않게 한다. 종전에는 transform 을 가진 래퍼가 이 쌓임 맥락이었다.
+ * - 높이는 래퍼 레이아웃 높이를 이 컴포넌트 지역 상태로 잰다. 높이가 바뀌어도 이 컴포넌트만 다시
+ *   그리고 children(미리보기 트리)은 같은 요소라 다시 그리지 않는다. 무대는 배율과 무관하게 늘 같은
+ *   자리에 렌더해 frame 서브트리가 다시 마운트되지 않게 한다.
+ *
+ * @param props 무대 속성
+ * @returns 무대 요소
+ */
+function PreviewStage(props: PreviewStageProps): React.ReactElement {
+  const { deviceWidth, scale, scaledWidth, overlay, children } = props;
+  const [wrapperEl, setWrapperEl] = useState<HTMLDivElement | null>(null);
+  const [wrapperHeight, setWrapperHeight] = useState<number | null>(null);
+  const shrunk = scale > 0 && scale < 1;
+  useEffect(() => {
+    if (!wrapperEl || !shrunk || typeof ResizeObserver === 'undefined') return;
+    const read = (): void => {
+      // offsetHeight 는 transform 전 레이아웃 높이다.
+      const h = wrapperEl.offsetHeight;
+      setWrapperHeight((prev) => (prev === h ? prev : h));
+    };
+    read();
+    const observer = new ResizeObserver(read);
+    observer.observe(wrapperEl);
+    return () => observer.disconnect();
+  }, [wrapperEl, shrunk]);
+  return (
+    <div
+      className="g7le-preview-stage"
+      data-testid="g7le-preview-stage"
+      data-g7le-preview-stage=""
+      style={{
+        position: 'relative',
+        width: scaledWidth,
+        height: resolvePreviewStageHeight(scale, wrapperHeight),
+        flexShrink: 0,
+        isolation: 'isolate',
+      }}
+    >
+      {/* frame 래퍼 — frame 을 deviceWidth 그대로 두고 transform 으로만 줄인다. 좌상단 기준이라
+          화면상 frame 좌상단 = 무대 좌상단이다. frame 자체의 translateZ(0)·overflow:hidden(fixed 자손
+          클리핑)은 frame 에 있으므로 이 구조와 무관하다. */}
+      <div
+        className="g7le-preview-frame-wrapper"
+        data-testid="g7le-preview-frame-wrapper"
+        ref={setWrapperEl}
+        style={{
+          position: 'relative',
+          width: deviceWidth,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        }}
+      >
+        {children}
       </div>
+      {overlay}
     </div>
   );
 }

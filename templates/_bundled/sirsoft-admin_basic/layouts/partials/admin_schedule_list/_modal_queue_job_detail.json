@@ -10,7 +10,111 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.schedules.queue.detail.title",
-        "size": "lg"
+        "size": "lg",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "queue_job_detail_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                },
+                "text": "$t:common.close"
+            },
+            {
+                "id": "queue_job_detail_delete",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{_global.queueJobDetailKind === 'failed'}}",
+                "actions": [
+                    {
+                        "comment": "상세에서 바로 삭제 — 이 창을 닫고 같은 한 건을 확인 창에 담아 연다(창 두 개를 겹치지 않는다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "queue_job_detail_modal"
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "queueConfirmResults": null,
+                                    "queueConfirmMessage": "",
+                                    "queueConfirm": {
+                                        "action": "delete",
+                                        "uuids": "{{[_global.queueJobDetail?.uuid]}}",
+                                        "single": true,
+                                        "label": "{{_global.queueJobDetail?.display_name}}"
+                                    }
+                                }
+                            },
+                            {
+                                "handler": "openModal",
+                                "target": "queue_confirm_modal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.queueJobDetail?.abilities?.can_delete !== true}}"
+                },
+                "text": "$t:common.delete"
+            },
+            {
+                "id": "queue_job_detail_retry",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{_global.queueJobDetailKind === 'failed'}}",
+                "actions": [
+                    {
+                        "comment": "상세에서 바로 재시도 — 삭제와 같이 확인 창으로 넘긴다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "queue_job_detail_modal"
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "queueConfirmResults": null,
+                                    "queueConfirmMessage": "",
+                                    "queueConfirm": {
+                                        "action": "retry",
+                                        "uuids": "{{[_global.queueJobDetail?.uuid]}}",
+                                        "single": true,
+                                        "label": "{{_global.queueJobDetail?.display_name}}"
+                                    }
+                                }
+                            },
+                            {
+                                "handler": "openModal",
+                                "target": "queue_confirm_modal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-info disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.queueJobDetail?.abilities?.can_retry !== true}}"
+                },
+                "text": "$t:admin.schedules.queue.action.retry"
+            }
+        ]
     },
     "children": [
         {
@@ -23,8 +127,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-3"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid grid-cols-1 md:grid-cols-2 gap-3"
+                        "className": "grid grid-cols-1 gap-3"
                     },
                     "children": [
                         {
@@ -338,117 +449,6 @@
                             "text": "{{JSON.stringify(_global.queueJobDetail?.payload_meta ?? {}, null, 2)}}"
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "queue_job_detail_modal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
-                    },
-                    "text": "$t:common.close"
-                },
-                {
-                    "id": "queue_job_detail_delete",
-                    "type": "basic",
-                    "name": "Button",
-                    "if": "{{_global.queueJobDetailKind === 'failed'}}",
-                    "actions": [
-                        {
-                            "comment": "상세에서 바로 삭제 — 이 창을 닫고 같은 한 건을 확인 창에 담아 연다(창 두 개를 겹치지 않는다).",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "closeModal",
-                                    "target": "queue_job_detail_modal"
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "queueConfirmResults": null,
-                                        "queueConfirmMessage": "",
-                                        "queueConfirm": {
-                                            "action": "delete",
-                                            "uuids": "{{[_global.queueJobDetail?.uuid]}}",
-                                            "single": true,
-                                            "label": "{{_global.queueJobDetail?.display_name}}"
-                                        }
-                                    }
-                                },
-                                {
-                                    "handler": "openModal",
-                                    "target": "queue_confirm_modal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.queueJobDetail?.abilities?.can_delete !== true}}"
-                    },
-                    "text": "$t:common.delete"
-                },
-                {
-                    "id": "queue_job_detail_retry",
-                    "type": "basic",
-                    "name": "Button",
-                    "if": "{{_global.queueJobDetailKind === 'failed'}}",
-                    "actions": [
-                        {
-                            "comment": "상세에서 바로 재시도 — 삭제와 같이 확인 창으로 넘긴다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "closeModal",
-                                    "target": "queue_job_detail_modal"
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "queueConfirmResults": null,
-                                        "queueConfirmMessage": "",
-                                        "queueConfirm": {
-                                            "action": "retry",
-                                            "uuids": "{{[_global.queueJobDetail?.uuid]}}",
-                                            "single": true,
-                                            "label": "{{_global.queueJobDetail?.display_name}}"
-                                        }
-                                    }
-                                },
-                                {
-                                    "handler": "openModal",
-                                    "target": "queue_confirm_modal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-info disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.queueJobDetail?.abilities?.can_retry !== true}}"
-                    },
-                    "text": "$t:admin.schedules.queue.action.retry"
                 }
             ]
         }

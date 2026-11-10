@@ -513,8 +513,15 @@
                             {
                                 "type": "basic",
                                 "name": "H1",
+                                "responsive": {
+                                    "640-": {
+                                        "props": {
+                                            "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-page-title"
+                                    "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.product.title"
                             },

@@ -7,6 +7,8 @@ export interface Attachment {
     size: number;
     size_formatted: string;
     download_url: string;
+    /** 미리보기 주소 (게시판·페이지 첨부 — 있으면 썸네일·확대 보기가 이 주소를 쓴다) */
+    preview_url?: string | null;
     order: number;
     is_image: boolean;
     meta?: Record<string, unknown>;

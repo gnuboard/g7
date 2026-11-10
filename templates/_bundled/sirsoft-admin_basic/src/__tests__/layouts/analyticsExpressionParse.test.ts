@@ -135,7 +135,7 @@ describe('방문자 통계 레이아웃 식의 구문', () => {
       analytics_settings: { data: { settings: base } },
       _local: { form: { settings: { ...base } } },
     });
-    expect(Object.keys(none)).toEqual(expect.arrayContaining(['privacy_mode', 'ip_mask_octets']));
+    expect(Object.keys(none as Record<string, unknown>)).toEqual(expect.arrayContaining(['privacy_mode', 'ip_mask_octets']));
     expect(none).not.toHaveProperty('retention_days');
   });
 

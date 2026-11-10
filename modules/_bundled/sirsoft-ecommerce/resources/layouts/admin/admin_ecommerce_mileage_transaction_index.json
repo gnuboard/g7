@@ -240,8 +240,15 @@
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "641-": {
+                                "props": {
+                                    "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "ecommerce-page-header"
+                            "className": "ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4"
                         },
                         "children": [
                             {
@@ -252,8 +259,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-page-title"
+                                            "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.title"
                                     },
@@ -271,8 +285,15 @@
                                 "id": "page_header_actions",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "641-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-page-actions"
+                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full"
                                 },
                                 "children": [
                                     {
@@ -321,7 +342,7 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{transactions?.data?.abilities?.can_manage !== true}}",
-                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                         },
                                         "children": [
                                             {

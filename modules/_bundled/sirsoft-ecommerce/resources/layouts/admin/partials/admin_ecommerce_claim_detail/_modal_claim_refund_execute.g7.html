@@ -90,37 +90,37 @@
         </label>
       </div>
       <p data-ref="crm_006_irreversible_notice" class="ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-yellow-50 ecommerce:dark:bg-yellow-900/20 ecommerce:text-sm ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.warning</p>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2">
-        <button data-ref="crm_007_cancel" type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_global.isProcessing}}">
-          <on type="click">
-            <!-- 취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다) -->
-            <sequence>
-              <close-modal/>
-              <set-state target="global" :claimRefundExecuteContext="null" :claimRefundExecuteBankCode="null" :claimRefundExecuteBankAccount="null" :claimRefundExecuteBankHolder="null" :claimRefundExecuteForce="null"/>
-            </sequence>
-          </on>
-          $t:common.cancel
-        </button>
-        <!-- 이 창에서 실제로 환불을 일으키는 유일한 버튼이다 — 진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 버튼 비활성으로 막는다(서버의 409 는 그다음 방어선이다). -->
-        <button data-ref="crm_008_confirm" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{!_global.claimRefundExecuteContext || _global.isProcessing || (_global.claimRefundExecuteContext?.refundAccountRequired === true &amp;&amp; _global.claimRefundExecuteForce !== true &amp;&amp; !((_global.claimRefundExecuteBankCode ?? '').trim() &amp;&amp; (_global.claimRefundExecuteBankAccount ?? '').trim() &amp;&amp; (_global.claimRefundExecuteBankHolder ?? '').trim()))}}">
-          <on type="click">
-            <set-state target="global" :isProcessing="true"/>
-            <!-- onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. 모달은 닫지 않는다: 409(더블클릭)·422(상한 초과)는 운영자가 그 자리에서 확인해야 할 사유다. -->
-            <action handler="sirsoft-ecommerce.executeClaimRefund">
-              <success>
-                <set-state target="global" :isProcessing="false"/>
-                <close-modal/>
-              </success>
-              <fail>
-                <set-state target="global" :isProcessing="false"/>
-              </fail>
-            </action>
-          </on>
-          <icon data-if="{{_global.isProcessing}}" name="spinner" class="ecommerce-spinner-sm"/>
-          <span>{{_global.isProcessing ? '$t:common.processing' : ''}}</span>
-          <span data-if="{{!_global.isProcessing}}">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.confirm</span>
-        </button>
-      </div>
     </div>
+    <footer>
+      <button data-ref="crm_007_cancel" type="button" class="ecommerce-btn ecommerce-btn-outline" disabled="{{_global.isProcessing}}">
+        <on type="click">
+          <!-- 취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다) -->
+          <sequence>
+            <close-modal/>
+            <set-state target="global" :claimRefundExecuteContext="null" :claimRefundExecuteBankCode="null" :claimRefundExecuteBankAccount="null" :claimRefundExecuteBankHolder="null" :claimRefundExecuteForce="null"/>
+          </sequence>
+        </on>
+        $t:common.cancel
+      </button>
+      <!-- 이 창에서 실제로 환불을 일으키는 유일한 버튼이다 — 진행 표식을 실행보다 먼저 세워 응답 전 두 번째 클릭을 버튼 비활성으로 막는다(서버의 409 는 그다음 방어선이다). -->
+      <button data-ref="crm_008_confirm" type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{!_global.claimRefundExecuteContext || _global.isProcessing || (_global.claimRefundExecuteContext?.refundAccountRequired === true &amp;&amp; _global.claimRefundExecuteForce !== true &amp;&amp; !((_global.claimRefundExecuteBankCode ?? '').trim() &amp;&amp; (_global.claimRefundExecuteBankAccount ?? '').trim() &amp;&amp; (_global.claimRefundExecuteBankHolder ?? '').trim()))}}">
+        <on type="click">
+          <set-state target="global" :isProcessing="true"/>
+          <!-- onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. 모달은 닫지 않는다: 409(더블클릭)·422(상한 초과)는 운영자가 그 자리에서 확인해야 할 사유다. -->
+          <action handler="sirsoft-ecommerce.executeClaimRefund">
+            <success>
+              <set-state target="global" :isProcessing="false"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isProcessing="false"/>
+            </fail>
+          </action>
+        </on>
+        <icon data-if="{{_global.isProcessing}}" name="spinner" class="ecommerce-spinner-sm"/>
+        <span>{{_global.isProcessing ? '$t:common.processing' : ''}}</span>
+        <span data-if="{{!_global.isProcessing}}">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.confirm</span>
+      </button>
+    </footer>
   </modal>
 </partial>

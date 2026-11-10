@@ -5,6 +5,7 @@
 @source "../layouts";
 @source "../extensions";
 @source "../js";
+@source not "../js/**/__tests__";
 @source "../../src";
 @theme {
   --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -69,7 +70,9 @@
     align-items: center;
 }
 
+/* 번들 레이아웃은 이 클래스를 쓰지 않는다(640px 이하 세로 쌓기를 엔진 responsive 구간 값으로 펼쳤다). */
 @media (max-width: 640px) {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
     .totp-page-header {
         flex-direction: column;
         align-items: flex-start;

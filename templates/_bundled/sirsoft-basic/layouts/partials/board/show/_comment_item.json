@@ -738,12 +738,14 @@
                                     },
                                     "children": [
                                         {
-                                            "comment": "올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다",
+                                            "comment": "thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다. 올려 둔 아이콘 이미지가 있으면 그것을 쓴다. 처리 중에는 이 자리를 아래 스피너에 내준다",
                                             "type": "basic",
                                             "name": "Img",
                                             "if": "{{!!commentReactionType.icon_url && (_local?.commentReacting?.[comment?.id] ?? null) !== commentReactionType.id}}",
                                             "props": {
                                                 "src": "{{commentReactionType.icon_url}}",
+                                                "loading": "lazy",
+                                                "decoding": "async",
                                                 "alt": "",
                                                 "className": "w-4 h-4 object-contain"
                                             }

@@ -165,9 +165,10 @@
   <slot name="content">
     <div data-ref="order_detail_wrapper" class="ecommerce-admin-page-content">
       <div data-ref="page_header_section" class="ecommerce:mb-6">
-        <div data-ref="page_header" class="ecommerce-page-header-padded">
+        <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+          <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6"/>
           <div>
-            <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.order.detail.title</h1>
+            <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.order.detail.title</h1>
             <div class="ecommerce-page-description ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap">
               <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_number:</span>
               <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{order.data.order_number}}</span>
@@ -181,9 +182,10 @@
               <badge data-type="composite" data-if="{{order.data.is_partially_cancelled}}" variant="warning">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</badge>
             </div>
           </div>
-          <div class="ecommerce-page-actions">
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
+            <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
             <!-- 주문 목록으로. 보던 검색·상태 필터·페이지를 그대로 이고 간다 — 주문 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다 -->
-            <a href="/admin/ecommerce/orders" :mergeQuery="true" data-ref="list_button" class="ecommerce-btn ecommerce-btn-outline">
+            <a href="/admin/ecommerce/orders" :mergeQuery="true" data-ref="list_button" class="ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap">
               <on type="click">
                 <navigate :mergeQuery="true">
                   <query/>

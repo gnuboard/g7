@@ -116,4 +116,22 @@ interface PageAttachmentRepositoryInterface
      * @return int 최대 order 값
      */
     public function getMaxOrder(?int $pageId = null, ?string $tempKey = null): int;
+
+    /**
+     * 래스터 이미지 첨부 수를 셉니다 (썸네일 원본 제공자용 — 페이지에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 개수
+     */
+    public function countByMimeTypes(array $mimeTypes): int;
+
+    /**
+     * 래스터 이미지 첨부를 ID 순으로 나눠 조회합니다 (썸네일 원본 제공자용 — 페이지에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 ID 다음부터 (처음이면 0)
+     * @param  int  $limit  최대 개수
+     * @return Collection<int, PageAttachment> 첨부 목록
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
 }

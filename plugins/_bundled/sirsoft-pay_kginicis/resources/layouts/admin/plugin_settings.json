@@ -74,8 +74,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "paykginicis:p-6 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "paykginicis:p-8 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "paykginicis:p-4 paykginicis:sm:p-6 paykginicis:lg:p-8 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900"
+                    "className": "paykginicis:p-4 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -337,15 +349,26 @@
                                         "id": "field_live_mid",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-kginicis-grid-3col-responsive"
+                                            "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -369,8 +392,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -417,15 +444,26 @@
                                         "id": "field_live_sign_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-kginicis-grid-3col-responsive"
+                                            "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -449,8 +487,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -522,15 +564,26 @@
                                         "id": "field_live_iniapi_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-kginicis-grid-3col-responsive"
+                                            "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -554,8 +607,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -627,15 +684,26 @@
                                         "id": "field_live_iniapi_iv",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-kginicis-grid-3col-responsive"
+                                            "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -659,8 +727,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -732,15 +804,26 @@
                                         "id": "field_live_mobile_hash_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-kginicis-grid-3col-responsive"
+                                            "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -764,8 +847,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1649,8 +1736,15 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
+                                                                                "responsive": {
+                                                                                    "640-": {
+                                                                                        "props": {
+                                                                                            "className": "paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-col"
+                                                                                        }
+                                                                                    }
+                                                                                },
                                                                                 "props": {
-                                                                                    "className": "paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-wide"
+                                                                                    "className": "paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300"
                                                                                 },
                                                                                 "text": "$t:sirsoft-pay_kginicis.settings.cbt_connectivity_egress_ip_label"
                                                                             },
@@ -1667,8 +1761,15 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "P",
+                                                                        "responsive": {
+                                                                            "640-": {
+                                                                                "props": {
+                                                                                    "className": "paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-label-indent"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "props": {
-                                                                            "className": "paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-indent-wide"
+                                                                            "className": "paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
                                                                         },
                                                                         "text": "$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_egress"
                                                                     },
@@ -1682,8 +1783,15 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
+                                                                                "responsive": {
+                                                                                    "640-": {
+                                                                                        "props": {
+                                                                                            "className": "paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-col"
+                                                                                        }
+                                                                                    }
+                                                                                },
                                                                                 "props": {
-                                                                                    "className": "paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-wide"
+                                                                                    "className": "paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300"
                                                                                 },
                                                                                 "text": "$t:sirsoft-pay_kginicis.settings.cbt_connectivity_server_ip_label"
                                                                             },
@@ -1718,8 +1826,15 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
+                                                                        "responsive": {
+                                                                            "640-": {
+                                                                                "props": {
+                                                                                    "className": "pay-kginicis-callback-table pay-kginicis-callback-table--wide paykginicis:gap-x-3 paykginicis:gap-y-1.5"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "props": {
-                                                                            "className": "pay-kginicis-callback-grid paykginicis:gap-x-3 paykginicis:gap-y-1.5"
+                                                                            "className": "pay-kginicis-callback-table paykginicis:gap-x-3 paykginicis:gap-y-1.5"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1978,15 +2093,26 @@
                                                 "id": "field_live_japan_mid",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "1024-": {
+                                                        "props": {
+                                                            "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "pay-kginicis-grid-3col-responsive"
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "paykginicis:lg:col-span-1"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "paykginicis:col-span-1"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -2010,8 +2136,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "paykginicis:lg:col-span-2"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "paykginicis:col-span-2"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -2033,15 +2163,26 @@
                                                 "id": "field_live_japan_cbt_key",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "1024-": {
+                                                        "props": {
+                                                            "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "pay-kginicis-grid-3col-responsive"
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "paykginicis:lg:col-span-1"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "paykginicis:col-span-1"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -2065,8 +2206,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "paykginicis:lg:col-span-2"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "paykginicis:col-span-2"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -2117,8 +2262,15 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "paykginicis:grid paykginicis:grid-cols-2 paykginicis:gap-4"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "pay-kginicis-grid-2col-responsive"
+                                                            "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4"
                                                         },
                                                         "children": [
                                                             {
@@ -2451,15 +2603,26 @@
                                         "id": "field_redirect_success_url",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-kginicis-grid-3col-responsive"
+                                            "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -2483,8 +2646,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -2506,15 +2673,26 @@
                                         "id": "field_redirect_fail_url",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-kginicis-grid-3col-responsive"
+                                            "className": "paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -2538,8 +2716,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paykginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paykginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {

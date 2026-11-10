@@ -78,7 +78,7 @@
         <p class="board:text-gray-700 board:dark:text-gray-300 board:mb-4">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_post'}}</p>
         <p data-if="{{_global.modal_data?.type !== 'post'}}" class="board-text-label-subtle">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}</p>
       </div>
-      <div class="board-modal-footer-buttons">
+      <footer>
         <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
@@ -110,7 +110,7 @@
           </on>
           <span>{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -146,7 +146,7 @@
           </textarea>
         </div>
       </div>
-      <div class="board-modal-footer-buttons">
+      <footer>
         <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
@@ -179,7 +179,7 @@
           <icon data-if="{{_global.reportSubmitting}}" name="spinner" class="board-spinner-sm"/>
           <span>{{_global.reportSubmitting ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.detail.report_modal.submit'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -199,7 +199,7 @@
           </on>
         </textarea>
       </div>
-      <div class="board-modal-footer-buttons">
+      <footer>
         <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
@@ -228,7 +228,7 @@
           </on>
           <span>{{_global.blindModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.blind'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -238,7 +238,7 @@
       <div class="board:py-2">
         <p class="board:text-gray-700 board:dark:text-gray-300 board:mb-4">{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}</p>
       </div>
-      <div class="board-modal-footer-buttons">
+      <footer>
         <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
@@ -266,7 +266,7 @@
           </on>
           <span>{{_global.restoreModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.restore'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
 </layout>

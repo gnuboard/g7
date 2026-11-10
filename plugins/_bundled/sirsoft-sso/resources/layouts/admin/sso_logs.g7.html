@@ -53,7 +53,7 @@
   <slot name="content">
     <div data-ref="sso_logs_content" class="sso-admin-page-content">
       <div data-ref="page_header" class="sso:mb-6">
-        <h1 class="sso-page-title">$t:sirsoft-sso.admin.logs.title</h1>
+        <h1 class="sso:text-xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"><responsive on="640-" class="sso:text-2xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"/>$t:sirsoft-sso.admin.logs.title</h1>
         <p class="sso-text-label-subtle sso:mt-1">$t:sirsoft-sso.admin.logs.description</p>
       </div>
       <tab-navigation data-type="composite" data-ref="logs_tabs" activeTabId="{{query.tab || 'attempts'}}" variant="underline">

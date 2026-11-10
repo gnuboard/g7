@@ -1185,7 +1185,7 @@ export interface ModalProps {
   title?: string;                     // 모달 타이틀
   titlePrefix?: ComponentDefinition[]; // 타이틀 앞 컴포넌트 배열 (sirsoft-admin_basic만)
   titleSuffix?: ComponentDefinition[]; // 타이틀 뒤 컴포넌트 배열 (sirsoft-admin_basic만)
-  footer?: ComponentDefinition[];     // 본문 스크롤 밖 고정 하단 영역 (sirsoft-admin_basic만)
+  footer?: ComponentDefinition[];     // 본문 스크롤 밖 고정 하단 영역 (두 번들 템플릿, sirsoft-basic 은 7.2.0 부터)
   icon?: string;                      // 타이틀 옆 아이콘 (sirsoft-basic만)
   iconClassName?: string;             // 아이콘 색상 클래스 (sirsoft-basic만)
   closeOnBackdropClick?: boolean;     // 배경 클릭 시 닫기 (기본: true)
@@ -1209,7 +1209,7 @@ export interface ModalProps {
 | `title` | `string` | ❌ | - | 모달 타이틀 |
 | `titlePrefix` | `ComponentDefinition[]` | ❌ | - | 타이틀 **앞**에 렌더링할 컴포넌트 배열 (sirsoft-admin_basic) |
 | `titleSuffix` | `ComponentDefinition[]` | ❌ | - | 타이틀 **뒤**에 렌더링할 컴포넌트 배열 (sirsoft-admin_basic) |
-| `footer` | `ComponentDefinition[]` | ❌ | - | 본문 스크롤 **밖** 고정 하단 영역 — 취소/확인 버튼 자리 (sirsoft-admin_basic) |
+| `footer` | `ComponentDefinition[]` | ❌ | - | 본문 스크롤 **밖** 고정 하단 영역 — 취소/확인 버튼 자리 (두 번들 템플릿, 640px 이하 세로 쌓기) |
 | `icon` | `string` | ❌ | - | 타이틀 옆 아이콘 (sirsoft-basic) |
 | `iconClassName` | `string` | ❌ | `'text-gray-500'` | 아이콘 색상 클래스 |
 | `closeOnBackdropClick` | `boolean` | ❌ | `true` | 배경 클릭 시 닫기 |
@@ -1222,10 +1222,10 @@ export interface ModalProps {
 
 ### 서브트리 Props 는 템플릿마다 다르다
 
-`titlePrefix`/`titleSuffix`/`footer` 세 표면은 **`sirsoft-admin_basic` 의 `Modal` 에만 구현**되어 있다
-([Modal.tsx](../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Modal.tsx) `ModalProps`).
-`sirsoft-basic` 의 `Modal` 은 이 props 를 받지 않으므로, 사용자 템플릿 모달에 넘기면 **조용히 렌더되지 않는다**
-(취소/확인 버튼이 통째로 사라진다). 사용자측 모달의 하단 버튼은 `children` 안에 둔다.
+`footer` 는 **두 번들 템플릿 `Modal` 모두**가 같은 계약으로 그린다(본문 스크롤 밖 `modal-footer-bar`, 본문 자식과 같은
+데이터 컨텍스트, 렌더 폭 640px 이하 세로 쌓기 — `sirsoft-basic` 은 7.2.0 부터, #869). `titlePrefix`/`titleSuffix` 두 표면은
+**`sirsoft-admin_basic` 의 `Modal` 에만 구현**되어 있다([Modal.tsx](../../templates/_bundled/sirsoft-admin_basic/src/components/composite/Modal.tsx) `ModalProps`).
+`sirsoft-basic` 의 `Modal` 은 그 둘을 받지 않으므로 사용자 템플릿 모달에 넘기면 **조용히 렌더되지 않는다**.
 
 `.g7.html` 마크업 표기는 `<title-prefix>`/`<title-suffix>`/`<footer>` 이며 `Modal` 자식일 때만 해당 props 로 hoist 된다
 ([layout-markup.md §6 임베딩](layout-markup.md)). 관리자 모달의 footer 배치 규칙은 [modal-usage.md](modal-usage.md) 참조.

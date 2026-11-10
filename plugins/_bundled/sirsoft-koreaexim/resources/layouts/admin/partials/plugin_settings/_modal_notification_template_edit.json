@@ -10,7 +10,213 @@
     "props": {
         "title": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.title",
         "size": "xl",
-        "closeOnOverlayClick": false
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
+                "responsive": {
+                    "-640": {
+                        "comment": "왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869)",
+                        "props": {
+                            "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors"
+                        }
+                    }
+                },
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "apiCall",
+                        "target": "/api/admin/notification-templates/preview",
+                        "auth_required": true,
+                        "params": {
+                            "method": "POST",
+                            "body": {
+                                "definition_id": "{{_global.koreaexim_notification_template_form_modal?.definition?.id}}",
+                                "subject": "{{_global.koreaexim_notification_template_form_modal?.template?.subject}}",
+                                "body": "{{_global.koreaexim_notification_template_form_modal?.template?.body}}",
+                                "locale": "{{_global.koreaexim_notification_template_form_modal?.editLang ?? $locale}}"
+                            }
+                        },
+                        "onSuccess": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "koreaexim_notification_template_form_modal.preview": "{{response.data}}"
+                                }
+                            },
+                            {
+                                "handler": "openModal",
+                                "target": "modal_koreaexim_notification_definition_preview"
+                            }
+                        ],
+                        "onError": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors koreaexim:mr-auto",
+                    "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "text": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.btn_preview"
+            },
+            {
+                "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "modal_koreaexim_notification_template_edit"
+                            },
+                            {
+                                "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "koreaexim_notification_template_form_modal": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
+                "id": "koreaexim_template_form_footer_ext",
+                "type": "extension_point",
+                "name": "notification_template_form_footer_actions",
+                "props": {
+                    "definition": "{{_global.koreaexim_notification_template_form_modal?.definition}}",
+                    "template": "{{_global.koreaexim_notification_template_form_modal?.template}}",
+                    "channel": "{{_global.koreaexim_notification_template_form_modal?.template?.channel ?? ''}}",
+                    "modalId": "modal_koreaexim_notification_template_edit",
+                    "stateKey": "koreaexim_notification_template_form_modal",
+                    "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.koreaexim_notification_template_form_modal?.template?.id}}",
+                    "refetchDataSourceId": "koreaeximNotificationDefinitions"
+                }
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
+                "actions": [
+                    {
+                        "comment": "저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "koreaexim_notification_template_form_modal.isSaving": true,
+                                    "koreaexim_notification_template_form_modal.errors": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "{{'/api/admin/notification-templates/' + _global.koreaexim_notification_template_form_modal?.template?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PUT",
+                                    "body": {
+                                        "subject": "{{_global.koreaexim_notification_template_form_modal?.template?.subject}}",
+                                        "body": "{{_global.koreaexim_notification_template_form_modal?.template?.body}}",
+                                        "click_url": "{{_global.koreaexim_notification_template_form_modal?.template?.click_url ?? null}}",
+                                        "recipients": "{{_global.koreaexim_notification_template_form_modal?.recipients ?? []}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "koreaeximNotificationDefinitions"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "$t:sirsoft-koreaexim.notification_definitions.save_success",
+                                            "type": "success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "modal_koreaexim_notification_template_edit"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "koreaexim_notification_template_form_modal": null
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "koreaexim_notification_template_form_modal.isSaving": false,
+                                            "koreaexim_notification_template_form_modal.errors": "{{error.errors}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "{{error.message ?? $t('sirsoft-koreaexim.notification_definitions.save_error')}}",
+                                            "type": "error"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "koreaexim-flex-center koreaexim:gap-2 koreaexim:text-sm koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:bg-indigo-600 koreaexim:text-white koreaexim:hover:bg-indigo-700 koreaexim:dark:bg-indigo-500 koreaexim:dark:hover:bg-indigo-600 koreaexim:transition-colors koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.koreaexim_notification_template_form_modal?.isSaving}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "koreaexim:animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.koreaexim_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -1026,227 +1232,6 @@
                                                     "text": " — {{v.description ?? ''}}"
                                                 }
                                             ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "koreaexim_template_modal_footer",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "koreaexim-flex-between koreaexim:pt-4 koreaexim:pb-4 koreaexim:border-t koreaexim:border-gray-200 koreaexim:dark:border-gray-700 koreaexim:mt-4 koreaexim:flex-shrink-0"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                                {
-                                    "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/notification-templates/preview",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "definition_id": "{{_global.koreaexim_notification_template_form_modal?.definition?.id}}",
-                                                    "subject": "{{_global.koreaexim_notification_template_form_modal?.template?.subject}}",
-                                                    "body": "{{_global.koreaexim_notification_template_form_modal?.template?.body}}",
-                                                    "locale": "{{_global.koreaexim_notification_template_form_modal?.editLang ?? $locale}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "koreaexim_notification_template_form_modal.preview": "{{response.data}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "modal_koreaexim_notification_definition_preview"
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors",
-                                        "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "text": "$t:sirsoft-koreaexim.notification_definitions.edit_modal.btn_preview"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "koreaexim:flex koreaexim:gap-2"
-                            },
-                            "children": [
-                                {
-                                    "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_koreaexim_notification_template_edit"
-                                                },
-                                                {
-                                                    "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "koreaexim_notification_template_form_modal": null
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "text": "$t:common.cancel"
-                                },
-                                {
-                                    "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
-                                    "id": "koreaexim_template_form_footer_ext",
-                                    "type": "extension_point",
-                                    "name": "notification_template_form_footer_actions",
-                                    "props": {
-                                        "definition": "{{_global.koreaexim_notification_template_form_modal?.definition}}",
-                                        "template": "{{_global.koreaexim_notification_template_form_modal?.template}}",
-                                        "channel": "{{_global.koreaexim_notification_template_form_modal?.template?.channel ?? ''}}",
-                                        "modalId": "modal_koreaexim_notification_template_edit",
-                                        "stateKey": "koreaexim_notification_template_form_modal",
-                                        "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.koreaexim_notification_template_form_modal?.template?.id}}",
-                                        "refetchDataSourceId": "koreaeximNotificationDefinitions"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{!((koreaeximNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.koreaexim_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
-                                    "actions": [
-                                        {
-                                            "comment": "저장. 성공하면 알림 목록을 다시 부른다 — 목록이 제목·사용 여부를 그대로 보여 주므로 갱신하지 않으면 방금 고친 값이 낡은 채로 남는다.",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "koreaexim_notification_template_form_modal.isSaving": true,
-                                                        "koreaexim_notification_template_form_modal.errors": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "apiCall",
-                                                    "target": "{{'/api/admin/notification-templates/' + _global.koreaexim_notification_template_form_modal?.template?.id}}",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "PUT",
-                                                        "body": {
-                                                            "subject": "{{_global.koreaexim_notification_template_form_modal?.template?.subject}}",
-                                                            "body": "{{_global.koreaexim_notification_template_form_modal?.template?.body}}",
-                                                            "click_url": "{{_global.koreaexim_notification_template_form_modal?.template?.click_url ?? null}}",
-                                                            "recipients": "{{_global.koreaexim_notification_template_form_modal?.recipients ?? []}}"
-                                                        }
-                                                    },
-                                                    "onSuccess": [
-                                                        {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "koreaeximNotificationDefinitions"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "message": "$t:sirsoft-koreaexim.notification_definitions.save_success",
-                                                                "type": "success"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "closeModal",
-                                                            "target": "modal_koreaexim_notification_template_edit"
-                                                        },
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "koreaexim_notification_template_form_modal": null
-                                                            }
-                                                        }
-                                                    ],
-                                                    "onError": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "koreaexim_notification_template_form_modal.isSaving": false,
-                                                                "koreaexim_notification_template_form_modal.errors": "{{error.errors}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "message": "{{error.message ?? $t('sirsoft-koreaexim.notification_definitions.save_error')}}",
-                                                                "type": "error"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "koreaexim-flex-center koreaexim:gap-2 koreaexim:text-sm koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:bg-indigo-600 koreaexim:text-white koreaexim:hover:bg-indigo-700 koreaexim:dark:bg-indigo-500 koreaexim:dark:hover:bg-indigo-600 koreaexim:transition-colors koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{_global.koreaexim_notification_template_form_modal?.isSaving}}",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "koreaexim:animate-spin",
-                                                "size": "sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "{{_global.koreaexim_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
                                         }
                                     ]
                                 }

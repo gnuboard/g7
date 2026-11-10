@@ -1,0 +1,25 @@
+feature: 격리 상태(IsolatedStateContext) 공급자와 모달 상태 스코프
+
+description: |
+  IsolatedStateProvider 가 초기 상태를 세우고, 경로로 쓰고 읽고, 깊은 병합(배열은 교체)을 하는지 본다.
+  공급자 안팎 판정, DevTools 의 G7Core._isolatedStates 등록과 해제, stateRef 로 최신 상태 읽기, scopeId 자동 생성,
+  중첩 공급자의 독립 상태를 본다. 회귀 묶음은 모달 격리 상태가 부모 _local 에 닿지 않고, 닫히면 지워지며,
+  여러 모달이 서로 섞이지 않는지 본다. 축 area 는 기능 묶음 하나씩이다.
+
+axes:
+  area: [init, set_state, get_state, merge_state, scope_detection, devtools, stale_closure, scope_id, nesting, modal_scope]
+
+effects:
+  - isolated_state_initialized
+  - isolated_state_set_by_path
+  - isolated_state_read_by_path
+  - isolated_state_merged
+  - isolated_scope_detected
+  - isolated_state_tracked_in_devtools
+  - isolated_state_ref_reads_latest
+  - isolated_scope_id_assigned
+  - isolated_nested_providers_independent
+  - modal_isolated_state_scoped
+
+test_files:
+  - resources/js/core/template-engine/__tests__/IsolatedStateContext.test.tsx

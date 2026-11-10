@@ -56,7 +56,7 @@
     <div data-ref="sso_accounts_content" class="sso-admin-page-content">
       <div data-ref="page_header" class="sso:flex sso:flex-wrap sso:items-start sso:justify-between sso:gap-3 sso:mb-6">
         <div>
-          <h1 class="sso-page-title">$t:sirsoft-sso.admin.accounts.title</h1>
+          <h1 class="sso:text-xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"><responsive on="640-" class="sso:text-2xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"/>$t:sirsoft-sso.admin.accounts.title</h1>
           <p class="sso-text-label-subtle sso:mt-1">$t:sirsoft-sso.admin.accounts.description</p>
         </div>
         <div class="sso:flex sso:flex-wrap sso:gap-2">
@@ -82,7 +82,8 @@
       <div data-ref="add_link_card" data-if="{{_local.showAdd}}" data-key="addForm" class="sso-admin-card sso:mb-6 sso:space-y-4">
         <h2 class="sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.accounts.add_title</h2>
         <p class="sso-form-hint">$t:sirsoft-sso.admin.accounts.add_hint</p>
-        <div class="sso-grid-2col-responsive">
+        <div class="sso:grid sso:grid-cols-1 sso:gap-4">
+          <responsive on="768-" class="sso:grid sso:grid-cols-2 sso:gap-4"/>
           <div>
             <label class="sso-form-label">$t:sirsoft-sso.admin.accounts.fields.idp</label>
             <select name="idp_id" class="sso:w-full">
@@ -117,7 +118,8 @@
           </label>
         </div>
         <div data-ref="add_existing_user" data-if="{{(_local.addForm?.mode ?? 'existing') === 'existing'}}" class="sso:space-y-2">
-          <div class="sso:flex sso:flex-col sso:sm:flex-row sso:gap-2">
+          <div class="sso:flex sso:flex-col sso:gap-2">
+            <responsive on="640-" class="sso:flex sso:flex-row sso:gap-2"/>
             <input type="text" name="user_search" class="sso-input sso:flex-1 sso:min-w-0" placeholder="$t:sirsoft-sso.admin.accounts.user_search_placeholder" aria-label="$t:sirsoft-sso.admin.accounts.user_search_placeholder"/>
             <button data-ref="add_user_search_button" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_local.addForm?.user_search}}">
               <on type="click">
@@ -152,7 +154,8 @@
             </li>
           </ul>
         </div>
-        <div data-ref="add_new_user" data-if="{{_local.addForm?.mode === 'new'}}" class="sso-grid-2col-responsive">
+        <div data-ref="add_new_user" data-if="{{_local.addForm?.mode === 'new'}}" class="sso:grid sso:grid-cols-1 sso:gap-4">
+          <responsive on="768-" class="sso:grid sso:grid-cols-2 sso:gap-4"/>
           <div>
             <label class="sso-form-label">$t:sirsoft-sso.admin.accounts.fields.new_name</label>
             <input type="text" name="new_name" class="sso-input"/>

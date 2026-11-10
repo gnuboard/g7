@@ -7,12 +7,12 @@
   넣고, 확장점을 연 관리자 템플릿의 검색 버튼이 `ext_filters[]` 로 보낸다. 서버 쪽은 `UserListAddressFilterListener` 가 맡는다.
   국가 선택지는 쇼핑몰 설정의 배송 가능 국가다(회원 편집 화면의 배송국가 칸과 같은 출처). -->
 <extension extension-point="admin_user_list_filters" mode="append" priority="201">
-  <div data-ref="ext_ecommerce_address_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center">
+  <div data-ref="ext_ecommerce_address_filter_row" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center">
     <permissions>
       <permission>sirsoft-ecommerce.user-addresses.read</permission>
     </permissions>
     <responsive on="portable" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:items-start"/>
-    <span class="ecommerce:block ecommerce:mb-2 ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:md:mb-0 ecommerce:shrink-0 ecommerce:md:flex ecommerce:md:items-center">$t:sirsoft-ecommerce.admin.user_filter.shipping_country</span>
+    <span class="ecommerce:block ecommerce:mb-2 ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:shrink-0"><responsive on="768-" class="ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>$t:sirsoft-ecommerce.admin.user_filter.shipping_country</span>
     <div class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-3">
       <select name="ecommerceShippingCountry" class="ecommerce:w-40" aria-label="$t:sirsoft-ecommerce.admin.user_filter.shipping_country" disabled="{{(_local.userFilterExtraQuery || []).includes('sirsoft-ecommerce.has_address=0')}}" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.shipping_country=')) || '').slice('sirsoft-ecommerce.shipping_country='.length)}}" options="{{[{ value: '', label: '$t:sirsoft-ecommerce.admin.user_filter.shipping_country_all' }, ...((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) })))]}}">
         <on type="change">

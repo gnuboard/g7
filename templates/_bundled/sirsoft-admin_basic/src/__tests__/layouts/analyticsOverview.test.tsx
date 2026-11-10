@@ -15,8 +15,36 @@ import {
   moveTargets,
 } from './analyticsLayoutTestUtils';
 import { ANALYTICS_PERIOD_PRESETS } from '../../handlers/setAnalyticsPeriodHandler';
-import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
+import { createLayoutTest, type LayoutJson } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+
+type ProbeNode = NonNullable<LayoutJson['components']>[number];
+type ProbeSource = NonNullable<LayoutJson['data_sources']>[number];
+
+/**
+ * 찾은 레이아웃 조각만 남긴다 — `filter(Boolean)` 과 같되 「찾지 못함(undefined)」을 타입에서도 걷어 낸다.
+ *
+ * @param items nodeById 나 dataSource 가 돌려준 값 목록
+ * @returns undefined 를 뺀 목록
+ */
+const found = (items: Array<Record<string, any> | undefined>): Record<string, any>[] =>
+  items.filter((item): item is Record<string, any> => Boolean(item));
+
+/**
+ * 찾은 컴포넌트 노드를 시험 레이아웃의 components 로 넘긴다(레이아웃 JSON 에서 읽은 노드라 모양은 ComponentDefinition 이다).
+ *
+ * @param items nodeById 가 돌려준 값 목록
+ * @returns 시험 레이아웃 components
+ */
+const foundNodes = (items: Array<Record<string, any> | undefined>): ProbeNode[] => found(items) as ProbeNode[];
+
+/**
+ * 찾은 데이터 소스를 시험 레이아웃의 data_sources 로 넘긴다.
+ *
+ * @param items dataSource 가 돌려준 값 목록
+ * @returns 시험 레이아웃 data_sources
+ */
+const foundSources = (items: Array<Record<string, any> | undefined>): ProbeSource[] => found(items) as ProbeSource[];
 
 const layout = loadLayout('admin_analytics_overview.json');
 const periodBar = loadLayout('partials/admin_analytics/_partial_period_bar.json');
@@ -147,7 +175,8 @@ describe('기간 바 조각', () => {
     // 390px 에서는 기간 바 아래 전폭이다(계획서 §4.11) — 칩 사이에 끼면 누를 면적이 칩 하나만 해진다.
     const csvClass = String(nodeById(periodBar, 'csv_download_button')?.props?.className ?? '');
     expect(csvClass).toContain('w-full');
-    expect(csvClass).toContain('sm:w-auto');
+    expect(csvClass).not.toContain('sm:');
+    expect(nodeById(periodBar, 'csv_download_button')?.responsive?.['640-']?.props?.className).toContain('w-auto');
     const refetch = actionsWithHandler(periodBar, 'refetchDataSource')[0];
     expect(refetch?.params?.dataSourceId).toBe('{{_local.periodSource}}');
   });
@@ -160,12 +189,18 @@ describe('기간 바 — 달력 두 칸', () => {
     // 390px 에서 w-40 두 칸 + 물결이 카드 안쪽(311px)보다 26px 넓어 끝 칸이 카드 밖으로 나갔다(브라우저 실측 §8 M2-T8).
     const dates = nodeById(periodBar, 'period_dates');
     expect(dates?.props?.className).toContain('w-full');
-    expect(dates?.props?.className).toContain('sm:w-auto');
+    // 640 이상 폭 분기는 엔진 responsive 구간 값이다(Tailwind 반응형 접두 없음)
+    expect(dates?.props?.className).not.toContain('sm:');
+    expect(dates?.responsive?.['640-']?.props?.className).toContain('w-auto');
     for (const id of ['period_from', 'period_to']) {
-      const cls: string = nodeById(periodBar, id)?.props?.className ?? '';
+      const node = nodeById(periodBar, id);
+      const cls: string = node?.props?.className ?? '';
       expect(cls, id).toContain('flex-1');
       expect(cls, id).toContain('min-w-0');
-      expect(cls, id).toContain('sm:w-40');
+      expect(cls, id).not.toContain('sm:');
+      const wide: string = node?.responsive?.['640-']?.props?.className ?? '';
+      expect(wide, id).toContain('w-40');
+      expect(wide, id).toContain('flex-none');
     }
   });
 
@@ -198,7 +233,7 @@ describe('기간 바 — 달력 두 칸', () => {
     const probe = {
       version: '1.0.0',
       layout_name: 'analytics_period_dates_probe',
-      components: [nodeById(periodBar, 'period_dates')],
+      components: foundNodes([nodeById(periodBar, 'period_dates')]),
     };
     const t = createLayoutTest(probe, {
       componentRegistry: datesRegistry(),
@@ -275,8 +310,8 @@ describe('기간 바 — 조회 한도(366일)', () => {
     const probe = {
       version: '1.0.0',
       layout_name: 'analytics_period_limit_probe',
-      data_sources: [dataSource(layout, 'analytics_overview')],
-      components: [nodeById(periodBar, 'period_range_error'), nodeById(layout, 'overview_load_failed')].filter(Boolean),
+      data_sources: foundSources([dataSource(layout, 'analytics_overview')]),
+      components: foundNodes([nodeById(periodBar, 'period_range_error'), nodeById(layout, 'overview_load_failed')]),
     };
     const t = createLayoutTest(probe, {
       componentRegistry: barRegistry(),
@@ -436,8 +471,8 @@ describe('개요 요청 실패 — 오류 카드', () => {
   const probe = () => ({
     version: '1.0.0',
     layout_name: 'analytics_overview_failure_probe',
-    data_sources: [dataSource(layout, 'analytics_overview')],
-    components: [nodeById(layout, 'overview_load_failed'), nodeById(layout, 'trend_card')].filter(Boolean),
+    data_sources: foundSources([dataSource(layout, 'analytics_overview')]),
+    components: foundNodes([nodeById(layout, 'overview_load_failed'), nodeById(layout, 'trend_card')]),
   });
 
   const render = async (arrange: (t: ReturnType<typeof createLayoutTest>) => void) => {

@@ -259,6 +259,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
           src={product.thumbnail_url}
           alt={displayName}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+          // 카드 표시 폭은 최대 약 315px — md(가로 640)에 2배 밀도는 srcset 의 lg
+          thumbPreset="md"
           loading="lazy"
         />
 

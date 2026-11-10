@@ -1,0 +1,27 @@
+# π3 (#869) 레이아웃 편집기 시험 표식 부채 채우기 — 이 매니페스트는 아래 test_files 의 각 시험이 재는 효과를
+# 시험 단위로 선언한다. 축 behavior 은 그 파일 안의 동작 묶음이다.
+
+feature: 레이아웃 편집기 클립보드와 단축키 — 세션 버퍼 왕복, 디스패처 가드, 단축키 맵 모달
+
+description: |
+  editorClipboard 버퍼, useEditorShortcuts 디스패처, ShortcutHelpModal 이 선택과 포커스 조건에 맞게 동작하는지 잰다.
+
+axes:
+  behavior: [shortcut_help_modal_mac_symbols, shortcut_help_modal_close_calls_on_close, shortcut_paste_works_without_selection, shortcut_mod_c_calls_copy, clipboard_empty_reads_null]
+
+effects:
+  - shortcut_help_modal_mac_symbols
+  - shortcut_help_modal_close_calls_on_close
+  - shortcut_paste_works_without_selection
+  - shortcut_mod_c_calls_copy
+  - clipboard_empty_reads_null
+  - clipboard_session_roundtrip_strips_internal_meta
+  - clipboard_read_returns_fresh_copy
+  - paste_across_layouts_via_session_storage
+  - shortcut_dispatch_guards_input_and_modal
+  - shortcut_requires_selection_guard
+  - shortcut_escape_branches_deselect_vs_exit_by_selection
+  - shortcut_help_modal_lists_all_groups_from_ssot
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/editorClipboardAndShortcuts.test.tsx

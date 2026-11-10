@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -263,26 +264,80 @@ class BannerImageService
     }
 
     /**
-     * 이미지·영상의 공개 서빙 정보를 반환합니다 — 저장 전 미리보기를 위해 임시 업로드도 해시로 내보낸다(해시 64자는 추측할 수 없다).
+     * 공개 해시로 이미지·영상을 찾습니다 — 공개 서빙의 게이트다(해시 64자는 추측할 수 없다).
+     *
+     * 저장 전 미리보기를 위해 임시 업로드도 찾는다(등록·수정 화면 업로더 칸과 미리보기가 저장 전에 그린다).
+     *
+     * @param  string  $hash  공개 해시
+     * @return BannerImage|null 파일 행 (없으면 null)
+     */
+    public function findPublic(string $hash): ?BannerImage
+    {
+        return $this->images->findByHash($hash);
+    }
+
+    /**
+     * 행의 원본 파일이 저장소에 있는지 (원본 응답과 같은 스토리지로 확인한다).
+     *
+     * 썸네일 판정 앞에서 부른다 — 원격 저장소에서 원본만 지워져 파생본이 남은 경우, 확인 없이 썸네일로 가면
+     * 무파라미터 요청은 404 인데 `?size=` 요청은 남은 파생본으로 200 이 된다.
+     *
+     * @param  BannerImage  $image  파일 행
+     * @return bool 있으면 true (저장소를 읽지 못해도 false)
+     */
+    public function originalExists(BannerImage $image): bool
+    {
+        try {
+            return $this->storage->exists(self::CATEGORY, (string) $image->path);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 썸네일 원본 정보를 행에서 만듭니다 — 배너 이미지는 해시만 알면 받는 공개 원본이다(`gated=false`).
+     *
+     * PC·모바일 이미지는 기기별로 따로 올린 각자의 원본이라 행마다 따로 만든다(파생본 키도 행 경로로 갈린다). 원본 응답과
+     * **같은 스토리지**로 만들어야 파생본 키(`thumbnails/{disk}/{전체 경로}/…`)가 저장소 계층의 덮어쓰기·삭제 무효화와 같은
+     * 경로를 가리킨다. 영상 행은 래스터가 아니므로 null — 컨트롤러가 원본 영상에 `bypass:not-raster` 를 붙인다.
+     *
+     * @param  BannerImage  $image  파일 행
+     * @return ThumbnailSource|null 원본 (영상이거나 드라이버가 원본 정보를 못 주면 null)
+     */
+    public function thumbnailSource(BannerImage $image): ?ThumbnailSource
+    {
+        if ($image->kind === MediaKind::Video->value) {
+            return null;
+        }
+
+        return ThumbnailSource::fromStorage(
+            $this->storage,
+            self::CATEGORY,
+            (string) $image->path,
+            (string) $image->mime,
+            gated: false,
+            width: $image->width,
+            height: $image->height,
+        );
+    }
+
+    /**
+     * 이미지·영상의 공개 서빙 정보를 반환합니다 — 게이트(`findPublic()`)를 지난 행만 받는다.
      *
      * 응답 계약(ETag·304 재검증·`Cache-Control`·`nosniff`)은 컨트롤러가 코어 파일 서빙 헬퍼로 입힌다. 여기서는 무엇을
      * 내보낼지만 정한다 — 로컬 디스크의 영상은 범위 요청(Range → 206)을 받는 파일 응답이 필요해 절대 경로(`file`)를,
      * 그 밖(이미지, 원격 디스크 영상)은 스토리지 스트림과 메타(`response`·`etag_source`·`mime_type`·`last_modified`)를 준다.
-     * iOS Safari 는 범위 요청을 받지 않는 영상을 재생하지 않는다.
+     * iOS Safari 는 범위 요청을 받지 않는 영상을 재생하지 않는다. `?size=`·`?w=` 썸네일은 컨트롤러가 이 메서드보다 먼저
+     * `ThumbnailResponder` 로 판정한다 — 원본 응답의 304 판정을 컨트롤러가 하므로, 썸네일이 원본 검증자로 다시 싸이지 않게 갈라 둔다.
      *
      * 이미지는 래스터만 인라인이고 그 밖은 내려받기다(`InlineMediaPolicy`). 영상은 업로드 때 내용으로 판정한 MP4·WEBM 만
      * 인라인으로 재생하고 그 외 유형은 내려받기 유형으로 낸다.
      *
-     * @param  string  $hash  공개 해시
-     * @return array<string, mixed>|null `['file' => 절대 경로, 'mime_type' => …]` 또는 스트림 메타 (없으면 null)
+     * @param  BannerImage  $image  파일 행 (`findPublic()` 결과)
+     * @return array<string, mixed>|null `['file' => 절대 경로, 'mime_type' => …]` 또는 스트림 메타 (파일이 없으면 null)
      */
-    public function publicServing(string $hash): ?array
+    public function publicServing(BannerImage $image): ?array
     {
-        $image = $this->images->findByHash($hash);
-        if ($image === null) {
-            return null;
-        }
-
         $video = $image->kind === MediaKind::Video->value;
         $mime = $video
             ? (in_array($image->mime, self::INLINE_VIDEO_MIME_TYPES, true) ? $image->mime : 'application/octet-stream')

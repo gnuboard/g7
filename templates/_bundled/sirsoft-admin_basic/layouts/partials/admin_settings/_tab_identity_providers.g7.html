@@ -8,12 +8,14 @@
       <h3 class="card-title">$t:admin.settings.identity.purposes.title</h3>
       <div class="card-description">$t:admin.settings.identity.purposes.desc</div>
       <div data-ref="purpose_rows" class="row-stack">
-        <div data-each="purpose in identityPurposes?.data ?? []" class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div data-each="purpose in identityPurposes?.data ?? []" class="flex flex-col gap-2">
+          <responsive on="768-" class="flex flex-row items-center justify-between gap-2"/>
           <div>
             <span class="text-heading block">{{purpose.label ?? purpose.id}}</span>
             <p data-if="{{purpose.description}}" class="text-tertiary">{{purpose.description ?? ''}}</p>
           </div>
-          <div class="w-full md:w-64">
+          <div class="w-full">
+            <responsive on="768-" class="w-64"/>
             <select name="identity.purpose_providers.{{purpose.id}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['identity.purpose_providers.' + purpose.id] ? 'text-primary w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm'}}" options="{{[{value: '', label: '$t:admin.settings.identity.purposes.use_default'}].concat((identityProviders?.data ?? []).map(function(p) { return { value: p.id, label: p.label }; }))}}"/>
             <span data-if="{{_local.errors?.['identity.purpose_providers.' + purpose.id]}}" class="form-error">{{_local.errors?.['identity.purpose_providers.' + purpose.id]?.[0] ?? ''}}</span>
           </div>

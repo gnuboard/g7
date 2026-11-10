@@ -16,7 +16,7 @@
       <p data-if="{{_global.boardBulkMembers?.mode === 'remove' &amp;&amp; (_global.boardBulkMembers?.type ?? 'manager') === 'manager'}}" class="board-text-tertiary">$t:sirsoft-board.admin.settings.bulk_members.hint</p>
       <div data-ref="bulk_members_confirm_error" data-if="{{!!_global.boardBulkMembers?.error}}" class="board-alert-danger board:text-sm">{{_global.boardBulkMembers?.error}}</div>
     </div>
-    <div class="board-modal-footer-buttons">
+    <footer>
       <button type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed">
         <on type="click">
           <close-modal/>
@@ -51,6 +51,6 @@
         <icon data-if="{{_global.boardBulkMembers?.isApplying === true}}" name="spinner" size="sm" :spin="true"/>
         <span>$t:sirsoft-board.admin.settings.bulk_members.apply</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

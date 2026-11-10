@@ -9,7 +9,52 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "id": "cre_005_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "id": "cre_006_save",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "고객을 대신해 신청 사유를 저장한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.updateClaimRequestOnBehalf",
+                        "params": {
+                            "pathSegment": "{{_global.claimRequestEditContext?.pathSegment ?? ''}}",
+                            "claimId": "{{_global.claimRequestEditContext?.claimId ?? null}}",
+                            "reasonCode": "{{_global.claimRequestEditReasonCode ?? ''}}",
+                            "reasonDetail": "{{_global.claimRequestEditReasonDetail ?? ''}}"
+                        },
+                        "onError": {
+                            "handler": "suppress"
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isEditingClaimRequest === true || (_global.claimRequestEditReasonCode ?? '') === ''}}"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.save"
+            }
+        ]
     },
     "children": [
         {
@@ -83,58 +128,6 @@
                         "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.fee_hint"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2"
-                    },
-                    "children": [
-                        {
-                            "id": "cre_005_cancel",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "id": "cre_006_save",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "고객을 대신해 신청 사유를 저장한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
-                                    "type": "click",
-                                    "handler": "sirsoft-ecommerce.updateClaimRequestOnBehalf",
-                                    "params": {
-                                        "pathSegment": "{{_global.claimRequestEditContext?.pathSegment ?? ''}}",
-                                        "claimId": "{{_global.claimRequestEditContext?.claimId ?? null}}",
-                                        "reasonCode": "{{_global.claimRequestEditReasonCode ?? ''}}",
-                                        "reasonDetail": "{{_global.claimRequestEditReasonDetail ?? ''}}"
-                                    },
-                                    "onError": {
-                                        "handler": "suppress"
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isEditingClaimRequest === true || (_global.claimRequestEditReasonCode ?? '') === ''}}"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.save"
-                        }
-                    ]
                 }
             ]
         }

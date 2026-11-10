@@ -11,7 +11,6 @@
  *  ⑥ 디그레이드(빈 recipes → no_recipes)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ActionAddPicker } from '../../../components/page-settings/ActionAddPicker';
@@ -32,6 +31,10 @@ const RECIPES = {
 beforeEach(() => cleanup());
 
 describe('ActionAddPicker', () => {
+  /**
+   * @scenario subject=action_add_picker
+   * @effects action_add_picker_groups_and_source_badges
+   */
   it('펼치면 그룹과 모든 항목 출처 배지를 표시한다', () => {
     render(<ActionAddPicker recipes={RECIPES} t={t} onAdd={vi.fn()} />);
     fireEvent.click(screen.getByTestId('g7le-action-add-toggle'));
@@ -47,6 +50,10 @@ describe('ActionAddPicker', () => {
     expect(screen.getByTestId('g7le-action-add-group-extension')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_add_picker
+   * @effects action_add_picker_search_filters
+   */
   it('검색은 라벨/핸들러명 부분일치로 필터한다', () => {
     render(<ActionAddPicker recipes={RECIPES} t={t} onAdd={vi.fn()} />);
     fireEvent.click(screen.getByTestId('g7le-action-add-toggle'));
@@ -55,6 +62,10 @@ describe('ActionAddPicker', () => {
     expect(screen.queryByTestId('g7le-init-action-spec-setState')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_add_picker
+   * @effects action_add_picker_select_builds_action
+   */
   it('항목 선택 시 buildAction(빈값) 으로 onAdd 한다', () => {
     const onAdd = vi.fn();
     render(<ActionAddPicker recipes={RECIPES} t={t} onAdd={onAdd} />);
@@ -64,11 +75,19 @@ describe('ActionAddPicker', () => {
     expect(onAdd.mock.calls[0][0]).toMatchObject({ handler: 'toast' });
   });
 
+  /**
+   * @scenario subject=action_add_picker
+   * @effects action_add_picker_empty_recipes_degrades
+   */
   it('빈 recipes 면 디그레이드 안내를 표시한다', () => {
     render(<ActionAddPicker recipes={{}} t={t} onAdd={vi.fn()} />);
     expect(screen.getByTestId('g7le-action-add-empty')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_add_picker
+   * @effects action_add_picker_component_context_same_catalog
+   */
   it('context=component 도 같은 카탈로그를 노출한다(정렬만 차이)', () => {
     render(<ActionAddPicker recipes={RECIPES} t={t} onAdd={vi.fn()} context="component" />);
     fireEvent.click(screen.getByTestId('g7le-action-add-toggle'));

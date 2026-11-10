@@ -15,7 +15,7 @@
         ]
     },
     "props": {
-        "className": "ecommerce-admin-card ecommerce-col-span-1-lg ecommerce:flex ecommerce:flex-col"
+        "className": "ecommerce-admin-card ecommerce:col-span-1 ecommerce:flex ecommerce:flex-col"
     },
     "children": [
         {

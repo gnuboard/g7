@@ -11,7 +11,24 @@
     "props": {
         "title": "{{_global.privacyTargets?.title ?? ''}}",
         "width": "800px",
-        "className": "ecommerce:max-w-[calc(100vw-2rem)]"
+        "className": "ecommerce:max-w-[calc(100vw-2rem)]",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-secondary"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.close"
+            }
+        ]
     },
     "children": [
         {
@@ -300,31 +317,6 @@
                             "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.empty"
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "privacy_targets_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-secondary"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.close"
                 }
             ]
         }

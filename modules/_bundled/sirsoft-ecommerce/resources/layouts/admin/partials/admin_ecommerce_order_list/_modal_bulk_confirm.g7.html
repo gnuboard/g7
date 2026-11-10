@@ -94,7 +94,7 @@
         </div>
       </div>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
         <on type="click">
           <close-modal/>
@@ -124,6 +124,6 @@
         <icon data-if="{{_global.isProcessing}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.order.bulk.confirm_apply'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

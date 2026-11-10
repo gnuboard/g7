@@ -266,7 +266,7 @@
 | `blur_until_loaded` | `data-blur-until-loaded` 또는 `<blur-until-loaded>` |
 | `classMap` | `<class-map key base default><variant when>…</class-map>` |
 | `isolatedState`(+`isolatedScopeId`) | `<isolated-state scope-id="…">` |
-| `responsive` | `<responsive on="portable">…</responsive>` (bp: portable/mobile/tablet/desktop) |
+| `responsive` | `<responsive on="portable">…</responsive>`. `on` 은 프리셋(portable/mobile/tablet/desktop) 또는 커스텀 구간 `min-max`(`768-1023`)·`min-`(`1024-`)·`-max`(`-767`). 한 노드에 같은 `on` 을 두 번 쓰면 `duplicate_node_key` 에러. 구간을 나누는 법은 [responsive-layout.md](responsive-layout.md#함정-열린-구간과-프리셋을-한-노드에-섞지-않는다) |
 | `lifecycle` | `<on event="mount">`/`<on event="unmount">` |
 | `onComponentEvent` | `<on listen="…">` |
 | `actions` | `<on event="click">…</on>` — §6 |
@@ -278,6 +278,8 @@
 | `comment` | `<!-- … -->` |
 
 > `data-if`/`data-each`/`data-key` 등 지시 키를 **무접두 속성**(`if=`·`each=`·`condition=`·`iteration=`)으로 쓰면 `foreign_idiom`/`node_key_as_attribute` 에러가 정확한 형태를 제안한다. AI·인간 작성 실측(S8)에서 자연 성향이 무접두 `if=` 였으나 이 에러가 1스텝 교정한다.
+
+`<img>` 가 업로드 이미지 서빙 주소를 그리면 표시 크기에 맞는 `thumbPreset` 을 준다. 원본이 의도인 자리는 `<!-- thumb-exempt: 사유 -->` 를 남긴다 — [규격 고르기와 면제 표기](../backend/image-thumbnails.md#프론트엔드).
 
 ---
 
@@ -329,7 +331,7 @@ hoist 태그는 **부모 컴포넌트 이름과 무관하게** 같은 props 키�
 
 > **이 계약은 기계가 강제한다 (S23 축 B).** 대상 템플릿의 그 노드 컴포넌트가 `footer`/`titlePrefix`/`titleSuffix` 를 선언하지 않았는데 그 자리를 쓰면 `hoist_prop_not_supported_by_template` lint 경고가 난다 — 부모 이름(`Modal`)이 아니라 **그 컴포넌트의 선언**으로 판정한다. 컴파일은 막지 않는다 — 아래 비대칭은 결함이 아니라 의도된 것이고, 막으면 두 템플릿이 공유하는 조각을 작성할 수 없게 된다. 판정 키는 {@see \App\Support\LayoutMarkup\EmbeddingCompiler} 의 `DECLARATION_CHECKED_PROPS` 셋으로 닫혀 있다 — 나머지 hoist 키(`expandChildren`·`options` 등)는 선언 없이 렌더하는 조합이 실측 수백 건이라 선언 대조가 오탐이다.
 >
-> **이 세 표기는 문법이지 보편 표면이 아니다 — 템플릿을 확인하고 쓴다.** `<prop-footer>`·`<title-prefix>`·`<title-suffix>` 는 **컴파일러가 어느 템플릿에서든 `props.footer`/`titlePrefix`/`titleSuffix` 로 hoist** 하지만, 그 props 를 **렌더하는 `Modal` 은 `sirsoft-admin_basic` 뿐**이다. `sirsoft-basic` 의 [Modal.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/Modal.tsx) 는 세 prop 을 구조분해하지 않고 rest spread 도 없어 **컴파일·렌더 모두 통과한 뒤 버튼이 조용히 사라진다**. 사용자 템플릿 모달의 확인/취소 버튼은 `children` 안에 둔다. 컴포넌트 측 계약은 [component-props.md §Modal](component-props.md#modal-컴포넌트) · [modal-usage.md §적용 범위](modal-usage.md) 참조.
+> **이 세 표기는 문법이지 보편 표면이 아니다 — 템플릿을 확인하고 쓴다.** `<prop-footer>`·`<title-prefix>`·`<title-suffix>` 는 **컴파일러가 어느 템플릿에서든 `props.footer`/`titlePrefix`/`titleSuffix` 로 hoist** 하지만, `props.footer` 는 두 번들 템플릿 `Modal` 이 모두 렌더하지만(`sirsoft-basic` 은 7.2.0 부터, #869), `titlePrefix`/`titleSuffix` 를 **렌더하는 `Modal` 은 `sirsoft-admin_basic` 뿐**이다. `sirsoft-basic` 의 [Modal.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/Modal.tsx) 는 그 두 prop 을 구조분해하지 않고 rest spread 도 없어 **컴파일·렌더 모두 통과한 뒤 조용히 사라진다**. 컴포넌트 측 계약은 [component-props.md §Modal](component-props.md#modal-컴포넌트) · [modal-usage.md §적용 범위](modal-usage.md) 참조.
 >
 > **너비는 `<modal size="…">` 로 고른다** — `sm`/`small` 400px · `md`/`medium` 500px · `lg`/`large` 720px · `xl` 900px · `2xl` 1120px. `width` 를 함께 주면 `width` 가 이기고, 모르는 값은 기본 500px 으로 떨어진다. 좁은 화면 넘침은 컨테이너의 `max-w-[calc(100vw-2rem)]` 이 막는다.
 

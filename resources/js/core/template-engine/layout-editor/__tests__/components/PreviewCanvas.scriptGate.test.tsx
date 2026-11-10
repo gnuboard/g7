@@ -120,22 +120,18 @@ describe('PreviewCanvas — scripts[] 출처 게이트', () => {
         } as any;
 
         return render(
-            React.createElement(
-                TranslationProvider,
-                {
-                    translationEngine: engine,
-                    translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
-                },
-                React.createElement(
-                    LayoutEditorProvider,
-                    { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-                    React.createElement(
-                        LayoutDocumentProvider,
-                        { value: docValue },
-                        React.createElement(PreviewCanvas)
-                    )
-                )
-            )
+            React.createElement(TranslationProvider, {
+                translationEngine: engine,
+                translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
+                children: React.createElement(LayoutEditorProvider, {
+                    templateIdentifier: 'sirsoft-basic',
+                    initialLocale: 'ko',
+                    children: React.createElement(LayoutDocumentProvider, {
+                        value: docValue,
+                        children: React.createElement(PreviewCanvas),
+                    }),
+                }),
+            }),
         );
     };
 

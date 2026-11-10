@@ -8,6 +8,7 @@ use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
@@ -656,6 +657,7 @@ class PageAttachmentService
         }
 
         // nosniff — 다운로드 응답도 브라우저가 내용을 추측해 렌더하지 않도록 (KVE-2026-2366)
+        // thumbnail-exempt: 내려받기 전용 통로(Content-Disposition: attachment)라 이미지도 원본 파일로 낸다. 썸네일은 미리보기 통로가 낸다
         InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
 
         $validators = $this->previewValidators($attachment);
@@ -700,6 +702,20 @@ class PageAttachmentService
             ]),
             'last_modified' => $lastModifiedAt,
         ];
+    }
+
+    /**
+     * 첨부의 원본 파일이 저장소에 있는지 (원본 응답과 같은 행 disk 로 확인합니다).
+     *
+     * 썸네일 판정 앞에서 부릅니다 — 원격 저장소에서 원본만 지워져 파생본이 남은 경우, 확인 없이 썸네일로 가면
+     * 무파라미터 요청은 404 인데 `?size=` 요청은 남은 파생본으로 200 이 됩니다.
+     *
+     * @param  PageAttachment  $attachment  첨부파일 모델
+     * @return bool 있으면 true
+     */
+    public function originalExists(PageAttachment $attachment): bool
+    {
+        return $this->storageForRow($attachment->disk)->exists('attachments', (string) $attachment->path);
     }
 
     /**
@@ -764,6 +780,35 @@ class PageAttachmentService
         }
 
         return $response;
+    }
+
+    /**
+     * 첨부 행의 썸네일 원본 정보를 만듭니다 (미리보기 통로·썸네일 원본 제공자 공용).
+     *
+     * 페이지 첨부는 미발행 페이지 게이트가 걸린 원본이라 항상 `gated` 다 — 파생본은 비공개 썸네일
+     * 디스크에 두고 `private` 캐시로 낸다. 같은 원본의 파생본이 발행 상태에 따라 두 디스크로 갈리지
+     * 않게 상태와 무관하게 고정한다. 디스크는 행이 정한다.
+     *
+     * @param  PageAttachment  $attachment  첨부파일 모델
+     * @return ThumbnailSource|null 원본 정보 (래스터 이미지가 아니거나 드라이버가 썸네일을 지원하지 않으면 null)
+     */
+    public function thumbnailSourceFor(PageAttachment $attachment): ?ThumbnailSource
+    {
+        if (! $attachment->isImage()) {
+            return null;
+        }
+
+        $meta = is_array($attachment->meta) ? $attachment->meta : [];
+
+        return ThumbnailSource::fromStorage(
+            $this->storageForRow($attachment->disk),
+            'attachments',
+            (string) $attachment->path,
+            $attachment->mime_type,
+            gated: true,
+            width: isset($meta['width']) ? (int) $meta['width'] : null,
+            height: isset($meta['height']) ? (int) $meta['height'] : null,
+        );
     }
 
     /**

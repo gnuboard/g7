@@ -8,7 +8,7 @@
  * - templates/.../partials/shop/list/_recent_products.json
  *
  * 검증 항목:
- * - 카드 너비: 모바일 2개/줄 + 데스크톱 4개/줄 클래스 공존
+ * - 카드 너비: 기본(모바일) 2개/줄, responsive 640-1023 구간 3개/줄, desktop 구간 4개/줄
  * - 다음 버튼: portable responsive에서 +2 기준 비활성화
  * - responsive 속성 portable 프리셋 사용
  *
@@ -98,6 +98,8 @@ describe('인기상품/신상품/최근본상품 섹션 모바일 반응형', ()
 
   describe.each(partials)('$name 섹션', ({ layout }) => {
     describe('grid 기반 카드 크기 반응형', () => {
+      // @scenario part=card_grid
+      // @effects scroll_container_is_grid_flow_col
       it('컨테이너가 grid grid-flow-col을 사용해야 한다', () => {
         const container = findScrollContainer(layout);
         expect(container).not.toBeNull();
@@ -105,13 +107,24 @@ describe('인기상품/신상품/최근본상품 섹션 모바일 반응형', ()
         expect(container.props.className).toContain('grid-flow-col');
       });
 
-      it('모바일 auto-cols 50%, sm 33.333%, lg 25%가 적용되어야 한다', () => {
+      // @scenario part=card_grid
+      // @effects card_columns_follow_responsive_ranges
+      it('모바일 auto-cols 50%, 640-1023 33.333%, 데스크톱 25%가 responsive 구간으로 적용되어야 한다', () => {
         const container = findScrollContainer(layout);
-        expect(container.props.className).toContain('auto-cols-[calc(50%_-_8px)]');
-        expect(container.props.className).toContain('sm:auto-cols-[calc(33.333%_-_11px)]');
-        expect(container.props.className).toContain('lg:auto-cols-[calc(25%_-_12px)]');
+        const tokens = (cls: unknown): string[] => (typeof cls === 'string' ? cls.split(/\s+/) : []);
+        // 화면 폭 분기는 Tailwind 반응형 접두 대신 엔진 responsive 로 적는다
+        expect(container.props.className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):/);
+        expect(tokens(container.props.className)).toContain('auto-cols-[calc(50%_-_8px)]');
+        expect(tokens(container.responsive?.['640-1023']?.props?.className)).toContain('auto-cols-[calc(33.333%_-_11px)]');
+        expect(tokens(container.responsive?.desktop?.props?.className)).toContain('auto-cols-[calc(25%_-_12px)]');
+        // 구간 className 은 기본값을 통째로 바꾸므로 그리드 골격도 함께 들고 있어야 한다
+        for (const key of ['640-1023', 'desktop']) {
+          expect(tokens(container.responsive?.[key]?.props?.className)).toEqual(expect.arrayContaining(['grid', 'grid-flow-col']));
+        }
       });
 
+      // @scenario part=card_grid
+      // @effects card_has_no_own_width
       it('카드에 별도 너비 클래스가 없어야 한다 (grid가 제어)', () => {
         const card = findIterationCard(layout);
         expect(card.props.className ?? '').not.toContain('w-[');
@@ -120,28 +133,38 @@ describe('인기상품/신상품/최근본상품 섹션 모바일 반응형', ()
     });
 
     describe('다음 버튼 responsive 오버라이드', () => {
+      // @scenario part=next_button
+      // @effects next_button_threshold_per_range
       it('모바일(0-639)에서 +2 기준 disabled 조건이 있어야 한다', () => {
         const nextBtn = findNextButton(layout);
         expect(nextBtn).not.toBeNull();
         expect(nextBtn.responsive['0-639'].props.disabled).toContain('+ 2');
       });
 
+      // @scenario part=next_button
+      // @effects next_button_threshold_per_range
       it('태블릿(640-1023)에서 +3 기준 disabled 조건이 있어야 한다', () => {
         const nextBtn = findNextButton(layout);
         expect(nextBtn.responsive['640-1023'].props.disabled).toContain('+ 3');
       });
 
+      // @scenario part=next_button
+      // @effects next_button_threshold_per_range
       it('데스크톱 기본값은 +4 기준이어야 한다', () => {
         const nextBtn = findNextButton(layout);
         expect(nextBtn.props.disabled).toContain('+ 4');
         expect(nextBtn.props.className).toContain('+ 4');
       });
 
+      // @scenario part=next_button
+      // @effects next_button_counts_same_collection
       it('모바일 disabled 가 기본값과 같은 컬렉션을 세야 한다', () => {
         const nextBtn = findNextButton(layout);
         expect(nextBtn.responsive['0-639'].props.disabled).toContain(countedCollection(nextBtn));
       });
 
+      // @scenario part=next_button
+      // @effects next_button_counts_same_collection
       it('태블릿 disabled 가 기본값과 같은 컬렉션을 세야 한다', () => {
         const nextBtn = findNextButton(layout);
         expect(nextBtn.responsive['640-1023'].props.disabled).toContain(countedCollection(nextBtn));
@@ -150,17 +173,23 @@ describe('인기상품/신상품/최근본상품 섹션 모바일 반응형', ()
   });
 
   describe('공통 구조 검증', () => {
+    // @scenario part=section_shell
+    // @effects section_hides_overflow_and_empty_state
     it.each(partials)('$name: 컨테이너가 overflow-x-hidden이어야 한다', ({ layout }) => {
       const container = findScrollContainer(layout);
       expect(container).not.toBeNull();
       expect(container.props.className).toContain('overflow-x-hidden');
     });
 
+    // @scenario part=section_shell
+    // @effects next_button_threshold_per_range
     it.each(partials)('$name: isolatedState에 scrollIdx가 정의되어야 한다', ({ layout }) => {
       expect(layout.isolatedState).toBeDefined();
       expect(layout.isolatedState.scrollIdx).toBe(0);
     });
 
+    // @scenario part=section_shell
+    // @effects section_hides_overflow_and_empty_state
     it.each(partials)('$name: if 조건으로 데이터 없을 때 비노출 처리되어야 한다', ({ layout }) => {
       expect(layout.if).toBeDefined();
       expect(layout.if).toContain('.length > 0');

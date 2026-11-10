@@ -12,6 +12,8 @@
  */
 
 /** 스펙 한 그릇 — 활성 확장 네임스페이스 병합 결과 (5.2 데이터 흐름) */
+import type { RecipeApply } from './recipeEngine';
+
 export interface EditorSpec {
   /** 스펙 스키마 버전 (`specVersion`) */
   version?: string;
@@ -288,8 +290,12 @@ export interface EditorControlSpec {
   widget?: string;
   /** 친화 라벨 — `$t:...` 다국어 키 */
   label?: string;
-  /** apply 타입 — `classToken`/`styleProp`/`cssVar`/`propValue` (원칙 4.8) */
-  apply?: string;
+  /**
+   * apply 선언 — 컨트롤 값을 노드에 쓰는 방식(`classToken`/`styleProp`/`cssVar`/`propValue`/`nodeKey`, 원칙 4.8).
+   * 런타임 값은 늘 객체다(번들 editor-spec 621건 전수, 코드·시험의 문자열 사용 0건 — #869). 종전 `string` 선언은
+   * 실제와 달라 사용처마다 `as unknown as` 캐스팅이 필요했다.
+   */
+  apply?: RecipeApply;
   /** apply 대상 키(스타일 속성명/클래스 토큰/CSS 변수명/prop 경로 등) */
   target?: string | string[];
   /** select 위젯 등의 선택지 */

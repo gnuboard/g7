@@ -20,8 +20,8 @@
 이 파일은 자동 생성 산출물이 아니라 **수작업으로 작성**한다. 확장 루트(`module.json`/`plugin.json`/`template.json` 옆)에 둔다.
 
 - 타입 SSoT: `resources/js/core/template-engine/layout-editor/spec/specTypes.ts` 의 `EditorSpec` 인터페이스 — 각 블록의 의도·병합 규칙·플레이스홀더 문법이 JSDoc 으로 명시되어 있다. 본 문서와 타입이 어긋나면 타입이 정본이다.
-- 서빙 엔드포인트: `/api/{templates|modules|plugins}/{id}/editor-spec`
-- 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 fetch 해 네임스페이스 병합한다.
+- 서빙 엔드포인트: 편집기는 묶음 엔드포인트 `GET /api/templates/{id}/editor-spec-bundle?modules[]=..&plugins[]=..` 한 요청으로 받는다(7.2.0, engine-v1.89.0). 항목마다 개별 엔드포인트 `/api/{templates|modules|plugins}/{id}/editor-spec` 과 같은 판정(활성 확장만, 설치본만)을 하고, 한 확장이 실패해도 그 항목만 비운다. 개별 엔드포인트는 서드파티 호환을 위해 그대로 있다 — [templates.md](../backend/api/templates.md#get-apitemplatesidentifiereditor-spec-bundle)
+- 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 묶음으로 받아 네임스페이스 병합한다.
 
 ## 확장 컴포넌트의 팔레트 등재
 
@@ -156,6 +156,7 @@ php artisan {module|plugin|template}:update {id} --force
 - `array-items` / `array-group` / `array-cell-tree` / `number-list` — 정적 배열 prop 편집(탭/차트 데이터/카드 컬럼 등). `nodeEditor` 슬롯 또는 propControl 로 결선한다(아래 "데이터 정의 빌트인" 참조).
 - `number` — 숫자를 기대하는 prop(예 `maxVisibleBoards`)을 편집한다. 위젯이 `number` 타입을 직접 내보내므로 `"5"` 같은 문자열이 저장되지 않는다. 빈 입력은 prop 삭제, `0` 은 유효값이라 삭제되지 않으며, 숫자로 해석할 수 없는 입력은 방출하지 않아 저장본을 보존한다(조용한 변조 금지). `min`/`max`/`step` 은 선언만 하고 **클램프하지 않는다** — 사용자가 넣은 값은 그대로 보존한다. 값이 `{{바인딩}}` 문자열일 때의 보호는 위젯이 아니라 아래 「데이터 연결 값 보호」 공용 게이트가 맡는다 — 숫자 입력칸이 그 값을 빈칸으로 표시해 다음 blur 에 소실시키는 것을 그 게이트가 차단한다.
 - `i18n-text` vs `text` — **표시 텍스트**(사용자가 화면에서 읽는 라벨/메시지/플레이스홀더)는 `i18n-text` 를 쓴다. `i18n-text` 는 평문 입력 시 `createCustomKey` 로 다국어 키를 자동 생성해 `$t:custom.*` 로 치환하고(미리보기에 raw 키 미노출), 🌐 펼침으로 ko/en/ja 동시 편집을 제공하며, `{{바인딩}}` 값이면 읽기전용 디그레이드한다(공통 위젯 `I18nTextField`). **비-표시값**(URL/id/수치/색/통화코드/separator 등)만 `text` 를 쓴다. 표시 텍스트에 `text` 를 쓰면 raw `$t:` 노출·다국어 누락 회귀가 발생한다(자동 검증이 배열 라벨 필드의 `text` 사용을 차단).
+- `thumbnail-preset` — 이미지 `thumbPreset` prop 의 썸네일 규격을 고른다. 값은 규격 이름 문자열이고 `apply` 는 `propValue` 다. 목록은 서버 규격(코어 고정·확장 등록·운영자 추가)을 읽으므로 `options` 를 선언하지 않으며, 첫 항목 「원본」을 고르면 prop 이 삭제된다. 표현식이 저장된 prop 은 아래 공통 보호를 따른다.
 
 **데이터 연결 값 보호 — 모든 위젯 공통**:
 prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, 그 값을 편집하는 컨트롤은 **원문 배지**로 디그레이드된다. 위젯은 그 문자열을 해석하지 못해 빈 컨트롤로 보이고, 그 상태에서 조작하면 표현식이 그대로 덮여 **환경설정과의 연결이 끊기기** 때문이다. 이 판정은 개별 위젯이 아니라 컨트롤 렌더러 한 곳에서 이뤄지므로 **새 위젯을 등록해도 자동 적용**된다 — 위젯 안에 같은 판정을 다시 넣지 않는다(넣으면 해제 경로까지 막혀 「직접 지정으로 바꾸기」가 무반응이 된다).

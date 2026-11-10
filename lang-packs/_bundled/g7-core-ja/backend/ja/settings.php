@@ -75,6 +75,10 @@ return [
         'search' => [
             'mysql-fulltext' => 'MySQL 全文検索',
         ],
+        'image' => [
+            'gd' => 'GD',
+            'imagick' => 'Imagick (ImageMagick)',
+        ],
     ],
     'php_probe_ok' => 'PHP :version を確認しました (最小要件 :min_version)',
     'php_probe_version_low' => 'PHP :version は最小要件バージョン :min_version より低いです。',
@@ -118,6 +122,12 @@ return [
     'driver_unusable_s3_adapter' => 'S3ストレージアダプター(league/flysystem-aws-s3-v3)がインストールされていません。',
     'driver_unusable_redis_client' => 'phpredis拡張とpredisライブラリのどちらも利用できません。',
     'driver_unusable_memcached_extension' => 'memcached PHP拡張がインストールされていません。',
+    'driver_unusable_gd_extension' => 'gd PHP拡張がインストールされていません。',
+    'driver_unusable_imagick_extension' => 'imagick PHP拡張がインストールされていません。',
+    'thumbnail_disks' => [
+        'thumbnails' => 'サーバー非公開ストレージ (既定)',
+        's3' => 'Amazon S3 (非公開、サーバー経由で送信)',
+    ],
     'websocket_invalid_host' => 'Websocketホスト設定が正しくありません。ホストにはアドレスのみを入力し、アカウント情報(@)またはhttp/https以外のプロトコルは使用できません。',
     'websocket_connection_refused' => 'Websocketサーバーに接続できません。サーバーが実行中であるか確認してください。',
     'invalid_email' => '無効なメールアドレスです。',

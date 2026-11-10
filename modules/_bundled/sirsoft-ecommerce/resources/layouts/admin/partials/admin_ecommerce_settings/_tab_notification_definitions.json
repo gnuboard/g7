@@ -48,8 +48,20 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-1023": {
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3"
+                            }
+                        },
+                        "desktop": {
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-3 ecommerce:gap-3"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:lg:grid-cols-3 ecommerce:gap-3"
+                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -345,8 +357,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-start ecommerce:justify-between"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:sm:flex-row ecommerce:sm:items-start ecommerce:sm:justify-between"
+                                                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                                                     },
                                                     "children": [
                                                         {

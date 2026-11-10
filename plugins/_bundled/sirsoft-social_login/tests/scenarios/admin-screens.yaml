@@ -58,6 +58,7 @@ effects:
   - data_source_condition_uses_if
   - provider_label_follows_site_locales
   - copy_writes_and_toasts
+  - provider_copy_labels_shown_from_640
   - copy_falls_back_to_selection
   - test_login_opens_blank_then_navigates
   - test_login_refuses_unsafe_url

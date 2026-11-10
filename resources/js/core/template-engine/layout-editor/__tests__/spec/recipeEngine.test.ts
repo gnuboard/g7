@@ -1,7 +1,3 @@
-// @scenario apply_type=cssVar, consumer=none, storage_scope=template_layouts, stored_shape=object, widget_output=image_object
-// @scenario apply_type=propValue, consumer=none, storage_scope=template_layouts, stored_shape=string, widget_output=scalar_string
-// @scenario apply_type=propValue, consumer=none, storage_scope=template_layouts, stored_shape=string, widget_output=image_object_empty_url
-// @scenario apply_type=classToken, consumer=none, storage_scope=template_layouts, stored_shape=absent, widget_output=undefined_cleared
 /**
  * recipeEngine.test.ts — 컨트롤 레시피 ↔ 노드 패치 변환
  *
@@ -18,7 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { applyRecipe, reverseResolve } from '../../spec/recipeEngine';
+import { applyRecipe, reverseResolve, type RecipeApply } from '../../spec/recipeEngine';
 import type { EditorControlSpec } from '../../spec/specTypes';
 import type { EditorNode } from '../../utils/layoutTreeUtils';
 
@@ -867,7 +863,7 @@ describe('number 위젯 값 — propValue 숫자 기록', () => {
 describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
   const dataKeyCtrl: EditorControlSpec = {
     widget: 'core-datakey',
-    apply: { type: 'nodeKey', nodeKey: 'dataKey' } as unknown as string,
+    apply: { type: 'nodeKey', nodeKey: 'dataKey' },
   };
 
   /** @effects nodekey_apply_writes_node_top_level_key_not_props */
@@ -911,7 +907,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
   it('5-6 예약키 가드 — nodeKey:"children" 은 no-op (노드 파괴 차단)', () => {
     const evil: EditorControlSpec = {
       widget: 'text',
-      apply: { type: 'nodeKey', nodeKey: 'children' } as unknown as string,
+      apply: { type: 'nodeKey', nodeKey: 'children' },
     };
     const node: EditorNode = { name: 'Div', children: [{ name: 'Span' }] };
     const out = applyRecipe(node, evil, 'boom');
@@ -923,7 +919,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
   /** @effects nodekey_apply_ignores_device_and_dark_scope */
   it('5-7 디바이스 scope 도 최상위에 쓴다 (responsive 브랜치는 런타임이 안 읽는다)', () => {
     const next = applyRecipe({ name: 'Form' }, dataKeyCtrl, 'orderer', {
-      colorScheme: 'light',
+      colorScheme: 'base',
       breakpoint: 'mobile',
     }) as EditorNode & Record<string, unknown>;
     expect(next.dataKey).toBe('orderer');
@@ -934,7 +930,7 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
   it('5-8 디바이스 scope 역해석도 최상위에서 — placeholder 흐림을 만들지 않는다', () => {
     const node = { name: 'Form', dataKey: 'orderer' } as EditorNode;
     expect(
-      reverseResolve(node, dataKeyCtrl, { colorScheme: 'light', breakpoint: 'mobile' }),
+      reverseResolve(node, dataKeyCtrl, { colorScheme: 'base', breakpoint: 'mobile' }),
     ).toEqual({ value: 'orderer', matched: true });
   });
 
@@ -958,14 +954,70 @@ describe('nodeKey apply — 노드 최상위 구조키 (A2)', () => {
   it('5-11 비-문자열/빈 nodeKey 는 no-op', () => {
     const bad: EditorControlSpec = {
       widget: 'text',
-      apply: { type: 'nodeKey', nodeKey: 42 } as unknown as string,
+      apply: { type: 'nodeKey', nodeKey: 42 } as unknown as RecipeApply, // 일부러 틀린 모양(숫자 키)
     };
     const node: EditorNode = { name: 'Form' };
     expect(applyRecipe(node, bad, 'x')).toBe(node);
     const empty: EditorControlSpec = {
       widget: 'text',
-      apply: { type: 'nodeKey', nodeKey: '' } as unknown as string,
+      apply: { type: 'nodeKey', nodeKey: '' },
     };
     expect(applyRecipe(node, empty, 'x')).toBe(node);
+  });
+});
+
+// image 위젯 값 형태 매니페스트(tests/scenarios/layout-editor-image-widget-value-shape.yaml) pairwise 조합 중
+// 이 엔진 단위가 재는 네 칸. 종전에는 파일 머리에 시험 없이 떠 있었다(#869). consumer=none 은 이미지 소비 sink
+// 가 없는 임의 prop, storage_scope=template_layouts 는 편집기가 쓰는 저장 자리다(엔진 변환은 자리와 무관).
+describe('image 위젯 값 형태 — 저장값이 있는 슬롯과 해제', () => {
+  // @scenario apply_type=cssVar, consumer=none, storage_scope=template_layouts, stored_shape=object, widget_output=image_object
+  /**
+   * @effects image_object_narrows_to_wrapped_css_url_in_cssvar_and_single_styleprop
+   */
+  it('cssVar 슬롯에 레거시 객체가 저장돼 있어도 새 값 객체는 url(...) 문자열로 덮어쓴다', () => {
+    const heroVar: EditorControlSpec = { widget: 'image', apply: { type: 'cssVar', varName: '--hero' } };
+    const node: EditorNode = { name: 'Div', props: { style: { '--hero': { url: '/old.png' }, color: 'red' } } };
+    const style = applyRecipe(node, heroVar, { url: '/a.png', size: 'cover' }).props?.style as Record<string, unknown>;
+    expect(style['--hero']).toBe('url(/a.png)');
+    expect(style.color).toBe('red');
+  });
+
+  // @scenario apply_type=propValue, consumer=none, storage_scope=template_layouts, stored_shape=string, widget_output=scalar_string
+  /**
+   * @effects scalar_string_image_value_is_written_unchanged_in_propvalue_slot
+   */
+  it('propValue 슬롯: 이미 문자열인 값은 그대로 기록한다(저장된 문자열을 교체, 회귀 0)', () => {
+    const posterCtrl: EditorControlSpec = { widget: 'image', apply: { type: 'propValue', propKey: 'poster' } };
+    const node: EditorNode = { name: 'Div', props: { poster: '/old.png' } };
+    const next = applyRecipe(node, posterCtrl, '/new.png');
+    expect(next.props?.poster).toBe('/new.png');
+  });
+
+  // @scenario apply_type=propValue, consumer=none, storage_scope=template_layouts, stored_shape=string, widget_output=image_object_empty_url
+  /**
+   * @effects image_object_without_url_or_with_empty_url_deletes_the_prop
+   */
+  it('propValue 슬롯: 문자열이 저장돼 있을 때 빈 url 객체가 오면 그 prop 을 지운다', () => {
+    const posterCtrl: EditorControlSpec = { widget: 'image', apply: { type: 'propValue', propKey: 'poster' } };
+    const node: EditorNode = { name: 'Div', props: { poster: '/old.png', id: 'hero' } };
+    const next = applyRecipe(node, posterCtrl, { url: '', size: 'cover' });
+    expect(next.props && 'poster' in next.props).toBe(false);
+    expect(next.props?.id).toBe('hero');
+  });
+
+  // @scenario apply_type=classToken, consumer=none, storage_scope=template_layouts, stored_shape=absent, widget_output=undefined_cleared
+  /**
+   * @effects image_classtoken_clear_on_absent_store_leaves_no_classname
+   */
+  it('classToken 슬롯: 저장값이 없을 때 해제(undefined)는 className 을 만들지 않는다', () => {
+    const bgToken: EditorControlSpec = {
+      widget: 'image',
+      group: 'bg-image-token',
+      apply: { type: 'classToken', tokenTemplate: 'bg-[url({value})]' },
+    };
+    const node: EditorNode = { name: 'Div', props: { id: 'hero' } };
+    const next = applyRecipe(node, bgToken, undefined);
+    expect(next.props?.className).toBeUndefined();
+    expect(next.props?.id).toBe('hero');
   });
 });

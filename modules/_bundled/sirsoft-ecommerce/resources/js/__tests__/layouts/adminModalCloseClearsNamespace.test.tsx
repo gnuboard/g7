@@ -110,6 +110,7 @@ function unmountClearers(modal: Node, keys: string[]): Array<{ node: Node; guard
         const g = guarded || (x !== modal && (x.if !== undefined || x.iteration !== undefined));
         if (flatten(x.lifecycle?.onUnmount ?? []).some((a) => clearsAll(a, keys))) out.push({ node: x, guarded: g });
         (x.children ?? []).forEach((c: any) => walk(c, g));
+        (x.props?.footer ?? []).forEach((c: any) => walk(c, g)); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     };
     walk(modal, false);
 
@@ -129,6 +130,7 @@ function cancelButtons(modal: Node): Node[] {
         const click = flatten(actionsOf(x).filter((a: any) => (a.type ?? a.event) === 'click'));
         if (x.name === 'Button' && click.some((a) => a.handler === 'closeModal') && !click.some((a) => a.handler === 'apiCall' || /\.(execute|submit)/.test(String(a.handler)))) out.push(x);
         (x.children ?? []).forEach(walk);
+        (x.props?.footer ?? []).forEach(walk); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     };
     walk(modal);
 
@@ -221,6 +223,7 @@ function collectClicks(modal: Node): any[] {
         if (!isNode(x)) return;
         out.push(...actionsOf(x).filter((a: any) => (a.type ?? a.event) === 'click'));
         (x.children ?? []).forEach(walk);
+        (x.props?.footer ?? []).forEach(walk); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     };
     walk(modal);
 

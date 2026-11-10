@@ -77,7 +77,7 @@
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isTemplateManualInstalling}}">
         <on type="click">
           <!-- 취소 — 입력·오류·탭을 처음 상태로 되돌린다(다시 열었을 때 지난 파일이 남지 않게). -->
@@ -119,6 +119,6 @@
         <icon data-if="{{_global.isTemplateManualInstalling}}" name="spinner" class="animate-spin" size="sm"/>
         <span>{{_global.isTemplateManualInstalling ? '$t:admin.templates.installing' : '$t:admin.templates.actions.install'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

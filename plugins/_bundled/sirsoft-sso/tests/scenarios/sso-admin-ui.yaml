@@ -9,7 +9,7 @@ axes:
   screen: [plugin_settings, "accounts|logs", accounts, logs, "plugin_settings|accounts|logs"]
   locale: ["ko|en"]
   storage: [plugin_api]
-  tab: [idps, connection, roles, policy, retention, "attempts|scim", provisioning, diagnostics]
+  tab: [idps, connection, roles, policy, retention, "attempts|scim", provisioning, diagnostics, "attributes|roles"]
   view: ["list|edit"]
   subtabs: ["8"]
   schema: [driver]
@@ -88,6 +88,9 @@ effects:
   - unknown_code_generic
   - reauth_error_toast
   - reauth_screens_all_covered
+  - sp_info_copy_label_shown_from_640
+  - mapping_inputs_fixed_width_from_768
+  - ldap_test_inputs_third_width_from_640
 test_files:
   - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/plugin-settings.test.tsx
   - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/admin-screens.test.tsx

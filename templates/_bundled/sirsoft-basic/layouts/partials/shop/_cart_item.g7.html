@@ -15,7 +15,7 @@
     <!-- 상품 이미지 (새 창으로 열기) -->
     <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" rel="noopener" class="flex-shrink-0">
       <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-        <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
+        <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
         <div data-if="{{!item.product.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
           <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
         </div>

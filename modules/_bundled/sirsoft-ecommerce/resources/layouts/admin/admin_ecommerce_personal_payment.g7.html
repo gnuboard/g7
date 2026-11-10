@@ -25,7 +25,7 @@
         <div>
           <div class="ecommerce-flex-center ecommerce:gap-3 ecommerce:mb-1">
             <icon name="credit-card" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
-            <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.personal_payment.title</h1>
+            <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.personal_payment.title</h1>
           </div>
           <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.personal_payment.description</p>
         </div>
@@ -40,8 +40,10 @@
         </div>
       </div>
       <div data-ref="filter_card" class="ecommerce-admin-card ecommerce:mb-6 ecommerce-filter-grid">
-        <div data-ref="search_row" class="ecommerce-search-bar ecommerce:mb-4">
-          <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="ecommerce:h-9 ecommerce:md:shrink-0" value="{{_local.searchField}}">
+        <div data-ref="search_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-3 ecommerce:flex-wrap ecommerce:items-center ecommerce:mb-4"/>
+          <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="ecommerce:h-9" value="{{_local.searchField}}">
+            <responsive on="768-" class="ecommerce:h-9 ecommerce:shrink-0"/>
             <options>
               <option value="payment_number">$t:sirsoft-ecommerce.admin.personal_payment.search.field.payment_number</option>
               <option value="member_name">$t:sirsoft-ecommerce.admin.personal_payment.search.field.member_name</option>
@@ -53,13 +55,15 @@
               <set-state target="_local" searchField="{{$event.target.value}}"/>
             </on>
           </select>
-          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.search.placeholder" class="ecommerce-search-bar-input" value="{{_local.searchKeyword}}">
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.search.placeholder" class="ecommerce:w-full ecommerce:h-9 ecommerce:bg-gray-100 ecommerce:text-gray-900 ecommerce:px-3 ecommerce:rounded-lg ecommerce:text-sm ecommerce:placeholder:text-gray-600 ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-100 ecommerce:dark:placeholder:text-gray-300" value="{{_local.searchKeyword}}">
+            <responsive on="768-" class="ecommerce:w-full ecommerce:h-9 ecommerce:bg-gray-100 ecommerce:text-gray-900 ecommerce:px-3 ecommerce:rounded-lg ecommerce:text-sm ecommerce:placeholder:text-gray-600 ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-100 ecommerce:dark:placeholder:text-gray-300 ecommerce:flex-1 ecommerce:min-w-64"/>
             <on type="change">
               <!-- 입력을 마칠 때 담는다 -->
               <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
             </on>
           </input>
-          <button data-ref="reset_button" type="button" class="ecommerce-search-bar-reset">
+          <button data-ref="reset_button" type="button" class="ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:rounded-lg ecommerce:transition-colors ecommerce:duration-200 ecommerce:cursor-pointer ecommerce:bg-transparent ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600 ecommerce:dark:hover:bg-gray-700 ecommerce:w-full ecommerce:shrink-0">
+            <responsive on="768-" class="ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:rounded-lg ecommerce:transition-colors ecommerce:duration-200 ecommerce:cursor-pointer ecommerce:bg-transparent ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600 ecommerce:dark:hover:bg-gray-700 ecommerce:w-auto ecommerce:shrink-0"/>
             <on type="click">
               <!-- 검색 초기화 — 아래 상태·결제수단·기간·금액 필터까지 함께 되돌린다 -->
               <set-state target="_local" statusFilter="" paymentMethodFilter="" dateType="created_at" startDate="" endDate="" minAmount="" maxAmount="" searchField="payment_number" searchKeyword=""/>
@@ -68,8 +72,11 @@
             <span>$t:sirsoft-ecommerce.admin.personal_payment.search.reset</span>
           </button>
         </div>
-        <div data-ref="status_filter_row" class="ecommerce-filter-row">
-          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.status</span>
+        <div data-ref="status_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+          <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+            <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.personal_payment.filter.status</span>
           <div class="ecommerce-filter-buttons">
             <!-- 진행 상태를 가리지 않고 모두 -->
             <button type="button" class="{{_local.statusFilter === '' ? 'ecommerce-btn-badge ecommerce:cursor-pointer ecommerce:bg-gray-200 ecommerce:text-gray-700 ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.statusFilter === ''}}">
@@ -101,8 +108,11 @@
             </button>
           </div>
         </div>
-        <div data-ref="payment_method_filter_row" class="ecommerce-filter-row">
-          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.payment_method</span>
+        <div data-ref="payment_method_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+          <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+            <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.personal_payment.filter.payment_method</span>
           <div class="ecommerce-filter-buttons">
             <button type="button" class="{{_local.paymentMethodFilter === '' ? 'ecommerce-btn-badge ecommerce:cursor-pointer ecommerce:bg-gray-200 ecommerce:text-gray-700 ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.paymentMethodFilter === ''}}">
               <on type="click">
@@ -146,10 +156,15 @@
             </button>
           </div>
         </div>
-        <div data-ref="date_filter_row" class="ecommerce-filter-row">
-          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.date_search</span>
-          <div class="ecommerce:md:flex-row ecommerce:md:items-center">
-            <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.personal_payment.filter.date_type" class="ecommerce:h-9 ecommerce:w-full ecommerce:md:w-24" value="{{_local.dateType}}">
+        <div data-ref="date_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+          <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+            <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.personal_payment.filter.date_search</span>
+          <div>
+            <responsive on="768-" class="ecommerce:flex-row ecommerce:items-center"/>
+            <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.personal_payment.filter.date_type" class="ecommerce:h-9 ecommerce:w-full" value="{{_local.dateType}}">
+              <responsive on="768-" class="ecommerce:h-9 ecommerce:w-24"/>
               <options>
                 <option value="created_at">$t:sirsoft-ecommerce.admin.personal_payment.filter.created_at</option>
                 <option value="expired_at">$t:sirsoft-ecommerce.admin.personal_payment.filter.expired_at</option>
@@ -161,17 +176,19 @@
             </select>
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
-              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}" class="ecommerce-input ecommerce:md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.start_date" value="{{_local.startDate}}">
+              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.start_date" value="{{_local.startDate}}">
+                <responsive on="768-" class="ecommerce-input ecommerce:w-36"/>
                 <on type="change">
                   <!-- 기간 시작일 -->
                   <set-state target="_local" startDate="{{$event.target.value}}"/>
                 </on>
               </input>
             </div>
-            <span class="ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+            <span class="ecommerce:hidden ecommerce:text-gray-500 ecommerce:dark:text-gray-400"><responsive on="768-" class="ecommerce:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>~</span>
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
-              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}" class="ecommerce-input ecommerce:md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.end_date" value="{{_local.endDate}}">
+              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.end_date" value="{{_local.endDate}}">
+                <responsive on="768-" class="ecommerce-input ecommerce:w-36"/>
                 <on type="change">
                   <!-- 기간 종료일 -->
                   <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -180,17 +197,23 @@
             </div>
           </div>
         </div>
-        <div data-ref="amount_filter_row" class="ecommerce-filter-row">
-          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.amount</span>
-          <div class="ecommerce:md:flex-row ecommerce:md:items-center">
-            <input type="text" class="ecommerce-input ecommerce:md:w-28" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.min_amount" value="{{_local.minAmount}}">
+        <div data-ref="amount_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+          <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+            <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.personal_payment.filter.amount</span>
+          <div>
+            <responsive on="768-" class="ecommerce:flex-row ecommerce:items-center"/>
+            <input type="text" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.min_amount" value="{{_local.minAmount}}">
+              <responsive on="768-" class="ecommerce-input ecommerce:w-28"/>
               <on type="change">
                 <!-- 결제금액 하한 -->
                 <set-state target="_local" minAmount="{{$event.target.value}}"/>
               </on>
             </input>
-            <span class="ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
-            <input type="text" class="ecommerce-input ecommerce:md:w-28" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.max_amount" value="{{_local.maxAmount}}">
+            <span class="ecommerce:hidden ecommerce:text-gray-500 ecommerce:dark:text-gray-400"><responsive on="768-" class="ecommerce:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>~</span>
+            <input type="text" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.max_amount" value="{{_local.maxAmount}}">
+              <responsive on="768-" class="ecommerce-input ecommerce:w-28"/>
               <on type="change">
                 <!-- 결제금액 상한 -->
                 <set-state target="_local" maxAmount="{{$event.target.value}}"/>

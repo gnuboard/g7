@@ -32,7 +32,8 @@
           </div>
         </div>
       </div>
-      <div data-ref="reported_content_grid" class="board:grid board:grid-cols-1 board:lg:grid-cols-2 board:gap-4">
+      <div data-ref="reported_content_grid" class="board:grid board:grid-cols-1 board:gap-4">
+        <responsive on="desktop" class="board:grid board:grid-cols-2 board:gap-4"/>
         <div data-ref="field_author">
           <span class="board-text-tertiary board:block board:font-medium board:mb-1">{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.content_author_label' : '$t:sirsoft-board.admin.reports.detail.comment_author_label'}}</span>
           <!-- 회원 작성자: ActionMenu로 사용자 정보 드롭다운 -->
@@ -120,7 +121,8 @@
       <div class="board-row-stack">
         <div data-ref="reporters_list_container_{{reporterIdx}}" data-each="reporter, reporterIdx in reporters_list?.data?.data ?? report_detail?.data?.reporters ?? []" data-blur-until-loaded="{{_local.reporters_loading}}" class="">
           <div data-ref="reporter_item_card_{{reporterIdx}}" class="board-admin-card">
-            <div data-ref="card_inner_grid_{{reporterIdx}}" class="board-grid-2col board:lg:grid-cols-5">
+            <div data-ref="card_inner_grid_{{reporterIdx}}" class="board-grid-2col">
+              <responsive on="desktop" class="board-grid-2col board:grid-cols-5"/>
               <div data-ref="reporter_field_{{reporterIdx}}">
                 <span class="board-text-tertiary board:block board:font-medium board:mb-1">$t:sirsoft-board.admin.reports.detail.reporter_label</span>
                 <action-menu data-type="composite" data-if="{{reporter.reporter?.uuid}}" triggerLabel="{{reporter.reporter?.name ?? '-'}}" triggerIconName="" position="right">
@@ -147,7 +149,8 @@
                 <span class="board-text-tertiary board:block board:font-medium board:mb-1">$t:sirsoft-board.admin.reports.detail.reason_type_label</span>
                 <span class="board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200">$t:sirsoft-board.enums.report_reason_type.{{reporter.reason_type}}</span>
               </div>
-              <div data-ref="reporter_item_reason_{{reporterIdx}}" class="board:md:col-span-2">
+              <div data-ref="reporter_item_reason_{{reporterIdx}}">
+                <responsive on="768-" class="board:col-span-2"/>
                 <span class="board-text-tertiary board:block board:font-medium board:mb-1">$t:sirsoft-board.admin.reports.detail.reason_detail_label</span>
                 <p class="board-text-body board:line-clamp-3">{{reporter.reason_detail}}</p>
               </div>

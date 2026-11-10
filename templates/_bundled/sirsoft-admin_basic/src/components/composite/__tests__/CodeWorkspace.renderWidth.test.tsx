@@ -6,7 +6,6 @@
  * 데스크톱 값(14px)이 쓰였다. 훅이 없을 때 창 폭 폴백은 `CodeWorkspace.buffers.test.tsx` 가 잠근다.
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CodeWorkspace } from '../CodeWorkspace';

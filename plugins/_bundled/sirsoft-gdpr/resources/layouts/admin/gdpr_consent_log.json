@@ -166,8 +166,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "gdpr:text-2xl gdpr:font-semibold gdpr:text-gray-900 gdpr:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "gdpr-page-title"
+                                            "className": "gdpr:text-xl gdpr:font-semibold gdpr:text-gray-900 gdpr:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-gdpr.admin.consent_log.title"
                                     },
@@ -356,15 +363,29 @@
                                         "id": "consent_key_filter",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "gdpr:flex gdpr:flex-row gdpr:gap-2 gdpr:items-center"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "gdpr-filter-row"
+                                            "className": "gdpr:flex gdpr:flex-col gdpr:gap-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "gdpr:text-sm gdpr:text-gray-600 gdpr:dark:text-gray-400 gdpr:mb-0 gdpr:shrink-0 gdpr:flex gdpr:items-center gdpr:w-32"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "gdpr-filter-label gdpr:w-32"
+                                                    "className": "gdpr:text-sm gdpr:text-gray-600 gdpr:block gdpr:mb-2 gdpr:dark:text-gray-400 gdpr:w-32"
                                                 },
                                                 "text": "$t:sirsoft-gdpr.admin.consent_log.filter.consent_key_label"
                                             },
@@ -608,15 +629,29 @@
                                         "id": "action_filter",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "gdpr:flex gdpr:flex-row gdpr:gap-2 gdpr:items-center"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "gdpr-filter-row"
+                                            "className": "gdpr:flex gdpr:flex-col gdpr:gap-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "gdpr:text-sm gdpr:text-gray-600 gdpr:dark:text-gray-400 gdpr:mb-0 gdpr:shrink-0 gdpr:flex gdpr:items-center gdpr:w-32"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "gdpr-filter-label gdpr:w-32"
+                                                    "className": "gdpr:text-sm gdpr:text-gray-600 gdpr:block gdpr:mb-2 gdpr:dark:text-gray-400 gdpr:w-32"
                                                 },
                                                 "text": "$t:sirsoft-gdpr.admin.consent_log.filter.action_label"
                                             },
@@ -816,15 +851,29 @@
                                         "id": "source_filter",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "gdpr:flex gdpr:flex-row gdpr:gap-2 gdpr:items-center"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "gdpr-filter-row"
+                                            "className": "gdpr:flex gdpr:flex-col gdpr:gap-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "gdpr:text-sm gdpr:text-gray-600 gdpr:dark:text-gray-400 gdpr:mb-0 gdpr:shrink-0 gdpr:flex gdpr:items-center gdpr:w-32"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "gdpr-filter-label gdpr:w-32"
+                                                    "className": "gdpr:text-sm gdpr:text-gray-600 gdpr:block gdpr:mb-2 gdpr:dark:text-gray-400 gdpr:w-32"
                                                 },
                                                 "text": "$t:sirsoft-gdpr.admin.consent_log.filter.source_label"
                                             },
@@ -1235,8 +1284,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "gdpr:grid gdpr:grid-cols-2 gdpr:gap-4"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "gdpr-grid-2col-responsive"
+                                                "className": "gdpr:grid gdpr:grid-cols-1 gdpr:gap-4"
                                             },
                                             "children": [
                                                 {
@@ -1287,8 +1343,12 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "if": "{{(row.categories_snapshot?.length ?? 0) > 0}}",
-                                                    "props": {
-                                                        "className": "gdpr:md:col-span-2"
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "gdpr:col-span-2"
+                                                            }
+                                                        }
                                                     },
                                                     "children": [
                                                         {

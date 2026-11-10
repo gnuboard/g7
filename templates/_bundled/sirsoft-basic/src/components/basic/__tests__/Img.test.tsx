@@ -1,12 +1,12 @@
-// @scenario apply_type=propValue, consumer=img_src, storage_scope=template_layouts, stored_shape=string, widget_output=scalar_string
-// @scenario apply_type=propValue, consumer=mobilenav_logo, storage_scope=template_layouts, stored_shape=absent, widget_output=image_object
+// 조합 요약(마커 아님, 평문): layout-editor-image-widget-value-shape.yaml 의 pairwise 조합 둘(img_src 문자열 통과, mobilenav_logo 이미지 값 객체)은
+// 아래 「1 정상 문자열」 시험과 「MobileNav 로고」 시험이 단다.
 /**
  * @file Img.test.tsx
  * @description Basic Img 컴포넌트 — `src` 는 브라우저가 라우터 없이 직접 여는 주소라
  *              하위 폴더 마운트의 접두사를 컴포넌트가 붙여야 한다 (`A` 의 `href` 와 같은 축).
  *
- * @scenario base_path=subpath, navigation_direction=request
- * @effects template_img_component_applies_base_prefix
+ * 조합 요약(마커 아님, 평문): base_path=subpath, navigation_direction=request
+ * 효과 요약(마커 아님, 평문): template_img_component_applies_base_prefix
  *
  * @vitest-environment jsdom
  */
@@ -25,10 +25,10 @@
  * 두 방어선의 기준이 어긋나면 한쪽만 통과하는 값이 생긴다.
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Img } from '../Img';
+import MobileNav from '../../composite/MobileNav';
 
 /** 렌더된 <img> 의 src 속성 원문(미부착이면 null) */
 function srcAttr(container: HTMLElement): string | null {
@@ -38,7 +38,10 @@ function srcAttr(container: HTMLElement): string | null {
 }
 
 describe('Img — src 값 형태 방어', () => {
-  /** @effects img_string_src_passes_through_unchanged */
+  /**
+   * @scenario apply_type=propValue, consumer=img_src, storage_scope=template_layouts, stored_shape=string, widget_output=scalar_string
+   * @effects img_string_src_passes_through_unchanged
+   */
   it('1 정상 문자열은 그대로 통과한다 (회귀 0)', () => {
     const { container } = render(<Img src="/img/logo.png" />);
     expect(srcAttr(container)).toBe('/img/logo.png');
@@ -217,5 +220,27 @@ describe.each([
     expect(screen.getByTestId('img')).not.toHaveAttribute('src');
     expect(screen.getByTestId('img')).toHaveAttribute('alt', '빈 이미지');
     expect(apiSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('MobileNav 로고 — 편집기 image 위젯 값 객체가 저장값 없이 propValue 로 들어온 경우', () => {
+  beforeEach(() => {
+    // 드로어는 lg 미만에서만 그린다 — 엔진 반응형 폭을 모바일로 둔다
+    (window as any).G7Core = { ...((window as any).G7Core ?? {}), useResponsive: () => ({ width: 390 }) };
+  });
+
+  afterEach(() => {
+    delete (window as any).G7Core;
+  });
+
+  // @scenario apply_type=propValue, consumer=mobilenav_logo, storage_scope=template_layouts, stored_shape=absent, widget_output=image_object
+  // @effects img_image_value_object_resolves_to_its_url
+  it('logo 에 {url,size,repeat,position} 객체가 와도 드로어 로고 img 의 src 는 그 url 이다 ([object Object] 아님)', () => {
+    const logo = { url: '/api/attachment/logo-x', size: 'contain', repeat: 'no-repeat', position: 'left' };
+    render(<MobileNav isOpen onClose={() => {}} siteName="사이트" logo={logo as never} />);
+    const img = screen.getByAltText('사이트');
+    expect(img.tagName).toBe('IMG');
+    expect(img.getAttribute('src')).not.toBe('[object Object]');
+    expect(img.getAttribute('src')).toContain('/api/attachment/logo-x');
   });
 });

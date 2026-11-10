@@ -102,8 +102,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "sso:text-2xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "sso-page-title"
+                                            "className": "sso:text-xl sso:font-semibold sso:text-gray-900 sso:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-sso.admin.accounts.title"
                                     },
@@ -236,8 +243,15 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "sso:grid sso:grid-cols-2 sso:gap-4"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "sso-grid-2col-responsive"
+                                    "className": "sso:grid sso:grid-cols-1 sso:gap-4"
                                 },
                                 "children": [
                                     {
@@ -413,8 +427,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "sso:flex sso:flex-row sso:gap-2"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "sso:flex sso:flex-col sso:sm:flex-row sso:gap-2"
+                                            "className": "sso:flex sso:flex-col sso:gap-2"
                                         },
                                         "children": [
                                             {
@@ -570,8 +591,15 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{_local.addForm?.mode === 'new'}}",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "sso:grid sso:grid-cols-2 sso:gap-4"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "sso-grid-2col-responsive"
+                                    "className": "sso:grid sso:grid-cols-1 sso:gap-4"
                                 },
                                 "children": [
                                     {

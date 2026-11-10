@@ -94,8 +94,15 @@
                     "id": "page_header",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center ecommerce:md:justify-between ecommerce:mb-6"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:mb-6"
                     },
                     "children": [
                         {
@@ -260,14 +267,28 @@
                     "id": "filter_card",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6 ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6 ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center"
+                        "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6 ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                     },
                     "children": [
                         {
                             "comment": "필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다.",
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:w-40 ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "범위 필터. 빈 값이면 query 에서 아예 빼고(`undefined`), 쪽은 1로 되돌린다.",
@@ -298,7 +319,7 @@
                                 "aria-label": "$t:admin.identity.policies.col.scope",
                                 "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
-                                "className": "ecommerce:w-full ecommerce:md:w-40 ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm",
+                                "className": "ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm",
                                 "options": [
                                     {
                                         "value": "",
@@ -323,6 +344,13 @@
                             "comment": "검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식.",
                             "type": "basic",
                             "name": "Input",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce-input ecommerce:flex-1 ecommerce:min-w-[200px]"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다",
@@ -364,7 +392,7 @@
                                 "autoBinding": false,
                                 "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                                 "placeholder": "$t:admin.identity.policies.search_placeholder",
-                                "className": "ecommerce-input ecommerce:md:flex-1 ecommerce:md:min-w-[200px]"
+                                "className": "ecommerce-input"
                             }
                         },
                         {

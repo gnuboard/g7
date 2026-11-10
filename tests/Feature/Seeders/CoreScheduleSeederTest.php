@@ -56,6 +56,8 @@ class CoreScheduleSeederTest extends TestCase
         'auth-process-password-expiry' => ['auth:process-password-expiry --scheduled', '15 5 * * *'],
         'identity-expire-challenges' => ['identity:expire-challenges', '0 * * * *'],
         'analytics-prune' => ['analytics:prune', '10 5 * * *'],
+        // 7.2.0 신규 (#869) — 옛 console.php 에 없던 예약. 카탈로그 전수 대조를 위해 함께 둔다.
+        'thumbnails-prune' => ['thumbnails:prune --scheduled', '20 5 * * *'],
         'dashboard-broadcast-resources' => ['dashboard:broadcast-resources', 'everyThirtySeconds'],
         'analytics-archive-hour' => ['analytics:archive --period=hour --scheduled', '5 * * * *'],
         'analytics-archive-day' => ['analytics:archive --period=day --scheduled', '15 0 * * *'],
@@ -96,7 +98,7 @@ class CoreScheduleSeederTest extends TestCase
             $this->assertNotEmpty($catalog[$name]['label']['en'] ?? '', "{$name} label.en");
         }
 
-        $this->assertCount(21, array_filter($catalog, fn (array $s) => ($s['group'] ?? null) === 'gc'));
+        $this->assertCount(22, array_filter($catalog, fn (array $s) => ($s['group'] ?? null) === 'gc'));
     }
 
     /**
@@ -164,7 +166,7 @@ class CoreScheduleSeederTest extends TestCase
         $this->seed(CoreScheduleSeeder::class);
 
         $rows = Schedule::ownedBy(ExtensionOwnerType::Core, 'core')->get()->keyBy('name');
-        $this->assertCount(32, $rows);
+        $this->assertCount(33, $rows);
 
         $expectedTtl = [
             'dashboard-broadcast-resources' => 5, 'analytics-broadcast-realtime' => 5, 'analytics-archive-hour' => 55,
@@ -207,7 +209,7 @@ class CoreScheduleSeederTest extends TestCase
         $second = Schedule::ownedBy(ExtensionOwnerType::Core, 'core')->orderBy('name')->pluck('id', 'name')->all();
 
         $this->assertSame($first, $second);
-        $this->assertCount(32, $second);
+        $this->assertCount(33, $second);
     }
 
     /**
@@ -307,6 +309,6 @@ class CoreScheduleSeederTest extends TestCase
 
         $this->app->make(CoreUpdateService::class)->reloadCoreConfigAndResync();
 
-        $this->assertSame(32, Schedule::ownedBy(ExtensionOwnerType::Core, 'core')->count());
+        $this->assertSame(33, Schedule::ownedBy(ExtensionOwnerType::Core, 'core')->count());
     }
 }

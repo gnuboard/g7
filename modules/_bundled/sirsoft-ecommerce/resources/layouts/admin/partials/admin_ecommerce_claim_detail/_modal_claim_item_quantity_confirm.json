@@ -9,7 +9,86 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_confirm_title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "id": "ciq_004_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "comment": "실행은 일괄 바와 **같은 핸들러**다 — 두 발신처가 각자 요청을 만들면 본문 계약이 갈리고, 한쪽만 고쳐졌을 때 그 경로로만 422 가 난다(형제 결함 R10 이 그것이다).",
+                "id": "ciq_005_confirm",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.executeClaimItemBulkStatus",
+                        "params": {
+                            "pathSegment": "{{_global.claimItemQuantityContext?.pathSegment ?? ''}}",
+                            "claimType": "{{_global.claimItemQuantityContext?.claimType ?? ''}}",
+                            "claimId": "{{_global.claimItemQuantityContext?.claimId ?? null}}",
+                            "claimNumber": "{{_global.claimItemQuantityContext?.claimNumber ?? ''}}",
+                            "requesterName": "{{_global.claimItemQuantityContext?.requesterName ?? ''}}",
+                            "itemIds": "{{_global.claimItemQuantityContext?.itemIds ?? []}}",
+                            "itemQuantities": "{{_global.claimItemQuantityContext?.quantities ?? {} }}",
+                            "status": "{{_global.claimItemQuantityContext?.status ?? ''}}",
+                            "trackingOnly": "{{_global.claimItemQuantityContext?.trackingOnly === true}}",
+                            "direction": "{{_global.claimItemQuantityContext?.direction ?? ''}}",
+                            "rejectReason": "{{_global.claimItemQuantityContext?.rejectReason ?? ''}}",
+                            "carrierId": "{{_global.claimItemQuantityContext?.carrierId ?? ''}}",
+                            "trackingNumber": "{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}",
+                            "rows": "{{_global.claimItemQuantityContext?.detailRows ?? []}}",
+                            "completeDefaults": "{{_global.claimItemQuantityContext?.completeDefaults ?? {} }}"
+                        },
+                        "onError": {
+                            "comment": "사유 토스트는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다.",
+                            "handler": "suppress"
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_local.isUpdatingClaimItems === true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_local.isUpdatingClaimItems}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm ecommerce:mr-1"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{_global.claimItemQuantityContext?.trackingOnly !== true}}",
+                        "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{_global.claimItemQuantityContext?.trackingOnly === true}}",
+                        "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -179,92 +258,6 @@
                         "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.quantity_not_splittable"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2"
-                    },
-                    "children": [
-                        {
-                            "id": "ciq_004_cancel",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "comment": "실행은 일괄 바와 **같은 핸들러**다 — 두 발신처가 각자 요청을 만들면 본문 계약이 갈리고, 한쪽만 고쳐졌을 때 그 경로로만 422 가 난다(형제 결함 R10 이 그것이다).",
-                            "id": "ciq_005_confirm",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sirsoft-ecommerce.executeClaimItemBulkStatus",
-                                    "params": {
-                                        "pathSegment": "{{_global.claimItemQuantityContext?.pathSegment ?? ''}}",
-                                        "claimType": "{{_global.claimItemQuantityContext?.claimType ?? ''}}",
-                                        "claimId": "{{_global.claimItemQuantityContext?.claimId ?? null}}",
-                                        "claimNumber": "{{_global.claimItemQuantityContext?.claimNumber ?? ''}}",
-                                        "requesterName": "{{_global.claimItemQuantityContext?.requesterName ?? ''}}",
-                                        "itemIds": "{{_global.claimItemQuantityContext?.itemIds ?? []}}",
-                                        "itemQuantities": "{{_global.claimItemQuantityContext?.quantities ?? {} }}",
-                                        "status": "{{_global.claimItemQuantityContext?.status ?? ''}}",
-                                        "trackingOnly": "{{_global.claimItemQuantityContext?.trackingOnly === true}}",
-                                        "direction": "{{_global.claimItemQuantityContext?.direction ?? ''}}",
-                                        "rejectReason": "{{_global.claimItemQuantityContext?.rejectReason ?? ''}}",
-                                        "carrierId": "{{_global.claimItemQuantityContext?.carrierId ?? ''}}",
-                                        "trackingNumber": "{{_global.claimItemQuantityContext?.trackingNumber ?? ''}}",
-                                        "rows": "{{_global.claimItemQuantityContext?.detailRows ?? []}}",
-                                        "completeDefaults": "{{_global.claimItemQuantityContext?.completeDefaults ?? {} }}"
-                                    },
-                                    "onError": {
-                                        "comment": "사유 토스트는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다.",
-                                        "handler": "suppress"
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                                "disabled": "{{_local.isUpdatingClaimItems === true}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_local.isUpdatingClaimItems}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "ecommerce-spinner-sm ecommerce:mr-1"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_global.claimItemQuantityContext?.trackingOnly !== true}}",
-                                    "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_global.claimItemQuantityContext?.trackingOnly === true}}",
-                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         }

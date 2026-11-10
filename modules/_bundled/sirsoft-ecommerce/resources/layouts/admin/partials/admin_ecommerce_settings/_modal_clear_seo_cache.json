@@ -9,7 +9,131 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_confirm_title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-secondary",
+                    "disabled": "{{$parent._local.isClearingCache === true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "seo_clear_cache_confirm",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{$parent._local.isClearingCache !== true}}",
+                "actions": [
+                    {
+                        "comment": "캐시 비우기. 성공·실패 어느 쪽이든 처리중 표시를 먼저 내린다 — 실패하면 창을 열어 둔 채 다시 시도할 수 있어야 한다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "$parent._local",
+                                    "isClearingCache": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-ecommerce/admin/settings/clear-cache",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "$parent._local",
+                                            "isClearingCache": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "seoStats"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "$parent._local",
+                                            "isClearingCache": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_failed')}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-danger ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{$parent._computed?.isReadOnly !== false}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "if": "{{$parent._local.isClearingCache === true}}",
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-danger",
+                    "disabled": true
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -77,137 +201,6 @@
                                 "className": "ecommerce-tone-warning-soft ecommerce:text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_confirm"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-secondary",
-                                "disabled": "{{$parent._local.isClearingCache === true}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "seo_clear_cache_confirm",
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{$parent._local.isClearingCache !== true}}",
-                            "actions": [
-                                {
-                                    "comment": "캐시 비우기. 성공·실패 어느 쪽이든 처리중 표시를 먼저 내린다 — 실패하면 창을 열어 둔 채 다시 시도할 수 있어야 한다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "$parent._local",
-                                                "isClearingCache": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-ecommerce/admin/settings/clear-cache",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "$parent._local",
-                                                        "isClearingCache": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "seoStats"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "$parent._local",
-                                                        "isClearingCache": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message ?? $t('sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_failed')}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-danger ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                                "disabled": "{{$parent._computed?.isReadOnly !== false}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{$parent._local.isClearingCache === true}}",
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-danger",
-                                "disabled": true
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache"
-                                }
-                            ]
                         }
                     ]
                 }

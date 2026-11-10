@@ -48,6 +48,9 @@ return [
     'notification_definitions' => [...], // 알림 정의 (본인인증 알림 identity.* 포함) → notification-system.md, identity-messages.md
     'identity_policies' => [...],      // 본인인증 정책 → identity-policies.md
     'identity_purposes' => [...],      // 본인인증 목적 → identity-policies.md
+    'image' => [...],                  // 이미지 처리 엔진(업로드 축소·썸네일, 7.2.0) → image-thumbnails.md
+    'thumbnail' => [...],              // 이미지 썸네일 설정·서버 보호 값(7.2.0, 서버 보호 값은 .env G7_THUMBNAIL_* 와 업로드 탭 「고급」) → image-thumbnails.md
+    'thumbnail_server_defaults' => [...], // 업로드 탭 「고급」 칸을 비웠을 때 쓸 서버 보호 값(.env 또는 기본값, 주입이 덮지 않음) → image-thumbnails.md
 ];
 ```
 

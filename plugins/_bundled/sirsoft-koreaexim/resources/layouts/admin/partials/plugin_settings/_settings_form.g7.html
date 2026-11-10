@@ -2,7 +2,8 @@
 <!-- 설정 폼 — 인증키·자동 관리·갱신 일정(스케줄 관리 링크)·환율 종류·재시도·소수 자릿수·조회 소급일·이력 보관 기간·실패 알림·실행 요일. 입력은 data-key 폼(_local.form)에 묶이고 저장은 상위 레이아웃의 저장 버튼이 한다. e2e:allow 화면 축은 tests/Playwright/specs/exchange-rate-settings.spec.ts 가 지난다 -->
 <div class="koreaexim-admin-card koreaexim:mb-4">
 <h3 class="koreaexim-card-title">$t:sirsoft-koreaexim.settings_tab</h3>
-<div class="koreaexim-grid-2col-responsive">
+<div class="koreaexim:grid koreaexim:grid-cols-1 koreaexim:gap-4">
+  <responsive on="768-" class="koreaexim:grid koreaexim:grid-cols-2 koreaexim:gap-4"/>
 <div class="koreaexim-form-group">
 <label class="koreaexim-form-label" htmlFor="koreaexim_auth_key">$t:sirsoft-koreaexim.fields.auth_key</label>
 <input id="koreaexim_auth_key" name="auth_key" type="password" autoComplete="new-password"   disabled="{{_computed.isSettingsReadOnly}}"/>
@@ -14,9 +15,10 @@
 <span data-if="{{_local.errors?.['auto_manage']}}" class="koreaexim-form-error">{{_local.errors?.['auto_manage']?.[0] ?? ''}}</span>
 </div>
 <!-- 갱신 일정 — 갱신 시각은 코어 스케줄 행(plugin/sirsoft-koreaexim/update-rates)이 원천이라 여기서는 입력받지 않는다. 다음 실행 시각과 스케줄 관리 화면 링크(소유 필터 쿼리)만 보여 준다.
-  2열 격자의 한 칸이 아니라 한 줄 전체를 쓴다(md:col-span-2) — 안내 상자와 경고가 반 칸에 끼면 줄바꿈이 많아진다.
+  2열 격자의 한 칸이 아니라 한 줄 전체를 쓴다(768px 이상 구간의 col-span-2) — 안내 상자와 경고가 반 칸에 끼면 줄바꿈이 많아진다.
   「스케줄 관리에서 변경」 안내는 설정 화면 공통 모양(파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크)이고, 11:00 권장 안내는 이 블록에만 둔다 -->
-<div data-ref="koreaexim_schedule_block" class="koreaexim-form-group koreaexim:md:col-span-2">
+<div data-ref="koreaexim_schedule_block" class="koreaexim-form-group">
+  <responsive on="768-" class="koreaexim-form-group koreaexim:col-span-2"/>
 <span class="koreaexim-form-label">$t:sirsoft-koreaexim.schedule.title</span>
 <p data-ref="koreaexim_schedule_next_run" class="koreaexim:text-sm">$t:sirsoft-koreaexim.next_run {{koreaeximStatus?.data?.next_run_at ?? '-'}}</p>
 <p class="koreaexim-form-hint">$t:sirsoft-koreaexim.site_time {{koreaeximStatus?.data?.update_time_site ?? '-'}}</p>

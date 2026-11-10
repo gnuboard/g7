@@ -2502,6 +2502,8 @@ Content-Disposition: attachment; filename="example.pdf"
 
 **설명** 해시로 지정한 첨부파일을 다운로드로 제공합니다(`Content-Disposition: attachment`). `auth:sanctum` + `sirsoft-board.{slug}.attachments.download` 권한이 필요하며, 이미지 포함 모든 파일을 다운로드 방식으로 스트리밍합니다. 이미지의 인라인 미리보기는 별도의 preview 엔드포인트를 사용하고, 삭제글 첨부 등 접근 차단 시 403을 반환합니다.
 
+**캐시**: 글 상태와 무관하게 항상 `Cache-Control: private` 로 냅니다(공유 캐시 저장 금지 — 운영 환경 `private, max-age={TTL}`, 그 외 `private, no-cache`). 다운로드 권한은 요청자마다 갈리므로(비회원을 권한에서 뺄 수 있다) 앞단 CDN 이나 프록시가 사본을 저장하면 권한 없는 방문자가 그 사본을 받고 다운로드 기록도 남지 않습니다. 검증자(`ETag`, `Last-Modified`)와 304 재검증은 그대로입니다. 미리보기 엔드포인트의 캐시 판정(비밀글, 삭제글, 블라인드 글만 `private`)은 바뀌지 않습니다. 판정은 서비스(`AttachmentService::getDownloadInfo()` 가 돌려주는 `private`)가 소유하고 컨트롤러는 그 값을 그대로 씁니다(값이 없으면 `private`).
+
 
 ### GET /api/modules/sirsoft-board/boards/{slug}/attachment/{hash}/preview
 <!-- @generated:start:api.modules.sirsoft-board.boards.attachment.preview -->
@@ -2563,6 +2565,22 @@ Cache-Control: public, max-age=86400
 **설명** 해시로 지정한 이미지 첨부파일을 인라인 미리보기로 제공합니다. 게시글 본문 내 이미지 표시용이라 비회원도 접근할 수 있으며(권한 체크 없음), 래스터 이미지(JPEG·PNG·GIF·WebP 등)가 아닌 파일(SVG 포함) 요청 시 400을 반환합니다(KVE-2026-2366). 응답에는 `X-Content-Type-Options: nosniff` 가 붙습니다. 응답에는 레이아웃 캐시 TTL(기본 24시간) 기반 캐싱 헤더가 포함되고, 삭제글·비밀글 첨부 등 차단 대상은 403을 반환합니다.
 
 브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 비밀글·삭제글의 열람 권한자에게 직렬화되는 상세 응답의 `preview_url` 에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 실리며, 이 엔드포인트는 유효한 서명을 열람 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 종전과 동일하게 403 으로 차단됩니다. 정상글의 `preview_url` 은 무서명 공개 경로입니다. 사이트를 하위 폴더(예: `/g7`)에 설치하면 이 서명 URL 은 설치 폴더 접두사를 실은 경로(`/g7/api/…`)로 내려간다 — 서명은 접두사를 뺀 경로에 걸리고 검증도 접두사를 뺀 요청 경로로 하므로, 그 주소 그대로 열면 서명이 유효하다.
+
+**캐시**: 비밀글·삭제글·블라인드 글의 첨부와 서명으로 연 원본은 `Cache-Control: private` 로 냅니다(공유 캐시 저장 금지 — 운영 환경 `private, max-age={TTL}`, 그 외 `private, no-cache`). 정상글 원본은 종전과 같습니다.
+
+**썸네일 (코어 7.2.0+)**: 쿼리에 규격을 붙이면 콘텐츠 상태 게이트를 지난 뒤 환경설정 > 업로드 「썸네일 규격」 크기로 줄인 이미지를 냅니다. 둘 다 없으면 원본입니다. 게시판 첨부는 권한이 걸린 원본이라 썸네일은 항상 `Cache-Control: private` 이고, 게이트에 막히는 요청은 썸네일을 붙여도 원본과 같은 403 입니다. 서명은 `size`·`w` 를 빼고 검증하므로 서명 주소 뒤에 `size` 를 덧붙여도 유효합니다(변조·만료는 그대로 403).
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| size | query | string | 아니오 | 규격 이름 (`xs`·`sm`·`md`·`lg`·`xl`·`og`·확장·운영자 규격) | 그 규격으로 줄인 이미지. `w` 보다 우선 |
+| w | query | integer | 아니오 | 1~10000 | 「숫자 요청 대상」 규격 중 가로가 이 값 이상인 가장 작은 규격(없으면 가장 큰 규격) |
+
+| 응답 헤더 | 값 | 의미 |
+| --- | --- | --- |
+| `X-G7-Thumbnail` | `hit` · `miss` | 썸네일을 냄 — 이미 있던 파일(`hit`) 또는 이번에 만든 파일(`miss`) |
+| `X-G7-Thumbnail` | `bypass:{사유}` | 썸네일을 요청했지만 원본을 냄. 사유: `disabled`·`no-engine`·`not-raster`·`animated`·`unknown-preset`(미정의 규격·배열 파라미터·같은 키 두 번)·`smaller-than-preset`·`rate-limited`·`too-large`·`error` |
+
+`size`·`w` 를 붙이지 않은 요청에는 이 헤더가 없습니다. 자세한 규약은 [이미지 썸네일](../../../../../docs/backend/image-thumbnails.md) 문서를 봅니다.
 
 
 ### POST /api/modules/sirsoft-board/boards/{slug}/attachments

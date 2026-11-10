@@ -49,10 +49,10 @@
           <span data-if="{{reply?.status === 'blinded'}}" class="italic text-orange-700 dark:text-orange-400">$t:board.blinded_post</span>
           <!-- 비밀글 안내 — 서버가 원문을 가린 경우(content null)만. 작성자·관리자처럼 열람 권한이 있으면 본문이 온다 -->
           <span data-if="{{reply?.status !== 'blinded' &amp;&amp; reply?.is_secret &amp;&amp; reply?.content == null}}" class="italic text-gray-500 dark:text-gray-400">$t:board.posts.detail.reply_secret_content</span>
-          <!-- 일반 글 내용 -->
-          <extension-point name="html_content" data-ref="reply_html_content_{{replyIndex}}" data-if="{{reply?.status !== 'blinded' &amp;&amp; !(reply?.is_secret &amp;&amp; reply?.content == null)}}" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}">
+          <!-- 일반 글 내용 — 접힘 상태의 이미지·표 숨김은 !hidden: CKEditor 플러그인의 레이어 밖 `.ck-content img{display:inline}` 이 레이어 안 유틸리티를 이겨 숨긴 이미지가 보이고 내려받혔다(#869 실측) -->
+          <extension-point name="html_content" data-ref="reply_html_content_{{replyIndex}}" data-if="{{reply?.status !== 'blinded' &amp;&amp; !(reply?.is_secret &amp;&amp; reply?.content == null)}}" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:!hidden [&amp;_table]:!hidden'}}">
             <default>
-              <html-content data-type="composite" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:hidden [&amp;_table]:hidden'}}"/>
+              <html-content data-type="composite" content="{{reply?.content ?? ''}}" isHtml="{{(reply?.content_mode ?? 'text') === 'html'}}" class="prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&amp;_img]:!hidden [&amp;_table]:!hidden'}}"/>
             </default>
           </extension-point>
         </div>

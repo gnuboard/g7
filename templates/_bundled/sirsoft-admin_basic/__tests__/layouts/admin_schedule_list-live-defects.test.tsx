@@ -222,19 +222,37 @@ describe('D7 — 클릭으로 쓰기 요청을 보내는 버튼은 연타해도 
 describe('D10 — 좁은 화면에서 탭 바가 본문 안쪽 여백과 같은 폭으로 붙는다', () => {
     // @scenario case=screen_render
     // @effects schedule_screen_renders_registry_fields
-    it('본문 여백과 탭 바 음수 여백이 같은 단계의 -responsive 짝이다(좁은 화면 p-4 ↔ -mx-4)', () => {
+    it('본문 여백과 탭 바 음수 여백이 폭마다 같은 단계다(좁은 화면 p-4 ↔ -mx-4)', () => {
         // sticky-tab-nav 는 -mx-6(24px) 고정이라 portable(p-4 = 16px)에서 8px 가로로 넘쳤다(M1 D10, 390 폭).
-        // 템플릿 관리·환경설정처럼 본문 admin-page-content-responsive-fluid(p-4 sm:p-6 lg:p-8) ↔
-        // 탭 바 sticky-tab-nav-responsive(-mx-4 sm:-mx-6 lg:-mx-8) 짝으로 맞춘다 — 두 자산의 단계가 실제로 같은지 CSS 로 잰다.
+        // 본문 여백(p-4 → 640 이상 p-6 → 1024 이상 p-8)과 탭 바 음수 여백·안쪽 여백(-mx-4/px-4 → -mx-6/px-6 → -mx-8/px-8)은
+        // 엔진 responsive 구간 값이다 — 폭마다 엔진이 고르는 클래스로 두 단계가 같은지 잰다.
+        const presets: Record<string, [number, number]> = {
+            mobile: [0, 767], tablet: [768, 1023], desktop: [1024, Infinity], portable: [0, 1023],
+        };
+        const rangeOf = (key: string): [number, number] => {
+            if (presets[key]) return presets[key];
+            const [lo, hi] = key.split('-');
+            return [lo ? Number(lo) : 0, hi ? Number(hi) : Infinity];
+        };
+        // 엔진 규칙: 맞는 키 중 커스텀 구간이 프리셋보다 먼저, 같은 종류끼리는 좁은 범위가 먼저
+        const classAt = (node: any, width: number): string[] => {
+            const keys = Object.keys(node.responsive ?? {}).filter((k) => {
+                const [lo, hi] = rangeOf(k);
+                return lo <= width && width <= hi;
+            });
+            keys.sort((a, b) => Number(a in presets) - Number(b in presets)
+                || (rangeOf(a)[1] - rangeOf(a)[0]) - (rangeOf(b)[1] - rangeOf(b)[0]));
+            const value = keys.length ? node.responsive[keys[0]]?.props?.className : undefined;
+            return String(value ?? node.props?.className ?? '').split(/\s+/);
+        };
+        const step = (tokens: string[], re: RegExp) => tokens.map((t) => re.exec(t)?.[1]).find(Boolean);
         const root = collect(mainLayout, (n) => n.id === 'schedule_list_content')[0];
-        expect(String(root.props?.className).split(/\s+/)).toContain('admin-page-content-responsive-fluid');
         const wrapper = collect(mainLayout, (n) => n.id === 'tab_navigation_wrapper')[0];
-        expect(String(wrapper.props?.className).split(/\s+/)).toContain('sticky-tab-nav-responsive');
-        const css = require('fs').readFileSync(require('path').resolve(__dirname, '../../src/styles/semantic.css'), 'utf8');
-        const rule = (name: string) => (css.match(new RegExp('\\.' + name + ' \\{([^}]*)\\}')) ?? [])[1] ?? '';
-        expect(rule('admin-page-content-responsive-fluid')).toMatch(/p-4 sm:p-6 lg:p-8/);
-        expect(rule('sticky-tab-nav-responsive')).toMatch(/-mx-4 sm:-mx-6 lg:-mx-8/);
-        expect(rule('sticky-tab-nav-responsive')).toMatch(/px-4 sm:px-6 lg:px-8/);
+        for (const [width, expected] of [[390, '4'], [700, '6'], [900, '6'], [1280, '8']] as const) {
+            expect(step(classAt(root, width), /^p-(\d+)$/), `${width}px 본문 여백`).toBe(expected);
+            expect(step(classAt(wrapper, width), /^-mx-(\d+)$/), `${width}px 탭 바 음수 여백`).toBe(expected);
+            expect(step(classAt(wrapper, width), /^px-(\d+)$/), `${width}px 탭 바 안쪽 여백`).toBe(expected);
+        }
     });
 });
 

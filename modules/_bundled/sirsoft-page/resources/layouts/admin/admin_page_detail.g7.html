@@ -27,7 +27,9 @@
     <wait-for>versions</wait-for>
   </transition-overlay>
   <slot name="content">
-    <div data-ref="page_detail_content" :data-blur-until-loaded="true" class="page-admin-page-content-responsive-fluid">
+    <div data-ref="page_detail_content" :data-blur-until-loaded="true" class="page:p-4 page:bg-gray-50 page:dark:bg-gray-900">
+      <responsive on="640-1023" class="page:p-6 page:bg-gray-50 page:dark:bg-gray-900"/>
+      <responsive on="1024-" class="page:p-8 page:bg-gray-50 page:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-page.admin.page.detail.page_title" description="$t:sirsoft-page.admin.page.detail.page_description" backLink="/admin/pages" backLinkText="$t:sirsoft-page.admin.page.detail.back_to_list">
         <a href="/admin/pages" :mergeQuery="true" data-ref="header_back_button" class="page-button page-btn page-btn-secondary">
           <on type="click">
@@ -37,7 +39,7 @@
             </navigate>
           </on>
           <icon name="arrow-left" class="page:text-sm"/>
-          <span class="page:hidden page-hidden page:sm:inline">$t:sirsoft-page.admin.page.detail.back_to_list</span>
+          <span class="page:hidden page-hidden"><responsive on="640-" class="page:inline"/>$t:sirsoft-page.admin.page.detail.back_to_list</span>
         </a>
         <a href="/admin/pages/{{route?.id}}/edit" :mergeQuery="true" data-ref="header_edit_button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="page-btn page-btn-primary">
           <on type="click">
@@ -47,14 +49,14 @@
             </navigate>
           </on>
           <icon name="pencil" class="page:text-sm"/>
-          <span class="page:hidden page-hidden page:sm:inline">$t:sirsoft-page.admin.page.detail.edit</span>
+          <span class="page:hidden page-hidden"><responsive on="640-" class="page:inline"/>$t:sirsoft-page.admin.page.detail.edit</span>
         </a>
         <button type="button" data-ref="header_delete_button" disabled="{{page?.data?.abilities?.can_delete !== true}}" class="page-btn page-btn-danger">
           <on type="click">
             <open-modal target="deletePageModal"/>
           </on>
           <icon name="trash" class="page:text-sm"/>
-          <span class="page:hidden page-hidden page:sm:inline">$t:sirsoft-page.admin.page.detail.delete</span>
+          <span class="page:hidden page-hidden"><responsive on="640-" class="page:inline"/>$t:sirsoft-page.admin.page.detail.delete</span>
         </button>
       </page-header>
       <alert data-type="composite" data-ref="page_api_error" data-if="{{_dataSourceErrors?.page}}" type="error" message="{{_dataSourceErrors?.page?.message ?? '$t:common.error_occurred'}}" class="page:mb-6"/>
@@ -125,7 +127,8 @@
             </a>
           </div>
         </div>
-        <div data-ref="info_grid" class="page-grid-2col-responsive page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700">
+        <div data-ref="info_grid" class="page:grid page:grid-cols-1 page:gap-4 page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700">
+          <responsive on="768-" class="page:grid page:grid-cols-2 page:gap-4 page:pt-4 page:border-t page:border-gray-200 page:dark:border-gray-700"/>
           <div class="page:flex page:items-baseline page:gap-3">
             <span class="page-text-table-header page:shrink-0 page:w-20">$t:sirsoft-page.admin.page.detail.info.creator</span>
             <p class="page-text-primary page:text-sm">{{page?.data?.creator?.name ?? '-'}}</p>
@@ -182,7 +185,7 @@
             </on>
             <!-- 이미지 썸네일 (이미지 파일인 경우) — 단추 안이라 블록 요소 대신 span 이다 -->
             <span data-if="{{attachment_item?.is_image}}" class="page:flex-shrink-0 page:w-12 page:h-12 page:rounded-md page:overflow-hidden page:bg-white page:dark:bg-gray-700">
-              <img src="{{attachment_item?.preview_url}}" alt="{{attachment_item?.original_filename}}" class="page:w-full page:h-full page:object-cover"/>
+              <img src="{{attachment_item?.preview_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{attachment_item?.original_filename}}" class="page:w-full page:h-full page:object-cover"/>
             </span>
             <!-- 파일 아이콘 (일반 파일인 경우) -->
             <span data-if="{{!attachment_item?.is_image}}" class="page-flex-center page:flex-shrink-0 page:w-12 page:h-12 page:rounded-md page:bg-white page:dark:bg-gray-700 page:justify-center">
@@ -273,7 +276,7 @@
       <div class="page:py-2">
         <p class="page:text-gray-700 page:dark:text-gray-300">$t:sirsoft-page.admin.page.modals.delete_confirm</p>
       </div>
-      <div class="page-modal-footer-buttons">
+      <footer>
         <button type="button" class="page-btn page-btn-secondary" disabled="{{_global.isDeletingPage}}">
           <on type="click">
             <close-modal/>
@@ -304,7 +307,7 @@
           <icon data-if="{{_global.isDeletingPage}}" name="spinner" class="page-spinner-sm"/>
           <span>{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -314,7 +317,7 @@
         <p class="page:text-gray-700 page:dark:text-gray-300">$t:sirsoft-page.admin.page.modals.restore_confirm</p>
         <p class="page-text-label-subtle page:mt-2">$t:sirsoft-page.admin.page.modals.restore_notice</p>
       </div>
-      <div class="page-modal-footer-buttons">
+      <footer>
         <button type="button" class="page-btn page-btn-secondary" disabled="{{_global.isRestoringVersion}}">
           <on type="click">
             <close-modal/>
@@ -343,7 +346,7 @@
           <icon data-if="{{_global.isRestoringVersion}}" name="spinner" class="page-spinner-sm"/>
           <span>{{_global.isRestoringVersion ? '$t:sirsoft-page.admin.page.modals.restoring' : '$t:sirsoft-page.admin.page.detail.versions.restore'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -381,7 +384,7 @@
           </div>
         </div>
       </div>
-      <div class="page-modal-footer-buttons">
+      <footer>
         <button type="button" class="page-btn page-btn-secondary">
           <on type="click">
             <close-modal/>
@@ -399,7 +402,7 @@
           <icon name="rotate-left" class="page:text-xs"/>
           <span>$t:sirsoft-page.admin.page.detail.versions.restore</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
 </layout>

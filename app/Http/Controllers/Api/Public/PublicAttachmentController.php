@@ -7,12 +7,11 @@ use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Public\Attachment\DownloadAttachmentRequest;
 use App\Http\Responses\FileServingMeta;
 use App\Services\AttachmentService;
+use App\Thumbnails\ThumbnailResponder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * 첨부파일 다운로드 컨트롤러
@@ -26,9 +25,11 @@ class PublicAttachmentController extends PublicBaseController
      * PublicAttachmentController 생성자
      *
      * @param  AttachmentService  $attachmentService  첨부파일 서비스
+     * @param  ThumbnailResponder  $thumbnails  썸네일 응답기 (size·w 요청을 원본 응답보다 먼저 받는다)
      */
     public function __construct(
-        private AttachmentService $attachmentService
+        private AttachmentService $attachmentService,
+        private ThumbnailResponder $thumbnails
     ) {
         parent::__construct();
     }
@@ -46,11 +47,20 @@ class PublicAttachmentController extends PublicBaseController
      * 인라인은 래스터 이미지(jpeg/png/gif/webp 등)만이고 그 외 파일(SVG 포함)은 다운로드 방식이다.
      * 파일 응답에는 모두 nosniff 를 붙인다 (KVE-2026-2366).
      *
+     * `?size={규격}`·`?w={숫자}` 가 붙으면 래스터 이미지는 권한 검사(`getFileInfo()`)를 지난 뒤 썸네일로 낸다.
+     * 코어 첨부는 게이트 원본이라 썸네일도 비공개 디스크·`private` 캐시다. 낼 수 없으면 원본에
+     * `X-G7-Thumbnail: bypass:{사유}` 를 붙인다.
+     *
+     * 원본은 권한 훅이나 켜진 본인인증 정책(hook 범위 `core.attachment.before_download_action`, route 범위
+     * `api.attachment.download`)이 걸린 사이트에서만 `private` 캐시로 낸다. 둘 다 없으면 누구나 받는 공개 첨부라 종전처럼
+     * `public` 이다. hook 범위 정책의 액션 훅과 필터 훅 `core.attachment.before_download` 는 `getFileInfo()` 가 이미지·비이미지
+     * 모두 한 요청에 한 번씩 돌리므로 이미지·썸네일도 같은 정책을 받는다. 비이미지는 `getFileInfo()` 가 다운로드 응답을 돌려준다.
+     *
      * @param  DownloadAttachmentRequest  $request  다운로드 요청
      * @param  string  $hash  첨부파일 해시 (12자)
-     * @return BinaryFileResponse|StreamedResponse|Response|JsonResponse 파일 응답 또는 에러 응답
+     * @return SymfonyResponse|JsonResponse 파일·썸네일 응답(200·304) 또는 에러 응답
      */
-    public function download(DownloadAttachmentRequest $request, string $hash): BinaryFileResponse|StreamedResponse|Response|JsonResponse
+    public function download(DownloadAttachmentRequest $request, string $hash): SymfonyResponse|JsonResponse
     {
         $user = $request->user();
 
@@ -90,38 +100,52 @@ class PublicAttachmentController extends PublicBaseController
             // 압축 제외를 **선언**한다 — 사용자 업로드물은 크기·건수가 유계가 아니라 압축 경로의
             // 전체 적재가 동시 요청 수만큼 증폭된다(형제 `PublicStorageController` 와 같은 선언).
             // `image/` 접두사로 판정하면 image/svg+xml 이 인라인으로 열려 앱 오리진에서 스크립트가 돈다 (KVE-2026-2366).
-            if (InlineMediaPolicy::isInlineImage($fileInfo['mime_type'])) {
+            // 갈래는 서비스가 필터를 지난 행으로 정한 `inline` 을 따른다 — 여기서 MIME 으로 다시 고르면 필터 구독자가 MIME 을
+            // 바꿀 때 서비스가 만든 응답(내려받기·인라인)과 다른 갈래를 탄다. 그 키가 없는 서비스(확장 대체)만 MIME 으로 고른다.
+            if ((bool) ($fileInfo['inline'] ?? InlineMediaPolicy::isInlineImage($fileInfo['mime_type']))) {
+                // 게이트(권한 훅·before_download 필터)를 지난 뒤, 원본 응답 바로 앞
+                if ($thumbnail = $this->thumbnails->respond($request, $fileInfo['thumbnail_source'] ?? null)) {
+                    return $thumbnail;
+                }
+
                 $response = $this->streamedFileResponseFromMeta(
                     $fileInfo,
                     (int) g7_core_settings('cache.layout_ttl', 86400),
                     immutable: false,
                     skipCompression: true,
-                    logContext: ['hash' => $hash]
+                    logContext: ['hash' => $hash],
+                    private: (bool) ($fileInfo['private'] ?? false)
                 );
 
-                return $response instanceof JsonResponse ? $response : InlineMediaPolicy::harden($response, $fileInfo['mime_type']);
+                return $response instanceof JsonResponse
+                    ? $response
+                    : ThumbnailResponder::markBypass(InlineMediaPolicy::harden($response, $fileInfo['mime_type']), $request);
             }
+
+            // 래스터가 아닌 파일(SVG 등)에 썸네일을 요청했으면 사유(not-raster)만 남긴다 — 응답은 기존 다운로드 그대로.
+            $this->thumbnails->respond($request, null);
 
             // 래스터 이미지가 아닌 파일(SVG 포함)은 다운로드 방식(attachment) — 단, 캐시 계약은 이미지와 같다.
-            // 액션 훅(IDV 가드)·다운로드 카운트 필터는 이 경로가 발화한다(종전 `download()` 와 같다).
-            $downloadInfo = $this->attachmentService->getDownloadInfo($hash, $user);
-
-            if (! $downloadInfo) {
-                return $this->forbidden('attachment.access_denied');
-            }
+            // getFileInfo() 가 이미 권한을 지난 행으로 다운로드 응답을 만들어 돌려준다(액션 훅·필터 훅 각 한 번). 종전에는 여기서
+            // getDownloadInfo() 를 다시 불러 같은 행을 다시 찾고 권한 확인·공유 캐시 판정을 한 번씩 더 했다.
+            $downloadInfo = $fileInfo;
 
             $response = $this->streamedFileResponseFromMeta(
                 $downloadInfo,
                 (int) g7_core_settings('cache.layout_ttl', 86400),
                 immutable: false,
                 skipCompression: true,
-                logContext: ['hash' => $hash]
+                logContext: ['hash' => $hash],
+                private: (bool) ($downloadInfo['private'] ?? false)
             );
 
             // 메타 누락 500(JSON)은 그대로 — 파일 응답에만 다운로드 강제·nosniff 를 붙인다
             return $response instanceof JsonResponse
                 ? $response
-                : InlineMediaPolicy::harden($response, $downloadInfo['mime_type'], $downloadInfo['filename'] ?? null);
+                : ThumbnailResponder::markBypass(
+                    InlineMediaPolicy::harden($response, $downloadInfo['mime_type'], $downloadInfo['filename'] ?? null),
+                    $request
+                );
         } catch (AuthorizationException) {
             return $this->forbidden('attachment.access_denied');
         }

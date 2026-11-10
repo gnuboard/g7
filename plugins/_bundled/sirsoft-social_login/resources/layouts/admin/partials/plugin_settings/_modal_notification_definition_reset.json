@@ -9,7 +9,119 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-social_login.admin.notifications.reset_modal.title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "modal_sl_notification_definition_reset"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "sl:px-4 sl:py-2 sl:bg-white sl:dark:bg-gray-800 sl:text-gray-700 sl:dark:text-gray-300 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:hover:bg-gray-50 sl:dark:hover:bg-gray-700 sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isResettingNotification}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isResettingNotification": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/notification-definitions/{{_global.resetTargetId}}/reset",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isResettingNotification": false,
+                                            "resetTargetId": null,
+                                            "resetTargetName": ""
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "slNotificationDefinitions"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-social_login.admin.notifications.reset_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "modal_sl_notification_definition_reset"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isResettingNotification": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:sirsoft-social_login.admin.notifications.reset_failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "sl-flex-center sl:gap-2 sl:px-4 sl:py-2 sl:bg-orange-700 sl:dark:bg-orange-700 sl:text-white sl:dark:text-white sl:rounded-lg sl:hover:bg-orange-800 sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isResettingNotification}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isResettingNotification}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "sl-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isResettingNotification ? '$t:sirsoft-social_login.admin.notifications.reset_modal.btn_confirming' : '$t:sirsoft-social_login.admin.notifications.reset_modal.btn_confirm'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -59,125 +171,6 @@
                         "className": "sl-text-error-soft"
                     },
                     "text": "$t:sirsoft-social_login.admin.notifications.reset_modal.warning_message"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "sl-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "modal_sl_notification_definition_reset"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "sl:px-4 sl:py-2 sl:bg-white sl:dark:bg-gray-800 sl:text-gray-700 sl:dark:text-gray-300 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:hover:bg-gray-50 sl:dark:hover:bg-gray-700 sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isResettingNotification}}"
-                    },
-                    "text": "$t:common.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isResettingNotification": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/notification-definitions/{{_global.resetTargetId}}/reset",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isResettingNotification": false,
-                                                "resetTargetId": null,
-                                                "resetTargetName": ""
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "slNotificationDefinitions"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:sirsoft-social_login.admin.notifications.reset_success"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal",
-                                            "target": "modal_sl_notification_definition_reset"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isResettingNotification": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:sirsoft-social_login.admin.notifications.reset_failed'}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "sl-flex-center sl:gap-2 sl:px-4 sl:py-2 sl:bg-orange-700 sl:dark:bg-orange-700 sl:text-white sl:dark:text-white sl:rounded-lg sl:hover:bg-orange-800 sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isResettingNotification}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isResettingNotification}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "sl-spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isResettingNotification ? '$t:sirsoft-social_login.admin.notifications.reset_modal.btn_confirming' : '$t:sirsoft-social_login.admin.notifications.reset_modal.btn_confirm'}}"
-                        }
-                    ]
                 }
             ]
         }

@@ -42,7 +42,9 @@ import { SlotContainer } from './SlotContainer';
 // NotificationCenter 컴포넌트 import
 import { NotificationCenter, type NotificationItem } from './NotificationCenter';
 import { getLocaleDisplayName } from '../../support/localeName';
+import { useLocaleSwitchFocusReturn } from '../../support/localeSwitchFocus';
 import { useHeaderOverlayController } from '../../support/headerOverlay';
+import { BREAKPOINTS, containerPaddingClass, useViewportWidth } from '../layout/viewportWidth';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -298,19 +300,21 @@ const Header: React.FC<HeaderProps> = ({
   // 목록을 가리키고, 열면 현재 언어 항목에 초점을 두며 ↓/↑/Home/End 로 옮기고 Enter 로 고른다. Esc 는 닫고 단추로.
   const langListboxId = `${useId()}-language-listbox`;
   const langTriggerRef = useRef<HTMLButtonElement>(null);
+  // 언어 전환이 끝날 때까지 참 — 그 사이에는 목록을 다시 열지 않는다(곧 화면 전체가 다시 그려져 연 목록이 사라진다, #869 8차 7부)
+  const [switchingLocale, setSwitchingLocale] = useState(false);
   const langOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const langPendingFocusRef = useRef<number | null>(null);
+  // 언어 전환은 같은 화면을 새로 마운트한다 — 고른 뒤 언어 단추에 있던 포커스를 새 헤더의 단추로 돌린다(#869 브라우저 실측)
+  useLocaleSwitchFocusReturn('site-header:language', langMenuRef, () => langTriggerRef.current);
 
   // 메뉴 겹침 — 화면 맨 위 배너가 `data-header-overlay` 로 알리면 헤더 높이를 알리고 맨 위에서만 투명하게 한다(모바일 툴바 포함, main.css)
   useHeaderOverlayController();
 
-  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준 — 위지윅 overrideWidth 호환)
-  const G7Core = (window as any).G7Core;
-  const useResponsive = G7Core?.useResponsive;
-  const responsiveValue = useResponsive?.();
-  const isMobile = responsiveValue
-    ? responsiveValue.width < 768
-    : typeof window !== 'undefined' && window.innerWidth < 768;
+  // 엔진 폭 구독 (G7 표준 — 위지윅 overrideWidth 호환). 여백·이름 표시도 이 폭으로 고른다 — Tailwind 반응형
+  // 접두는 창 폭으로 판정되어 편집기 미리보기 폭을 따르지 못한다(폭을 모르면 엔진 기본 폭 1024).
+  const viewportWidth = useViewportWidth();
+  const isMobile = viewportWidth < BREAKPOINTS.md;
+  const containerPadding = containerPaddingClass(viewportWidth);
 
   // 경로 변경 감지 (SPA 네비게이션 대응)
   useEffect(() => {
@@ -563,6 +567,7 @@ const Header: React.FC<HeaderProps> = ({
 
   // 언어 메뉴를 연다 — 초점은 현재 언어 항목(없으면 where 쪽 끝 항목)
   const openLangMenu = (where: 'first' | 'last' = 'first') => {
+    if (switchingLocale) return;
     const locales = availableLocales ?? [];
     const selected = locales.indexOf(currentLocale);
     const index = selected >= 0 ? selected : (where === 'last' ? locales.length - 1 : 0);
@@ -624,10 +629,15 @@ const Header: React.FC<HeaderProps> = ({
 
   // 언어 변경 핸들러 — 헤더 독립 언어 버튼(코어 기능)에서 호출. setLocale 은 비회원도 동작.
   const handleLocaleChange = (locale: string) => {
-    (window as any).G7Core?.dispatch?.({
+    const pending = (window as any).G7Core?.dispatch?.({
       handler: 'setLocale',
       target: locale,
     });
+    if (locale !== currentLocale) {
+      setSwitchingLocale(true);
+      // 전환이 실패하거나 화면을 다시 그리지 않고 끝나면 다시 열 수 있게 푼다(다시 그리면 새 인스턴스라 상관없다)
+      void Promise.resolve(pending).finally(() => setSwitchingLocale(false));
+    }
     // 고른 뒤 초점은 언어 단추로 돌린다(목록 항목이 사라지며 초점이 문서 맨 위로 빠지지 않게)
     closeLangMenu(true);
   };
@@ -641,7 +651,7 @@ const Header: React.FC<HeaderProps> = ({
       className={`g7-site-header sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}
     >
       {/* 상단 바 */}
-      <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Div className={`max-w-7xl mx-auto ${containerPadding}`}>
         <Div className="flex items-center justify-between h-16">
           {/* 로고 — 이름이 길면 이 칸이 먼저 줄어들고(shrink-1000, 최소 6rem) 최대 20rem 에서 이름이 한 줄 … 로 잘린다.
               검색창은 32rem 을 기준 폭으로 잡고(basis-lg) 줄어드는 몫은 로고·회원 이름이 먼저 진다 — 이름 길이와 무관하게 검색창 폭이
@@ -649,11 +659,12 @@ const Header: React.FC<HeaderProps> = ({
           <LinkButton href="/" onNavigate={() => navigate('/')} className="justify-start flex items-center gap-2 min-w-24 max-w-xs shrink-1000 cursor-pointer">
             {/* 다크 로고가 있으면 어두운 화면에서는 그것만 보인다 — 밝은 화면은 사이트 로고(없으면 이름) */}
             {logo ? (
-              <Img src={logo} alt={siteName} className={`h-8 max-w-full object-contain object-left ${logoDark ? 'dark:hidden' : ''}`} />
+              // 로고는 첫 화면이라 지연 로딩하지 않는다(Img 기본 lazy). 높이 32px — md(가로 640)면 충분하다
+              <Img src={logo} alt={siteName} className={`h-8 max-w-full object-contain object-left ${logoDark ? 'dark:hidden' : ''}`} thumbPreset="md" loading="eager" />
             ) : (
               <Span className={`text-xl font-bold text-gray-900 dark:text-white truncate ${logoDark ? 'dark:hidden' : ''}`}>{siteName}</Span>
             )}
-            {logoDark && <Img src={logoDark} alt={siteName} className="hidden dark:block h-8 max-w-full object-contain object-left" data-testid="header-logo-dark" />}
+            {logoDark && <Img src={logoDark} alt={siteName} className="hidden dark:block h-8 max-w-full object-contain object-left" thumbPreset="md" loading="eager" data-testid="header-logo-dark" />}
           </LinkButton>
 
           {/* 검색바 (데스크톱 전용) — 검색 공급자가 하나도 없으면(searchEnabled=false) 숨긴다 */}
@@ -733,6 +744,7 @@ const Header: React.FC<HeaderProps> = ({
                   ref={langTriggerRef}
                   onClick={() => (showLangMenu ? closeLangMenu(false) : openLangMenu())}
                   onKeyDown={handleLangTriggerKeyDown}
+                  aria-busy={switchingLocale || undefined}
                   className="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
                   aria-haspopup="listbox"
                   aria-expanded={showLangMenu}
@@ -799,7 +811,14 @@ const Header: React.FC<HeaderProps> = ({
                   />
                   {/* 이름은 한 줄 … (최대 8rem). truncate(nowrap)는 최소 폭이 이름 전체라 묶음이 줄지 못한다 — 줄바꿈을 허용하고(break-all)
                       한 줄만 보이게(line-clamp-1) 해 최소 폭을 3rem 으로 낮춘다. 이름이 길어도 검색창이 좁아지지 않는다(#143). */}
-                  <Span className="hidden sm:line-clamp-1 break-all text-sm font-medium max-w-32 min-w-12" title={user.name}>{user.name}</Span>
+                  <Span
+                    className={
+                      viewportWidth >= BREAKPOINTS.sm
+                        ? 'line-clamp-1 break-all text-sm font-medium max-w-32 min-w-12'
+                        : 'hidden break-all text-sm font-medium max-w-32 min-w-12'
+                    }
+                    title={user.name}
+                  >{user.name}</Span>
                   <Icon name="chevron-down" className="w-4 h-4" />
                 </Button>
 
@@ -916,7 +935,7 @@ const Header: React.FC<HeaderProps> = ({
       {/* 탭 네비게이션 (데스크톱 전용) */}
       {!isMobile && (
       <Nav className="border-t border-gray-200 dark:border-gray-800">
-        <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Div className={`max-w-7xl mx-auto ${containerPadding}`}>
           <Div ref={menuNavRef} className="flex items-center gap-1 h-12 overflow-x-auto" data-testid="header-menu-nav">
             {navMenu.map((item, index) => renderTopItem(item, index))}
 

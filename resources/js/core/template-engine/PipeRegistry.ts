@@ -19,6 +19,7 @@
 
 import { createLogger } from '../utils/Logger';
 import { pickLocalized } from '../support/localeTag';
+import { thumbnailSrcset, withThumbnailSize } from '../support/thumbnailUrl';
 
 const logger = createLogger('PipeRegistry');
 
@@ -462,6 +463,37 @@ const builtInPipes: Record<string, PipeDefinition> = {
       return pickLocalized(value, target) ?? '';
     },
     description: '다국어 객체에서 로케일에 맞는 값 추출',
+  },
+
+  // ============================================
+  // 이미지 썸네일 파이프 (engine-v1.89.0)
+  // ============================================
+
+  /**
+   * thumb - 이미지 주소에 썸네일 규격을 붙인다
+   *
+   * 같은 출처 + 등록된 서빙 경로(`upload.thumbnail_url_patterns`)만 바꾸고 외부·정적·`data:` 주소는 그대로다.
+   * 기존 쿼리(서명 등)는 원문 그대로 두고 `size` 만 덧붙인다. 봇 화면 짝은 `App\Seo\PipeRegistry` 의 같은 이름.
+   *
+   * @example
+   * "{{product.thumbnail_url | thumb('sm')}}" → "/api/…/image/abc?size=sm"
+   */
+  thumb: {
+    fn: (value: any, preset: string = 'sm'): any => withThumbnailSize(value, preset),
+    description: '이미지 주소에 썸네일 규격 붙이기 (기본: sm)',
+  },
+
+  /**
+   * thumbSrcset - 썸네일 규격의 1x·2x srcset
+   *
+   * 2x 는 같은 맞춤의 규격 중 가로 1.5배 이상인 가장 작은 규격이다. 대상 주소가 아니면 빈 문자열.
+   *
+   * @example
+   * "{{product.thumbnail_url | thumbSrcset('md')}}" → "…?size=md 1x, …?size=lg 2x"
+   */
+  thumbSrcset: {
+    fn: (value: any, preset: string = 'sm'): string => thumbnailSrcset(value, preset),
+    description: '썸네일 규격의 1x·2x srcset (기본: sm)',
   },
 };
 

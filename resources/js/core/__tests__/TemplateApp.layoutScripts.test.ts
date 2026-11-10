@@ -8,7 +8,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TemplateApp } from '../TemplateApp';
 import type { TemplateAppConfig } from '../TemplateApp';
-import { AuthManager } from '../auth/AuthManager';
 
 const mockApiClient = {
   post: vi.fn().mockResolvedValue({}),

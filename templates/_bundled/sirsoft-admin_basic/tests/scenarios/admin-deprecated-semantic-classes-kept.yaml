@@ -1,0 +1,26 @@
+feature: 관리자 폐지 예정 의미 클래스 — 7.1.4 에 있던 정의를 폭 부분까지 빌드 CSS 에 남긴다
+
+description: |
+  번들 레이아웃은 폭 분기를 엔진 responsive 구간 값으로 펼쳐 폭 미디어를 품은 의미 클래스를 쓰지 않는다. 사이트가
+  편집기로 고쳐 저장한 레이아웃은 7.1.4 의 클래스 이름을 그대로 들고 있으므로, 7.1.4 원본 CSS 에 있던 의미 클래스는
+  다음 출시 이후까지 정의(폭 부분 포함)를 남기고 폐지 예정으로 안내한다.
+
+  적용 지점:
+    - `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `.search-bar-select`·`.search-bar-select-custom`.
+    - `templates/_bundled/sirsoft-admin_basic/src/styles/layout/_admin_base.css` 의 `.user_info`.
+
+# axis 의미:
+#   class — 7.1.4 에 있었고 이번 정리에서 정의가 빠졌던 의미 클래스.
+axes:
+  class: [search-bar-select, search-bar-select-custom, user_info]
+
+effects:
+  - released_semantic_class_definition_kept   # 7.1.4 에 있던 의미 클래스의 기본 정의와 768px 이상 정의가 빌드 CSS 에 있다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/styles/deprecatedSemanticClassesKept.test.ts
+
+validation:
+  browser_check: none
+  note: |
+    번들 레이아웃은 이 클래스를 쓰지 않으므로 번들 화면에서 잴 자리가 없다. 빌드 CSS 정의를 Vitest 가 잰다.

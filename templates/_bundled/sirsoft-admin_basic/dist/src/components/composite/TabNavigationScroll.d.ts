@@ -70,28 +70,4 @@ export interface TabNavigationScrollProps {
      */
     'aria-label'?: string;
 }
-/**
- * 탭 네비게이션 컴포넌트 (자동 스크롤 기능 내장)
- *
- * 특징:
- * - 내부 상태로 활성 탭 관리 (React useState)
- * - scrollToSectionHandler를 사용하여 자동 스크롤
- * - 탭 클릭 시 즉시 UI 업데이트 + 스크롤 이동
- * - 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여 768px 미만 시
- *   Select 드롭다운으로 자동 전환 (Tailwind hidden md:flex 분기 미사용 — 위지윅 미리보기 호환)
- *
- * @example
- * ```json
- * {
- *   "type": "composite",
- *   "name": "TabNavigationScroll",
- *   "props": {
- *     "tabs": [
- *       {"id": "basic", "label": "$t:admin.tabs.basic"},
- *       {"id": "permissions", "label": "$t:admin.tabs.permissions"}
- *     ]
- *   }
- * }
- * ```
- */
 export declare const TabNavigationScroll: React.FC<TabNavigationScrollProps>;

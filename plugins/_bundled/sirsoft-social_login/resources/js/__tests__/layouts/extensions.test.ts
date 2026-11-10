@@ -305,10 +305,15 @@ describe('사용자 화면 확장 조각', () => {
     // 모집단: 인증번호 받기·확인, 비밀번호 확인, 기존 계정 인증번호 받기·확인, 새 계정으로 가입, 취소
     expect(buttons.length).toBeGreaterThanOrEqual(7);
     for (const b of buttons) {
+      // 기본(640px 미만)은 손가락 크기 py-3, 640px 이상 구간(responsive 640-)에서만 py-2 로 줄어든다
       const cls = String(b.props.className);
-      expect(cls, b.props?.['data-ref'] ?? cls).toMatch(/(^|\s)sl:py-3(\s|$)/);
-      expect(cls, b.props?.['data-ref'] ?? cls).toMatch(/(^|\s)sl:sm:py-2(\s|$)/);
-      expect(cls, b.props?.['data-ref'] ?? cls).not.toMatch(/(^|\s)sl:py-2(\s|$)/);
+      const wide = String(b.responsive?.['640-']?.props?.className ?? '');
+      const label = b.props?.['data-ref'] ?? cls;
+      expect(cls, label).toMatch(/(^|\s)sl:py-3(\s|$)/);
+      expect(cls, label).not.toMatch(/(^|\s)sl:py-2(\s|$)/);
+      expect(cls, label).not.toMatch(/(^|\s)sl:(sm|md|lg|xl|2xl):/);
+      expect(wide, label).toMatch(/(^|\s)sl:py-2(\s|$)/);
+      expect(wide, label).not.toMatch(/(^|\s)sl:py-3(\s|$)/);
     }
   });
 

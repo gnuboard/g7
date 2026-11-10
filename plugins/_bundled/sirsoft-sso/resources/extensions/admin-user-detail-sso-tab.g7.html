@@ -26,7 +26,8 @@
         <p data-ref="admin_user_sso_forbidden" data-if="{{!!user?.data &amp;&amp; !user?.data?.sso}}" class="sso-text-hint">$t:sirsoft-sso.admin.user_tab.forbidden</p>
         <p data-ref="admin_user_sso_empty" data-if="{{!!user?.data?.sso &amp;&amp; (user?.data?.sso?.accounts ?? []).length === 0}}" class="sso-text-hint">$t:sirsoft-sso.admin.user_tab.empty</p>
         <!-- 연결된 IdP 카드 -->
-        <div data-ref="admin_user_sso_accounts" data-if="{{(user?.data?.sso?.accounts ?? []).length > 0}}" class="sso:grid sso:grid-cols-1 sso:lg:grid-cols-2 sso:gap-3">
+        <div data-ref="admin_user_sso_accounts" data-if="{{(user?.data?.sso?.accounts ?? []).length > 0}}" class="sso:grid sso:grid-cols-1 sso:gap-3">
+          <responsive on="desktop" class="sso:grid sso:grid-cols-2 sso:gap-3"/>
           <div data-each="account in user?.data?.sso?.accounts ?? []" data-key="{{account.id}}" data-ref="admin_user_sso_account_{{account.id}}" class="sso:rounded-lg sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-4 sso:space-y-2">
             <div class="sso:flex sso:flex-wrap sso:items-center sso:gap-2">
               <span class="sso:text-sm sso:font-semibold sso:text-gray-900 sso:dark:text-white">{{account.idp?.label ?? '-'}}</span>

@@ -9,7 +9,27 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.preset_manage.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "id": "preset_save_new_button",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "openModal",
+                        "target": "modal_preset_save"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-primary ecommerce:w-full ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{products?.data?.abilities?.can_update !== true}}"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product.modal.preset_manage.add_new"
+            }
+        ]
     },
     "children": [
         {
@@ -159,34 +179,6 @@
                             ]
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "preset_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:mt-4"
-            },
-            "children": [
-                {
-                    "id": "preset_save_new_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "openModal",
-                            "target": "modal_preset_save"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-primary ecommerce:w-full ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{products?.data?.abilities?.can_update !== true}}"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.product.modal.preset_manage.add_new"
                 }
             ]
         }

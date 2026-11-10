@@ -16,7 +16,8 @@
       <multilingual-input data-type="composite" name="label" :maxLength="100"/>
       <p data-if="{{!!_local.providerErrors &amp;&amp; Object.keys(_local.providerErrors).some((k) => k === 'label' || k.startsWith('label.'))}}" class="sl-form-error">{{_local.providerErrors ? Object.entries(_local.providerErrors).find(([k]) => k === 'label' || k.startsWith('label.'))?.[1]?.[0] : ''}}</p>
     </div>
-    <div data-ref="editor_credentials_{{provider.key}}" class="sl-grid-2col-responsive">
+    <div data-ref="editor_credentials_{{provider.key}}" class="sl:grid sl:grid-cols-1 sl:gap-4">
+      <responsive on="768-" class="sl:grid sl:grid-cols-2 sl:gap-4"/>
       <div>
         <label class="sl-form-label">{{$t('sirsoft-social_login.admin.providers.fields.client_id_' + provider.driver)}}</label>
         <input type="text" name="client_id" class="sl-input" autoComplete="off"/>
@@ -45,7 +46,8 @@
       </div>
     </div>
     <div data-ref="editor_custom_endpoints_{{provider.key}}" data-if="{{provider.type === 'custom'}}" class="sl:space-y-3">
-      <div class="sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-end sl:gap-2">
+      <div class="sl:flex sl:flex-col sl:gap-2">
+        <responsive on="640-" class="sl:flex sl:flex-row sl:items-end sl:gap-2"/>
         <div class="sl:flex-1">
           <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.discovery_url</label>
           <input type="url" name="discovery_url" class="sl-input" placeholder="https://"/>
@@ -68,7 +70,8 @@
           <span>$t:sirsoft-social_login.admin.providers.discover</span>
         </button>
       </div>
-      <div class="sl-grid-2col-responsive">
+      <div class="sl:grid sl:grid-cols-1 sl:gap-4">
+        <responsive on="768-" class="sl:grid sl:grid-cols-2 sl:gap-4"/>
         <div>
           <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.issuer</label>
           <input type="text" name="issuer" class="sl-input"/>
@@ -120,7 +123,8 @@
         </div>
       </div>
     </div>
-    <div data-ref="editor_signup_policy_{{provider.key}}" class="sl-grid-2col-responsive">
+    <div data-ref="editor_signup_policy_{{provider.key}}" class="sl:grid sl:grid-cols-1 sl:gap-4">
+      <responsive on="768-" class="sl:grid sl:grid-cols-2 sl:gap-4"/>
       <div class="sl-flex-start sl:gap-3">
         <input type="checkbox" name="signup_allowed" class="sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600"/>
         <div>

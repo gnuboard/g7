@@ -7,7 +7,7 @@
   드래그 정렬은 꺼 두었다(`enableDrag=false`). 브랜드 순서는 정렬 조건이 정하지 손으로 끌어
   바꾸는 값이 아니다. -->
 <partial description="Brand List Panel - Left Sidebar with Search/Sort">
-  <div data-ref="brand_list_panel" class="ecommerce-admin-card ecommerce-col-span-1-lg ecommerce:flex ecommerce:flex-col">
+  <div data-ref="brand_list_panel" class="ecommerce-admin-card ecommerce:col-span-1 ecommerce:flex ecommerce:flex-col">
     <div data-ref="brand_list_header" class="ecommerce:px-4 ecommerce-panel-header ecommerce-flex-between">
       <div class="ecommerce-flex-center ecommerce:gap-2">
         <icon name="tag" class="ecommerce:text-xl ecommerce:text-gray-700 ecommerce:dark:text-gray-300"/>
@@ -16,7 +16,8 @@
       </div>
     </div>
     <div data-ref="search_sort_area" class="ecommerce:px-4 ecommerce-panel-header">
-      <div class="ecommerce-search-bar">
+      <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-3">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-3 ecommerce:flex-wrap ecommerce:items-center"/>
         <div class="ecommerce:flex-1 ecommerce:min-w-0">
           <search-bar data-type="composite" placeholder="$t:sirsoft-ecommerce.admin.brand.list.search_placeholder" value="{{query.search || ''}}" class="ecommerce:w-full">
             <on type="submit">
@@ -30,7 +31,8 @@
           </search-bar>
         </div>
         <div class="ecommerce:shrink-0">
-          <select name="sortOrder" aria-label="$t:common.sort_order" class="ecommerce:h-9 ecommerce:md:shrink-0" value="{{query.sort || 'name_asc'}}">
+          <select name="sortOrder" aria-label="$t:common.sort_order" class="ecommerce:h-9" value="{{query.sort || 'name_asc'}}">
+            <responsive on="768-" class="ecommerce:h-9 ecommerce:shrink-0"/>
             <options>
               <option value="name_asc">$t:sirsoft-ecommerce.admin.brand.list.sort.name_asc</option>
               <option value="name_desc">$t:sirsoft-ecommerce.admin.brand.list.sort.name_desc</option>

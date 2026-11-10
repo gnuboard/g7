@@ -11,8 +11,7 @@ import type { Route } from './routing/Router';
 import { normalizePathname } from './routing/normalizePathname';
 import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
-import { DataBindingEngine } from './template-engine/DataBindingEngine';
-import { evaluateSafeExpression } from './template-engine/SafeExpressionEvaluator';
+import { BINDING_CACHE_EPOCH, DataBindingEngine } from './template-engine/DataBindingEngine';
 import { evaluateComputedDefinitions } from './template-engine/helpers/ComputedEvaluator';
 import { extractSingleBinding } from './template-engine/BindingShape';
 import { hasPipes } from './template-engine/PipeRegistry';
@@ -36,7 +35,6 @@ import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFro
 import { getColorSchemeSignal } from './theme/ColorSchemeSignal';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
 import {
-    fetchWithRetry,
     installUnloadGuard,
     isDocumentUnloading,
     loadScriptWithRetry,
@@ -53,9 +51,6 @@ import {
 import { fetchStaticFirst } from './support/fetchStaticFirst';
 import { resolveUsableLocale } from './support/localeTag';
 import {
-    normalizeScriptSrcForOriginCheck as normalizeScriptSrcForOriginCheckImpl,
-    extractScriptHost as extractScriptHostImpl,
-    getTrustedScriptHosts as getTrustedScriptHostsImpl,
     isAllowedScriptSrc as isAllowedScriptSrcImpl,
 } from './support/scriptSrcPolicy';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
@@ -161,6 +156,14 @@ export interface UploadSettings {
     image_max_height: number;
     /** 이미지 품질 (1-100) */
     image_quality: number;
+    /** 썸네일 기능 사용 여부 */
+    thumbnail_enabled?: boolean;
+    /** 본문 이미지 규격 이름 (기본 lg) */
+    thumbnail_content_preset?: string;
+    /** 공개 규격 목록 (서버 계산 필드 — 사용 중인 규격만) @since engine-v1.89.0 */
+    thumbnail_presets_public?: import('./support/thumbnailUrl').ThumbnailPresetInfo[];
+    /** `size` 를 붙여도 되는 서빙 경로 패턴 (서버 계산 필드 — 꺼짐이면 빈 배열) @since engine-v1.89.0 */
+    thumbnail_url_patterns?: string[];
 }
 
 /**
@@ -363,6 +366,17 @@ export class TemplateApp {
     private earlySpinnerTimer: ReturnType<typeof setTimeout> | null = null;
     /** 앞당겨 띄운 덮개가 보이는 중인지 (@since engine-v1.81.2) */
     private earlySpinnerVisible = false;
+    /** 인증 확인 중 표시 띄우기 예약 (engine-v1.89.0, installAuthCheckIndicator 참조) */
+    private authCheckIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+    /**
+     * 인증 확인이 이 시간 안에 끝나지 않으면 확인 중 표시를 띄운다(ms) — 보통의 빠른 확인에서는 깜빡이지 않을 만큼, 첫 요청이 늦는
+     * 서버 일시 오류에서는 백지로 느껴지기 전에 (설계 확정 2026-11-08, 브라우저 실측)
+     */
+    private static readonly AUTH_CHECK_INDICATOR_DELAY_MS = 500;
+    /** 포커스 가능한 요소 (언어 전환 뒤 포커스 되돌리기, engine-v1.89.0) */
+    private static readonly FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
+    /** 언어 전환 뒤 포커스 자리를 다시 보는 최대 횟수(16ms 간격) — 다시 그린 화면의 커밋·지연 부품 로드를 기다린다 */
+    private static readonly LOCALE_FOCUS_RESTORE_ATTEMPTS = 30;
     /**
      * 다시 받기로 받은 값의 요청 주소 경로(데이터 소스 id 별) — 다른 경로로 다시 받기를 시작하면 앞 값을 받기 전으로
      * 돌리는 기준. 화면 전환마다 비운다 (@since engine-v1.81.2)
@@ -388,6 +402,14 @@ export class TemplateApp {
      * 화면 처리가 시작돼 새 화면을 아직 그리지 않았는지 — 그동안 끝난 다시 받기가 전환 상태(흐림)를 끄지 않게 한다 (@since engine-v1.82.0)
      */
     private routeChangeInFlight = false;
+    /**
+     * 새 화면을 그리기 전(미룬 blocking onSuccess·init_actions)에 다시 받은 소스의 initLocal 수집 상자 (@since engine-v1.89.0).
+     * 종전에는 그 다시 받기가 initLocal 을 `_localInit` 갱신으로만 넘겨, SPA 진입이면 떠나는 화면 문맥에 적용됐다가 새 화면 렌더가
+     * 버렸고, 첫 진입이면 대기열을 거쳐 첫 렌더 뒤 적용되며 그 사이 init_actions 가 같은 키에 쓴 값을 통째로 덮었다. 상자가 열려 있으면
+     * 받는 즉시 정본 `_local` 에 쓰고(뒤이은 setState 가 그 위에 쌓인다) 키만 적어 두며, 렌더 직전에 닫으면서 그 키의 현재 값을 첫 렌더
+     * 상태(`_local`·`_localInit`)에 싣는다.
+     */
+    private preRenderInitCollector: { keys: Set<string>; force?: unknown } | null = null;
     /**
      * 언어 전환으로 같은 화면을 다시 그릴 때 이어 쓸 화면 상태 (@since engine-v1.79.0)
      * - path: 전환을 시작한 경로 (다른 경로로 가면 쓰지 않는다)
@@ -653,6 +675,8 @@ export class TemplateApp {
             // 1. 템플릿 엔진 초기화, ComponentRegistry, routes.json, 사용자 정보를 병렬 로딩
             const componentRegistry = ComponentRegistry.getInstance();
             const authManager = AuthManager.getInstance();
+            // 인증 확인을 다시 묻는 동안(서버 일시 오류) 백지 대신 확인 중 표시 — preloadAuth 보다 먼저 구독한다 (설계 확정 2026-11-08)
+            this.installAuthCheckIndicator(authManager);
 
             // 캐시 버전 시드 — blade 주입값(현재 렌더와 동일 버전) 우선, 부재 시 localStorage 폴백.
             // localStorage 만 보면 stale 버전으로 첫 burst 가 나가고 config 핸드셰이크가
@@ -838,7 +862,6 @@ export class TemplateApp {
             // 토큰 갱신 실패 시 로그인 페이지로 리다이렉트
             const apiClient = getApiClient();
             const authType = this.config.templateType === 'admin' ? 'admin' : 'user';
-            const authConfig = authManager.getConfig(authType);
 
             apiClient.setOnUnauthorized(() => {
                 logger.log('Unauthorized - redirecting to login page');
@@ -946,6 +969,9 @@ export class TemplateApp {
 
             // 8.5 routeNotFound 이벤트 핸들러 등록 (404 에러 페이지 처리)
             this.router.on('routeNotFound', (path: string) => this.handleRouteNotFound(path));
+
+            // 8.5.1 인증 확인 불가(서버 일시 오류) — 로그인 화면 대신 503 오류 화면 (engine-v1.89.0)
+            this.router.on('authUnavailable', ({ path }: { path: string }) => this.handleAuthUnavailable(path));
 
             // 8.6 레이아웃 편집기 모드 가드
             //
@@ -1204,6 +1230,8 @@ export class TemplateApp {
         (window as any).__g7ForcedLocalFields = undefined;
         (window as any).__g7ActionContext = undefined;
         (window as any).__g7PendingLocalState = undefined;
+        // 밀려서 렌더까지 가지 못한 앞 화면 처리의 렌더 전 수집 상자를 닫는다 — 새 처리는 자기 상자를 연다 (@since engine-v1.89.0)
+        this.preRenderInitCollector = null;
         // engine-v1.24.6: 추가 전역 변수 초기화 (이전 페이지 잔존 방지)
         // - __g7LastSetLocalSnapshot: getLocal() fallback — 이전 페이지 setLocal 스냅샷 잔존
         // - __g7SetLocalOverrideKeys: setLocal override 키 — useLayoutEffect 미처리 시 잔존
@@ -1425,6 +1453,8 @@ export class TemplateApp {
             let localInit: Record<string, any> = {};
             // initIsolated 옵션으로 초기화할 격리된 상태
             let isolatedInit: Record<string, any> = {};
+            // 다른 화면으로 옮길 때 새 화면 상태를 세운 뒤 돌릴 blocking onSuccess (@since engine-v1.89.0)
+            let deferredBlockingOnSuccess: Array<() => Promise<void>> = [];
 
             // 이전 WebSocket 구독 해제
             if (this.currentWebSocketSubscriptions.length > 0) {
@@ -1467,10 +1497,17 @@ export class TemplateApp {
 
                 // fetchDataSourcesWithResults를 사용하여 에러 상태도 추적
                 // 대기열에 새 이동이 들어오면 응답을 기다리지 않고 물러난다 — 늦게 온 응답은 세대 판정으로 버려진다 (@since engine-v1.82.0)
+                // 다른 화면으로 옮기면 onSuccess 를 미룬다 (@since engine-v1.89.0, #869) — 여기는 아직 앞 화면 상태 위라, 종전에는 그 `_local` 쓰기가
+                // 아래 레이아웃 전환 초기화에 지워지고 그 안의 다시 받기 결과도 렌더 문맥 재구성에 버려졌다. 첫 진입(비울 앞 화면 없음)은
+                // 결과가 남아 같은 주소를 바로 열면 되고 SPA 로 들어오면 빈 화면이었다(클레임 신청 「신청할 수 있는 상품이 없습니다」,
+                // 신청 상세 원 주문 카드). 같은 화면(쿼리만 다름)은 상태를 비우지 않으므로 종전대로 여기서 돌린다
                 const blockingOutcome = await this.awaitUnlessSuperseded(routeChangeId, dataSourceManager.fetchDataSourcesWithResults(
                     blockingSources,
                     route.params || {},
-                    queryParams
+                    queryParams,
+                    undefined,
+                    undefined,
+                    screenChanged ? { deferOnSuccess: true } : undefined
                 ));
 
                 // 새 요청이 들어왔으면 응답을 이 화면에 심지 않는다 — 종전에는 이 판정이 initLocal 계산·받은 데이터 기록 뒤에 있어
@@ -1484,6 +1521,9 @@ export class TemplateApp {
 
                 // 결과를 데이터와 에러로 분리
                 results.forEach((result) => {
+                    if (result.runOnSuccess) {
+                        deferredBlockingOnSuccess.push(result.runOnSuccess);
+                    }
                     if (result.state === 'success' && result.data !== undefined) {
                         blockingData[result.id] = result.data;
                     } else if (result.state === 'error' && result.error) {
@@ -1704,6 +1744,49 @@ export class TemplateApp {
                 logger.log('initIsolated applied:', Object.keys(layoutData.initIsolated));
             }
 
+            // 이제부터 렌더 전까지(미룬 onSuccess·init_actions) 다시 받은 소스의 initLocal 을 정본에 바로 쓰고 키를 모은다 (@since engine-v1.89.0)
+            const preRenderInit: { keys: Set<string>; force?: unknown } = { keys: new Set<string>() };
+            this.preRenderInitCollector = preRenderInit;
+
+            // 미뤄 둔 blocking onSuccess — 새 화면 `_local` 을 세운 뒤(레이아웃 initLocal 다음, init_actions 앞) 돌린다 (@since engine-v1.89.0).
+            // 첫 진입과 같은 결과가 되게 한다: 그 `_local` 쓰기는 정본 B 에 남고, 그 안의 다시 받기 결과는 첫 렌더 문맥에 싣는다.
+            if (deferredBlockingOnSuccess.length > 0) {
+                if (isLayoutChanged) {
+                    // 받는 동안 앞 화면이 남긴 반영 대기 값을 기준으로 쓰지 않게 비운다 — 경로 시작 때 비운 것과 같은 묶음
+                    (window as any).__g7PendingLocalState = undefined;
+                    (window as any).__g7ForcedLocalFields = undefined;
+                    (window as any).__g7LastSetLocalSnapshot = undefined;
+                    (window as any).__g7SetLocalOverrideKeys = undefined;
+                }
+                // 이제부터의 `_local` 쓰기는 새 화면 몫이다 — 그 안 요청을 기다리는 동안 떠나는 화면에 친 입력이 새 화면 `_local` 에
+                // 남지 않게 덮개 대상 내용을 잠근다(렌더 뒤 종전 해제 경로가 푼다). 이미 잠갔으면(blocking initLocal 이동) 그대로 둔다
+                if (this.routeInertElements.length === 0) {
+                    this.applyRouteInert();
+                }
+                // 받기 안에서 돌던 때와 같이 소스끼리 함께 돌리고 다음 이동과 경주한다 — 느리거나 끝나지 않는 다시 받기가 다음 이동을 막지 않게
+                const deferredOutcome = await this.awaitUnlessSuperseded(
+                    routeChangeId,
+                    Promise.all(deferredBlockingOnSuccess.map((runOnSuccess) => runOnSuccess()))
+                );
+                deferredBlockingOnSuccess = [];
+
+                if (deferredOutcome === 'superseded' || routeChangeId !== this.currentRouteChangeId) {
+                    logger.log('Route change cancelled after deferred blocking onSuccess (newer request exists):', routeChangeId);
+                    this.releaseRouteInert();
+                    return;
+                }
+
+                (initialDataContext as any)._local = { ...(this.globalState._local || {}) };
+                // onSuccess 안 다시 받기의 값·오류 기록 — 렌더 전 갱신은 렌더가 문맥을 새로 세우며 사라진다(init_actions 뒤 병합과 같은 이유)
+                for (const [dsId, dsData] of Object.entries(this.currentFetchedData)) {
+                    (initialDataContext as any)[dsId] = dsData;
+                }
+                if (Object.keys(this.routeDataSourceErrors).length > 0) {
+                    (initialDataContext as any)._dataSourceErrors = { ...this.routeDataSourceErrors };
+                }
+                logger.log('Deferred blocking onSuccess executed for the new screen');
+            }
+
             // _global을 최신 상태로 갱신 (initLocal/initGlobal/initIsolated 처리 이후)
             // _local 리셋 및 layoutInitLocal 적용이 완료된 상태에서 스냅샷해야
             // SPA 네비게이션 시 이전 페이지의 stale _local 키가 _global._local에 남지 않음
@@ -1786,6 +1869,38 @@ export class TemplateApp {
                 }
             }
 
+            // 렌더 전 다시 받기의 initLocal 을 첫 렌더 상태에 싣는다 (@since engine-v1.89.0) — 받을 때 정본 B 에 이미 썼으므로(그 뒤
+            // init_actions 의 setState 가 그 위에 쌓였다) 그 키의 지금 B 값을 문맥 `_local`(첫 그림·핸들러)과 `_localInit`(마운트 뒤 저장소 A
+            // 반영)에 싣는다. initGlobal 은 다시 받기가 정본 `_global` 에 바로 쓰고 위 init 뒤 스냅샷이 싣는다. 언어 전환 재진입은 아래에서
+            // 전환 직전 `_local` 로 바꾸고 `_localInit` 을 비운다(종전 계약)
+            this.preRenderInitCollector = null;
+            if (preRenderInit.keys.size > 0) {
+                const carried: Record<string, any> = {};
+                for (const key of preRenderInit.keys) {
+                    carried[key] = this.globalState._local?.[key];
+                }
+                if (preRenderInit.force !== undefined) {
+                    carried._forceLocalInit = preRenderInit.force;
+                }
+                (initialDataContext as any)._local = { ...(this.globalState._local || {}) };
+                (initialDataContext as any)._localInit = {
+                    ...((initialDataContext as any)._localInit ?? {}),
+                    ...carried,
+                };
+                initialDataContext._global = {
+                    ...this.globalState,
+                    layoutWarnings: layoutData.warnings || [],
+                };
+                if (layoutData.computed && Object.keys(layoutData.computed).length > 0) {
+                    const computedData = this.calculateComputed(layoutData.computed, initialDataContext);
+                    if (Object.keys(computedData).length > 0) {
+                        (initialDataContext as any)._computed = computedData;
+                        this.globalState._computed = computedData;
+                    }
+                }
+                logger.log('Pre-render refetch initLocal carried into the first render:', Array.from(preRenderInit.keys));
+            }
+
             // 언어 전환 재진입 — 같은 화면의 표시 언어만 바뀐다 (@since engine-v1.79.0)
             // 언어 전환은 엔진을 다시 띄우고 같은 경로로 재진입한다. 그대로 두면 레이아웃 init(생성 모드의
             // form 초기화 등)과 데이터소스 initLocal 이 다시 돌아 저장하지 않은 입력(제목·본문·고른 첨부 등)이
@@ -1847,8 +1962,14 @@ export class TemplateApp {
             // 종전에는 같은 레이아웃의 다른 대상(클레임 A → B)으로 가면 props 의 `{{claim.data.order_number}}` 가
             // 30초 동안 앞 대상 값이었다. 받는 동안(blocking·init_actions 대기) 떠나는 화면이 전환 상태로 다시 그려지며
             // 앞 값을 다시 채울 수 있어 대기 뒤인 이 자리에서 비우고, 렌더 사이클 캐시도 함께 비운다 (engine-v1.82.1)
-            getState().bindingEngine?.clearCache();
-            getState().bindingEngine?.startRenderCycle();
+            // 비운 뒤에도 떠나는 화면의 다시 그리기(받는 동안 전역 상태가 바뀌어 startTransition 으로 예약된 것)가 늦게 처리되면 앞 대상
+            // 문맥으로 평가한 값을 비운 캐시에 다시 채웠다 — 새 세대를 열고 새 화면 문맥에 그 번호를 실어, 앞 세대 문맥의 평가가 캐시를
+            // 읽지도 쓰지도 않게 한다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+            const routeBindingEngine = getState().bindingEngine;
+            if (routeBindingEngine) {
+                (initialDataContext as Record<symbol, unknown>)[BINDING_CACHE_EPOCH] = routeBindingEngine.startCacheEpoch();
+                routeBindingEngine.startRenderCycle();
+            }
 
             await renderTemplate({
                 containerId: 'app',
@@ -1861,6 +1982,9 @@ export class TemplateApp {
             });
 
             logger.log('Initial render complete with blocking data');
+
+            // 화면이 그려졌다 — 인증 확인 불가 뒤에도 공개 화면이면 오류 화면이 오지 않으므로 확인 중 표시를 여기서 걷는다 (engine-v1.89.0)
+            this.hideAuthCheckIndicator();
 
             // 새 화면이 그려졌다 — 받는 동안 걸어 둔 앞 화면 입력 잠금은 커밋 뒤에 푼다(renderTemplate 은 커밋 전에 돌아온다 — 바로
             // 풀면 커밋 전 앞 화면이 잠깐 다시 조작된다) (@since engine-v1.82.0)
@@ -2809,6 +2933,9 @@ export class TemplateApp {
         conditionContext: Record<string, any>
     ): Promise<void> {
         const loadPromises: Promise<void>[] = [];
+        // 조건 평가용 바인딩 엔진. TemplateApp 에는 bindingEngine 필드가 없어 종전의 `this.bindingEngine` 은
+        // undefined 였고, `{{...}}` 조건은 평가 중 예외로 늘 거짓이 되어 스크립트가 로드되지 않았다(#869)
+        const conditionBindingEngine = new DataBindingEngine();
 
         for (const script of scripts) {
             // 조건 체크 (if 또는 conditions)
@@ -2817,7 +2944,7 @@ export class TemplateApp {
                 const shouldLoad = evaluateRenderCondition(
                     { if: script.if, conditions: script.conditions },
                     conditionContext,
-                    this.bindingEngine,
+                    conditionBindingEngine,
                     `script:${script.id}`
                 );
                 if (!shouldLoad) {
@@ -2971,80 +3098,6 @@ export class TemplateApp {
     }
 
     /**
-     * origin 판정 전에 스크립트 src 를 브라우저 URL 파서와 동일하게 정규화합니다.
-     *
-     * 문자열 접두 검사만으로는 authority 우회를 막지 못합니다. 브라우저(WHATWG URL)는
-     * 파싱 전에 ASCII tab·개행을 제거하고, special scheme(http/https)에서 백슬래시를
-     * 슬래시와 동등하게 처리하기 때문입니다. 그래서 `/\/evil.com/x.js` ·
-     * `/{tab}/evil.com/x.js` 는 `//` 로 시작하지 않고 scheme 도 없는데 실제로는
-     * `https://evil.com/x.js` 로 해석되어 원격 스크립트가 로드됩니다.
-     *
-     * 정규화 후 판정하면 경로 중간의 백슬래시·탭(`/js/a\b.js`)은 authority 를 만들지
-     * 않으므로 그대로 same-origin 으로 통과합니다(과차단 없음).
-     *
-     * 저장측 `SafeLayoutExpressions::normalizeForOriginCheck` · 정적 검사
-     * `layout-scripts-src-same-origin` 과 3층 동형이어야 합니다. 구현은
-     * `support/scriptSrcPolicy` 가 SSoT 이며 이 메서드는 위임입니다.
-     *
-     * @since engine-v1.60.2
-     * @param src 원본 src 문자열
-     * @returns 정규화된 src
-     */
-    private static normalizeScriptSrcForOriginCheck(src: string): string {
-        return normalizeScriptSrcForOriginCheckImpl(src);
-    }
-
-    /**
-     * 스크립트 src 에서 http(s) 호스트명을 추출합니다.
-     *
-     * `//host/...`(protocol-relative)·`https://host/...` 를 처리하며, http/https 가 아닌
-     * scheme(`javascript:`·`data:` 등)은 null 을 반환해 신뢰 호스트 판정 대상에서 제외합니다.
-     *
-     * @param src 스크립트 src 문자열
-     * @returns 소문자 호스트명 (판정 불가 시 null)
-     */
-    private extractScriptHost(src: string): string | null {
-        return extractScriptHostImpl(src);
-    }
-
-    /**
-     * 코어가 집계해 노출한 신뢰 외부 스크립트 호스트 목록을 반환합니다.
-     *
-     * @returns 소문자 호스트명 배열 (window.G7Config.trustedScriptHosts)
-     */
-    private getTrustedScriptHosts(): string[] {
-        return getTrustedScriptHostsImpl();
-    }
-
-    /**
-     * 스크립트 조건 평가
-     *
-     * {{...}} 형태의 표현식을 평가합니다.
-     *
-     * @param condition 조건 표현식 (예: "{{_global.pluginActive}}")
-     * @param context 평가 컨텍스트
-     * @returns 조건 평가 결과 (truthy/falsy)
-     */
-    private evaluateScriptCondition(condition: string, context: Record<string, any>): boolean {
-        try {
-            // {{...}} 형태에서 표현식 추출
-            if (condition.startsWith('{{') && condition.endsWith('}}')) {
-                const expression = condition.slice(2, -2).trim();
-
-                // 화이트리스트 AST 평가기로 안전하게 평가(KVE-2026-1915).
-                // 종전의 `new Function('ctx','with(ctx){return Boolean(...)}')` 폐기.
-                return Boolean(evaluateSafeExpression(expression, context));
-            }
-
-            // {{}} 형태가 아니면 truthy 체크
-            return Boolean(condition);
-        } catch (error) {
-            logger.warn(`Failed to evaluate script condition: ${condition}`, error);
-            return false;
-        }
-    }
-
-    /**
      * 초기화 에러 화면 표시
      *
      * 문서 이탈 중(새로고침으로 버려지는 문서)에는 렌더하지 않는다. 사용자가 이미
@@ -3056,6 +3109,8 @@ export class TemplateApp {
      * @since engine-v1.53.0 (이탈 가드 추가)
      */
     private showInitError(error: Error): void {
+        // 초기화 오류 화면이 대신 그려진다 — 확인 중 표시를 남기지 않는다 (engine-v1.89.0)
+        this.hideAuthCheckIndicator();
         if (isDocumentUnloading()) {
             logger.warn('Init failed while document is unloading — skipping error screen', error);
             return;
@@ -3555,7 +3610,11 @@ export class TemplateApp {
 
         // 기본 스피너 폴백 (커스텀 컴포넌트 미지정 시)
         // 폴백만 인라인 스타일 사용 — 커스텀 컴포넌트 사용 시 이 코드는 실행되지 않음
-        container.innerHTML = `<div style="position:absolute;inset:0;z-index:2147483647;overflow:hidden;background:var(--g7-overlay-bg, rgb(249,250,251));display:flex;align-items:center;justify-content:center;"><div style="width:32px;height:32px;border:3px solid var(--g7-spinner-color, #9ca3af);border-top-color:transparent;border-radius:50%;animation:g7-spin 0.8s linear infinite;"></div></div>`;
+        // 배경 기본값은 다른 덮개와 같은 판정으로 다크 모드면 gray-900 이다. --g7-overlay-bg 를 정의하는 곳이
+        // 없어 종전에는 다크 모드에서도 밝은 회색이 그려졌다(#869)
+        const isDark = document.documentElement.classList.contains('dark');
+        const fallbackBg = isDark ? 'rgb(17,24,39)' : 'rgb(249,250,251)';
+        container.innerHTML = `<div style="position:absolute;inset:0;z-index:2147483647;overflow:hidden;background:var(--g7-overlay-bg, ${fallbackBg});display:flex;align-items:center;justify-content:center;"><div style="width:32px;height:32px;border:3px solid var(--g7-spinner-color, #9ca3af);border-top-color:transparent;border-radius:50%;animation:g7-spin 0.8s linear infinite;"></div></div>`;
     }
 
     /**
@@ -3797,6 +3856,8 @@ export class TemplateApp {
      */
     private async handleRouteNotFound(path: string): Promise<void> {
         logger.warn('Route not found:', path);
+        // 경로 없음 화면이 그려진다 — 확인 중 표시를 남기지 않는다 (engine-v1.89.0)
+        this.hideAuthCheckIndicator();
 
         // 밀린 화면 처리(대기열의 새 이동이 경로 없음으로 끝남)가 켜 둔 전환 상태·입력 잠금·덮개를 걷는다 — 이 경로는 화면 처리
         // (handleRouteChange)를 거치지 않아, 걷지 않으면 흐림이 남고 뒤이은 다시 받기도 끄지 못한다 (@since engine-v1.82.0)
@@ -3834,6 +3895,149 @@ export class TemplateApp {
             // 최종 폴백: 기존 ErrorDisplay 사용
             this.showRouteError(new Error(`Page not found: ${path}`));
         }
+    }
+
+    /**
+     * 인증 확인이 서버 일시 오류로 끝났을 때 처리 (중립 오류 화면)
+     *
+     * 라우트 캐시 재생성처럼 서버가 잠깐 5xx 를 내면 사용자 조회가 실패한다. 이를 인증 실패로 보고 로그인 화면으로
+     * 보내면 유효한 토큰을 가진 사람이 다시 로그인해야 한다. 그래서 토큰은 그대로 두고 「잠시 뒤 다시 시도」 안내와
+     * 새로고침 단추만 그린다 — 서버가 돌아오면 새로고침으로 같은 화면이 이어진다.
+     *
+     * 템플릿 오류 레이아웃(503)은 쓰지 않는다. 그 레이아웃은 base 를 상속해 머리글이 `current_user` 로 로그인 분기를
+     * 하는데, 서버가 계속 실패하면 그 조회도 실패해 로그인돼 있는 사람에게 비로그인 머리글(로그인 단추)을 보인다. 로그인
+     * 여부를 모르는 상태이므로 로그인 상태를 단정하는 요소가 없는 코어 기본 오류 표시가 맞다. 실패할 base 데이터 소스와
+     * 오류 레이아웃 적재 요청을 서버에 더 보내지도 않는다. 템플릿 503 은 서버가 정한 의존 확장 미충족 화면으로 남는다 (#869 N5).
+     *
+     * @param path 인증을 확인하던 경로
+     * @since engine-v1.89.0
+     */
+    private async handleAuthUnavailable(path: string): Promise<void> {
+        logger.warn('Auth check unavailable:', path);
+
+        // 재시도하는 사이 사용자가 문서를 떠나고 있으면 떠나는 문서에 오류 화면을 그리지 않는다(networkResilience 원칙)
+        if (isDocumentUnloading()) {
+            return;
+        }
+
+        // 경로 없음과 같다 — 이 경로도 화면 처리(handleRouteChange)를 거치지 않으므로 밀린 화면 처리가 켜 둔 전환 상태를 걷는다
+        this.releaseRouteInert();
+        if (this.routeChangeInFlight) {
+            this.routeChangeInFlight = false;
+            transitionManager.setPending(false);
+            this.cancelEarlySpinnerTimer();
+            this.earlySpinnerVisible = false;
+            this.hideTransitionOverlay();
+        }
+
+        this.showRouteError(
+            new TemplateEngineError('AUTH_CHECK_UNAVAILABLE', ErrorDisplay.text('core.errors.api_request_failed'), {
+                showStack: false,
+                icon: 'fa-triangle-exclamation',
+                recoverable: true,
+            })
+        );
+        // 오류 화면이 그려졌다 — 확인 중 표시는 여기서 걷는다(확인 불가 결론 뒤로 이 화면까지 유지했다)
+        this.hideAuthCheckIndicator();
+    }
+
+    /**
+     * 인증 확인이 늦거나 다시 묻는 동안, 그리고 확인 불가로 끝나 오류 화면을 그릴 때까지 확인 중 표시를 띄웁니다.
+     *
+     * 확인을 시작한 뒤 `AUTH_CHECK_INDICATOR_DELAY_MS` 안에 끝나지 않거나 재시도가 시작되면 화면 위쪽에 코어 기본 표시(role=status,
+     * 화면 언어 문구)를 띄운다. 빨리 끝나는 보통의 확인에서는 띄우지 않는다. 결론이 인증·미인증이면 바로 걷고, 확인 불가면 걷지 않는다 —
+     * 그 뒤 라우터가 결론을 재사용해 오류 화면을 그리기까지(부팅의 나머지 단계 포함) 백지가 되지 않게 `handleAuthUnavailable` 이 오류 화면을
+     * 그린 뒤 걷는다. 확인 불가였지만 공개 화면이 그려지면 화면 처리가 걷는다(`hideAuthCheckIndicator`). #app 을 건드리지 않는 고정 위치
+     * 요소라 보던 화면을 지우지 않고, 로그인 상태를 단정하지 않는다.
+     *
+     * 종전(engine-v1.89.0 첫 판)은 재시도에서만 띄우고 재시도가 끝나면 걷어, 첫 요청이 늦는 동안과 확인 불가 뒤 오류 화면 전까지가 백지였다
+     * (브라우저 실측: 표시 3.1초에 뜸, 걷힌 뒤 오류 화면까지 ko 2.6초·en 2.2초·ja 1.5초).
+     *
+     * @param authManager 인증 관리자
+     * @since engine-v1.89.0
+     */
+    private installAuthCheckIndicator(authManager: AuthManager): void {
+        authManager.on('authCheckStart', () => {
+            if (this.authCheckIndicatorTimer !== null || this.findAuthCheckIndicator()) {
+                return;
+            }
+            this.authCheckIndicatorTimer = setTimeout(() => {
+                this.authCheckIndicatorTimer = null;
+                this.showAuthCheckIndicator();
+            }, TemplateApp.AUTH_CHECK_INDICATOR_DELAY_MS);
+        });
+        authManager.on('authCheckRetry', () => {
+            this.cancelAuthCheckIndicatorTimer();
+            this.showAuthCheckIndicator();
+        });
+        authManager.on('authCheckEnd', ({ status }: { status?: string } = {}) => {
+            this.cancelAuthCheckIndicatorTimer();
+            if (status === 'unavailable') {
+                // 오류 화면을 그릴 때까지 둔다 — 아직 띄우지 않았으면 지금 띄운다(라우터 재사용·오류 화면 준비 동안 백지 방지)
+                this.showAuthCheckIndicator();
+                return;
+            }
+            this.hideAuthCheckIndicator();
+        });
+    }
+
+    /**
+     * 확인 중 표시를 띄운다(이미 있으면 그대로).
+     *
+     * @since engine-v1.89.0
+     */
+    private showAuthCheckIndicator(): void {
+        if (typeof document === 'undefined' || !document.body || this.findAuthCheckIndicator()) {
+            return;
+        }
+        const indicator = document.createElement('div');
+        indicator.setAttribute('data-g7-auth-check-indicator', '');
+        indicator.setAttribute('role', 'status');
+        indicator.setAttribute('aria-live', 'polite');
+        const isDark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        indicator.style.cssText = [
+            'position:fixed', 'top:16px', 'left:50%', 'transform:translateX(-50%)', 'z-index:2147483646',
+            'max-width:calc(100% - 32px)', 'padding:10px 16px', 'border-radius:8px',
+            'font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif', 'text-align:center',
+            'box-shadow:0 4px 12px rgba(0,0,0,0.12)',
+            isDark ? 'background:#1f2937;color:#f3f4f6;border:1px solid #374151' : 'background:#ffffff;color:#1f2937;border:1px solid #e5e7eb',
+        ].join(';');
+        indicator.textContent = ErrorDisplay.text('core.errors.auth_checking');
+        document.body.appendChild(indicator);
+    }
+
+    /**
+     * 확인 중 표시와 띄우기 예약을 걷는다 — 오류 화면을 그렸거나 화면 처리가 화면을 그렸을 때.
+     *
+     * @since engine-v1.89.0
+     */
+    private hideAuthCheckIndicator(): void {
+        this.cancelAuthCheckIndicatorTimer();
+        if (typeof document === 'undefined') {
+            return;
+        }
+        document.querySelectorAll('[data-g7-auth-check-indicator]').forEach((el) => el.remove());
+    }
+
+    /**
+     * 확인 중 표시 띄우기 예약을 취소한다.
+     *
+     * @since engine-v1.89.0
+     */
+    private cancelAuthCheckIndicatorTimer(): void {
+        if (this.authCheckIndicatorTimer !== null) {
+            clearTimeout(this.authCheckIndicatorTimer);
+            this.authCheckIndicatorTimer = null;
+        }
+    }
+
+    /**
+     * 지금 떠 있는 확인 중 표시
+     *
+     * @returns 표시 요소, 없으면 null
+     */
+    private findAuthCheckIndicator(): Element | null {
+        return typeof document === 'undefined' ? null : document.querySelector('[data-g7-auth-check-indicator]');
     }
 
     /**
@@ -4054,6 +4258,9 @@ export class TemplateApp {
             // 엔진이 내려가 있는 동안 시작된 화면 전환은 새 엔진·핸들러가 준비될 때까지 기다린다
             this.localeSwitchEngineReady = new Promise<void>((resolve) => { releaseEngineReady = resolve; });
 
+            // 포커스 자리를 맡긴다 — 다시 그리면 포커스가 body 로 빠지므로 같은 요소로 되돌린다 (engine-v1.89.0, captureFocusForLocaleSwitch)
+            const focusTarget = this.captureFocusForLocaleSwitch();
+
             // 기존 템플릿 엔진 정리 — 언마운트되는 컴포넌트가 인계 저장소에 맡긴 뒤 맡기기를 닫는다
             destroyTemplate();
             closeLocaleSwitchHandoff();
@@ -4106,6 +4313,9 @@ export class TemplateApp {
                 await this.router.navigateToCurrentPath();
             }
 
+            // 맡겨 둔 포커스 자리로 되돌린다 — 다시 그린 화면이 커밋될 때까지 몇 프레임 기다린다 (engine-v1.89.0)
+            this.restoreFocusAfterLocaleSwitch(focusTarget);
+
             // 수동으로 받아 둔 데이터소스를 새 언어로 다시 받는다 — 사용자 입력(`_local`)은 덮지 않는다
             // 재진입이 레이아웃 로드 실패 등으로 전환 상태를 소비하지 못했으면 옛 정의로 다시 받지 않는다
             if (this.localeSwitchConsumed) {
@@ -4122,6 +4332,72 @@ export class TemplateApp {
             closeLocaleSwitchHandoff();
             // 실패로 끝나도 기다리던 화면 전환을 묶어 두지 않는다 (engine-v1.79.0)
             this.releaseLocaleSwitchEngineReady(releaseEngineReady);
+        }
+    }
+
+    /**
+     * 언어 전환 직전 포커스 요소의 안정된 식별자를 잡습니다 (engine-v1.89.0, #869).
+     *
+     * 언어 전환은 엔진을 내리고 같은 화면을 새로 마운트하므로 포커스가 body 로 빠진다. 레이아웃의 `<set-locale>` 단추(모바일 서랍
+     * 언어 칩 등)와 서드파티 레이아웃은 부품 훅(`G7Core.locale.handoff`)이 닿지 않으므로 엔진이 맡는다. 식별자는 렌더러가 DOM 에 싣는
+     * 노드 id 다 — 요소에 id 가 없으면 id 가 있는 가장 가까운 조상과 그 안 포커스 가능한 요소의 순번을 쓴다. 화면 밖(#app 밖) 포커스와
+     * body 는 맡기지 않는다.
+     *
+     * @returns 맡길 자리, 없으면 null
+     */
+    private captureFocusForLocaleSwitch(): { id: string | null; index: number; element: HTMLElement } | null {
+        if (typeof document === 'undefined') return null;
+        const active = document.activeElement as HTMLElement | null;
+        const app = document.getElementById('app');
+        if (!active || active === document.body || !app || !app.contains(active) || active === app) return null;
+        if (active.id) return { id: active.id, index: -1, element: active };
+        const anchor = active.parentElement?.closest('[id]') as HTMLElement | null;
+        if (!anchor || anchor === app || !app.contains(anchor)) return { id: null, index: -1, element: active };
+        const focusables = Array.from(anchor.querySelectorAll<HTMLElement>(TemplateApp.FOCUSABLE_SELECTOR));
+
+        return { id: anchor.id, index: focusables.indexOf(active), element: active };
+    }
+
+    /**
+     * 언어 전환으로 다시 그린 뒤 맡겨 둔 자리로 포커스를 되돌립니다 (engine-v1.89.0, #869).
+     *
+     * 다시 그린 화면은 비동기로 커밋되므로 요소가 나타날 때까지 `LOCALE_FOCUS_RESTORE_ATTEMPTS` 프레임까지 다시 본다. 끝내 없으면 본문
+     * 시작점(`main`·`[role=main]`·`#main_content`, 없으면 #app)으로 보낸다. 매 시도마다 포커스가 body 일 때만 움직인다 — 그 사이 사용자가
+     * 다른 곳으로 옮겼거나 부품 훅(언어 메뉴의 `useLocaleSwitchFocusReturn`)이 이미 되돌렸으면 건드리지 않아 두 번 옮기지 않는다.
+     *
+     * @param target 맡긴 자리
+     * @param attempt 지금까지 본 횟수
+     */
+    private restoreFocusAfterLocaleSwitch(target: { id: string | null; index: number; element: HTMLElement } | null, attempt = 0): void {
+        if (!target || typeof document === 'undefined') return;
+        const active = document.activeElement;
+        // 맡긴 요소가 그대로 문서에 남아 포커스를 가졌으면(다시 그리며 노드를 유지) 할 일이 없다. 문서에서 빠진 요소(내려간 옛 노드)에
+        // 남은 포커스는 아무 데도 없는 것과 같다. 그 밖의 요소에 포커스가 있으면 사용자·부품 훅이 옮긴 것이라 건드리지 않는다
+        if (active === target.element) {
+            if (active.isConnected) return;
+        } else if (active && active !== document.body && active.isConnected) {
+            return;
+        }
+
+        const anchor = target.id ? document.getElementById(target.id) : null;
+        let el: HTMLElement | null = null;
+        if (anchor) {
+            el = target.index >= 0
+                ? (anchor.querySelectorAll<HTMLElement>(TemplateApp.FOCUSABLE_SELECTOR)[target.index] ?? null)
+                : (anchor.matches(TemplateApp.FOCUSABLE_SELECTOR) ? anchor : anchor.querySelector<HTMLElement>(TemplateApp.FOCUSABLE_SELECTOR));
+        }
+        if (el) {
+            el.focus({ preventScroll: true });
+            return;
+        }
+        if (attempt < TemplateApp.LOCALE_FOCUS_RESTORE_ATTEMPTS) {
+            setTimeout(() => this.restoreFocusAfterLocaleSwitch(target, attempt + 1), 16);
+            return;
+        }
+        const start = document.querySelector<HTMLElement>('main, [role="main"], #main_content') ?? document.getElementById('app');
+        if (start) {
+            if (!start.hasAttribute('tabindex')) start.setAttribute('tabindex', '-1');
+            start.focus({ preventScroll: true });
         }
     }
 
@@ -4546,8 +4822,23 @@ export class TemplateApp {
             getGlobalHeaders: () => this.currentGlobalHeaders,
             clearBindingCache: () => {
                 const bindingEngine = getState().bindingEngine;
-                bindingEngine?.clearCache();
+                // 화면 전환과 같이 새 세대를 연다 — 오류 화면으로 가는 동안 늦게 처리된 앞 화면의 렌더(앞 세대 문맥)가 비운 캐시를
+                // 다시 채우지 않게 한다. 오류 화면 문맥은 표지가 없어 종전처럼 캐시를 쓴다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+                bindingEngine?.startCacheEpoch();
                 bindingEngine?.startRenderCycle();
+            },
+            // 템플릿에 그 코드의 오류 레이아웃도 default 도 없으면 엔진 내장 오류 화면 (engine-v1.89.0, #869 λ 4부 18) — 종전에는 아무것도
+            // 그리지 않아 화면이 오류 전 모습으로 남았다. 레이아웃 적재 실패 화면과 같이 React 루트를 내려놓고 #app 을 덮는다
+            renderBuiltinFallback: (errorCode: number) => {
+                releaseTemplateRoot();
+                ErrorDisplay.render('app', {
+                    title: `${ErrorDisplay.text('core.errors.page_load_failed')} (${errorCode})`,
+                    message: ErrorDisplay.text('core.errors.api_request_failed'),
+                    icon: 'fas fa-triangle-exclamation',
+                    showStack: false,
+                    showReloadButton: true,
+                    debug: this.config.debug,
+                });
             },
         });
     }
@@ -4653,6 +4944,10 @@ export class TemplateApp {
      * @returns fetch된 데이터 또는 undefined
      */
     async refetchDataSource(dataSourceId: string, options?: { sync?: boolean; globalStateOverride?: Record<string, any>; localStateOverride?: Record<string, any>; isolatedStateOverride?: Record<string, any>; skipInitLocal?: boolean }): Promise<any> {
+        // 시작 시점의 렌더 전 수집 상자 — 응답 때도 같은 상자가 열려 있을 때만 그 initLocal 을 첫 렌더 몫으로 모은다 (@since engine-v1.89.0).
+        // 앞 화면에서 시작한 다시 받기(상자 없음)나 다른 화면 처리가 새로 연 상자에는 쓰지 않는다
+        const preRenderCollector = this.preRenderInitCollector;
+
         // 데이터 소스 정의 찾기 (페이지 레벨 → 모달 레벨 순서로 검색)
         let dataSourceDef = this.currentDataSources.find((ds: any) => ds.id === dataSourceId);
 
@@ -4688,15 +4983,21 @@ export class TemplateApp {
 
             // _global 상태 가져오기 (endpoint 표현식에서 {{_global.xxx}} 접근 지원)
             // globalStateOverride가 있으면 기존 상태와 병합 (sequence에서 setState 후 업데이트된 값 반영)
-            const state = getState();
-            const currentGlobalState = state.currentDataContext?._global || {};
+            // engine-v1.89.0 (#869 λ 4부 17): 다시 그리기 전 화면 문맥이 아니라 정본 최신 상태를 기준으로 쓴다 — `G7Core.state.set` 은
+            // 정본(this.globalState)을 바로 바꾸는데 화면 문맥은 다시 그린 뒤에야 바뀌어, state.set 직후의 다시 받기가 앞 값으로 나갔다
+            // (늦게 받은 장바구니 키를 싣고 바로 다시 받으면 키 없이 400). 레이아웃 refetchDataSource 핸들러와 handleApiCall 은 이미 최신
+            // 상태를 쓴다. 화면 문맥에만 있는 값(layoutWarnings 등)은 남기고 정본이 이긴다. override 는 그대로 우선한다
+            const currentGlobalState = this.latestGlobalForRequest();
             const globalState = options?.globalStateOverride
                 ? { ...currentGlobalState, ...options.globalStateOverride }
                 : currentGlobalState;
 
             // _local 상태 가져오기 (params 표현식에서 {{_local.xxx}} 접근 지원)
             // localStateOverride가 있으면 기존 상태와 병합 (sequence에서 setState local 후 업데이트된 값 반영)
-            const currentLocalState = state.currentDataContext?._local || {};
+            // engine-v1.89.0: 기준은 페이지 `_local` 정본 B 와 아직 반영 대기 중인 값(latestLocalForRequest). 화면 문맥의 `_local` 도
+            // 페이지 루트 범위라 범위가 같고, 모달·격리 범위의 값은 종전처럼 호출부가 override(refetchDataSource 핸들러의 동작 문맥
+            // `_local`, isolatedStateOverride)로 넘긴다
+            const currentLocalState = this.latestLocalForRequest();
             const localState = options?.localStateOverride
                 ? { ...currentLocalState, ...options.localStateOverride }
                 : currentLocalState;
@@ -4786,7 +5087,25 @@ export class TemplateApp {
 
                 // initLocal이 있으면 추가 — skipInitLocal(언어 전환 재조회)은 사용자 입력을 덮지 않는다 (@since engine-v1.79.0)
                 if (Object.keys(localInit).length > 0 && !options?.skipInitLocal) {
-                    updateData._localInit = localInit;
+                    if (preRenderCollector && this.preRenderInitCollector === preRenderCollector) {
+                        // 새 화면을 그리기 전이다 (@since engine-v1.89.0) — 정본 B(와 반영 대기 값)에 바로 써서 뒤이은 setState 가 그 위에
+                        // 쌓이게 하고, 키만 적어 두면 렌더 직전에 그 키의 지금 값을 첫 렌더 상태(`_local`·`_localInit`)에 싣는다. `_localInit`
+                        // 갱신으로 넘기면 떠나는 화면 문맥(SPA)이나 첫 렌더 뒤 대기열(첫 진입)로 가서 버려지거나 뒤 값을 덮는다
+                        const { _forceLocalInit: forceFlag, ...fields } = localInit;
+                        this.globalState._local = { ...(this.globalState._local || {}), ...fields };
+                        const pendingLocal = (window as any).__g7PendingLocalState;
+                        if (pendingLocal && typeof pendingLocal === 'object') {
+                            (window as any).__g7PendingLocalState = { ...pendingLocal, ...fields };
+                        }
+                        for (const key of Object.keys(fields)) {
+                            preRenderCollector.keys.add(key);
+                        }
+                        if (forceFlag !== undefined) {
+                            preRenderCollector.force = forceFlag;
+                        }
+                    } else {
+                        updateData._localInit = localInit;
+                    }
                 }
 
                 // initGlobal이 있으면 _global도 업데이트
@@ -5237,7 +5556,8 @@ export class TemplateApp {
         // 원본(currentRawDataSources)을 변경된 query + 최신 _global 로 다시 filterByCondition 한다.
         // 원본 미보존(구버전 캐시 등) 시 기존 currentDataSources 로 안전 폴백.
         const reevalManager = new DataSourceManager();
-        const latestGlobal = getState().currentDataContext?._global || this.globalState || {};
+        // engine-v1.89.0 (ρ 9부): 다시 받기(refetchDataSource)와 같은 기준 — 정본 최신 `_global`
+        const latestGlobal = this.latestGlobalForRequest();
         const reevalContext = {
             route: this.currentRouteParams || {},
             query: parseQueryParams(this.currentQueryParams),
@@ -5325,9 +5645,10 @@ export class TemplateApp {
                 dataSourceManager.setGlobalHeaders(this.currentGlobalHeaders);
             }
 
-            // _global 상태 가져오기
+            // _global 상태 가져오기 — engine-v1.89.0 (ρ 9부): 다시 받기(refetchDataSource)와 같은 기준인 정본 최신 `_global`.
+            // 종전에는 다시 그리기 전 화면 문맥을 써서 state.set 직후의 쿼리 갱신이 앞 값으로 요청됐다
             const state = getState();
-            const globalState = state.currentDataContext?._global || {};
+            const globalState = this.latestGlobalForRequest();
 
             // 모든 auto_fetch 데이터 소스 fetch
             const results = await dataSourceManager.fetchDataSourcesWithResults(
@@ -5548,32 +5869,6 @@ export class TemplateApp {
     }
 
     /**
-     * computed 표현식 평가
-     *
-     * JavaScript 표현식을 안전하게 평가합니다.
-     * dataContext의 값들을 컨텍스트로 사용합니다.
-     *
-     * engine-v1.74.0 부터 computed 계산은 공용 평가기(`calculateComputed` → `evaluateComputedDefinitions`)
-     * 를 거친다. 이 메서드는 샌드박스 탈출 보안 회귀선(`TemplateApp.safeComputed.test.ts`)이 직접
-     * 호출하므로 남겨 둔다.
-     *
-     * @param expression 평가할 표현식
-     * @param context 평가 컨텍스트
-     * @returns 평가 결과
-     */
-    private evaluateComputedExpression(expression: string, context: Record<string, any>): any {
-        try {
-            // 화이트리스트 AST 평가기로 안전하게 평가한다(KVE-2026-1915).
-            // 종전의 `new Function('ctx', 'with(ctx){return ...}')` 는 필터조차 거치지 않아
-            // `''.constructor.constructor(...)` 샌드박스 탈출이 가능했으므로 폐기한다.
-            return evaluateSafeExpression(expression, context);
-        } catch (error) {
-            logger.warn(`Expression evaluation failed: ${expression}`, error);
-            return undefined;
-        }
-    }
-
-    /**
      * 초기화 액션 실행
      *
      * 레이아웃 로드 후 init_actions에 정의된 핸들러를 순차적으로 실행합니다.
@@ -5669,6 +5964,36 @@ export class TemplateApp {
      */
     isRunningPreRenderInit(): boolean {
         return this.preRenderInitDepth > 0;
+    }
+
+    /**
+     * 화면 처리 밖의 데이터 요청(다시 받기, 쿼리 갱신 재조회)에 쓸 `_global` — 정본 최신 상태 (engine-v1.89.0, #869).
+     *
+     * `G7Core.state.set` 은 정본(this.globalState)을 바로 바꾸지만 화면 문맥(`currentDataContext._global`)은 다시 그린 뒤에야 바뀐다.
+     * 화면 문맥에만 있는 값(layoutWarnings 등)은 남기고 정본이 이긴다.
+     *
+     * @returns 요청 식에 쓸 `_global`
+     */
+    private latestGlobalForRequest(): Record<string, any> {
+        return { ...(getState().currentDataContext?._global || {}), ...this.globalState };
+    }
+
+    /**
+     * 화면 처리 밖의 데이터 요청에 쓸 페이지 `_local` — 정본 B 위에 아직 반영 대기 중인 값(`__g7PendingLocalState`)만 얹는다
+     * (engine-v1.89.0, #869 ρ 9부 M9).
+     *
+     * `G7Core.state.getLocal()` 은 마지막 setLocal 사본(`__g7LastSetLocalSnapshot`)이 B 와 다르면 그 사본을 B 위에 덮는데, 그 사본은
+     * 렌더에서 지워지지 않아 setLocal 뒤 사본을 지우지 않는 B 쓰기가 있으면 낡은 값이 된다. 반영 대기 값은 렌더마다 비워져 B 보다
+     * 늦은 값만 담는다. 정본 B 가 없으면 화면 문맥의 `_local`.
+     *
+     * @returns 요청 식에 쓸 `_local`
+     */
+    private latestLocalForRequest(): Record<string, any> {
+        const canonical = this.globalState._local;
+        const base = canonical && typeof canonical === 'object' ? canonical : (getState().currentDataContext?._local || {});
+        const pending = typeof window !== 'undefined' ? (window as any).__g7PendingLocalState : undefined;
+
+        return pending && typeof pending === 'object' ? this.deepMerge(base, pending) : base;
     }
 
     /**
@@ -5942,7 +6267,7 @@ export class TemplateApp {
                 if (actionDispatcher) {
                     await actionDispatcher.dispatchAction(action, {
                         navigate: this.getRouter?.() ? (path: string, opts?: any) =>
-                            this.getRouter().navigate(path, opts) : undefined,
+                            this.getRouter()?.navigate(path, opts) : undefined,
                         setState: (updates: any) => this.setGlobalState(updates),
                         state: this.globalState,
                         data: { ...this.globalState, $args: [data], $event: data },

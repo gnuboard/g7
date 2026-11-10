@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ActionDispatcher, ActionDefinition } from '../template-engine/ActionDispatcher';
-import { DataBindingEngine } from '../template-engine/DataBindingEngine';
+import { Logger } from '../utils/Logger';
 
 // Mock 의존성
 vi.mock('../template-engine/TranslationEngine', () => ({
@@ -77,9 +77,6 @@ describe('ActionDispatcher conditions 핸들러', () => {
 
     dispatcher = new ActionDispatcher({
       navigate: vi.fn(),
-      router: {
-        navigate: vi.fn(),
-      } as any,
     });
 
     // executeAction을 spy하여 실행된 액션 추적
@@ -106,6 +103,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
   });
 
   describe('기본 if/else 체인', () => {
+    // @scenario area=branch_chain
+    // @effects conditions_handler_runs_matched_branch
     it('첫 번째 조건이 true면 해당 브랜치의 then 액션을 실행해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -131,6 +130,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
       });
     });
 
+    // @scenario area=branch_chain
+    // @effects conditions_handler_runs_matched_branch
     it('두 번째 조건이 true면 해당 브랜치의 then 액션을 실행해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -156,6 +157,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
       });
     });
 
+    // @scenario area=branch_chain
+    // @effects conditions_handler_runs_matched_branch
     it('모든 조건이 false면 아무 액션도 실행하지 않아야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -179,6 +182,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
       expect(executedActions[0].handler).toBe('conditions');
     });
 
+    // @scenario area=branch_chain
+    // @effects conditions_handler_runs_matched_branch
     it('else 브랜치 (if 없음)가 있으면 기본 액션으로 실행해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -206,6 +211,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
   });
 
   describe('$args 지원', () => {
+    // @scenario area=args
+    // @effects conditions_handler_runs_matched_branch
     it('$args[0]로 전달된 값으로 조건을 평가해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -233,6 +240,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
   });
 
   describe('AND 그룹 조건', () => {
+    // @scenario area=and_group
+    // @effects conditions_handler_runs_matched_branch
     it('AND 그룹의 모든 조건이 true면 브랜치를 실행해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -261,6 +270,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
       });
     });
 
+    // @scenario area=and_group
+    // @effects conditions_handler_runs_matched_branch
     it('AND 그룹의 하나라도 false면 다음 브랜치로 넘어가야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -291,6 +302,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
   });
 
   describe('OR 그룹 조건', () => {
+    // @scenario area=or_group
+    // @effects conditions_handler_runs_matched_branch
     it('OR 그룹의 하나라도 true면 브랜치를 실행해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -321,6 +334,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
   });
 
   describe('중첩 AND/OR 조건', () => {
+    // @scenario area=nested
+    // @effects conditions_handler_runs_matched_branch
     it('OR 안에 AND가 중첩된 조건을 평가할 수 있어야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -356,6 +371,8 @@ describe('ActionDispatcher conditions 핸들러', () => {
   });
 
   describe('then 배열 (sequence)', () => {
+    // @scenario area=then_sequence
+    // @effects conditions_handler_then_array_runs_in_order
     it('then이 배열이면 순차적으로 실행해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -376,50 +393,55 @@ describe('ActionDispatcher conditions 핸들러', () => {
 
       await dispatcher.dispatchAction(action, { data: { action: 'delete' } });
 
-      // handleSequence가 호출되었는지 확인
+      // handleSequence 를 거쳐 then 배열의 액션이 적힌 순서대로 실행된다
       expect(handleSequenceSpy).toHaveBeenCalled();
+      expect(executedActions.map((a) => a.handler)).toEqual(['conditions', 'setState', 'openModal']);
     });
   });
 
   describe('에러 처리', () => {
-    it('conditions가 없으면 경고를 출력하고 종료해야 함', async () => {
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const action: ActionDefinition = {
-        type: 'click',
-        handler: 'conditions',
-        // conditions 없음
-      };
-
+    // 엔진 경고는 디버그 모드에서만 console.warn 으로 나온다. 종전 시험은 spy 를 바로 풀어 경고를 보지 않았다(#869)
+    const warnings = async (action: ActionDefinition): Promise<{ result: unknown; messages: string[] }> => {
       // 실제 executeAction 호출을 위해 spy 복원
       vi.restoreAllMocks();
       dispatcher = new ActionDispatcher({
         navigate: vi.fn(),
-        router: { navigate: vi.fn() } as any,
+      });
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      Logger.getInstance().setDebug(true);
+      try {
+        const result = await dispatcher.dispatchAction(action, {});
+        return { result, messages: warnSpy.mock.calls.map((args) => args.map(String).join(' ')) };
+      } finally {
+        Logger.getInstance().setDebug(false);
+      }
+    };
+
+    // @scenario area=invalid_conditions
+    // @effects conditions_handler_warns_on_invalid
+    it('conditions가 없으면 경고를 출력하고 종료해야 함', async () => {
+      const { result, messages } = await warnings({
+        type: 'click',
+        handler: 'conditions',
+        // conditions 없음
       });
 
-      const result = await dispatcher.dispatchAction(action, {});
-
-      // 에러 없이 종료
+      // 에러 없이 종료하고, 조건 배열이 필요하다는 경고를 남긴다
       expect(result).toBeDefined();
+      expect(messages.some((m) => m.includes('conditions handler requires conditions array'))).toBe(true);
     });
 
+    // @scenario area=invalid_conditions
+    // @effects conditions_handler_warns_on_invalid
     it('conditions가 배열이 아니면 경고를 출력하고 종료해야 함', async () => {
-      const action: ActionDefinition = {
+      const { result, messages } = await warnings({
         type: 'click',
         handler: 'conditions',
         conditions: 'invalid' as any, // 잘못된 타입
-      };
-
-      vi.restoreAllMocks();
-      dispatcher = new ActionDispatcher({
-        navigate: vi.fn(),
-        router: { navigate: vi.fn() } as any,
       });
 
-      const result = await dispatcher.dispatchAction(action, {});
-
       expect(result).toBeDefined();
+      expect(messages.some((m) => m.includes('conditions handler requires conditions array'))).toBe(true);
     });
   });
 });
@@ -434,7 +456,6 @@ describe('실제 사용 사례', () => {
 
     dispatcher = new ActionDispatcher({
       navigate: vi.fn(),
-      router: { navigate: vi.fn() } as any,
     });
 
     const originalExecuteAction = (dispatcher as any).executeAction.bind(dispatcher);
@@ -457,6 +478,8 @@ describe('실제 사용 사례', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario area=usage_scenario
+  // @effects conditions_handler_then_array_runs_in_order
   it('DataGrid 행 액션 처리 - edit/delete/view 분기', async () => {
     const action: ActionDefinition = {
       type: 'click',
@@ -491,7 +514,8 @@ describe('실제 사용 사례', () => {
     // delete 클릭
     executedActions = [];
     await dispatcher.dispatchAction(action, { data: { $args: ['delete'], row: { id: '456' } } });
-    // handleSequence가 실행되므로 setState와 openModal이 순차적으로 호출될 것으로 예상
+    // then 배열이 순서대로 실행된다(종전에는 이 분기에 단언이 없었다)
+    expect(executedActions.map((a) => a.handler)).toEqual(['conditions', 'setState', 'openModal']);
 
     // unknown 클릭
     executedActions = [];

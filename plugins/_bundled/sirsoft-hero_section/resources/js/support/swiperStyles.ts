@@ -31,7 +31,11 @@ type CoreApi = {
 
 let done = false;
 let pending: Promise<void> | null = null;
+/** 싣기가 끝난 횟수 — 실패 알림의 다시 시도로 또 끝나면 늘어, 이미 끝난 것으로 본 화면(미리보기)도 다시 알게 한다 */
+let revision = 0;
 const listeners = new Set<() => void>();
+/** 미리보기 문서에 둔 사본 → 그 사본을 만든 바깥 원본 `<link>` */
+const copies = new WeakMap<Element, HTMLLinkElement>();
 
 /**
  * 끝났다고 표시하고 기다리는 화면에 알립니다.
@@ -40,6 +44,7 @@ const listeners = new Set<() => void>();
  */
 function finish(): void {
   done = true;
+  revision += 1;
   listeners.forEach((listener) => listener());
 }
 
@@ -116,7 +121,38 @@ export function useSwiperStyles(): boolean {
 }
 
 /**
- * 바깥 문서에 실린 Swiper CSS 를 다른 문서(미리보기 iframe)의 `<head>` 에도 복사합니다. 이미 있으면 그대로 둡니다.
+ * Swiper CSS 싣기가 끝날 때마다 바뀌는 차례 번호를 알려 주는 훅. 처음 부르면 싣기 시작한다.
+ *
+ * `useSwiperStyles` 는 한 번 끝나면 더 알리지 않는다. 미리보기(iframe)는 실패 알림의 다시 시도로 나중에 실린 CSS 도 복사해야
+ * 하므로 끝날 때마다 바뀌는 이 값을 지켜본다.
+ *
+ * @returns 끝난 횟수(아직이면 0)
+ */
+export function useSwiperStylesRevision(): number {
+  const [value, setValue] = useState(() => {
+    void loadSwiperStyles();
+    return revision;
+  });
+
+  useEffect(() => {
+    const listener = () => setValue(revision);
+    listeners.add(listener);
+    setValue(revision);
+
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+
+  return value;
+}
+
+/**
+ * 바깥 문서에 실린 Swiper CSS 를 다른 문서(미리보기 iframe)의 `<head>` 에도 복사합니다.
+ *
+ * 같은 바깥 `<link>` 의 사본이 이미 있으면 그대로 둔다(다시 받느라 미리보기를 가리지 않게). 코어 로더는 실패한 시도의 `<link>` 를
+ * 지우고 다음 시도에 새 `<link>` 를 붙이므로, 사본이 지금의 원본에서 나온 것이 아니면(실패한 시도의 사본) 지우고 새로 복사한다 —
+ * 실패한 사본은 스스로 다시 받지 않아, 그대로 두면 바깥은 실렸는데 미리보기만 Swiper CSS 없이 남는다.
  *
  * @param doc 대상 문서
  * @returns 반환값 없음
@@ -128,11 +164,17 @@ export function copySwiperStyles(doc: Document): void {
     return;
   }
 
-  if (!doc.getElementById(SWIPER_STYLES_ID)) {
-    const copy = doc.createElement('link');
-    copy.id = SWIPER_STYLES_ID;
-    copy.rel = 'stylesheet';
-    copy.href = source.href;
-    doc.head.appendChild(copy);
+  const existing = doc.getElementById(SWIPER_STYLES_ID);
+
+  if (existing && copies.get(existing) === source) {
+    return;
   }
+
+  existing?.remove();
+  const copy = doc.createElement('link');
+  copy.id = SWIPER_STYLES_ID;
+  copy.rel = 'stylesheet';
+  copy.href = source.href;
+  copies.set(copy, source);
+  doc.head.appendChild(copy);
 }

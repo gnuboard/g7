@@ -167,6 +167,9 @@
     "img_alt": {
       "label": "代替テキスト"
     },
+    "img_thumb_preset": {
+      "label": "サムネイル規格"
+    },
     "link_href": {
       "label": "リンクアドレス"
     },
@@ -1602,6 +1605,7 @@
     "admin_menu": "管理者メニュー",
     "appKey": "アプリキー",
     "auto_deactivated_banner": "自動無効化通知",
+    "thumbnailStats": "サムネイル保存先別の使用量",
     "unplaced_bundled_notice": "未配置の公式バンドル案内",
     "availableChannels": "利用可能チャネル",
     "clone_source": "複製元",

@@ -128,7 +128,8 @@
             <set-state target="global" editingAddress.address_line_2="{{$event.target.value}}"/>
           </on>
         </input>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div class="grid grid-cols-1 gap-2">
+          <responsive on="640-" class="grid grid-cols-2 gap-2"/>
           <input aria-label="$t:shop.checkout.intl_city" type="text" name="intl_city" value="{{_global.editingAddress?.intl_city ?? ''}}" placeholder="$t:shop.checkout.intl_city_placeholder" class="{{_local.addressErrors?.intl_city ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
             <on type="change">
               <!-- 칸 값을 편집 중인 배송지의 도시(`_global.editingAddress.intl_city`)에 옮긴다 -->
@@ -172,7 +173,9 @@
         <label for="address_is_default" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">$t:mypage.addresses.form.set_default</label>
       </div>
       <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <responsive on="portable" class="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"/>
+        <!-- 이 줄은 저장 단추가 폼 제출이라 고정 하단으로 옮기지 않는다. 640px 이하에서는 세로로 쌓고 폭을 채운다(Modal 고정 하단과 같은 경계, #869) -->
+        <responsive on="-640" class="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"/>
+        <responsive on="641-1023" class="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"/>
         <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <responsive on="portable" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
           <on type="click">

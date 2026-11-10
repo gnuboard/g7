@@ -8,7 +8,6 @@
  * - useEffect는 handleClose(useCallback) 정의 이후 위치 → TDZ 회피
  * - 콜백은 notification 객체 전체를 인자로 전달 (id가 아님)
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { NotificationCenter, type NotificationItem } from '../NotificationCenter';
@@ -93,7 +92,7 @@ describe('NotificationCenter (sirsoft-basic)', () => {
     // @scenario dropdown=open
     // @effects dropdown_toggles_and_closes_on_outside_click
     it('드롭다운 외부 클릭 시 닫힘 (외부 클릭 의존성 회귀)', () => {
-      const { container } = render(
+      render(
         <div>
           <NotificationCenter notifications={mockNotifications} />
           <div data-testid="outside">바깥</div>
@@ -111,7 +110,7 @@ describe('NotificationCenter (sirsoft-basic)', () => {
     // @scenario dropdown=open
     // @effects notification_card_is_not_nested_button
     it('알림 카드가 button 태그가 아닌 div 태그여야 함', () => {
-      const { container } = render(<NotificationCenter notifications={mockNotifications} />);
+      render(<NotificationCenter notifications={mockNotifications} />);
       fireEvent.click(screen.getByLabelText('알림'));
 
       const titleEl = screen.getByText('새 댓글');

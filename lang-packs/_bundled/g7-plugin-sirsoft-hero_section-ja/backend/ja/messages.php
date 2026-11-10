@@ -18,6 +18,10 @@ return [
         'attached_not_deletable' => 'バナーに添付された画像はここで削除できません。バナー編集画面で変更して保存してください。',
         'not_found' => '画像が見つかりません。',
     ],
+    'thumbnail' => [
+        'source_label' => 'ヒーローセクションのバナー画像',
+        'list_preset_label' => 'バナー一覧',
+    ],
     'position' => [
         'fetched' => '表示位置設定を読み込みました。',
         'updated' => 'スライダー設定を保存しました。',

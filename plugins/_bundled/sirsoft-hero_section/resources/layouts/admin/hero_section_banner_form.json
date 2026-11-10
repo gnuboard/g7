@@ -265,8 +265,15 @@
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "641-": {
+                                "props": {
+                                    "className": "hs:flex hs:items-center hs:justify-between hs:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "hs-page-header"
+                            "className": "hs:flex hs:justify-between hs:mb-6 hs:flex-col hs:items-start hs:gap-4"
                         },
                         "children": [
                             {
@@ -276,8 +283,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "hs:text-2xl hs:font-semibold hs:text-gray-900 hs:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "hs-page-title"
+                                            "className": "hs:text-xl hs:font-semibold hs:text-gray-900 hs:dark:text-white"
                                         },
                                         "text": "{{_local.form?.id ? '$t:sirsoft-hero_section.admin.form.edit_title' : '$t:sirsoft-hero_section.admin.form.create_title'}}"
                                     },
@@ -355,8 +369,15 @@
                         "id": "hero_form_columns",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "hs:grid hs:grid-cols-3 hs:gap-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "hs:grid hs:grid-cols-1 hs:lg:grid-cols-3 hs:gap-6"
+                            "className": "hs:grid hs:grid-cols-1 hs:gap-6"
                         },
                         "children": [
                             {
@@ -366,8 +387,15 @@
                                 "dataKey": "form",
                                 "trackChanges": true,
                                 "debounce": 0,
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "hs:col-span-2 hs:flex hs:flex-col hs:gap-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "hs:lg:col-span-2 hs:flex hs:flex-col hs:gap-6"
+                                    "className": "hs:flex hs:flex-col hs:gap-6"
                                 },
                                 "children": [
                                     {
@@ -1883,8 +1911,15 @@
                                                         "id": "field_animation",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "hs:grid hs:grid-cols-3 hs:gap-4"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "hs:grid hs:grid-cols-1 hs:sm:grid-cols-3 hs:gap-4"
+                                                            "className": "hs:grid hs:grid-cols-1 hs:gap-4"
                                                         },
                                                         "children": [
                                                             {
@@ -2838,10 +2873,17 @@
                                 "id": "preview_card",
                                 "type": "basic",
                                 "name": "Section",
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "hs-admin-card hs:self-start hs:order-last hs:sticky hs:top-[84px]"
+                                        }
+                                    }
+                                },
                                 "props": {
                                     "id": "hero_form_preview",
                                     "aria-labelledby": "hero_form_preview_heading",
-                                    "className": "hs-admin-card hs:self-start hs:order-first hs:lg:order-last hs-editor-preview"
+                                    "className": "hs-admin-card hs:self-start hs:order-first"
                                 },
                                 "children": [
                                     {

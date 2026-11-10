@@ -17,8 +17,9 @@
  *   검사로는 잡히지 않는다.
  *
  * 이 파일은 위 좌표들이 되돌아가지 않도록 레이아웃 JSON 구조를 직접 단언한다.
- * 2열 행의 좁은 화면 대비는 두 방식 모두 허용한다: Tailwind 접두(`grid-cols-1 sm:grid-cols-2`)
- * 또는 엔진 노드 레벨 `responsive.portable`(0~1023px) 오버라이드.
+ * 2열 행의 좁은 화면 대비는 엔진 노드 레벨 `responsive` 로 적는다: 기본 `grid-cols-1` +
+ * `responsive["640-"]` 의 `grid-cols-2`, 또는 기본 2열 + `responsive.portable`(0~1023px) 의 1열.
+ * 화면 폭 분기에 Tailwind 반응형 접두(`sm:` 등)는 쓰지 않는다.
  *
  * @vitest-environment jsdom
  */
@@ -66,6 +67,18 @@ function findNode(node: any, predicate: (n: any) => boolean): any {
 }
 
 /**
+ * 노드의 className 토큰을 돌려줍니다. `key` 를 주면 그 `responsive` 구간의 className 입니다.
+ *
+ * @param node 레이아웃 노드
+ * @param key responsive 구간 키 (없으면 기본 className)
+ * @return className 토큰 배열
+ */
+function classTokens(node: any, key?: string): string[] {
+  const cls = key === undefined ? node?.props?.className : node?.responsive?.[key]?.props?.className;
+  return typeof cls === 'string' ? cls.split(/\s+/).filter(Boolean) : [];
+}
+
+/**
  * 술어를 만족하는 모든 노드를 찾습니다.
  *
  * @param node 탐색 시작 노드/배열
@@ -89,7 +102,7 @@ function findAllNodes(node: any, predicate: (n: any) => boolean, acc: any[] = []
 describe('게시판 비회원 입력 행 — 좁은 화면에서 세로 스택', () => {
   // @scenario case=guest_comment_form_stacked
   // @effects guest_fields_stack_vertically
-  it('댓글 입력폼의 이름/비밀번호 행이 flex-col sm:flex-row 다 (+81px 오버플로 회귀)', () => {
+  it('댓글 입력폼의 이름/비밀번호 행이 기본 flex-col, 640 이상 flex-row 다 (+81px 오버플로 회귀)', () => {
     const layout = loadLayout('partials/board/show/_comment_input.json');
     const guestRow = findNode(
       layout,
@@ -97,14 +110,14 @@ describe('게시판 비회원 입력 행 — 좁은 화면에서 세로 스택',
     );
     expect(guestRow).toBeTruthy();
 
-    const cls: string = guestRow.props?.className ?? '';
-    expect(cls).toContain('flex-col');
-    expect(cls).toContain('sm:flex-row');
+    expect(classTokens(guestRow)).toContain('flex-col');
+    expect(classTokens(guestRow)).not.toContain('flex-row');
+    expect(classTokens(guestRow, '640-')).toContain('flex-row');
   });
 
   // @scenario case=guest_write_form_stacked
   // @effects guest_fields_stack_vertically
-  it('글쓰기폼의 이름/비밀번호 행이 grid-cols-1 sm:grid-cols-2 다 (147px 압착 회귀)', () => {
+  it('글쓰기폼의 이름/비밀번호 행이 기본 grid-cols-1, 640 이상 grid-cols-2 다 (147px 압착 회귀)', () => {
     const layout = loadLayout('partials/board/form/_post_form.json');
     const guestRow = findNode(
       layout,
@@ -115,11 +128,10 @@ describe('게시판 비회원 입력 행 — 좁은 화면에서 세로 스택',
     );
     expect(guestRow).toBeTruthy();
 
-    const cls: string = guestRow.props?.className ?? '';
-    expect(cls).toContain('grid-cols-1');
-    expect(cls).toContain('sm:grid-cols-2');
-    // 무접두 grid-cols-2 는 모바일에서 그대로 2열이 된다
-    expect(cls).not.toMatch(/(^|\s)grid-cols-2(\s|$)/);
+    expect(classTokens(guestRow)).toContain('grid-cols-1');
+    // 기본 className 의 grid-cols-2 는 모바일에서 그대로 2열이 된다
+    expect(classTokens(guestRow)).not.toContain('grid-cols-2');
+    expect(classTokens(guestRow, '640-')).toContain('grid-cols-2');
   });
 });
 
@@ -289,11 +301,11 @@ describe('해외주소 도시/주 입력 — 무접두 grid-cols-2 금지', () =
   for (const file of files) {
     // @scenario case=overseas_address_city_state
     // @effects two_column_rows_single_column_on_narrow
-    it(`${file} 의 2열 행은 모두 좁은 화면 대비가 있다 (sm: 접두 또는 responsive.portable)`, () => {
+    it(`${file} 의 2열 행은 모두 좁은 화면 대비가 있다 (responsive 구간)`, () => {
       const layout = loadLayout(file);
       // 390px 에서 2열을 그대로 유지하는 노드를 찾는다.
       // 허용되는 두 가지 대비책:
-      //  (a) Tailwind breakpoint 접두 — "grid-cols-1 sm:grid-cols-2"
+      //  (a) 기본 grid-cols-1 + responsive["640-"] 의 grid-cols-2 — 기본 className 에 2열이 없어 여기 걸리지 않는다
       //  (b) 엔진 노드 레벨 responsive.portable(0~1023px) 오버라이드 — 받는분/연락처 행 패턴
       const offenders = findAllNodes(layout, (n) => {
         const cls = n.props?.className;
@@ -308,14 +320,15 @@ describe('해외주소 도시/주 입력 — 무접두 grid-cols-2 금지', () =
 
     // @scenario case=overseas_address_city_state
     // @effects two_column_rows_single_column_on_narrow
-    it(`${file} 의 도시/주 행은 grid-cols-1 sm:grid-cols-2 다`, () => {
+    it(`${file} 의 도시/주 행은 기본 grid-cols-1, 640 이상 grid-cols-2 다`, () => {
       const layout = loadLayout(file);
-      const row = findNode(layout, (n) => {
-        const cls = n.props?.className;
-        return typeof cls === 'string' && cls.includes('sm:grid-cols-2') && cls.includes('gap-2');
-      });
+      const row = findNode(
+        layout,
+        (n) => classTokens(n, '640-').includes('grid-cols-2') && classTokens(n).includes('gap-2')
+      );
       expect(row).toBeTruthy();
-      expect(row.props.className.split(/\s+/)).toContain('grid-cols-1');
+      expect(classTokens(row)).toContain('grid-cols-1');
+      expect(classTokens(row)).not.toContain('grid-cols-2');
     });
   }
 });

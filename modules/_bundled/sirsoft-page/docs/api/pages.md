@@ -1258,6 +1258,22 @@ Expires: Wed, 13 Nov 2024 22:13:20 GMT
 
 **조건부 요청**: 응답은 행 메타(디스크·경로·수정 시각·크기) 기반 `ETag` 와 `Last-Modified` 를 싣고, 되돌아온 `If-None-Match`(우선) / `If-Modified-Since` 를 판정해 변경이 없으면 본문 없는 304 로 응답합니다. 판정은 코어 파일 서빙 헬퍼(`streamedFileResponse()`)가 하므로 다중값·`W/` 약한 검증자·압축 표현의 `-gzip` 접미사가 모두 인정되며, 304 에도 200 과 같은 캐시 헤더가 실립니다. 주소에 자산 버전(`?v=`)이 없으므로 `immutable` 은 붙지 않고(비운영 환경은 `no-cache`), 같은 주소의 이미지가 교체되면 재검증으로 도달합니다. 파일 이름 선언(`Content-Disposition`)은 스토리지 계층이 원본 파일명으로 만듭니다.
 
+**캐시**: 미발행 페이지 첨부의 원본은 `Cache-Control: private` 로 냅니다(공유 캐시 저장 금지 — 운영 환경 `private, max-age={TTL}`, 그 외 `private, no-cache`). 발행 페이지 원본은 종전과 같습니다. 썸네일을 요청했는데 원본을 낸 응답(`X-G7-Thumbnail: bypass:{사유}`)은 운영 환경에서 `max-age` 가 썸네일과 같은 코어 레이아웃 캐시 유지 시간(`cache.layout_ttl`, 1년 이하)으로 줄고, 생성 제한·일시 오류면 `no-store` 입니다.
+
+**썸네일 (코어 7.2.0+)**: 쿼리에 규격을 붙이면 발행상태 게이트를 지난 뒤 환경설정 > 업로드 「썸네일 규격」 크기로 줄인 이미지를 냅니다. 둘 다 없으면 원본입니다. 페이지 첨부는 권한이 걸린 원본이라 썸네일은 항상 `Cache-Control: private` 이고, 게이트에 막히는 요청은 썸네일을 붙여도 원본과 같은 404 입니다. 서명은 `size`·`w` 를 빼고 검증하므로 서명 주소 뒤에 `size` 를 덧붙여도 유효합니다(변조·만료는 그대로 404). 저장소에서 원본 파일만 사라진 첨부는 썸네일 파생본이 남아 있어도 원본과 같은 404(`첨부파일이 스토리지에 존재하지 않습니다.`)입니다 — 원본 확인을 썸네일 판정보다 먼저 합니다.
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| size | query | string | 아니오 | 규격 이름 (`xs`·`sm`·`md`·`lg`·`xl`·`og`·확장·운영자 규격) | 그 규격으로 줄인 이미지. `w` 보다 우선 |
+| w | query | integer | 아니오 | 1~10000 | 「숫자 요청 대상」 규격 중 가로가 이 값 이상인 가장 작은 규격(없으면 가장 큰 규격) |
+
+| 응답 헤더 | 값 | 의미 |
+| --- | --- | --- |
+| `X-G7-Thumbnail` | `hit` · `miss` | 썸네일을 냄 — 이미 있던 파일(`hit`) 또는 이번에 만든 파일(`miss`) |
+| `X-G7-Thumbnail` | `bypass:{사유}` | 썸네일을 요청했지만 원본을 냄. 사유: `disabled`·`no-engine`·`not-raster`·`animated`·`unknown-preset`(미정의 규격·배열 파라미터·같은 키 두 번)·`smaller-than-preset`·`rate-limited`·`too-large`·`error` |
+
+`size`·`w` 를 붙이지 않은 요청에는 이 헤더가 없습니다. 자세한 규약은 [이미지 썸네일](../../../../../docs/backend/image-thumbnails.md) 문서를 봅니다.
+
 
 ### GET /api/modules/sirsoft-page/pages/{slug}
 <!-- @generated:start:api.modules.sirsoft-page.pages.show -->

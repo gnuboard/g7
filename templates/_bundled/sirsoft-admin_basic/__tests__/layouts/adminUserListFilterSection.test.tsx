@@ -96,22 +96,25 @@ describe('회원 목록 필터 조각 — 구조', () => {
 
   // @scenario filter_axis=status, outcome=narrows
   // @effects filter_section_slot_structure
-  it('모든 행이 visibleFilters 에 따라 basic/detail 슬롯으로 갈리고 filter-row 를 쓴다', () => {
+  it('모든 행이 visibleFilters 에 따라 basic/detail 슬롯으로 갈리고 넓은 화면 가로·좁은 화면 세로로 놓인다', () => {
     for (const row of filterRows()) {
       const key = slotKey(row);
       expect(row.slot).toBe(`{{(_local.visibleFilters || []).includes('${key}') ? 'basic_filters' : 'detail_filters'}}`);
-      expect(row.props?.className).toContain('filter-row');
+      // 행 배치는 엔진 responsive 구간 값이다 — 1024 이상 가로(flex-row items-center), portable 세로(flex-col items-start).
+      expect(String(row.props?.className).split(/\s+/)).toEqual(expect.arrayContaining(['flex', 'flex-row', 'gap-2', 'items-center']));
+      expect(String(row.responsive?.portable?.props?.className).split(/\s+/)).toEqual(expect.arrayContaining(['flex', 'flex-col', 'gap-2', 'items-start']));
     }
   });
 
   // @scenario filter_axis=status, outcome=narrows
   // @effects filter_section_slot_structure
-  it('행 라벨은 filter-label w-32 다(코어 관리자 관례)', () => {
-    const labels = collect(filterSection, (n) => String(n?.props?.className ?? '').startsWith('filter-label'));
+  it('행 라벨은 filter-field-label w-32 다(코어 관리자 관례 — 폐지 예정 filter-label 은 쓰지 않는다)', () => {
+    // 구간 값(responsive 의 props)도 className 을 가지므로 컴포넌트 노드(name 있음)만 센다.
+    const labels = collect(filterSection, (n) => !!n?.name && /^filter-(field-)?label( |$)/.test(String(n?.props?.className ?? '')));
 
     expect(labels).toHaveLength(12);
     for (const label of labels) {
-      expect(label.props.className).toMatch(/^filter-label w-32( |$)/);
+      expect(label.props.className).toMatch(/^filter-field-label w-32( |$)/);
     }
   });
 

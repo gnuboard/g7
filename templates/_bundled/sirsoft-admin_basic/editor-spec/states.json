@@ -3568,6 +3568,111 @@
       ]
     },
     {
+      "comment": "업로드 탭 「두 곳 모두 비우기」 확인 창(#869). 카드의 버튼이 `_global.thumbnailPurgeAll.locations` 에 두 저장 위치의 요약을 담고 연다 — 상태 없이는 위치 상자가 하나도 그려지지 않는다. 값은 표본 thumbnailStats 의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "settings_thumbnail_purge_all_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "thumbnailPurgeAll": {
+                "locations": [
+                  {
+                    "kind": "public",
+                    "current": "thumbnails",
+                    "disk_label": "비공개 썸네일 저장소",
+                    "remote": false,
+                    "loaded": true,
+                    "count": 128,
+                    "size": "5.6 MB"
+                  },
+                  {
+                    "kind": "gated",
+                    "current": "thumbnails",
+                    "disk_label": "비공개 썸네일 저장소",
+                    "remote": false,
+                    "loaded": true,
+                    "count": 42,
+                    "size": "1.1 MB"
+                  }
+                ],
+                "purging": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "업로드 탭 「기존 이미지 썸네일 만들기」 창(#869). 카드의 버튼이 `_global.thumbnailPregen` 에 소스·규격 선택지와 진행 계수를 담고 연다 — 상태 없이는 선택지가 비고 진행률 칸이 그려지지 않는다. 진행 중 한 걸음을 마친 모습(처리 40/170)을 담는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "settings_thumbnail_pregenerate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "thumbnailPregen": {
+                "sourceOptions": [
+                  {
+                    "key": "core_attachment",
+                    "label": "첨부파일 이미지"
+                  },
+                  {
+                    "key": "layout_attachment",
+                    "label": "레이아웃 첨부 이미지"
+                  }
+                ],
+                "presetOptions": [
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "sirsoft-hero_section.list"
+                ],
+                "presetLabels": {
+                  "xs": null,
+                  "sm": null,
+                  "md": null,
+                  "lg": null,
+                  "xl": null,
+                  "sirsoft-hero_section.list": "배너 목록"
+                },
+                "sources": [
+                  "core_attachment",
+                  "layout_attachment"
+                ],
+                "presets": [
+                  "sm",
+                  "md"
+                ],
+                "running": true,
+                "paused": false,
+                "inflight": false,
+                "done": false,
+                "cursor": "40",
+                "processed": 40,
+                "generated": 36,
+                "total": 170,
+                "steps": 2,
+                "error": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(isTemplateActivating, selectedTemplate) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",

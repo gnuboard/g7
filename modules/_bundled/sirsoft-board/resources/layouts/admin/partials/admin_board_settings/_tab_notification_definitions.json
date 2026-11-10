@@ -49,8 +49,20 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-1023": {
+                            "props": {
+                                "className": "board:grid board:grid-cols-2 board:gap-3"
+                            }
+                        },
+                        "desktop": {
+                            "props": {
+                                "className": "board:grid board:grid-cols-3 board:gap-3"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "board:grid board:grid-cols-1 board:sm:grid-cols-2 board:lg:grid-cols-3 board:gap-3"
+                        "className": "board:grid board:grid-cols-1 board:gap-3"
                     },
                     "children": [
                         {
@@ -345,8 +357,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "board:flex board:gap-2 board:flex-row board:items-start board:justify-between"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "board:flex board:flex-col board:gap-2 board:sm:flex-row board:sm:items-start board:sm:justify-between"
+                                                        "className": "board:flex board:flex-col board:gap-2"
                                                     },
                                                     "children": [
                                                         {

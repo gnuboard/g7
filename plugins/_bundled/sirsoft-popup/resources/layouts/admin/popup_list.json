@@ -212,8 +212,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "gpp:text-2xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "g7pp-page-title"
+                                            "className": "gpp:text-xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-popup.admin.title"
                                     },
@@ -312,16 +319,30 @@
                         "id": "summary_card",
                         "type": "basic",
                         "name": "Section",
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-row gpp:items-center gpp:gap-4"
+                                }
+                            }
+                        },
                         "props": {
                             "aria-labelledby": "popup_summary_heading",
-                            "className": "gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-col gpp:lg:flex-row gpp:lg:items-center gpp:gap-4"
+                            "className": "gpp:bg-white gpp:dark:bg-gray-800 gpp:rounded-lg gpp:border gpp:border-gray-200 gpp:dark:border-gray-700 gpp:p-4 gpp:mb-6 gpp:flex gpp:flex-col gpp:gap-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "gpp:w-1/5 gpp:shrink-0"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "gpp:lg:w-1/5 gpp:shrink-0"
+                                    "className": "gpp:shrink-0"
                                 },
                                 "children": [
                                     {
@@ -371,8 +392,15 @@
                                             "item_var": "item",
                                             "index_var": "idx"
                                         },
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "gpp:w-20 {{idx >= 3 && _local.summaryExpanded !== true ? 'gpp:block' : ''}}"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "gpp:w-20 {{idx >= 3 && _local.summaryExpanded !== true ? 'gpp:hidden gpp:md:block' : ''}}"
+                                            "className": "gpp:w-20 {{idx >= 3 && _local.summaryExpanded !== true ? 'gpp:hidden' : ''}}"
                                         },
                                         "children": [
                                             {
@@ -399,11 +427,14 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160)",
                                                         "type": "basic",
                                                         "name": "Img",
                                                         "if": "{{!!item.thumbnail}}",
                                                         "props": {
                                                             "src": "{{item.thumbnail?.url}}",
+                                                            "thumbPreset": "sm",
+                                                            "decoding": "async",
                                                             "alt": "",
                                                             "className": "g7pp-summary-link__thumb gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700",
                                                             "loading": "lazy"
@@ -438,11 +469,14 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160)",
                                                         "type": "basic",
                                                         "name": "Img",
                                                         "if": "{{!!item.thumbnail}}",
                                                         "props": {
                                                             "src": "{{item.thumbnail?.url}}",
+                                                            "thumbPreset": "sm",
+                                                            "decoding": "async",
                                                             "alt": "",
                                                             "className": "gpp:w-16 gpp:h-20 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700",
                                                             "loading": "lazy"
@@ -481,8 +515,15 @@
                                         "type": "basic",
                                         "name": "Li",
                                         "if": "{{(summary?.data?.data ?? []).length > 3}}",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "gpp:self-center {{(summary?.data?.data ?? []).length > 8 ? '' : 'gpp:hidden'}}"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "gpp:self-center {{(summary?.data?.data ?? []).length > 8 ? '' : 'gpp:md:hidden'}}"
+                                            "className": "gpp:self-center"
                                         },
                                         "children": [
                                             {
@@ -511,8 +552,12 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "if": "{{_local.summaryExpanded !== true}}",
-                                                        "props": {
-                                                            "className": "gpp:md:hidden"
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "gpp:hidden"
+                                                                }
+                                                            }
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 3}}"
                                                     },
@@ -520,8 +565,15 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "if": "{{_local.summaryExpanded !== true}}",
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "gpp:inline"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "gpp:hidden gpp:md:inline"
+                                                            "className": "gpp:hidden"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.summary.show_more|count={{(summary?.data?.data ?? []).length - 8}}"
                                                     },
@@ -1377,11 +1429,14 @@
                                     "width": "80px",
                                     "cellChildren": [
                                         {
+                                            "comment": "팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160)",
                                             "type": "basic",
                                             "name": "Img",
                                             "if": "{{!!row.thumbnail}}",
                                             "props": {
                                                 "src": "{{row.thumbnail?.url}}",
+                                                "thumbPreset": "sm",
+                                                "decoding": "async",
                                                 "alt": "",
                                                 "className": "gpp:w-12 gpp:h-14 gpp:object-cover gpp:rounded gpp:border gpp:border-gray-200 gpp:dark:border-gray-700",
                                                 "loading": "lazy"
@@ -1564,7 +1619,114 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-popup.admin.delete.title",
-                "size": "medium"
+                "size": "medium",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "g7pp-btn g7pp-btn-secondary",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "한 건 삭제 — 지우는 동안 버튼을 잠그고, 성공하면 창을 닫고 선택을 풀어 목록·요약을 다시 받는다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeleting": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-popup/admin/popups/{{_global.targetPopup?.id}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false,
+                                                    "targetPopup": null,
+                                                    "bulkSelectedIds": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "actionRef": "reloadPopups"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isDeleting}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "g7pp-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.delete"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1608,120 +1770,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "g7pp-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "g7pp-btn g7pp-btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "한 건 삭제 — 지우는 동안 버튼을 잠그고, 성공하면 창을 닫고 선택을 풀어 목록·요약을 다시 받는다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeleting": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-popup/admin/popups/{{_global.targetPopup?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false,
-                                                        "targetPopup": null,
-                                                        "bulkSelectedIds": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{response.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "actionRef": "reloadPopups"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isDeleting}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "g7pp-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -1732,7 +1780,116 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-popup.admin.delete.bulk_title",
-                "size": "medium"
+                "size": "medium",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "g7pp-btn g7pp-btn-secondary",
+                            "disabled": "{{_global.isBulkWorking}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "선택한 여러 건 삭제 — 지우는 동안 버튼을 잠그고, 성공하면 선택을 풀고 창을 닫아 목록·요약을 다시 받는다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isBulkWorking": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-popup/admin/popups/bulk",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE",
+                                            "body": {
+                                                "ids": "{{_global.bulkSelectedIds}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkWorking": false,
+                                                    "bulkSelectedIds": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "actionRef": "reloadPopups"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkWorking": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50",
+                            "disabled": "{{_global.isBulkWorking}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isBulkWorking}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "g7pp-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.delete"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1776,122 +1933,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "g7pp-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "g7pp-btn g7pp-btn-secondary",
-                                "disabled": "{{_global.isBulkWorking}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "선택한 여러 건 삭제 — 지우는 동안 버튼을 잠그고, 성공하면 선택을 풀고 창을 닫아 목록·요약을 다시 받는다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isBulkWorking": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-popup/admin/popups/bulk",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE",
-                                                "body": {
-                                                    "ids": "{{_global.bulkSelectedIds}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkWorking": false,
-                                                        "bulkSelectedIds": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "{{response.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "actionRef": "reloadPopups"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkWorking": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50",
-                                "disabled": "{{_global.isBulkWorking}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isBulkWorking}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "g7pp-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.delete"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -1902,7 +1943,117 @@
             "name": "Modal",
             "props": {
                 "title": "$t:sirsoft-popup.admin.copy.title",
-                "size": "medium"
+                "size": "medium",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "g7pp-btn g7pp-btn-secondary",
+                            "disabled": "{{_global.isBulkWorking}}"
+                        },
+                        "text": "$t:common.cancel"
+                    },
+                    {
+                        "id": "bulk_copy_confirm",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "선택한 팝업 복사 — 일부만 실패하면 경고로 알리고, 끝나면 선택을 풀고 창을 닫아 목록·요약을 다시 받는다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isBulkWorking": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-popup/admin/popups/bulk-copy",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": {
+                                                "ids": "{{_global.bulkSelectedIds}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkWorking": false,
+                                                    "bulkSelectedIds": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "{{(response?.data?.failed_ids ?? []).length > 0 ? 'warning' : 'success'}}",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "actionRef": "reloadPopups"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkWorking": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2",
+                            "disabled": "{{_global.isBulkWorking}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isBulkWorking}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "g7pp-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-popup.admin.copy.confirm"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1912,123 +2063,6 @@
                         "className": "gpp:text-gray-700 gpp:dark:text-gray-300"
                     },
                     "text": "$t:sirsoft-popup.admin.copy.message|count={{(_global.bulkSelectedIds ?? []).length}}"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "g7pp-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "g7pp-btn g7pp-btn-secondary",
-                                "disabled": "{{_global.isBulkWorking}}"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "id": "bulk_copy_confirm",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "선택한 팝업 복사 — 일부만 실패하면 경고로 알리고, 끝나면 선택을 풀고 창을 닫아 목록·요약을 다시 받는다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isBulkWorking": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-popup/admin/popups/bulk-copy",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "ids": "{{_global.bulkSelectedIds}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkWorking": false,
-                                                        "bulkSelectedIds": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "{{(response?.data?.failed_ids ?? []).length > 0 ? 'warning' : 'success'}}",
-                                                        "message": "{{response.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "actionRef": "reloadPopups"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isBulkWorking": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2",
-                                "disabled": "{{_global.isBulkWorking}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isBulkWorking}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "g7pp-spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-popup.admin.copy.confirm"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ]
         },
@@ -2061,7 +2095,135 @@
             ],
             "props": {
                 "title": "$t:sirsoft-popup.admin.reorder.title",
-                "size": "md"
+                "size": "md",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "취소 — 바꾼 순서를 버리고 창을 닫는다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "reorderItems": null,
+                                            "reorderOriginal": null,
+                                            "reorderError": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "popup_reorder_modal"
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "g7pp-btn g7pp-btn-secondary",
+                            "disabled": "{{_global.reorderSaving}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "reorderSaving": true,
+                                            "reorderError": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-popup/admin/popups/order",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PUT",
+                                            "body": {
+                                                "ids": "{{(_global.reorderItems ?? []).map(i => i.id)}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "reorderSaving": false,
+                                                    "reorderItems": null,
+                                                    "reorderOriginal": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal",
+                                                "target": "popup_reorder_modal"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "{{response.message}}"
+                                                }
+                                            },
+                                            {
+                                                "actionRef": "reloadPopups"
+                                            }
+                                        ],
+                                        "onError": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reorderSaving": false,
+                                                "reorderError": "{{error.message}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "data-testid": "popup-reorder-save",
+                            "type": "button",
+                            "lockRepeatClick": true,
+                            "className": "g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2",
+                            "disabled": "{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i => i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.reorderSaving}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "g7pp-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.save"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -2111,11 +2273,18 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "gpp:flex gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
                                                     "data-drag-handle": true,
                                                     "aria-hidden": "true",
                                                     "title": "{{$t('sirsoft-popup.admin.reorder.drag_handle', { name: row.title })}}",
-                                                    "className": "gpp:hidden g7pp-hidden gpp:md:flex gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300"
+                                                    "className": "gpp:hidden g7pp-hidden gpp:cursor-grab gpp:text-gray-400 gpp:hover:text-gray-600 gpp:dark:text-gray-500 gpp:dark:hover:text-gray-300"
                                                 },
                                                 "children": [
                                                     {
@@ -2137,11 +2306,15 @@
                                                 "text": "{{row._idx + 1}}"
                                             },
                                             {
+                                                "comment": "팝업 이미지는 세로가 조금 긴 칸(64×80 이하)에 덮어 그린다 — 정사각 자르기 sm(160)",
                                                 "type": "basic",
                                                 "name": "Img",
                                                 "if": "{{!!row.thumbnail}}",
                                                 "props": {
                                                     "src": "{{row.thumbnail}}",
+                                                    "thumbPreset": "sm",
+                                                    "loading": "lazy",
+                                                    "decoding": "async",
                                                     "alt": "",
                                                     "className": "gpp:w-8 gpp:h-10 gpp:object-cover gpp:rounded"
                                                 }
@@ -2259,141 +2432,6 @@
                                 "className": "gpp:rounded-lg gpp:border gpp:border-red-200 gpp:dark:border-red-800 gpp:bg-red-50 gpp:dark:bg-red-900/20 gpp:px-4 gpp:py-3 gpp:text-sm gpp:text-red-700 gpp:dark:text-red-300"
                             },
                             "text": "{{_global.reorderError}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "g7pp-modal-footer-buttons"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "comment": "취소 — 바꾼 순서를 버리고 창을 닫는다",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "reorderItems": null,
-                                                        "reorderOriginal": null,
-                                                        "reorderError": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "popup_reorder_modal"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "g7pp-btn g7pp-btn-secondary",
-                                        "disabled": "{{_global.reorderSaving}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:common.cancel"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "comment": "저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "reorderSaving": true,
-                                                        "reorderError": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "apiCall",
-                                                    "target": "/api/plugins/sirsoft-popup/admin/popups/order",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "PUT",
-                                                        "body": {
-                                                            "ids": "{{(_global.reorderItems ?? []).map(i => i.id)}}"
-                                                        }
-                                                    },
-                                                    "onSuccess": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "reorderSaving": false,
-                                                                "reorderItems": null,
-                                                                "reorderOriginal": null
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "closeModal",
-                                                            "target": "popup_reorder_modal"
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "success",
-                                                                "message": "{{response.message}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "actionRef": "reloadPopups"
-                                                        }
-                                                    ],
-                                                    "onError": {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "reorderSaving": false,
-                                                            "reorderError": "{{error.message}}"
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "data-testid": "popup-reorder-save",
-                                        "type": "button",
-                                        "lockRepeatClick": true,
-                                        "className": "g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2",
-                                        "disabled": "{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i => i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{_global.reorderSaving}}",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "g7pp-spinner-sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:common.save"
-                                        }
-                                    ]
-                                }
-                            ]
                         }
                     ]
                 }

@@ -33,9 +33,10 @@
    콘텐츠가 판정에서 빠져 실제로 쓰이는 이미지를 미참조로 오판하므로, 그 상태를 감지해
    정리를 멈춥니다.
 
-**의도적으로 하지 않는 것**: 훅 구독 0 · 리스너 0 · 미들웨어 0 · 브로드캐스트 0 · 알림 0.
-이 플러그인은 다른 확장의 흐름에 개입하지 않고, 자기 확장점 안에서만 삽니다. 본문 정화
-(sanitize)도 이 플러그인의 일이 아닙니다 — 저장측 검증과 봇 화면 정화는 코어가 담당합니다.
+**의도적으로 하지 않는 것**: 미들웨어 0 · 브로드캐스트 0 · 알림 0. 훅 구독은 코어 이미지 썸네일에
+본문 이미지를 등록하는 필터 2개(`ThumbnailRegistrationListener`)뿐입니다 — 그 밖에는 다른 확장의
+흐름에 개입하지 않고, 자기 확장점 안에서만 삽니다. 본문 정화(sanitize)도 이 플러그인의 일이
+아닙니다 — 저장측 검증과 봇 화면 정화는 코어가 담당합니다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -51,6 +52,7 @@
 | `src/Services/` | 비즈니스 로직 | Repository 인터페이스 주입 (구체 클래스 금지) |
 | `src/Repositories/` | 데이터 접근 | 목록 쿼리는 컬럼 프루닝·정렬 화이트리스트 확인 |
 | `src/Models/` | Eloquent 모델 | 스키마 변경 시 마이그레이션 + 업그레이드 스텝 동반 |
+| `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
@@ -88,7 +90,10 @@
 `ImageUploadService`(`before_upload` → `filter_upload_file` → 저장 → `after_upload`) →
 `ckeditor5_image_uploads` 에 기록. 서빙은 **해시 경로**(`GET images/{hash}`)이며, 설정
 디스크가 공개 URL 을 주는 환경에서는 본문에 디스크 직접 URL 이 박힙니다 — 그래서 본문에
-남는 URL 형태가 두 가지입니다.
+남는 URL 형태가 두 가지입니다. 해시 경로에 `?size={규격}`·`?w={숫자}` 가 붙으면
+`ImageServeController::serve` 가 원본 응답 바로 앞에서 코어 `ThumbnailResponder` 로 썸네일을 냅니다
+(공개 원본 — 공개 썸네일 디스크, 그 디스크가 공개 자산 디스크면 302). 디스크 직접 URL 로 박힌
+이미지는 이 경로를 지나지 않으므로 원본 그대로입니다.
 
 **미참조 이미지 정리**: `sirsoft-ckeditor5:prune-unused-images --scheduled`(일 1회, 설정
 `unusedImageCleanup` 이 켜져 있을 때만) → `ImageReferenceScanService` 가 코어 소스 4개(알림 템플릿·레이아웃 3종)
@@ -104,8 +109,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 0개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 0개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 2개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 1개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -135,7 +140,13 @@
 차지합니다. 다른 편집기 플러그인이 같은 확장점을 노리면 어느 쪽이 이기는지가 설치 순서에
 좌우되므로, 편집기 플러그인은 하나만 활성화하는 것이 전제입니다.
 
-구독 훅·리스너·미들웨어·브로드캐스트 채널·알림은 전부 0개입니다.
+구독 훅은 코어 이미지 썸네일 필터 2개입니다. `core.thumbnail.filter_url_patterns` 에 본문 이미지
+서빙 경로(`/api/plugins/sirsoft-ckeditor5/images/*`)를 더해 화면·SEO 가 이 주소에 규격을 붙이게 하고,
+`core.thumbnail.filter_source_providers` 에 `ImageThumbnailSourceProvider` 를 더해 썸네일 캐시 관리와
+「기존 이미지 썸네일 만들기」가 본문 이미지를 알게 합니다. 서빙 경로를 바꾸면 이 패턴도 같이 바꿔야
+합니다 — 어긋나면 오류 없이 본문 이미지가 원본으로만 나갑니다.
+
+미들웨어·브로드캐스트 채널·알림은 전부 0개입니다.
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -178,10 +189,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 22개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 31개 | `vitest.config.ts` |
+| PHPUnit | 23개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
+| Vitest | 32개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 22개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 23개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

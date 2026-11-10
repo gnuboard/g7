@@ -27,25 +27,16 @@ import {
   getLoadingComponents,
 } from '../../spec/editorSpecLoader';
 import type { EditorSpec } from '../../spec/specTypes';
+import { makeBundleFetcher } from './editorSpecBundleFetcher';
 
-/** 식별자 → spec 매핑으로 fetch 를 모킹 */
+/** 식별자 → spec 매핑으로 묶음 엔드포인트 fetch 를 모킹 (engine-v1.89.0 — 편집기는 묶음 한 요청으로 받는다) */
 function makeFetcher(specs: Record<string, EditorSpec | null>): typeof fetch {
-  return vi.fn(async (url: string | URL | Request) => {
-    const u = String(url);
-    const m = /\/(templates|modules|plugins)\/([^/]+)\/editor-spec/.exec(u);
-    const id = m ? decodeURIComponent(m[2]) : '';
-    if (!(id in specs)) {
-      return { ok: false, status: 404, json: async () => ({}) } as unknown as Response;
-    }
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ success: true, data: { identifier: id, spec: specs[id] } }),
-    } as unknown as Response;
-  }) as unknown as typeof fetch;
+  return makeBundleFetcher(specs);
 }
 
 describe('loadEditorSpecBundle — 활성 확장 네임스페이스 병합', () => {
+  // @scenario merge_case=all_sources
+  // @effects template_module_plugin_specs_merge_into_one
   it('템플릿 + 모듈 + 플러그인 스펙을 단일 병합본으로 합친다', async () => {
     const fetcher = makeFetcher({
       'sirsoft-basic': {
@@ -91,6 +82,8 @@ describe('loadEditorSpecBundle — 활성 확장 네임스페이스 병합', () 
     );
   });
 
+  // @scenario merge_case=action_chip_candidates
+  // @effects action_chip_candidates_concat_per_context
   it('actionChipCandidates 는 컨텍스트별 배열을 concat 한다(코어/확장 응답 칩 누적, key override 아님)', async () => {
     const fetcher = makeFetcher({
       tpl: {
@@ -124,6 +117,8 @@ describe('loadEditorSpecBundle — 활성 확장 네임스페이스 병합', () 
     expect(spec!.actionChipCandidates!.error!.map((c) => c.path)).toEqual(['data.domain_error']);
   });
 
+  // @scenario merge_case=record_conflict
+  // @effects template_wins_record_block_conflict
   it('record 블록 충돌 시 템플릿(마지막 소스)이 이긴다', async () => {
     const fetcher = makeFetcher({
       tpl: { controls: { color: { widget: 'template-color' } } },
@@ -138,6 +133,8 @@ describe('loadEditorSpecBundle — 활성 확장 네임스페이스 병합', () 
     expect(spec!.controls!.color.widget).toBe('template-color');
   });
 
+  // @scenario merge_case=sample_global_order
+  // @effects sample_global_sources_keep_merge_order
   it('sampleGlobalSources 는 모듈 → 플러그인 → 템플릿 순이며 sampleGlobal 미정의 소스는 제외된다', async () => {
     const fetcher = makeFetcher({
       tpl: { sampleGlobal: { currentUser: { uuid: 'x' } } },
@@ -155,6 +152,8 @@ describe('loadEditorSpecBundle — 활성 확장 네임스페이스 병합', () 
     expect(sampleGlobalSources[1].kind).toBe('template');
   });
 
+  // @scenario merge_case=inactive_not_requested
+  // @effects inactive_extension_not_requested
   it('비활성 확장은 fetch 하지 않는다 (활성 식별자 목록 기준)', async () => {
     const fetcher = makeFetcher({ tpl: { controls: {} }, 'inactive-mod': { controls: {} } });
     await loadEditorSpecBundle({
@@ -165,9 +164,11 @@ describe('loadEditorSpecBundle — 활성 확장 네임스페이스 병합', () 
     });
     const calls = (fetcher as unknown as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]));
     expect(calls.some((u) => u.includes('inactive-mod'))).toBe(false);
-    expect(calls.some((u) => u.includes('/templates/tpl/editor-spec'))).toBe(true);
+    expect(calls.some((u) => u.includes('/templates/tpl/editor-spec-bundle'))).toBe(true);
   });
 
+  // @scenario merge_case=all_missing
+  // @effects all_missing_specs_yield_null
   it('모든 스펙이 부재(404/null)면 spec=null 을 반환한다', async () => {
     const fetcher = makeFetcher({}); // 전부 404
     const { spec, sampleGlobalSources } = await loadEditorSpecBundle({
@@ -182,6 +183,8 @@ describe('loadEditorSpecBundle — 활성 확장 네임스페이스 병합', () 
 });
 
 describe('방안 B — 출처별 bySource 보존', () => {
+  // @scenario merge_case=by_source_split
+  // @effects by_source_keeps_each_source_separately
   it('같은 id 를 여러 출처가 정의해도 각 출처 키(template / {kind}:{id})로 분리 보존', async () => {
     const fetcher = makeFetcher({
       'shop-mod': { sampleData: { byDataSourceId: { settings: { data: { currency: 'KRW' } } } } },
@@ -202,6 +205,8 @@ describe('방안 B — 출처별 bySource 보존', () => {
     expect(spec!.sampleData!.bySource!.template.settings).toEqual({ data: { site_name: '코어' } });
   });
 
+  // @scenario merge_case=by_source_accumulate
+  // @effects by_source_accumulates_ids_of_same_source
   it('같은 출처(kind+identifier)의 여러 id 는 한 키에 누적된다', async () => {
     const fetcher = makeFetcher({
       'board-mod': { sampleData: { byDataSourceId: { posts: { data: [1] }, boards: { data: [2] } } } },
@@ -234,6 +239,8 @@ describe('editorSpecLoader 조회 헬퍼', () => {
     },
   };
 
+  // @scenario merge_case=lookup_helpers
+  // @effects lookup_helpers_read_merged_spec
   it('getComponentCapability / getControl / getActionRecipe / getConditionRecipe', () => {
     expect(getComponentCapability(spec, 'Button')?.label).toBe('$t:button');
     expect(getComponentCapability(spec, 'Missing')).toBeNull();
@@ -243,6 +250,8 @@ describe('editorSpecLoader 조회 헬퍼', () => {
     expect(getActionRecipe(null, 'x')).toBeNull();
   });
 
+  // @scenario merge_case=state_scope_lookup
+  // @effects state_groups_filtered_by_scope
   it('getStateGroupsForScope 는 scope 매칭 그룹만 반환한다', () => {
     const groups = getStateGroupsForScope(spec, { kind: 'route', match: '/mypage' });
     expect(groups).toHaveLength(1);
@@ -254,6 +263,8 @@ describe('editorSpecLoader 조회 헬퍼', () => {
 // ── 페이지 설정 4블록 병합·__source·코어 시드 ──
 
 describe('페이지 설정 4블록 병합 + __source 출처 부착', () => {
+  // @scenario merge_case=page_setting_blocks
+  // @effects page_setting_blocks_merge_with_source
   it('initActionRecipes/computedRecipes/errorRecipes/loadingComponents 를 병합하고 __source 를 단다', async () => {
     const fetcher = makeFetcher({
       mod: {
@@ -297,6 +308,8 @@ describe('페이지 설정 4블록 병합 + __source 출처 부착', () => {
     expect(getErrorRecipes(spec).tplErr).toBeDefined();
   });
 
+  // @scenario merge_case=core_seed
+  // @effects core_seed_is_base_and_overridable
   it('coreSeed 는 base 로 병합되고 __source:core 가 붙으며 확장이 같은 key 를 override 한다', async () => {
     const fetcher = makeFetcher({
       tpl: {

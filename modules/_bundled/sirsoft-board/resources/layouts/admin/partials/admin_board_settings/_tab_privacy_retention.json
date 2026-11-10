@@ -105,8 +105,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "board:flex board:gap-2 board:flex-row board:items-center board:justify-between"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "board:flex board:flex-col board:gap-2 board:sm:flex-row board:sm:items-center board:sm:justify-between"
+                                                "className": "board:flex board:flex-col board:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -302,8 +309,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "board:flex board:gap-2 board:flex-row board:items-center board:justify-between"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "board:flex board:flex-col board:gap-2 board:sm:flex-row board:sm:items-center board:sm:justify-between"
+                                                "className": "board:flex board:flex-col board:gap-2"
                                             },
                                             "children": [
                                                 {

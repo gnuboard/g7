@@ -19,7 +19,8 @@
           </div>
           <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
         </div>
-        <div class="board-grid-2col-responsive">
+        <div class="board:grid board:grid-cols-1 board:gap-4">
+          <responsive on="768-" class="board:grid board:grid-cols-2 board:gap-4"/>
           <div data-ref="field_notify_post_complete">
             <label class="board:text-sm board:text-gray-500 board:dark:text-gray-400 board:block board:font-medium board:mb-1">$t:sirsoft-board.admin.users.form.notifications.post_complete</label>
             <div class="board:text-gray-900 board:dark:text-white board:text-sm">{{user?.data?.notify_post_complete ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>

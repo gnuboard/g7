@@ -122,6 +122,8 @@
 
 `module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. cron, CI, 원격 명령, `--no-interaction` 처럼 확인에 답할 수 없는 실행에서 `--force` 가 없으면 업데이트를 시작하지 않은 사유와 `--force` 안내를 출력하고 **종료 코드 1** 로 끝나므로(아무것도 바뀌지 않음) 자동 실행에는 `--force` 를 붙입니다. 터미널에서 직접 「아니오」를 답한 취소는 종료 코드 0 입니다. 제거 명령(`module:uninstall` / `plugin:uninstall` / `template:uninstall` / `language-pack:uninstall`)도 같은 규칙입니다. 단 `--force` 는 확인을 건너뛸 뿐 아니라 버전 비교 없이 같은 판도 다시 적용하므로, 실제로 갱신할 확장에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않습니다.
 
+**활성 디렉토리만 사라진 확장의 복구 (7.2.0~)**: DB 에는 설치(활성 포함) 행이 남았는데 `modules/{id}`·`plugins/{id}`·`templates/{id}` 활성 디렉토리만 없으면, 번들 소스 업데이트(`{type}:update {id} --force --source=bundled`)와 기본 소스 업데이트가 `_pending`·`_bundled` 원본을 활성 디렉토리로 복사한 뒤 업데이트를 이어 갑니다. 활성 상태는 그대로입니다. 종전에는 업데이트는 「찾을 수 없습니다」, 설치는 「이미 설치되어 있습니다」로 막혀 되돌릴 길이 없었습니다. GitHub·ZIP 소스와 원본이 없는 확장은 종전처럼 실패합니다.
+
 #### 외부 ZIP 직접 지정 (`--zip`)
 
 `module:update` / `plugin:update` / `template:update` 에 `--zip={path}` 옵션이 제공됩니다. GitHub 우회 + 번들 우회 경로로, 오프라인 환경·사설 레지스트리·긴급 수동 배포 용도입니다.
@@ -1061,13 +1063,14 @@ class Upgrade_1_3_0 implements UpgradeStepInterface
 
 > 파일: `app/Listeners/ExtensionUpdateQueueListener.php`
 
-모듈·플러그인에 **코드가 새로 들어오는 사건**(설치·활성화·업데이트 성공) 뒤 `Artisan::call('queue:restart')` 를 자동 실행합니다. 상주 큐 워커가 이전 코드(클래스·바인딩·리스너)로 계속 실행되는 문제를 방지합니다.
+세 확장 종류(모듈·플러그인·템플릿)의 설치·활성화·업데이트·제거가 성공하면 `Artisan::call('queue:restart')` 를 자동 실행합니다(제거와 템플릿은 7.2.0~). 상주 큐 워커가 이전 코드(클래스·바인딩·리스너)나 지운 확장의 코드로 계속 실행되는 문제를 방지합니다.
 
-- 구독 훅: `core.modules.after_install`·`after_activate`·`after_update`, `core.plugins.after_install`·`after_activate`·`after_update` (priority 100)
+- 구독 훅: `core.modules.after_install`·`after_activate`·`after_update`·`after_uninstall`, `core.plugins.after_install`·`after_activate`·`after_update`·`after_uninstall`, `core.templates.after_install`·`after_activate`·`after_version_update`·`after_uninstall` (priority 100). 템플릿 활성화 완료 훅은 식별자 없이 정보 배열 하나를 넘긴다
+- 플러그인 제거 완료 훅은 실패에도 발화하므로(인자 `$result`) 결과가 true 일 때만 재시작한다. 모듈·템플릿 제거 완료 훅은 성공일 때만 발화한다
 - **동기 실행(`'sync' => true`)**: 큐로 보내면 "큐 워커를 재시작하는 작업을 그 큐 워커가 실행" 하게 되고, CLI 커맨드는 실행 후 곧바로 종료되어 쌓인 작업을 처리할 주체가 없다
 - 진입점: 완료 훅을 Manager 가 발화하므로 어드민 UI 와 `module:update` 등 CLI 커맨드 양쪽에서 동작한다
-- 대상 밖: 템플릿(PHP 코드 없음), 제거·비활성화 — 상주 워커는 사라진 확장의 클래스를 메모리에 들고 있을 수 있으나 새로 실행되는 코드는 없다
-- `after_update` 는 "업데이트할 것 없음" 에서도 발화하므로 `result.success` 가 true 일 때만 재시작한다
+- 대상 밖: 비활성화. 켜진 확장의 제거는 비활성화를 먼저 거치지만 재시작 신호는 제거 완료 때 한 번이다
+- `after_update`·`after_version_update` 는 "업데이트할 것 없음" 에서도 발화하므로 `result.success` 가 true 일 때만 재시작한다
 - 실패 시: warning 로그만 기록 (예외 전파 안 함)
 - 자동 등록: `CoreServiceProvider::registerCoreHookListeners()` 스캔. **배포 시 `php artisan hooks:cache` 로 훅 캐시를 다시 굽는다** — 캐시(`bootstrap/cache/hooks.php`)는 파일 부재·손상에만 폴백하므로, 굽지 않으면 이전 구독(`sync` 없음)이 그대로 쓰인다
 

@@ -93,8 +93,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "paynhnkcp:p-6 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "paynhnkcp:p-8 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "paynhnkcp:p-4 paynhnkcp:sm:p-6 paynhnkcp:lg:p-8 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"
+                    "className": "paynhnkcp:p-4 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -263,8 +275,15 @@
                                 "comment": "PC/모바일 카드/모바일 가상계좌 결제 가능 여부 요약 배지",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "640-": {
+                                        "props": {
+                                            "className": "paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:sm:grid-cols-3 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
+                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                                 },
                                 "children": [
                                     {
@@ -749,15 +768,26 @@
                                         "id": "field_live_site_cd",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nhnkcp-grid-3col-responsive"
+                                            "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -781,8 +811,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -829,15 +863,26 @@
                                         "id": "field_live_site_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nhnkcp-grid-3col-responsive"
+                                            "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -861,8 +906,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1185,15 +1234,26 @@
                                         "id": "field_redirect_success_url",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nhnkcp-grid-3col-responsive"
+                                            "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1217,8 +1277,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1240,15 +1304,26 @@
                                         "id": "field_redirect_fail_url",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nhnkcp-grid-3col-responsive"
+                                            "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1272,8 +1347,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1339,15 +1418,26 @@
                                         "id": "field_vbank_expire_days",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nhnkcp-grid-3col-responsive"
+                                            "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1371,8 +1461,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1843,15 +1937,26 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "if": "{{_local.form.use_escrow && _local.form.is_test_mode}}",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-3 paynhnkcp:gap-4 paynhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-nhnkcp-grid-3col-responsive"
+                                            "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:gap-4 paynhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -1875,8 +1980,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paynhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paynhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {

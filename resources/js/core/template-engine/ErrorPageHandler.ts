@@ -64,6 +64,12 @@ export interface ErrorPageHandlerOptions {
      * 같은 화면에서 403 → 500 을 연속으로 그리면 `{{errorCode}}` 가 경로 글자 키 캐시의 앞 값으로 그려졌다.
      */
     clearBindingCache?: () => void;
+    /**
+     * 템플릿에 그 코드의 오류 레이아웃도 `default` 도 없을 때(또는 error_config 가 없을 때) 엔진 내장 오류 화면을 그린다
+     * (engine-v1.89.0, #869 λ 4부 18). 종전에는 아무것도 그리지 않고 끝나 화면이 오류 전 모습(빈 장바구니 등)으로 남았다.
+     * 생략하면 종전처럼 false 로 끝난다(단위 시험·편집기 미리보기).
+     */
+    renderBuiltinFallback?: (errorCode: number) => void;
 }
 
 /**
@@ -81,6 +87,7 @@ export class ErrorPageHandler {
     private getRouteContextFn?: () => { route: Record<string, unknown>; query: Record<string, unknown> };
     private getGlobalHeadersFn?: () => GlobalHeaderRule[];
     private clearBindingCacheFn?: () => void;
+    private renderBuiltinFallbackFn?: (errorCode: number) => void;
     private errorConfig: ErrorConfig | null = null;
     private configLoaded: boolean = false;
 
@@ -96,6 +103,29 @@ export class ErrorPageHandler {
         this.getRouteContextFn = options.getRouteContext;
         this.getGlobalHeadersFn = options.getGlobalHeaders;
         this.clearBindingCacheFn = options.clearBindingCache;
+        this.renderBuiltinFallbackFn = options.renderBuiltinFallback;
+    }
+
+    /**
+     * 템플릿 오류 레이아웃이 없을 때 엔진 내장 오류 화면으로 그린다 (engine-v1.89.0).
+     *
+     * @param errorCode 오류 코드
+     * @param reason 경고 로그에 남길 사유
+     * @param shouldRender 그리기 직전 판정
+     * @returns 그렸으면 true
+     */
+    private renderBuiltin(errorCode: number, reason: string, shouldRender?: () => boolean): boolean {
+        if (!this.renderBuiltinFallbackFn) {
+            return false;
+        }
+        if (shouldRender && !shouldRender()) {
+            logger.log(`Builtin error display ${errorCode} skipped — route changed while loading`);
+            return false;
+        }
+        logger.warn(`${reason} — rendering the engine builtin error display for code ${errorCode}`);
+        this.renderBuiltinFallbackFn(errorCode);
+
+        return true;
     }
 
     /**
@@ -168,20 +198,21 @@ export class ErrorPageHandler {
             const config = await this.loadConfig();
 
             if (!config) {
-                if (this.debug) {
-                    logger.warn('No error config available, cannot render error page');
-                }
-                return false;
+                // error_config 가 없는 템플릿 — 엔진 내장 오류 화면으로 그린다 (engine-v1.89.0, #869 λ 4부 18)
+                return this.renderBuiltin(errorCode, 'No error_config in template.json', shouldRender);
             }
 
-            // 2. 에러 코드에 맞는 레이아웃 이름 찾기
-            const layoutName = config.layouts[errorCode] || config.layouts[String(errorCode)];
+            // 2. 에러 코드에 맞는 레이아웃 이름 찾기 — 없으면 템플릿의 공통 오류 레이아웃(`layouts.default`), 그것도 없으면 엔진 내장
+            //    오류 화면 (engine-v1.89.0, #869 λ 4부 18). 종전에는 아무것도 그리지 않고 끝나(예: 400) 화면이 오류 전 모습으로 남았다.
+            //    다른 코드의 레이아웃(500 등)으로 대신하지 않는다 — 그 레이아웃은 코드와 문구를 박아 두어(「500 서버 오류」) 다른 코드를 잘못 알린다
+            const codeLayout = config.layouts[errorCode] || config.layouts[String(errorCode)];
+            const layoutName = codeLayout || config.layouts.default;
 
             if (!layoutName) {
-                if (this.debug) {
-                    logger.warn(`No layout defined for error code: ${errorCode}`);
-                }
-                return false;
+                return this.renderBuiltin(errorCode, `No error layout for code ${errorCode} and no default in error_config`, shouldRender);
+            }
+            if (!codeLayout) {
+                logger.warn(`No error layout for code ${errorCode} — rendering error_config default layout: ${layoutName}`);
             }
 
             if (this.debug) {

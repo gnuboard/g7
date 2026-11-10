@@ -265,7 +265,15 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
             'name' => 'Div',
             'if' => '{{'.self::TEST_MODE_CONDITION.'}}',
             'props' => [
-                'className' => 'paynhnkcp:flex paynhnkcp:flex-col paynhnkcp:gap-3 paynhnkcp:sm:flex-row paynhnkcp:sm:items-center paynhnkcp:sm:justify-between',
+                'className' => 'paynhnkcp:flex paynhnkcp:flex-col paynhnkcp:gap-3',
+            ],
+            // 폭 분기는 엔진 responsive 로 — Tailwind 폭 접두(`paynhnkcp:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다(#869)
+            'responsive' => [
+                '640-' => [
+                    'props' => [
+                        'className' => 'paynhnkcp:flex paynhnkcp:flex-row paynhnkcp:items-center paynhnkcp:justify-between paynhnkcp:gap-3',
+                    ],
+                ],
             ],
             'children' => [
                 [
@@ -298,7 +306,14 @@ class AdjustEcommercePaymentMethodsLayoutListener implements HookListenerInterfa
                     'name' => 'Button',
                     'props' => [
                         'type' => 'button',
-                        'className' => 'pay-nhnkcp-btn pay-nhnkcp-btn-outline pay-nhnkcp-btn-sm paynhnkcp:w-full paynhnkcp:flex-shrink-0 paynhnkcp:border-orange-300 paynhnkcp:text-orange-900 paynhnkcp:hover:bg-orange-100 paynhnkcp:sm:w-auto paynhnkcp:dark:border-orange-600 paynhnkcp:dark:text-orange-100 paynhnkcp:dark:hover:bg-orange-900/40',
+                        'className' => 'pay-nhnkcp-btn pay-nhnkcp-btn-outline pay-nhnkcp-btn-sm paynhnkcp:w-full paynhnkcp:flex-shrink-0 paynhnkcp:border-orange-300 paynhnkcp:text-orange-900 paynhnkcp:hover:bg-orange-100 paynhnkcp:dark:border-orange-600 paynhnkcp:dark:text-orange-100 paynhnkcp:dark:hover:bg-orange-900/40',
+                    ],
+                    'responsive' => [
+                        '640-' => [
+                            'props' => [
+                                'className' => 'pay-nhnkcp-btn pay-nhnkcp-btn-outline pay-nhnkcp-btn-sm paynhnkcp:w-auto paynhnkcp:flex-shrink-0 paynhnkcp:border-orange-300 paynhnkcp:text-orange-900 paynhnkcp:hover:bg-orange-100 paynhnkcp:dark:border-orange-600 paynhnkcp:dark:text-orange-100 paynhnkcp:dark:hover:bg-orange-900/40',
+                            ],
+                        ],
                     ],
                     'actions' => [
                         [

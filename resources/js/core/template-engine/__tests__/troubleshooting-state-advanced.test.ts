@@ -7,7 +7,7 @@
  * @see 트러블슈팅 가이드 troubleshooting-state-advanced.md
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { DataBindingEngine } from '../DataBindingEngine';
 import { Logger } from '../../utils/Logger';
@@ -516,7 +516,7 @@ describe('트러블슈팅 회귀 테스트 - computed 관련', () => {
 });
 
 describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
-  let mockSetState: ReturnType<typeof vi.fn>;
+  let mockSetState: Mock;
   let capturedState: Record<string, any>;
 
   beforeEach(() => {
@@ -640,7 +640,7 @@ describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
     // @effects parent_set_state_triggers_rerender
     it('부모의 setState를 호출하여 리렌더링을 트리거해야 함', () => {
       let renderCount = 0;
-      const parentSetState = vi.fn(() => {
+      const parentSetState = vi.fn<(updates: Record<string, any>) => void>(() => {
         renderCount++;
       });
 

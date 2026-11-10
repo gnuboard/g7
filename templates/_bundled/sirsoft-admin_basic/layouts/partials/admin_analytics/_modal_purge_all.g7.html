@@ -26,7 +26,7 @@
         <span class="text-label">$t:admin.analytics.modals.purge.confirm_label</span>
       </label>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsPurging}}">
         <on type="click">
           <!-- 취소 — 체크를 걷고 닫는다. 다시 열었을 때 체크가 켜진 채면 클릭 한 번으로 전부 지워진다. -->
@@ -60,6 +60,6 @@
         <icon data-if="{{_global.analyticsPurging}}" name="spinner" :spin="true" class="text-sm"/>
         <span>$t:admin.analytics.modals.purge.button</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

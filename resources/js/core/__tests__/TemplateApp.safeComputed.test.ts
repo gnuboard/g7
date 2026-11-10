@@ -1,14 +1,19 @@
 /**
  * TemplateApp 안전 평가기 경로 테스트 (KVE-2026-1915 B-2)
  *
- * computed(`evaluateComputedExpression`) 와 scripts[].if(`evaluateScriptCondition`)
- * 두 싱크가 실제 TemplateApp 경로에서 화이트리스트 AST 평가기(evaluateSafeExpression)를
- * 사용함을 검증한다. 종전의 `new Function('ctx','with(ctx){…}')` 로 회귀하면
+ * computed(`calculateComputed`) 와 scripts[].if·conditions(`loadLayoutScripts`)
+ * 두 싱크가 실제 TemplateApp 경로에서 화이트리스트 AST 평가기를 사용함을 검증한다.
+ * 종전의 `new Function('ctx','with(ctx){…}')` 로 회귀하면
  * `''.constructor.constructor('return …')()` 가 값으로 평가되어 아래 단언이 깨진다.
  *
  * DefinesComputed.test.ts 는 평가기 자체(evaluateSafeExpression)를 직접 호출하지만,
- * 이 파일은 실제 TemplateApp private 메서드를 거쳐 "엔진이 이 싱크에서 안전 평가기를
+ * 이 파일은 TemplateApp 이 실제로 부르는 메서드를 거쳐 "엔진이 이 싱크에서 안전 평가기를
  * 실제로 쓰는지" 를 고정한다.
+ *
+ * #869: 종전에는 아무도 부르지 않는 private 메서드(`evaluateScriptCondition`,
+ * `evaluateComputedExpression`)를 직접 불렀다. 그 사이 실제 스크립트 로드 경로는 존재하지 않는
+ * `this.bindingEngine` 을 평가기에 넘겨, `{{...}}` 조건이 붙은 레이아웃 스크립트가 조건과 무관하게
+ * 한 번도 로드되지 않았는데 이 시험은 통과했다. 그래서 실제 경로를 부르도록 바꿨다.
  *
  * 효과 요약(마커 아님 — 평문): sandbox_escape_blocked, same_expression_same_value_across_paths.
  * 실제 마커는 그 효과를 단언하는 개별 테스트에만 둔다 — 파일 레벨에 몰아 적으면 테스트를
@@ -112,13 +117,45 @@ describe('TemplateApp 안전 평가기 경로 (computed / scripts[].if)', () => 
     return new TemplateApp(config);
   };
 
-  // computed 싱크: 이미 {{}} 가 제거된 내부 표현식을 받는다
+  // computed 싱크: {{}} 가 없는 내부 표현식을 받아 라우트 진입 계산 경로(calculateComputed)로 평가한다
   const computed = (a: TemplateApp, expr: string, ctx: Record<string, any> = {}): any =>
-    (a as any).evaluateComputedExpression(expr, ctx);
+    (a as any).calculateComputed({ value: `{{${expr}}}` }, ctx).value;
 
-  // scripts[].if 싱크: {{...}} 형태의 조건을 받아 boolean 을 돌려준다
-  const condition = (a: TemplateApp, cond: string, ctx: Record<string, any> = {}): boolean =>
-    (a as any).evaluateScriptCondition(cond, ctx);
+  let scriptSeq = 0;
+
+  /**
+   * scripts[] 조건 싱크: 조건을 단 스크립트 하나를 실제 로드 경로(loadLayoutScripts)로 보내고
+   * 로드를 시도했는지(= 조건이 참으로 평가됐는지)를 돌려준다.
+   *
+   * @param a TemplateApp
+   * @param cond 조건 (`if` 문자열, 또는 `{ conditions }`)
+   * @param ctx 조건 평가 컨텍스트
+   * @returns 스크립트를 head 에 붙였으면 true
+   */
+  const condition = async (
+    a: TemplateApp,
+    cond: string | { conditions: unknown },
+    ctx: Record<string, any> = {},
+  ): Promise<boolean> => {
+    scriptSeq += 1;
+    const script = typeof cond === 'string'
+      ? { id: `cond-${scriptSeq}`, src: `/cond-${scriptSeq}.js`, if: cond }
+      : { id: `cond-${scriptSeq}`, src: `/cond-${scriptSeq}.js`, conditions: cond.conditions };
+    const appended: Node[] = [];
+    const spy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+      if (node.tagName === 'SCRIPT') {
+        appended.push(node);
+        queueMicrotask(() => node.onload?.(new Event('load')));
+      }
+      return node;
+    }) as typeof document.head.appendChild);
+    try {
+      await (a as any).loadLayoutScripts([script], ctx);
+    } finally {
+      spy.mockRestore();
+    }
+    return appended.length > 0;
+  };
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="app"></div>';
@@ -134,7 +171,8 @@ describe('TemplateApp 안전 평가기 경로 (computed / scripts[].if)', () => 
       configurable: true,
     });
     (AuthManager as any).instance = undefined;
-    (window as any).G7Core = { devTools: { trackAuthEvent: vi.fn() } };
+    // 실제 경로가 evaluateExpression 을 거치므로 devTools 스텁에 isEnabled 가 있어야 한다(실제 인터페이스와 같게)
+    (window as any).G7Core = { devTools: { trackAuthEvent: vi.fn(), isEnabled: () => false } };
     vi.clearAllMocks();
     app = build();
   });
@@ -174,23 +212,29 @@ describe('TemplateApp 안전 평가기 경로 (computed / scripts[].if)', () => 
   });
 
   describe('scripts[].if 정상 평가', () => {
-    /** @effects same_expression_same_value_across_paths */
-    it('{{...}} 조건을 boolean 으로 평가한다', () => {
-      expect(condition(app, '{{_global.on}}', { _global: { on: true } })).toBe(true);
-      expect(condition(app, '{{_global.on}}', { _global: { on: false } })).toBe(false);
-      expect(condition(app, "{{status === 'active'}}", { status: 'active' })).toBe(true);
+    /** @effects same_expression_same_value_across_paths, conditional_layout_script_loads_only_when_true */
+    it('{{...}} 조건이 참일 때만 스크립트를 로드한다', async () => {
+      expect(await condition(app, '{{_global.on}}', { _global: { on: true } })).toBe(true);
+      expect(await condition(app, '{{_global.on}}', { _global: { on: false } })).toBe(false);
+      expect(await condition(app, "{{status === 'active'}}", { status: 'active' })).toBe(true);
+    });
+
+    /** @effects same_expression_same_value_across_paths, conditional_layout_script_loads_only_when_true */
+    it('conditions 조건이 참일 때만 스크립트를 로드한다', async () => {
+      expect(await condition(app, { conditions: '{{_global.on}}' }, { _global: { on: true } })).toBe(true);
+      expect(await condition(app, { conditions: '{{_global.on}}' }, { _global: { on: false } })).toBe(false);
     });
   });
 
   describe('scripts[].if 보안 회귀 — 샌드박스 탈출 차단', () => {
     /** @effects sandbox_escape_blocked */
-    it("''.constructor.constructor 조건은 false 로 막힌다", () => {
-      expect(condition(app, "{{''.constructor.constructor('return true')()}}")).toBe(false);
+    it("''.constructor.constructor 조건은 거짓으로 막혀 로드하지 않는다", async () => {
+      expect(await condition(app, "{{''.constructor.constructor('return true')()}}")).toBe(false);
     });
 
     /** @effects sandbox_escape_blocked */
-    it('전역 Function 참조 조건은 false 로 막힌다', () => {
-      expect(condition(app, "{{Function('return true')()}}")).toBe(false);
+    it('전역 Function 참조 조건은 거짓으로 막혀 로드하지 않는다', async () => {
+      expect(await condition(app, "{{Function('return true')()}}")).toBe(false);
     });
   });
 });

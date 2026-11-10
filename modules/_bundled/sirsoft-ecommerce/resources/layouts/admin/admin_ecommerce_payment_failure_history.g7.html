@@ -23,7 +23,7 @@
         <div>
           <div class="ecommerce-flex-center ecommerce:gap-3 ecommerce:mb-1">
             <icon name="credit-card" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
-            <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.payment_failure_history.title</h1>
+            <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.payment_failure_history.title</h1>
           </div>
           <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.payment_failure_history.description</p>
         </div>
@@ -32,8 +32,10 @@
         </button>
       </div>
       <div data-ref="filter_card" class="ecommerce-admin-card ecommerce:mb-6 ecommerce-filter-grid">
-        <div data-ref="search_row" class="ecommerce-search-bar ecommerce:mb-4">
-          <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="ecommerce:h-9 ecommerce:md:shrink-0" value="{{_local.searchField}}">
+        <div data-ref="search_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-3 ecommerce:flex-wrap ecommerce:items-center ecommerce:mb-4"/>
+          <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="ecommerce:h-9" value="{{_local.searchField}}">
+            <responsive on="768-" class="ecommerce:h-9 ecommerce:shrink-0"/>
             <options>
               <option value="order_number">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.order_number</option>
               <option value="member_name">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.member_name</option>
@@ -47,13 +49,15 @@
               <set-state target="_local" searchField="{{$event.target.value}}"/>
             </on>
           </select>
-          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.search.placeholder" class="ecommerce-search-bar-input" value="{{_local.searchKeyword}}">
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.search.placeholder" class="ecommerce:w-full ecommerce:h-9 ecommerce:bg-gray-100 ecommerce:text-gray-900 ecommerce:px-3 ecommerce:rounded-lg ecommerce:text-sm ecommerce:placeholder:text-gray-600 ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-100 ecommerce:dark:placeholder:text-gray-300" value="{{_local.searchKeyword}}">
+            <responsive on="768-" class="ecommerce:w-full ecommerce:h-9 ecommerce:bg-gray-100 ecommerce:text-gray-900 ecommerce:px-3 ecommerce:rounded-lg ecommerce:text-sm ecommerce:placeholder:text-gray-600 ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-100 ecommerce:dark:placeholder:text-gray-300 ecommerce:flex-1 ecommerce:min-w-64"/>
             <on type="change">
               <!-- 입력을 마칠 때 담는다 -->
               <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
             </on>
           </input>
-          <button data-ref="reset_button" type="button" class="ecommerce-search-bar-reset">
+          <button data-ref="reset_button" type="button" class="ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:rounded-lg ecommerce:transition-colors ecommerce:duration-200 ecommerce:cursor-pointer ecommerce:bg-transparent ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600 ecommerce:dark:hover:bg-gray-700 ecommerce:w-full ecommerce:shrink-0">
+            <responsive on="768-" class="ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:rounded-lg ecommerce:transition-colors ecommerce:duration-200 ecommerce:cursor-pointer ecommerce:bg-transparent ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600 ecommerce:dark:hover:bg-gray-700 ecommerce:w-auto ecommerce:shrink-0"/>
             <on type="click">
               <!-- 검색 초기화 — 아래 결제수단·기기·기간 필터까지 함께 되돌린다 -->
               <set-state target="_local" paymentMethodFilter="" deviceFilter="" startDate="" endDate="" searchField="order_number" searchKeyword=""/>
@@ -62,8 +66,11 @@
             <span>$t:sirsoft-ecommerce.admin.payment_failure_history.search.reset</span>
           </button>
         </div>
-        <div data-ref="payment_method_filter_row" class="ecommerce-filter-row">
-          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.payment_method</span>
+        <div data-ref="payment_method_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+          <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+            <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.payment_failure_history.filter.payment_method</span>
           <div class="ecommerce-filter-buttons">
             <button type="button" class="{{_local.paymentMethodFilter === '' ? 'ecommerce-btn-badge ecommerce:cursor-pointer ecommerce:bg-gray-200 ecommerce:text-gray-700 ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.paymentMethodFilter === ''}}">
               <on type="click">
@@ -115,8 +122,11 @@
             </button>
           </div>
         </div>
-        <div data-ref="device_filter_row" class="ecommerce-filter-row">
-          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.device</span>
+        <div data-ref="device_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+          <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+            <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.payment_failure_history.filter.device</span>
           <div class="ecommerce-filter-buttons">
             <!-- 기기를 가리지 않고 모두 -->
             <button type="button" class="{{_local.deviceFilter === '' ? 'ecommerce-btn-badge ecommerce-btn-badge-blue ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-blue-400 ecommerce:dark:ring-blue-500' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.deviceFilter === ''}}">
@@ -141,22 +151,28 @@
             </button>
           </div>
         </div>
-        <div data-ref="date_filter_row" class="ecommerce-filter-row">
-          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date</span>
-          <div class="ecommerce:md:flex-row ecommerce:md:items-center">
+        <div data-ref="date_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+          <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+          <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+            <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date</span>
+          <div>
+            <responsive on="768-" class="ecommerce:flex-row ecommerce:items-center"/>
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
-              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date')}}" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.start_date" class="ecommerce-input ecommerce:md:w-36" value="{{_local.startDate}}">
+              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date')}}" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.start_date" class="ecommerce-input" value="{{_local.startDate}}">
+                <responsive on="768-" class="ecommerce-input ecommerce:w-36"/>
                 <on type="change">
                   <!-- 실패일 기간 시작일 -->
                   <set-state target="_local" startDate="{{$event.target.value}}"/>
                 </on>
               </input>
             </div>
-            <span class="ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+            <span class="ecommerce:hidden ecommerce:text-gray-500 ecommerce:dark:text-gray-400"><responsive on="768-" class="ecommerce:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>~</span>
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
-              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date')}}" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.end_date" class="ecommerce-input ecommerce:md:w-36" value="{{_local.endDate}}">
+              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date')}}" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.end_date" class="ecommerce-input" value="{{_local.endDate}}">
+                <responsive on="768-" class="ecommerce-input ecommerce:w-36"/>
                 <on type="change">
                   <!-- 실패일 기간 종료일 -->
                   <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -213,7 +229,7 @@
                 <div class="ecommerce-flex-between ecommerce:mb-2">
                   <span class="ecommerce-text-primary ecommerce:font-semibold">₩89,000</span>
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(1)}}" aria-label="{{_local.expandedRows.includes(1) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(1)}}" aria-label="{{_local.expandedRows.includes(1) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
                   </button>
                 </div>
@@ -382,7 +398,7 @@
                     <set-state target="_local" expandedRows="{{_local.expandedRows.includes(1) ? _local.expandedRows.filter(id => id !== 1) : [..._local.expandedRows, 1]}}"/>
                   </on>
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(1)}}" aria-label="{{_local.expandedRows.includes(1) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(1)}}" aria-label="{{_local.expandedRows.includes(1) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -396,7 +412,8 @@
                         <span class="ecommerce-tone-error-soft ecommerce:font-semibold">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
                       </div>
                       <div class="ecommerce-row-stack">
-                        <div class="ecommerce-grid-2col-responsive">
+                        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+                          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
                           <div class="ecommerce:flex ecommerce:justify-between">
                             <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.transaction_number</span>
                             <span class="ecommerce-text-primary">20251027-001</span>
@@ -406,7 +423,8 @@
                             <span class="ecommerce-btn-badge ecommerce-btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
                           </div>
                         </div>
-                        <div class="ecommerce-grid-2col-responsive">
+                        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+                          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
                           <div class="ecommerce:flex ecommerce:justify-between">
                             <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.payment_amount</span>
                             <span class="ecommerce-text-primary">₩89,000</span>
@@ -416,7 +434,8 @@
                             <span class="ecommerce-text-primary">2025-10-27 14:32:15</span>
                           </div>
                         </div>
-                        <div class="ecommerce-grid-2col-responsive">
+                        <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+                          <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
                           <div class="ecommerce:flex ecommerce:justify-between">
                             <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.failure_reason</span>
                             <span class="ecommerce-tone-error-soft">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
@@ -428,7 +447,8 @@
                         </div>
                       </div>
                     </div>
-                    <div class="ecommerce-grid-2col-responsive">
+                    <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+                      <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
                       <div class="ecommerce:bg-white ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
                         <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
                           <icon name="user" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
@@ -514,7 +534,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(2)}}" aria-label="{{_local.expandedRows.includes(2) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(2)}}" aria-label="{{_local.expandedRows.includes(2) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(2) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -552,7 +572,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(3)}}" aria-label="{{_local.expandedRows.includes(3) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(3)}}" aria-label="{{_local.expandedRows.includes(3) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(3) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -590,7 +610,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(4)}}" aria-label="{{_local.expandedRows.includes(4) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(4)}}" aria-label="{{_local.expandedRows.includes(4) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(4) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -628,7 +648,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(5)}}" aria-label="{{_local.expandedRows.includes(5) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(5)}}" aria-label="{{_local.expandedRows.includes(5) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(5) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -666,7 +686,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(6)}}" aria-label="{{_local.expandedRows.includes(6) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(6)}}" aria-label="{{_local.expandedRows.includes(6) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(6) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -704,7 +724,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(7)}}" aria-label="{{_local.expandedRows.includes(7) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(7)}}" aria-label="{{_local.expandedRows.includes(7) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(7) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -742,7 +762,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(8)}}" aria-label="{{_local.expandedRows.includes(8) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(8)}}" aria-label="{{_local.expandedRows.includes(8) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(8) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -780,7 +800,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(9)}}" aria-label="{{_local.expandedRows.includes(9) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(9)}}" aria-label="{{_local.expandedRows.includes(9) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(9) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>
@@ -818,7 +838,7 @@
                 </td>
                 <td class="ecommerce-empty-state-cell">
                   <!-- 키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다 -->
-                  <button type="button" class="ecommerce:rounded" aria-expanded="{{_local.expandedRows.includes(10)}}" aria-label="{{_local.expandedRows.includes(10) ? '$t:common.collapse' : '$t:common.expand'}}">
+                  <button type="button" class="ecommerce:rounded ecommerce:focus-visible:outline-none ecommerce:focus-visible:ring-2 ecommerce:focus-visible:ring-blue-500" aria-expanded="{{_local.expandedRows.includes(10)}}" aria-label="{{_local.expandedRows.includes(10) ? '$t:common.collapse' : '$t:common.expand'}}">
                     <icon name="{{_local.expandedRows.includes(10) ? 'chevron-up' : 'chevron-down'}}" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </button>
                 </td>

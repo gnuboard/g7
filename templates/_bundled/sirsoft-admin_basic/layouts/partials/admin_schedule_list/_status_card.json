@@ -139,7 +139,7 @@
                 }
             },
             "props": {
-                "className": "grid-2col md:grid-cols-4 mb-6"
+                "className": "grid-2col grid-cols-4 mb-6"
             },
             "children": [
                 {

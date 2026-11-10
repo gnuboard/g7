@@ -164,8 +164,20 @@
         {
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "640-1023": {
+                    "props": {
+                        "className": "grid grid-flow-col auto-cols-[calc(33.333%_-_11px)] gap-4 overflow-x-hidden"
+                    }
+                },
+                "desktop": {
+                    "props": {
+                        "className": "grid grid-flow-col auto-cols-[calc(25%_-_12px)] gap-4 overflow-x-hidden"
+                    }
+                }
+            },
             "props": {
-                "className": "grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-x-hidden"
+                "className": "grid grid-flow-col auto-cols-[calc(50%_-_8px)] gap-4 overflow-x-hidden"
             },
             "children": [
                 {

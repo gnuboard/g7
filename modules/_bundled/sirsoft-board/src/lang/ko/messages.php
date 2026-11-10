@@ -210,6 +210,8 @@ return [
         'preview_failed' => '이미지 미리보기에 실패했습니다.',
         'reorder_success' => '첨부파일 순서가 변경되었습니다.',
         'reorder_failed' => '첨부파일 순서 변경에 실패했습니다.',
+        // 환경설정 > 업로드 「기존 이미지 썸네일 만들기」의 원본 종류 이름
+        'thumbnail_source' => '게시판 첨부 이미지',
     ],
 
     // 권한 메시지 (Role-Permission 시스템)
@@ -656,6 +658,44 @@ return [
             'scenario_created' => '시나리오 :key [:slug] :type #:id: :label',
             'scenario_e' => '시나리오 E: 게시판 삭제 후 남은 신고 케이스 생성',
             'resubmit_done' => '재접수/특수 케이스 생성 완료: :count건',
+        ],
+        // 이미지 썸네일 실측 시더 (Sample\ThumbnailMeasureSeeder·ThumbnailMeasureCleanupSeeder)
+        'thumbnail_measure' => [
+            'start' => '게시판 썸네일 실측 데이터 생성을 시작합니다.',
+            'done' => '게시판 썸네일 실측 데이터 생성을 마쳤습니다.',
+            'cleanup_start' => '게시판 썸네일 실측 데이터 정리를 시작합니다.',
+            'cleanup_done' => '게시판 썸네일 실측 데이터 정리를 마쳤습니다.',
+            'previous_removed' => '이전 실행의 게시판 실측 데이터를 지웠습니다: :counts',
+            'data_title' => '게시판 실측 데이터',
+            'data_headers' => [
+                'board' => '게시판',
+                'kind' => '구분',
+                'post_id' => '글 ID',
+                'attachment_id' => '첨부 ID',
+                'hash' => '해시',
+                'mime' => 'MIME',
+                'size' => '크기',
+                'preview_url' => '미리보기 주소',
+            ],
+            'kinds' => [
+                'general' => '일반글',
+                'secret' => '비밀글',
+                'blinded' => '블라인드 글',
+                'variants' => '변종 이미지 글',
+                'reply_parent' => '답글 달린 원글',
+                'reply' => '답글',
+                'gallery' => '갤러리 글',
+            ],
+            'boards' => '게시판: :card (ID :card_id), :gallery (ID :gallery_id)',
+            'cleanup_title' => '게시판 실측 데이터 정리',
+            'cleanup_headers' => [
+                'boards' => '게시판',
+                'posts' => '글',
+                'attachments' => '첨부',
+                'attachment_files_failed' => '첨부 파일 삭제 실패',
+                'temp_attachments' => '임시 첨부',
+                'activity_logs' => '활동 로그',
+            ],
         ],
     ],
 ];

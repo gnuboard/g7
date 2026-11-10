@@ -128,7 +128,8 @@
         <div data-if="{{post?.data?.board?.use_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0}}" class="board-flex-center board:gap-2">
           <div data-each="adminReactionType, adminReactionIdx in {{post?.data?.board?.reaction_type_options ?? []}}">
             <span class="board-flex-center board:gap-1" title="{{adminReactionType.name ?? ''}}">
-              <img data-if="{{adminReactionType.icon_url}}" src="{{adminReactionType.icon_url}}" alt="{{adminReactionType.name ?? ''}}" class="board:w-4 board:h-4 board:object-contain"/>
+              <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+              <img data-if="{{adminReactionType.icon_url}}" src="{{adminReactionType.icon_url}}" loading="lazy" decoding="async" alt="{{adminReactionType.name ?? ''}}" class="board:w-4 board:h-4 board:object-contain"/>
               <icon data-if="{{!adminReactionType.icon_url}}" name="{{adminReactionType.icon_name ?? 'fa-thumbs-up'}}" class="board:text-base"/>
               <span>{{post?.data?.reaction_counts?.[adminReactionType.id] ?? 0}}</span>
             </span>
@@ -164,7 +165,7 @@
             </on>
             <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용. 단추 안이라 블록 요소 대신 span 이다 -->
             <span data-if="{{attachment?.is_image}}" class="board:flex-shrink-0 board:w-8 board:h-8 board:rounded board:overflow-hidden board:bg-white board:dark:bg-gray-700">
-              <img src="{{attachment?.preview_url}}" alt="{{attachment?.original_filename}}" class="board:w-full board:h-full board:object-cover"/>
+              <img src="{{attachment?.preview_url}}" thumbPreset="xs" loading="lazy" decoding="async" alt="{{attachment?.original_filename}}" class="board:w-full board:h-full board:object-cover"/>
             </span>
             <!-- 파일 아이콘 (일반 파일인 경우) -->
             <span data-if="{{!attachment?.is_image}}" class="board-flex-center board:flex-shrink-0 board:w-8 board:h-8 board:rounded board:bg-white board:dark:bg-gray-700 board:justify-center">

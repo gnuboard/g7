@@ -210,8 +210,15 @@
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "641-": {
+                                "props": {
+                                    "className": "gpp:flex gpp:items-center gpp:justify-between gpp:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "g7pp-page-header"
+                            "className": "gpp:flex gpp:justify-between gpp:mb-6 gpp:flex-col gpp:items-start gpp:gap-4"
                         },
                         "children": [
                             {
@@ -229,8 +236,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "gpp:text-2xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "g7pp-page-title"
+                                            "className": "gpp:text-xl gpp:font-semibold gpp:text-gray-900 gpp:dark:text-white"
                                         },
                                         "text": "{{_local.form?.id ? '$t:sirsoft-popup.admin.form.edit_title' : '$t:sirsoft-popup.admin.form.create_title'}}"
                                     }
@@ -300,8 +314,15 @@
                         "id": "popup_form_columns",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "gpp:grid gpp:grid-cols-3 gpp:gap-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "gpp:grid gpp:grid-cols-1 gpp:lg:grid-cols-3 gpp:gap-6"
+                            "className": "gpp:grid gpp:grid-cols-1 gpp:gap-6"
                         },
                         "children": [
                             {
@@ -309,10 +330,17 @@
                                 "id": "preview_card",
                                 "type": "basic",
                                 "name": "Section",
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "g7pp-admin-card gpp:self-start gpp:order-last gpp:sticky gpp:top-4"
+                                        }
+                                    }
+                                },
                                 "props": {
                                     "id": "popup_form_preview",
                                     "aria-labelledby": "popup_form_preview_heading",
-                                    "className": "g7pp-admin-card gpp:self-start gpp:order-first gpp:lg:order-last gpp:lg:sticky gpp:top-4"
+                                    "className": "g7pp-admin-card gpp:self-start gpp:order-first gpp:top-4"
                                 },
                                 "children": [
                                     {
@@ -508,8 +536,15 @@
                                 "dataKey": "form",
                                 "trackChanges": true,
                                 "debounce": 0,
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "gpp:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "gpp:lg:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"
+                                    "className": "gpp:flex gpp:flex-col gpp:gap-6"
                                 },
                                 "children": [
                                     {
@@ -1486,8 +1521,15 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "gpp:grid gpp:grid-cols-2 gpp:gap-4"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "gpp:grid gpp:grid-cols-1 gpp:md:grid-cols-2 gpp:gap-4"
+                                                            "className": "gpp:grid gpp:grid-cols-1 gpp:gap-4"
                                                         },
                                                         "children": [
                                                             {

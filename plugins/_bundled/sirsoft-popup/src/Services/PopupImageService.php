@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -329,22 +330,72 @@ class PopupImageService
     }
 
     /**
-     * 이미지의 공개 서빙 정보를 반환합니다 — 저장 전 미리보기를 위해 임시 업로드도 해시로 내보낸다(해시 64자는 추측할 수 없다).
+     * 공개 해시로 이미지를 찾습니다 — 공개 서빙의 게이트다(해시 64자는 추측할 수 없다).
+     *
+     * 저장 전 미리보기를 위해 임시 업로드도 찾는다(등록·수정 화면 업로더 칸과 미리보기가 저장 전에 그린다).
+     *
+     * @param  string  $hash  공개 해시
+     * @return PopupImage|null 이미지 행 (없으면 null)
+     */
+    public function findPublic(string $hash): ?PopupImage
+    {
+        return $this->images->findByHash($hash);
+    }
+
+    /**
+     * 행의 원본 파일이 저장소에 있는지 (원본 응답과 같은 스토리지로 확인한다).
+     *
+     * 썸네일 판정 앞에서 부른다 — 원격 저장소에서 원본만 지워져 파생본이 남은 경우, 확인 없이 썸네일로 가면
+     * 무파라미터 요청은 404 인데 `?size=` 요청은 남은 파생본으로 200 이 된다.
+     *
+     * @param  PopupImage  $image  이미지 행
+     * @return bool 있으면 true (저장소를 읽지 못해도 false)
+     */
+    public function originalExists(PopupImage $image): bool
+    {
+        try {
+            return $this->storage->exists(self::CATEGORY, (string) $image->path);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 썸네일 원본 정보를 행에서 만듭니다 — 팝업 이미지는 해시만 알면 받는 공개 원본이다(`gated=false`).
+     *
+     * PC·모바일 이미지는 기기별로 따로 올린 각자의 원본이라 행마다 따로 만든다(파생본 키도 행 경로로 갈린다). 원본 응답과
+     * **같은 스토리지**로 만들어야 파생본 키(`thumbnails/{disk}/{전체 경로}/…`)가 저장소 계층의 덮어쓰기·삭제 무효화와 같은
+     * 경로를 가리킨다. 움직이는 GIF·WebP·APNG 는 코어가 판정해 원본을 낸다(`bypass:animated`, 코어 설정으로 첫 프레임 썸네일로 바꿀 수 있다).
+     *
+     * @param  PopupImage  $image  이미지 행
+     * @return ThumbnailSource|null 원본 (드라이버가 원본 정보를 못 주면 null)
+     */
+    public function thumbnailSource(PopupImage $image): ?ThumbnailSource
+    {
+        return ThumbnailSource::fromStorage(
+            $this->storage,
+            self::CATEGORY,
+            (string) $image->path,
+            (string) $image->mime,
+            gated: false,
+            width: $image->width,
+            height: $image->height,
+        );
+    }
+
+    /**
+     * 이미지의 공개 서빙 정보를 반환합니다 — 게이트(`findPublic()`)를 지난 행만 받는다.
      *
      * 응답 계약(ETag·304 재검증·`Cache-Control`·`nosniff`)은 컨트롤러가 코어 파일 서빙 헬퍼로 입힌다. 여기서는 스토리지
      * 스트림과 그 메타(`response`·`etag_source`·`mime_type`·`last_modified`)만 만든다. 인라인은 래스터 이미지만이고 그 밖은
-     * 내려받기다(`InlineMediaPolicy`).
+     * 내려받기다(`InlineMediaPolicy`). `?size=`·`?w=` 썸네일은 컨트롤러가 이 메서드보다 먼저 `ThumbnailResponder` 로 판정한다 —
+     * 원본 응답의 304 판정을 컨트롤러가 하므로, 썸네일이 원본 검증자로 다시 싸이지 않게 갈라 둔다.
      *
-     * @param  string  $hash  공개 해시
-     * @return array<string, mixed>|null 스트림 메타 (없으면 null)
+     * @param  PopupImage  $image  이미지 행 (`findPublic()` 결과)
+     * @return array<string, mixed>|null 스트림 메타 (파일이 없으면 null)
      */
-    public function publicServing(string $hash): ?array
+    public function publicServing(PopupImage $image): ?array
     {
-        $image = $this->images->findByHash($hash);
-        if ($image === null) {
-            return null;
-        }
-
         $response = $this->storage->response(self::CATEGORY, $image->path, $image->original_name, [
             'Content-Type' => $image->mime,
         ]);

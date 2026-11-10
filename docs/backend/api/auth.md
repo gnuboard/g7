@@ -225,6 +225,7 @@ _단건 응답: `data` 객체의 필드._
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_create":true,"can_update":true,"can…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 | is_super | boolean | `true` | 본인의 최고관리자 여부 (User::isSuperAdmin() — 로그인 사용자 본인 응답에만 싣고 회원 목록 응답에는 없음) |
+| can_edit_layouts | boolean | `true` | 본인이 레이아웃 편집기에 들어갈 수 있는지 (`User::hasPermission('core.templates.layouts.edit', admin)` — 편집기 API 가드와 같은 판정, 사용 중지한 역할의 권한은 제외. 로그인 사용자 본인 응답에만 싣는다) |
 
 **응답 예시**
 
@@ -262,6 +263,8 @@ HTTP/1.1 200
 관리자 레이아웃 전역 부트스트랩 엔드포인트. `_admin_base.g7.html` 의 `data_source`(`current_user`)가 모든 관리자 페이지 진입 시 자동 호출해, 헤더/권한 게이트/is_admin 분기의 기준 사용자 정보를 채운다. 응답에는 `roles.permissions` 가 eager load 되어 `permissions` 배열이 함께 내려온다.
 
 **본인 최고관리자 여부**: 회원 목록 등 다른 `UserResource` 응답과 달리 이 응답만 `is_super` 를 싣는다(`UserResource::toAdminAuthArray`). 관리자 목록 화면의 최고관리자 전용 제어(모듈·플러그인·템플릿 「숨김 항목 포함」)가 `current_user.data.is_super` 로 읽는다 — 이 값이 없으면 제어가 누구에게도 나타나지 않는다(#703).
+
+**레이아웃 편집 권한(`can_edit_layouts`)**: 운영 화면의 편집 진입 단추가 이 값이 참인 사람에게만 보인다(#869). 같은 판정을 `GET /api/auth/user` 도 싣는다. `permissions` 목록은 사용 중지한 역할의 권한까지 담으므로 편집기 진입 판정에 쓰지 않는다.
 
 **인증 계약**: `auth:sanctum` 필요 — Bearer 토큰이 없거나 만료되면 `401` 을 반환한다(프론트 `data_source` 의 `auth_required: true` 에 대응). 이 계약이 프론트 소비의 SSoT 이므로 미들웨어 체인 변경 시 반드시 프론트 `auth_required`/`auth_mode` 와 함께 검토한다(이슈 #64).
 
@@ -1735,6 +1738,7 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-08-04 19:00:10` | 최종 수정 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_create":true,"can_update":true,"can…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+| can_edit_layouts | boolean | `false` | 본인이 레이아웃 편집기에 들어갈 수 있는지 (`User::hasPermission('core.templates.layouts.edit', admin)` — 편집기 API 가드와 같은 판정. 사용자 사이트의 편집 진입 단추가 읽는다, #869) |
 | notify_post_complete | boolean | `false` | 게시판 새 글 작성 완료 알림 수신 설정 (marketing 플러그인 주입) |
 | notify_post_reply | boolean | `false` | 내 게시글에 답글 달림 알림 수신 설정 (marketing 플러그인 주입) |
 | notify_comment | boolean | `false` | 내 게시글에 댓글 달림 알림 수신 설정 (marketing 플러그인 주입) |

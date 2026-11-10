@@ -13,15 +13,17 @@
 <partial description="Coupon List - Filter Section with Slot System">
   <div data-ref="filter_card" data-key="filter" class="ecommerce-admin-card">
     <div data-ref="slot_registration_area" class="ecommerce:hidden ecommerce-hidden ecommerce-filter-grid" aria-hidden="true">
-      <div data-ref="target_type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('targetType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="target_type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('targetType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('targetType')}}">
           <on type="change">
             <!-- 혜택 대상 필터 노출 스위치. 어떤 필터를 기본에 둘지는 운영자 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
             <input type="radio" :autoBinding="false" name="targetType" value="all" checked="{{(_local.filter.targetType || 'all') === 'all'}}" class="ecommerce-radio">
@@ -61,14 +63,17 @@
           </label>
         </div>
       </div>
-      <div data-ref="issue_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="ecommerce-filter-row">
+      <div data-ref="issue_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueStatus')}}">
           <on type="change">
             <!-- 발급상태 필터 노출 스위치. 발급중/중지만 가르는 짧은 행이라 기본에 두는 일이 많다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
             <input type="radio" :autoBinding="false" name="issueStatus" value="all" checked="{{(_local.filter.issueStatus || 'all') === 'all'}}" class="ecommerce-radio">
@@ -99,14 +104,17 @@
           </label>
         </div>
       </div>
-      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="ecommerce-filter-row">
+      <div data-ref="created_date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('createdAt')}}">
           <on type="change">
             <!-- 만든 날 필터 노출 스위치. 세 날짜 축 중 유일하게 빠른 기간 버튼이 붙어 있어 자리를 많이 먹는다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <div class="ecommerce-flex-center ecommerce:gap-2">
             <icon name="calendar" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
@@ -178,14 +186,17 @@
           </div>
         </div>
       </div>
-      <div data-ref="benefit_amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('benefitAmount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="ecommerce-filter-row">
+      <div data-ref="benefit_amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('benefitAmount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('benefitAmount')}}">
           <on type="change">
             <!-- 혜택금액 필터 노출 스위치. 정액/정률 선택이 함께 있어 범위만 보는 것보다 폭이 넓다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <select name="discountType" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.discount_unit" class="ecommerce:w-24" value="{{_local.filter.discountType || 'all'}}">
             <options>
@@ -214,14 +225,17 @@
           <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{(_local.filter.discountType || 'all') === 'rate' ? '%' : '$t:sirsoft-ecommerce.common.currency.won'}}</span>
         </div>
       </div>
-      <div data-ref="issue_method_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="ecommerce-filter-row">
+      <div data-ref="issue_method_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueMethod')}}">
           <on type="change">
             <!-- 발급방법 필터 노출 스위치. 아래 발급조건과 짝으로 보는 일이 많아 둘을 같은 쪽에 두는 편이 낫다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
             <input type="radio" :autoBinding="false" name="issueMethod" value="all" checked="{{(_local.filter.issueMethod || 'all') === 'all'}}" class="ecommerce-radio">
@@ -261,14 +275,17 @@
           </label>
         </div>
       </div>
-      <div data-ref="issue_condition_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueCondition') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="ecommerce-filter-row">
+      <div data-ref="issue_condition_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issueCondition') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('issueCondition')}}">
           <on type="change">
             <!-- 발급조건 필터 노출 스위치. 자동발급을 쓰지 않는 몰에서는 늘 "전체" 로 남는 행이다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
             <input type="radio" :autoBinding="false" name="issueCondition" value="all" checked="{{(_local.filter.issueCondition || 'all') === 'all'}}" class="ecommerce-radio">
@@ -317,14 +334,17 @@
           </label>
         </div>
       </div>
-      <div data-ref="min_order_amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('minOrderAmount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="ecommerce-filter-row">
+      <div data-ref="min_order_amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('minOrderAmount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('minOrderAmount')}}">
           <on type="change">
             <!-- 최소 주문금액 필터 노출 스위치. 값 하나짜리 행이다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <input type="number" name="minOrderAmount" class="ecommerce-input ecommerce:w-36" placeholder="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_placeholder" value="{{_local.filter.minOrderAmount || ''}}">
             <on type="change">
@@ -335,14 +355,17 @@
           <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_suffix</span>
         </div>
       </div>
-      <div data-ref="valid_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('validPeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce-filter-row">
+      <div data-ref="valid_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('validPeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('validPeriod')}}">
           <on type="change">
             <!-- 사용 가능 기간 필터 노출 스위치. 만든 날·발급 기간과 헷갈리기 쉬운 축이다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <icon name="calendar" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
           <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period')}}" type="date" name="validStartDate" value="{{_local.filter.validStartDate || ''}}" class="ecommerce-input ecommerce:w-36">
@@ -360,14 +383,17 @@
           </input>
         </div>
       </div>
-      <div data-ref="issue_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issuePeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="ecommerce-filter-row">
+      <div data-ref="issue_period_filter_row" data-slot="{{(_local.visibleFilters || []).includes('issuePeriod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('issuePeriod')}}">
           <on type="change">
             <!-- 발급 기간 필터 노출 스위치. 사용 기간과 별개 축이라 둘을 함께 켜 두면 비교가 쉽다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <icon name="calendar" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
           <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period')}}" type="date" name="issueStartDate" value="{{_local.filter.issueStartDate || ''}}" class="ecommerce-input ecommerce:w-36">
@@ -385,15 +411,17 @@
           </input>
         </div>
       </div>
-      <div data-ref="creator_filter_row" data-slot="{{(_local.visibleFilters || []).includes('creator') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="creator_filter_row" data-slot="{{(_local.visibleFilters || []).includes('creator') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('creator')}}">
           <on type="change">
             <!-- 만든 사람 필터 노출 스위치. 관리자가 여럿인 몰에서만 의미가 있다. -->
               <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"/>
           </on>
         </input>
-        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator</span>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"/>
+$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator</span>
         <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-1">
           <searchable-dropdown data-type="composite" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator" options="{{_local.creatorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_initial" class="ecommerce:w-64">
             <on event="onSearch">

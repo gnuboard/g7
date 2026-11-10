@@ -227,8 +227,15 @@
                             "id": "row_company_business_number",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -288,19 +295,33 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "641-": {
+                                                    "props": {
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "ecommerce-input-split"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.business_number_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.business_number_1",
                                                         "placeholder": "123",
                                                         "maxLength": 3,
-                                                        "className": "{{_local.errors?.['basic_info.business_number_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.business_number_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -308,19 +329,26 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator"
+                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "-"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.business_number_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-12 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-12 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.business_number_2",
                                                         "placeholder": "45",
                                                         "maxLength": 2,
-                                                        "className": "{{_local.errors?.['basic_info.business_number_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-12 ecommerce:text-center' : 'ecommerce-input ecommerce:w-12 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.business_number_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-12 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-12 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -328,19 +356,26 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator"
+                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "-"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.business_number_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-20 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-20 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.business_number_3",
                                                         "placeholder": "67890",
                                                         "maxLength": 5,
-                                                        "className": "{{_local.errors?.['basic_info.business_number_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-20 ecommerce:text-center' : 'ecommerce-input ecommerce:w-20 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.business_number_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-20 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-20 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }
@@ -363,8 +398,15 @@
                             "id": "row_ceo_business_type",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -574,11 +616,18 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.detail_address'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-96' : 'ecommerce-input ecommerce:w-96'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.detail_address",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.detail_address",
-                                                        "className": "{{_local.errors?.['basic_info.detail_address'] ? 'ecommerce-input ecommerce-input-error ecommerce:md:w-96' : 'ecommerce-input ecommerce:md:w-96'}}",
+                                                        "className": "{{_local.errors?.['basic_info.detail_address'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -601,8 +650,15 @@
                             "id": "row_phone_fax",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -624,19 +680,33 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "641-": {
+                                                    "props": {
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "ecommerce-input-split"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.phone_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-14 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-14 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.phone_1",
                                                         "placeholder": "02",
                                                         "maxLength": 4,
-                                                        "className": "{{_local.errors?.['basic_info.phone_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-14 ecommerce:text-center' : 'ecommerce-input ecommerce:w-14 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.phone_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-14 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-14 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -644,19 +714,26 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator"
+                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "-"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.phone_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.phone_2",
                                                         "placeholder": "1234",
                                                         "maxLength": 4,
-                                                        "className": "{{_local.errors?.['basic_info.phone_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.phone_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -664,19 +741,26 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator"
+                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "-"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.phone_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.phone_3",
                                                         "placeholder": "5678",
                                                         "maxLength": 4,
-                                                        "className": "{{_local.errors?.['basic_info.phone_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.phone_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }
@@ -712,19 +796,33 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "641-": {
+                                                    "props": {
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "ecommerce-input-split"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.fax_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-14 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-14 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.fax_1",
                                                         "placeholder": "02",
                                                         "maxLength": 4,
-                                                        "className": "{{_local.errors?.['basic_info.fax_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-14 ecommerce:text-center' : 'ecommerce-input ecommerce:w-14 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.fax_1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-14 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-14 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -732,19 +830,26 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator"
+                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "-"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.fax_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.fax_2",
                                                         "placeholder": "1234",
                                                         "maxLength": 4,
-                                                        "className": "{{_local.errors?.['basic_info.fax_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.fax_2'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -752,19 +857,26 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-input-split-separator"
+                                                        "className": "ecommerce-input-split-separator ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "-"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
+                                                    "responsive": {
+                                                        "641-": {
+                                                            "props": {
+                                                                "className": "{{_local.errors?.['basic_info.fax_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2'}}"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
                                                         "type": "text",
                                                         "name": "basic_info.fax_3",
                                                         "placeholder": "5678",
                                                         "maxLength": 4,
-                                                        "className": "{{_local.errors?.['basic_info.fax_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center'}}",
+                                                        "className": "{{_local.errors?.['basic_info.fax_3'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0' : 'ecommerce-input ecommerce:w-16 ecommerce:text-center ecommerce:py-2 ecommerce:flex-1 ecommerce:min-w-0'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }
@@ -890,8 +1002,15 @@
                             "id": "row_privacy_officer",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -976,8 +1095,15 @@
                             "id": "row_order_numbers",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -1162,8 +1288,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:w-64"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:w-full ecommerce:md:w-64"
+                                "className": "ecommerce:w-full"
                             },
                             "children": [
                                 {

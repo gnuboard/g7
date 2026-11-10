@@ -5,7 +5,7 @@
 <partial description="Product Index - Preset Delete Confirm Modal">
   <modal data-type="composite" data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.preset_delete.title" size="sm">
     <p data-ref="preset_delete_message" class="ecommerce-text-body">$t:sirsoft-ecommerce.admin.product.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
-    <div data-ref="preset_delete_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-4">
+    <footer>
       <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal/>
@@ -28,6 +28,6 @@
         </on>
         $t:common.delete
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

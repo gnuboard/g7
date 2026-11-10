@@ -1,4 +1,6 @@
 {
+  "zoom_image": "이미지 크게 보기",
+  "zoom_image_named": "{{name}} 크게 보기",
   "loading": "로딩 중...",
   "error": "오류가 발생했습니다",
   "error_occurred": "오류가 발생했습니다",

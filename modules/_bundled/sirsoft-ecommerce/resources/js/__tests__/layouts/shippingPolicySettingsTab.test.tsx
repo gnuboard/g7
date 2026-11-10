@@ -63,6 +63,7 @@ function flattenAll(node: any): any[] {
     }
     result.push(node);
     if (node.children) result.push(...flattenAll(node.children));
+    if (node.props?.footer) result.push(...flattenAll(node.props.footer)); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     if (node.slots) {
         Object.values(node.slots).forEach((s: any) => result.push(...flattenAll(s)));
     }

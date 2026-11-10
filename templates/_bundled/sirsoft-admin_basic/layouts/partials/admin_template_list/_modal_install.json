@@ -21,7 +21,202 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.templates.modals.install_title",
-        "size": "medium"
+        "size": "medium",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isTemplateInstalling}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "설치 실행. 두 목록은 화면 체크 상태가 아니라 **같은 규칙으로 다시 계산**한 결과를 보낸다\n               (언어팩은 딸린 확장이 빠졌으면 여기서도 빠진다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isTemplateInstalling": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/templates/install",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "template_name": "{{_global.selectedTemplate.identifier}}",
+                                        "dependencies": "{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}",
+                                        "language_packs": "{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}",
+                                        "integrations": "{{ (_global.installPreview?.integrations ?? []).filter(i => i.can_select === true && i.status !== 'active' && (_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier)).includes(i.type + ':' + i.identifier)).map(i => ({ type: i.type, identifier: i.identifier })) }}",
+                                        "layout_source": "{{_global.templateLayoutSource ?? 'auto'}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isTemplateInstalling": false,
+                                            "installSelectedDeps": null,
+                                            "installSelectedLPs": null,
+                                            "installSelectedIntegrations": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.templates.install_success"
+                                        }
+                                    },
+                                    {
+                                        "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다.",
+                                        "handler": "toast",
+                                        "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
+                                        "params": {
+                                            "type": "info",
+                                            "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + (n.failure_reason ? ': ' + n.failure_reason : '') + ')').join(', ')}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "함께 고른 언어팩 중 설치하지 못한 것이 있으면 식별자와 첫 사유를 알린다(응답 language_pack_failures).",
+                                        "handler": "toast",
+                                        "if": "{{(response.data?.language_pack_failures ?? []).length !== 0}}",
+                                        "params": {
+                                            "type": "warning",
+                                            "message": "$t:extensions.alerts.language_pack_install_failed|names={{(response.data?.language_pack_failures ?? []).map(f => f.identifier).join(', ')}}|reason={{response.data?.language_pack_failures?.[0]?.reason ?? ''}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "이 확장이 아직 꺼져 있어 꺼진 채 설치된 언어팩은 실패가 아니다 — 확장을 켜면 함께 켜진다고 알린다(응답 language_packs_awaiting_host).",
+                                        "handler": "toast",
+                                        "if": "{{(response.data?.language_packs_awaiting_host ?? []).length !== 0}}",
+                                        "params": {
+                                            "type": "info",
+                                            "message": "$t:extensions.alerts.language_pack_awaiting_host|names={{(response.data?.language_packs_awaiting_host ?? []).join(', ')}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록된다 — 몇 건인지 경고로 알린다.",
+                                        "handler": "toast",
+                                        "if": "{{(response?.data?.layout_warnings?.length ?? 0) > 0}}",
+                                        "params": {
+                                            "type": "warning",
+                                            "message": "$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "templates"
+                                        }
+                                    },
+                                    {
+                                        "handler": "reloadExtensions"
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedTemplate": null,
+                                            "templateLayoutSource": "auto",
+                                            "templateLayoutSourceOpen": false
+                                        }
+                                    },
+                                    {
+                                        "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                            "lifecycleWarningsOpen": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "lifecycle_warnings_modal",
+                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isTemplateInstalling": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isTemplateInstalling}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{!_global.isTemplateInstalling}}",
+                        "props": {
+                            "name": "download",
+                            "className": "text-base"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isTemplateInstalling}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isTemplateInstalling ? '$t:admin.templates.installing' : '$t:admin.templates.actions.install'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -47,6 +242,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다)",
                                     "type": "basic",
                                     "name": "Img",
                                     "if": "{{_global.selectedTemplate?.icon_url}}",
@@ -816,208 +1012,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isTemplateInstalling}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "설치 실행. 두 목록은 화면 체크 상태가 아니라 **같은 규칙으로 다시 계산**한 결과를 보낸다\n               (언어팩은 딸린 확장이 빠졌으면 여기서도 빠진다).",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isTemplateInstalling": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/templates/install",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "template_name": "{{_global.selectedTemplate.identifier}}",
-                                            "dependencies": "{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}",
-                                            "language_packs": "{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}",
-                                            "integrations": "{{ (_global.installPreview?.integrations ?? []).filter(i => i.can_select === true && i.status !== 'active' && (_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier)).includes(i.type + ':' + i.identifier)).map(i => ({ type: i.type, identifier: i.identifier })) }}",
-                                            "layout_source": "{{_global.templateLayoutSource ?? 'auto'}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isTemplateInstalling": false,
-                                                "installSelectedDeps": null,
-                                                "installSelectedLPs": null,
-                                                "installSelectedIntegrations": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.templates.install_success"
-                                            }
-                                        },
-                                        {
-                                            "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다.",
-                                            "handler": "toast",
-                                            "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + (n.failure_reason ? ': ' + n.failure_reason : '') + ')').join(', ')}}"
-                                            }
-                                        },
-                                        {
-                                            "comment": "함께 고른 언어팩 중 설치하지 못한 것이 있으면 식별자와 첫 사유를 알린다(응답 language_pack_failures).",
-                                            "handler": "toast",
-                                            "if": "{{(response.data?.language_pack_failures ?? []).length !== 0}}",
-                                            "params": {
-                                                "type": "warning",
-                                                "message": "$t:extensions.alerts.language_pack_install_failed|names={{(response.data?.language_pack_failures ?? []).map(f => f.identifier).join(', ')}}|reason={{response.data?.language_pack_failures?.[0]?.reason ?? ''}}"
-                                            }
-                                        },
-                                        {
-                                            "comment": "이 확장이 아직 꺼져 있어 꺼진 채 설치된 언어팩은 실패가 아니다 — 확장을 켜면 함께 켜진다고 알린다(응답 language_packs_awaiting_host).",
-                                            "handler": "toast",
-                                            "if": "{{(response.data?.language_packs_awaiting_host ?? []).length !== 0}}",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:extensions.alerts.language_pack_awaiting_host|names={{(response.data?.language_packs_awaiting_host ?? []).join(', ')}}"
-                                            }
-                                        },
-                                        {
-                                            "comment": "7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록된다 — 몇 건인지 경고로 알린다.",
-                                            "handler": "toast",
-                                            "if": "{{(response?.data?.layout_warnings?.length ?? 0) > 0}}",
-                                            "params": {
-                                                "type": "warning",
-                                                "message": "$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "templates"
-                                            }
-                                        },
-                                        {
-                                            "handler": "reloadExtensions"
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedTemplate": null,
-                                                "templateLayoutSource": "auto",
-                                                "templateLayoutSourceOpen": false
-                                            }
-                                        },
-                                        {
-                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                "lifecycleWarningsOpen": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "lifecycle_warnings_modal",
-                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isTemplateInstalling": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isTemplateInstalling}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{!_global.isTemplateInstalling}}",
-                            "props": {
-                                "name": "download",
-                                "className": "text-base"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isTemplateInstalling}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isTemplateInstalling ? '$t:admin.templates.installing' : '$t:admin.templates.actions.install'}}"
                         }
                     ]
                 }

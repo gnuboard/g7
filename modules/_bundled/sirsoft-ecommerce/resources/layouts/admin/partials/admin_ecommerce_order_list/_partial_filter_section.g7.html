@@ -28,8 +28,8 @@
     <!-- 슬롯 등록 영역 - 모든 필터 행 정의 (hidden) -->
     <div data-ref="slot_registration_area" class="ecommerce:hidden ecommerce-hidden ecommerce-filter-grid" aria-hidden="true">
       <!-- F-010 ~ F-019 일자 필터 -->
-      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-002 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.date" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
           <on type="change">
@@ -37,7 +37,9 @@
           </on>
         </input>
         <!-- F-010 -->
-        <span data-ref="f_010_date_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.date</span>
+        <span data-ref="f_010_date_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.date</span>
         <!-- F-011 -->
         <select data-ref="f_011_date_type_select" name="dateType" aria-label="$t:sirsoft-ecommerce.admin.order.filter.date_type_select" class="ecommerce:w-28" value="{{_local.filter.dateType || 'ordered_at'}}">
           <options>
@@ -119,8 +121,8 @@
         <p data-ref="date_site_basis_notice" data-if="{{query.date_basis === 'site'}}" class="ecommerce:text-xs ecommerce-text-tertiary">$t:sirsoft-ecommerce.admin.order.filter.site_day_notice|timezone={{_global.settings?.general?.timezone ?? ''}}</p>
       </div>
       <!-- F-020 ~ F-030 주문상태 필터 -->
-      <div data-ref="orderStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="orderStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-003 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.order_status" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('orderStatus')}}">
           <on type="change">
@@ -128,7 +130,9 @@
           </on>
         </input>
         <!-- F-020 -->
-        <span data-ref="f_020_order_status_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.order_status</span>
+        <span data-ref="f_020_order_status_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.order_status</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <!-- F-021 -->
           <chip-checkbox data-type="composite" data-ref="f_021_status_pending_order" value="pending_order" checked="{{(_local.filter.orderStatus || []).includes('pending_order')}}" icon="clock" label="$t:sirsoft-ecommerce.admin.order.status.waiting" variant="gray">
@@ -199,8 +203,8 @@
         </div>
       </div>
       <!-- F-080 ~ F-084 배송방법 필터 -->
-      <div data-ref="deliveryMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('deliveryMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="deliveryMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('deliveryMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-005 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.delivery_method" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('deliveryMethod')}}">
           <on type="change">
@@ -208,7 +212,9 @@
           </on>
         </input>
         <!-- F-080 -->
-        <span data-ref="f_080_delivery_method_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.delivery_method</span>
+        <span data-ref="f_080_delivery_method_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.delivery_method</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <!-- F-081 배송유형 동적 체크박스 -->
           <label data-each="option in _computed.shippingTypeOptions" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
@@ -223,8 +229,8 @@
         </div>
       </div>
       <!-- F-090 ~ F-096 결제수단 필터 -->
-      <div data-ref="paymentMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('paymentMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="paymentMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('paymentMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-006 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.payment_method" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('paymentMethod')}}">
           <on type="change">
@@ -232,7 +238,9 @@
           </on>
         </input>
         <!-- F-090 -->
-        <span data-ref="f_090_payment_method_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.payment_method</span>
+        <span data-ref="f_090_payment_method_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.payment_method</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <!-- F-091 동적 결제수단 체크박스 -->
           <label data-each="method in _computed.availablePaymentMethods" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
@@ -247,8 +255,8 @@
         </div>
       </div>
       <!-- F-100 ~ F-105 상품카테고리 필터 -->
-      <div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-007 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.category" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('category')}}">
           <on type="change">
@@ -256,7 +264,9 @@
           </on>
         </input>
         <!-- F-100 -->
-        <span data-ref="f_100_category_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.category</span>
+        <span data-ref="f_100_category_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.category</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
           <!-- F-101 -->
           <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1" data-ref="f_101_category_1" name="category1" value="{{_local.filter.category1}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="ecommerce:w-32" options="{{_computed.category1Options ?? []}}">
@@ -285,8 +295,8 @@
         </div>
       </div>
       <!-- F-110 ~ F-114 구매금액 필터 -->
-      <div data-ref="price_filter_row" data-slot="{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="price_filter_row" data-slot="{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-008 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.price" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('price')}}">
           <on type="change">
@@ -294,7 +304,9 @@
           </on>
         </input>
         <!-- F-110 -->
-        <span data-ref="f_110_price_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.price</span>
+        <span data-ref="f_110_price_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.price</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <!-- F-111 -->
           <input data-ref="f_111_min_price" type="number" min="0" step="100" name="minPrice" value="{{_local.filter.minPrice}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.min_price" class="ecommerce-input ecommerce:w-32 ecommerce:text-right">
@@ -315,8 +327,8 @@
         </div>
       </div>
       <!-- F-120 ~ F-126 배송국가 필터 -->
-      <div data-ref="country_filter_row" data-slot="{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="country_filter_row" data-slot="{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-009 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.country" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('country')}}">
           <on type="change">
@@ -324,7 +336,9 @@
           </on>
         </input>
         <!-- F-120 -->
-        <span data-ref="f_120_country_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.country</span>
+        <span data-ref="f_120_country_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.country</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <!-- F-121 동적 국가 체크박스 -->
           <label data-each="country in _computed.availableCountries" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
@@ -340,8 +354,8 @@
         </div>
       </div>
       <!-- F-130 ~ F-132 구매환경 필터 -->
-      <div data-ref="device_filter_row" data-slot="{{(_local.visibleFilters || []).includes('device') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="device_filter_row" data-slot="{{(_local.visibleFilters || []).includes('device') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-010 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.device" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('device')}}">
           <on type="change">
@@ -349,7 +363,9 @@
           </on>
         </input>
         <!-- F-130 -->
-        <span data-ref="f_130_device_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.device</span>
+        <span data-ref="f_130_device_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.device</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
           <!-- F-131 -->
           <label data-ref="f_131_device_pc" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce-text-label">
@@ -374,8 +390,8 @@
         </div>
       </div>
       <!-- F-140 ~ F-142 배송정책 필터 -->
-      <div data-ref="shippingPolicy_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="11" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="shippingPolicy_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="11" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-011 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.shipping_policy" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingPolicy')}}">
           <on type="change">
@@ -383,17 +399,19 @@
           </on>
         </input>
         <!-- F-140 -->
-        <span data-ref="f_140_shipping_policy_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.shipping_policy</span>
+        <span data-ref="f_140_shipping_policy_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.shipping_policy</span>
         <!-- F-141 -->
-        <select data-ref="f_141_shipping_policy_select" name="shippingPolicy" class="ecommerce:!w-48" value="{{_local.filter.shippingPolicy || ''}}" options="{{_computed.shippingPolicyOptions ?? [{ value: '', label: '$t:common.all' }]}}">
+        <select data-ref="f_141_shipping_policy_select" name="shippingPolicy" aria-label="$t:sirsoft-ecommerce.admin.order.filter.shipping_policy" class="ecommerce:!w-48" value="{{_local.filter.shippingPolicy || ''}}" options="{{_computed.shippingPolicyOptions ?? [{ value: '', label: '$t:common.all' }]}}">
           <on type="change">
             <set-state target="_local" filter.shippingPolicy="{{$event.target.value}}"/>
           </on>
         </select>
       </div>
       <!-- F-150 ~ F-153 배송비 필터 -->
-      <div data-ref="shippingFee_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingFee') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="12" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="shippingFee_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingFee') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="12" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-012 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.shipping_fee" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingFee')}}">
           <on type="change">
@@ -401,7 +419,9 @@
           </on>
         </input>
         <!-- F-150 -->
-        <span data-ref="f_150_shipping_fee_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.shipping_fee</span>
+        <span data-ref="f_150_shipping_fee_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.shipping_fee</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <!-- F-151 -->
           <input data-ref="f_151_min_shipping_fee" type="number" min="0" step="100" name="minShippingFee" value="{{_local.filter.minShippingFee}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.min_shipping_fee" class="ecommerce-input ecommerce:w-32 ecommerce:text-right">
@@ -420,8 +440,8 @@
         </div>
       </div>
       <!-- F-160 ~ F-162 주문자 필터 (회원 검색) -->
-      <div data-ref="orderer_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderer') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="13" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="orderer_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderer') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="13" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-013 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.orderer" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('orderer')}}">
           <on type="change">
@@ -429,7 +449,9 @@
           </on>
         </input>
         <!-- F-160 -->
-        <span data-ref="f_160_orderer_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.orderer</span>
+        <span data-ref="f_160_orderer_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.orderer</span>
         <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-1">
           <!-- F-161 -->
           <searchable-dropdown data-type="composite" data-ref="f_161_orderer_searchable_dropdown" aria-label="$t:sirsoft-ecommerce.admin.order.filter.orderer" options="{{_local.ordererSearchResults ?? []}}" value="{{_local.filter.ordererUuid || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.order.filter.orderer_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.order.filter.orderer_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.order.filter.orderer_search_initial" class="ecommerce:w-64">
@@ -464,8 +486,8 @@
         </div>
       </div>
       <!-- F-170 ~ F-171 회원 구분 필터 (회원/비회원) -->
-      <div data-ref="member_type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('memberType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="14" class="ecommerce-filter-row">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="member_type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('memberType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="14" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-014 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.member_type" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('memberType')}}">
           <on type="change">
@@ -473,9 +495,11 @@
           </on>
         </input>
         <!-- F-170 -->
-        <span data-ref="f_170_member_type_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.member_type</span>
+        <span data-ref="f_170_member_type_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+          <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.member_type</span>
         <!-- F-171 -->
-        <select data-ref="f_171_member_type_select" name="memberType" class="ecommerce:w-32" value="{{_local.filter.memberType || ''}}">
+        <select data-ref="f_171_member_type_select" name="memberType" aria-label="$t:sirsoft-ecommerce.admin.order.filter.member_type" class="ecommerce:w-32" value="{{_local.filter.memberType || ''}}">
           <options>
             <option value="">$t:sirsoft-ecommerce.admin.order.filter.member_type_option.all</option>
             <option value="member">$t:sirsoft-ecommerce.admin.order.filter.member_type_option.member</option>
@@ -487,8 +511,8 @@
         </select>
       </div>
       <!-- F-200 ~ F-2xx 클레임 기준 필터 (D22) — 이 주문에 접수된 클레임의 유무·유형별 상태·귀책·신청일로 주문을 거른다 -->
-      <div data-ref="claim_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claim') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="15" class="ecommerce-filter-row ecommerce:items-start">
-        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+      <div data-ref="claim_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claim') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="15" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-start">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"/>
         <!-- E-003 편집모드 체크박스 -->
         <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.claim.presence" class="{{_local.isEditMode ? 'ecommerce-checkbox ecommerce:mr-2 ecommerce:mt-1' : 'ecommerce:hidden ecommerce-hidden'}}" checked="{{(_local.visibleFilters || []).includes('claim')}}">
           <on type="change">
@@ -500,9 +524,11 @@
             <span class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.filter.claim.block_title</span>
             <span class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.order.filter.claim.block_hint</span>
     </div>
-          <div class="ecommerce-filter-row ecommerce:w-full">
-            <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
-            <span data-ref="f_203_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.presence</span>
+          <div class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center ecommerce:w-full">
+            <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
+            <span data-ref="f_203_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.claim.presence</span>
             <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
               <!-- 유무는 서버가 한 값만 받으므로 세 칩이 라디오처럼 하나만 켜지고, 켜진 칩을 다시 누르면 조건이 빠진다. 「없음」에 아래 상태·귀책·신청일을 더하면 조건 전체가 뒤집혀 그런 클레임이 없는 주문이 걸린다. -->
               <chip-checkbox data-type="composite" data-ref="f_200_claimPresence_none" value="none" checked="{{_local.filter.claimPresence === 'none'}}" label="$t:sirsoft-ecommerce.admin.order.filter.claim.presence_none" variant="gray">
@@ -524,9 +550,11 @@
               </chip-checkbox>
             </div>
           </div>
-          <div class="ecommerce-filter-row ecommerce:w-full">
-            <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
-            <span data-ref="f_218_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.exchange</span>
+          <div class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center ecommerce:w-full">
+            <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
+            <span data-ref="f_218_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.claim.exchange</span>
             <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
               <!-- 교환이 접수돼 운영자 검토를 기다리는 첫 단계다. 신청 때 결제하는 방식으로 배송비·차액이 청구되면 접수 직후 결제대기로 넘어간다. -->
               <chip-checkbox data-type="composite" data-ref="f_204_claimExchangeStatuses_requested" value="requested" checked="{{(_local.filter.claimExchangeStatuses || []).includes('requested')}}" label="$t:sirsoft-ecommerce.enums.exchange_status.requested" variant="blue">
@@ -614,9 +642,11 @@
               </chip-checkbox>
             </div>
           </div>
-          <div class="ecommerce-filter-row ecommerce:w-full">
-            <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
-            <span data-ref="f_230_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.return</span>
+          <div class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center ecommerce:w-full">
+            <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
+            <span data-ref="f_230_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.claim.return</span>
             <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
               <!-- 반품이 접수돼 운영자 검토를 기다리는 첫 단계다. 반품은 교환과 달리 새 상품을 보내지 않아 회수도착 다음이 곧바로 완료다. -->
               <chip-checkbox data-type="composite" data-ref="f_219_claimReturnStatuses_requested" value="requested" checked="{{(_local.filter.claimReturnStatuses || []).includes('requested')}}" label="$t:sirsoft-ecommerce.enums.return_status.requested" variant="orange">
@@ -686,9 +716,11 @@
               </chip-checkbox>
             </div>
           </div>
-          <div class="ecommerce-filter-row ecommerce:w-full">
-            <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
-            <span data-ref="f_238_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.refund</span>
+          <div class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center ecommerce:w-full">
+            <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
+            <span data-ref="f_238_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.claim.refund</span>
             <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
               <!-- 환불 신청이 접수돼 운영자 승인을 기다리는 건. 출처를 가리지 않아 취소에서 생긴 환불신청서도 함께 걸린다. -->
               <chip-checkbox data-type="composite" data-ref="f_231_claimRefundStatuses_requested" value="requested" checked="{{(_local.filter.claimRefundStatuses || []).includes('requested')}}" label="$t:sirsoft-ecommerce.enums.refund_status.requested" variant="yellow">
@@ -734,9 +766,11 @@
               </chip-checkbox>
             </div>
           </div>
-          <div class="ecommerce-filter-row ecommerce:w-full">
-            <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
-            <span data-ref="f_241_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.cancel</span>
+          <div class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center ecommerce:w-full">
+            <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
+            <span data-ref="f_241_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.claim.cancel</span>
             <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
               <!-- 나눠 취소하다 마지막에 남은 수량을 모두 취소한 건도 전체취소로 기록돼, 한 주문이 부분·전체 두 칩에 함께 걸릴 수 있다. 취소는 상태가 신청·완료 둘뿐이라 이 줄만 상태 대신 유형으로 가른다. -->
               <chip-checkbox data-type="composite" data-ref="f_239_claimCancelTypes_full" value="full" checked="{{(_local.filter.claimCancelTypes || []).includes('full')}}" label="$t:sirsoft-ecommerce.enums.cancel_type.full" variant="gray">
@@ -752,9 +786,11 @@
               </chip-checkbox>
             </div>
           </div>
-          <div class="ecommerce-filter-row ecommerce:w-full">
-            <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
-            <span data-ref="f_245_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.fault</span>
+          <div class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center ecommerce:w-full">
+            <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
+            <span data-ref="f_245_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.claim.fault</span>
             <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
               <!-- 단순 변심·사이즈·옵션 착오처럼 고객 사정으로 접수된 클레임이다(기본 사유 기준). 교환·반품 배송비가 자동으로 산정돼 고객에게 청구되는 것은 이 귀책뿐이다. -->
               <chip-checkbox data-type="composite" data-ref="f_242_claimFaultTypes_customer" value="customer" checked="{{(_local.filter.claimFaultTypes || []).includes('customer')}}" label="$t:sirsoft-ecommerce.enums.claim_reason_fault_type.customer" variant="green">
@@ -776,9 +812,11 @@
               </chip-checkbox>
             </div>
           </div>
-          <div class="ecommerce-filter-row ecommerce:w-full">
-            <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
-            <span data-ref="f_260_claim_requested_label" class="ecommerce-filter-label ecommerce:w-20">$t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
+          <div class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center ecommerce:w-full">
+            <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start ecommerce:w-full"/>
+            <span data-ref="f_260_claim_requested_label" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-20">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
+$t:sirsoft-ecommerce.admin.order.filter.claim.requested_at</span>
             <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap">
               <!-- 일자 필터(주문·결제·배송일)와 달리 클레임이 접수된 날로 거른다 — 위 상태·귀책을 만족하는 바로 그 클레임이 이 기간에 접수됐어야 걸린다. 한쪽만 채우면 그쪽 경계만 적용된다. -->
               <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.order.filter.claim.requested_at')}}" data-ref="f_261_claim_requested_from" type="date" class="ecommerce-input ecommerce:w-40" value="{{_local.filter.claimRequestedFrom ?? ''}}">
@@ -855,8 +893,9 @@
         {{preset.name}}
       </button>
     </div>
-    <!-- 검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 빼면 md:flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (#408 시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원). -->
-    <div data-ref="search_row_wrapper" class="ecommerce:flex ecommerce:flex-col ecommerce:md:flex-row ecommerce:md:items-center ecommerce:gap-3">
+    <!-- 검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 768px 이상 구간 값에도 `flex` 를 함께 적는다(구간 값은 className 을 통째로 바꾼다). 빼면 flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (#408 시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원). -->
+    <div data-ref="search_row_wrapper" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-3">
+      <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:items-center ecommerce:gap-3"/>
       <!-- F-001, F-002 검색 필드 + 검색어 입력 -->
       <div data-ref="search_row_line1" class="ecommerce:flex-1 ecommerce-flex-center ecommerce:gap-2">
         <!-- F-001 -->

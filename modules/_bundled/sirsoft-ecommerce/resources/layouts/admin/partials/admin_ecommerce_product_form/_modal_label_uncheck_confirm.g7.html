@@ -16,20 +16,20 @@
           <p data-if="{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at || ($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at}}" class="ecommerce-text-label-subtle ecommerce:mt-2 ecommerce:font-medium">{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at ?? ''}} ~ {{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at ?? ''}}</p>
         </div>
       </div>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
-        <button type="button" class="ecommerce-btn ecommerce-btn-outline">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:sirsoft-ecommerce.common.cancel
-        </button>
-        <button type="button" class="ecommerce-btn ecommerce-btn-warning">
-          <on type="click">
-            <action handler="sirsoft-ecommerce.confirmUncheckLabel"/>
-          </on>
-          $t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.common.cancel
+      </button>
+      <button type="button" class="ecommerce-btn ecommerce-btn-warning">
+        <on type="click">
+          <action handler="sirsoft-ecommerce.confirmUncheckLabel"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm
+      </button>
+    </footer>
   </modal>
 </partial>

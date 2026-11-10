@@ -9,7 +9,6 @@
  *  ④ modelToExpr — 동사별 식 생성(buildCustomComputedExpr SSoT)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { CustomComputedBuilder, modelToExpr } from '../../../components/page-settings/CustomComputedBuilder';
@@ -28,6 +27,10 @@ function base(): CustomComputedModel {
 }
 
 describe('CustomComputedBuilder', () => {
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_verb_select_switches_inputs
+   */
   it('연산 select 가 7동사를 노출하고 전환 시 동사별 입력을 보인다', () => {
     let model = base();
     const onChange = (m: CustomComputedModel) => { model = m; };
@@ -39,6 +42,10 @@ describe('CustomComputedBuilder', () => {
     expect(screen.getByTestId('g7le-computed-custom-labelfield')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_count_condition_rows_add_remove
+   */
   it('count 동사는 조건 AND 행을 추가/삭제한다', () => {
     let model = base();
     const onChange = (m: CustomComputedModel) => { model = m; };
@@ -52,12 +59,20 @@ describe('CustomComputedBuilder', () => {
     expect(model.conditions).toHaveLength(0);
   });
 
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_duplicate_key_warning
+   */
   it('결과 이름이 기존 키와 겹치면 경고', () => {
     const model: CustomComputedModel = { ...base(), key: 'productCount' };
     render(<CustomComputedBuilder model={model} onChange={vi.fn()} t={t} existingKeys={['productCount']} />);
     expect(screen.getByTestId('g7le-computed-custom-key-dup')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_count_expr_generation
+   */
   it('modelToExpr — count 동사 식 생성(buildCustomComputedExpr)', () => {
     const model: CustomComputedModel = {
       key: 'cnt',
@@ -71,6 +86,10 @@ describe('CustomComputedBuilder', () => {
     expect(expr).toMatch(/^\{\{[\s\S]*\}\}$/); // {{ }} 한 쌍.
   });
 
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_key_input_updates_model
+   */
   it('③ 결과 이름 입력이 모델 key 를 갱신한다', () => {
     let model = base();
     const onChange = (m: CustomComputedModel) => { model = m; };
@@ -81,6 +100,10 @@ describe('CustomComputedBuilder', () => {
 
   // 자동 계산 값/경로 칸도 데이터 칩(DataChipValueInput)으로 단순
   // 데이터 연동 가능. 평문/경로는 종전처럼 그대로 입력(키화 0), `{{...}}` 데이터는 검색 칩/표현식.
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_sum_field_uses_data_chip_input
+   */
   it('sum 합산 필드 = DataChipValueInput(데이터 칩 입력기)로 렌더 + 평문 경로 입력이 model.sumField 반영', () => {
     let model: CustomComputedModel = { ...base(), op: 'sum' };
     const onChange = (m: CustomComputedModel) => { model = m; };
@@ -92,6 +115,10 @@ describe('CustomComputedBuilder', () => {
     expect(model.sumField).toBe('price');
   });
 
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_condition_fields_use_data_chip
+   */
   it('조건 필드/값 = 데이터 칩 입력기로 렌더(단순 데이터 연동 진입)', () => {
     let model: CustomComputedModel = { ...base(), op: 'count', conditions: [{ field: '', cmp: '=', value: '' }] };
     const onChange = (m: CustomComputedModel) => { model = m; };
@@ -100,6 +127,10 @@ describe('CustomComputedBuilder', () => {
     expect(screen.getByTestId('g7le-computed-custom-cond-value-0-chip-input')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_candidates_show_value_picker
+   */
   it('bindingCandidates 전달 시 값 칸 데이터 검색 피커 노출(단순 데이터 연동)', () => {
     const model: CustomComputedModel = { ...base(), op: 'literal' };
     const candidates = [
@@ -111,6 +142,10 @@ describe('CustomComputedBuilder', () => {
   });
 
   // nth 인덱스(숫자)·firstOf 후보(쉼표 다중 목록)는 의도적 평문 유지 — 데이터 칩 비대상.
+  /**
+   * @scenario subject=custom_computed_builder
+   * @effects custom_computed_nth_index_stays_plain_input
+   */
   it('nth 인덱스는 평문 input 유지(배열 인덱스 — 데이터 칩 비대상)', () => {
     const model: CustomComputedModel = { ...base(), op: 'nth' };
     render(<CustomComputedBuilder model={model} onChange={vi.fn()} t={t} />);

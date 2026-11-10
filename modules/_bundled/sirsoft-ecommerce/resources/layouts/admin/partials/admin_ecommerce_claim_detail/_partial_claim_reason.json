@@ -7,8 +7,15 @@
     "id": "claim_reason_row",
     "type": "basic",
     "name": "Div",
+    "responsive": {
+        "768-": {
+            "props": {
+                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-6 ecommerce:mt-6"
+            }
+        }
+    },
     "props": {
-        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:md:grid-cols-2 ecommerce:gap-6 ecommerce:mt-6"
+        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-6 ecommerce:mt-6"
     },
     "children": [
         {

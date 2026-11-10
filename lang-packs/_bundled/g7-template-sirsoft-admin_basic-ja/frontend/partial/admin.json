@@ -1966,6 +1966,141 @@
       "image_max_height": "最大高さ",
       "image_quality": "画像品質",
       "image_quality_hint": "1〜100の値を入力してください。値が大きいほど品質が良くなります。",
+      "thumbnail": {
+        "title": "サムネイル",
+        "desc": "画像のアドレスに規格（?size=sm など）を付けると、下の「サムネイル規格」どおりに縮小したファイルを作成・保存して配信します。",
+        "engine_missing": "このサーバーには画像処理エンジン（GD または Imagick）がないため、サムネイルを作成できません。画像は元のまま送信されます。",
+        "enabled": "サムネイルを使用",
+        "enabled_hint": "オフにすると、規格を付けたアドレスでも元の画像を送ります。作成済みのサムネイルファイルは削除しません。",
+        "content_preset": "本文画像の規格",
+        "content_preset_hint": "投稿やページ本文の画像を表示するときに使う規格です。保存された本文 HTML は変わりません。",
+        "prune_enabled": "サムネイルの自動整理",
+        "prune_enabled_hint": "規格が変わって使われなくなったサムネイルや、元画像がなくなったサムネイルを整理スケジュールが削除します。",
+        "animated_original": "アニメーション画像は元画像を使用",
+        "animated_original_hint": "アニメーションする GIF・WebP・PNG はサムネイルに変換せず、元画像をそのまま送ります。オフにすると最初のフレームから静止したサムネイルを作ります。GD エンジンはアニメーション WebP を読めないため、オフでも元画像を送ります。",
+        "prune_schedule_notice": "サムネイルの整理はサムネイル整理スケジュールが実行します。",
+        "server_limits": {
+          "title": "詳細 — サーバー保護値",
+          "desc": "サムネイル作成でサーバーが占有されないようにする値です。空欄にするとサーバーの既定値（.env の G7_THUMBNAIL_* があればその値）を使い、欄に薄く表示される数値が現在のその値です。.env 優先モードで .env に値を書いた欄は「.env 固定」でロックされます。",
+          "generate_per_minute": "1分あたりに新しく作成するサムネイル数（IP ごと）",
+          "generate_per_minute_hint": "まだないサムネイルを1つの IP が1分間にこの数まで作成できます。超えると元画像を送ります。1〜10000",
+          "lock_wait_seconds": "作成の待ち時間",
+          "lock_wait_seconds_hint": "同じサムネイルを別のリクエストが作成中のときに待つ時間です。超えると元画像を送り、キャッシュしません。1〜30秒",
+          "max_source_pixels": "元画像の最大ピクセル数",
+          "max_source_pixels_hint": "これより大きい元画像は縮小せず元画像を送ります（メモリ保護）。サーバーのメモリ上限が小さい場合はさらに低い値を使います。1000000〜100000000",
+          "pregenerate_batch": "1回に処理する元画像の数",
+          "pregenerate_batch_hint": "「既存画像のサムネイル作成」とコマンド thumbnails:pregenerate が1回に処理する元画像の数です。1〜500",
+          "pregenerate_time_budget": "1回の呼び出しの時間予算",
+          "pregenerate_time_budget_hint": "「既存画像のサムネイル作成」1回の呼び出しで使う最大時間です。超えるとその位置から続けて呼び出します。サーバーの実行時間上限のほうが短い場合はその半分を使います。1〜60秒",
+          "purge_time_budget": "削除1回の呼び出しの時間予算",
+          "purge_time_budget_hint": "サムネイル「削除」1回の呼び出しで使う最大時間です。2つの保存場所が同じストレージを使う場合、規格を1つだけ削除する場合、リモートストレージを削除する場合に超えると、その位置から続けて呼び出します。サーバーの実行時間上限のほうが短い場合はその半分を使います。1〜60秒",
+          "unit_count": "件",
+          "unit_seconds": "秒",
+          "unit_pixels": "ピクセル"
+        },
+        "storage": {
+          "title": "保存先とキャッシュ",
+          "desc": "サムネイルファイルは、元画像が公開かどうかによって 2 か所に分けて保存します。保存先は「保存」を押すと変わり、削除は押した時点ですぐに実行されます。",
+          "kinds": {
+            "public": "公開画像のサムネイル",
+            "gated": "権限が必要な画像のサムネイル"
+          },
+          "kind_hints": {
+            "public": "レイアウト添付、商品、カテゴリのように誰でも見られる画像です。公開ストレージ（CDN）を選択できます。",
+            "gated": "添付ファイル、秘密投稿、レビューのように権限を確認してから送る画像です。非公開ストレージのみ選択できます。"
+          },
+          "disk": "保存ディスク",
+          "private_disk": "非公開サムネイルストレージ",
+          "usage": "ファイル {{count}} 件、{{size}}",
+          "not_counted": "集計しない（リモートストレージ）",
+          "after_save": "保存後に集計",
+          "load_failed": "サムネイルの使用量を読み込めませんでした。しばらくしてからもう一度お試しください。",
+          "locked_hint": "保存先を変更した行は「保存」するまで削除できません。保存すると新しい保存先で集計し直します。",
+          "purge_preset": "削除する規格",
+          "all_presets": "すべての規格",
+          "purge": "削除",
+          "purge_success": "サムネイルを {{count}} 件削除しました。",
+          "purge_failed": "サムネイルを削除できませんでした。",
+          "purge_all": "両方とも削除",
+          "pregenerate": "既存画像のサムネイルを作成",
+          "cdn_purge_notice": "公開サムネイルを公開ストレージ（CDN）に置く場合、削除や元画像の削除時の CDN キャッシュ無効化は CDN プラグインが処理します。プラグインがない場合、CDN に残ったコピーが期限切れになるまで表示されることがあります。"
+        },
+        "purge_all_modal": {
+          "title": "サムネイルをすべて削除",
+          "body": "下の 2 つの保存先にあるサムネイルファイルをすべて削除します。",
+          "disk": "ディスク: {{disk}}",
+          "warning": "元画像はそのまま残ります。削除したサムネイルは次のリクエスト時に再作成されます。",
+          "confirm": "すべて削除",
+          "success": "サムネイルを削除しました。公開 {{public}} 件、権限 {{gated}} 件"
+        },
+        "pregenerate_modal": {
+          "title": "既存画像のサムネイルを作成",
+          "body": "すでにアップロードされている画像のサムネイルを事前に作成します。作成済みのサムネイルはスキップします。",
+          "sources": "対象の画像",
+          "no_sources": "サムネイルを作成できる画像ソースがありません。",
+          "presets": "作成する規格",
+          "counts": "処理 {{processed}} / {{total}}、作成 {{generated}}",
+          "running": "作成中…",
+          "paused": "一時停止",
+          "done": "完了",
+          "done_toast": "サムネイルの作成が終わりました。新しく作成したファイル {{generated}} 件",
+          "failed": "サムネイルを作成できませんでした。",
+          "start": "開始",
+          "restart": "もう一度開始",
+          "pause": "一時停止"
+        },
+        "presets": {
+          "title": "サムネイル規格",
+          "desc": "規格ごとにサイズ、合わせ方、形式を設定します。コアと拡張機能の規格は名前を変更できず、値のみ変更できます。",
+          "col": {
+            "name": "名前",
+            "source": "提供元",
+            "width": "幅",
+            "height": "高さ",
+            "fit": "合わせ方",
+            "anchor": "基準点",
+            "format": "形式",
+            "quality": "品質",
+            "upscale": "拡大",
+            "pregenerate": "登録時に作成",
+            "numeric": "数値リクエスト",
+            "enabled": "使用",
+            "actions": "管理"
+          },
+          "kinds": {
+            "fixed": "コア",
+            "og": "コア（SEO）",
+            "extension": "拡張機能",
+            "custom": "運営者"
+          },
+          "fit": {
+            "cover": "切り抜き",
+            "contain": "全体を収める",
+            "width": "幅のみ"
+          },
+          "anchor": {
+            "center": "中央",
+            "top": "上",
+            "bottom": "下",
+            "left": "左",
+            "right": "右"
+          },
+          "format": {
+            "original": "元の形式",
+            "webp": "WebP",
+            "avif": "AVIF"
+          },
+          "og_size_notice": "SEO タブで設定",
+          "reset": "既定値に戻す",
+          "remove": "削除",
+          "add": "規格を追加",
+          "name_rule": "規格名は英小文字で始まり、英小文字、数字、アンダースコアで 2〜32 文字です（^[a-z][a-z0-9_]{1,31}$）。xs、sm、md、lg、xl、og は使えません。高さを空にすると幅のみ合わせ、品質を空にすると画像品質の設定に従います。",
+          "placeholder": {
+            "name": "例: banner_wide",
+            "height": "自動"
+          }
+        }
+      },
       "orphan_cleanup": "孤立した添付ファイルのクリーンアップ",
       "orphan_cleanup_desc": "フォームを保存せずに離脱して、所有者がいなくなった添付ファイルをクリーンアップします。",
       "orphan_cleanup_enabled": "孤立した添付ファイルの自動クリーンアップ",
@@ -2485,6 +2620,13 @@
         "driver": "検索エンジンドライバー",
         "driver_desc": "デフォルト提供のMySQL FULLTEXT（ngram）エンジンは、追加設定なしで日本語検索をサポートしています。",
         "plugin_notice": "検索エンジンプラグイン（Meilisearch、Elasticsearchなど）をインストールすると、追加ドライバーが表示されます。"
+      },
+      "image": {
+        "title": "画像処理",
+        "desc": "アップロード画像の縮小とサムネイル生成に使う画像処理エンジンを設定します。",
+        "driver": "画像処理エンジン",
+        "driver_desc": "GD はほとんどのサーバーに標準で入っています。Imagick は PHP imagick 拡張がインストールされたサーバーでのみ表示されます。",
+        "plugin_notice": "画像処理プラグインをインストールすると、追加のエンジンが表示されます。選択したエンジンが使えなくなった場合は GD で処理します。"
       },
       "test_connection": "接続テスト",
       "testing": "テスト中...",
@@ -3984,7 +4126,9 @@
       "core_update_result_modal": "コアアップデート確認結果",
       "settings_static_cache_republish_modal": "初期画面静的ファイルの再作成確認",
       "cron_token_rotate_modal": "ウェブ cron 呼び出し番号の再発行モーダル",
-      "ip_restriction_rule_form_modal": "IP アクセス制限ルール編集"
+      "ip_restriction_rule_form_modal": "IP アクセス制限ルール編集",
+      "settings_thumbnail_purge_all_modal": "サムネイルをすべて削除の確認",
+      "settings_thumbnail_pregenerate_modal": "既存画像のサムネイルを作成"
     },
     "admin_template_list": {
       "template_activate_modal": "テンプレート有効化確認",

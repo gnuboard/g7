@@ -536,8 +536,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{gdprMeConsents?.data?.needs_renewal === true}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "gdpr:mb-4 gdpr:rounded-lg gdpr:border gdpr:border-amber-300 gdpr:dark:border-amber-700 gdpr:bg-amber-50 gdpr:dark:bg-amber-900/20 gdpr:px-4 gdpr:py-3 gdpr:flex gdpr:gap-2 gdpr:flex-row gdpr:items-center"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "gdpr:mb-4 gdpr:rounded-lg gdpr:border gdpr:border-amber-300 gdpr:dark:border-amber-700 gdpr:bg-amber-50 gdpr:dark:bg-amber-900/20 gdpr:px-4 gdpr:py-3 gdpr:flex gdpr:flex-col gdpr:gap-2 gdpr:sm:flex-row gdpr:sm:items-center"
+                                "className": "gdpr:mb-4 gdpr:rounded-lg gdpr:border gdpr:border-amber-300 gdpr:dark:border-amber-700 gdpr:bg-amber-50 gdpr:dark:bg-amber-900/20 gdpr:px-4 gdpr:py-3 gdpr:flex gdpr:flex-col gdpr:gap-2"
                             },
                             "children": [
                                 {
@@ -588,8 +595,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "gdpr:flex gdpr:items-center gdpr:flex-wrap gdpr:gap-2 gdpr:flex-shrink-0"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "gdpr:flex gdpr:items-center gdpr:flex-wrap gdpr:gap-2 gdpr:sm:flex-shrink-0"
+                                        "className": "gdpr:flex gdpr:items-center gdpr:flex-wrap gdpr:gap-2"
                                     },
                                     "children": [
                                         {

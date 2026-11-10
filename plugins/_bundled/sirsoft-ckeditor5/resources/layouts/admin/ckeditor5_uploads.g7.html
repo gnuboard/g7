@@ -78,7 +78,7 @@
     <div data-ref="ckeditor5_uploads_content" class="ckeditor-admin-page-content">
       <div data-ref="page_header" class="ckeditor-flex-between ckeditor:mb-6">
         <div>
-          <h1 class="ckeditor-page-title">$t:sirsoft-ckeditor5.admin.uploads.title</h1>
+          <h1 class="ckeditor:text-xl ckeditor:font-semibold ckeditor:text-gray-900 ckeditor:dark:text-white"><responsive on="640-" class="ckeditor:text-2xl ckeditor:font-semibold ckeditor:text-gray-900 ckeditor:dark:text-white"/>$t:sirsoft-ckeditor5.admin.uploads.title</h1>
           <p class="ckeditor-text-label-subtle ckeditor:mt-1">$t:sirsoft-ckeditor5.admin.uploads.description</p>
         </div>
         <div class="ckeditor-flex-center ckeditor:gap-2">
@@ -175,7 +175,7 @@
         </prop>
         <column field="thumbnail" :sortable="false" header="$t:sirsoft-ckeditor5.admin.uploads.col.thumbnail" width="90px">
           <cell>
-            <img src="{{row.download_url}}" alt="{{row.original_name ?? ''}}" loading="lazy" class="ckeditor:w-16 ckeditor:h-16 ckeditor:object-cover ckeditor:rounded-lg ckeditor:border ckeditor:border-gray-200 ckeditor:dark:border-gray-700"/>
+            <img src="{{row.download_url}}" thumbPreset="sm" decoding="async" alt="{{row.original_name ?? ''}}" loading="lazy" class="ckeditor:w-16 ckeditor:h-16 ckeditor:object-cover ckeditor:rounded-lg ckeditor:border ckeditor:border-gray-200 ckeditor:dark:border-gray-700"/>
           </cell>
         </column>
         <column field="original_name" header="$t:sirsoft-ckeditor5.admin.uploads.col.original_name" :sortable="true" width="260px">
@@ -247,7 +247,7 @@
       <div class="ckeditor:py-2">
         <p class="ckeditor:text-gray-700 ckeditor:dark:text-gray-300">$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_message</p>
       </div>
-      <div class="ckeditor-modal-footer-buttons">
+      <footer>
         <button type="button" class="ckeditor-btn ckeditor-btn-secondary" disabled="{{_global.isDeletingUpload}}">
           <on type="click">
             <close-modal/>
@@ -283,7 +283,7 @@
           </on>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -293,7 +293,7 @@
       <div class="ckeditor:py-2">
         <p class="ckeditor:text-gray-700 ckeditor:dark:text-gray-300">$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_message|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}</p>
       </div>
-      <div class="ckeditor-modal-footer-buttons">
+      <footer>
         <button type="button" class="ckeditor-btn ckeditor-btn-secondary" disabled="{{_global.isDeletingUpload}}">
           <on type="click">
             <close-modal/>
@@ -330,7 +330,7 @@
           </on>
           <span>$t:common.delete</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
 </layout>

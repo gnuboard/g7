@@ -5,6 +5,8 @@
  * 플러그인 환경설정(plugin_settings.json)의 하단 저장/취소 버튼 영역이
  * 긴 콘텐츠를 스크롤하는 동안에도 화면 하단에 고정되도록 sticky 클래스가
  * 적용되어 있는지 검증한다.
+ *
+ * @scenario-manifest tests/scenarios/plugin-settings-sticky.yaml
  */
 
 import { describe, it, expect } from 'vitest';
@@ -65,6 +67,11 @@ function collectNodes(node: unknown, predicate: (value: Record<string, unknown>)
 }
 
 describe('plugin_settings 하단 버튼 sticky 고정', () => {
+  /**
+   * @scenario plugin=sirsoft-pay_kginicis, element=footer
+   *
+   * @effects footer_buttons_stick_to_bottom
+   */
   it('footer_buttons 에 sticky bottom 고정 클래스가 존재해야 한다', () => {
     const footer = findById(pluginSettingsLayout, 'footer_buttons');
     expect(footer).toBeDefined();
@@ -83,14 +90,23 @@ describe('plugin_settings 하단 버튼 sticky 고정', () => {
     expect(isShorthand || className.includes('sticky')).toBe(true);
   });
 
+  /**
+   * @scenario plugin=sirsoft-pay_kginicis, element=root
+   *
+   * @effects settings_root_layout_by_width
+   */
   it('활성 테마의 신규 시맨틱 CSS 없이도 설정 화면 기본 레이아웃이 적용되어야 한다', () => {
     const root = findById(pluginSettingsLayout, 'plugin_settings_content');
     expect(root).toBeDefined();
 
     const rootClassName = classNameOf(root);
     expect(rootClassName).toContain('p-4');
-    expect(rootClassName).toContain('sm:p-6');
-    expect(rootClassName).toContain('lg:p-8');
+    // 화면 폭 분기는 엔진 responsive 로 쓴다 — 640~1023px 은 p-6, 1024px 이상은 p-8
+    const responsive = (root?.responsive ?? {}) as Record<string, Record<string, unknown>>;
+    expect(classNameOf(responsive['640-1023']).split(' ')).toContain('paykginicis:p-6');
+    // 커스텀 구간(640-1023)과 프리셋을 한 노드에 섞지 않는다 — 1024px 이상도 커스텀 구간 1024- 로 쓴다
+    expect(classNameOf(responsive['1024-']).split(' ')).toContain('paykginicis:p-8');
+    expect(responsive.desktop).toBeUndefined();
     expect(rootClassName).toContain('min-h-screen');
     expect(rootClassName).toContain('bg-gray-50');
     expect(rootClassName).toContain('dark:bg-gray-900');
@@ -104,6 +120,11 @@ describe('plugin_settings 하단 버튼 sticky 고정', () => {
     }
   });
 
+  /**
+   * @scenario plugin=sirsoft-pay_kginicis, element=save_error
+   *
+   * @effects save_error_reads_error_context
+   */
   it('저장 실패 시 apiCall onError 에서 validation errors 를 error 컨텍스트에서 읽어야 한다', () => {
     const saveActions = collectNodes(pluginSettingsLayout, (node) => {
       return node.handler === 'apiCall'
@@ -122,6 +143,11 @@ describe('plugin_settings 하단 버튼 sticky 고정', () => {
     expect(params.errors).toBe('{{error.errors ?? { _general: error.message }}}');
   });
 
+  /**
+   * @scenario plugin=sirsoft-pay_kginicis, element=validation_error
+   *
+   * @effects save_error_scrolls_to_validation_box
+   */
   it('저장 실패 시 상단 검증 오류 영역으로 자동 스크롤해야 한다', () => {
     const validationError = collectNodes(pluginSettingsLayout, (node) => {
       return node.id === 'validation_error';

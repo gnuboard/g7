@@ -50,11 +50,12 @@
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_requires_update"
         },
         {
+            "comment": "아래 회수지 묶음이 보일 때만 그 사이에 여백을 둔다 — 묶음이 감춰지면 이 안내가 구역의 마지막 줄이다.",
             "id": "claim_addresses_snapshot_notice",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "ecommerce-alert-info"
+                "className": "{{(!!route.id || !_computed.lacksUpdate) ? 'ecommerce-alert-info ecommerce:mb-4' : 'ecommerce-alert-info'}}"
             },
             "children": [
                 {
@@ -80,8 +81,15 @@
             "type": "basic",
             "name": "Div",
             "if": "{{!!route.id || !_computed.lacksUpdate}}",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                    }
+                }
+            },
             "props": {
-                "className": "ecommerce-grid-2col-responsive"
+                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
             },
             "children": [
                 {

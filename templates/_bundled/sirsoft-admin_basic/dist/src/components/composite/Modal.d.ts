@@ -66,6 +66,14 @@ export interface ModalProps {
                 isEditMode?: boolean;
             } | null;
         };
+        /** Modal 노드의 확장 데이터 컨텍스트 — 본문 자식이 받는 dataContext 와 같은 객체 */
+        parentDataContext?: Record<string, any>;
+        /**
+         * Modal 노드의 편집기 경로(레이아웃 편집기 미리보기에서만 값이 있다). footer 단추마다
+         * `${componentPath}.props.footer.${index}` 를 넘겨 편집기가 footer 단추를 고르게 한다(#141).
+         */
+        componentPath?: string;
+        [key: string]: any;
     };
 }
 /**

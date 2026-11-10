@@ -62,12 +62,14 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=renders_nothing_when_empty
+  // @effects slider_controls_follow_banner_count
   it('배너가 없으면 아무것도 그리지 않는다', () => {
     const { container } = render(<HeroSlider banners={[]} />);
     expect(container.innerHTML).toBe('');
   });
 
   // @scenario surface=single_banner_hides_controls
+  // @effects slider_controls_follow_banner_count
   it('배너 1장이면 컨트롤·자동 재생·넘기기·무한 반복이 없다', () => {
     const { container } = render(<HeroSlider banners={[banner(1)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     expect(container.querySelector('.hs-slider__controls')).toBeNull();
@@ -78,6 +80,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=loop_and_touch_swipe_enabled
+  // @effects slider_controls_follow_banner_count
   it('2장 이상이면 Swiper 무한 반복·손가락 넘기기·PC 마우스 끌기(잡기 커서)를 켜고, 사진은 끌려 나오지 않는다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
     expect(swiperState.props?.loop).toBe(true);
@@ -88,14 +91,18 @@ describe('HeroSlider', () => {
     expect(swiperState.props?.className).toBe('hs-slider__track');
   });
 
-  // @scenario surface=picture_has_mobile_source
+  // @scenario surface=main_image_device_from_engine_width
   // @effects responsive_image_switch
-  it('모바일 이미지가 있으면 767px 이하 source 를 둔다', () => {
-    const { container } = render(<HeroSlider banners={[banner(1)]} />);
-    const source = container.querySelector('source');
-    expect(source?.getAttribute('media')).toBe('(max-width: 767px)');
-    expect(source?.getAttribute('srcset')).toBe('/img/m-1.jpg');
-    expect(container.querySelector('img')?.getAttribute('src')).toBe('/img/pc-1.jpg');
+  it('넓은 화면은 PC 이미지, 휴대폰 화면(엔진 폭 767px 이하)은 모바일 이미지를 주 이미지로 쓰고 창 폭 source 는 두지 않는다', () => {
+    const wide = render(<HeroSlider banners={[banner(1)]} />);
+    expect(wide.container.querySelector('source')).toBeNull();
+    expect(wide.container.querySelector('img')?.getAttribute('src')).toBe('/img/pc-1.jpg');
+    wide.unmount();
+
+    (window as any).G7Core.useResponsive = () => ({ width: 375 });
+    const phone = render(<HeroSlider banners={[banner(1)]} />);
+    expect(phone.container.querySelector('source')).toBeNull();
+    expect(phone.container.querySelector('img')?.getAttribute('src')).toBe('/img/m-1.jpg');
   });
 
   // @scenario surface=picture_omits_mobile_source_when_missing
@@ -107,6 +114,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=text_visibility_color_align
+  // @effects banner_text_follows_display_settings
   it('문구 표시 여부·색·정렬을 따른다', () => {
     const { container, rerender } = render(<HeroSlider banners={[banner(1, { title_color: '#112233', title_align: 'center', description_align: 'right' })]} />);
     const title = container.querySelector('.hs-slider__title') as HTMLElement;
@@ -121,6 +129,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=button_text_makes_button_link
+  // @effects banner_link_follows_link_settings
   it('버튼 문구가 있으면 버튼만 링크다', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { button_text: '보러 가기' })]} />);
     const links = container.querySelectorAll('a');
@@ -131,6 +140,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=link_href_carries_site_mount_prefix
+  // @effects banner_link_follows_link_settings
   it('하위 폴더 사이트에서는 사이트 안 링크 href 에 마운트 접두사를 붙이고, 바깥 주소는 그대로 둔다', () => {
     (window as any).G7Config = { basePath: '/g7' };
     try {
@@ -145,6 +155,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=empty_button_makes_whole_slide_link
+  // @effects banner_link_follows_link_settings
   it('버튼 문구가 없으면 슬라이드 전체를 덮는 제목 이름의 링크를 두고, 문구는 링크 밖에 둔다', () => {
     const { container } = render(<HeroSlider banners={[banner(1)]} />);
     const link = container.querySelector('a.hs-slider__link') as HTMLAnchorElement;
@@ -160,6 +171,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=empty_button_makes_whole_slide_link
+  // @effects banner_link_follows_link_settings
   it('전체 링크 배너는 문구를 눌러도 링크로 이동하고, 버튼 배너의 문구는 누르기만으로 이동하지 않는다', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     try {
@@ -179,6 +191,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=new_window_sets_rel_noopener_noreferrer
+  // @effects banner_link_follows_link_settings
   it('새 창이면 target=_blank 와 rel=noopener noreferrer 를 붙인다', () => {
     const { container } = render(<HeroSlider banners={[banner(1, { link_new_window: true }), banner(2, { link_new_window: true, button_text: '보기' })]} />);
     const anchors = Array.from(container.querySelectorAll('a'));
@@ -190,6 +203,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=autoplay_advances_by_interval
+  // @effects autoplay_follows_interval_and_visitor
   it('자동 재생은 설정 간격(초)을 Swiper autoplay 지연(ms)으로 넘기고, Swiper 가 넘긴 장을 따라간다', () => {
     const { container, unmount } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     expect(swiperState.props?.autoplay).toEqual({ delay: 3000, disableOnInteraction: false });
@@ -207,6 +221,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=autoplay_pauses_on_hover_and_focus
+  // @effects autoplay_follows_interval_and_visitor
   it('마우스를 올리거나 포커스가 들어가면 Swiper 자동 재생을 멈추고, 나가면 다시 켠다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     const region = container.querySelector('section') as HTMLElement;
@@ -225,6 +240,7 @@ describe('HeroSlider', () => {
 
   // @scenario surface=pause_button_toggles_autoplay
   // @scenario surface=autoplay_pauses_on_hover_and_focus
+  // @effects autoplay_follows_interval_and_visitor
   it('포커스가 남아 있으면 마우스 이탈로 재생하지 않고, hover가 남으면 blur로 재생하지 않는다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} />);
     const region = container.querySelector('section')!;
@@ -242,6 +258,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=pointer_click_does_not_hold_autoplay
+  // @effects autoplay_follows_interval_and_visitor
   it('[case:components-misc-carousel-autoplay-held-by-pointer-focus] 마우스로 화살표를 누르면(누르며 포커스가 들어가도) 마우스가 나간 뒤 자동 넘김이 다시 돈다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     const region = container.querySelector('section')!;
@@ -262,6 +279,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=pointer_click_does_not_hold_autoplay
+  // @effects autoplay_follows_interval_and_visitor
   it('[case:components-misc-carousel-autoplay-held-by-pointer-focus] 휴대폰에서 점을 탭해도(뒤따르는 흉내 마우스 이벤트·포커스 포함) 자동 넘김이 계속 돈다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     const region = container.querySelector('section')!;
@@ -281,6 +299,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=pause_button_toggles_autoplay
+  // @effects autoplay_follows_interval_and_visitor
   it('일시정지 단추가 자동 재생을 멈추고 다시 켠다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     const toggle = container.querySelector('[data-hs-control="toggle"]') as HTMLButtonElement;
@@ -300,6 +319,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=reduced_motion_disables_autoplay
+  // @effects autoplay_follows_interval_and_visitor
   it('움직임 줄이기를 켠 사용자는 자동 재생·효과가 꺼진다', () => {
     mockReducedMotion(true);
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3, effect: 'slide' }} />);
@@ -310,6 +330,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=effect_fade_and_none
+  // @effects transition_effect_follows_setting
   it('효과는 Swiper effect·speed 로 옮긴다 — 슬라이드 500ms, 페이드(교차) 600ms, 없음은 slide 를 0ms 로', () => {
     const cases = [
       ['slide', 'slide', 500, null],
@@ -337,6 +358,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=prev_next_buttons_and_keyboard
+  // @effects slider_navigation_controls_operable
   it('이전·다음 단추와 좌우 화살표 키가 Swiper 를 넘긴다(무한 반복이라 끝에서 처음으로 돈다)', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
     const region = container.querySelector('section') as HTMLElement;
@@ -517,6 +539,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=preview_static_without_swiper
+  // @effects preview_slider_moves_without_swiper
   it('[case:components-misc-swiper-not-mounted-in-iframe-preview] 관리자 미리보기처럼 iframe 문서에 그리면 Swiper 를 부르지 않고(자동 넘김 없음) 화살표·점이 장 번호만 바꿔 그 장을 보인다', () => {
     const frame = document.createElement('iframe');
     document.body.appendChild(frame);
@@ -549,6 +572,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=preview_static_without_swiper
+  // @effects preview_slider_moves_without_swiper
   it('[case:components-misc-swiper-not-mounted-in-iframe-preview] 요소에 붙지 못한(초기화 안 된) Swiper 인스턴스에는 넘김을 부르지 않는다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
     swiperState.instance!.initialized = false;
@@ -559,6 +583,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_pagination_dots_default
+  // @effects pagination_follows_position_setting
   it('페이징 모양이 없거나 모르는 값이면 종전 점이다', () => {
     for (const pagination of [undefined, 'bullets']) {
       const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, pagination: pagination as any }} />);
@@ -570,6 +595,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_pagination_progress
+  // @effects pagination_follows_position_setting
   it('진행 막대 점은 지금 장 점에만 막대를 넣고, 자동 넘김의 지난 비율을 CSS 변수로 흘리며, 자동 넘김이 멈추면 가득 찬 채로 둔다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 5, pagination: 'progress' }} />);
     const section = container.querySelector('section') as HTMLElement;
@@ -589,6 +615,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_pagination_tabs
+  // @effects pagination_follows_position_setting
   it('배너 이름 탭은 장마다 배너 제목을 보이는 이름으로 단 단추이고, 누르면 그 장으로 간다 — 제목이 없으면 대체 문구, 그것도 없으면 「n번째 배너로 이동」', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2, { title: '' }), banner(3, { title: '', image_alt: '' })]} settings={{ autoplay: false, pagination: 'tabs' }} />);
     const tabs = Array.from(container.querySelectorAll<HTMLButtonElement>('.hs-slider__tabs > button.hs-slider__tab'));
@@ -605,6 +632,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_pagination_fraction
+  // @effects pagination_follows_position_setting
   it('번호는 「01 / 03」을 보이고 장이 바뀌면 따라가며, 장 번호는 슬라이드 이름이 읽으므로 화면 읽기에서는 감춘다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false, pagination: 'fraction' }} />);
     const fraction = container.querySelector('.hs-slider__fraction') as HTMLElement;
@@ -616,6 +644,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=index_resets_when_banners_change
+  // @effects slider_controls_follow_banner_count
   it('배너 목록이 바뀌면 첫 장으로 돌아간다', () => {
     const { container, rerender } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
     fireEvent.click(container.querySelector('.hs-slider__next') as HTMLElement);
@@ -626,6 +655,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=first_image_eager_rest_lazy
+  // @effects slide_images_load_by_priority
   it('첫 장 이미지는 즉시·높은 우선순위, 나머지는 지연 로딩', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
     const imgs = container.querySelectorAll('img');
@@ -636,6 +666,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=next_slide_preloaded_before_transition
+  // @effects slide_images_load_by_priority
   it('다음으로 넘어갈 장은 전환 전에 미리 받는다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
     expect(container.querySelectorAll('img')[1].getAttribute('loading')).toBe('eager');
@@ -651,13 +682,20 @@ describe('HeroSlider', () => {
     const img = container.querySelector('img') as HTMLImageElement;
     expect(img.getAttribute('width')).toBe('1920');
     expect(img.getAttribute('height')).toBe('640');
-    expect(container.querySelector('source')?.getAttribute('width')).toBe('750');
     const style = (container.querySelector('section') as HTMLElement).style;
     expect(style.getPropertyValue('--hs-ratio-pc')).toBe('1920 / 640');
     expect(style.getPropertyValue('--hs-ratio-mobile')).toBe('750 / 1000');
+
+    // 휴대폰 화면은 모바일 이미지의 크기를 싣는다
+    (window as any).G7Core.useResponsive = () => ({ width: 375 });
+    const phone = render(<HeroSlider banners={[banner(1)]} />);
+    const mobileImg = phone.container.querySelector('img') as HTMLImageElement;
+    expect(mobileImg.getAttribute('width')).toBe('750');
+    expect(mobileImg.getAttribute('height')).toBe('1000');
   });
 
   // @scenario surface=aspect_ratio_falls_back_to_recommended
+  // @effects responsive_image_switch
   it('첫 배너의 이미지 크기·모바일 유무와 무관하게 PC·모바일 표시 비율을 유지한다', () => {
     const { container, rerender } = render(<HeroSlider banners={[banner(1, { images: { pc: { url: '/p.jpg' }, mobile: null } })]} />);
     let style = (container.querySelector('section') as HTMLElement).style;
@@ -671,6 +709,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_content_box_wrap
+  // @effects site_slider_matches_width_setting
   it('본문 폭(기본)이면 확장점이 넘긴 본문 상자로 슬라이더를 감싸고, 상자가 없으면 감싸지 않는다', () => {
     const { container, rerender } = render(<HeroSlider banners={[banner(1), banner(2)]} contentClass="max-w-7xl mx-auto px-8" />);
     const frame = container.querySelector('[data-hs-width="content"]') as HTMLElement;
@@ -686,6 +725,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_full_text_box
+  // @effects site_slider_matches_width_setting
   it('화면 전체 폭이면 끝까지 그리고 제목·넘김 단추만 본문 상자에 맞춘다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ width: 'full' }} contentClass="max-w-7xl mx-auto px-8" />);
     const section = container.firstElementChild as HTMLElement;
@@ -705,6 +745,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=slider_full_text_box
+  // @effects site_slider_matches_width_setting
   it('화면 전체 폭인데 본문 상자를 받지 못하면(자리가 본문 상자 안인 템플릿) 문구를 감싸지 않고 종전 여백을 쓴다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ width: 'full' }} />);
     expect(container.querySelector('section')?.className).toContain('hs-slider--full');
@@ -715,6 +756,7 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=swiper_pagination_and_arrows
+  // @effects slider_navigation_controls_operable
   it('2장 이상이면 Swiper 기본 모양의 좌우 화살표와 점 표시를 이름 붙은 단추로 그리고, 점을 누르면 그 장으로 간다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
     const prev = container.querySelector('button.hs-slider__arrow.hs-slider__prev') as HTMLButtonElement;
@@ -735,12 +777,14 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=swiper_pagination_and_arrows
+  // @effects slider_controls_follow_banner_count
   it('1장이면 화살표·점 표시가 없다', () => {
     const { container } = render(<HeroSlider banners={[banner(1)]} />);
     expect(container.querySelector('.hs-slider__prev, .hs-slider__next, .hs-slider__pagination')).toBeNull();
   });
 
   // @scenario surface=swiper_extra_effects
+  // @effects transition_effect_follows_setting
   it('모르는 효과 값은 slide 로 그린다', () => {
     render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, effect: 'zoom' as any }} />);
     expect(swiperState.props?.effect).toBe('slide');
@@ -751,6 +795,7 @@ describe('HeroSlider', () => {
     beforeEach(() => window.localStorage.clear());
 
     // @scenario surface=loading_skeleton_until_response
+    // @effects loading_skeleton_reserves_slot
     it('받는 중이고 배너가 아직 없으면 같은 비율의 스켈레톤을 그리고(읽지 않음), 받은 뒤 0건이면 아무것도 그리지 않는다', () => {
       swiperState.props = null;
       const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" contentClass="max-w-7xl mx-auto px-8" />);
@@ -768,6 +813,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_until_response
+    // @effects loading_skeleton_reserves_slot
     it('받은 배너가 오면 스켈레톤을 실제 슬라이더로 바꾼다', () => {
       const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" />);
       expect(container.querySelector('.hs-slider--skeleton')).not.toBeNull();
@@ -777,6 +823,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_remembers_slot
+    // @effects loading_skeleton_reserves_slot
     it('직전 방문의 모양을 기억해, 0건이던 위치는 스켈레톤을 그리지 않고 화면 전체였던 위치는 끝까지 그린다', () => {
       const first = render(<HeroSlider banners={[]} loading={false} settings={{ width: 'content' }} position="shop_hero" />);
       first.unmount();
@@ -797,6 +844,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_remembers_slot
+    // @effects loading_skeleton_reserves_slot
     it('받기에 실패하면(설정 없이 끝남) 기억을 남기지 않아, 다음 방문에도 스켈레톤이 자리를 잡는다', () => {
       window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 3, width: 'full' }));
       const failed = render(<HeroSlider banners={[]} loading={false} position="home_hero" />);
@@ -808,6 +856,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_remembers_slot
+    // @effects loading_skeleton_reserves_slot
     it('첫 로드 설정의 표시 폭 힌트가 브라우저 기억보다 먼저다(저장소를 지우는 개인정보 설정에서도 폭이 맞는다)', () => {
       window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 2, width: 'content' }));
       const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" skeletonWidth="full" contentClass="px-8" />);
@@ -818,6 +867,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_remembers_slot
+    // @effects loading_skeleton_reserves_slot
     it('저장소를 쓸 수 없어도(개인정보 동의 전 차단 등) 기본 스켈레톤으로 동작한다', () => {
       const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
       const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
@@ -828,6 +878,7 @@ describe('HeroSlider', () => {
     });
 
     // @scenario surface=loading_skeleton_until_response
+    // @effects loading_skeleton_reserves_slot
     it('위치를 모르는 미리보기는 기억을 쓰지 않는다', () => {
       render(<HeroSlider banners={[banner(1)]} />);
       expect(window.localStorage.length).toBe(0);

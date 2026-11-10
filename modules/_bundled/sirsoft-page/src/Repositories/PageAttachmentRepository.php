@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Repositories;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
@@ -187,5 +188,47 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
         }
 
         return (int) $query->max('order');
+    }
+
+    /**
+     * 래스터 이미지 첨부 수를 셉니다 (썸네일 원본 제공자용 — 페이지에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 개수
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return $this->imageRowsQuery($mimeTypes)->count();
+    }
+
+    /**
+     * 래스터 이미지 첨부를 ID 순으로 나눠 조회합니다 (썸네일 원본 제공자용 — 페이지에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 ID 다음부터 (처음이면 0)
+     * @param  int  $limit  최대 개수
+     * @return Collection<int, PageAttachment> 첨부 목록
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->imageRowsQuery($mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get(['id', 'page_id', 'disk', 'path', 'mime_type', 'meta']);
+    }
+
+    /**
+     * 썸네일 원본이 되는 첨부 행 쿼리 — 래스터 MIME, 페이지에 이어진 행(임시 첨부 제외).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return Builder<PageAttachment> 쿼리
+     */
+    private function imageRowsQuery(array $mimeTypes): Builder
+    {
+        return PageAttachment::query()
+            ->whereIn('mime_type', $mimeTypes)
+            ->whereNotNull('page_id')
+            ->whereNull('temp_key');
     }
 }

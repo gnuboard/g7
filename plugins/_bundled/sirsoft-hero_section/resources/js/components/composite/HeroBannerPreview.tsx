@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { HeroSlider, type HeroBanner, type HeroSliderSettings, type TextSpot } from './HeroSlider';
 import { youtubeIdFromUrl } from '../../support/media';
 import { textOverflows } from '../../support/text';
-import { copySwiperStyles, useSwiperStyles } from '../../support/swiperStyles';
+import { copySwiperStyles, SWIPER_STYLES_ID, useSwiperStylesRevision } from '../../support/swiperStyles';
 import { basic, estimateContrast, frameClass, isLightText, localized, sampleImage, translate, type FrameBox, type PreviewFrame, type Rgb } from '../../support/editor';
 
 export type HeroDraft = Partial<Omit<HeroBanner, 'title' | 'eyebrow' | 'description' | 'button_text' | 'image_alt'>> & {
@@ -54,6 +54,12 @@ export interface HeroBannerPreviewProps {
 type Overflow = 'alone' | 'controls' | false;
 
 /**
+ * 미리보기 문서의 stylesheet 를 기다리는 최대 시간(ms). 넘으면 표식(`data-hs-styles-ready`) 없이 미리보기를 보인다 —
+ * 응답하지 않는 CSS 하나 때문에 미리보기가 계속 가려지지 않게.
+ */
+export const PREVIEW_STYLES_TIMEOUT_MS = 8000;
+
+/**
  * 독립 문서에서 실제 기기 viewport로 렌더한 뒤 전체를 축소합니다. 스크립트는 복사하지 않습니다.
  *
  * 기기 viewport(iframe 폭)와 안쪽 구좌 폭을 구분한다 — vw·미디어쿼리·글자 크기는 viewport 기준이어야 실제 사이트와 같고,
@@ -85,12 +91,43 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   }, [viewport]);
   const scale = Math.min(1, width / viewport);
   const Div = basic('Div', 'div');
+  // 미리보기 문서의 stylesheet(복사한 바깥 CSS·Swiper CSS·템플릿 CSS)가 모두 load·error 를 받았는지.
+  // 받기 전에는 본문 상자 여백(`px-4` 등)이 0 으로 계산돼 구좌가 기기 폭 그대로 넓게 보였다가 좁아진다 — 그동안 가린다.
+  const watchedStyles = useRef(new WeakSet<Element>());
+  const settledStyles = useRef(new WeakSet<Element>());
+  const [stylesReady, setStylesReady] = useState(false);
+  const [stylesTimedOut, setStylesTimedOut] = useState(false);
+  /** 아직 지켜보지 않은 stylesheet 링크에 load·error 를 걸고, 모두 끝났는지 다시 본다. 링크를 붙인 직후(같은 작업 안)에 부른다. */
+  const trackStyles = () => {
+    const doc = frame.current?.contentDocument;
+    if (!doc) return;
+    const links = [...doc.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')];
+    for (const link of links) {
+      if (watchedStyles.current.has(link)) continue;
+      watchedStyles.current.add(link);
+      const done = () => { settledStyles.current.add(link); trackStyles(); };
+      link.addEventListener('load', done, { once: true });
+      link.addEventListener('error', done, { once: true });
+    }
+    // `link.sheet` 로 대신 판정하지 않는다 — 받는 중에도 미완성 시트를 내주는 브라우저가 있어 일찍 보이게 된다.
+    // 리스너는 링크를 붙인 같은 작업 안에서 걸므로 load·error 를 놓치지 않는다.
+    setStylesReady(links.every((link) => settledStyles.current.has(link)));
+  };
+  // 문서가 새로 만들어지면(body 가 바뀌면) 기다림도 처음부터 — 옛 문서에서 시간이 지났다고 새 문서를 받기 전에 보이지 않게
+  useEffect(() => {
+    if (stylesReady) return;
+    const timer = setTimeout(() => setStylesTimedOut(true), PREVIEW_STYLES_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [stylesReady, body]);
+  const stylesShown = stylesReady || stylesTimedOut;
   const setup = () => {
     const doc = frame.current?.contentDocument;
     if (!doc || documentBody.current === doc.body) return;
     documentBody.current = doc.body;
     doc.head.replaceChildren();
     for (const style of document.querySelectorAll('link[rel="stylesheet"], style')) {
+      // Swiper CSS 는 copySwiperStyles 가 원본과 짝지어 복사한다 — 실패한 시도의 사본을 나중에 알아보고 갈기 위해서다
+      if (style.id === SWIPER_STYLES_ID) continue;
       const copy = style.cloneNode(true) as HTMLElement;
       for (const attribute of [...copy.attributes]) {
         if (/^on/i.test(attribute.name)) copy.removeAttribute(attribute.name);
@@ -101,6 +138,7 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
       }
       doc.head.appendChild(copy);
     }
+    copySwiperStyles(doc);
     const reset = doc.createElement('style');
     reset.textContent = 'html{font-size:16px}html,body{margin:0;padding:0;overflow:hidden}';
     doc.head.appendChild(reset);
@@ -111,6 +149,8 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
     if (scheme) doc.documentElement.setAttribute('data-g7-color-scheme', scheme);
     // 스크립트를 막은(sandbox) 문서라 on* 처리 속성은 실행되지 않고 콘솔 오류만 남는다 — 바깥 문서의 리스너로 단다.
     doc.body.addEventListener('click', (event) => { if ((event.target as Element).closest('a')) event.preventDefault(); });
+    trackStyles();
+    setStylesTimedOut(false);
     setBody(doc.body);
   };
   /** 슬라이더가 그려진 자리(위쪽 위치·높이·폭)를 잰다 — 템플릿 CSS 가 늦게 오면 그때 다시 잰다. */
@@ -125,12 +165,16 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   };
   // about:blank는 삽입 즉시 load가 끝나 ref 부착 전에 이벤트가 지나갈 수 있다.
   useLayoutEffect(() => { setup(); }, []);
-  // Swiper CSS 는 런타임에 실리므로 미리보기를 띄운 뒤에 올 수 있다 — 오면 iframe 에도 넣는다
-  const swiperStyles = useSwiperStyles();
+  // Swiper CSS 는 런타임에 실리므로 미리보기를 띄운 뒤에 올 수 있다 — 코어 로더의 다음 시도나 실패 알림의 다시 시도로 새 원본이
+  // 실리면 끝날 때마다 iframe 사본을 그 원본으로 갈고, 새 사본을 받을 때까지 가린다
+  const swiperRevision = useSwiperStylesRevision();
   useLayoutEffect(() => {
     const doc = frame.current?.contentDocument;
-    if (swiperStyles && doc && body) copySwiperStyles(doc);
-  }, [swiperStyles, body]);
+    if (doc && body) {
+      copySwiperStyles(doc);
+      trackStyles();
+    }
+  }, [swiperRevision, body]);
   // 템플릿 CSS 는 틀(위치 설정 응답)이 오는 때에 맞춘다 — 응답이 미리보기보다 늦게 와도, 위치를 바꿔 틀이 달라져도 실린다.
   const sheets = framed ? (stylesheets ?? []).join('\n') : '';
   useLayoutEffect(() => {
@@ -148,6 +192,7 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
       link.addEventListener('load', () => measure());
       doc.head.insertBefore(link, reset);
     }
+    trackStyles();
   }, [body, sheets]);
   useEffect(() => {
     if (!framed || !body) return;
@@ -178,12 +223,12 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
   const nest = (index: number): React.ReactNode => index >= (chain?.length ?? 0)
     ? <Div ref={setSlot} data-hs-slot="" />
     : <Div className={frameClass(chain![index], viewport)} data-hs-frame="">{nest(index + 1)}</Div>;
-  return <Div ref={host} className="hs-preview__viewport" style={{ height: frameHeight * scale }} data-slot-width={framed && box ? Math.round(box.width * 1000) / 1000 : viewport}>
+  return <Div ref={host} className="hs-preview__viewport" style={{ height: frameHeight * scale }} data-slot-width={framed && box ? Math.round(box.width * 1000) / 1000 : viewport} data-hs-styles-ready={stylesReady ? '' : undefined}>
     {React.createElement('iframe', {
       ref: frame, title: translate('admin.form.preview.frame', { device: device.toUpperCase() }),
       sandbox: 'allow-same-origin', src: 'about:blank', onLoad: setup,
       width: viewport, height: frameHeight,
-      style: { display: 'block', border: 0, width: viewport, height: frameHeight, maxWidth: 'none', transform: `scale(${scale})`, transformOrigin: 'top left' },
+      style: { display: 'block', border: 0, width: viewport, height: frameHeight, maxWidth: 'none', transform: `scale(${scale})`, transformOrigin: 'top left', visibility: stylesShown ? undefined : 'hidden' },
       'data-preview-width': viewport,
     })}
     {body && framed && createPortal(<Div style={{ transform: box ? `translateY(${-box.top}px)` : undefined }}>{nest(0)}</Div>, body)}

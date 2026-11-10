@@ -11,12 +11,12 @@
       </on-code>
     </error-handling>
   </data-source>
-  <div data-ref="ext_social_login_provider_filter_row" class="sl:flex sl:flex-col sl:gap-2 sl:md:flex-row sl:md:items-center">
+  <div data-ref="ext_social_login_provider_filter_row" class="sl:flex sl:gap-2 sl:flex-row sl:items-center">
     <permissions>
       <permission>sirsoft-social_login.accounts.view</permission>
     </permissions>
     <responsive on="portable" class="sl:flex sl:flex-col sl:gap-2 sl:items-start"/>
-    <span class="sl:block sl:mb-2 sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:md:mb-0 sl:shrink-0 sl:md:flex sl:md:items-center">$t:sirsoft-social_login.admin.users.filter_label</span>
+    <span class="sl:block sl:mb-2 sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:shrink-0"><responsive on="768-" class="sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:mb-0 sl:shrink-0 sl:flex sl:items-center"/>$t:sirsoft-social_login.admin.users.filter_label</span>
     <div class="sl:flex sl:items-center sl:flex-wrap sl:gap-2">
       <select data-ref="social_login_provider_filter" name="socialLoginProvider" class="sl:w-48" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-social_login.provider=')) || '').slice('sirsoft-social_login.provider='.length)}}" aria-label="$t:sirsoft-social_login.admin.users.filter_label">
         <option value="">$t:sirsoft-social_login.admin.users.filter_all</option>

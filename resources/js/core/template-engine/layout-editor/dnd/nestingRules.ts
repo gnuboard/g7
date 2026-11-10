@@ -126,6 +126,8 @@ export function resolveGlobalInsertionTarget(
   }
   // 비컨테이너 → 형제 다음
   const parentPath = selectedPathIndexes.slice(0, -1);
-  const lastIdx = selectedPathIndexes[selectedPathIndexes.length - 1] ?? 0;
+  // 노드 path 의 끝 세그먼트는 늘 children 인덱스(number)다 — 분기·prop 슬롯 세그먼트는 끝에 오지 않는다.
+  const lastSeg = selectedPathIndexes[selectedPathIndexes.length - 1];
+  const lastIdx = typeof lastSeg === 'number' ? lastSeg : 0;
   return { parentPath, index: lastIdx + 1 };
 }

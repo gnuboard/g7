@@ -1,0 +1,16 @@
+feature: 반복 렌더(renderItemChildren)의 단일 바인딩 파이프 해석 (engine-v1.54.3)
+
+description: |
+  DataGrid 의 cellChildren, CardGrid 의 카드 children 처럼 반복 문맥에서 그리는 자식의 단일 바인딩 `{{path | pipe}}` 는
+  파이프 체인으로 풀어야 한다. 종전에는 `|` 때문에 복잡 표현식으로 분류돼 JS 비트 OR 로 평가됐다(인자 있는 파이프는
+  값 소실, 인자 없는 파이프는 조용한 오답). 축 binding_form 은 바인딩 모양 하나씩이고, 파이프가 아닌 모양은 회귀 보호다.
+
+axes:
+  binding_form: [args_pipe, no_arg_pipe, string_pipe, pipe_chain, props_pipe, mixed_interpolation, no_pipe, logical_or]
+
+effects:
+  - single_binding_pipe_applied
+  - non_pipe_binding_unchanged
+
+test_files:
+  - resources/js/core/template-engine/__tests__/renderItemChildren-pipe.test.ts

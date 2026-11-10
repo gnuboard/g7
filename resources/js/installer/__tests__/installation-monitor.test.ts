@@ -10,7 +10,7 @@
  *
  * 커버 축: monitor_mode stepwise·polling·sse / terminal_outcome task_done·busy·failed·completed·rejected / failure_channel state·envelope / cancellation before_dispatch·after_await
  *
- * @effects stepwise_monitor_surfaces_envelope_failure_reason, stepwise_monitor_drains_events_before_outcome, stepwise_monitor_ignores_response_after_stop, polling_monitor_ignores_response_after_stop, sse_monitor_completes_on_broken_event_body, sse_monitor_reports_stall_after_connect, sse_monitor_closes_stream_on_stop, polling_monitor_surfaces_client_error_status
+ * 조합과 효과 표식은 그 효과를 재는 각 시험 앞에 있다.
  */
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -34,6 +34,11 @@ type Monitors = {
  */
 class FakeEventSource {
   static last: FakeEventSource | null = null;
+
+  /** 마지막으로 만든 인스턴스 — 정적 필드를 바로 읽으면 앞의 `last = null` 대입으로 null 로 좁혀진다 */
+  static latest(): FakeEventSource | null {
+    return FakeEventSource.last;
+  }
 
   url: string;
   closed = false;
@@ -669,9 +674,9 @@ describe('PollingMonitor', () => {
   });
 
   /**
-   * @scenario installation_mode=stepwise, task_outcome=aborted
+   * @scenario installation_mode=polling, task_outcome=aborted
    *
-   * @effects stepwise_monitor_ignores_response_after_stop
+   * @effects polling_monitor_ignores_response_after_stop
    */
   it('중단된 뒤 도착한 응답은 버린다 (#L — StepwiseMonitor 와 같은 규칙)', async () => {
     let release: (value: unknown) => void = () => {};
@@ -722,7 +727,7 @@ describe('SseMonitor', () => {
     });
     monitor.start();
 
-    const source = FakeEventSource.last;
+    const source = FakeEventSource.latest();
     expect(source, 'EventSource 가 생성되지 않았다').toBeTruthy();
 
     return { monitor, source: source as FakeEventSource, calls: c.calls };

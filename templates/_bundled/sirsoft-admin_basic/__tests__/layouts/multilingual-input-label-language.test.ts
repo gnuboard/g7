@@ -13,7 +13,7 @@
  * 이름 재료를 찾는 규칙(부품 쪽 규칙을 JSON 트리에 옮긴 판):
  *   ① 자기 이름 prop(ariaLabel·aria-label) — 있으면 그것만 본다
  *   ② 감싼 FormField 의 label
- *   ③ 곁 라벨 — 자기·조상 3단계까지 앞 형제 가운데 가장 가까운 라벨 자리(Label·form-label·filter-label·text-heading,
+ *   ③ 곁 라벨 — 자기·조상 3단계까지 앞 형제 가운데 가장 가까운 라벨 자리(Label·form-label·filter-field-label·filter-label·text-heading,
  *      또는 칸 없이 라벨을 품은 상자). 사이에 다른 칸이 있으면 그 라벨은 앞 칸의 것이라 멈춘다
  * `$t:` 키는 ko·en·ja(번들 언어팩) 사전으로 풀어 세 언어 모두에서 언어 이름이 없는지 본다.
  *
@@ -115,7 +115,7 @@ const isNode = (x: unknown): x is Node =>
     !!x && typeof x === 'object' && !Array.isArray(x) && typeof (x as Node).name === 'string' && Boolean((x as Node).type || (x as Node).props || (x as Node).children);
 const CONTROLS = new Set(['Input', 'Select', 'Textarea', 'Toggle', 'Checkbox', 'PasswordInput', 'TagInput', 'MultilingualInput', 'SearchableDropdown', 'FileInput', 'MultilingualTagInput']);
 const isControl = (n: Node) => CONTROLS.has(String(n.name)) && n.props?.type !== 'hidden';
-const isLabelEl = (n: Node) => n.name === 'Label' || /(^|\s)(form-label|filter-label|text-heading)(\s|$)/.test(String(n.props?.className ?? ''));
+const isLabelEl = (n: Node) => n.name === 'Label' || /(^|\s)(form-label|filter-field-label|filter-label|text-heading)(\s|$)/.test(String(n.props?.className ?? ''));
 const kidsOf = (n: Node): Node[] => (Array.isArray(n.children) ? n.children.filter(isNode) : []);
 const deep = (n: Node, pred: (x: Node) => boolean): Node | null => {
     if (pred(n)) return n;

@@ -219,19 +219,26 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.member"
                         },
@@ -387,19 +394,26 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.created_at"
                         },
@@ -637,19 +651,26 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"
+                                "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-col ecommerce:items-start"
                             }
                         }
                     },
                     "props": {
-                        "className": "ecommerce-filter-row"
+                        "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-28"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-filter-label ecommerce:w-28"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400 ecommerce:w-28"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default"
                         },

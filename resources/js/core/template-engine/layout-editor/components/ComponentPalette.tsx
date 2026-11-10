@@ -23,7 +23,6 @@ import type { EditorNode, ComponentPath } from '../utils/layoutTreeUtils';
 import type {
   NestingSpec,
   ComponentPaletteSpec,
-  ComponentPaletteGroupSpec,
 } from '../spec/specTypes';
 import { trackEditorDnd } from '../devtools/editorTrackers';
 

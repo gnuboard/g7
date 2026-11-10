@@ -83,23 +83,20 @@ describe('PreviewCanvas — 프레임 data-g7-color-scheme', () => {
   function renderCanvas(path: string, layoutName: string) {
     const engine = new TranslationEngine();
     return render(
-      React.createElement(
-        TranslationProvider,
-        {
-          translationEngine: engine,
-          translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
-        },
-        React.createElement(
-          LayoutEditorProvider,
-          { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-          React.createElement(
+      React.createElement(TranslationProvider, {
+        translationEngine: engine,
+        translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
+        children: React.createElement(LayoutEditorProvider, {
+          templateIdentifier: 'sirsoft-basic',
+          initialLocale: 'ko',
+          children: React.createElement(
             EditorModalProvider,
             null,
             React.createElement(SelectRoute, { path, layoutName }),
             React.createElement(PreviewCanvas),
           ),
-        ),
-      ),
+        }),
+      }),
     );
   }
 

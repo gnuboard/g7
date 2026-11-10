@@ -37,7 +37,8 @@ const byId = (id: string) => sources.find(s => s.id === id);
 function findNodeById(node: any, id: string): any {
   if (!node || typeof node !== 'object') return null;
   if (node.id === id) return node;
-  for (const child of node.children ?? []) {
+  // Modal 고정 하단(props.footer)의 단추도 찾는다(#869 P1)
+  for (const child of [...(node.children ?? []), ...(node.props?.footer ?? [])]) {
     const found = findNodeById(child, id);
     if (found) return found;
   }

@@ -259,11 +259,6 @@
     }
   }
 
-  .ecommerce-btn-sm {
-    padding-inline: calc(.25rem * 3);
-    padding-block: calc(.25rem * 1.5);
-  }
-
   .ecommerce-button {
     cursor: pointer;
     justify-content: center;
@@ -300,6 +295,11 @@
   .ecommerce-btn[aria-disabled=true] {
     cursor: not-allowed;
     opacity: .5;
+  }
+
+  .ecommerce-btn-sm {
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 1.5);
   }
 
   .ecommerce-btn-primary {
@@ -3557,6 +3557,6 @@
 }
 
 /* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
-i:is(.ecommerce\:md\:text-xl, .ecommerce\:text-2xl, .ecommerce\:text-3xl, .ecommerce\:text-4xl, .ecommerce\:text-5xl, .ecommerce\:text-base, .ecommerce\:text-lg, .ecommerce\:text-sm, .ecommerce\:text-xl, .ecommerce\:text-xs) {
+i:is(.ecommerce\:text-2xl, .ecommerce\:text-3xl, .ecommerce\:text-4xl, .ecommerce\:text-5xl, .ecommerce\:text-base, .ecommerce\:text-lg, .ecommerce\:text-sm, .ecommerce\:text-xl, .ecommerce\:text-xs) {
   line-height: 1;
 }

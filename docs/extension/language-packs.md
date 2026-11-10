@@ -286,7 +286,7 @@ foreach ($config['categories'] as $cat) { ... }
 | `plugin.{id}.permissions.translations` | PluginManager::createPluginPermissions() — 플러그인 권한 트리 동기화 시 |
 | `template.language.merge` | TemplateService::getLanguageDataWithModules() |
 
-**언어팩을 켜고 끌 때의 재시딩**: 코어는 대상 확장의 시더를 다시 돌려(`module:seed` / `plugin:seed`) 위 필터가 새 언어를 기존 행에 채우게 합니다. 이 명령은 확장의 `Database\Seeders\DatabaseSeeder` 를 찾으므로, 다국어 행을 시딩하는 확장은 그 진입 시더가 설치 시더와 같은 시더를 돌려야 합니다. 시더가 기존 행을 「있으면 건너뜀」으로만 다루면 새 언어가 들어오지 않으니, 다국어 칸은 빠진 언어만 더하고 운영자가 바꾼 값은 그대로 두는 병합으로 씁니다.
+**언어팩을 켜고 끌 때의 재시딩**: 코어는 대상 확장의 시더를 다시 돌려(`module:seed` / `plugin:seed`) 위 필터가 새 언어를 기존 행에 채우게 합니다. 이 명령은 확장의 `Database\Seeders\DatabaseSeeder` 를 찾으므로, 다국어 행을 시딩하는 확장은 그 진입 시더가 설치 시더와 같은 시더를 돌려야 합니다. 시더가 기존 행을 「있으면 건너뜀」으로만 다루면 새 언어가 들어오지 않으니, 다국어 칸은 빠진 언어만 더하고 운영자가 바꾼 값은 그대로 두는 병합으로 씁니다. 대상 확장이 꺼져 있거나, DB 에는 켜진 채 남았지만 활성 디렉터리에 파일(`module.php`·`plugin.php`)이 없으면 그 확장의 시더는 건너뛰고 경고로 올리지 않습니다(7.2.0~, 종전에는 「모듈을 찾을 수 없습니다」로 언어팩 작업이 「일부 실패」·종료 코드 1 로 끝났습니다).
 
 **확장 시드 필터 자동 결선** (`LanguagePackServiceProvider::registerExtensionSeedFilters`): 활성 모듈/플러그인 언어팩의 `seed/*.json` 마다 위 패턴의 필터에 listener 가 자동 등록됩니다. 매칭 키는 entry 의 컬럼을 우선순위(`code` > `slug` > `key` > `identifier` > `id`) 로 자동 감지합니다.
 

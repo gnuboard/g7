@@ -77,5 +77,7 @@ _등록하는 액션 핸들러가 없습니다._
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-JS(`resources/js/index.ts` → `dist/js/plugin.iife.js`)와 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `sso` — 레이아웃용 접두 유틸리티 `sso:*` 와 템플릿 의미 클래스 사본 `sso-*`)입니다. 화면은 템플릿 CSS 에 기대지 않고, 다크 모드는 템플릿이 선언한 다크 방식에 따라 코어가 다는 `<html data-g7-color-scheme="dark">` 표식을 따릅니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-sso --production` 으로 다시 굽습니다. 브라우저 로그인 테스트 결과, SAML 자동 제출 폼, 모의 IdP 화면은 서버가 그리는 단독 HTML 입니다.
+JS(`resources/js/index.ts` → `dist/js/plugin.iife.js`)와 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `sso` — 레이아웃용 접두 유틸리티 `sso:*` 와 템플릿 의미 클래스 사본 `sso-*`)입니다. 화면은 템플릿 CSS 에 기대지 않고, 다크 모드는 템플릿이 선언한 다크 방식에 따라 코어가 다는 `<html data-g7-color-scheme="dark">` 표식을 따릅니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-sso --production` 으로 다시 굽습니다. 화면 폭에 따라 클래스가 달라지는 자리는 Tailwind 반응형 접두(`sso:sm:py-2` 같은 꼴)를 쓰지 않고, 노드의 `<responsive on="…">` 구간(`desktop`, `640-` 등)에 그 폭에서 쓸 className 전체를 둡니다 — 로그인 버튼은 기본 `sso:py-3`(휴대폰 손가락 크기), `640-` 구간에서 `sso:py-2` 입니다. 브라우저 로그인 테스트 결과, SAML 자동 제출 폼, 모의 IdP 화면은 서버가 그리는 단독 HTML 입니다.
+
+폭 미디어를 품은 의미 클래스 사본(`sso-grid-3col-responsive`·`sso-grid-2col-responsive`·`sso-page-title`·`sso-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"` 에 `<responsive on="1024-" class="sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`sso:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->

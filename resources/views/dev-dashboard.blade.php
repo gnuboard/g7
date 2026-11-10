@@ -481,7 +481,9 @@ if (isset($_GET['ajax_action'])) {
         // 코어 첨부파일 디스크(config/attachment.php) + 공개 업로드 디스크
         $attachmentPaths = [
             'storage/app/attachments' => storage_path('app/attachments'),
-            'storage/app/public' => storage_path('app/public')
+            'storage/app/public' => storage_path('app/public'),
+            // 업로드 원본에서 만든 썸네일 파생본 — 원본과 함께 지운다
+            'storage/app/thumbnails' => storage_path('app/thumbnails'),
         ];
         foreach ($attachmentPaths as $displayName => $path) {
             $cleared = devDashboardClearDirectory($path);
@@ -1189,6 +1191,22 @@ if (isset($_GET['ajax_action'])) {
                                     <span>고아 첨부 정리 (실삭제)</span>
                                     <span class="text-[10px] opacity-60">(attachments:prune-orphans)</span>
                                 </button>
+                                <button onclick="runCommand('thumbnails:prune --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>썸네일 정리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(thumbnails:prune --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('thumbnails:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>썸네일 정리 (실삭제)</span>
+                                    <span class="text-[10px] opacity-60">(thumbnails:prune)</span>
+                                </button>
+                                <button onclick="runCommand('thumbnails:pregenerate --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>기존 이미지 썸네일 만들기 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(thumbnails:pregenerate --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('thumbnails:pregenerate')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>기존 이미지 썸네일 만들기 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(thumbnails:pregenerate)</span>
+                                </button>
                                 <button onclick="runCommand('storage:prune-leftovers --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>스토리지 잔존물 정리 (미리보기)</span>
                                     <span class="text-[10px] opacity-60">(storage:prune-leftovers --dry-run)</span>
@@ -1632,6 +1650,7 @@ if (isset($_GET['ajax_action'])) {
             if (deleteAttachments) {
                 message += '  • storage/app/attachments/ (첨부파일)\n';
                 message += '  • storage/app/public/ (공개 업로드 파일)\n';
+                message += '  • storage/app/thumbnails/ (이미지 썸네일)\n';
                 message += '  • storage/app/modules|plugins/*/ 업로드 파일 (settings 보존)\n';
             }
             message += '\n계속하시겠습니까?';

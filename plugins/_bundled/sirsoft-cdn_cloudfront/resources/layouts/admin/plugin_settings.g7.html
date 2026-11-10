@@ -1,0 +1,249 @@
+<!-- CloudFront CDN 플러그인 환경설정 화면 — 배포 주소·무효화 자격을 저장하고, 저장된 값으로 연결을 시험하며, 실패한 무효화가 밀려 있는지 본다. 모양은 템플릿 CSS 가 아니라 이 플러그인의 순수 CSS(resources/css/main.css, cdncf-*)가 싣는다 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-cdn_cloudfront.settings.title" description="$t:sirsoft-cdn_cloudfront.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form). 자격 증명 두 칸은 서버가 가려서 내려주고, 가린 값이 그대로 돌아오면 저장값을 유지한다 -->
+  <data-source id="settings" label_key="$t:sirsoft-cdn_cloudfront.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(저장 뒤 갱신 등) 실패는 받아 둔 값을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 무효화 대기 현황(재시도 대기·멈춤 건수, 마지막 오류·성공 시각). 설정 화면 조회 권한과 같은 축이라 보통 403 이 나지 않지만, 나면 현황 카드에만 안내를 띄우고 설정 폼은 그대로 둔다 -->
+  <data-source id="cdncfPurgeStatus" label_key="$t:sirsoft-cdn_cloudfront.editor.data_source.purge_status" type="api" endpoint="/api/plugins/sirsoft-cdn_cloudfront/admin/purge-status" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <error-handling>
+      <on-code code="403">
+        <set-state target="local" :purgeStatusForbidden="true"/>
+      </on-code>
+      <default>
+        <toast type="error" message="$t:core.errors.refresh_failed"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="cdncf-settings">
+      <responsive on="640-1023" class="cdncf-settings cdncf-settings--md"/>
+      <responsive on="1024-" class="cdncf-settings cdncf-settings--lg"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-cdn_cloudfront.settings.title" description="$t:sirsoft-cdn_cloudfront.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="cdncf-alert">
+        <icon name="lock" class="cdncf-alert__icon"/>
+        <span class="cdncf-alert__text">$t:sirsoft-cdn_cloudfront.plugin_read_only</span>
+      </div>
+      <div data-ref="notice_banner" class="cdncf-alert cdncf-alert--info">
+        <icon name="circle-info" class="cdncf-alert__icon"/>
+        <p class="cdncf-alert__text">$t:sirsoft-cdn_cloudfront.settings.notice</p>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" role="alert" class="cdncf-alert cdncf-alert--danger">
+        <icon name="triangle-exclamation" class="cdncf-alert__icon"/>
+        <div>
+          <p class="cdncf-alert__title">$t:admin.plugins.settings.validation_error</p>
+          <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="cdncf-alert__list">
+            <li class="cdncf-alert__text">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+      <!-- 배포 — CDN 주소와 배포 ID. 저장 디스크(버킷·자격)는 코어 S3 설정을 그대로 쓰므로 여기서 받지 않는다 -->
+      <div data-ref="section_basic_card" class="cdncf-card">
+        <div data-ref="section_basic_header" class="cdncf-card__header">
+          <h3 class="cdncf-card__title">$t:sirsoft-cdn_cloudfront.settings.section_basic</h3>
+        </div>
+        <div data-ref="section_basic_fields" class="cdncf-card__body">
+          <div data-ref="field_cdn_base_url" class="cdncf-field-row">
+            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <div class="cdncf-field__meta">
+              <label class="cdncf-label" htmlFor="cdncf_cdn_base_url">$t:sirsoft-cdn_cloudfront.settings.fields.cdn_base_url.label</label>
+              <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.cdn_base_url.hint</p>
+            </div>
+            <div class="cdncf-field__control">
+              <input id="cdncf_cdn_base_url" type="url" name="cdn_base_url" autoComplete="off" disabled="{{_computed.isPluginReadOnly}}"/>
+              <span data-if="{{_local.errors?.['cdn_base_url']}}" class="cdncf-error">{{_local.errors?.['cdn_base_url']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div data-ref="field_distribution_id" class="cdncf-field-row">
+            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <div class="cdncf-field__meta">
+              <label class="cdncf-label" htmlFor="cdncf_distribution_id">$t:sirsoft-cdn_cloudfront.settings.fields.distribution_id.label</label>
+              <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.distribution_id.hint</p>
+            </div>
+            <div class="cdncf-field__control">
+              <input id="cdncf_distribution_id" type="text" name="distribution_id" autoComplete="off" disabled="{{_computed.isPluginReadOnly}}"/>
+              <span data-if="{{_local.errors?.['distribution_id']}}" class="cdncf-error">{{_local.errors?.['distribution_id']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 캐시 무효화 — 자격 증명은 S3 키와 따로 받는다(비면 무효화를 보내지 않는다). 비밀 칸은 password 형식이라 화면에 드러나지 않는다 -->
+      <div data-ref="section_purge_card" class="cdncf-card">
+        <div data-ref="section_purge_header" class="cdncf-card__header">
+          <h3 class="cdncf-card__title">$t:sirsoft-cdn_cloudfront.settings.section_purge</h3>
+        </div>
+        <div data-ref="section_purge_fields" class="cdncf-card__body">
+          <div data-ref="field_purge_enabled" class="cdncf-field-row">
+            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <div class="cdncf-field__meta">
+              <label class="cdncf-label" htmlFor="cdncf_purge_enabled">$t:sirsoft-cdn_cloudfront.settings.fields.purge_enabled.label</label>
+              <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.purge_enabled.hint</p>
+            </div>
+            <div class="cdncf-field__control">
+              <toggle data-type="composite" id="cdncf_purge_enabled" name="purge_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_access_key" class="cdncf-field-row">
+            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <div class="cdncf-field__meta">
+              <label class="cdncf-label" htmlFor="cdncf_access_key">$t:sirsoft-cdn_cloudfront.settings.fields.access_key.label</label>
+              <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.access_key.hint</p>
+            </div>
+            <div class="cdncf-field__control">
+              <input id="cdncf_access_key" type="password" name="access_key" autoComplete="new-password" disabled="{{_computed.isPluginReadOnly}}"/>
+              <span data-if="{{_local.errors?.['access_key']}}" class="cdncf-error">{{_local.errors?.['access_key']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div data-ref="field_secret_key" class="cdncf-field-row">
+            <responsive on="1024-" class="cdncf-field-row cdncf-field-row--wide"/>
+            <div class="cdncf-field__meta">
+              <label class="cdncf-label" htmlFor="cdncf_secret_key">$t:sirsoft-cdn_cloudfront.settings.fields.secret_key.label</label>
+              <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.fields.secret_key.hint</p>
+            </div>
+            <div class="cdncf-field__control">
+              <input id="cdncf_secret_key" type="password" name="secret_key" autoComplete="new-password" disabled="{{_computed.isPluginReadOnly}}"/>
+              <span data-if="{{_local.errors?.['secret_key']}}" class="cdncf-error">{{_local.errors?.['secret_key']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 연결 시험 — 저장된 값으로 배포를 조회한다(폼의 고친 값은 보내지 않는다). 결과는 이 화면 안에서만 쓰는 상태(_local.connectionResult)에 두고, 실패 사유는 응답 문구로 알린다 -->
+      <div data-ref="section_connection_card" class="cdncf-card">
+        <div data-ref="section_connection_header" class="cdncf-card__header">
+          <h3 class="cdncf-card__title">$t:sirsoft-cdn_cloudfront.settings.connection.title</h3>
+          <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.connection.hint</p>
+        </div>
+        <div data-ref="section_connection_body" class="cdncf-card__body">
+          <div class="cdncf-actions">
+            <button type="button" data-ref="test_connection_button" disabled="{{_computed.isPluginReadOnly || _local.isTesting}}" class="cdncf-button cdncf-button--secondary">
+              <on type="click">
+                <!-- 연결 시험 요청 — 시험 중 플래그로 버튼을 잠그고 직전 결과를 지운 뒤 보낸다. 성공하면 배포 상태·도메인을, 실패하면 서버 사유를 토스트로 보인다 -->
+                <sequence>
+                  <set-state target="local" :isTesting="true" :connectionResult="null"/>
+                  <api-call :auth_required="true" target="/api/plugins/sirsoft-cdn_cloudfront/admin/test-connection" method="POST">
+                    <success>
+                      <set-state target="local" :isTesting="false" connectionResult="{{response.data}}"/>
+                      <toast type="success" message="{{response.message}}"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :isTesting="false"/>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.isTesting}}" name="spinner" class="cdncf-spin"/>
+              <span data-if="{{!_local.isTesting}}">$t:sirsoft-cdn_cloudfront.settings.connection.button</span>
+              <span data-if="{{_local.isTesting}}">$t:sirsoft-cdn_cloudfront.settings.connection.testing</span>
+            </button>
+          </div>
+          <div data-ref="connection_result" data-if="{{!!_local.connectionResult}}" role="status" class="cdncf-stat-grid">
+            <responsive on="1024-" class="cdncf-stat-grid cdncf-stat-grid--wide"/>
+            <div class="cdncf-stat">
+              <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.connection.status</span>
+              <span data-ref="connection_status" class="cdncf-stat__value">{{_local.connectionResult?.status === 'Deployed' ? '$t:sirsoft-cdn_cloudfront.settings.connection.status_deployed' : (_local.connectionResult?.status === 'InProgress' ? '$t:sirsoft-cdn_cloudfront.settings.connection.status_in_progress' : (_local.connectionResult?.status ?? '-'))}}</span>
+            </div>
+            <div class="cdncf-stat">
+              <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.connection.domain</span>
+              <span class="cdncf-stat__value cdncf-break">{{_local.connectionResult?.domain_name ?? '-'}}</span>
+            </div>
+          </div>
+          <p data-ref="connection_disabled" data-if="{{_local.connectionResult?.enabled === false}}" role="status" class="cdncf-alert cdncf-alert--warning-inline">$t:sirsoft-cdn_cloudfront.settings.connection.disabled</p>
+          <p data-ref="connection_host_mismatch" data-if="{{_local.connectionResult?.cdn_host_matches === false}}" role="status" class="cdncf-alert cdncf-alert--warning-inline">$t:sirsoft-cdn_cloudfront.settings.connection.host_mismatch</p>
+        </div>
+      </div>
+      <!-- 무효화 대기 현황 — 실패한 무효화의 재시도 대기·멈춤 건수와 마지막 오류. 새로 고침은 현황만 다시 받는다 -->
+      <div data-ref="section_purge_status_card" class="cdncf-card">
+        <div data-ref="section_purge_status_header" class="cdncf-card__header cdncf-card__header--split">
+          <div>
+            <h3 class="cdncf-card__title">$t:sirsoft-cdn_cloudfront.settings.purge_status.title</h3>
+            <p class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.purge_status.hint</p>
+          </div>
+          <button type="button" data-ref="purge_status_refresh" class="cdncf-button cdncf-button--secondary">
+            <on type="click">
+              <!-- 현황만 다시 받는다 — 설정 폼의 고친 값은 그대로 둔다 -->
+              <refetch-data-source dataSourceId="cdncfPurgeStatus"/>
+            </on>
+            <icon name="rotate" class="cdncf-button__icon"/>
+            <span>$t:sirsoft-cdn_cloudfront.settings.purge_status.refresh</span>
+          </button>
+        </div>
+        <div data-ref="section_purge_status_body" class="cdncf-card__body">
+          <p data-ref="purge_status_forbidden" data-if="{{_local.purgeStatusForbidden === true}}" role="status" class="cdncf-hint">$t:sirsoft-cdn_cloudfront.settings.purge_status.forbidden</p>
+          <p data-ref="purge_status_not_ready" data-if="{{cdncfPurgeStatus?.data?.purge_ready === false}}" role="status" class="cdncf-alert cdncf-alert--warning-inline">$t:sirsoft-cdn_cloudfront.settings.purge_status.not_ready</p>
+          <div data-ref="purge_status_stats" data-if="{{_local.purgeStatusForbidden !== true}}" class="cdncf-stat-grid">
+            <responsive on="1024-" class="cdncf-stat-grid cdncf-stat-grid--wide"/>
+            <div class="cdncf-stat">
+              <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.purge_status.pending</span>
+              <span data-ref="purge_status_pending" class="cdncf-stat__value">{{cdncfPurgeStatus?.data?.pending ?? 0}}</span>
+            </div>
+            <div class="cdncf-stat">
+              <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.purge_status.abandoned</span>
+              <span data-ref="purge_status_abandoned" class="cdncf-stat__value">{{cdncfPurgeStatus?.data?.abandoned ?? 0}}</span>
+            </div>
+            <div class="cdncf-stat">
+              <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.purge_status.last_success_at</span>
+              <span class="cdncf-stat__value">{{cdncfPurgeStatus?.data?.last_success_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
+            </div>
+            <div class="cdncf-stat">
+              <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.purge_status.last_failed_at</span>
+              <span class="cdncf-stat__value">{{cdncfPurgeStatus?.data?.last_failed_at | datetime('YYYY-MM-DD HH:mm:ss') | default('-')}}</span>
+            </div>
+          </div>
+          <div data-ref="purge_status_last_error" data-if="{{!!cdncfPurgeStatus?.data?.last_error}}" class="cdncf-error-box">
+            <span class="cdncf-stat__label">$t:sirsoft-cdn_cloudfront.settings.purge_status.last_error</span>
+            <p class="cdncf-error-box__text cdncf-break">{{cdncfPurgeStatus?.data?.last_error ?? ''}}</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="cdncf-footer">
+        <a href="/admin/plugins" data-ref="cancel_button" class="cdncf-button cdncf-button--secondary">
+          <on type="click">
+            <navigate :bypassLeaveGuard="true"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </a>
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="cdncf-button cdncf-button--primary cdncf-footer__save">
+          <on type="click">
+            <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 연결 시험 결과·현황 같은 화면 상태는 폼(_local.form) 밖에 두므로 body 에 섞이지 않는다. 성공하면 설정과 현황(무효화 가능 여부가 바뀔 수 있다)을 다시 받는다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                  <refetch-data-source dataSourceId="cdncfPurgeStatus"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="cdncf-spin"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

@@ -11,7 +11,9 @@
   <meta title="$t:admin.base_layout_title" description="$t:admin.base_layout_description"/>
   <computed name="homePath">{{!current_user?.data ? null : ((current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.dashboard.read') ? '/admin/dashboard' : ((admin_menu?.data ?? []).flatMap(m =&gt; [m].concat(m?.children ?? [])).map(m =&gt; m?.url).find(u =&gt; typeof u === 'string' &amp;&amp; u.startsWith('/admin/') &amp;&amp; !['/admin/dashboard', '/admin/dashboard/'].includes(u.split('?')[0])) ?? null))}}</computed>
   <slot name="content">
-    <div data-ref="admin_home_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="admin_home_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="admin_home_redirect" data-if="{{!!_computed.homePath}}">
         <!-- 마운트 동작은 조건 노드 자신이 아니라 그 안쪽 노드에 둔다 — 엔진은 조건이 거짓이어도 노드의 렌더러를 먼저 만들고 그때
              `mount` 를 한 번 실행한다(데이터를 받기 전, 갈 곳이 빈 값이라 이동을 건너뛴다). 안쪽 노드는 조건이 참이 된 뒤에야 만들어진다. -->

@@ -74,8 +74,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "paytosspayments:p-6 paytosspayments:min-h-screen paytosspayments:bg-gray-50 paytosspayments:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "paytosspayments:p-8 paytosspayments:min-h-screen paytosspayments:bg-gray-50 paytosspayments:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "pay-tosspayments-admin-page-content-responsive"
+                    "className": "paytosspayments:p-4 paytosspayments:min-h-screen paytosspayments:bg-gray-50 paytosspayments:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -277,15 +289,26 @@
                                         "id": "field_test_client_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-tosspayments-grid-3col-responsive"
+                                            "className": "paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -309,8 +332,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -332,15 +359,26 @@
                                         "id": "field_test_secret_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-tosspayments-grid-3col-responsive"
+                                            "className": "paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -364,8 +402,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -423,15 +465,26 @@
                                         "id": "field_live_client_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-tosspayments-grid-3col-responsive"
+                                            "className": "paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -447,8 +500,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -470,15 +527,26 @@
                                         "id": "field_live_secret_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-tosspayments-grid-3col-responsive"
+                                            "className": "paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -502,8 +570,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -561,15 +633,26 @@
                                         "id": "field_redirect_success_url",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-tosspayments-grid-3col-responsive"
+                                            "className": "paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -593,8 +676,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -616,15 +703,26 @@
                                         "id": "field_redirect_fail_url",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "pay-tosspayments-grid-3col-responsive"
+                                            "className": "paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -648,8 +746,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "paytosspayments:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "paytosspayments:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {

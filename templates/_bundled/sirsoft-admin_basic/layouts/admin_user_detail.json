@@ -58,8 +58,15 @@
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "641-": {
+                                "props": {
+                                    "className": "flex items-center justify-between mb-6 -mx-6 px-6 bg-gray-50 dark:bg-gray-900"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "page-header-fullbleed"
+                            "className": "flex justify-between mb-6 -mx-6 px-6 bg-gray-50 dark:bg-gray-900 flex-col items-start gap-4"
                         },
                         "children": [
                             {
@@ -69,8 +76,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "text-xl font-semibold text-gray-900 dark:text-white"
                                         },
                                         "text": "$t:admin.users.detail.page_title"
                                     },
@@ -406,8 +420,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -461,8 +482,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -529,8 +557,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -687,8 +722,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -742,8 +784,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -852,8 +901,15 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "grid grid-cols-2 gap-4"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "grid-2col-responsive"
+                                                            "className": "grid grid-cols-1 gap-4"
                                                         },
                                                         "children": [
                                                             {
@@ -1020,8 +1076,15 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "grid grid-cols-2 gap-4"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "grid-2col-responsive"
+                                                            "className": "grid grid-cols-1 gap-4"
                                                         },
                                                         "children": [
                                                             {
@@ -1151,8 +1214,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1248,8 +1318,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1403,8 +1480,15 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{user?.data?.has_password !== false}}",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "grid grid-cols-2 gap-4"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "grid-2col-responsive"
+                                    "className": "grid grid-cols-1 gap-4"
                                 },
                                 "children": [
                                     {
@@ -1587,8 +1671,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "grid grid-cols-2 gap-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "grid-2col-responsive"
+                                            "className": "grid grid-cols-1 gap-4"
                                         },
                                         "children": [
                                             {
@@ -1685,8 +1776,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "grid grid-cols-2 gap-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "grid-2col-responsive"
+                                            "className": "grid grid-cols-1 gap-4"
                                         },
                                         "children": [
                                             {
@@ -1796,7 +1894,117 @@
             "name": "Modal",
             "props": {
                 "title": "$t:admin.users.detail.revoke_sessions.confirm_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "btn btn-secondary",
+                            "disabled": "{{_global.isRevokingSessions}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "revoke_sessions_confirm_button",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "모든 세션을 끊고 모달을 닫는다 — 진행 표시는 성공·실패 양쪽에서 끈다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isRevokingSessions": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/users/{{route?.id}}/sessions/revoke",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isRevokingSessions": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:admin.users.detail.revoke_sessions.success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isRevokingSessions": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                            "disabled": "{{_global.isRevokingSessions}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isRevokingSessions}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "spin": true,
+                                    "className": "text-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:admin.users.detail.revoke_sessions.confirm"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1813,123 +2021,6 @@
                                 "className": "text-gray-700 dark:text-gray-300"
                             },
                             "text": "$t:admin.users.detail.revoke_sessions.confirm_message"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isRevokingSessions}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "revoke_sessions_confirm_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "모든 세션을 끊고 모달을 닫는다 — 진행 표시는 성공·실패 양쪽에서 끈다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isRevokingSessions": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/users/{{route?.id}}/sessions/revoke",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isRevokingSessions": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.detail.revoke_sessions.success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isRevokingSessions": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isRevokingSessions}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isRevokingSessions}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "spin": true,
-                                        "className": "text-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:admin.users.detail.revoke_sessions.confirm"
-                                }
-                            ]
                         }
                     ]
                 }

@@ -31,6 +31,17 @@ class SettingsBoundaryContractTest extends TestCase
             'upload.image_max_width' => 'upload_image_max_width',
             'upload.image_max_height' => 'upload_image_max_height',
             'upload.image_quality' => 'upload_image_quality',
+            'upload.thumbnail_presets' => 'upload_thumbnail_presets',
+            'upload.thumbnail_presets.*.width' => 'upload_thumbnail_width',
+            'upload.thumbnail_presets.*.height' => 'upload_thumbnail_height',
+            'upload.thumbnail_presets.*.quality' => 'upload_image_quality',
+            // 썸네일 서버 보호 값(「고급」 칸) — 규칙은 SettingShapeRules 가 한계값에서 만든다
+            'upload.thumbnail_generate_per_minute' => 'upload_thumbnail_generate_per_minute',
+            'upload.thumbnail_lock_wait_seconds' => 'upload_thumbnail_lock_wait_seconds',
+            'upload.thumbnail_max_source_pixels' => 'upload_thumbnail_max_source_pixels',
+            'upload.thumbnail_pregenerate_batch' => 'upload_thumbnail_pregenerate_batch',
+            'upload.thumbnail_pregenerate_time_budget' => 'upload_thumbnail_pregenerate_time_budget',
+            'upload.thumbnail_purge_time_budget' => 'upload_thumbnail_purge_time_budget',
             'seo.og_image_default_width' => 'seo_og_image_default_width',
             'seo.og_image_default_height' => 'seo_og_image_default_height',
             'seo.cache_ttl' => 'seo_cache_ttl',
@@ -154,6 +165,41 @@ class SettingsBoundaryContractTest extends TestCase
         $bounds = $this->boundsOf((new SaveSettingsRequest)->rules()['drivers.log_days']);
 
         $this->assertSame('999', $bounds['max']);
+    }
+
+    /**
+     * 썸네일 서버 보호 값 여섯 키도 한계값을 바꾸면 저장 규칙의 min·max 가 따라 바뀐다.
+     *
+     * 지금 한계값과 같은 숫자 리터럴로 규칙을 바꾸면 위 일치 검사는 그대로 통과한다 — 한계값을 기본과 다른 값으로
+     * 바꿔 리터럴을 가려낸다.
+     *
+     * @effects settings_save_rules_follow_shared_limits
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function thumbnail_server_limit_rules_follow_changed_limits(): void
+    {
+        $keys = ['generate_per_minute', 'lock_wait_seconds', 'max_source_pixels', 'pregenerate_batch', 'pregenerate_time_budget', 'purge_time_budget'];
+
+        foreach ($keys as $index => $key) {
+            config([
+                "core.settings_limits.upload_thumbnail_{$key}_min" => 2 + $index,
+                "core.settings_limits.upload_thumbnail_{$key}_max" => 777 + $index,
+            ]);
+        }
+
+        $rules = (new SaveSettingsRequest)->rules();
+
+        foreach ($keys as $index => $key) {
+            $bounds = $this->boundsOf($rules["upload.thumbnail_{$key}"]);
+
+            $this->assertSame(
+                ['min' => (string) (2 + $index), 'max' => (string) (777 + $index)],
+                $bounds,
+                "upload.thumbnail_{$key} 규칙이 한계값을 따르지 않는다 — 숫자 리터럴로 바뀌었는지 확인하세요."
+            );
+        }
     }
 
     /**

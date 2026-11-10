@@ -24,7 +24,9 @@
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paynicepayments:p-4 paynicepayments:sm:p-6 paynicepayments:lg:p-8 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paynicepayments:p-4 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900">
+      <responsive on="640-1023" class="paynicepayments:p-6 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900"/>
+      <responsive on="1024-" class="paynicepayments:p-8 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_nicepayments.settings.title" description="$t:sirsoft-pay_nicepayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="pay-nicepayments-alert-warning paynicepayments:mt-6">
         <icon name="lock" class="paynicepayments:text-xl paynicepayments:leading-none paynicepayments:text-amber-600 paynicepayments:dark:text-amber-400 paynicepayments:flex-shrink-0"/>
@@ -66,12 +68,15 @@
           <h3 class="pay-nicepayments-section-heading-md">$t:sirsoft-pay_nicepayments.settings.section_live_keys</h3>
         </div>
         <div class="paynicepayments:p-6 paynicepayments:space-y-6">
-          <div data-ref="field_live_mid" class="pay-nicepayments-grid-3col-responsive">
-            <div class="paynicepayments:lg:col-span-1">
+          <div data-ref="field_live_mid" class="paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start">
+            <responsive on="1024-" class="paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynicepayments:col-span-1"/>
               <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.live_mid</label>
               <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.live_mid_hint</p>
             </div>
-            <div class="paynicepayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynicepayments:col-span-2"/>
               <div class="paynicepayments:flex paynicepayments:rounded-lg paynicepayments:border paynicepayments:border-gray-300 paynicepayments:dark:border-gray-600 paynicepayments:overflow-hidden paynicepayments:focus-within:ring-2 paynicepayments:focus-within:ring-blue-500 pay-nicepayments-focus-group">
                 <span class="paynicepayments:inline-flex paynicepayments:items-center paynicepayments:px-3 paynicepayments:bg-gray-100 paynicepayments:dark:bg-gray-600 paynicepayments:border-r paynicepayments:border-gray-300 paynicepayments:dark:border-gray-600 pay-nicepayments-text-body paynicepayments:font-mono paynicepayments:font-bold paynicepayments:select-none">SR</span>
                 <input type="text" name="live_mid" placeholder="paytestm" class="paynicepayments:flex-1 paynicepayments:font-mono paynicepayments:outline-none paynicepayments:border-0" disabled="{{_computed.isPluginReadOnly}}"/>
@@ -79,12 +84,15 @@
               <p class="paynicepayments:mt-1.5 pay-nicepayments-text-tertiary">$t:sirsoft-pay_nicepayments.settings.live_mid_example</p>
             </div>
           </div>
-          <div data-ref="field_live_merchant_key" class="pay-nicepayments-grid-3col-responsive">
-            <div class="paynicepayments:lg:col-span-1">
+          <div data-ref="field_live_merchant_key" class="paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start">
+            <responsive on="1024-" class="paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynicepayments:col-span-1"/>
               <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.live_merchant_key</label>
               <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.live_merchant_key_hint</p>
             </div>
-            <div class="paynicepayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynicepayments:col-span-2"/>
               <input type="password" name="live_merchant_key" placeholder="live_key_..." class="paynicepayments:dark:focus:ring-blue-400 paynicepayments:focus:border-transparent paynicepayments:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
@@ -95,21 +103,27 @@
           <h3 class="pay-nicepayments-section-heading-md">$t:sirsoft-pay_nicepayments.settings.section_redirect</h3>
         </div>
         <div class="paynicepayments:p-6 paynicepayments:space-y-6">
-          <div data-ref="field_redirect_success_url" class="pay-nicepayments-grid-3col-responsive">
-            <div class="paynicepayments:lg:col-span-1">
+          <div data-ref="field_redirect_success_url" class="paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start">
+            <responsive on="1024-" class="paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynicepayments:col-span-1"/>
               <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.redirect_success_url</label>
               <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.redirect_success_url_hint</p>
             </div>
-            <div class="paynicepayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynicepayments:col-span-2"/>
               <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="paynicepayments:dark:focus:ring-blue-400 paynicepayments:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_redirect_fail_url" class="pay-nicepayments-grid-3col-responsive">
-            <div class="paynicepayments:lg:col-span-1">
+          <div data-ref="field_redirect_fail_url" class="paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start">
+            <responsive on="1024-" class="paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"/>
+            <div>
+              <responsive on="desktop" class="paynicepayments:col-span-1"/>
               <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.redirect_fail_url</label>
               <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.redirect_fail_url_hint</p>
             </div>
-            <div class="paynicepayments:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paynicepayments:col-span-2"/>
               <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="paynicepayments:dark:focus:ring-blue-400 paynicepayments:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>

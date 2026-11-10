@@ -33,6 +33,7 @@ import {
 // 스토리지 관련 핸들러
 import {
   initCartKeyHandler,
+  ensureCartKeyHandler,
   getCartKeyHandler,
   clearCartKeyHandler,
   regenerateCartKeyHandler,
@@ -130,6 +131,7 @@ export const handlers = {
 
   // 스토리지
   initCartKey: initCartKeyHandler,
+  ensureCartKey: ensureCartKeyHandler,
   getCartKey: getCartKeyHandler,
   clearCartKey: clearCartKeyHandler,
   regenerateCartKey: regenerateCartKeyHandler,
@@ -189,6 +191,7 @@ export {
   initCartOptionSelectionHandler,
   // 스토리지
   initCartKeyHandler,
+  ensureCartKeyHandler,
   getCartKeyHandler,
   clearCartKeyHandler,
   regenerateCartKeyHandler,

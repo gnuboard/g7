@@ -8,6 +8,7 @@ use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Extension\Helpers\TemplateLastActiveGuard;
 use App\Extension\TemplateManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -59,6 +60,14 @@ class UninstallTemplateCommand extends Command
 
             if (! $template) {
                 $this->error('❌ '.__('templates.commands.activate.not_installed', ['template' => $identifier]));
+
+                return Command::FAILURE;
+            }
+
+            // 유형의 마지막 활성 템플릿은 지우지 않는다 — 관리자 화면 경로와 같은 판정(TemplateLastActiveGuard). 지우면 그 화면
+            // 전체가 그려지지 않는다. --force 는 확인 질문만 건너뛴다. 확인을 묻기 전에 거절해 답한 뒤에 막히지 않게 한다
+            if (TemplateLastActiveGuard::isLastActiveOfType($template, $this->templateRepository)) {
+                $this->error('❌ '.TemplateLastActiveGuard::message($template, 'templates.errors.last_active_uninstall'));
 
                 return Command::FAILURE;
             }

@@ -31,7 +31,8 @@ export interface ExtensionCardItem {
     description?: string;
     vendor?: string;
     iconUrl?: string;
-    fallbackIcon?: IconName;
+    /** 그림이 없을 때 보일 아이콘 — Icon 의 name 과 같이 별칭 문자열('cube', 'puzzle-piece')이나 IconName 을 받는다 */
+    fallbackIcon?: string | IconName;
     /**
      * 아이콘 오른쪽 아래에 얹는 짧은 표식(언어팩의 로케일). 언어팩은 대개 자기 그림이 없어
      * 대상 확장·코어의 아이콘을 빌려 쓰므로, 무엇의 어떤 언어인지 이 표식으로 구분한다.

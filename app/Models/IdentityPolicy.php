@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Enums\IdentityPolicyAppliesTo;
 use App\Enums\IdentityPolicyFailMode;
 use App\Enums\IdentityPolicyScope;
@@ -73,6 +74,11 @@ class IdentityPolicy extends Model
         'purpose', 'applies_to', 'priority',
     ];
 
+    /**
+     * 속성 형 변환 규칙을 반환합니다.
+     *
+     * @return array<string, string> 속성 => 형
+     */
     protected function casts(): array
     {
         return [
@@ -102,20 +108,36 @@ class IdentityPolicy extends Model
      */
     public const ROUTE_SCOPE_CACHE_TAG = 'identity_policy';
 
+    /**
+     * Hook scope 인덱스 캐시 키 — Repository::getHookScopeIndex 가 사용. route 인덱스와 같은 태그로 함께 비운다.
+     */
+    public const HOOK_SCOPE_CACHE_KEY = 'identity_policies.hook_scope_index';
+
+    /**
+     * 저장·삭제 때 정책 색인 캐시(route·hook)를 비우도록 모델 이벤트를 등록합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected static function booted(): void
     {
         static::saved(static::flushRouteScopeCache(...));
         static::deleted(static::flushRouteScopeCache(...));
     }
 
+    /**
+     * 정책 색인 캐시(route·hook 인덱스)를 비웁니다 — 태그를 지원하면 태그째, 아니면 키별로.
+     *
+     * @return void 반환값 없음
+     */
     public static function flushRouteScopeCache(): void
     {
-        $cache = app(\App\Contracts\Extension\CacheInterface::class);
+        $cache = app(CacheInterface::class);
         if ($cache->supportsTags()) {
             $cache->flushTags([self::ROUTE_SCOPE_CACHE_TAG]);
 
             return;
         }
         $cache->forget(self::ROUTE_SCOPE_CACHE_KEY);
+        $cache->forget(self::HOOK_SCOPE_CACHE_KEY);
     }
 }

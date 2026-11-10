@@ -71,10 +71,12 @@
     <set-state target="local" search.subject="{{query.subject || 'ip'}}" search.value="{{query.value || ''}}" search.from="{{query.from || ''}}" search.to="{{query.to || ''}}"/>
   </init>
   <slot name="content">
-    <div data-ref="analytics_privacy_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="analytics_privacy_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between mb-4">
         <div>
-          <h1 class="page-title">$t:admin.analytics.privacy_requests.title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.privacy_requests.title</h1>
           <p class="text-label-subtle mt-1">$t:admin.analytics.privacy_requests.description</p>
         </div>
       </div>
@@ -87,8 +89,9 @@
       </div>
       <div data-ref="search_card" class="admin-card mb-4">
         <div class="filter-grid">
-          <div class="filter-row">
-            <span class="filter-label w-32">$t:admin.analytics.privacy_requests.search.subject_label</span>
+          <div class="flex flex-col gap-2">
+            <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+            <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.analytics.privacy_requests.search.subject_label</span>
             <radio-group data-type="composite" name="analytics_subject_type" value="{{_local.search?.subject || 'ip'}}" :inline="true">
               <prop name="options">
                 <item label="$t:admin.analytics.privacy_requests.search.subject_ip" value="ip"/>
@@ -101,8 +104,9 @@
               </on>
             </radio-group>
           </div>
-          <div class="filter-row">
-            <span class="filter-label w-32">$t:admin.analytics.privacy_requests.search.value_label</span>
+          <div class="flex flex-col gap-2">
+            <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+            <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.analytics.privacy_requests.search.value_label</span>
             <input data-ref="subject_value" name="analytics_subject_value" type="text" class="input w-80" placeholder="{{(_local.search?.subject || 'ip') === 'ip' ? $t('admin.analytics.privacy_requests.search.placeholder_ip') : ((_local.search?.subject === 'user_id') ? $t('admin.analytics.privacy_requests.search.placeholder_user') : $t('admin.analytics.privacy_requests.search.placeholder_key'))}}" value="{{_local.search?.value || ''}}">
               <on type="change">
                 <!-- 입력값을 폼에 담아 둔다. 조회하지 않는다 — 주소에 올릴 때까지 결과 카드는 앞선 검색 그대로다. -->
@@ -123,8 +127,9 @@
               </on>
             </input>
           </div>
-          <div class="filter-row">
-            <span class="filter-label w-32">$t:admin.analytics.privacy_requests.search.period_label</span>
+          <div class="flex flex-col gap-2">
+            <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+            <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.analytics.privacy_requests.search.period_label</span>
             <div class="flex-center gap-2 flex-wrap">
               <input name="analytics_subject_from" type="date" aria-label="$t:common.range_start|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.from || ''}}">
                 <on type="change">

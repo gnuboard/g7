@@ -5,6 +5,7 @@
   <modal data-type="composite" data-ref="module_uninstall_modal" title="{{_global.moduleUninstallBackups?.length ? '$t:admin.modules.modals.uninstall_done_title' : '$t:admin.modules.modals.uninstall_title'}}" size="medium">
     <div data-if="{{!(_global.moduleUninstallBackups?.length)}}" class="py-2">
       <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="module_uninstall_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다) -->
         <img data-if="{{_global.selectedModule?.icon_url}}" src="{{_global.selectedModule.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
         <icon data-if="{{!_global.selectedModule?.icon_url}}" name="cube" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
       </span><span>$t:admin.modules.modals.uninstall_confirm|name={{_global.selectedModule.name}}</span></p>
@@ -149,7 +150,7 @@
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons sticky bottom-0 items-center px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+    <footer>
       <button type="button" data-if="{{!(_global.moduleUninstallBackups?.length)}}" class="btn btn-secondary" disabled="{{_global.isModuleUninstalling}}">
         <on type="click">
           <close-modal/>
@@ -198,6 +199,6 @@
         </on>
         <span>$t:common.close</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

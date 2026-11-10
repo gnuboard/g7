@@ -1,0 +1,84 @@
+# 레이아웃 편집기 인라인 텍스트 편집과 데이터 연결 위젯
+# #869 이월 0 회차(π1): tsc 정리 때 건드린 편집기 시험의 시나리오 표식 누락을 채우며 만든 매니페스트다.
+# 축 subject 는 각 시험 파일이 재는 대상(컴포넌트 또는 함수)이고, effects 는 시험 하나하나가 단언하는 동작이다.
+feature: layout_editor_inline_text_pi1
+
+description: |
+  캔버스 인라인 텍스트 편집기(contentEditable 커밋과 취소, 키 힌트, 글자색 대비 배경)와 서식 툴바를 다룬다.
+  인라인 데이터 연결(평문 키화, param 교체와 해제, lang named-param 오판 방지), 칩 편집기(로케일 버퍼, 커서 삽입, 미키화 노드 키 생성),
+  반복 데이터 연결(array 후보, 안전 바인딩 인식, 복합식 디그레이드)과 로케일 전환기를 함께 잰다.
+
+axes:
+  subject: [inline_binding_section, inline_param_chip_editor, inline_text_editor, inline_text_toolbar, iteration_binding_section, locale_switcher]
+
+effects:
+  - inline_binding_plain_text_shows_none_and_picker
+  - inline_binding_insert_keyifies_plain_into_param_key
+  - inline_binding_picker_lists_scalar_only
+  - inline_binding_legacy_raw_interp_read_only
+  - inline_binding_param_rows_with_clear_and_append
+  - inline_binding_param_replace_keeps_key_and_others
+  - inline_binding_param_clear_removes_pn_segment
+  - inline_binding_complex_param_read_only
+  - inline_binding_lang_named_param_not_param_key
+  - inline_binding_lang_named_param_insert_new_custom_key
+  - inline_chip_fetch_renders_chip_and_text
+  - inline_chip_save_buffers_current_locale_only
+  - inline_chip_outside_pointerdown_commits
+  - inline_chip_unchanged_save_no_put
+  - inline_chip_insert_button_hidden_without_handler
+  - inline_chip_insert_button_opens_picker
+  - inline_chip_candidate_pick_inserts_at_cursor
+  - inline_chip_precommits_local_edit_before_insert
+  - inline_chip_unkeyed_renders_initial_chip_no_fetch
+  - inline_chip_unkeyed_changed_save_calls_onkeyify
+  - inline_chip_unkeyed_unchanged_save_skips_keyify
+  - inline_text_initial_value_injected
+  - inline_text_enter_commits
+  - inline_text_escape_cancels_without_commit
+  - inline_text_blur_commits
+  - inline_text_enter_then_blur_commits_once
+  - inline_text_key_hint_existing_or_new
+  - inline_text_hint_badge_opens_translations
+  - inline_text_hint_badge_static_without_handler
+  - inline_text_empty_value_warns
+  - inline_text_mirrors_class_and_style
+  - inline_text_class_color_not_overridden_inline
+  - inline_text_style_color_applied
+  - inline_text_fallback_color_without_source
+  - inline_text_light_color_darkens_background
+  - inline_text_dark_color_keeps_white_background
+  - inline_text_no_color_keeps_white_background
+  - inline_text_node_effective_color_drives_contrast
+  - inline_text_node_effective_color_beats_mirror_style
+  - inline_toolbar_shows_declared_style_controls
+  - inline_toolbar_absent_without_style_controls
+  - inline_toolbar_no_element_add_buttons
+  - inline_toolbar_bold_applies_token_on_fresh_node
+  - inline_toolbar_bold_toggle_on_off
+  - inline_toolbar_bold_jumps_to_bold_and_toggles
+  - inline_toolbar_bold_replaces_semibold
+  - inline_toolbar_align_opens_popover_and_applies
+  - inline_toolbar_size_popover_free_value_applies
+  - inline_toolbar_reselect_same_option_clears
+  - iteration_binding_section_renders_for_iteration
+  - iteration_binding_section_null_without_iteration
+  - iteration_binding_pick_array_sets_source
+  - iteration_binding_clear_removes_source_only
+  - iteration_binding_safe_fallback_expr_is_linked
+  - iteration_binding_complex_expr_degrades
+  - iteration_binding_shows_item_index_vars
+  - locale_switcher_renders_locales_current_active
+  - locale_switcher_click_switches_active
+  - locale_switcher_single_locale_label_only
+  - locale_switcher_adds_missing_current_locale
+  - locale_switcher_reads_supported_locales
+  - locale_switcher_display_label_resolves
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InlineBindingSection.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InlineParamChipEditor.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InlineTextEditor.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InlineTextToolbar.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/IterationBindingSection.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/LocaleSwitcher.test.tsx

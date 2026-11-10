@@ -18,15 +18,17 @@ const ENABLE_CONTROL: EditorControlSpec = {
   widget: 'toggle',
   group: 'flex-enable',
   onValue: 'flex',
-  apply: { type: 'classToken', tokens: ['flex'] } as unknown as string,
+  apply: { type: 'classToken', tokens: ['flex'] },
 };
 
 afterEach(() => vi.restoreAllMocks());
 
 describe('getFlexEditorRole', () => {
+  /** @effects flex_container_classToken_emits_per_spec_apply_type */
   it.each(['container', 'item', 'auto'])('%s 역할을 읽는다', (role) => {
     expect(getFlexEditorRole({ flexEditor: role as 'container' })).toBe(role);
   });
+  /** @effects flex_container_classToken_emits_per_spec_apply_type */
   it('미선언/잘못된 값 → null', () => {
     expect(getFlexEditorRole({})).toBeNull();
     expect(getFlexEditorRole(null)).toBeNull();
@@ -35,18 +37,22 @@ describe('getFlexEditorRole', () => {
 });
 
 describe('isRenderedAsFlex — computed style 기반(className 토큰 아님)', () => {
+  /** @effects flex_auto_detection_uses_computed_style_not_classname */
   it('display:flex → true', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'flex' } as CSSStyleDeclaration);
     expect(isRenderedAsFlex(document.createElement('div'))).toBe(true);
   });
+  /** @effects flex_auto_detection_uses_computed_style_not_classname */
   it('display:inline-flex → true', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'inline-flex' } as CSSStyleDeclaration);
     expect(isRenderedAsFlex(document.createElement('div'))).toBe(true);
   });
+  /** @effects flex_auto_detection_uses_computed_style_not_classname */
   it('display:block → false', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'block' } as CSSStyleDeclaration);
     expect(isRenderedAsFlex(document.createElement('div'))).toBe(false);
   });
+  /** @effects flex_auto_detection_uses_computed_style_not_classname */
   it('null 엘리먼트 → false', () => {
     expect(isRenderedAsFlex(null)).toBe(false);
   });
@@ -57,9 +63,11 @@ describe('isNodeFlexEnabled — 노드 파생(enable 컨트롤 역해석)', () =
   it('className 에 flex 토큰 있으면 true', () => {
     expect(isNodeFlexEnabled({ props: { className: 'w-full flex gap-2' } }, ENABLE_CONTROL)).toBe(true);
   });
+  /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
   it('flex 토큰 없으면 false', () => {
     expect(isNodeFlexEnabled({ props: { className: 'w-full max-w-md p-8' } }, ENABLE_CONTROL)).toBe(false);
   });
+  /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
   it('enable 컨트롤/노드 미공급 → false', () => {
     expect(isNodeFlexEnabled(null, ENABLE_CONTROL)).toBe(false);
     expect(isNodeFlexEnabled({ props: { className: 'flex' } }, null)).toBe(false);
@@ -81,12 +89,15 @@ describe('isNodeFlexEnabled — 노드 파생(enable 컨트롤 역해석)', () =
       ],
     } as unknown as EditorControlSpec;
 
+    /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
     it('on 토큰(flex) → true', () => {
       expect(isNodeFlexEnabled({ props: { className: 'w-full flex gap-2' } }, ENABLE_ONOFF_CONTROL)).toBe(true);
     });
+    /** @effects device_flex_disable_writes_explicit_off_token_breaking_base_inheritance */
     it('off 토큰(block) → false (해제 후 만들기 버튼 복귀)', () => {
       expect(isNodeFlexEnabled({ props: { className: 'w-full block p-8' } }, ENABLE_ONOFF_CONTROL)).toBe(false);
     });
+    /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
     it('on/off 토큰 모두 없음 → false', () => {
       expect(isNodeFlexEnabled({ props: { className: 'w-full p-8' } }, ENABLE_ONOFF_CONTROL)).toBe(false);
     });
@@ -102,6 +113,7 @@ describe('resolveFlexContainerMode', () => {
   it('item → 컨테이너 컨트롤 비노출', () => {
     expect(resolveFlexContainerMode('item', null)).toEqual({ showContainer: false, showEnableButton: false, showDisableButton: false });
   });
+  /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
   it('auto + 노드 파생 flex(enable 컨트롤 있음) → 컨테이너 컨트롤 + 해제 버튼', () => {
     // 노드 파생 우선 — computed style 은 보지 않는다(stale 방지). el 은 block 이어도 무관.
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'block' } as CSSStyleDeclaration);
@@ -130,6 +142,7 @@ describe('resolveFlexContainerMode', () => {
       showDisableButton: false,
     });
   });
+  /** @effects flex_make_box_button_when_not_rendered_as_flex */
   it('auto + enable 컨트롤 없음 → computed style 폴백(block) → 만들기 버튼', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'block' } as CSSStyleDeclaration);
     expect(resolveFlexContainerMode('auto', document.createElement('div'), false, false)).toEqual({
@@ -155,12 +168,14 @@ describe('scope', () => {
   const mobileScope = { colorScheme: 'base', breakpoint: 'mobile' } as const;
   const baseScope = { colorScheme: 'base', breakpoint: 'base' } as const;
 
+  /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
   it('isNodeFlexEnabled — base flex 가 mobile scope 에서는 false(상속 미인정)', () => {
     const node = { name: 'Div', props: { className: 'flex' } };
     expect(isNodeFlexEnabled(node, ENABLE_ONOFF, baseScope)).toBe(true);
     expect(isNodeFlexEnabled(node, ENABLE_ONOFF, mobileScope)).toBe(false);
   });
 
+  /** @effects device_flex_disable_writes_explicit_off_token_breaking_base_inheritance */
   it('isNodeFlexEnabled — mobile scope 명시 flex 오버라이드면 true', () => {
     const node = {
       name: 'Div',
@@ -170,6 +185,7 @@ describe('scope', () => {
     expect(isNodeFlexEnabled(node, ENABLE_ONOFF, mobileScope)).toBe(true);
   });
 
+  /** @effects no_enable_control_hides_flex_toggle_in_non_base_scope */
   it('resolveFlexContainerMode — scope≠base + enable 없음 → flex on/off 비노출(D8)', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'flex' } as CSSStyleDeclaration);
     expect(resolveFlexContainerMode('auto', document.createElement('div'), false, false, mobileScope)).toEqual({
@@ -179,6 +195,7 @@ describe('scope', () => {
     });
   });
 
+  /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
   it('resolveFlexContainerMode — scope≠base + 노드 파생 flex → 컨테이너+해제', () => {
     expect(resolveFlexContainerMode('auto', null, true, true, mobileScope)).toEqual({
       showContainer: true,
@@ -187,6 +204,7 @@ describe('scope', () => {
     });
   });
 
+  /** @effects scope_flex_judgment_uses_node_derivation_not_computed_style */
   it('resolveFlexContainerMode — computed 폴백은 base scope 에서만', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({ display: 'flex' } as CSSStyleDeclaration);
     expect(
@@ -196,6 +214,7 @@ describe('scope', () => {
 });
 
 describe('control key 규약', () => {
+  /** @effects flex_container_classToken_emits_per_spec_apply_type */
   it('컨테이너/아이템 컨트롤 키 상수가 안정적이다', () => {
     expect(Object.values(FLEX_CONTAINER_CONTROL_KEYS)).toEqual(['flexDirection', 'flexJustify', 'flexAlign', 'flexWrap', 'flexGap', 'flexEnable']);
     expect(Object.values(FLEX_ITEM_CONTROL_KEYS)).toEqual(['flexItemGrow', 'flexItemAlign', 'flexItemOrder']);

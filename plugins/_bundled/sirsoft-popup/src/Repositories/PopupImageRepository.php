@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Popup\Repositories;
 
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
 use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
@@ -131,5 +132,46 @@ class PopupImageRepository implements PopupImageRepositoryInterface
             ->orderBy('id')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  array<int, string>  $mimeTypes  MIME 목록
+     * @return int 개수
+     */
+    public function countAttachedImages(array $mimeTypes): int
+    {
+        return $this->attachedImages($mimeTypes)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  array<int, string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 id 다음부터
+     * @param  int  $limit  최대 건수
+     * @return Collection<int, PopupImage> 이미지 목록
+     */
+    public function chunkAttachedImages(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->attachedImages($mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
+     * 팝업에 붙은 이미지 행 쿼리
+     *
+     * @param  array<int, string>  $mimeTypes  MIME 목록
+     * @return Builder<PopupImage> 쿼리
+     */
+    private function attachedImages(array $mimeTypes): Builder
+    {
+        return PopupImage::query()
+            ->whereNotNull('popup_id')
+            ->whereIn('mime', $mimeTypes);
     }
 }

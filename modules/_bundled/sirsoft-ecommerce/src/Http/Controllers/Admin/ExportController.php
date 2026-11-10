@@ -177,6 +177,7 @@ class ExportController extends AdminBaseController
      * @param  Export  $export  작업
      * @return Response 파일 스트림 또는 오류
      */
+    // thumbnail-exempt: 내보내기 파일(엑셀·CSV) 다운로드 통로다 — 이미지가 아니어서 썸네일 대상이 아니다.
     public function download(DownloadExportRequest $request, Export $export): Response
     {
         if (! ExportAccess::inScope($export, $request->user(), ExportAccess::DOWNLOAD_PERMISSION)) {
@@ -240,6 +241,7 @@ class ExportController extends AdminBaseController
      * @param  string  $token  토큰
      * @return Response 파일 스트림 또는 오류
      */
+    // thumbnail-exempt: 내보내기 파일(엑셀·CSV) 다운로드 통로다 — 이미지가 아니어서 썸네일 대상이 아니다.
     // route-param:unused $token 은 DownloadByTokenRequest 가 검증 대상으로 옮겨 담고, 본문은 검증(확장 규칙 포함)을 거친 값만 쓴다.
     public function downloadByToken(DownloadByTokenRequest $request, string $token): Response
     {

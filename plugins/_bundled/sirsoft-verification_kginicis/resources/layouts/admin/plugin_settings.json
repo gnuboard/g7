@@ -63,8 +63,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "verificationkginicis:p-6 verificationkginicis:min-h-screen verificationkginicis:bg-gray-50 verificationkginicis:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "verificationkginicis:p-8 verificationkginicis:min-h-screen verificationkginicis:bg-gray-50 verificationkginicis:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "verification-kginicis-admin-page-content-responsive"
+                    "className": "verificationkginicis:p-4 verificationkginicis:min-h-screen verificationkginicis:bg-gray-50 verificationkginicis:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -360,15 +372,26 @@
                                         "id": "field_live_mid",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "verificationkginicis:grid verificationkginicis:grid-cols-3 verificationkginicis:gap-4 verificationkginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verification-kginicis-grid-3col-responsive"
+                                            "className": "verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationkginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationkginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -392,8 +415,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationkginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationkginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -443,15 +470,26 @@
                                         "id": "field_live_api_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "verificationkginicis:grid verificationkginicis:grid-cols-3 verificationkginicis:gap-4 verificationkginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verification-kginicis-grid-3col-responsive"
+                                            "className": "verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationkginicis:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationkginicis:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -467,8 +505,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationkginicis:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationkginicis:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -538,15 +580,26 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "verificationkginicis:grid verificationkginicis:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:lg:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start"
+                                            "className": "verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationkginicis:lg:col-span-8"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationkginicis:col-span-8"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -570,8 +623,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationkginicis:col-span-4 verificationkginicis:space-y-3"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "verificationkginicis:lg:col-span-4 verificationkginicis:space-y-3"
+                                                    "className": "verificationkginicis:space-y-3"
                                                 },
                                                 "children": [
                                                     {
@@ -713,15 +773,26 @@
                                         "id": "field_duplicate_block_enabled",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "verificationkginicis:grid verificationkginicis:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start verificationkginicis:pt-6 verificationkginicis:border-t verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:lg:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start verificationkginicis:pt-6 verificationkginicis:border-t verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700"
+                                            "className": "verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start verificationkginicis:pt-6 verificationkginicis:border-t verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationkginicis:lg:col-span-8"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationkginicis:col-span-8"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -753,8 +824,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verification-kginicis-flex-center verificationkginicis:col-span-4 verificationkginicis:justify-end"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "verification-kginicis-flex-center verificationkginicis:lg:col-span-4 verificationkginicis:justify-end"
+                                                    "className": "verification-kginicis-flex-center verificationkginicis:justify-end"
                                                 },
                                                 "children": [
                                                     {

@@ -172,9 +172,10 @@
   </init>
   <slot name="content">
     <div data-ref="hero_form_content" class="hs-admin-page-content">
-      <div data-ref="page_header" class="hs-page-header">
+      <div data-ref="page_header" class="hs:flex hs:justify-between hs:mb-6 hs:flex-col hs:items-start hs:gap-4">
+        <responsive on="641-" class="hs:flex hs:items-center hs:justify-between hs:mb-6"/>
         <div>
-          <h1 class="hs-page-title">{{_local.form?.id ? '$t:sirsoft-hero_section.admin.form.edit_title' : '$t:sirsoft-hero_section.admin.form.create_title'}}</h1>
+          <h1 class="hs:text-xl hs:font-semibold hs:text-gray-900 hs:dark:text-white"><responsive on="640-" class="hs:text-2xl hs:font-semibold hs:text-gray-900 hs:dark:text-white"/>{{_local.form?.id ? '$t:sirsoft-hero_section.admin.form.edit_title' : '$t:sirsoft-hero_section.admin.form.create_title'}}</h1>
           <p class="hs-page-description">$t:sirsoft-hero_section.admin.form.description</p>
         </div>
       </div>
@@ -187,8 +188,10 @@
           </ul>
         </div>
       </div>
-      <div data-ref="hero_form_columns" class="hs:grid hs:grid-cols-1 hs:lg:grid-cols-3 hs:gap-6">
-        <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="0" class="hs:lg:col-span-2 hs:flex hs:flex-col hs:gap-6">
+      <div data-ref="hero_form_columns" class="hs:grid hs:grid-cols-1 hs:gap-6">
+        <responsive on="desktop" class="hs:grid hs:grid-cols-3 hs:gap-6"/>
+        <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="0" class="hs:flex hs:flex-col hs:gap-6">
+          <responsive on="desktop" class="hs:col-span-2 hs:flex hs:flex-col hs:gap-6"/>
           <!-- 기본 정보 — 노출 위치는 템플릿이 열어 둔 히어로섹션 자리(확장점) 이름과 같다 -->
           <section data-ref="basic_card" class="hs-admin-card">
             <h2 class="hs-card-title">$t:sirsoft-hero_section.admin.form.section.basic</h2>
@@ -500,7 +503,8 @@
                 <input type="range" id="hero_text_width" name="presentation.text_width" min="{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}" max="{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}" :step="5" class="hs:w-full"/>
                 <p class="hs-form-hint">$t:sirsoft-hero_section.admin.form.text_layout.width_hint</p>
               </div>
-              <div data-ref="field_animation" class="hs:grid hs:grid-cols-1 hs:sm:grid-cols-3 hs:gap-4">
+              <div data-ref="field_animation" class="hs:grid hs:grid-cols-1 hs:gap-4">
+                <responsive on="640-" class="hs:grid hs:grid-cols-3 hs:gap-4"/>
                 <label class="hs:flex hs:flex-col hs:gap-1" htmlFor="hero_text_animation">
                   <span class="hs-form-label">$t:sirsoft-hero_section.admin.form.text_layout.animation</span>
                   <select id="hero_text_animation" name="presentation.animation" class="hs-input hs-select">
@@ -694,7 +698,8 @@
         </div>
         <!-- 미리보기 — 저장 전 입력값을 사용자 슬라이더 그대로 그린다. 좁은 화면에서는 입력 위로 올라가고(팝업 관리와 같은 배치) 넓은 화면에서는 오른쪽 열에 고정된다.
           관리자 템플릿에는 Aside 기본 컴포넌트가 없어(있으면 화면에서 조용히 빠진다) Section 으로 둔다 -->
-        <section id="hero_form_preview" data-ref="preview_card" aria-labelledby="hero_form_preview_heading" class="hs-admin-card hs:self-start hs:order-first hs:lg:order-last hs-editor-preview">
+        <section id="hero_form_preview" data-ref="preview_card" aria-labelledby="hero_form_preview_heading" class="hs-admin-card hs:self-start hs:order-first">
+          <responsive on="desktop" class="hs-admin-card hs:self-start hs:order-last hs:sticky hs:top-[84px]"/>
           <div class="hs-flex-between hs:flex-wrap hs:gap-2 hs:mb-3">
             <h2 id="hero_form_preview_heading" class="hs-card-title">$t:sirsoft-hero_section.admin.form.preview.title</h2>
             <div role="group" aria-label="$t:sirsoft-hero_section.admin.preview.device_label" class="hs:flex hs:gap-1">

@@ -35,7 +35,7 @@
         <span class="text-label">$t:admin.analytics.modals.reaggregate.force</span>
       </label>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsReaggRunning}}">
         <on type="click">
           <close-modal/>
@@ -70,6 +70,6 @@
         <icon data-if="{{_global.analyticsReaggRunning}}" name="spinner" :spin="true" class="text-sm"/>
         <span>$t:admin.analytics.modals.reaggregate.button</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -8,7 +8,104 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "modal_reply_delete"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "답변 삭제 실행. 성공하면 목록을 다시 불러 답변 표시를 없앤다. 진행 깃발은 양쪽 갈래에서 모두 푼다(한쪽만 풀면 버튼이 영영 잠긴다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "isDeleting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-ecommerce/admin/reviews/{{_global.editReviewId}}/reply",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "_local",
+                                            "isDeleting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "reviews"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "modal_reply_delete"
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "isDeleting": false
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_local.isDeleting || reviews.data?.abilities?.can_update !== true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{!_local.isDeleting}}",
+                        "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.confirm"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{_local.isDeleting}}",
+                        "text": "$t:common.loading"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -34,110 +131,6 @@
                                 "className": "ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.warning"
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "modal_reply_delete"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "답변 삭제 실행. 성공하면 목록을 다시 불러 답변 표시를 없앤다. 진행 깃발은 양쪽 갈래에서 모두 푼다(한쪽만 풀면 버튼이 영영 잠긴다).",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "_local",
-                                        "isDeleting": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-ecommerce/admin/reviews/{{_global.editReviewId}}/reply",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "DELETE"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "_local",
-                                                "isDeleting": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "reviews"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal",
-                                            "target": "modal_reply_delete"
-                                        }
-                                    ],
-                                    "onError": {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "_local",
-                                            "isDeleting": false
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_local.isDeleting || reviews.data?.abilities?.can_update !== true}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{!_local.isDeleting}}",
-                            "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.confirm"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{_local.isDeleting}}",
-                            "text": "$t:common.loading"
                         }
                     ]
                 }

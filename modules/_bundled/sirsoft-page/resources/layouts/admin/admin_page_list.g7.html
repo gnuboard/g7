@@ -273,7 +273,7 @@
       <div class="page:py-2">
         <p class="page:text-gray-700 page:dark:text-gray-300">$t:sirsoft-page.admin.page.modals.bulk_publish_confirm|count={{(_global.selectedIds_admin_pages || []).length}}</p>
       </div>
-      <div class="page-modal-footer-buttons">
+      <footer>
         <button type="button" class="page-btn page-btn-secondary" disabled="{{_global.isBulkPublishing}}">
           <on type="click">
             <close-modal/>
@@ -306,7 +306,7 @@
           <icon data-if="{{_global.isBulkPublishing}}" name="spinner" class="page-spinner-sm"/>
           <span>{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -315,7 +315,7 @@
       <div class="page:py-2">
         <p class="page:text-gray-700 page:dark:text-gray-300">$t:sirsoft-page.admin.page.modals.bulk_unpublish_confirm|count={{(_global.selectedIds_admin_pages || []).length}}</p>
       </div>
-      <div class="page-modal-footer-buttons">
+      <footer>
         <button type="button" class="page-btn page-btn-secondary" disabled="{{_global.isBulkPublishing}}">
           <on type="click">
             <close-modal/>
@@ -348,7 +348,7 @@
           <icon data-if="{{_global.isBulkPublishing}}" name="spinner" class="page-spinner-sm"/>
           <span>{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -357,7 +357,7 @@
       <div class="page:py-2">
         <p class="page:text-gray-700 page:dark:text-gray-300">$t:sirsoft-page.admin.page.modals.delete_confirm</p>
       </div>
-      <div class="page-modal-footer-buttons">
+      <footer>
         <button type="button" class="page-btn page-btn-secondary" disabled="{{_global.isDeletingPage}}">
           <on type="click">
             <close-modal/>
@@ -387,7 +387,7 @@
           <icon data-if="{{_global.isDeletingPage}}" name="spinner" class="page-spinner-sm"/>
           <span>{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
 </layout>

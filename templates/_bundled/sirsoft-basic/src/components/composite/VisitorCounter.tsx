@@ -1,5 +1,7 @@
 import React from 'react';
 import type { EditorAttrs } from '../../types';
+import { gridColsClass, resolveGridCols } from '../layout/gridColumns';
+import { useViewportWidth } from '../layout/viewportWidth';
 
 /**
  * 방문자 카운터 라벨 — 레이아웃이 `$t:` 로 번역해 넘긴다(컴포넌트는 번역하지 않는다).
@@ -58,7 +60,7 @@ function formatCount(value: number | string | undefined): string {
  *
  * 사이트 홈에 놓는 방문자 카운터(오늘·어제·최대·전체). 순수 표시 컴포넌트라 데이터를 스스로
  * 받지 않는다 — 레이아웃 데이터소스(`GET /api/analytics/summary`)가 네 숫자를 넘긴다.
- * 다크 모드 변형을 함께 두고, `row` 배치는 모바일에서 2×2 로 접힌다.
+ * 다크 모드 변형을 함께 두고, `row` 배치는 768px 미만(엔진 폭, 편집기 미리보기에서는 기기 폭)에서 2×2 로 접힌다.
  *
  * @example
  * // 레이아웃 JSON 사용 예시
@@ -93,9 +95,11 @@ export const VisitorCounter: React.FC<VisitorCounterProps> = ({
     { key: 'total', label: l.total, value: total, accent: 'text-gray-900 dark:text-white' },
   ];
 
+  // row 배치는 768px 미만 2열·이상 4열 — 엔진 폭으로 골라 편집기 미리보기 폭도 따른다(예전 Tailwind 반응형 접두와 같은 경계)
+  const viewportWidth = useViewportWidth();
   const gridClass = layout === 'column'
     ? 'grid grid-cols-1 gap-3'
-    : 'grid grid-cols-2 md:grid-cols-4 gap-3';
+    : `grid ${gridColsClass(resolveGridCols(2, { md: 4 }, viewportWidth))} gap-3`;
 
   return (
     <div

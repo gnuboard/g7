@@ -268,13 +268,13 @@ class FileServingHelperSourceContractTest extends TestCase
         $source = (string) file_get_contents(base_path('app/Http/Controllers/Api/Public/PublicAttachmentController.php'));
         $this->assertArrayHasKey('download', $this->fileServingMethodBodies($source), '변이 전 원본이 모집단에 없다 — 픽스처가 잘못됐다');
 
-        $mutated = preg_replace('/\):\s*BinaryFileResponse\|StreamedResponse\|Response\|JsonResponse/', '): Response', $source, 1, $count);
+        $mutated = preg_replace('/\):\s*SymfonyResponse\|JsonResponse/', '): Response', $source, 1, $count);
         $this->assertSame(1, $count, '변이 대상 시그니처를 찾지 못했다 — 원본이 바뀌었으면 픽스처를 갱신한다');
 
         $this->assertArrayHasKey('download', $this->fileServingMethodBodies((string) $mutated), '반환 타입을 넓히자 모집단에서 빠졌다 — 본문 신호 도출이 죽었다');
 
         // 반환 타입을 **아예 없앤** 형태도 같다 (`serveEditorCss()` 가 그 형태였다).
-        $untyped = preg_replace('/\):\s*BinaryFileResponse\|StreamedResponse\|Response\|JsonResponse/', ')', $source, 1);
+        $untyped = preg_replace('/\):\s*SymfonyResponse\|JsonResponse/', ')', $source, 1);
         $this->assertArrayHasKey('download', $this->fileServingMethodBodies((string) $untyped));
     }
 

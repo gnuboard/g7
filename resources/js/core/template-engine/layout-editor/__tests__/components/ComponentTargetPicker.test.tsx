@@ -11,7 +11,6 @@
  * 계약(이벤트명/detail 형태)을 잠근다.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
@@ -49,6 +48,10 @@ beforeEach(() => {
 });
 
 describe('ComponentTargetPicker — 직접 입력 + 캔버스 pick 핸드셰이크', () => {
+  /**
+   * @scenario subject=component_target_picker
+   * @effects target_picker_typing_emits_on_change
+   */
   it('직접 입력칸 타이핑 → onChange', () => {
     const onChange = renderPicker('');
     const input = screen.getByTestId('g7le-component-target-input') as HTMLInputElement;
@@ -56,6 +59,10 @@ describe('ComponentTargetPicker — 직접 입력 + 캔버스 pick 핸드셰이�
     expect(onChange).toHaveBeenCalledWith('main-form');
   });
 
+  /**
+   * @scenario subject=component_target_picker
+   * @effects target_picker_empty_input_emits_undefined
+   */
   it('빈 입력 → onChange(undefined)', () => {
     const onChange = renderPicker('x');
     const input = screen.getByTestId('g7le-component-target-input') as HTMLInputElement;
@@ -63,6 +70,10 @@ describe('ComponentTargetPicker — 직접 입력 + 캔버스 pick 핸드셰이�
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  /**
+   * @scenario subject=component_target_picker
+   * @effects target_picker_pick_click_requests_and_minimizes
+   */
   it('🎯 클릭 → pick-request 발사 + 호스트 모달 최소화', () => {
     let requestDetail: { requestId?: string } | null = null;
     const onReq = (e: Event): void => {
@@ -78,6 +89,10 @@ describe('ComponentTargetPicker — 직접 입력 + 캔버스 pick 핸드셰이�
     window.removeEventListener(COMPONENT_TARGET_PICK_REQUEST_EVENT, onReq);
   });
 
+  /**
+   * @scenario subject=component_target_picker
+   * @effects target_picker_picked_reply_sets_id_and_restores
+   */
   it('picked 회신(같은 requestId) → onChange(id) + 모달 복원', () => {
     let requestId = '';
     const onReq = (e: Event): void => {
@@ -95,6 +110,10 @@ describe('ComponentTargetPicker — 직접 입력 + 캔버스 pick 핸드셰이�
     window.removeEventListener(COMPONENT_TARGET_PICK_REQUEST_EVENT, onReq);
   });
 
+  /**
+   * @scenario subject=component_target_picker
+   * @effects target_picker_cancelled_reply_only_restores
+   */
   it('cancelled 회신 → onChange 미발화(복원만)', () => {
     let requestId = '';
     const onReq = (e: Event): void => {
@@ -111,6 +130,10 @@ describe('ComponentTargetPicker — 직접 입력 + 캔버스 pick 핸드셰이�
     window.removeEventListener(COMPONENT_TARGET_PICK_REQUEST_EVENT, onReq);
   });
 
+  /**
+   * @scenario subject=component_target_picker
+   * @effects target_picker_ignores_other_request_id
+   */
   it('다른 requestId 회신은 무시(onChange 미발화)', () => {
     const onReq = (): void => {};
     window.addEventListener(COMPONENT_TARGET_PICK_REQUEST_EVENT, onReq);

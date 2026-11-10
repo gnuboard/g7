@@ -11,7 +11,6 @@
  *  - 작성자·의존성이 갤러리에서는 **각각 제 줄**을 차지한다
  *  - 콜백은 `(값, 원본 행)` 으로 원본 행을 되돌려 준다(data-grid 규약)
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { ExtensionCardGrid, type ExtensionCardItem } from '../ExtensionCardGrid';

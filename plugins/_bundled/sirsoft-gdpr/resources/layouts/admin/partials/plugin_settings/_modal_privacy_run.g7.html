@@ -17,7 +17,7 @@
       <p class="gdpr-text-error-soft">$t:sirsoft-gdpr.annual_notice.manual_run.irreversible</p>
       <p class="gdpr-text-hint">$t:sirsoft-gdpr.annual_notice.manual_run.queue_hint</p>
     </div>
-    <div class="gdpr-modal-footer-buttons">
+    <footer>
       <button type="button" class="gdpr-btn gdpr-btn-secondary" disabled="{{_global.privacyRun?.submitting}}">
         <on type="click">
           <!-- 취소 — 통지를 접수하지 않고 닫는다. 창이 쓰던 `_global.privacyRun`(대상 키·통지 대상 수)을 실행 성공 때와 같이 비운다. -->
@@ -55,6 +55,6 @@
         <icon data-if="{{_global.privacyRun?.submitting}}" name="spinner" class="gdpr-spinner-sm"/>
         <span>{{_global.privacyRun?.submitting ? '$t:sirsoft-gdpr.annual_notice.manual_run.executing' : '$t:sirsoft-gdpr.annual_notice.manual_run.execute'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

@@ -10,7 +10,52 @@
     "props": {
         "title": "$t:sirsoft-board.admin.board_types.modal_title",
         "width": "640px",
-        "closeOnBackdropClick": false
+        "closeOnBackdropClick": false,
+        "footer": [
+            {
+                "id": "bt_modal_close_btn",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "닫으면서 폼을 비운다 — 남겨 두면 다음에 열었을 때 지난번 입력이 「수정 중」인 것처럼 되살아난다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "btFormMode": "add",
+                                    "btEditingItem": null,
+                                    "btFormSlug": "",
+                                    "btFormErrors": null,
+                                    "btFormName": {
+                                        "ko": "",
+                                        "en": ""
+                                    }
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                },
+                "children": [
+                    {
+                        "id": "bt_close_text",
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.close"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -665,59 +710,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "bt_modal_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "board:flex board:justify-end board:mt-6"
-            },
-            "children": [
-                {
-                    "id": "bt_modal_close_btn",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "닫으면서 폼을 비운다 — 남겨 두면 다음에 열었을 때 지난번 입력이 「수정 중」인 것처럼 되살아난다",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "btFormMode": "add",
-                                        "btEditingItem": null,
-                                        "btFormSlug": "",
-                                        "btFormErrors": null,
-                                        "btFormName": {
-                                            "ko": "",
-                                            "en": ""
-                                        }
-                                    }
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                    },
-                    "children": [
-                        {
-                            "id": "bt_close_text",
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.close"
                         }
                     ]
                 }

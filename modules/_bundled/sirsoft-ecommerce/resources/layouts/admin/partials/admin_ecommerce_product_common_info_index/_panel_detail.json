@@ -7,8 +7,15 @@
     "id": "detail_panel",
     "type": "basic",
     "name": "Div",
+    "responsive": {
+        "1024-": {
+            "props": {
+                "className": "ecommerce-admin-card ecommerce:col-span-2"
+            }
+        }
+    },
     "props": {
-        "className": "ecommerce-admin-card ecommerce-col-span-2-lg"
+        "className": "ecommerce-admin-card ecommerce:col-span-1"
     },
     "children": [
         {

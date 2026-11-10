@@ -53,7 +53,7 @@ function jsonFiles(dir: string): string[] {
 const isNode = (x: Json) => x && typeof x === 'object' && !Array.isArray(x) && typeof x.name === 'string' && (x.type || x.props || x.children);
 const cls = (n: Json) => String(n?.props?.className ?? '');
 const isCtrl = (n: Json) => isNode(n) && CTRL.has(n.name) && n.props?.type !== 'hidden' && !/\bsr-only\b/.test(cls(n));
-const isLabelEl = (n: Json) => isNode(n) && (n.name === 'Label' || /\b(form-label|filter-label|text-heading)\b/.test(cls(n)));
+const isLabelEl = (n: Json) => isNode(n) && (n.name === 'Label' || /\b(form-label|filter-field-label|filter-label|text-heading)\b/.test(cls(n)));
 const kids = (n: Json): Json[] => (Array.isArray(n?.children) ? n.children.filter(isNode) : []);
 const deep = (n: Json, p: (x: Json) => boolean): boolean => (isNode(n) ? p(n) || kids(n).some((c) => deep(c, p)) : false);
 const hasText = (n: Json) => deep(n, (x) => (typeof x.text === 'string' && x.text.trim() !== '') || (typeof x.props?.text === 'string' && x.props.text.trim() !== ''));

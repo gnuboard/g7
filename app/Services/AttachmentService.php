@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
+use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Enums\AttachmentSourceType;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Models\Attachment;
 use App\Models\User;
@@ -14,6 +16,8 @@ use App\Support\Favicon\FaviconPolicy;
 use App\Support\ImageResizer;
 use App\Support\SettingAttachmentReferences;
 use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
+use App\Thumbnails\Providers\CoreAttachmentSourceProvider;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -32,17 +36,27 @@ class AttachmentService
 {
     use ResolvesRowStorage;
 
+    /** 내려받기 전 액션 훅 — hook 범위 본인인증 정책의 대상 */
+    public const DOWNLOAD_ACTION_HOOK = 'core.attachment.before_download_action';
+
+    /** 첨부 서빙 라우트 이름 — route 범위 본인인증 정책의 대상 */
+    public const DOWNLOAD_ROUTE = 'api.attachment.download';
+
     /**
      * AttachmentService 생성자
+     *
+     * 넷째 인자는 뒤에 더한 선택 인자다 — 앞 세 인자만 넘겨 만드는 기존 하위 클래스·호출이 깨지지 않게 한다.
      *
      * @param  AttachmentRepositoryInterface  $repository  첨부파일 리포지토리
      * @param  StorageInterface  $storage  스토리지 드라이버
      * @param  ImageResizer  $imageResizer  업로드 이미지 축소기
+     * @param  IdentityPolicyRepositoryInterface|null  $identityPolicies  본인인증 정책 리포지토리 (서빙 캐시 판정, 없으면 쓸 때 컨테이너에서 꺼낸다)
      */
     public function __construct(
         private AttachmentRepositoryInterface $repository,
         private StorageInterface $storage,
-        private ImageResizer $imageResizer
+        private ImageResizer $imageResizer,
+        private ?IdentityPolicyRepositoryInterface $identityPolicies = null
     ) {}
 
     /**
@@ -397,7 +411,7 @@ class AttachmentService
      *
      * @param  string  $hash  첨부파일 해시
      * @param  User|null  $user  요청한 사용자 (null이면 비로그인)
-     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null}|null 서빙 정보 또는 null
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, private: bool}|null 서빙 정보 또는 null
      *
      * @throws AuthorizationException 기능 레벨 권한이 없는 경우
      */
@@ -414,12 +428,47 @@ class AttachmentService
         // → 미매핑 시 모든 사용자 허용
         HookManager::checkHookPermission('core.attachment.download', $user);
 
+        return $this->downloadInfoFor($attachment, $user);
+    }
+
+    /**
+     * 권한 검사를 지난 첨부 행으로 다운로드(첨부 방식) 서빙 정보를 만듭니다 — 액션 훅(IDV 가드) → 필터 훅 → 존재 확인 → 응답.
+     *
+     * `getDownloadInfo()` 와 `getFileInfo()`(래스터 이미지가 아닌 파일)가 함께 쓴다. 권한 검사는 부르는 쪽이 이미 했다.
+     *
+     * @param  Attachment  $attachment  권한 검사를 지난 첨부 행
+     * @param  User|null  $user  요청한 사용자 (null이면 비로그인)
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, private: bool}|null 서빙 정보 또는 null (파일이 스토리지에 없음)
+     */
+    private function downloadInfoFor(Attachment $attachment, mixed $user): ?array
+    {
+        return $this->downloadServingFor($this->passDownloadHooks($attachment, $user));
+    }
+
+    /**
+     * 내려받기 전 훅을 돌립니다 — 액션 훅(IDV 정책 가드 지점) → 필터 훅(다운로드 전 처리). 한 요청에 한 번만 부른다.
+     *
+     * @param  Attachment  $attachment  권한 검사를 지난 첨부 행
+     * @param  User|null  $user  요청한 사용자 (null이면 비로그인)
+     * @return Attachment 필터를 지난 행 (서빙은 이 행의 disk·path·MIME 을 쓴다)
+     */
+    private function passDownloadHooks(Attachment $attachment, mixed $user): Attachment
+    {
         // 액션 훅 - IDV 정책 가드 지점 (filter 훅과 병행)
-        HookManager::doAction('core.attachment.before_download_action', $attachment, $user);
+        HookManager::doAction(self::DOWNLOAD_ACTION_HOOK, $attachment, $user);
 
         // 필터 훅 - 다운로드 전 처리 (다운로드 카운트 증가 등)
-        $attachment = HookManager::applyFilters('core.attachment.before_download', $attachment, $user);
+        return HookManager::applyFilters('core.attachment.before_download', $attachment, $user);
+    }
 
+    /**
+     * 훅을 지난 첨부 행으로 다운로드(첨부 방식) 서빙 정보를 만듭니다 — 존재 확인 → 응답.
+     *
+     * @param  Attachment  $attachment  필터를 지난 첨부 행
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, private: bool}|null 서빙 정보 또는 null (파일이 스토리지에 없음)
+     */
+    private function downloadServingFor(Attachment $attachment): ?array
+    {
         // 파일 존재 확인
         $diskStorage = $this->storageForRow($attachment->disk);
         if (! $diskStorage->exists('', $attachment->path)) {
@@ -453,7 +502,7 @@ class AttachmentService
      * 통로에 따라 다른 ETag 를 갖는다.
      *
      * @param  Attachment  $attachment  첨부 행
-     * @return array{etag_source: string, mime_type: string, filename: string, last_modified: int|null}
+     * @return array{etag_source: string, mime_type: string, filename: string, last_modified: int|null, private: bool} 서빙 메타 (private 는 공유 캐시에 남기지 않을지 — 권한 훅이나 켜진 본인인증 정책이 걸려 있으면 true)
      */
     private function serveMeta(Attachment $attachment): array
     {
@@ -470,6 +519,9 @@ class AttachmentService
             // 조건부 요청의 `Last-Modified`/`If-Modified-Since` 축 — ETag 를 쓰지 않고
             // 시각으로만 재검증하는 프록시는 이 값이 없으면 매번 전문을 받아 간다.
             'last_modified' => $attachment->updated_at?->getTimestamp(),
+            // 공유 캐시(CDN·프록시)에 남기지 않을지. 권한 훅이나 켜진 본인인증 정책이 걸려 있으면 요청자마다 받을 수
+            // 있는지가 갈린다. 둘 다 없는 공개 첨부는 종전처럼 public 이다 — CDN 적중을 해치지 않는다.
+            'private' => HookManager::hasPermissionGate('core.attachment.download') || $this->hasIdentityGate(),
         ];
     }
 
@@ -517,6 +569,29 @@ class AttachmentService
     }
 
     /**
+     * 첨부 서빙에 켜진 본인인증 정책이 걸려 있는지 — hook 범위(`core.attachment.before_download_action`) 또는
+     * route 범위(`api.attachment.download`).
+     *
+     * 인증을 마친 사람에게 간 응답이 공유 캐시에 남으면 인증하지 않은 사람이 그 사본을 받는다. 두 색인 모두 캐시되어
+     * (정책 저장·확장 활성화가 비운다) 요청마다 정책 표를 조회하지 않는다. 색인을 읽지 못하면 private 쪽으로 판정한다.
+     *
+     * @return bool 걸려 있으면 true
+     */
+    private function hasIdentityGate(): bool
+    {
+        try {
+            $policies = $this->identityPolicies ??= app(IdentityPolicyRepositoryInterface::class);
+
+            return isset($policies->getHookScopeIndex()[self::DOWNLOAD_ACTION_HOOK])
+                || isset($policies->getRouteScopeIndex()[self::DOWNLOAD_ROUTE]);
+        } catch (\Throwable $e) {
+            Log::warning('첨부 서빙의 본인인증 정책 색인을 읽지 못해 private 으로 냅니다', ['error' => $e->getMessage()]);
+
+            return true;
+        }
+    }
+
+    /**
      * 이미지 파일 정보 조회 (캐싱 응답용)
      *
      * 권한 체크 후 인라인 스트림 응답과 캐싱용 메타를 반환합니다.
@@ -525,9 +600,13 @@ class AttachmentService
      * StorageInterface::response() 스트림으로 서빙합니다. 컨트롤러는
      * streamedFileResponse() 로 캐싱 헤더(ETag/304)를 입혀 응답합니다.
      *
+     * 래스터 이미지가 아닌 파일(SVG 포함)은 인라인 스트림 대신 `getDownloadInfo()` 와 같은 다운로드(첨부 방식) 응답을
+     * 돌려준다(`thumbnail_source` 는 null) — 권한을 지난 행을 그대로 써서 같은 요청에 행 조회·권한 확인을 다시 하지 않는다.
+     * 갈래(`inline`)는 필터 훅 `core.attachment.before_download` 를 지난 행의 MIME 으로 한 번 정하고, 컨트롤러는 그 값을 따른다.
+     *
      * @param  string  $hash  첨부파일 해시
      * @param  User|null  $user  요청한 사용자 (null이면 비로그인)
-     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null}|null 서빙 정보 또는 null
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, private: bool, inline: bool, thumbnail_source: ThumbnailSource|null}|null 서빙 정보 또는 null (inline 은 인라인 래스터 갈래인지, thumbnail_source 는 래스터 이미지일 때 썸네일 원본)
      *
      * @throws AuthorizationException 기능 레벨 권한이 없는 경우
      */
@@ -542,8 +621,20 @@ class AttachmentService
         // 기능 레벨 권한 체크 (permission_hooks)
         HookManager::checkHookPermission('core.attachment.download', $user);
 
-        // 필터 훅 - 다운로드 전 처리
-        $attachment = HookManager::applyFilters('core.attachment.before_download', $attachment, $user);
+        // 액션 훅(IDV 정책 가드 지점)과 필터 훅(다운로드 전 처리)을 갈래를 고르기 전에 한 번 돌린다 — 두 갈래 모두 한 요청에 한 번이다.
+        $attachment = $this->passDownloadHooks($attachment, $user);
+
+        // 인라인·내려받기 갈래는 필터를 지난 행의 MIME 하나로 여기서만 정하고(`inline`), 컨트롤러는 그 값을 따른다.
+        // 응답의 Content-Type 도 같은 행의 MIME 이다. 종전에는 필터 전 MIME 으로 갈래를 고르고 컨트롤러가 필터 뒤 MIME 으로
+        // 다시 골라, 구독자가 MIME 을 바꾸면 내려받기 응답이 이미지 갈래로 나가는 식으로 두 판정이 갈렸다.
+        // 래스터 이미지가 아닌 파일(SVG 포함)은 인라인으로 열지 않는다 — 권한을 지난 이 행으로 다운로드 서빙 정보를 바로 만든다.
+        // 종전에는 여기서 인라인 스트림을 만든 뒤 컨트롤러가 getDownloadInfo() 를 이어 불러 같은 행을 다시 찾고 권한 확인과
+        // 공유 캐시 판정을 한 번씩 더 했다(권한 매핑 조회는 캐시가 없어 DB 질의가 그만큼 늘었다).
+        if (! InlineMediaPolicy::isInlineImage($attachment->mime_type)) {
+            $download = $this->downloadServingFor($attachment);
+
+            return $download === null ? null : [...$download, 'inline' => false, 'thumbnail_source' => null];
+        }
 
         // 행 disk 기준 인라인 스트림 (존재 검사는 response() 내부에서 수행)
         // Content-Type/Length 를 행 메타로 선지정해 원격 디스크의 추가 메타 조회를 생략한다.
@@ -569,6 +660,9 @@ class AttachmentService
         return [
             'response' => $response,
             ...$this->serveMeta($attachment),
+            'inline' => true,
+            // 썸네일 헬퍼가 쓸 원본 정보 — 권한 검사를 지난 행에서만 만든다(래스터가 아니면 null)
+            'thumbnail_source' => CoreAttachmentSourceProvider::sourceFor($attachment),
         ];
     }
 

@@ -48,8 +48,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-2"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-page-title ecommerce:mb-2"
+                                            "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.title"
                                     },
@@ -413,8 +420,15 @@
                         "id": "info_cards_grid",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "768-": {
+                                "props": {
+                                    "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "ecommerce-grid-2col-responsive ecommerce:mb-6"
+                            "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4 ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -721,8 +735,15 @@
                         "id": "link_memo_cards_grid",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "768-": {
+                                "props": {
+                                    "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-6"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "ecommerce-grid-2col-responsive ecommerce:mb-6"
+                            "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4 ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -1061,7 +1082,7 @@
                                             }
                                         },
                                         "props": {
-                                            "className": "ecommerce-table-container ecommerce-table-desktop ecommerce:overflow-x-auto"
+                                            "className": "ecommerce-table-container ecommerce:overflow-x-auto"
                                         },
                                         "children": [
                                             {

@@ -75,7 +75,9 @@ _프론트 엔트리포인트가 없습니다._
 (앞글자 `helloplugin`, `plugin.json` 의 `assets.css`), 빌드는 그 파일을 `dist/css/plugin.css` 로 옮기기만 합니다
 (Tailwind·전처리기 없음, 압축 없음). 확장 화면 모양을 템플릿 CSS 에 기대지 않고 확장이 스스로 싣는 가장 짧은
 예입니다 — 색·테두리 같은 「의미」는 템플릿이 덮을 수 있는 `@layer g7-extension` 안에, 여백·정렬 같은 「배치」는
-층 밖에 두고, 다크 모드는 코어의 중립 표식(`data-g7-color-scheme`)만 봅니다.
+층 밖에 두고, 다크 모드는 코어의 중립 표식(`data-g7-color-scheme`)만 봅니다. CSS 는 화면 폭을 보지 않습니다 — 폭에 따라 바뀌는
+바깥 여백은 레이아웃의 엔진 `responsive` 구간 값이 폭과 무관한 클래스(`helloplugin-settings--md`·`--lg`)를 붙여 고릅니다
+(편집기 미리보기 기기 폭도 같은 경계를 탑니다). 폭 미디어로 같은 값을 주던 `helloplugin-page` 는 폐지 예정입니다.
 
 CSS 를 고치면 `php artisan plugin:build gnuboard7-hello_plugin --production` 후 `plugin:update` 로 반영합니다.
 레이아웃 JSON 만 고쳤다면 `php artisan plugin:update gnuboard7-hello_plugin --force` 하나로 끝납니다.

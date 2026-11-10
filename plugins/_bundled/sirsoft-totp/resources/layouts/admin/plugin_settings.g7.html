@@ -63,8 +63,9 @@
   </transition-overlay>
   <slot name="content">
     <div data-ref="totp_security_page" class="totp-admin-page-content">
-      <div data-ref="totp_security_header" class="totp-page-header">
-        <h1 data-ref="totp_security_title" class="totp-page-title">$t:sirsoft-totp.admin.security.title</h1>
+      <div data-ref="totp_security_header" class="totp:flex totp:justify-between totp:mb-6 totp:flex-col totp:items-start totp:gap-4">
+        <responsive on="641-" class="totp:flex totp:items-center totp:justify-between totp:mb-6"/>
+        <h1 data-ref="totp_security_title" class="totp:text-xl totp:font-semibold totp:text-gray-900 totp:dark:text-white"><responsive on="640-" class="totp:text-2xl totp:font-semibold totp:text-gray-900 totp:dark:text-white"/>$t:sirsoft-totp.admin.security.title</h1>
         <p data-ref="totp_security_description" class="totp-page-description">$t:sirsoft-totp.admin.security.description</p>
     </div>
       <div data-ref="totp_security_error" data-if="{{_local.error}}" class="totp-alert-danger totp:mb-4" role="alert">
@@ -86,7 +87,8 @@
           </input>
           <p data-ref="totp_security_enrolled_hint" class="totp-text-hint totp:mt-1">$t:sirsoft-totp.admin.security.enrolled.code_hint</p>
         </div>
-        <div data-ref="totp_security_enrolled_actions" class="totp:flex totp:flex-col totp:sm:flex-row totp:gap-2 totp:mt-4">
+        <div data-ref="totp_security_enrolled_actions" class="totp:flex totp:flex-col totp:gap-2 totp:mt-4">
+          <responsive on="640-" class="totp:flex totp:flex-row totp:gap-2 totp:mt-4"/>
           <button data-ref="totp_security_regenerate" type="button" class="totp:px-4 totp:py-2 totp:bg-white totp:dark:bg-gray-700 totp-text-body totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:rounded-lg totp:hover:bg-gray-50 totp:dark:hover:bg-gray-600 totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{String(_local.code ?? '').trim().length &lt; 6 || _local.busy}}">
             <on type="click">
               <!-- 백업 코드 재발급 — 성공하면 새 코드를 1회 노출 화면으로 띄우고 입력값을 비운다. 서버가 6자 이상만 받으므로(앞뒤 공백 제외) 그 전에는 버튼이 잠긴다(해제 버튼도 같다). -->
@@ -183,7 +185,8 @@
                 </on>
               </input>
             </div>
-            <div data-ref="totp_security_enroll_actions" class="totp:flex totp:flex-col totp:sm:flex-row totp:gap-2 totp:mt-4">
+            <div data-ref="totp_security_enroll_actions" class="totp:flex totp:flex-col totp:gap-2 totp:mt-4">
+              <responsive on="640-" class="totp:flex totp:flex-row totp:gap-2 totp:mt-4"/>
               <button data-ref="totp_security_confirm" type="button" class="totp:flex-1 totp:px-4 totp:py-3 totp:bg-blue-600 totp:hover:bg-blue-700 totp:dark:bg-blue-600 totp:dark:hover:bg-blue-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{!_local.code || _local.code.length < 6 || _local.busy}}">
                 <on type="click">
                   <!-- 확정 — 성공하면 백업 코드 10개를 1회 노출 화면으로 넘긴다. -->
@@ -225,7 +228,8 @@
           <responsive on="mobile" class="totp:grid totp:grid-cols-2 totp:gap-2 totp:mt-4"/>
           <div data-ref="totp_security_backup_item_{{$idx}}" data-each="backupCode, $idx in {{_local.backupCodes ?? []}}" class="totp:px-3 totp:py-2 totp:rounded-lg totp:bg-gray-50 totp:dark:bg-gray-800 totp:border totp:border-gray-200 totp:dark:border-gray-700 totp:text-center totp:font-mono totp:text-sm totp:text-gray-900 totp:dark:text-gray-100">{{backupCode}}</div>
         </div>
-        <div data-ref="totp_security_backup_actions" class="totp:flex totp:flex-col totp:sm:flex-row totp:gap-2 totp:mt-4">
+        <div data-ref="totp_security_backup_actions" class="totp:flex totp:flex-col totp:gap-2 totp:mt-4">
+          <responsive on="640-" class="totp:flex totp:flex-row totp:gap-2 totp:mt-4"/>
           <!-- 복사 먼저, 보관 확인은 그 다음 — 이 화면을 벗어나면 코드를 다시 볼 수 없으므로
                「보관했습니다」를 누르기 전에 가져갈 수단이 눈에 먼저 들어와야 한다.
                엔진에는 클립보드 액션이 없어 플러그인이 named action 으로 내준다(resources/js/handlers). -->

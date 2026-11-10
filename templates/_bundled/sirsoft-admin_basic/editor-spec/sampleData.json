@@ -284,6 +284,54 @@
         }
       }
     },
+    "thumbnailStats": {
+      "data": {
+        "locations": [
+          {
+            "kind": "public",
+            "disk": "thumbnails",
+            "disk_label": "비공개 썸네일 저장소",
+            "remote": false,
+            "count": 128,
+            "bytes": 5872025,
+            "by_preset": {
+              "sm": 64,
+              "md": 64
+            }
+          },
+          {
+            "kind": "gated",
+            "disk": "thumbnails",
+            "disk_label": "비공개 썸네일 저장소",
+            "remote": false,
+            "count": 42,
+            "bytes": 1153433,
+            "by_preset": {
+              "sm": 42
+            }
+          }
+        ],
+        "presets": [
+          "xs",
+          "sm",
+          "md",
+          "lg",
+          "xl",
+          "og",
+          "banner_wide"
+        ],
+        "sources": [
+          {
+            "key": "core_attachment",
+            "label": "첨부파일 이미지"
+          },
+          {
+            "key": "layout_attachment",
+            "label": "레이아웃 첨부 이미지"
+          }
+        ]
+      }
+    },
     "locales": {
       "data": [
         {
@@ -4802,7 +4850,8 @@
           {"name": "auth-process-password-expiry", "is_active": true, "next_run_at": "2026-05-30T05:15:00+09:00"},
           {"name": "geoip-update", "is_active": true, "next_run_at": "2026-06-03T03:00:00+09:00"},
           {"name": "privacy-process-retention", "is_active": true, "next_run_at": "2026-05-30T05:05:00+09:00"},
-          {"name": "attachments-prune-orphans", "is_active": false, "next_run_at": null}
+          {"name": "attachments-prune-orphans", "is_active": false, "next_run_at": null},
+          {"name": "thumbnails-prune", "is_active": true, "next_run_at": "2026-05-30T05:20:00+09:00"}
         ]
       }
     },
@@ -5371,7 +5420,165 @@
           ],
           "image_max_width": 2000,
           "image_max_height": 2000,
-          "image_quality": 85
+          "image_quality": 85,
+          "thumbnail_enabled": true,
+          "thumbnail_content_preset": "lg",
+          "thumbnail_disk_public": "thumbnails",
+          "thumbnail_disk_gated": "thumbnails",
+          "thumbnail_prune_enabled": true,
+          "thumbnail_animated_original": true,
+          "thumbnail_generate_per_minute": null,
+          "thumbnail_lock_wait_seconds": null,
+          "thumbnail_max_source_pixels": null,
+          "thumbnail_pregenerate_batch": null,
+          "thumbnail_pregenerate_time_budget": null,
+          "thumbnail_purge_time_budget": null,
+          "thumbnail_presets_rows": [
+            {
+              "name": "xs",
+              "source": "core",
+              "width": 64,
+              "height": 64,
+              "fit": "cover",
+              "anchor": "center",
+              "quality": null,
+              "format": "original",
+              "upscale": false,
+              "pregenerate": false,
+              "numeric": false,
+              "enabled": true,
+              "locked": true,
+              "kind": "fixed"
+            },
+            {
+              "name": "sm",
+              "source": "core",
+              "width": 160,
+              "height": 160,
+              "fit": "cover",
+              "anchor": "center",
+              "quality": null,
+              "format": "original",
+              "upscale": false,
+              "pregenerate": false,
+              "numeric": false,
+              "enabled": true,
+              "locked": true,
+              "kind": "fixed"
+            },
+            {
+              "name": "md",
+              "source": "core",
+              "width": 640,
+              "height": null,
+              "fit": "width",
+              "anchor": "center",
+              "quality": null,
+              "format": "original",
+              "upscale": false,
+              "pregenerate": false,
+              "numeric": true,
+              "enabled": true,
+              "locked": true,
+              "kind": "fixed"
+            },
+            {
+              "name": "lg",
+              "source": "core",
+              "width": 1280,
+              "height": null,
+              "fit": "width",
+              "anchor": "center",
+              "quality": null,
+              "format": "original",
+              "upscale": false,
+              "pregenerate": false,
+              "numeric": true,
+              "enabled": true,
+              "locked": true,
+              "kind": "fixed"
+            },
+            {
+              "name": "xl",
+              "source": "core",
+              "width": 1920,
+              "height": null,
+              "fit": "width",
+              "anchor": "center",
+              "quality": null,
+              "format": "original",
+              "upscale": false,
+              "pregenerate": false,
+              "numeric": true,
+              "enabled": true,
+              "locked": true,
+              "kind": "fixed"
+            },
+            {
+              "name": "og",
+              "source": "core",
+              "width": 1200,
+              "height": 630,
+              "fit": "cover",
+              "anchor": "center",
+              "quality": null,
+              "format": "original",
+              "upscale": false,
+              "pregenerate": false,
+              "numeric": false,
+              "enabled": true,
+              "locked": true,
+              "kind": "og",
+              "size_readonly": true
+            },
+            {
+              "name": "sirsoft-ecommerce.card",
+              "source": "sirsoft-ecommerce",
+              "width": 300,
+              "height": 300,
+              "fit": "cover",
+              "anchor": "center",
+              "quality": 80,
+              "format": "webp",
+              "upscale": false,
+              "pregenerate": true,
+              "numeric": false,
+              "enabled": true,
+              "locked": true,
+              "kind": "extension",
+              "defaults": {
+                "name": "sirsoft-ecommerce.card",
+                "source": "sirsoft-ecommerce",
+                "width": 300,
+                "height": 300,
+                "fit": "cover",
+                "anchor": "center",
+                "quality": null,
+                "format": "original",
+                "upscale": false,
+                "pregenerate": false,
+                "numeric": false,
+                "enabled": true,
+                "locked": true
+              }
+            },
+            {
+              "name": "banner_wide",
+              "source": "custom",
+              "width": 1200,
+              "height": 400,
+              "fit": "cover",
+              "anchor": "center",
+              "quality": null,
+              "format": "original",
+              "upscale": false,
+              "pregenerate": false,
+              "numeric": false,
+              "enabled": true,
+              "locked": false,
+              "kind": "custom"
+            }
+          ]
         },
         "seo": {
           "meta_title_suffix": "",
@@ -5672,9 +5879,54 @@
                 "ja": "SES (Amazon)"
               }
             }
+          ],
+          "image": [
+            {
+              "id": "gd",
+              "label": {
+                "ko": "GD",
+                "en": "GD",
+                "ja": "GD"
+              }
+            },
+            {
+              "id": "imagick",
+              "label": {
+                "ko": "Imagick",
+                "en": "Imagick",
+                "ja": "Imagick"
+              }
+            }
           ]
         },
         "_meta": {
+          "thumbnail_engine_available": true,
+          "thumbnail_server_defaults": {
+            "generate_per_minute": 120,
+            "lock_wait_seconds": 10,
+            "max_source_pixels": 16000000,
+            "pregenerate_batch": 20,
+            "pregenerate_time_budget": 15,
+            "purge_time_budget": 10
+          },
+          "thumbnail_disk_options": {
+            "public": [
+              {
+                "id": "thumbnails",
+                "label": "비공개 썸네일 저장소"
+              },
+              {
+                "id": "public",
+                "label": "공개 저장소 (public)"
+              }
+            ],
+            "gated": [
+              {
+                "id": "thumbnails",
+                "label": "비공개 썸네일 저장소"
+              }
+            ]
+          },
           "queue_connection_options": [
             {
               "name": "database",

@@ -12,7 +12,6 @@
  *  ⑦ 빈 배열 + 추가
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ActionListBuilder } from '../../../components/page-settings/ActionListBuilder';
@@ -26,7 +25,13 @@ const RECIPES = {
 beforeEach(() => cleanup());
 
 describe('ActionListBuilder', () => {
-  it('친화 요약 + 드래그 순서/삭제 + chipContext 분기', () => {
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_summary_drag_reorder_remove
+   */
+  // chipContext 분기(컨텍스트 칩 주입)는 아래 「ActionListBuilder — chipContext 컨텍스트 칩 주입」 describe 가 잰다.
+  // 여기서는 chipContext 를 준 상태에서도 요약과 드래그 순서, 삭제가 그대로 동작하는지만 본다.
+  it('친화 요약 + 드래그 순서/삭제 (chipContext 지정 상태)', () => {
     const onChange = vi.fn();
     const actions = [
       { handler: 'toast', params: { message: '안녕' } },
@@ -50,6 +55,10 @@ describe('ActionListBuilder', () => {
   });
 
   // 드롭 위치 표시 — 드래그 중 포인터가 가리키는 삽입 지점의 삽입선만 활성.
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_dropline_marks_drop_target
+   */
   it('드래그 중 드롭 예정 지점의 삽입선이 활성화된다(드롭 위치 표시)', () => {
     const actions = [
       { handler: 'toast', params: { message: '안녕' } },
@@ -65,6 +74,10 @@ describe('ActionListBuilder', () => {
     expect(screen.getByTestId('g7le-action-list-dropline-end').getAttribute('data-active')).toBe('false');
   });
 
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_add_pushes_into_array
+   */
   it('renderAddPicker 로 추가 → 배열 push(1건도 배열 유지)', () => {
     const onChange = vi.fn();
     render(
@@ -80,18 +93,33 @@ describe('ActionListBuilder', () => {
     expect(onChange).toHaveBeenCalledWith([{ handler: 'closeModal' }]);
   });
 
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_code_view_shows_json
+   */
   it('코드 보기 토글 → 실제 JSON', () => {
     render(<ActionListBuilder actions={[{ handler: 'toast', params: { message: 'hi' } }]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
     fireEvent.click(screen.getByTestId('g7le-action-list-code-0'));
     expect(screen.getByTestId('g7le-action-list-code-view-0').textContent).toContain('"handler": "toast"');
   });
 
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_empty_without_picker_no_items
+   */
   it('빈 배열 + renderAddPicker 미주입 시 추가 버튼 부재', () => {
-    render(<ActionListBuilder actions={[]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
+    // recipes 를 주면 기본 ActionAddPicker 가 그려지므로(아래 hideAddPicker 시험의 기본 분기) 주입 picker 와
+    // recipes 가 모두 없을 때가 「추가 버튼 부재」다.
+    render(<ActionListBuilder actions={[]} onChange={vi.fn()} t={t} />);
     expect(screen.queryByTestId('g7le-action-list-item-0')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('g7le-action-list-add-picker-toggle')).not.toBeInTheDocument();
   });
 
   // base(읽기전용) 그룹은 동작 추가 불가.
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_hide_add_picker
+   */
   it('hideAddPicker — 동작 추가 picker 미렌더(읽기전용 그룹)', () => {
     render(
       <ActionListBuilder
@@ -110,6 +138,10 @@ describe('ActionListBuilder', () => {
   });
 
   // 카드당 코드 보기 `</>` 버튼은 1개만(미리보기 중복 제거).
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_single_code_button_per_card
+   */
   it('카드당 코드 보기 버튼은 1개만 — 미리보기(ActionPreview) 코드 버튼 중복 없음', () => {
     render(<ActionListBuilder actions={[{ handler: 'toast', params: { message: 'hi' } }]} onChange={vi.fn()} t={t} recipes={RECIPES} />);
     // 카드 우측 단일 코드 버튼.
@@ -140,6 +172,10 @@ describe('ActionListBuilder — chipContext 컨텍스트 칩 주입', () => {
     ],
   };
 
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_response_context_chips_offered
+   */
   it('chipContext="response" + actionChipCandidates → data-chip 입력칸이 응답 칩(코어+확장 PG)을 후보로 노출', () => {
     // paymentHandler 빈 값 → DataChipValueInput 평문 분기(검색 토글 노출). pgPaymentData 는
     // placeholder 매칭용 sole-binding 키 유지(매칭 성립 → 친화 편집 가능).
@@ -171,6 +207,10 @@ describe('ActionListBuilder — chipContext 컨텍스트 칩 주입', () => {
     expect(candidates).toContain('g7le-inline-binding-candidate-{{response.data.pg_payment_handler}}');
   });
 
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_no_context_no_response_chips
+   */
   it('chipContext 미지정(컨텍스트 없음) → 응답 칩 후보 미노출(컨텍스트 칩 안 합쳐짐)', () => {
     const action = { handler: '{{x}}', params: { pgPaymentData: '{{y}}' } };
     render(
@@ -187,6 +227,10 @@ describe('ActionListBuilder — chipContext 컨텍스트 칩 주입', () => {
     expect(screen.queryByTestId('g7le-inline-binding-candidate-{{response.data}}')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=action_list_builder
+   * @effects action_list_context_chips_not_double_merged
+   */
   it('회귀 — candidatePools 에 이미 같은 컨텍스트 칩이 있으면 이중 합산 안 함(ErrorHandlingForm 패턴)', () => {
     // ErrorHandlingForm 은 error 칩(errorCands)을 pools.bindingCandidates 에 직접 주입한 뒤
     // chipContext="error" 도 준다. 빌더가 또 error 칩을 합치면 중복 노출 → expression 기준 dedup.

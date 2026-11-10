@@ -9,7 +9,151 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다)",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal"
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "directIssueSearchResults": null,
+                                    "directIssueSelectedUsers": null,
+                                    "directIssueSearchKeyword": null,
+                                    "directIssueSearchResultsKeyword": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "발급. 고른 회원이 하나도 없으면 버튼이 잠긴다. 성공하면 창을 닫고 쿠폰 목록을 다시 불러 발급 수를 갱신한다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "directIssueSubmitting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.directIssueCoupon?.id}}/issue-direct",
+                                "auth_mode": "required",
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "user_uuids": "{{(_global.directIssueSelectedUsers ?? []).map(u => u.uuid)}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "directIssueSubmitting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "coupons"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{response.message}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "발급 성공 — 창을 닫고 안내를 띄운 뒤 회원 이름 공간을 비운다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "directIssueSearchResults": null,
+                                            "directIssueSelectedUsers": null,
+                                            "directIssueSearchKeyword": null,
+                                            "directIssueSearchResultsKeyword": null
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "directIssueSubmitting": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{(_global.directIssueSelectedUsers ?? []).length === 0 || _global.directIssueSubmitting}}",
+                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-white ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:rounded-lg ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.directIssueSubmitting}}",
+                        "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "className": "ecommerce:animate-spin"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.directIssueSubmitting ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_btn'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -240,158 +384,6 @@
                                     }
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "comment": "푸터 (취소 / 발급)",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다)",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "closeModal"
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "directIssueSearchResults": null,
-                                        "directIssueSelectedUsers": null,
-                                        "directIssueSearchKeyword": null,
-                                        "directIssueSearchResultsKeyword": null
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "발급. 고른 회원이 하나도 없으면 버튼이 잠긴다. 성공하면 창을 닫고 쿠폰 목록을 다시 불러 발급 수를 갱신한다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "directIssueSubmitting": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.directIssueCoupon?.id}}/issue-direct",
-                                    "auth_mode": "required",
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "user_uuids": "{{(_global.directIssueSelectedUsers ?? []).map(u => u.uuid)}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "directIssueSubmitting": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "coupons"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "{{response.message}}"
-                                            }
-                                        },
-                                        {
-                                            "comment": "발급 성공 — 창을 닫고 안내를 띄운 뒤 회원 이름 공간을 비운다",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "directIssueSearchResults": null,
-                                                "directIssueSelectedUsers": null,
-                                                "directIssueSearchKeyword": null,
-                                                "directIssueSearchResultsKeyword": null
-                                            }
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "directIssueSubmitting": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_failed'}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "disabled": "{{(_global.directIssueSelectedUsers ?? []).length === 0 || _global.directIssueSubmitting}}",
-                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-white ecommerce:bg-blue-600 ecommerce:hover:bg-blue-700 ecommerce:dark:bg-blue-600 ecommerce:dark:hover:bg-blue-700 ecommerce:rounded-lg ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.directIssueSubmitting}}",
-                            "props": {
-                                "name": "spinner",
-                                "size": "sm",
-                                "className": "ecommerce:animate-spin"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.directIssueSubmitting ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.issue_btn'}}"
                         }
                     ]
                 }

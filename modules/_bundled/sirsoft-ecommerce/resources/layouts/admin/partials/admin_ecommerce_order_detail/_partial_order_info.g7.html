@@ -95,7 +95,7 @@
             <cell>
               <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-3">
                 <a href="{{'/admin/ecommerce/products/' + (row.product_snapshot?.product_code ?? row.product_id) + '/edit'}}" target="_blank" class="ecommerce:flex-shrink-0">
-                  <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.product_name}}" class="ecommerce:w-14 ecommerce:h-14 ecommerce:object-cover ecommerce:rounded ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:hover:border-blue-400 ecommerce:dark:hover:border-blue-500 ecommerce:transition-colors ecommerce:cursor-pointer"/>
+                  <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.product_name}}" class="ecommerce:w-14 ecommerce:h-14 ecommerce:object-cover ecommerce:rounded ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:hover:border-blue-400 ecommerce:dark:hover:border-blue-500 ecommerce:transition-colors ecommerce:cursor-pointer"/>
                   <div data-if="{{!row.thumbnail_url}}" class="ecommerce:w-14 ecommerce:h-14 ecommerce:rounded ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
                     <icon name="image" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
                   </div>
@@ -293,7 +293,8 @@
       <div data-ref="orderer_info_section" class="ecommerce:mt-8 ecommerce:pt-8">
         <h3 class="ecommerce:text-base ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:mb-4">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.title</h3>
         <div class="ecommerce-row-stack">
-          <div class="ecommerce-grid-2col-responsive">
+          <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+            <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
             <div>
               <span class="ecommerce-text-label-subtle ecommerce:block ecommerce:mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.name</span>
               <action-menu data-type="composite" data-if="{{!!order.data?.user_id}}" position="left">
@@ -341,7 +342,8 @@
               </div>
             </div>
           </div>
-          <div class="ecommerce-grid-2col-responsive">
+          <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+            <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
             <div>
               <span class="ecommerce-text-label-subtle ecommerce:block ecommerce:mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.tel</span>
               <div class="ecommerce:bg-gray-100 ecommerce:dark:bg-gray-800 ecommerce:rounded ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{order.data?.orderer_tel ?? '-'}}</div>
@@ -378,7 +380,8 @@
           </div>
         </div>
         <div class="ecommerce-row-stack">
-          <div class="ecommerce-grid-2col-responsive">
+          <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+            <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
             <!-- 배송국가 (D9 — 항상 표시 KR 포함. 해외배송 활성 시 변경 가능, 아니면 표시 전용 — D7) -->
             <div>
               <span class="ecommerce-text-label-subtle ecommerce:mb-1 ecommerce:block">$t:sirsoft-ecommerce.common.shipping_country_label</span>
@@ -409,7 +412,8 @@
               <span data-if="{{_local.errors?.recipient_phone}}" class="ecommerce-form-error-xs ecommerce:mt-1 ecommerce:block">{{_local.errors?.recipient_phone?.[0] ?? ''}}</span>
             </div>
           </div>
-          <div class="ecommerce-grid-2col-responsive">
+          <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+            <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
             <div>
               <div class="ecommerce-flex-center ecommerce:gap-1 ecommerce:mb-1">
                 <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.tel</span>

@@ -10,29 +10,29 @@
           <p class="ecommerce-tone-warning-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.notice.confirm_change_description</p>
         </div>
       </div>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3">
-        <button type="button" class="ecommerce-btn ecommerce-btn-outline">
-          <on type="click">
-            <!-- 취소 — 대기시켜 둔 선택을 버린다(그대로 두면 다음에 창을 열 때 지난 선택이 적용된다) -->
-            <sequence>
-              <set-state target="global" :pendingNoticeTemplateId="null"/>
-              <close-modal/>
-            </sequence>
-          </on>
-          $t:sirsoft-ecommerce.common.cancel
-        </button>
-        <button type="button" class="ecommerce-btn ecommerce-btn-warning">
-          <on type="click">
-            <!-- 확정 — 창을 닫고 대기 중이던 템플릿을 적용한 뒤 그 자리를 비운다 -->
-            <sequence>
-              <close-modal/>
-              <action handler="sirsoft-ecommerce.selectNoticeTemplate" templateId="{{_global.pendingNoticeTemplateId}}"/>
-              <set-state target="global" :pendingNoticeTemplateId="null"/>
-            </sequence>
-          </on>
-          $t:sirsoft-ecommerce.admin.product.notice.confirm_change_button
-        </button>
-      </div>
     </div>
+    <footer>
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
+        <on type="click">
+          <!-- 취소 — 대기시켜 둔 선택을 버린다(그대로 두면 다음에 창을 열 때 지난 선택이 적용된다) -->
+          <sequence>
+            <set-state target="global" :pendingNoticeTemplateId="null"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.common.cancel
+      </button>
+      <button type="button" class="ecommerce-btn ecommerce-btn-warning">
+        <on type="click">
+          <!-- 확정 — 창을 닫고 대기 중이던 템플릿을 적용한 뒤 그 자리를 비운다 -->
+          <sequence>
+            <close-modal/>
+            <action handler="sirsoft-ecommerce.selectNoticeTemplate" templateId="{{_global.pendingNoticeTemplateId}}"/>
+            <set-state target="global" :pendingNoticeTemplateId="null"/>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.notice.confirm_change_button
+      </button>
+    </footer>
   </modal>
 </partial>

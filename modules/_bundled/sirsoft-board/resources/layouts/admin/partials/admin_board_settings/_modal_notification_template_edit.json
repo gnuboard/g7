@@ -10,7 +10,213 @@
     "props": {
         "title": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.title",
         "size": "xl",
-        "closeOnOverlayClick": false
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
+                "responsive": {
+                    "-640": {
+                        "comment": "왼쪽 단추는 오른쪽 묶음과 떨어뜨린다. 640px 이하에서는 Modal 이 세로로 쌓으므로 여백을 빼고 폭을 채운다(#869)",
+                        "props": {
+                            "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors"
+                        }
+                    }
+                },
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "apiCall",
+                        "target": "/api/admin/notification-templates/preview",
+                        "auth_required": true,
+                        "params": {
+                            "method": "POST",
+                            "body": {
+                                "definition_id": "{{_global.board_notification_template_form_modal?.definition?.id}}",
+                                "subject": "{{_global.board_notification_template_form_modal?.template?.subject}}",
+                                "body": "{{_global.board_notification_template_form_modal?.template?.body}}",
+                                "locale": "{{_global.board_notification_template_form_modal?.editLang ?? $locale}}"
+                            }
+                        },
+                        "onSuccess": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "board_notification_template_form_modal.preview": "{{response.data}}"
+                                }
+                            },
+                            {
+                                "handler": "openModal",
+                                "target": "modal_board_notification_template_preview"
+                            }
+                        ],
+                        "onError": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:mr-auto",
+                    "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.btn_preview"
+            },
+            {
+                "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal",
+                                "target": "modal_board_notification_template_edit"
+                            },
+                            {
+                                "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "board_notification_template_form_modal": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
+                "id": "board_template_form_footer_ext",
+                "type": "extension_point",
+                "name": "notification_template_form_footer_actions",
+                "props": {
+                    "definition": "{{_global.board_notification_template_form_modal?.definition}}",
+                    "template": "{{_global.board_notification_template_form_modal?.template}}",
+                    "channel": "{{_global.board_notification_template_form_modal?.template?.channel ?? ''}}",
+                    "modalId": "modal_board_notification_template_edit",
+                    "stateKey": "board_notification_template_form_modal",
+                    "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}",
+                    "refetchDataSourceId": "boardNotificationDefinitions"
+                }
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
+                "actions": [
+                    {
+                        "comment": "저장 — 문안과 수신 규칙을 함께 보낸다. 성공하면 폼 객체를 통째로 비우고 목록을 다시 읽어, 고친 제목이 목록 요약에도 반영되게 한다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "board_notification_template_form_modal.isSaving": true,
+                                    "board_notification_template_form_modal.errors": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PUT",
+                                    "body": {
+                                        "subject": "{{_global.board_notification_template_form_modal?.template?.subject}}",
+                                        "body": "{{_global.board_notification_template_form_modal?.template?.body}}",
+                                        "click_url": "{{_global.board_notification_template_form_modal?.template?.click_url ?? null}}",
+                                        "recipients": "{{_global.board_notification_template_form_modal?.recipients ?? []}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "boardNotificationDefinitions"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "$t:sirsoft-board.admin.settings.notification_definitions.save_success",
+                                            "type": "success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "modal_board_notification_template_edit"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "board_notification_template_form_modal": null
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "board_notification_template_form_modal.isSaving": false,
+                                            "board_notification_template_form_modal.errors": "{{error.errors}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.notification_definitions.save_error'}}",
+                                            "type": "error"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-flex-center board:gap-2 board:text-sm board:px-4 board:py-2 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.board_notification_template_form_modal?.isSaving}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "board:animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.board_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -1013,227 +1219,6 @@
                                                     "text": " — {{v.description ?? ''}}"
                                                 }
                                             ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "board_template_modal_footer",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-flex-between board:pt-4 board:pb-4 board:border-t board:border-gray-200 board:dark:border-gray-700 board:mt-4 board:flex-shrink-0"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                                {
-                                    "comment": "미리보기 — 편집 중인 제목·본문을 서버에 보내 변수를 채운 모습을 받아 미리보기 창에 띄운다. 저장 중에는 잠긴다 — 요청이 도는 도중 창이 바뀌면 성공·실패 안내가 갈 곳을 잃는다",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/notification-templates/preview",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": {
-                                                    "definition_id": "{{_global.board_notification_template_form_modal?.definition?.id}}",
-                                                    "subject": "{{_global.board_notification_template_form_modal?.template?.subject}}",
-                                                    "body": "{{_global.board_notification_template_form_modal?.template?.body}}",
-                                                    "locale": "{{_global.board_notification_template_form_modal?.editLang ?? $locale}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "board_notification_template_form_modal.preview": "{{response.data}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "modal_board_notification_template_preview"
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors",
-                                        "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.btn_preview"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "board:flex board:gap-2"
-                            },
-                            "children": [
-                                {
-                                    "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "modal_board_notification_template_edit"
-                                                },
-                                                {
-                                                    "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "board_notification_template_form_modal": null
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "text": "$t:common.cancel"
-                                },
-                                {
-                                    "comment": "편집 모달 푸터 확장 슬롯(범용). template_editor='none' 채널에서는 코어 [저장]/[미리보기]가 숨겨지므로, 그 채널을 소유한 확장이 자기 저장 버튼(코어 수신자 규칙 저장 포함)을 여기에 주입한다. [취소]는 코어가 유지한다.",
-                                    "id": "board_template_form_footer_ext",
-                                    "type": "extension_point",
-                                    "name": "notification_template_form_footer_actions",
-                                    "props": {
-                                        "definition": "{{_global.board_notification_template_form_modal?.definition}}",
-                                        "template": "{{_global.board_notification_template_form_modal?.template}}",
-                                        "channel": "{{_global.board_notification_template_form_modal?.template?.channel ?? ''}}",
-                                        "modalId": "modal_board_notification_template_edit",
-                                        "stateKey": "board_notification_template_form_modal",
-                                        "saveEndpoint": "{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}",
-                                        "refetchDataSourceId": "boardNotificationDefinitions"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
-                                    "actions": [
-                                        {
-                                            "comment": "저장 — 문안과 수신 규칙을 함께 보낸다. 성공하면 폼 객체를 통째로 비우고 목록을 다시 읽어, 고친 제목이 목록 요약에도 반영되게 한다",
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "board_notification_template_form_modal.isSaving": true,
-                                                        "board_notification_template_form_modal.errors": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "apiCall",
-                                                    "target": "{{'/api/admin/notification-templates/' + _global.board_notification_template_form_modal?.template?.id}}",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "PUT",
-                                                        "body": {
-                                                            "subject": "{{_global.board_notification_template_form_modal?.template?.subject}}",
-                                                            "body": "{{_global.board_notification_template_form_modal?.template?.body}}",
-                                                            "click_url": "{{_global.board_notification_template_form_modal?.template?.click_url ?? null}}",
-                                                            "recipients": "{{_global.board_notification_template_form_modal?.recipients ?? []}}"
-                                                        }
-                                                    },
-                                                    "onSuccess": [
-                                                        {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "boardNotificationDefinitions"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "message": "$t:sirsoft-board.admin.settings.notification_definitions.save_success",
-                                                                "type": "success"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "closeModal",
-                                                            "target": "modal_board_notification_template_edit"
-                                                        },
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "board_notification_template_form_modal": null
-                                                            }
-                                                        }
-                                                    ],
-                                                    "onError": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "global",
-                                                                "board_notification_template_form_modal.isSaving": false,
-                                                                "board_notification_template_form_modal.errors": "{{error.errors}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.notification_definitions.save_error'}}",
-                                                                "type": "error"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "board-flex-center board:gap-2 board:text-sm board:px-4 board:py-2 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                                        "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{_global.board_notification_template_form_modal?.isSaving}}",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "board:animate-spin",
-                                                "size": "sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "{{_global.board_notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
                                         }
                                     ]
                                 }

@@ -235,8 +235,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "p-8 min-h-screen bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "p-4 min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -254,8 +266,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "text-2xl font-semibold text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "text-xl font-semibold text-gray-900 dark:text-white"
                                         },
                                         "text": "$t:admin.analytics.settings.title"
                                     },
@@ -382,14 +401,38 @@
                         "id": "sticky_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "640-1023": {
+                                "props": {
+                                    "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                }
+                            },
+                            "1024-": {
+                                "props": {
+                                    "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "sticky-tab-nav-responsive"
+                            "className": "sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "id": "settings_tabs",
                                 "type": "composite",
                                 "name": "TabNavigation",
+                                "responsive": {
+                                    "640-1023": {
+                                        "props": {
+                                            "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                        }
+                                    },
+                                    "1024-": {
+                                        "props": {
+                                            "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                        }
+                                    }
+                                },
                                 "actions": [
                                     {
                                         "comment": "탭 전환 — 검증 오류를 지우고 질의만 바꾼다. 설정은 질의를 타지 않으므로 다시 받지 않고,\n                 저장하지 않은 변경은 탭을 옮겨도 폼에 남는다(브라우저 실측 M6-T3). 그래서 저장은 지금 탭이\n                 아니라 달라진 키 전부를 보낸다. 화면을 떠났다 오면 처음부터 받으므로 그때는 버려진다.",
@@ -419,7 +462,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "sticky-tab-nav-responsive",
+                                    "className": "sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700",
                                     "activeTabId": "{{query.tab || 'collection'}}",
                                     "variant": "default",
                                     "tabs": [
@@ -610,8 +653,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1148,10 +1198,17 @@
                                         "id": "privacy_mode_cards",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "grid grid-cols-3 gap-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "role": "radiogroup",
                                             "aria-label": "$t:admin.analytics.settings.privacy.mode_label",
-                                            "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                                            "className": "grid grid-cols-1 gap-4"
                                         },
                                         "children": [
                                             {
@@ -1449,8 +1506,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -2108,8 +2172,15 @@
                                                 "comment": "GeoIP 상태는 조회 권한 API 에서 온다 — 조회 권한이 없는 계정(설정 전용)에서는 403 이라 fallback 이\n                 「꺼짐」으로 굳는다. 그때는 「모른다」로 두고 잠그지 않는다. 잠그면 GeoIP 가 켜진 사이트에서도\n                 국가 필터를 영영 못 고르고, 이유로 거짓 안내를 보게 된다(#682 S3 라운드 3).",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -2211,8 +2282,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -2684,8 +2762,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {

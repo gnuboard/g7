@@ -91,6 +91,8 @@ function getSequenceHandlers(actions: any[]): string[] {
 }
 
 describe('관리자 첨부파일 Partial (_attachments.json)', () => {
+    // @scenario area=admin_attachments
+    // @effects board_attachments_deferred_upload_wired
     it('FileUploader에 autoUpload: false가 설정되어야 합니다', () => {
         const fileUploaders = findComponentsByName(adminAttachments, 'FileUploader');
         expect(fileUploaders.length).toBeGreaterThan(0);
@@ -99,12 +101,16 @@ describe('관리자 첨부파일 Partial (_attachments.json)', () => {
         expect(uploader.props.autoUpload).toBe(false);
     });
 
+    // @scenario area=admin_attachments
+    // @effects board_attachments_deferred_upload_wired
     it('FileUploader에 uploadTriggerEvent가 설정되어야 합니다', () => {
         const fileUploaders = findComponentsByName(adminAttachments, 'FileUploader');
         const uploader = fileUploaders[0];
         expect(uploader.props.uploadTriggerEvent).toBe('upload:board_attachments');
     });
 
+    // @scenario area=admin_attachments
+    // @effects board_attachments_deferred_upload_wired
     it('FileUploader에 uploadParams가 temp_key를 포함해야 합니다', () => {
         const fileUploaders = findComponentsByName(adminAttachments, 'FileUploader');
         const uploader = fileUploaders[0];
@@ -113,6 +119,8 @@ describe('관리자 첨부파일 Partial (_attachments.json)', () => {
         expect(uploader.props.uploadParams.temp_key).toContain('_local.tempKey');
     });
 
+    // @scenario area=admin_attachments
+    // @effects board_attachments_deferred_upload_wired
     it('FileUploader의 upload URL에 쿼리스트링이 없어야 합니다', () => {
         const fileUploaders = findComponentsByName(adminAttachments, 'FileUploader');
         const uploader = fileUploaders[0];
@@ -126,6 +134,8 @@ describe('관리자 첨부파일 Partial (_attachments.json)', () => {
 });
 
 describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
+    // @scenario area=admin_save
+    // @effects board_save_uploads_before_request
     it('header_save_button의 sequence에 emitEvent가 포함되어야 합니다', () => {
         const headerButton = findById(adminPostForm, 'header_save_button');
         expect(headerButton).not.toBeNull();
@@ -134,6 +144,8 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
         expect(handlers).toContain('emitEvent');
     });
 
+    // @scenario area=admin_save
+    // @effects board_save_uploads_before_request
     it('header_save_button의 emitEvent가 apiCall 앞에 위치해야 합니다', () => {
         const headerButton = findById(adminPostForm, 'header_save_button');
         const handlers = getSequenceHandlers(headerButton.actions);
@@ -146,6 +158,8 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
         expect(emitIndex).toBeLessThan(apiCallIndex);
     });
 
+    // @scenario area=admin_save
+    // @effects board_save_uploads_before_request
     it('header_save_button의 emitEvent가 upload:board_attachments 이벤트를 발행해야 합니다', () => {
         const headerButton = findById(adminPostForm, 'header_save_button');
         const sequenceAction = actionsOf(headerButton).find((a: any) => a.handler === 'sequence');
@@ -154,6 +168,8 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
         expect(emitAction.params.event).toBe('upload:board_attachments');
     });
 
+    // @scenario area=admin_save
+    // @effects board_save_uploads_before_request
     it('footer_save_button의 sequence에 emitEvent가 포함되어야 합니다', () => {
         const footerButton = findById(adminPostForm, 'footer_save_button');
         expect(footerButton).not.toBeNull();
@@ -162,6 +178,8 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
         expect(handlers).toContain('emitEvent');
     });
 
+    // @scenario area=admin_save
+    // @effects board_save_uploads_before_request
     it('footer_save_button의 emitEvent가 apiCall 앞에 위치해야 합니다', () => {
         const footerButton = findById(adminPostForm, 'footer_save_button');
         const handlers = getSequenceHandlers(footerButton.actions);
@@ -174,15 +192,21 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
         expect(emitIndex).toBeLessThan(apiCallIndex);
     });
 
+    // @scenario area=admin_save
+    // @effects board_save_uploads_before_request
     it('저장 sequence 순서: setState → emitEvent → apiCall', () => {
         const headerButton = findById(adminPostForm, 'header_save_button');
         const handlers = getSequenceHandlers(headerButton.actions);
 
+        // 저장 표시 → 업로드 신호 → 저장 요청 순서. 사이에 업로드 실패 수를 모으고 실패면 알리는 단계가 끼며,
+        // 저장 요청은 실패가 없을 때만 나간다(#869 브라우저 실측 — uploadFailureStopsSave.test.ts 가 실행으로 잰다)
         expect(handlers[0]).toBe('setState');
-        expect(handlers[1]).toBe('emitEvent');
-        expect(handlers[2]).toBe('apiCall');
+        expect(handlers.indexOf('emitEvent')).toBeGreaterThan(0);
+        expect(handlers.indexOf('apiCall')).toBeGreaterThan(handlers.indexOf('emitEvent'));
     });
 
+    // @scenario area=admin_save
+    // @effects board_save_uploads_before_request
     it('apiCall body에 temp_key가 포함되어야 합니다', () => {
         const headerButton = findById(adminPostForm, 'header_save_button');
         const sequenceAction = actionsOf(headerButton).find((a: any) => a.handler === 'sequence');
@@ -194,6 +218,8 @@ describe('관리자 폼 저장 버튼 (admin_board_post_form.json)', () => {
 });
 
 describe('사용자 폼 (_post_form.json)', () => {
+    // @scenario area=user_form
+    // @effects board_attachments_deferred_upload_wired
     it('FileUploader에 autoUpload: false가 설정되어야 합니다', () => {
         const fileUploaders = findComponentsByName(userPostForm, 'FileUploader');
         expect(fileUploaders.length).toBeGreaterThan(0);
@@ -202,12 +228,16 @@ describe('사용자 폼 (_post_form.json)', () => {
         expect(uploader.props.autoUpload).toBe(false);
     });
 
+    // @scenario area=user_form
+    // @effects board_attachments_deferred_upload_wired
     it('FileUploader에 uploadTriggerEvent가 설정되어야 합니다', () => {
         const fileUploaders = findComponentsByName(userPostForm, 'FileUploader');
         const uploader = fileUploaders[0];
         expect(uploader.props.uploadTriggerEvent).toBe('upload:board_attachments');
     });
 
+    // @scenario area=user_form
+    // @effects board_attachments_deferred_upload_wired
     it('FileUploader에 uploadParams가 temp_key를 포함해야 합니다', () => {
         const fileUploaders = findComponentsByName(userPostForm, 'FileUploader');
         const uploader = fileUploaders[0];
@@ -215,6 +245,8 @@ describe('사용자 폼 (_post_form.json)', () => {
         expect(uploader.props.uploadParams.temp_key).toContain('_local.tempKey');
     });
 
+    // @scenario area=user_form
+    // @effects board_attachments_deferred_upload_wired
     it('FileUploader의 upload URL에 쿼리스트링이 없어야 합니다', () => {
         const fileUploaders = findComponentsByName(userPostForm, 'FileUploader');
         const uploader = fileUploaders[0];
@@ -225,6 +257,8 @@ describe('사용자 폼 (_post_form.json)', () => {
         expect(uploadUrl).not.toContain('post_id=');
     });
 
+    // @scenario area=user_form
+    // @effects board_save_uploads_before_request
     it('저장 버튼의 sequence에 emitEvent가 포함되어야 합니다', () => {
         // 사용자 폼에서 저장 버튼은 children 마지막 영역에 위치
         const allButtons = findComponentsByName(userPostForm, 'Button');
@@ -243,6 +277,8 @@ describe('사용자 폼 (_post_form.json)', () => {
         expect(handlers).toContain('emitEvent');
     });
 
+    // @scenario area=user_form
+    // @effects board_save_uploads_before_request
     it('저장 버튼의 emitEvent가 apiCall 앞에 위치해야 합니다', () => {
         const allButtons = findComponentsByName(userPostForm, 'Button');
         const saveButton = allButtons.find((btn: any) => {
@@ -262,6 +298,8 @@ describe('사용자 폼 (_post_form.json)', () => {
         expect(emitIndex).toBeLessThan(apiCallIndex);
     });
 
+    // @scenario area=user_form
+    // @effects board_save_uploads_before_request
     it('저장 sequence 순서: setState → emitEvent → apiCall', () => {
         const allButtons = findComponentsByName(userPostForm, 'Button');
         const saveButton = allButtons.find((btn: any) => {
@@ -273,13 +311,17 @@ describe('사용자 폼 (_post_form.json)', () => {
         });
 
         const handlers = getSequenceHandlers(saveButton.actions);
+        // 저장 표시 → 업로드 신호 → 저장 요청 순서. 사이에 업로드 실패 수를 모으고 실패면 알리는 단계가 끼며,
+        // 저장 요청은 실패가 없을 때만 나간다(#869 브라우저 실측 — uploadFailureStopsSave.test.ts 가 실행으로 잰다)
         expect(handlers[0]).toBe('setState');
-        expect(handlers[1]).toBe('emitEvent');
-        expect(handlers[2]).toBe('apiCall');
+        expect(handlers.indexOf('emitEvent')).toBeGreaterThan(0);
+        expect(handlers.indexOf('apiCall')).toBeGreaterThan(handlers.indexOf('emitEvent'));
     });
 });
 
 describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
+    // @scenario area=upload_error
+    // @effects board_upload_error_restores_saving
     it('관리자 첨부파일 onUploadError에서 isSaving: false를 설정해야 합니다', () => {
         const fileUploaders = findComponentsByName(adminAttachments, 'FileUploader');
         const uploader = fileUploaders[0];
@@ -292,6 +334,8 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
         expect(setStateAction.params.isSaving).toBe(false);
     });
 
+    // @scenario area=upload_error
+    // @effects board_upload_error_restores_saving
     it('사용자 폼 onUploadError에서 isSaving: false를 설정해야 합니다', () => {
         const fileUploaders = findComponentsByName(userPostForm, 'FileUploader');
         const uploader = fileUploaders[0];
@@ -303,12 +347,16 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
         expect(setStateAction.params.isSaving).toBe(false);
     });
 
+    // @scenario area=upload_error
+    // @effects board_upload_error_restores_saving
     it('관리자 첨부파일 uploadParams에 post_id가 없어야 합니다', () => {
         const fileUploaders = findComponentsByName(adminAttachments, 'FileUploader');
         const uploader = fileUploaders[0];
         expect(uploader.props.uploadParams.post_id).toBeUndefined();
     });
 
+    // @scenario area=upload_error
+    // @effects board_upload_error_restores_saving
     it('사용자 폼 uploadParams에 post_id가 없어야 합니다', () => {
         const fileUploaders = findComponentsByName(userPostForm, 'FileUploader');
         const uploader = fileUploaders[0];
@@ -337,6 +385,8 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
 
     const FALLBACK = '.jpg,.jpeg,.png,.gif,.pdf,.zip';
 
+    // @scenario area=admin_attachments
+    // @effects board_attachments_deferred_upload_wired
     it.each([
         ['관리자 첨부파일', () => findComponentsByName(adminAttachments, 'FileUploader')[0]],
         ['사용자 폼', () => findComponentsByName(userPostForm, 'FileUploader')[0]],
@@ -348,6 +398,8 @@ describe('업로드 에러 시 isSaving 복구 (onUploadError)', () => {
         expect(evaluateAccept(accept, undefined)).toBe(FALLBACK);
     });
 
+    // @scenario area=admin_attachments
+    // @effects board_attachments_deferred_upload_wired
     it.each([
         ['관리자 첨부파일', () => findComponentsByName(adminAttachments, 'FileUploader')[0]],
         ['사용자 폼', () => findComponentsByName(userPostForm, 'FileUploader')[0]],

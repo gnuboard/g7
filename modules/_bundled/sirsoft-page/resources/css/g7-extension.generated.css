@@ -205,11 +205,6 @@
     }
   }
 
-  .page-btn-sm {
-    padding-inline: calc(.25rem * 3);
-    padding-block: calc(.25rem * 1.5);
-  }
-
   .page-button {
     cursor: pointer;
     justify-content: center;
@@ -246,6 +241,11 @@
   .page-btn[aria-disabled=true] {
     cursor: not-allowed;
     opacity: .5;
+  }
+
+  .page-btn-sm {
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 1.5);
   }
 
   .page-btn-primary {

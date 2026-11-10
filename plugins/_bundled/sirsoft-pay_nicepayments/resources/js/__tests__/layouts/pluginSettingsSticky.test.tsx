@@ -5,6 +5,8 @@
  * 플러그인 환경설정(plugin_settings.json)의 하단 저장/취소 버튼 영역이
  * 긴 콘텐츠를 스크롤하는 동안에도 화면 하단에 고정되도록 sticky 클래스가
  * 적용되어 있는지 검증한다.
+ *
+ * @scenario-manifest tests/scenarios/plugin-settings-sticky.yaml
  */
 
 import { describe, it, expect } from 'vitest';
@@ -50,6 +52,11 @@ function collectClassNames(node: unknown, classNames: string[] = []): string[] {
 }
 
 describe('plugin_settings 하단 버튼 sticky 고정', () => {
+  /**
+   * @scenario plugin=sirsoft-pay_nicepayments, element=footer
+   *
+   * @effects footer_buttons_stick_to_bottom
+   */
   it('footer_buttons 에 sticky bottom 고정 클래스가 존재해야 한다', () => {
     const footer = findById(pluginSettingsLayout, 'footer_buttons');
     expect(footer).toBeDefined();
@@ -68,14 +75,23 @@ describe('plugin_settings 하단 버튼 sticky 고정', () => {
     expect(isShorthand || className.includes('sticky')).toBe(true);
   });
 
+  /**
+   * @scenario plugin=sirsoft-pay_nicepayments, element=root
+   *
+   * @effects settings_root_layout_by_width
+   */
   it('활성 테마의 신규 시맨틱 CSS 없이도 설정 화면 기본 레이아웃이 적용되어야 한다', () => {
     const root = findById(pluginSettingsLayout, 'plugin_settings_content');
     expect(root).toBeDefined();
 
     const rootClassName = classNameOf(root);
     expect(rootClassName).toContain('p-4');
-    expect(rootClassName).toContain('sm:p-6');
-    expect(rootClassName).toContain('lg:p-8');
+    // 화면 폭 분기는 엔진 responsive 로 쓴다 — 640~1023px 은 p-6, 1024px 이상은 p-8
+    const responsive = (root?.responsive ?? {}) as Record<string, Record<string, unknown>>;
+    expect(classNameOf(responsive['640-1023']).split(' ')).toContain('paynicepayments:p-6');
+    // 커스텀 구간(640-1023)과 프리셋을 한 노드에 섞지 않는다 — 1024px 이상도 커스텀 구간 1024- 로 쓴다
+    expect(classNameOf(responsive['1024-']).split(' ')).toContain('paynicepayments:p-8');
+    expect(responsive.desktop).toBeUndefined();
     expect(rootClassName).toContain('min-h-screen');
     expect(rootClassName).toContain('bg-gray-50');
     expect(rootClassName).toContain('dark:bg-gray-900');

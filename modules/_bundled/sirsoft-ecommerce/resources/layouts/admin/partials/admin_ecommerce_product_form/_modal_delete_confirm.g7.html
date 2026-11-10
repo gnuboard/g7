@@ -12,7 +12,7 @@
         <div class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4">
           <div class="ecommerce-flex-center ecommerce:justify-center ecommerce:gap-3">
             <div data-if="{{_local.form.images?.length > 0}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded-lg ecommerce:overflow-hidden ecommerce:flex-shrink-0">
-              <img src="{{_local.form.images?.[0]?.download_url}}" alt="" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
+              <img src="{{_local.form.images?.[0]?.download_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="" class="ecommerce:w-full ecommerce:h-full ecommerce:object-cover"/>
             </div>
             <div data-if="{{!_local.form.images?.length}}" class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:rounded-lg ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:justify-center ecommerce:flex-shrink-0">
               <icon name="image" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
@@ -36,7 +36,7 @@
     <div data-if="{{_global.deleteProduct?.canDelete === false}}">
       <alert data-type="composite" type="error" title="$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title" message="{{_global.deleteProduct?.reason}}"/>
     </div>
-    <div class="ecommerce-modal-footer-buttons">
+    <footer>
       <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isProductDeleting}}">
         <on type="click">
           <close-modal target="modal_delete_confirm"/>
@@ -67,6 +67,6 @@
         <icon data-if="{{_global.isProductDeleting}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.isProductDeleting ? '$t:common.deleting' : '$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_button'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

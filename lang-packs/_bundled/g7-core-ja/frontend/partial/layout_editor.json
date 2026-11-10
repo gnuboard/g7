@@ -73,6 +73,12 @@
       },
       "empty": "表示するルートがありません"
     },
+    "spec_load_error": {
+      "title": "エディタ情報を読み込めませんでした。",
+      "message": "コンポーネント一覧、スタイル設定、状態切り替えが使えません。もう一度お試しください。",
+      "retry": "再試行",
+      "retrying": "再読み込み中…"
+    },
     "fab": {
       "label": "レイアウト編集",
       "tooltip": "この画面をレイアウトエディタで開く"
@@ -187,7 +193,9 @@
   },
   "zoom": {
     "label": "ズーム",
-    "aria_label": "キャンバスズームスライダー"
+    "aria_label": "キャンバスズームスライダー",
+    "actual_size": "実際のサイズ",
+    "actual_size_hint": "プレビューを縮小せず 1:1 で表示します。キャンバスより広い場合は横スクロールが出ます。"
   },
   "palette": {
     "title": "要素を追加",
@@ -351,6 +359,14 @@
       "restore": "データ連携に戻す",
       "template_settings_notice": "テンプレート設定に連結された値です — 管理 > テンプレート > このテンプレートの「設定」で変更します。",
       "open_template_settings": "設定を開く"
+    },
+    "thumbnail_preset": {
+      "original": "元画像",
+      "fit_cover": "切り抜き",
+      "fit_contain": "全体を収める",
+      "fit_width": "幅のみ",
+      "option_label": "{name}（{size}・{fit}）",
+      "unknown": "{name}（現在未使用）"
     }
   },
   "recipe": {

@@ -1,0 +1,27 @@
+feature: 관리자 상품 이미지 자리 — 목록 이미지 열의 썸네일 규격, 폼 SEO 미리보기 대체 텍스트 (#869)
+
+description: |
+  관리자 상품 목록의 이미지 칸이 2000px 원본을 받았다(한 쪽 20행이면 원본 20장). 이미지 열의 `<img>` 가
+  규격을 들고 있어야 Img 가 주소에 `?size=` 를 붙인다. 규격은 두 구간이고 칸 크기 분기와 같은 경계(768px)를 쓴다. 768px 이상은
+  80px 칸이라 기본 `sm`(160 정사각)이고, `responsive.0-767` 이 가로 640 맞춤 `md` 로 덮는다. 767px 이하에서 DataGrid 가 카드로
+  바꾸고 칸이 `w-full aspect-square` 로 카드 폭을 채우기 때문이다. 프리셋 `mobile` 대신 숫자 키인 것은 이 문서의 다른 노드가
+  `portable` 을 쓰고 한 문서에 둘을 섞지 않기 때문이다. 규격이 어긋나도 화면은 멀쩡해 보이고 전송량으로만 드러나므로,
+  `_partial_product_datagrid.g7.html` 을 구운 결과에서 이미지 열 셀을 행 반복 안에서 실제 엔진으로 렌더해 폭별 주소로 고정한다.
+  지연 로딩과 이미지 없는 상품의 아이콘 자리도 같은 렌더에서 본다.
+
+  상품 폼 SEO 탭의 검색결과 미리보기 이미지는 썸네일 규격을 붙이면서 대체 텍스트가 고정 영문(`OG Image`)으로 남아 있었다.
+  `_partial_seo_settings.g7.html` 을 구운 결과의 alt 가 모듈 다국어 키이고 ko·en·ja 세 언어에 값이 있는지 본다.
+
+  Img 컴포넌트 자체의 `thumbPreset` 처리는 템플릿 컴포넌트 테스트 몫이다. 이 매니페스트는 「레이아웃이 이 칸에 어느
+  규격을 주는가」 만 본다.
+
+axes:
+  screen: [admin_product_list, admin_product_form_seo_preview]
+
+effects:
+  - admin_product_list_img_requests_sm_from_768_md_below
+  - admin_product_seo_preview_alt_translated
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-product-list-thumbnail-preset.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-product-seo-preview-image-alt.test.ts

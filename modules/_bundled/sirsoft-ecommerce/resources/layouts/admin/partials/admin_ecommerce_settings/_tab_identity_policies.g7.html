@@ -31,7 +31,8 @@
         <span class="ecommerce-tone-warning-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.settings.identity.read_only_notice</span>
       </div>
       <div class="ecommerce-card-description">$t:sirsoft-ecommerce.admin.settings.identity.purposes_section_description</div>
-      <div data-ref="page_header" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center ecommerce:md:justify-between ecommerce:mb-6">
+      <div data-ref="page_header" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:mb-6">
+        <responsive on="768-" class="ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between ecommerce:mb-6"/>
         <div>
           <h3 class="ecommerce-section-title">$t:admin.identity.policies.page_title</h3>
           <p class="ecommerce-text-label-subtle">$t:admin.identity.policies.page_description</p>
@@ -86,9 +87,11 @@
           <span data-if="{{ecommerceIdentityPurposes !== undefined &amp;&amp; ((ecommerceIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-ecommerce').length === 0)}}" class="ecommerce-text-tertiary ecommerce:italic">$t:sirsoft-ecommerce.admin.settings.identity.purposes_empty</span>
         </div>
       </div>
-      <div data-ref="filter_card" class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6 ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center">
+      <div data-ref="filter_card" class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6 ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <responsive on="768-" class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6 ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-center"/>
         <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다. -->
-        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="ecommerce:w-full ecommerce:md:w-40 ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm">
+        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm">
+          <responsive on="768-" class="ecommerce:w-40 ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm"/>
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -109,7 +112,8 @@
           </on>
         </select>
         <!-- 검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식. -->
-        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="ecommerce-input ecommerce:md:flex-1 ecommerce:md:min-w-[200px]">
+        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="ecommerce-input">
+          <responsive on="768-" class="ecommerce-input ecommerce:flex-1 ecommerce:min-w-[200px]"/>
           <on type="change">
             <!-- 입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다 -->
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>

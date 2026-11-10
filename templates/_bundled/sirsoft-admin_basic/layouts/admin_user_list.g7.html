@@ -495,7 +495,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_activate_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
           <on type="click">
             <close-modal/>
@@ -530,7 +530,7 @@
           <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
           <span>{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -540,7 +540,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_deactivate_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
           <on type="click">
             <close-modal/>
@@ -573,7 +573,7 @@
           <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
           <span>{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -584,7 +584,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.delete_confirm</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
@@ -614,7 +614,7 @@
           <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
           <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -642,7 +642,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_block_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
           <on type="click">
             <close-modal/>
@@ -675,7 +675,7 @@
           <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
           <span>{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <modal>
@@ -685,7 +685,7 @@
       <div class="py-2">
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_withdraw_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
       </div>
-      <div class="modal-footer-buttons">
+      <footer>
         <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
           <on type="click">
             <close-modal/>
@@ -718,7 +718,7 @@
           <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
           <span>{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
   </modal>
   <!-- 회원 역할 일괄 추가·제거 창 — 일괄 작업 바의 「역할 추가」「역할 제거」(모바일은 드롭다운)가 연다. -->

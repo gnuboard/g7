@@ -63,8 +63,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H1",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "ecommerce-page-title"
+                                                    "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.title"
                                             }
@@ -146,14 +153,28 @@
                                 "id": "search_row",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-3 ecommerce:flex-wrap ecommerce:items-center ecommerce:mb-4"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-search-bar ecommerce:mb-4"
+                                    "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-3 ecommerce:mb-4"
                                 },
                                 "children": [
                                     {
                                         "id": "search_field_select",
                                         "type": "basic",
                                         "name": "Select",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:h-9 ecommerce:shrink-0"
+                                                }
+                                            }
+                                        },
                                         "actions": [
                                             {
                                                 "comment": "검색 대상만 바꾼다 — 조회는 옆 입력칸의 검색어와 함께 이뤄진다",
@@ -168,7 +189,7 @@
                                         "props": {
                                             "name": "searchField",
                                             "aria-label": "$t:common.search_field",
-                                            "className": "ecommerce:h-9 ecommerce:md:shrink-0",
+                                            "className": "ecommerce:h-9",
                                             "value": "{{_local.searchField}}",
                                             "options": [
                                                 {
@@ -194,6 +215,13 @@
                                         "id": "search_input",
                                         "type": "basic",
                                         "name": "Input",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:w-full ecommerce:h-9 ecommerce:bg-gray-100 ecommerce:text-gray-900 ecommerce:px-3 ecommerce:rounded-lg ecommerce:text-sm ecommerce:placeholder:text-gray-600 ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-100 ecommerce:dark:placeholder:text-gray-300 ecommerce:flex-1 ecommerce:min-w-64"
+                                                }
+                                            }
+                                        },
                                         "actions": [
                                             {
                                                 "comment": "입력을 마칠 때 담는다",
@@ -208,7 +236,7 @@
                                         "props": {
                                             "type": "text",
                                             "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment.search.placeholder",
-                                            "className": "ecommerce-search-bar-input",
+                                            "className": "ecommerce:w-full ecommerce:h-9 ecommerce:bg-gray-100 ecommerce:text-gray-900 ecommerce:px-3 ecommerce:rounded-lg ecommerce:text-sm ecommerce:placeholder:text-gray-600 ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:outline-none ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-100 ecommerce:dark:placeholder:text-gray-300",
                                             "value": "{{_local.searchKeyword}}"
                                         }
                                     },
@@ -216,6 +244,13 @@
                                         "id": "reset_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:rounded-lg ecommerce:transition-colors ecommerce:duration-200 ecommerce:cursor-pointer ecommerce:bg-transparent ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600 ecommerce:dark:hover:bg-gray-700 ecommerce:w-auto ecommerce:shrink-0"
+                                                }
+                                            }
+                                        },
                                         "actions": [
                                             {
                                                 "comment": "검색 초기화 — 아래 상태·결제수단·기간·금액 필터까지 함께 되돌린다",
@@ -237,7 +272,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "ecommerce-search-bar-reset"
+                                            "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:rounded-lg ecommerce:transition-colors ecommerce:duration-200 ecommerce:cursor-pointer ecommerce:bg-transparent ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:hover:bg-gray-50 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600 ecommerce:dark:hover:bg-gray-700 ecommerce:w-full ecommerce:shrink-0"
                                         },
                                         "children": [
                                             {
@@ -261,15 +296,29 @@
                                 "id": "status_filter_row",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-filter-row"
+                                    "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-filter-label"
+                                            "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.status"
                                     },
@@ -372,15 +421,29 @@
                                 "id": "payment_method_filter_row",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-filter-row"
+                                    "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-filter-label"
+                                            "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.payment_method"
                                     },
@@ -574,28 +637,53 @@
                                 "id": "date_filter_row",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-filter-row"
+                                    "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-filter-label"
+                                            "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.date_search"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "ecommerce:md:flex-row ecommerce:md:items-center"
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:flex-row ecommerce:items-center"
+                                                }
+                                            }
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Select",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "ecommerce:h-9 ecommerce:w-24"
+                                                        }
+                                                    }
+                                                },
                                                 "actions": [
                                                     {
                                                         "comment": "기간을 요청일에 걸지 만료일에 걸지 고른다 — 곧 만료될 건을 찾을 때 만료일 기준이 쓰인다",
@@ -610,7 +698,7 @@
                                                 "props": {
                                                     "name": "dateType",
                                                     "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment.filter.date_type",
-                                                    "className": "ecommerce:h-9 ecommerce:w-full ecommerce:md:w-24",
+                                                    "className": "ecommerce:h-9 ecommerce:w-full",
                                                     "value": "{{_local.dateType}}",
                                                     "options": [
                                                         {
@@ -642,6 +730,13 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Input",
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "ecommerce-input ecommerce:w-36"
+                                                                }
+                                                            }
+                                                        },
                                                         "actions": [
                                                             {
                                                                 "comment": "기간 시작일",
@@ -656,7 +751,7 @@
                                                         "props": {
                                                             "type": "date",
                                                             "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}",
-                                                            "className": "ecommerce-input ecommerce:md:w-36",
+                                                            "className": "ecommerce-input",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment.filter.start_date",
                                                             "value": "{{_local.startDate}}"
                                                         }
@@ -666,8 +761,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "ecommerce:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:hidden ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 },
                                                 "text": "~"
                                             },
@@ -689,6 +791,13 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Input",
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "ecommerce-input ecommerce:w-36"
+                                                                }
+                                                            }
+                                                        },
                                                         "actions": [
                                                             {
                                                                 "comment": "기간 종료일",
@@ -703,7 +812,7 @@
                                                         "props": {
                                                             "type": "date",
                                                             "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}",
-                                                            "className": "ecommerce-input ecommerce:md:w-36",
+                                                            "className": "ecommerce-input",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment.filter.end_date",
                                                             "value": "{{_local.endDate}}"
                                                         }
@@ -718,28 +827,53 @@
                                 "id": "amount_filter_row",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-filter-row"
+                                    "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-filter-label"
+                                            "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.amount"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "ecommerce:md:flex-row ecommerce:md:items-center"
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce:flex-row ecommerce:items-center"
+                                                }
+                                            }
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Input",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "ecommerce-input ecommerce:w-28"
+                                                        }
+                                                    }
+                                                },
                                                 "actions": [
                                                     {
                                                         "comment": "결제금액 하한",
@@ -753,7 +887,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "text",
-                                                    "className": "ecommerce-input ecommerce:md:w-28",
+                                                    "className": "ecommerce-input",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment.filter.min_amount",
                                                     "value": "{{_local.minAmount}}"
                                                 }
@@ -761,14 +895,28 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "ecommerce:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                                    "className": "ecommerce:hidden ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 },
                                                 "text": "~"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Input",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "ecommerce-input ecommerce:w-28"
+                                                        }
+                                                    }
+                                                },
                                                 "actions": [
                                                     {
                                                         "comment": "결제금액 상한",
@@ -782,7 +930,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "text",
-                                                    "className": "ecommerce-input ecommerce:md:w-28",
+                                                    "className": "ecommerce-input",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment.filter.max_amount",
                                                     "value": "{{_local.maxAmount}}"
                                                 }

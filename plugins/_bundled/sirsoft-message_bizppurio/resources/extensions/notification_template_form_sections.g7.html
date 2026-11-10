@@ -2,8 +2,9 @@
 <extension extension-point="notification_template_form_sections" priority="320">
   <div data-ref="bizppurio_tpl_sections" data-if="{{extensionPointProps.channel === 'alimtalk'}}" class="bizppurio:space-y-4">
     <on event="mount">
-      <!-- 코어 [편집] 모달이 열릴 때(섹션 마운트) 요약 맵으로 상태를 시딩하고, 행이 있으면 상세(content)를 받아온다. 카테고리·발신프로필은 작성 셀렉트용(자격증명 미설정 422 는 suppress). audit:allow layout-markup-no-lifecycle-sequence-wrapper develop 이 작성한 구조(sequence 하나) — 주석을 달려고 감싼 래퍼가 아니다 -->
-      <sequence>
+      <!-- 코어 [편집] 모달이 열릴 때(섹션 마운트) 요약 맵으로 상태를 시딩하고, 행이 있으면 상세(content)를 받아온다. 카테고리·발신프로필은 작성 셀렉트용(자격증명 미설정 422 는 suppress). audit:allow layout-markup-no-lifecycle-sequence-wrapper develop 이 작성한 구조(sequence 하나) — 주석을 달려고 감싼 래퍼가 아니다
+           시퀀스의 if 는 루트 data-if 와 같은 조건이다. 엔진은 노드 if 가 거짓이어도 그 노드의 마운트 동작을 돌리므로, 메일과 사이트 알림 템플릿 창을 열 때마다 카카오 조회 두 번(자격증명이 없으면 콘솔 422 두 줄)이 나갔다(#869). -->
+      <sequence if="{{extensionPointProps.channel === 'alimtalk'}}">
         <set-state target="global">
           <field name="bz_tpl_upload">
             <field name="uploading" :value="false"/>
@@ -271,7 +272,8 @@
       </div>
       <!-- 작성 폼(구 modal_bizppurio_template 본문을 그대로 이식). draft/rejected(또는 행 없음)에서만 노출. -->
       <div data-ref="bizppurio_tpl_editor" data-if="{{(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" class="bizppurio:space-y-4">
-        <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-3">
+        <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-3">
+          <responsive on="640-" class="bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-3"/>
           <div>
             <label class="bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1">$t:sirsoft-message_bizppurio.template.form.sender_profile</label>
             <select class="bizppurio:w-full bizppurio:text-sm" value="{{_global.bz_tpl_modal?.sender_profile ?? ''}}" options="{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.sender_profile_placeholder')}, ...((bizppurioProfiles?.data?.profiles ?? []).map(pr => ({value: pr.senderKey ?? '', label: (pr.name ?? pr.senderKey ?? '')})))]}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
@@ -548,7 +550,8 @@
                 <icon name="trash-can" size="sm"/>
               </button>
             </div>
-            <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-1.5">
+            <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-1.5">
+              <responsive on="640-" class="bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-1.5"/>
               <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}" data-if="{{buttonsItem.linkType === 'WL'}}" class="bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_mo" value="{{buttonsItem.linkMo ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 버튼 모바일 웹 링크(linkMo) — 해당 인덱스 버튼만 바꾼 새 배열로 교체한다. -->
@@ -621,7 +624,8 @@
                 <icon name="trash-can" size="sm"/>
               </button>
             </div>
-            <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-1.5">
+            <div class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-1.5">
+              <responsive on="640-" class="bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-1.5"/>
               <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}" data-if="{{quickRepliesItem.linkType === 'WL'}}" class="bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_mo" value="{{quickRepliesItem.linkMo ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 바로연결 모바일 웹 링크(linkMo) — 해당 인덱스 항목만 바꾼 새 배열로 교체한다. -->

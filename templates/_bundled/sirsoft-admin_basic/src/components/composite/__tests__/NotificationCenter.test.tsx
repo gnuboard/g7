@@ -20,7 +20,7 @@ describe('NotificationCenter', () => {
       message: 'System has been updated successfully',
       time: '1 hour ago',
       read: true,
-      iconName: IconName.Info,
+      iconName: IconName.InfoCircle,
     },
     {
       id: 3,
@@ -32,29 +32,39 @@ describe('NotificationCenter', () => {
   ];
 
   describe('렌더링 테스트', () => {
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('컴포넌트가 렌더링됨', () => {
       render(<NotificationCenter />);
       const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('알림 버튼에 벨 아이콘이 표시됨', () => {
-      const { container } = render(<NotificationCenter />);
+      render(<NotificationCenter />);
       // Bell 아이콘 확인
       const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('알림이 없을 때 배지가 표시되지 않음', () => {
       render(<NotificationCenter notifications={[]} />);
       expect(screen.queryByText(/^\d+$/)).not.toBeInTheDocument();
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('읽지 않은 알림 개수가 배지에 표시됨', () => {
       render(<NotificationCenter notifications={mockNotifications} />);
       expect(screen.getByText('2')).toBeInTheDocument(); // 읽지 않은 알림 2개
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('읽지 않은 알림이 99개 초과 시 99+로 표시됨', () => {
       const manyNotifications: NotificationItem[] = Array.from({ length: 150 }, (_, i) => ({
         id: i,
@@ -70,6 +80,8 @@ describe('NotificationCenter', () => {
   });
 
   describe('알림 드롭다운 테스트', () => {
+    // @scenario dropdown=open
+    // @effects dropdown_toggles_and_closes_on_outside_click
     it('알림 버튼 클릭 시 드롭다운이 표시됨', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={mockNotifications} />);
@@ -82,6 +94,8 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('New Message')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects empty_list_shows_empty_text
     it('알림이 없을 때 빈 상태 메시지가 표시됨', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={[]} />);
@@ -92,6 +106,8 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('No notifications')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('알림 제목이 드롭다운에 표시됨', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={mockNotifications} titleText="Notifications" />);
@@ -102,9 +118,11 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('Notifications')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects read_and_unread_visually_distinct
     it('읽지 않은 알림에 파란색 배경이 표시됨', async () => {
       const user = userEvent.setup();
-      const { container } = render(<NotificationCenter notifications={mockNotifications} />);
+      render(<NotificationCenter notifications={mockNotifications} />);
 
       const notificationButton = screen.getByRole('button');
       await user.click(notificationButton);
@@ -114,6 +132,8 @@ describe('NotificationCenter', () => {
       expect(unreadNotification?.className).toMatch(/bg-blue-50/);
     });
 
+    // @scenario dropdown=open
+    // @effects read_and_unread_visually_distinct
     it('읽은 알림에는 파란색 배경이 없음', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={mockNotifications} />);
@@ -126,6 +146,8 @@ describe('NotificationCenter', () => {
       expect(readNotification?.className).not.toMatch(/bg-blue-50/);
     });
 
+    // @scenario dropdown=open
+    // @effects read_and_unread_visually_distinct
     it('읽지 않은 알림에 파란색 점 표시가 있음', async () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
@@ -140,6 +162,8 @@ describe('NotificationCenter', () => {
   });
 
   describe('다국어 Props 테스트', () => {
+    // @scenario dropdown=open
+    // @effects trigger_shows_unread_badge
     it('커스텀 titleText가 표시됨', async () => {
       const user = userEvent.setup();
       render(
@@ -155,6 +179,8 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('알림')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects empty_list_shows_empty_text
     it('커스텀 emptyText가 표시됨', async () => {
       const user = userEvent.setup();
       render(
@@ -170,6 +196,8 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('알림이 없습니다')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects empty_list_shows_empty_text
     it('기본 영어 텍스트가 표시됨', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={[]} />);
@@ -183,6 +211,8 @@ describe('NotificationCenter', () => {
   });
 
   describe('이벤트 핸들러 테스트', () => {
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('알림 클릭 시 onNotificationClick이 호출됨', async () => {
       const user = userEvent.setup();
       const onNotificationClick = vi.fn();
@@ -203,6 +233,8 @@ describe('NotificationCenter', () => {
       expect(onNotificationClick).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('알림 아이템의 onClick이 호출됨', async () => {
       const user = userEvent.setup();
       const onClick = vi.fn();
@@ -227,6 +259,8 @@ describe('NotificationCenter', () => {
       expect(onClick).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_toggles_and_closes_on_outside_click
     it('알림 클릭 시 드롭다운이 닫힘', async () => {
       const user = userEvent.setup();
       const onNotificationClick = vi.fn();
@@ -249,6 +283,8 @@ describe('NotificationCenter', () => {
   });
 
   describe('외부 클릭 감지 테스트', () => {
+    // @scenario dropdown=open
+    // @effects dropdown_toggles_and_closes_on_outside_click
     it('드롭다운 외부 클릭 시 드롭다운이 닫힘', async () => {
       const user = userEvent.setup();
       render(
@@ -274,6 +310,8 @@ describe('NotificationCenter', () => {
   });
 
   describe('알림 아이템 렌더링 테스트', () => {
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('알림 제목이 표시됨', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={mockNotifications} />);
@@ -286,6 +324,8 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('New Message')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('알림 메시지가 표시됨', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={mockNotifications} />);
@@ -298,6 +338,8 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('You received a message from admin')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('알림 시간이 표시됨', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={mockNotifications} />);
@@ -310,6 +352,8 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('2 hours ago')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('아이콘이 있는 알림은 아이콘이 표시됨', async () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
@@ -324,6 +368,8 @@ describe('NotificationCenter', () => {
   });
 
   describe('스타일 및 className 테스트', () => {
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('커스텀 className이 적용됨', () => {
       const { container } = render(
         <NotificationCenter className="custom-notification" />
@@ -332,12 +378,16 @@ describe('NotificationCenter', () => {
       expect(wrapper).toHaveClass('custom-notification');
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('기본 클래스가 유지됨', () => {
       const { container } = render(<NotificationCenter />);
       const wrapper = container.firstChild;
       expect(wrapper).toHaveClass('relative');
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('알림 버튼에 hover 효과가 있음', () => {
       render(<NotificationCenter />);
       const button = screen.getByRole('button');
@@ -346,12 +396,16 @@ describe('NotificationCenter', () => {
   });
 
   describe('접근성 테스트', () => {
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('알림 버튼에 aria-label이 있음', () => {
       render(<NotificationCenter titleText="Notifications" />);
       const button = screen.getByLabelText('Notifications');
       expect(button).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects notification_card_is_not_nested_button
     it('알림 아이템들이 카드 단위로 렌더링되어 접근 가능함', async () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
@@ -366,6 +420,8 @@ describe('NotificationCenter', () => {
   });
 
   describe('복합 시나리오 테스트', () => {
+    // @scenario dropdown=open
+    // @effects dropdown_toggles_and_closes_on_outside_click
     it('드롭다운 열고 닫기를 반복해도 정상 동작함', async () => {
       const user = userEvent.setup();
       render(<NotificationCenter notifications={mockNotifications} />);
@@ -385,6 +441,8 @@ describe('NotificationCenter', () => {
       expect(screen.getByText('New Comment')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('여러 알림을 순차적으로 클릭해도 정상 동작함', async () => {
       const user = userEvent.setup();
       const onNotificationClick = vi.fn();
@@ -396,12 +454,14 @@ describe('NotificationCenter', () => {
       );
 
       // 첫 번째 알림 클릭
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
       await user.click(screen.getByText('New Comment').closest('[data-notification-id]') as HTMLElement);
       expect(onNotificationClick).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
 
       // 드롭다운 다시 열기
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       // 두 번째 알림 클릭
       await user.click(screen.getByText('System Update').closest('[data-notification-id]') as HTMLElement);
@@ -410,12 +470,15 @@ describe('NotificationCenter', () => {
       expect(onNotificationClick).toHaveBeenCalledTimes(2);
     });
 
+    // @scenario dropdown=open
+    // @effects empty_list_shows_empty_text
     it('빈 알림에서 알림 추가 시 정상 렌더링됨', async () => {
       const user = userEvent.setup();
       const { rerender } = render(<NotificationCenter notifications={[]} />);
 
       // 빈 상태 확인
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
       expect(screen.getByText('No notifications')).toBeInTheDocument();
 
       // 알림 추가
@@ -427,22 +490,28 @@ describe('NotificationCenter', () => {
   });
 
   describe('드롭다운 위치 테스트', () => {
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운이 올바른 위치에 렌더링됨', async () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
 
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       // 드롭다운이 오른쪽 정렬되어 있는지 확인
       const dropdown = container.querySelector('.absolute.right-0');
       expect(dropdown).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운이 최대 높이를 가짐', async () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
 
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       // 최대 높이 클래스 확인
       const scrollableArea = container.querySelector('.max-h-96.overflow-y-auto');
@@ -503,6 +572,8 @@ describe('NotificationCenter', () => {
         read: false,
       }));
 
+    // @scenario dropdown=open
+    // @effects infinite_scroll_loads_once_per_length
     it('같은 notifications.length 에서 sentinel 이 재교차해도 onLoadMore 는 한 번만 호출된다', async () => {
       const user = userEvent.setup();
       const onLoadMore = vi.fn();
@@ -515,7 +586,8 @@ describe('NotificationCenter', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       fireIntersection();
       fireIntersection();
@@ -524,6 +596,8 @@ describe('NotificationCenter', () => {
       expect(onLoadMore).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario dropdown=open
+    // @effects infinite_scroll_loads_once_per_length
     it('loading=true 일 때는 onLoadMore 를 발행하지 않는다', async () => {
       const user = userEvent.setup();
       const onLoadMore = vi.fn();
@@ -536,12 +610,15 @@ describe('NotificationCenter', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
       fireIntersection();
 
       expect(onLoadMore).not.toHaveBeenCalled();
     });
 
+    // @scenario dropdown=open
+    // @effects infinite_scroll_loads_once_per_length
     it('hasMore=false 일 때는 onLoadMore 를 발행하지 않는다', async () => {
       const user = userEvent.setup();
       const onLoadMore = vi.fn();
@@ -554,12 +631,15 @@ describe('NotificationCenter', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
       fireIntersection();
 
       expect(onLoadMore).not.toHaveBeenCalled();
     });
 
+    // @scenario dropdown=open
+    // @effects infinite_scroll_loads_once_per_length
     it('notifications.length 가 증가한 뒤 재교차하면 onLoadMore 를 다시 발행한다', async () => {
       const user = userEvent.setup();
       const onLoadMore = vi.fn();
@@ -572,7 +652,8 @@ describe('NotificationCenter', () => {
         />,
       );
 
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
       fireIntersection();
       expect(onLoadMore).toHaveBeenCalledTimes(1);
 
@@ -596,6 +677,8 @@ describe('NotificationCenter', () => {
   });
 
   describe('[회귀] 닫기 시 read-batch 불필요 호출 방지', () => {
+    // @scenario dropdown=open
+    // @effects close_skips_read_batch_without_unread
     it('unreadCount=0 + 모든 알림 read=true 상태에서 닫으면 onClose 를 호출하지 않는다', async () => {
       const user = userEvent.setup();
       const onClose = vi.fn();
@@ -617,6 +700,8 @@ describe('NotificationCenter', () => {
       expect(onClose).not.toHaveBeenCalled();
     });
 
+    // @scenario dropdown=open
+    // @effects close_skips_read_batch_without_unread
     it('뷰포트에 노출됐던 ID 라도 현재 notifications 에서 read=true 로 바뀐 것은 onClose 인자에서 제외된다', async () => {
       const user = userEvent.setup();
       const onClose = vi.fn();
@@ -646,7 +731,8 @@ describe('NotificationCenter', () => {
       );
 
       // 레이어 닫기
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       expect(onClose).not.toHaveBeenCalled();
     });
@@ -663,15 +749,20 @@ describe('NotificationCenter', () => {
       Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운에 max-w-[calc(100vw-1rem)] 클래스가 적용된다', async () => {
       const user = userEvent.setup();
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       const dropdown = container.querySelector('.absolute.w-80');
       expect(dropdown?.className).toContain('max-w-[calc(100vw-1rem)]');
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운이 뷰포트 오른쪽을 이탈하면 translateX 로 왼쪽으로 보정된다', async () => {
       // rect.right 가 vw 를 초과하도록 mock → 이탈량만큼 음의 translateX 기대
       Element.prototype.getBoundingClientRect = vi.fn(() => ({
@@ -691,13 +782,16 @@ describe('NotificationCenter', () => {
       const { container } = render(
         <NotificationCenter notifications={mockNotifications} dropdownAlign="left" />,
       );
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');
       // 1100 - (1024 - 8) = 84 → translateX(-84px)
       expect(dropdown?.style.transform).toBe('translateX(-84px)');
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운이 뷰포트 왼쪽을 이탈하면 translateX 로 오른쪽으로 보정된다', async () => {
       Element.prototype.getBoundingClientRect = vi.fn(() => ({
         left: -50,
@@ -716,13 +810,16 @@ describe('NotificationCenter', () => {
       const { container } = render(
         <NotificationCenter notifications={mockNotifications} dropdownAlign="right" />,
       );
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');
       // margin(8) - left(-50) = 58 → translateX(58px)
       expect(dropdown?.style.transform).toBe('translateX(58px)');
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운이 뷰포트 안에 있으면 transform 이 적용되지 않는다', async () => {
       Element.prototype.getBoundingClientRect = vi.fn(() => ({
         left: 100,
@@ -741,7 +838,8 @@ describe('NotificationCenter', () => {
       const { container } = render(
         <NotificationCenter notifications={mockNotifications} dropdownAlign="right" />,
       );
-      await user.click(screen.getByRole('button'));
+      // 링크 없는 알림의 본문 칸도 단추라(#869 키보드 접근) 종 단추를 집는다 — 문서에서 첫 단추다
+      await user.click(screen.getAllByRole('button')[0]);
 
       const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');
       expect(dropdown?.style.transform).toBe('');

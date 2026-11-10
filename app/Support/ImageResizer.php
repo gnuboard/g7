@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Thumbnails\ImageProcessorResolver;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -14,26 +15,26 @@ use Illuminate\Support\Facades\Log;
  * 단위 규약: config/attachment.image_* 는 픽셀, `image_quality` 는 1~100 입니다.
  * MB↔KB 처럼 변환이 필요한 값이 아니므로 `SettingsServiceProvider` 가 그대로 옮깁니다.
  *
+ * 실제 처리는 드라이버 카테고리 `image` 의 엔진(GD·Imagick·플러그인)이 맡는다 — 썸네일 생성과 같은 엔진이다.
+ *
  * 한계값이 없으면(설정 미지정) 아무 것도 하지 않습니다 — 기존 동작을 유지해,
  * 이 기능이 도입됐다는 이유만으로 기존 사이트의 이미지가 갑자기 줄어들지 않도록 합니다.
  */
 class ImageResizer
 {
     /**
-     * 축소를 지원하는 MIME 타입 → GD 로더/세이버 매핑
-     */
-    private const SUPPORTED = [
-        'image/jpeg' => 'jpeg',
-        'image/jpg' => 'jpeg',
-        'image/png' => 'png',
-        'image/gif' => 'gif',
-        'image/webp' => 'webp',
-    ];
-
-    /**
      * 기본 품질 (설정 미지정 시)
      */
     private const DEFAULT_QUALITY = 85;
+
+    /**
+     * ImageResizer 생성자
+     *
+     * @param  ImageProcessorResolver  $processors  이미지 처리 엔진 해석기
+     */
+    public function __construct(
+        private readonly ImageProcessorResolver $processors
+    ) {}
 
     /**
      * 이미지가 설정 상한을 넘으면 비율을 유지한 채 파일을 제자리에서 축소합니다.
@@ -47,9 +48,7 @@ class ImageResizer
      */
     public function resizeInPlace(string $path, ?string $mimeType): bool
     {
-        $format = self::SUPPORTED[strtolower((string) $mimeType)] ?? null;
-
-        if ($format === null || ! extension_loaded('gd') || ! is_file($path)) {
+        if (! is_file($path)) {
             return false;
         }
 
@@ -60,39 +59,20 @@ class ImageResizer
             return false;
         }
 
-        $size = @getimagesize($path);
+        $engine = $this->processors->resolve();
 
-        if ($size === false) {
+        if ($engine === null) {
             return false;
         }
-
-        [$width, $height] = [(int) $size[0], (int) $size[1]];
-
-        if ($width <= 0 || $height <= 0) {
-            return false;
-        }
-
-        $scale = min(
-            $maxWidth !== null ? $maxWidth / $width : 1.0,
-            $maxHeight !== null ? $maxHeight / $height : 1.0,
-            1.0
-        );
-
-        if ($scale >= 1.0) {
-            return false;
-        }
-
-        // 반올림으로 0 이 되는 극단 비율에서도 최소 1px 은 남긴다
-        $targetWidth = max(1, (int) round($width * $scale));
-        $targetHeight = max(1, (int) round($height * $scale));
 
         try {
-            return $this->write($path, $format, $targetWidth, $targetHeight);
+            return $engine->resizeInPlace($path, $mimeType, $maxWidth, $maxHeight, $this->quality());
         } catch (\Throwable $e) {
             // 축소 실패가 업로드 자체를 막지는 않는다 — 원본이 그대로 저장된다
             Log::warning('업로드 이미지 축소 실패 (원본을 그대로 저장합니다)', [
                 'path' => $path,
                 'mime_type' => $mimeType,
+                'engine' => $engine->id(),
                 'error' => $e->getMessage(),
             ]);
 
@@ -117,61 +97,6 @@ class ImageResizer
         $value = (int) $value;
 
         return $value > 0 ? $value : null;
-    }
-
-    /**
-     * 축소한 이미지를 원본 경로에 다시 씁니다.
-     *
-     * @param  string  $path  대상 경로
-     * @param  string  $format  GD 포맷 (jpeg/png/gif/webp)
-     * @param  int  $targetWidth  결과 가로
-     * @param  int  $targetHeight  결과 세로
-     * @return bool 성공 여부
-     */
-    private function write(string $path, string $format, int $targetWidth, int $targetHeight): bool
-    {
-        // php-ext-guard: resizeInPlace() 가 extension_loaded('gd') 로 먼저 거른다
-        $source = match ($format) {
-            'jpeg' => @imagecreatefromjpeg($path),
-            'png' => @imagecreatefrompng($path),
-            'gif' => @imagecreatefromgif($path),
-            'webp' => @imagecreatefromwebp($path),
-        };
-
-        if (! $source) {
-            return false;
-        }
-
-        $target = imagecreatetruecolor($targetWidth, $targetHeight);
-
-        // PNG·GIF·WebP 의 투명도를 보존한다 (미처리 시 검은 배경으로 채워진다)
-        if (in_array($format, ['png', 'gif', 'webp'], true)) {
-            imagealphablending($target, false);
-            imagesavealpha($target, true);
-            imagefill($target, 0, 0, imagecolorallocatealpha($target, 0, 0, 0, 127));
-        }
-
-        imagecopyresampled(
-            $target, $source,
-            0, 0, 0, 0,
-            $targetWidth, $targetHeight,
-            imagesx($source), imagesy($source)
-        );
-
-        $quality = $this->quality();
-
-        $written = match ($format) {
-            'jpeg' => imagejpeg($target, $path, $quality),
-            // PNG 압축 레벨은 0~9 이고 값이 클수록 더 압축된다 — 품질(1~100)과 방향이 반대다
-            'png' => imagepng($target, $path, (int) round((100 - $quality) / 100 * 9)),
-            'gif' => imagegif($target, $path),
-            'webp' => imagewebp($target, $path, $quality),
-        };
-
-        imagedestroy($source);
-        imagedestroy($target);
-
-        return (bool) $written;
     }
 
     /**

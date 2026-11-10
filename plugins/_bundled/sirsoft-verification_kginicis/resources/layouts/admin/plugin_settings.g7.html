@@ -22,7 +22,9 @@
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="verification-kginicis-admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="verificationkginicis:p-4 verificationkginicis:min-h-screen verificationkginicis:bg-gray-50 verificationkginicis:dark:bg-gray-900">
+      <responsive on="640-1023" class="verificationkginicis:p-6 verificationkginicis:min-h-screen verificationkginicis:bg-gray-50 verificationkginicis:dark:bg-gray-900"/>
+      <responsive on="1024-" class="verificationkginicis:p-8 verificationkginicis:min-h-screen verificationkginicis:bg-gray-50 verificationkginicis:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-verification_kginicis.settings.title" description="$t:sirsoft-verification_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="verification-kginicis-alert-warning verificationkginicis:mt-6">
         <icon name="lock" class="verificationkginicis:text-xl verificationkginicis:leading-none verificationkginicis:text-amber-600 verificationkginicis:dark:text-amber-400 verificationkginicis:flex-shrink-0"/>
@@ -73,12 +75,15 @@
           <h3 class="verification-kginicis-section-heading-md">$t:sirsoft-verification_kginicis.settings.section_live_keys</h3>
         </div>
         <div class="verificationkginicis:p-6 verificationkginicis:space-y-6">
-          <div data-ref="field_live_mid" class="verification-kginicis-grid-3col-responsive">
-            <div class="verificationkginicis:lg:col-span-1">
+          <div data-ref="field_live_mid" class="verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start">
+            <responsive on="1024-" class="verificationkginicis:grid verificationkginicis:grid-cols-3 verificationkginicis:gap-4 verificationkginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="verificationkginicis:col-span-1"/>
               <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.live_mid</label>
               <p class="verification-kginicis-form-hint">$t:sirsoft-verification_kginicis.settings.live_mid_hint</p>
             </div>
-            <div class="verificationkginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="verificationkginicis:col-span-2"/>
               <div class="{{_local.errors?.live_mid ? 'verificationkginicis:flex verificationkginicis:rounded-lg verificationkginicis:border verificationkginicis:border-red-500 verificationkginicis:dark:border-red-500 verificationkginicis:overflow-hidden' : 'verificationkginicis:flex verificationkginicis:rounded-lg verificationkginicis:border verificationkginicis:border-gray-300 verificationkginicis:dark:border-gray-600 verificationkginicis:overflow-hidden verificationkginicis:focus-within:ring-2 verificationkginicis:focus-within:ring-blue-500 verification-kginicis-focus-group'}}">
                 <span class="verificationkginicis:inline-flex verificationkginicis:items-center verificationkginicis:px-3 verificationkginicis:bg-gray-100 verificationkginicis:dark:bg-gray-600 verificationkginicis:border-r verificationkginicis:border-gray-300 verificationkginicis:dark:border-gray-600 verification-kginicis-text-body verificationkginicis:font-mono verificationkginicis:font-bold verificationkginicis:select-none">SRB</span>
                 <input type="text" name="live_mid" autoComplete="one-time-code" placeholder="1234567" class="verificationkginicis:flex-1 verificationkginicis:font-mono verificationkginicis:outline-none verificationkginicis:border-0" disabled="{{_computed.isPluginReadOnly}}"/>
@@ -86,11 +91,14 @@
               <p data-ref="field_live_mid_error" data-if="{{_local.errors?.live_mid}}" class="verificationkginicis:mt-1 verificationkginicis:text-sm verificationkginicis:text-red-600 verificationkginicis:dark:text-red-400">{{_local.errors?.live_mid?.[0] ?? ''}}</p>
             </div>
           </div>
-          <div data-ref="field_live_api_key" class="verification-kginicis-grid-3col-responsive">
-            <div class="verificationkginicis:lg:col-span-1">
+          <div data-ref="field_live_api_key" class="verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start">
+            <responsive on="1024-" class="verificationkginicis:grid verificationkginicis:grid-cols-3 verificationkginicis:gap-4 verificationkginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="verificationkginicis:col-span-1"/>
               <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.live_api_key</label>
             </div>
-            <div class="verificationkginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="verificationkginicis:col-span-2"/>
               <input type="password" name="live_api_key" autoComplete="new-password" placeholder="••••••••••••••••" class="{{_local.errors?.live_api_key ? 'verificationkginicis:dark:focus:ring-red-400 verificationkginicis:font-mono verificationkginicis:border verificationkginicis:border-red-500 verificationkginicis:dark:border-red-500 verificationkginicis:focus:ring-red-500' : 'verificationkginicis:dark:focus:ring-blue-400 verificationkginicis:focus:border-transparent verificationkginicis:font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
               <p data-ref="field_live_api_key_error" data-if="{{_local.errors?.live_api_key}}" class="verificationkginicis:mt-1 verificationkginicis:text-sm verificationkginicis:text-red-600 verificationkginicis:dark:text-red-400">{{_local.errors?.live_api_key?.[0] ?? ''}}</p>
             </div>
@@ -102,12 +110,15 @@
           <h3 class="verification-kginicis-section-heading-md">$t:sirsoft-verification_kginicis.settings.section.duplicate_field</h3>
         </div>
         <div data-ref="section_duplicate_body" class="verificationkginicis:p-6 verificationkginicis:space-y-6">
-          <div class="verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:lg:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start">
-            <div class="verificationkginicis:lg:col-span-8">
+          <div class="verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start">
+            <responsive on="desktop" class="verificationkginicis:grid verificationkginicis:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="verificationkginicis:col-span-8"/>
               <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.fields.duplicate_field.label</label>
               <p class="verification-kginicis-form-hint">$t:sirsoft-verification_kginicis.settings.duplicate_field.hint</p>
             </div>
-            <div class="verificationkginicis:lg:col-span-4 verificationkginicis:space-y-3">
+            <div class="verificationkginicis:space-y-3">
+              <responsive on="desktop" class="verificationkginicis:col-span-4 verificationkginicis:space-y-3"/>
               <div class="verification-kginicis-flex-center verificationkginicis:justify-end verificationkginicis:gap-6">
                 <label class="verification-kginicis-inline-clickable verification-kginicis-text-body">
                   <on type="click">
@@ -155,13 +166,16 @@
               <p class="verificationkginicis:text-xs verificationkginicis:text-amber-700 verificationkginicis:dark:text-amber-400 verificationkginicis:text-right">$t:sirsoft-verification_kginicis.settings.duplicate_field.warning</p>
             </div>
           </div>
-          <div data-ref="field_duplicate_block_enabled" class="verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:lg:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start verificationkginicis:pt-6 verificationkginicis:border-t verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700">
-            <div class="verificationkginicis:lg:col-span-8">
+          <div data-ref="field_duplicate_block_enabled" class="verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:gap-4 verificationkginicis:items-start verificationkginicis:pt-6 verificationkginicis:border-t verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700">
+            <responsive on="desktop" class="verificationkginicis:grid verificationkginicis:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start verificationkginicis:pt-6 verificationkginicis:border-t verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700"/>
+            <div>
+              <responsive on="desktop" class="verificationkginicis:col-span-8"/>
               <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.label</label>
               <p class="verification-kginicis-form-hint">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.hint</p>
               <p class="verification-kginicis-text-hint verificationkginicis:mt-1 verificationkginicis:italic">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.note</p>
             </div>
-            <div class="verification-kginicis-flex-center verificationkginicis:lg:col-span-4 verificationkginicis:justify-end">
+            <div class="verification-kginicis-flex-center verificationkginicis:justify-end">
+              <responsive on="desktop" class="verification-kginicis-flex-center verificationkginicis:col-span-4 verificationkginicis:justify-end"/>
               <toggle data-type="composite" name="duplicate_block_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>

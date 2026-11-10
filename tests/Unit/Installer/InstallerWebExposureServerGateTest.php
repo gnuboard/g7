@@ -153,7 +153,7 @@ class InstallerWebExposureServerGateTest extends TestCase
      * 전에 POST 가 오면 서버는 그 값을 받는데, 집합 밖으로 접으면 로그에 「보고되지 않음」
      * — 배선 파손 신호 — 이 남는다. 그 둘은 운영자가 할 일이 다르므로 구분해 남긴다.
      *
-     * @scenario exposure_probe=unknown
+     * @scenario exposure_probe=pending
      *
      * @effects installer_web_exposure_pending_verdict_is_in_the_closed_set
      *

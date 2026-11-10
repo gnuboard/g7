@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Extension\HookManager;
 use App\Repositories\JsonConfigRepository;
+use App\Support\PhpExtensionProbe;
 use Illuminate\Support\Facades\Lang;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use Predis\Client;
@@ -12,7 +13,7 @@ use Predis\Client;
  * 코어 드라이버 레지스트리 서비스
  *
  * 코어 환경설정의 드라이버 영역(스토리지, 캐시, 세션, 큐, 로그, 웹소켓, 메일)을
- * 관리합니다. 플러그인이 필터 훅으로 새 드라이버를 등록할 수 있으며,
+ * 관리합니다(검색엔진, 이미지 처리 엔진 포함). 플러그인이 필터 훅으로 새 드라이버를 등록할 수 있으며,
  * 플러그인 비활성화 시 기본 드라이버로 안전하게 폴백합니다.
  */
 class DriverRegistryService
@@ -37,7 +38,20 @@ class DriverRegistryService
         // 검색엔진도 저장 가능한 드라이버 선택이다. 레지스트리에 등재해야 폴백 가드
         // (플러그인 제거 후 죽은 값 → 기본 드라이버)가 이 카테고리에도 적용된다.
         'search' => ['mysql-fulltext'],
+        // 이미지 처리 엔진(업로드 축소와 썸네일). 레지스트리에 있어야 플러그인 엔진이 빠졌을 때 gd 로 되돌아간다.
+        'image' => ['gd', 'imagick'],
     ];
+
+    /**
+     * 이 서버에서 쓸 수 없으면 선택지에서 빼는 카테고리
+     *
+     * 다른 카테고리는 쓸 수 없는 드라이버도 목록에 두고 저장 때 422 로 막는다(사유를 보여 주려고).
+     * 이미지 엔진은 PHP 확장 하나로 갈리고 고를 이유가 없는 선택지라 처음부터 보이지 않게 한다 —
+     * imagick 이 없는 서버(Windows 개발 서버 등)에서는 gd 만 보인다. 저장 검증은 그대로 둔다(직접 호출 방어).
+     *
+     * @var list<string>
+     */
+    private const HIDE_UNUSABLE_CATEGORIES = ['image'];
 
     /**
      * 카테고리별 기본 폴백 드라이버
@@ -54,6 +68,7 @@ class DriverRegistryService
         'websocket' => '',
         'mail' => 'smtp',
         'search' => 'mysql-fulltext',
+        'image' => 'gd',
     ];
 
     /**
@@ -75,6 +90,8 @@ class DriverRegistryService
         'mail' => 'mail.default',
         // SettingsServiceProvider::applyDriverConfig() 가 기록하는 키와 동일해야 폴백이 실효한다
         'search' => 'scout.driver',
+        // SettingsServiceProvider::applyDriverConfig() 가 drivers.image_driver 를 기록하는 키
+        'image' => 'core.image.driver',
     ];
 
     /**
@@ -94,6 +111,7 @@ class DriverRegistryService
         // 카테고리 제외로 같은 동작을 명시화한다 (getSettingsKey('websocket') === null).
         'mail' => ['category' => 'mail', 'key' => 'mailer'],
         'search' => ['category' => 'drivers', 'key' => 'search_engine_driver'],
+        'image' => ['category' => 'drivers', 'key' => 'image_driver'],
     ];
 
     /**
@@ -188,6 +206,7 @@ class DriverRegistryService
      *
      * 활성 translatable_locales 전 로케일에 대해 lang/{locale}/settings.drivers.{category}.{id}
      * 키를 조회하여 JSON 라벨을 구성합니다. 로케일별 키가 없으면 ID 자체로 폴백합니다.
+     * `HIDE_UNUSABLE_CATEGORIES` 카테고리는 이 서버에서 쓸 수 없는 드라이버를 뺍니다.
      *
      * @param  string  $category  드라이버 카테고리
      * @return array<array{id: string, label: array<string, string>}>
@@ -199,6 +218,10 @@ class DriverRegistryService
 
         $drivers = [];
         foreach ($ids as $id) {
+            if (in_array($category, self::HIDE_UNUSABLE_CATEGORIES, true) && ! $this->isDriverUsable($category, $id)) {
+                continue;
+            }
+
             $label = [];
             foreach ($locales as $locale) {
                 $label[$locale] = Lang::get("settings.drivers.{$category}.{$id}", [], $locale) ?: $id;
@@ -341,6 +364,13 @@ class DriverRegistryService
             'memcached' => extension_loaded('memcached')
                 ? null
                 : __('settings.driver_unusable_memcached_extension'),
+            // 이미지 엔진 — 확장 부재를 테스트가 만들 수 있게 조회기를 컨테이너에서 받는다.
+            'gd' => app(PhpExtensionProbe::class)->loaded('gd')
+                ? null
+                : __('settings.driver_unusable_gd_extension'),
+            'imagick' => app(PhpExtensionProbe::class)->loaded('imagick')
+                ? null
+                : __('settings.driver_unusable_imagick_extension'),
             default => null,
         };
     }

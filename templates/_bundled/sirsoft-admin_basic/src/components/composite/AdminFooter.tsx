@@ -5,6 +5,9 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { classAtWidth } from '../layout/widthBreakpoints';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 /**
  * 빠른 링크 인터페이스
@@ -61,6 +64,8 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 줄 방향·구분점을 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
+  const renderWidth = useRenderWidth();
   const handleVersionClick = useCallback(() => {
     if (changelogModalId) {
       const G7Core = (window as any).G7Core;
@@ -141,21 +146,25 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
 
   return (
     <Div className={`admin-footer ${className}`} id={id} {...editorAttrs}>
-      <Div className="admin-footer-row">
+      {/* 768 이상 가로 배치 — 폭 미디어가 없는 바탕(`admin-footer-bar`)에 렌더 폭으로 `flex-row` 를 더한다 */}
+      <Div className={`admin-footer-bar ${classAtWidth(renderWidth, 'md', 'flex-row')}`.trim()}>
         {/* 왼쪽: 저작권 및 버전 정보 */}
         <Div className="admin-footer-group">
           <Span
-            className={copyrightModalId ? 'admin-footer-link-hover' : ''}
+            className={copyrightModalId ? `admin-footer-link-hover rounded ${FOCUS_VISIBLE_RING}` : ''}
             onClick={copyrightModalId ? handleCopyrightClick : undefined}
+            // 창을 여는 칸은 키보드로도 연다(#869 키보드 접근)
+            {...keyboardActivationProps(copyrightModalId ? handleCopyrightClick : undefined)}
           >
             {copyright}
           </Span>
           {version && (
             <>
-              <Span className="hidden md:inline">•</Span>
+              <Span className={classAtWidth(renderWidth, 'md', 'inline', 'hidden')}>•</Span>
               <Span
-                className={`flex-center gap-2 ${changelogModalId ? 'admin-footer-link-hover' : ''}`}
+                className={`flex-center gap-2 ${changelogModalId ? `admin-footer-link-hover rounded ${FOCUS_VISIBLE_RING}` : ''}`}
                 onClick={changelogModalId ? handleVersionClick : undefined}
+                {...keyboardActivationProps(changelogModalId ? handleVersionClick : undefined)}
               >
                 <Icon name={IconName.Tag} className="w-4 h-4" />
                 <Span>v{version}</Span>

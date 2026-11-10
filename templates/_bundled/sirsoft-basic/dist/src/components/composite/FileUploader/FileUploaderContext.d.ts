@@ -33,6 +33,8 @@ export interface FileUploaderContextValue {
     itemToDelete: Attachment | null;
     executeRemoveAttachment: (item: Attachment) => Promise<void>;
     authenticatedImageUrls: Map<number, string>;
+    /** 썸네일로 그리는 첨부도 원본 blob 을 받아 두게 한다 — 썸네일이 실패한 칸이 부른다 */
+    requestAuthenticatedImage: (ids: number[]) => void;
 }
 declare const FileUploaderContext: React.Context<FileUploaderContextValue | null>;
 /**

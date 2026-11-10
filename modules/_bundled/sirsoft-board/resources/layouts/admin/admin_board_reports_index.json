@@ -2335,7 +2335,143 @@
             "name": "Modal",
             "props": {
                 "title": "{{_global.bulkActionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.bulkActionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.bulkActionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 바꾸므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다",
+                                "type": "click",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "bulkStatusLoading": true
+                                }
+                            },
+                            {
+                                "comment": "실행 ②  선택한 건들을 한 요청으로 바꾼다. 실패는 토스트가 아니라 별도 오류 모달로 띄운다 — 여러 건을 다루는 자리라 실패 사유를 스쳐 지나가게 두지 않는다",
+                                "type": "click",
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-board/admin/reports/bulk-status",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PATCH",
+                                    "body": {
+                                        "ids": "{{_global.selectedIds}}",
+                                        "status": "{{_global.bulkActionType}}",
+                                        "process_note": "{{_global.bulkActionReason}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bulkStatusLoading": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedIds": [],
+                                            "bulkActionReason": ""
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "reports"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{result.message}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "bulkStatusLoading": false,
+                                            "errorMessage": "{{error.message}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "error_modal"
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board:px-4 board:py-2 board:text-white board:rounded-lg board:disabled:opacity-50 board:disabled:cursor-not-allowed {{_global.bulkActionType === 'pending' ? 'board:bg-yellow-700 board:hover:bg-yellow-800' : _global.bulkActionType === 'review' ? 'board:bg-blue-600 board:hover:bg-blue-700' : _global.bulkActionType === 'rejected' ? 'board:bg-purple-600 board:hover:bg-purple-700' : _global.bulkActionType === 'suspended' ? 'board:bg-red-600 board:hover:bg-red-700' : _global.bulkActionType === 'deleted' ? 'board:bg-gray-600 board:hover:bg-gray-700 board:dark:bg-gray-700 board:dark:hover:bg-gray-600' : 'board:bg-blue-600 board:hover:bg-blue-700'}}",
+                            "disabled": "{{_global.bulkStatusLoading}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!_global.bulkStatusLoading}}",
+                                "text": "$t:common.confirm"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{_global.bulkStatusLoading}}",
+                                "props": {
+                                    "className": "board-flex-center board:gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "board-spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-board.admin.reports.modals.processing"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -2567,149 +2703,6 @@
                                 "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
                                 "value": "{{_global.bulkActionReason || ''}}"
                             }
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 바꾸므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다",
-                                    "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "bulkStatusLoading": true
-                                    }
-                                },
-                                {
-                                    "comment": "실행 ②  선택한 건들을 한 요청으로 바꾼다. 실패는 토스트가 아니라 별도 오류 모달로 띄운다 — 여러 건을 다루는 자리라 실패 사유를 스쳐 지나가게 두지 않는다",
-                                    "type": "click",
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-board/admin/reports/bulk-status",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "PATCH",
-                                        "body": {
-                                            "ids": "{{_global.selectedIds}}",
-                                            "status": "{{_global.bulkActionType}}",
-                                            "process_note": "{{_global.bulkActionReason}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bulkStatusLoading": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedIds": [],
-                                                "bulkActionReason": ""
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "reports"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "{{result.message}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "bulkStatusLoading": false,
-                                                "errorMessage": "{{error.message}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "error_modal"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "board:px-4 board:py-2 board:text-white board:rounded-lg board:disabled:opacity-50 board:disabled:cursor-not-allowed {{_global.bulkActionType === 'pending' ? 'board:bg-yellow-700 board:hover:bg-yellow-800' : _global.bulkActionType === 'review' ? 'board:bg-blue-600 board:hover:bg-blue-700' : _global.bulkActionType === 'rejected' ? 'board:bg-purple-600 board:hover:bg-purple-700' : _global.bulkActionType === 'suspended' ? 'board:bg-red-600 board:hover:bg-red-700' : _global.bulkActionType === 'deleted' ? 'board:bg-gray-600 board:hover:bg-gray-700 board:dark:bg-gray-700 board:dark:hover:bg-gray-600' : 'board:bg-blue-600 board:hover:bg-blue-700'}}",
-                                "disabled": "{{_global.bulkStatusLoading}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!_global.bulkStatusLoading}}",
-                                    "text": "$t:common.confirm"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_global.bulkStatusLoading}}",
-                                    "props": {
-                                        "className": "board-flex-center board:gap-2"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "spinner",
-                                                "className": "board-spinner-sm"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "$t:sirsoft-board.admin.reports.modals.processing"
-                                        }
-                                    ]
-                                }
-                            ]
                         }
                     ]
                 }

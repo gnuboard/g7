@@ -10,7 +10,128 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.settings.system.cron_token_rotate_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "comment": "재발급은 왕복이 있는 조작이라 진행 표시가 필요하다 — 없으면 운영자가 같은 버튼을 다시 눌러 번호를 연달아 갈아 치운다. 이 모달은 포털이라 _local 은 모달 자신의 것이고, 성공 시 닫히므로 플래그를 되돌릴 자리는 onError 뿐이다.",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "cronTokenRotating": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/settings/system/cron-token/rotate",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "cronTokenRotating": false
+                                        }
+                                    },
+                                    {
+                                        "comment": "부모 화면의 주소칸을 갱신한다. 이 모달은 modals 섹션(포털) 소속이라 target:'local' 은 모달 자신의 _local 로 가고, 부모의 _local.cronUrl 은 그대로 남는다 — 그러면 재발급 뒤에도 무효가 된 옛 주소가 화면에 남아 운영자가 그것을 복사해 호스팅에 등록한다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "$parent._local",
+                                            "cronUrl": "{{result.data.url}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.settings.system.cron_token_rotated"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "system_status"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "cronTokenRotating": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:admin.settings.system.cron_token_rotate_failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-danger",
+                    "disabled": "{{_local.cronTokenRotating}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_local.cronTokenRotating}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:admin.settings.system.cron_token_rotate"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -35,134 +156,6 @@
                         "className": "mt-2 text-label-subtle"
                     },
                     "text": "$t:admin.settings.system.cron_token_rotate_warning"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "comment": "재발급은 왕복이 있는 조작이라 진행 표시가 필요하다 — 없으면 운영자가 같은 버튼을 다시 눌러 번호를 연달아 갈아 치운다. 이 모달은 포털이라 _local 은 모달 자신의 것이고, 성공 시 닫히므로 플래그를 되돌릴 자리는 onError 뿐이다.",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "cronTokenRotating": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/settings/system/cron-token/rotate",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST"
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "cronTokenRotating": false
-                                            }
-                                        },
-                                        {
-                                            "comment": "부모 화면의 주소칸을 갱신한다. 이 모달은 modals 섹션(포털) 소속이라 target:'local' 은 모달 자신의 _local 로 가고, 부모의 _local.cronUrl 은 그대로 남는다 — 그러면 재발급 뒤에도 무효가 된 옛 주소가 화면에 남아 운영자가 그것을 복사해 호스팅에 등록한다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "$parent._local",
-                                                "cronUrl": "{{result.data.url}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.settings.system.cron_token_rotated"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "system_status"
-                                            }
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "cronTokenRotating": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.settings.system.cron_token_rotate_failed'}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-danger",
-                        "disabled": "{{_local.cronTokenRotating}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_local.cronTokenRotating}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:admin.settings.system.cron_token_rotate"
-                        }
-                    ]
                 }
             ]
         }

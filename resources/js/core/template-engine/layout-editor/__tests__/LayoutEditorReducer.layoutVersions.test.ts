@@ -29,11 +29,18 @@ function makeState(overrides: Partial<LayoutEditorState> = {}): LayoutEditorStat
     activeStateId: null,
     layoutVersions: {},
     extensionVersions: {},
+    lastActiveStateId: null,
+    activeStateScopeKey: null,
+    lastActiveStateScopeKey: null,
     ...overrides,
   };
 }
 
 describe('layoutEditorReducer — layoutVersions', () => {
+  /**
+   * @scenario reducer_action=layout_versions
+   * @effects versions_set_layout_map_replaces_all
+   */
   it('SET_LAYOUT_VERSIONS — routes 응답 맵으로 일괄 교체', () => {
     const state = makeState({ layoutVersions: { stale: 1 } });
     const next = layoutEditorReducer(state, {
@@ -43,6 +50,10 @@ describe('layoutEditorReducer — layoutVersions', () => {
     expect(next.layoutVersions).toEqual({ home: 3, 'auth/login': 7 });
   });
 
+  /**
+   * @scenario reducer_action=layout_versions
+   * @effects versions_set_one_layout_keeps_others
+   */
   it('SET_LAYOUT_VERSION — 해당 레이아웃만 갱신하고 나머지 항목 보존 (저장/복원 동기화)', () => {
     const state = makeState({ layoutVersions: { home: 3, 'auth/login': 7 } });
     const next = layoutEditorReducer(state, {
@@ -53,6 +64,10 @@ describe('layoutEditorReducer — layoutVersions', () => {
     expect(next.layoutVersions).toEqual({ home: 4, 'auth/login': 7 });
   });
 
+  /**
+   * @scenario reducer_action=layout_versions
+   * @effects versions_set_one_layout_adds_first_save
+   */
   it('SET_LAYOUT_VERSION — 맵에 없던 레이아웃(첫 저장)도 추가된다', () => {
     const state = makeState();
     const next = layoutEditorReducer(state, {
@@ -63,6 +78,10 @@ describe('layoutEditorReducer — layoutVersions', () => {
     expect(next.layoutVersions).toEqual({ 'board/index': 2 });
   });
 
+  /**
+   * @scenario reducer_action=layout_versions
+   * @effects versions_actions_leave_other_state
+   */
   it('버전 액션은 selectedRoute/editMode 등 다른 상태를 변경하지 않는다', () => {
     const state = makeState({
       selectedRoute: { path: '/', layoutName: 'home' },
@@ -79,6 +98,10 @@ describe('layoutEditorReducer — layoutVersions', () => {
 });
 
 describe('layoutEditorReducer — extensionVersions', () => {
+  /**
+   * @scenario reducer_action=layout_versions
+   * @effects versions_set_extension_map_replaces_all
+   */
   it('SET_EXTENSION_VERSIONS — layout-extensions 응답 맵으로 일괄 교체', () => {
     const state = makeState({ extensionVersions: { '99': 1 } });
     const next = layoutEditorReducer(state, {
@@ -88,6 +111,10 @@ describe('layoutEditorReducer — extensionVersions', () => {
     expect(next.extensionVersions).toEqual({ '7': 3, '12': 5 });
   });
 
+  /**
+   * @scenario reducer_action=layout_versions
+   * @effects versions_set_one_extension_keeps_layout_map
+   */
   it('SET_EXTENSION_VERSION — 해당 확장만 갱신 + 레이아웃 맵은 불변 (저장/복원 동기화)', () => {
     const state = makeState({
       layoutVersions: { home: 3 },
@@ -102,6 +129,10 @@ describe('layoutEditorReducer — extensionVersions', () => {
     expect(next.layoutVersions).toEqual({ home: 3 });
   });
 
+  /**
+   * @scenario reducer_action=layout_versions
+   * @effects versions_set_one_extension_adds_first_save
+   */
   it('SET_EXTENSION_VERSION — 맵에 없던 확장(첫 저장)도 추가된다', () => {
     const next = layoutEditorReducer(makeState(), {
       type: 'SET_EXTENSION_VERSION',

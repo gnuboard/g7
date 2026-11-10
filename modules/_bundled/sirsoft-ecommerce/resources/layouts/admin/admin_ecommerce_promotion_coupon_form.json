@@ -233,8 +233,15 @@
                                 "id": "page_header",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "641-": {
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-page-header-padded"
+                                    "className": "ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4"
                                 },
                                 "children": [
                                     {
@@ -283,8 +290,15 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "H1",
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "ecommerce-page-title"
+                                                            "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                                         },
                                                         "text": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"
                                                     },
@@ -313,8 +327,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "641-": {
+                                                "props": {
+                                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-page-actions"
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full"
                                         },
                                         "children": [
                                             {
@@ -336,7 +357,7 @@
                                                 "props": {
                                                     "href": "/admin/ecommerce/promotion-coupons",
                                                     "mergeQuery": true,
-                                                    "className": "ecommerce-button ecommerce-btn ecommerce-btn-outline"
+                                                    "className": "ecommerce-button ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel"
                                             },
@@ -415,7 +436,7 @@
                                                 "props": {
                                                     "type": "button",
                                                     "disabled": "{{_local.isSaving || _computed.isReadOnly}}",
-                                                    "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                                    "className": "ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:shrink-0 ecommerce:whitespace-nowrap"
                                                 },
                                                 "children": [
                                                     {

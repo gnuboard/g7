@@ -49,6 +49,7 @@ import { TemplateApp } from '@core/TemplateApp';
 import * as engine from '@core/template-engine';
 import { initializeG7CoreGlobals } from '@core/template-engine/G7CoreGlobals';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { renderModalFooterStandIn } from './modalFooterStandIn';
 
 vi.mock('@core/api/ApiClient', () => ({
     getApiClient: () => ({
@@ -114,7 +115,8 @@ const passthrough = (tag: string) => ({ children, text, className, ...rest }: an
  * @param props 창 속성
  * @returns 창
  */
-function ModalStandIn({ isOpen, onClose, title, children, closeOnBackdropClick, closeOnOverlayClick }: any) {
+function ModalStandIn(props: any) {
+    const { isOpen, onClose, title, children, closeOnBackdropClick, closeOnOverlayClick } = props;
     // 코어 엔진이 그리는 트리이므로 엔진 쪽 React(initializeG7CoreGlobals 가 window.React 로 노출)의 훅을 쓴다
     const CoreReact = (window as any).React ?? React;
     const dialogRef = CoreReact.useRef(null);
@@ -137,7 +139,9 @@ function ModalStandIn({ isOpen, onClose, title, children, closeOnBackdropClick, 
     return React.createElement('div', { 'data-testid': 'modal-backdrop', onClick: backdropCloses ? (e: any) => onClose?.(e) : undefined },
         React.createElement('section', { ref: dialogRef, role: 'dialog', 'data-title': title, onClick: (e: any) => e.stopPropagation() },
             React.createElement('button', { type: 'button', 'aria-label': 'close', onClick: (e: any) => onClose?.(e) }, 'x'),
-            children));
+            children,
+            // 실물과 같이 고정 하단(footer)도 그린다 — 확인 창 단추가 고정 하단으로 옮겨 갔다(#869)
+            renderModalFooterStandIn(props)));
 }
 
 /** 부품 — 창은 basic Modal 대역, 나머지는 DOM 대역 */
@@ -1049,6 +1053,7 @@ function unmountClears(modal: Node, key: string): Array<{ guarded: boolean }> {
         const clears = (x.lifecycle?.onUnmount ?? []).some((a: any) => a?.handler === 'setState' && a.params?.target === 'global' && Object.prototype.hasOwnProperty.call(a.params, key) && (a.params[key] === null || a.params[key] === ''));
         if (clears) out.push({ guarded: g });
         (x.children ?? []).forEach((c: any) => walk(c, g));
+        (x.props?.footer ?? []).forEach((c: any) => walk(c, g)); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     };
     walk(modal, false);
 

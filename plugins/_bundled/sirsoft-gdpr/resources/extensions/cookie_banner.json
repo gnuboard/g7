@@ -39,8 +39,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "gdpr:px-6 gdpr:py-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "gdpr:px-4 gdpr:py-4 gdpr:sm:px-6 gdpr:sm:py-4"
+                        "className": "gdpr:px-4 gdpr:py-4"
                     },
                     "children": [
                         {

@@ -42,18 +42,20 @@ describe('회원관리 목록 확장 필터 조각', () => {
 
   // @scenario example=address, outcome=ignored_without_permission
   // @effects ecommerce_user_filters_require_permission
-  // 슬롯 확장은 어느 템플릿에 주입될지 조각이 모르므로 한 템플릿의 컴포넌트 클래스(filter-row·filter-label·
+  // 슬롯 확장은 어느 템플릿에 주입될지 조각이 모르므로 한 템플릿의 컴포넌트 클래스(filter-row·filter-field-label·filter-label·
   // flex-center·text-body 등)를 쓰지 않고 평범한 유틸로 편다 — 다른 템플릿에는 그 규칙이 없어 배치가 무너진다
   // (check-extension-css-coverage 「어휘 오용」).
   it.each(FRAGMENTS)('%s — 행은 유틸로 편 필터 행이고 서버 리스너와 같은 권한으로만 보인다', (_label, fragment, permission) => {
-    const classes = (n: any) => String(n?.props?.className ?? '').split(' ');
-    const rows = collect(fragment, (n) => !!n?.id && classes(n).includes('ecommerce:md:flex-row'));
+    // 폭 분기는 Tailwind 반응형 접두(`md:flex-row`) 또는 엔진 responsive 덮어쓰기 어느 쪽으로도 적힐 수 있다 — 기본과 모든 구간의 클래스를 함께 본다.
+    const classes = (n: any) =>
+      [n?.props?.className, ...Object.values(n?.responsive ?? {}).map((o: any) => o?.props?.className)].map((v) => String(v ?? '')).join(' ').split(' ');
+    const rows = collect(fragment, (n) => !!n?.id && classes(n).includes('ecommerce:flex-col') && (classes(n).includes('ecommerce:md:flex-row') || classes(n).includes('ecommerce:flex-row')));
 
     expect(rows).toHaveLength(1);
     expect(JSON.stringify(rows[0].permissions)).toContain(permission);
-    expect(collect(rows[0], (n) => classes(n).includes('ecommerce:w-32') && classes(n).includes('ecommerce:shrink-0'))).toHaveLength(1);
+    expect(collect(rows[0], (n) => !!n?.name && classes(n).includes('ecommerce:w-32') && classes(n).includes('ecommerce:shrink-0'))).toHaveLength(1);
 
-    const templateOnly = ['filter-row', 'filter-label', 'flex-center', 'text-body', 'text-label-subtle'];
+    const templateOnly = ['filter-row', 'filter-field-label', 'filter-label', 'flex-center', 'text-body', 'text-label-subtle'];
     expect(collect(fragment, (n) => classes(n).some((c) => templateOnly.includes(c)))).toHaveLength(0);
   });
 

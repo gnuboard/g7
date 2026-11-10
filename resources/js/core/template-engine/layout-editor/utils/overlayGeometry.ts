@@ -174,6 +174,67 @@ export function subscribeOverlayTracking(
 }
 
 /**
+ * 어포던스가 놓일 수 있는 영역 — frame 화면 좌상단 기준 좌표(오버레이 레이어 좌표와 같다).
+ */
+export interface AffordanceBounds {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/**
+ * 어포던스 경계 = 미리보기 캔버스 상자(#869 브라우저 실측).
+ *
+ * 맞춤 보기에서 캔버스 오른쪽 끝은 곧 창 끝이라, 캔버스 밖으로 나간 어포던스(박스 바깥 30px 의 삽입 단추)가
+ * 문서를 가로로 넓혔다. 캔버스가 스크롤 상자(실제 크기, `overflow-x:auto`)면 화면 사각형이 아니라 스크롤 내용
+ * 영역 전체가 경계다 — 스크롤로 닿는 자리는 잘리지 않으므로.
+ *
+ * @param frameEl 미리보기 frame
+ * @returns frame 좌표 경계. 캔버스를 못 찾으면 null(경계 없음 — 종전 배치)
+ */
+export function resolveAffordanceBounds(frameEl: Element | null): AffordanceBounds | null {
+  if (!frameEl) return null;
+  const canvas = frameEl.closest<HTMLElement>('[data-testid="g7le-preview-canvas"]');
+  if (!canvas) return null;
+  const c = canvas.getBoundingClientRect();
+  const f = frameEl.getBoundingClientRect();
+  const cs = typeof window !== 'undefined' ? window.getComputedStyle(canvas) : null;
+  const scrolls = (v: string | undefined): boolean => v === 'auto' || v === 'scroll';
+  const scrollX = scrolls(cs?.overflowX ?? canvas.style.overflowX);
+  const scrollY = scrolls(cs?.overflowY ?? canvas.style.overflowY) || scrollX;
+  const width = scrollX ? Math.max(canvas.scrollWidth, canvas.clientWidth) : canvas.clientWidth || c.width;
+  const height = scrollY ? Math.max(canvas.scrollHeight, canvas.clientHeight) : canvas.clientHeight || c.height;
+  const left = c.left - (scrollX ? canvas.scrollLeft : 0) - f.left;
+  const top = c.top - (scrollY ? canvas.scrollTop : 0) - f.top;
+  return { left, top, right: left + width, bottom: top + height };
+}
+
+/**
+ * 박스 기준 좌표(`offset`)에 놓인 정사각 어포던스가 경계를 넘으면 경계 안으로 접은 좌표를 돌려준다.
+ *
+ * @param box 기준 박스(frame 좌표)
+ * @param offset 박스 좌상단 기준 어포던스 좌상단(px)
+ * @param size 어포던스 한 변(px)
+ * @param bounds 경계(frame 좌표)
+ * @returns 접은 박스 기준 좌표. 넘지 않으면 null(종전 배치 유지)
+ */
+export function foldIntoBounds(
+  box: OverlayBox,
+  offset: { left: number; top: number },
+  size: number,
+  bounds: AffordanceBounds,
+): { left: number; top: number } | null {
+  const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v, lo), Math.max(lo, hi));
+  const x = box.left + offset.left;
+  const y = box.top + offset.top;
+  const nx = clamp(x, bounds.left, bounds.right - size);
+  const ny = clamp(y, bounds.top, bounds.bottom - size);
+  if (nx === x && ny === y) return null;
+  return { left: nx - box.left, top: ny - box.top };
+}
+
+/**
  * 작은 박스 판정 임계값(px). 박스의 width 또는 height 가 이 값 미만이면
  * 오버레이 버튼이 박스 모서리/위/아래에서 서로 겹친다.
  * 44px 은 권장 최소 터치 타깃 크기.

@@ -16,6 +16,9 @@
             "if": "{{review?.author?.avatar}}",
             "props": {
                 "src": "{{review.author.avatar}}",
+                "thumbPreset": "xs",
+                "loading": "lazy",
+                "decoding": "async",
                 "alt": "{{review.author.name}}",
                 "className": "w-full h-full object-cover"
             }

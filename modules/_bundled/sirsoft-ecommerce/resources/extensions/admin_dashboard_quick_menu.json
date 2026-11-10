@@ -8,17 +8,31 @@
             "id": "qm_ecommerce_products",
             "type": "basic",
             "name": "A",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-20 ecommerce:h-20 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                    }
+                }
+            },
             "props": {
                 "href": "/admin/ecommerce/products",
-                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:text-[10px] ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Icon",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:text-xl"
+                            }
+                        }
+                    },
                     "props": {
                         "name": "box",
-                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
+                        "className": "ecommerce:text-lg"
                     }
                 },
                 {
@@ -35,17 +49,31 @@
             "id": "qm_ecommerce_orders",
             "type": "basic",
             "name": "A",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-20 ecommerce:h-20 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                    }
+                }
+            },
             "props": {
                 "href": "/admin/ecommerce/orders",
-                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:text-[10px] ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Icon",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:text-xl"
+                            }
+                        }
+                    },
                     "props": {
                         "name": "shopping-cart",
-                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
+                        "className": "ecommerce:text-lg"
                     }
                 },
                 {
@@ -62,17 +90,31 @@
             "id": "qm_ecommerce_reviews",
             "type": "basic",
             "name": "A",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-20 ecommerce:h-20 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                    }
+                }
+            },
             "props": {
                 "href": "/admin/ecommerce/reviews",
-                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:text-[10px] ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Icon",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:text-xl"
+                            }
+                        }
+                    },
                     "props": {
                         "name": "star",
-                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
+                        "className": "ecommerce:text-lg"
                     }
                 },
                 {
@@ -89,17 +131,31 @@
             "id": "qm_ecommerce_coupons",
             "type": "basic",
             "name": "A",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-20 ecommerce:h-20 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                    }
+                }
+            },
             "props": {
                 "href": "/admin/ecommerce/promotion-coupons",
-                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:text-[10px] ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Icon",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:text-xl"
+                            }
+                        }
+                    },
                     "props": {
                         "name": "ticket",
-                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
+                        "className": "ecommerce:text-lg"
                     }
                 },
                 {
@@ -116,17 +172,31 @@
             "id": "qm_ecommerce_shipping",
             "type": "basic",
             "name": "A",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-20 ecommerce:h-20 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                    }
+                }
+            },
             "props": {
                 "href": "/admin/ecommerce/shipping-policies",
-                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:text-[10px] ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Icon",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:text-xl"
+                            }
+                        }
+                    },
                     "props": {
                         "name": "truck",
-                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
+                        "className": "ecommerce:text-lg"
                     }
                 },
                 {

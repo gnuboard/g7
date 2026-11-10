@@ -185,4 +185,22 @@ interface AttachmentRepositoryInterface
      * @return Collection 고아 첨부 후보 (created_at 오름차순, 소프트 삭제분 포함)
      */
     public function findOrphanCandidates(Carbon $threshold, int $limit, array $protectedIds = []): Collection;
+
+    /**
+     * 래스터 이미지 MIME 행 수 (썸네일 미리 만들기 진행률)
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 행 수
+     */
+    public function countByMimeTypes(array $mimeTypes): int;
+
+    /**
+     * 래스터 이미지 MIME 행을 id 순으로 나눠 조회합니다 (썸네일 미리 만들기 — 커서는 마지막 id).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 id 보다 큰 행부터
+     * @param  int  $limit  최대 행 수
+     * @return Collection<int, Attachment> 행 (id·disk·path·mime_type 등)
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
 }

@@ -1,0 +1,28 @@
+feature: 오류 처리기 자신의 실패는 오류 처리 재진입 상한에서 끝난다 (engine-v1.89.0)
+
+description: |
+  실패한 동작의 오류 처리기(errorHandling, onError, 레이아웃/템플릿/시스템 기본값)는 ActionDispatcher.executeAction 으로 실행되고,
+  그 처리기가 실패하면 같은 catch 갈래에서 다시 오류 처리기를 고른다. 처리기에 자기 정의가 없으면 시스템 기본 toast 가 골라지는데,
+  그 toast 가 같은 이유로 실패하면(전역 상태 갱신기가 던짐) 끝없이 되풀이했다. 비동기 재귀라 마이크로태스크만 돌아 타이머가 실행되지
+  않고 메모리만 늘었다(#869 이월 0 회차, 이탈 가드 시험 작업 프로세스가 힙 한도로 죽음).
+
+  규칙:
+    - 오류 처리기를 실행하는 문맥에 깊이(errorHandlerDepth)를 1 늘려 싣는다. 하위 동작은 문맥을 펼쳐 받아 같은 깊이다
+    - 깊이 2 에 닿은 실패는 오류 처리기를 다시 고르지 않고 실패로 끝난다
+    - 깊이 2 까지(원래 동작의 오류 처리기, 그 처리기 실패의 오류 처리기)는 종전과 같다
+
+axes:
+  case: [default_handler_keeps_failing, error_handler_fails_once, no_error]
+
+effects:
+  - reentry_bounded            # 오류 처리기가 매번 실패해도 오류 처리기 시도는 상한(2회)에서 멈춘다
+  - action_reports_failure     # 그때도 동작 결과는 실패(success=false)로 호출부에 돌아간다
+  - nested_default_still_runs  # 깊이 2 까지의 오류 처리(onError 실패의 기본 toast)는 종전대로 실행된다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.errorHandlerReentry.test.ts
+
+validation:
+  note: |
+    fail-first: 수정 전 엔진에서 default_handler_keeps_failing 사례가 갱신기 시도 200회(시험의 폭주 상한)까지 가서 red, 수정 뒤 2회 green.
+    이탈 가드 시험(ActionDispatcher.leaveGuardDispatchFlush)에 afterAll 400ms 붙잡기를 더한 사본이 수정 전 512MB 한도에서 47초 만에 힙 초과, 수정 뒤 3초 4/4.

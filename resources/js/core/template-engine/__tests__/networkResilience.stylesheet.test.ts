@@ -4,16 +4,14 @@
  * CSS 경로만 이 계층이 없어 실패가 통째로 무음이었다. 아이콘만으로 조작하는 버튼이
  * 있는 화면에서는 스타일 소실이 곧 조작 불능이다.
  *
- * @scenario asset_class=vendored, outcome=failed
- * @scenario asset_class=translation, outcome=failed
- * @effects stylesheet_failure_retries_then_surfaces
+ * 로더는 자산 부류와 무관해 동봉 자산(vendored) 조합으로 성공과 실패를 각 시험이 재고, 표식은 그 시험 앞에 있다.
+ * 번역 자산 실패(translation, failed)의 열화 동작은 sirsoft-ckeditor5 의 html-editor-fallback.test.tsx 가 잰다.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { loadStylesheetWithRetry } from '../networkResilience';
 
 describe('loadStylesheetWithRetry', () => {
-    let appendSpy: ReturnType<typeof vi.spyOn>;
     let created: HTMLLinkElement[];
 
     /**
@@ -23,7 +21,7 @@ describe('loadStylesheetWithRetry', () => {
      * @return void
      */
     function stub(outcomes: Array<'load' | 'error'>): void {
-        appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+        vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
             if (node.tagName !== 'LINK') {
                 return node;
             }
@@ -52,6 +50,8 @@ describe('loadStylesheetWithRetry', () => {
         document.querySelectorAll('link[id^="test-css"]').forEach(el => el.remove());
     });
 
+    // @scenario asset_class=vendored, outcome=loaded
+    // @effects stylesheet_failure_retries_then_surfaces
     it('첫 시도에 성공하면 재시도하지 않는다', async () => {
         stub(['load']);
 
@@ -59,6 +59,8 @@ describe('loadStylesheetWithRetry', () => {
         expect(created).toHaveLength(1);
     });
 
+    // @scenario asset_class=vendored, outcome=loaded
+    // @effects stylesheet_failure_retries_then_surfaces
     it('rel 과 href 를 설정하고 전달한 속성을 붙인다', async () => {
         stub(['load']);
 
@@ -70,6 +72,8 @@ describe('loadStylesheetWithRetry', () => {
         expect(created[0].getAttribute('media')).toBe('screen');
     });
 
+    // @scenario asset_class=vendored, outcome=failed
+    // @effects stylesheet_failure_retries_then_surfaces
     it('일시 실패 후 성공하면 최종 resolve 한다', async () => {
         stub(['error', 'load']);
 
@@ -80,6 +84,8 @@ describe('loadStylesheetWithRetry', () => {
         expect(created).toHaveLength(2);
     });
 
+    // @scenario asset_class=vendored, outcome=failed
+    // @effects stylesheet_failure_retries_then_surfaces
     it('모든 시도가 실패하면 reject 한다 (실패를 resolve 로 은폐하지 않는다)', async () => {
         stub(['error', 'error', 'error']);
 
@@ -90,6 +96,8 @@ describe('loadStylesheetWithRetry', () => {
         expect(created).toHaveLength(3);
     });
 
+    // @scenario asset_class=vendored, outcome=failed
+    // @effects stylesheet_failure_retries_then_surfaces
     it('retries 옵션으로 시도 횟수를 조정할 수 있다', async () => {
         stub(['error']);
 
@@ -100,9 +108,11 @@ describe('loadStylesheetWithRetry', () => {
         expect(created).toHaveLength(1);
     });
 
+    // @scenario asset_class=vendored, outcome=failed
+    // @effects stylesheet_failure_retries_then_surfaces
     it('재시도 전 실패한 element 를 문서에서 제거한다 (누적 방지)', async () => {
         // 실제 DOM 에 붙여 제거 여부를 관측한다
-        appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
+        vi.spyOn(document.head, 'appendChild').mockImplementation(((node: any) => {
             if (node.tagName !== 'LINK') return node;
 
             created.push(node);

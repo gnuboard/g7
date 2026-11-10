@@ -62,6 +62,12 @@ axes:
     - skeleton_c52
     - skeleton_c53
     - skeleton_c54
+    - skeleton_c55
+    - skeleton_c56
+    - skeleton_c57
+    - skeleton_c58
+    - skeleton_c59
+    - skeleton_c60
 
 effects:
   - page_skeleton_renders_placeholders   # 레이아웃 구조별 자리 표시(확장 앞글자 클래스 포함)

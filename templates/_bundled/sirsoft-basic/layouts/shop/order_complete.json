@@ -769,6 +769,9 @@
                                                                 "if": "{{item.thumbnail_url}}",
                                                                 "props": {
                                                                     "src": "{{item.thumbnail_url}}",
+                                                                    "thumbPreset": "sm",
+                                                                    "loading": "lazy",
+                                                                    "decoding": "async",
                                                                     "alt": "{{$localized(item.product_name)}}",
                                                                     "className": "w-16 h-16 object-cover rounded"
                                                                 }

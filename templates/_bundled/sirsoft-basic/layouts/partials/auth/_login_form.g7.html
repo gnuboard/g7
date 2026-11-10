@@ -184,7 +184,8 @@
         <span data-if="{{!_global.isLoggingIn}}">$t:auth.two_factor.verify</span>
         <span data-if="{{_global.isLoggingIn}}">$t:auth.two_factor.verifying</span>
       </button>
-      <div class="flex flex-col sm:flex-row gap-2">
+      <div class="flex flex-col gap-2">
+        <responsive on="640-" class="flex flex-row gap-2"/>
         <!-- 인증 앱 경로에서는 숨긴다 — 서버가 보내는 것이 없으므로 「다시 받기」가 새 challenge 발급
              이상의 의미가 없고, 누르면 아무 일도 일어나지 않은 것처럼 보인다. -->
         <button type="button" data-if="{{_global.twoFactor?.provider_id !== 'totp'}}" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.twoFactor?.resending || _global.isLoggingIn}}">
@@ -277,7 +278,8 @@
         <span data-if="{{!_global.isLoggingIn}}">$t:auth.password_change.submit</span>
         <span data-if="{{_global.isLoggingIn}}">$t:auth.login_processing</span>
       </button>
-      <div class="flex flex-col sm:flex-row gap-2">
+      <div class="flex flex-col gap-2">
+        <responsive on="640-" class="flex flex-row gap-2"/>
         <button type="button" data-if="{{_global.passwordChange?.can_postpone}}" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isLoggingIn}}">
           <on type="click">
             <!-- 다음에 변경 — 만료 시 동작이 「다음에 변경 허용」일 때만 보인다. 로그인을 마치고 연기 종료일을 알린 뒤 원래 가려던 곳으로 보낸다

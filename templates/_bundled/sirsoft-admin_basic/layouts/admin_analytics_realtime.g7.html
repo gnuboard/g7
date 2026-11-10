@@ -69,13 +69,15 @@
     </start-interval>
   </init>
   <slot name="content">
-    <div data-ref="analytics_realtime_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="analytics_realtime_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <on event="unmount">
         <stop-interval id="analytics_realtime_live"/>
       </on>
       <div data-ref="page_header" class="flex-between mb-4">
         <div>
-          <h1 class="page-title">$t:admin.analytics.realtime.title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.realtime.title</h1>
           <p class="text-label-subtle mt-1">$t:admin.analytics.realtime.description</p>
         </div>
         <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.common.refresh">
@@ -94,7 +96,7 @@
             <span class="text-label">$t:admin.analytics.realtime.count_label|minutes={{analytics_realtime?.data?.window_minutes ?? 5}}</span>
           </div>
           <div class="flex-center gap-2">
-            <span class="filter-label">$t:admin.analytics.realtime.window_label</span>
+            <span class="filter-field-label"><responsive on="768-" class="filter-field-label mb-0 w-14 shrink-0 flex items-center"/>$t:admin.analytics.realtime.window_label</span>
             <select data-ref="window_select" name="analytics_realtime_minutes" class="w-24" value="{{String(query.minutes || analytics_realtime?.data?.window_minutes || 5)}}">
               <options>
                 <option value="1">1</option>
@@ -117,7 +119,8 @@
           <badge data-type="composite" data-ref="transport_badge_polling" data-if="{{analytics_status?.data?.broadcasting?.configured !== true}}" color="gray" text="$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}" size="sm"/>
         </div>
       </div>
-      <div data-ref="realtime_grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div data-ref="realtime_grid" class="grid grid-cols-1 gap-4">
+        <responsive on="desktop" class="grid grid-cols-3 gap-4"/>
         <div data-ref="realtime_pages_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.realtime.pages_title</h2>
           <p data-if="{{analytics_realtime !== undefined &amp;&amp; (analytics_realtime?.data?.visitors ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.realtime.empty</p>
@@ -131,7 +134,8 @@
             </div>
           </div>
         </div>
-        <div data-ref="realtime_visitors_card" class="admin-card lg:col-span-2">
+        <div data-ref="realtime_visitors_card" class="admin-card">
+          <responsive on="desktop" class="admin-card col-span-2"/>
           <h2 class="section-heading mb-3">$t:admin.analytics.realtime.visitors_title</h2>
           <div class="overflow-x-auto">
             <data-grid data-type="composite" data-ref="realtime_visitors_grid" data="{{analytics_realtime?.data?.visitors ?? []}}" :pagination="false" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="{{analytics_realtime === undefined ? '' : $t('admin.analytics.realtime.empty')}}">

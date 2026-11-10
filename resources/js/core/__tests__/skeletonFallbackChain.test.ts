@@ -6,279 +6,330 @@
  * 2. fallback_target 존재 → 해당 영역만 (페이지 전환)
  * 3. 둘 다 미존재         → 전체 페이지 (#app fullpage)
  *
+ * #869: 종전에는 TemplateApp.renderSkeletonOverlay 의 로직을 이 파일 안에 베낀 함수(대상 결정, CSS 대상 id,
+ * 컴포넌트 트리 선택)만 검사해, 원본이 깨져도 통과했다. 지금은 실제 renderSkeletonOverlay 를 부르고, 주입된
+ * ::after 규칙과 스켈레톤 컨테이너 위치, 스켈레톤 컴포넌트가 받은 트리를 본다.
+ * (매니페스트 core-skeleton-fallback-nu2.yaml)
+ *
  * @since engine-v1.24.2
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import React from 'react';
 
-// --- renderSkeletonOverlay에서 추출한 핵심 로직 ---
+const { skeletonCalls } = vi.hoisted(() => ({
+    skeletonCalls: [] as Array<{ components: any[] }>,
+}));
 
-type SkeletonScope = 'target' | 'fallback' | 'fullpage';
+vi.mock('../template-engine', () => ({
+    initTemplateEngine: vi.fn().mockResolvedValue(undefined),
+    renderTemplate: vi.fn().mockResolvedValue(undefined),
+    destroyTemplate: vi.fn(),
+    releaseTemplateRoot: vi.fn(),
+    updateTemplateData: vi.fn(),
+    getActionDispatcher: vi.fn().mockReturnValue(null),
+    getState: vi.fn().mockReturnValue({ currentLayoutJson: null, currentDataContext: {} }),
+}));
 
-interface FallbackResult {
-    targetEl: HTMLElement | null;
-    skeletonScope: SkeletonScope;
-}
+vi.mock('../routing/Router', () => ({
+    Router: vi.fn(function (this: any) {
+        this.on = vi.fn();
+    }),
+}));
 
-/**
- * 3단계 fallback chain (TemplateApp.renderSkeletonOverlay 내부 로직)
- *
- * target → fallback_target → #app
- */
-function resolveFallbackChain(target: string, fallbackTarget?: string): FallbackResult {
-    let targetEl = document.getElementById(target);
-    let skeletonScope: SkeletonScope = 'target';
+vi.mock('../template-engine/ComponentRegistry', () => {
+    /** 받은 트리를 기록하고 최상위 id 를 그리는 스켈레톤 대역 */
+    const PageSkeleton = (props: { components: any[] }) => {
+        skeletonCalls.push({ components: props.components });
+        return React.createElement(
+            'div',
+            { 'data-testid': 'skeleton' },
+            props.components.map((c: any) => c.id).join(','),
+        );
+    };
+    const mockInstance: any = {
+        loadComponents: vi.fn().mockResolvedValue(undefined),
+        getComponent: vi.fn((name: string) => (name === 'PageSkeleton' ? PageSkeleton : null)),
+        hasComponent: vi.fn().mockReturnValue(true),
+        getInstance: vi.fn(),
+    };
+    mockInstance.getInstance.mockReturnValue(mockInstance);
+    return { ComponentRegistry: { getInstance: vi.fn(() => mockInstance) } };
+});
 
-    if (!targetEl && fallbackTarget) {
-        targetEl = document.getElementById(fallbackTarget);
-        skeletonScope = 'fallback';
-    }
-    if (!targetEl) {
-        targetEl = document.getElementById('app');
-        skeletonScope = 'fullpage';
-    }
+import { TemplateApp } from '../TemplateApp';
 
-    return { targetEl, skeletonScope };
-}
-
-/**
- * CSS ::after 타겟 ID 결정 (TemplateApp.renderSkeletonOverlay 내부 로직)
- */
-function getCssTargetId(skeletonScope: SkeletonScope, target: string, fallbackTarget?: string): string {
-    if (skeletonScope === 'fullpage') return 'app';
-    if (skeletonScope === 'fallback') return fallbackTarget!;
-    return target;
-}
-
-/**
- * 스켈레톤 컴포넌트 트리 결정 (TemplateApp.renderSkeletonOverlay 내부 로직)
- *
- * fullpage: 전체 컴포넌트 트리
- * fallback/target: findComponentChildrenById로 추출한 하위 트리
- */
-function resolveComponentTree(
-    skeletonScope: SkeletonScope,
-    components: any[],
-    target: string,
-    fallbackTarget?: string,
-    findChildrenById?: (components: any[], id: string) => any[]
-): any[] {
-    if (skeletonScope === 'fullpage') {
-        return components;
-    }
-    const searchId = skeletonScope === 'fallback' ? fallbackTarget! : target;
-    return findChildrenById ? findChildrenById(components, searchId) : [];
-}
-
-// --- 테스트 ---
+/** 마이페이지 레이아웃 모양의 컴포넌트 트리 */
+const fullTree = [
+    { id: 'header', name: 'Header', children: [] },
+    {
+        id: 'main_content_area', name: 'Div', children: [
+            { id: 'tab_nav', name: 'TabNavigation', children: [] },
+            {
+                id: 'mypage_tab_content', name: 'Div', children: [
+                    { id: 'orders_list', name: 'Div', children: [] },
+                ],
+            },
+        ],
+    },
+    { id: 'footer', name: 'Footer', children: [] },
+];
 
 describe('skeleton 3단계 fallback chain (@since engine-v1.24.2)', () => {
+    let app: TemplateApp;
     let appEl: HTMLDivElement;
 
+    /**
+     * 실제 TemplateApp.renderSkeletonOverlay 를 부른다.
+     *
+     * @param target transition_overlay.target
+     * @param fallbackTarget transition_overlay.fallback_target
+     * @param component 스켈레톤 컴포넌트 이름
+     */
+    const render = (target: string, fallbackTarget?: string, component = 'PageSkeleton'): void => {
+        (app as any).renderSkeletonOverlay(target, { component }, { components: fullTree }, fallbackTarget);
+    };
+
+    /** 주입된 ::after 규칙 */
+    const skeletonStyle = (): string | null =>
+        document.getElementById('g7-skeleton-overlay-style')?.textContent ?? null;
+
+    /** body 직속 스켈레톤 컨테이너 */
+    const skeletonContainer = (): HTMLElement | null => document.getElementById('g7-skeleton-overlay');
+
+    /** 스켈레톤 컴포넌트가 마지막으로 받은 트리의 최상위 id */
+    const lastTreeIds = (): string[] => skeletonCalls[skeletonCalls.length - 1].components.map((c: any) => c.id);
+
+    const addDiv = (id: string, parent: HTMLElement = document.body): HTMLDivElement => {
+        const el = document.createElement('div');
+        el.id = id;
+        parent.appendChild(el);
+        return el;
+    };
+
     beforeEach(() => {
+        document.body.innerHTML = '';
+        document.head.querySelectorAll('#g7-transition-overlay, #g7-skeleton-overlay-style').forEach(el => el.remove());
+        skeletonCalls.length = 0;
         // #app은 항상 존재 (React 렌더 컨테이너)
-        appEl = document.createElement('div');
-        appEl.id = 'app';
-        document.body.appendChild(appEl);
+        appEl = addDiv('app');
+        app = new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko' } as any);
     });
 
     afterEach(() => {
-        // DOM 정리
-        ['app', 'main_content_area', 'mypage_tab_content'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        });
+        (app as any).hideSkeletonOverlay();
+        (app as any).hideTransitionOverlay();
+        document.head.querySelectorAll('#g7-transition-overlay, #g7-skeleton-overlay-style').forEach(el => el.remove());
+        document.body.innerHTML = '';
     });
 
-    describe('resolveFallbackChain', () => {
-        it('target DOM 존재 시 scope=target으로 해결해야 한다', () => {
-            const targetEl = document.createElement('div');
-            targetEl.id = 'mypage_tab_content';
-            document.body.appendChild(targetEl);
+    describe('대상 결정', () => {
+        // @scenario area=scope_target
+        // @effects skeleton_scope_resolved
+        it('target DOM 존재 시 target 영역만 덮는다', () => {
+            addDiv('mypage_tab_content');
 
-            const result = resolveFallbackChain('mypage_tab_content', 'main_content_area');
+            render('mypage_tab_content', 'main_content_area');
 
-            expect(result.skeletonScope).toBe('target');
-            expect(result.targetEl).toBe(targetEl);
+            expect(skeletonStyle()).toContain('#mypage_tab_content::after{');
+            expect(skeletonContainer()!.style.position).toBe('absolute');
         });
 
-        it('target 미존재 + fallback_target 존재 시 scope=fallback으로 해결해야 한다', () => {
-            const fallbackEl = document.createElement('div');
-            fallbackEl.id = 'main_content_area';
-            document.body.appendChild(fallbackEl);
+        // @scenario area=scope_fallback
+        // @effects skeleton_scope_resolved
+        it('target 미존재 + fallback_target 존재 시 fallback_target 영역을 덮는다', () => {
+            addDiv('main_content_area');
 
-            const result = resolveFallbackChain('mypage_tab_content', 'main_content_area');
+            render('mypage_tab_content', 'main_content_area');
 
-            expect(result.skeletonScope).toBe('fallback');
-            expect(result.targetEl).toBe(fallbackEl);
+            expect(skeletonStyle()).toContain('#main_content_area::after{');
+            expect(skeletonContainer()!.style.position).toBe('absolute');
         });
 
-        it('target + fallback_target 모두 미존재 시 scope=fullpage (#app)로 해결해야 한다', () => {
-            const result = resolveFallbackChain('mypage_tab_content', 'main_content_area');
+        // @scenario area=scope_fullpage
+        // @effects skeleton_scope_resolved
+        it('target + fallback_target 모두 미존재 시 #app 전체를 fixed 로 덮는다', () => {
+            render('mypage_tab_content', 'main_content_area');
 
-            expect(result.skeletonScope).toBe('fullpage');
-            expect(result.targetEl).toBe(appEl);
+            expect(skeletonStyle()).toContain('#app::after{');
+            expect(skeletonContainer()!.style.position).toBe('fixed');
         });
 
-        it('fallback_target 미지정 + target 미존재 시 scope=fullpage로 해결해야 한다', () => {
-            const result = resolveFallbackChain('mypage_tab_content');
+        // @scenario area=scope_fullpage
+        // @effects skeleton_scope_resolved
+        it('fallback_target 미지정 + target 미존재 시 #app 전체를 덮는다', () => {
+            render('mypage_tab_content');
 
-            expect(result.skeletonScope).toBe('fullpage');
-            expect(result.targetEl).toBe(appEl);
+            expect(skeletonStyle()).toContain('#app::after{');
+            expect(skeletonContainer()!.style.position).toBe('fixed');
         });
 
-        it('#app도 미존재 시 targetEl=null을 반환해야 한다', () => {
+        // @scenario area=no_container
+        // @effects skeleton_missing_target_falls_back
+        it('#app도 미존재 시 스켈레톤 대신 opaque 덮개로 폴백한다', () => {
             appEl.remove();
 
-            const result = resolveFallbackChain('mypage_tab_content', 'main_content_area');
+            render('mypage_tab_content', 'main_content_area');
 
-            expect(result.skeletonScope).toBe('fullpage');
-            expect(result.targetEl).toBeNull();
+            expect(skeletonContainer()).toBeNull();
+            expect(skeletonStyle()).toBeNull();
+            expect(skeletonCalls).toHaveLength(0);
+            expect(document.getElementById('g7-transition-overlay')).not.toBeNull();
         });
 
-        it('fallback_target 없이 target만 존재 시 scope=target으로 해결해야 한다', () => {
-            const targetEl = document.createElement('div');
-            targetEl.id = 'main_content_area';
-            document.body.appendChild(targetEl);
+        // @scenario area=scope_target
+        // @effects skeleton_scope_resolved
+        it('fallback_target 없이 target만 존재 시 target 영역을 덮는다', () => {
+            addDiv('main_content_area');
 
-            const result = resolveFallbackChain('main_content_area');
+            render('main_content_area');
 
-            expect(result.skeletonScope).toBe('target');
-            expect(result.targetEl).toBe(targetEl);
-        });
-    });
-
-    describe('getCssTargetId', () => {
-        it('scope=target일 때 target ID를 반환해야 한다', () => {
-            expect(getCssTargetId('target', 'mypage_tab_content', 'main_content_area'))
-                .toBe('mypage_tab_content');
+            expect(skeletonStyle()).toContain('#main_content_area::after{');
+            expect(skeletonContainer()!.style.position).toBe('absolute');
         });
 
-        it('scope=fallback일 때 fallback_target ID를 반환해야 한다', () => {
-            expect(getCssTargetId('fallback', 'mypage_tab_content', 'main_content_area'))
-                .toBe('main_content_area');
-        });
+        // @scenario area=no_container
+        // @effects skeleton_missing_target_falls_back
+        it('스켈레톤 컴포넌트가 등록되지 않았으면 opaque 덮개로 폴백한다', () => {
+            addDiv('mypage_tab_content');
 
-        it('scope=fullpage일 때 "app"을 반환해야 한다', () => {
-            expect(getCssTargetId('fullpage', 'mypage_tab_content', 'main_content_area'))
-                .toBe('app');
+            render('mypage_tab_content', 'main_content_area', 'MissingSkeleton');
+
+            expect(skeletonContainer()).toBeNull();
+            expect(skeletonStyle()).toBeNull();
+            expect(document.getElementById('g7-transition-overlay')).not.toBeNull();
         });
     });
 
-    describe('resolveComponentTree', () => {
-        const fullTree = [
-            { id: 'header', name: 'Header', children: [] },
-            {
-                id: 'main_content_area', name: 'Div', children: [
-                    { id: 'tab_nav', name: 'TabNavigation', children: [] },
-                    {
-                        id: 'mypage_tab_content', name: 'Div', children: [
-                            { id: 'orders_list', name: 'Div', children: [] },
-                        ],
-                    },
-                ],
-            },
-            { id: 'footer', name: 'Footer', children: [] },
-        ];
+    describe('CSS 대상 id', () => {
+        // @scenario area=css_target
+        // @effects skeleton_css_target_matches_scope
+        it('target 범위면 ::after 규칙이 target id 하나만 가리킨다', () => {
+            addDiv('main_content_area');
+            addDiv('mypage_tab_content');
 
-        function mockFindChildrenById(components: any[], id: string): any[] {
-            for (const comp of components) {
-                if (comp.id === id) return comp.children || [];
-                if (comp.children) {
-                    const found = mockFindChildrenById(comp.children, id);
-                    if (found.length > 0) return found;
-                }
-            }
-            return [];
-        }
+            render('mypage_tab_content', 'main_content_area');
 
-        it('scope=fullpage일 때 전체 컴포넌트 트리를 반환해야 한다', () => {
-            const result = resolveComponentTree('fullpage', fullTree, 'mypage_tab_content', 'main_content_area', mockFindChildrenById);
-
-            expect(result).toBe(fullTree);
-            expect(result).toHaveLength(3); // header + content + footer
+            expect(skeletonStyle()).toContain('#mypage_tab_content::after{');
+            expect(skeletonStyle()).not.toContain('#main_content_area');
+            expect(skeletonStyle()).not.toContain('#app');
         });
 
-        it('scope=fallback일 때 fallback_target의 자식만 반환해야 한다', () => {
-            const result = resolveComponentTree('fallback', fullTree, 'mypage_tab_content', 'main_content_area', mockFindChildrenById);
+        // @scenario area=css_target
+        // @effects skeleton_css_target_matches_scope
+        it('fallback 범위면 ::after 규칙이 fallback_target id 를 가리킨다', () => {
+            addDiv('main_content_area');
 
-            expect(result).toHaveLength(2); // tab_nav + mypage_tab_content
-            expect(result[0].id).toBe('tab_nav');
-            expect(result[1].id).toBe('mypage_tab_content');
+            render('mypage_tab_content', 'main_content_area');
+
+            expect(skeletonStyle()).toContain('#main_content_area::after{');
+            expect(skeletonStyle()).not.toContain('#mypage_tab_content');
         });
 
-        it('scope=target일 때 target의 자식만 반환해야 한다', () => {
-            const result = resolveComponentTree('target', fullTree, 'mypage_tab_content', 'main_content_area', mockFindChildrenById);
+        // @scenario area=css_target
+        // @effects skeleton_css_target_matches_scope
+        it('fullpage 범위면 ::after 규칙이 #app 을 가리킨다', () => {
+            render('mypage_tab_content', 'main_content_area');
 
-            expect(result).toHaveLength(1); // orders_list only
-            expect(result[0].id).toBe('orders_list');
+            expect(skeletonStyle()).toContain('#app::after{');
+            expect(skeletonStyle()).not.toContain('#mypage_tab_content');
+            expect(skeletonStyle()).not.toContain('#main_content_area');
+        });
+    });
+
+    describe('스켈레톤 컴포넌트 트리', () => {
+        // @scenario area=component_tree
+        // @effects skeleton_tree_matches_scope
+        it('fullpage 범위면 전체 컴포넌트 트리를 넘긴다', () => {
+            render('mypage_tab_content', 'main_content_area');
+
+            expect(skeletonCalls[skeletonCalls.length - 1].components).toBe(fullTree);
+            expect(lastTreeIds()).toEqual(['header', 'main_content_area', 'footer']);
+        });
+
+        // @scenario area=component_tree
+        // @effects skeleton_tree_matches_scope
+        it('fallback 범위면 fallback_target 의 자식만 넘긴다', () => {
+            addDiv('main_content_area');
+
+            render('mypage_tab_content', 'main_content_area');
+
+            expect(lastTreeIds()).toEqual(['tab_nav', 'mypage_tab_content']);
+        });
+
+        // @scenario area=component_tree
+        // @effects skeleton_tree_matches_scope
+        it('target 범위면 target 의 자식만 넘긴다', () => {
+            addDiv('mypage_tab_content');
+
+            render('mypage_tab_content', 'main_content_area');
+
+            expect(lastTreeIds()).toEqual(['orders_list']);
+            expect(skeletonContainer()!.textContent).toBe('orders_list');
+        });
+
+        // @scenario area=component_tree
+        // @effects skeleton_tree_matches_scope
+        it('트리에 대상 id 가 없으면 전체 트리로 폴백한다', () => {
+            addDiv('detached_area');
+
+            render('detached_area');
+
+            expect(lastTreeIds()).toEqual(['header', 'main_content_area', 'footer']);
         });
     });
 
     describe('실제 시나리오', () => {
+        // @scenario area=real_navigation
+        // @effects skeleton_scope_resolved
         it('초기 로드 (직접 URL 접속) — fullpage 스켈레톤', () => {
             // 초기 로드: renderTemplate() 전이므로 target/fallback DOM 미존재
-            const result = resolveFallbackChain('mypage_tab_content', 'main_content_area');
+            render('mypage_tab_content', 'main_content_area');
 
-            expect(result.skeletonScope).toBe('fullpage');
-            expect(result.targetEl!.id).toBe('app');
+            expect(skeletonStyle()).toContain('#app::after{');
+            expect(lastTreeIds()).toEqual(['header', 'main_content_area', 'footer']);
         });
 
+        // @scenario area=real_navigation
+        // @effects skeleton_scope_resolved
         it('헤더에서 게시판→마이페이지 전환 — fallback (main_content_area) 스켈레톤', () => {
             // 페이지 전환: main_content_area는 존재하지만 mypage_tab_content는 아직 없음
-            const mainEl = document.createElement('div');
-            mainEl.id = 'main_content_area';
-            document.body.appendChild(mainEl);
+            addDiv('main_content_area', appEl);
 
-            const result = resolveFallbackChain('mypage_tab_content', 'main_content_area');
+            render('mypage_tab_content', 'main_content_area');
 
-            expect(result.skeletonScope).toBe('fallback');
-            expect(result.targetEl!.id).toBe('main_content_area');
+            expect(skeletonStyle()).toContain('#main_content_area::after{');
+            expect(lastTreeIds()).toEqual(['tab_nav', 'mypage_tab_content']);
         });
 
+        // @scenario area=real_navigation
+        // @effects skeleton_scope_resolved
         it('마이페이지 내 탭 전환 (주문→프로필) — target (mypage_tab_content) 스켈레톤', () => {
             // 마이페이지 내부 전환: 둘 다 존재
-            const mainEl = document.createElement('div');
-            mainEl.id = 'main_content_area';
-            document.body.appendChild(mainEl);
+            const mainEl = addDiv('main_content_area', appEl);
+            addDiv('mypage_tab_content', mainEl);
 
-            const tabEl = document.createElement('div');
-            tabEl.id = 'mypage_tab_content';
-            mainEl.appendChild(tabEl);
+            render('mypage_tab_content', 'main_content_area');
 
-            const result = resolveFallbackChain('mypage_tab_content', 'main_content_area');
-
-            expect(result.skeletonScope).toBe('target');
-            expect(result.targetEl!.id).toBe('mypage_tab_content');
+            expect(skeletonStyle()).toContain('#mypage_tab_content::after{');
+            expect(lastTreeIds()).toEqual(['orders_list']);
         });
 
+        // @scenario area=real_navigation
+        // @effects skeleton_scope_resolved
         it('일반 페이지 (fallback_target 미사용) — target 존재 시 target, 미존재 시 fullpage', () => {
             // _user_base 기본 설정: target="main_content_area", fallback_target 없음
             // 페이지 전환: main_content_area 존재
-            const mainEl = document.createElement('div');
-            mainEl.id = 'main_content_area';
-            document.body.appendChild(mainEl);
+            const mainEl = addDiv('main_content_area', appEl);
 
-            const result1 = resolveFallbackChain('main_content_area');
-            expect(result1.skeletonScope).toBe('target');
+            render('main_content_area');
+            expect(skeletonStyle()).toContain('#main_content_area::after{');
 
             // 초기 로드: main_content_area 미존재
             mainEl.remove();
-            const result2 = resolveFallbackChain('main_content_area');
-            expect(result2.skeletonScope).toBe('fullpage');
-        });
-
-        it('마이페이지에서 헤더→게시판 전환 — 게시판의 target (main_content_area) 사용', () => {
-            // 마이페이지 DOM이 있더라도, 게시판 레이아웃의 transition_overlay가 적용됨
-            // 게시판: target="main_content_area" (fallback_target 없음)
-            const mainEl = document.createElement('div');
-            mainEl.id = 'main_content_area';
-            document.body.appendChild(mainEl);
-
-            const result = resolveFallbackChain('main_content_area');
-
-            expect(result.skeletonScope).toBe('target');
-            expect(result.targetEl!.id).toBe('main_content_area');
+            render('main_content_area');
+            expect(skeletonStyle()).toContain('#app::after{');
+            expect(document.querySelectorAll('#g7-skeleton-overlay-style')).toHaveLength(1);
         });
     });
 });

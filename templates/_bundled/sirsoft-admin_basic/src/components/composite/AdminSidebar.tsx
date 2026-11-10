@@ -495,6 +495,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               src={logo}
               alt={logoAlt}
               className="h-8"
+              thumbPreset="md"
+              loading="eager"
             />
           )}
           {onToggleCollapse && (

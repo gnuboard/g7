@@ -5,7 +5,8 @@
     <div data-ref="language_settings_card" class="ecommerce-admin-card">
       <h3 data-ref="language_settings_title" class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.title</h3>
       <div data-ref="language_settings_description" class="ecommerce-card-description">$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.description</div>
-      <div data-ref="language_settings_content" class="ecommerce-grid-2col-responsive">
+      <div data-ref="language_settings_content" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+        <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
         <div data-ref="field_default_currency" class="ecommerce-form-group">
           <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.default_currency</label>
           <select name="language_currency.default_currency" value="{{_local.form?.language_currency?.default_currency}}" options="{{((Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))) ?? []}}" class="{{_local.errors?.['language_currency.default_currency'] ? 'ecommerce:w-full ecommerce:border-red-500' : 'ecommerce:w-full'}}" disabled="{{_computed.isReadOnly}}"/>

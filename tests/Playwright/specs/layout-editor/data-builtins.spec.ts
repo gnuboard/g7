@@ -11,12 +11,8 @@
  * 상세(마커 아님 — 평문): DonutChart(single_object_array)·BarChart(multi_array) 필드를 number/number_list
  * 위젯으로 편집(operation=edit_field, field_widget=number·number_list).
  *
- * @scenario data_surface=single_object_array, data_surface=multi_array, aspect=field_widget
- * @effects property_modal_dispatches_data_builtin_node_editor_in_props_tab_by_kind,
- *   array_editor_number_widget_writes_numeric_value,
- *   array_group_renders_multiple_array_editors_per_group,
- *   live_donut_data_item_edit_save_persists_to_user_page,
- *   live_barchart_dataset_edit_save_persists_to_user_page, admin_editor_save_specs_target_admin_sandbox_layout
+ * 요약(마커 아님 — 평문, 조합과 효과는 시험마다 붙어 있다): DonutChart 는 single_object_array, BarChart 는
+ * multi_array 표면의 field_widget 축을 재고, BarChart 데이터셋 편집은 저장 뒤 실제 화면(시드 화면)까지 따라간다.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -211,6 +207,7 @@ async function addComponent(page: Page, name: string, sandbox = false): Promise<
 // 시드 컨테이너에서 수행하면 `↑BarChart` + ⓘ 표시 + array-group 에디터(labels/datasets) 3개 모두
 // 마운트된다. 컴포넌트 결함이 아니라 삽입 위치 문제였다.
 test.describe('@layout-editor 데이터 정의 빌트인(8-b)', () => {
+  // @scenario data_surface=single_object_array, aspect=field_widget
   /** @effects property_modal_dispatches_data_builtin_node_editor_in_props_tab_by_kind, array_editor_number_widget_writes_numeric_value */
   test('DonutChart 선택 시 array 에디터(data)가 속성 탭에 마운트되고 value(number) 편집 반영', async ({
     page,
@@ -267,5 +264,52 @@ test.describe('@layout-editor 데이터 정의 빌트인(8-b)', () => {
     await page.getByRole('button', { name: /save|저장/i }).first().click();
     const saveRes = await savePromise;
     expect(saveRes.status()).toBe(200);
+  });
+
+  // BarChart 데이터셋 값을 편집기에서 바꿔 저장하면 실제 화면(편집기 밖 시드 화면)의 차트가 그 값으로 그려진다.
+  // 차트는 canvas 라 값이 글자로 나오지 않는다 — 렌더된 canvas 의 React fiber 를 거슬러 Bar 에 넘어간 data 를 읽는다.
+  // @scenario data_surface=multi_array, aspect=field_widget
+  /** @effects live_barchart_dataset_edit_save_persists_to_user_page, admin_editor_save_specs_target_admin_sandbox_layout */
+  test('BarChart 데이터셋 값 편집 후 저장 → 실제 화면 차트가 그 값으로 그려진다', async ({ page }) => {
+    // 편집기 진입만으로 기본 30초의 대부분을 쓴다(같은 진입의 마운트 시험 실측 28.7초). 이 시험은 저장과 실제
+    // 화면 이동까지 이어지므로 예산을 따로 준다.
+    test.setTimeout(120_000);
+    await gotoEditor(page, sandboxRouteParam('admin'));
+    const path = await addComponent(page, 'BarChart', true);
+    expect(await selectByPath(page, path)).toBe(true);
+    await openPropsTab(page);
+    const datasets = page.getByTestId('g7le-array-group-datasets');
+    await expect(datasets).toBeVisible();
+
+    // 팔레트 기본 노드는 데이터셋 하나([30, 70])를 가진다 — 그 값을 바꾼다.
+    const dataField = datasets.getByTestId('g7le-array-field-0-data');
+    await dataField.fill('11, 22');
+    await expect(dataField).toHaveValue('11, 22');
+
+    const savePromise = page.waitForResponse(
+      (r) =>
+        new RegExp(`/api/admin/templates/${TEMPLATE}/layouts/`).test(r.url()) &&
+        r.request().method() === 'PUT',
+      { timeout: 15_000 },
+    );
+    await page.getByTestId('g7le-property-modal-done').click().catch(() => undefined);
+    await page.getByRole('button', { name: /save|저장/i }).first().click();
+    expect((await savePromise).status()).toBe(200);
+
+    // 편집기 밖 실제 화면으로 간다(같은 토큰 세션). 시드 화면 경로는 `*/admin/` 프리픽스의 실제 주소 `/admin/e2e-sandbox`.
+    await page.goto('/admin/e2e-sandbox');
+    const canvas = page.locator('.bar-chart-container canvas').first();
+    await expect(canvas).toBeVisible({ timeout: 30_000 });
+    const rendered = await canvas.evaluate((el) => {
+      const fiberKey = Object.keys(el).find((k) => k.startsWith('__reactFiber$'));
+      let fiber = fiberKey ? (el as unknown as Record<string, any>)[fiberKey] : null;
+      while (fiber) {
+        const data = fiber.memoizedProps?.data;
+        if (data && Array.isArray(data.datasets)) return data.datasets.map((d: { data: unknown }) => d.data);
+        fiber = fiber.return;
+      }
+      return null;
+    });
+    expect(rendered).toEqual([[11, 22]]);
   });
 });

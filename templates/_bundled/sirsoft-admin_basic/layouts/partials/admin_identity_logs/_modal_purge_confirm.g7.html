@@ -6,7 +6,7 @@
     <div class="py-2">
       <p class="text-gray-700 dark:text-gray-300">$t:admin.identity.logs.purge_confirm</p>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isPurgingIdentityLogs}}">
         <on type="click">
           <close-modal target="identity_log_purge_confirm_modal"/>
@@ -36,6 +36,6 @@
         <icon data-if="{{_global.isPurgingIdentityLogs}}" name="fa-solid fa-spinner" class="spinner-sm"/>
         <span>$t:admin.identity.logs.purge_button</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

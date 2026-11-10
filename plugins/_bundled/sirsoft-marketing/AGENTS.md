@@ -169,7 +169,7 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 11개 | `plugins/_bundled/sirsoft-marketing/tests` |
-| Vitest | 16개 | `vitest.config.ts` |
+| Vitest | 17개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 22개 | `tests/scenarios` |
 

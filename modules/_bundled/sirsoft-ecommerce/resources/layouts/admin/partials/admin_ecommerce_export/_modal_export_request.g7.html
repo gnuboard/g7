@@ -28,7 +28,8 @@
           <!-- 파일 형식 -->
           <div data-ref="export_format_section" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
             <span class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.export.modal.format</span>
-            <div class="ecommerce:w-full ecommerce:md:w-64">
+            <div class="ecommerce:w-full">
+              <responsive on="768-" class="ecommerce:w-64"/>
             <select name="exportFormat" class="ecommerce:w-full" value="{{_global.ecommerceExportForm?.format ?? ''}}" options="{{(_global.ecommerceExportCatalog?.formats ?? []).map(f => ({ value: f.key, label: f.label }))}}">
               <on type="change">
                 <!-- 형식은 건수와 무관하다 — 예상 건수를 지우지 않는다 -->
@@ -133,7 +134,8 @@
             <p data-if="{{_global.ecommerceExportCatalog?.can_personal_data !== true}}" class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.export.modal.personal_locked</p>
             <div data-if="{{(_global.ecommerceExportCatalog?.row_units ?? []).length > 1}}" class="ecommerce-flex-center ecommerce:gap-3 ecommerce:flex-wrap ecommerce:mt-1">
               <span class="ecommerce-text-label ecommerce:shrink-0 ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.export.modal.row_unit</span>
-              <div class="ecommerce:w-full ecommerce:md:w-64">
+              <div class="ecommerce:w-full">
+                <responsive on="768-" class="ecommerce:w-64"/>
               <select name="exportRowUnit" aria-label="$t:sirsoft-ecommerce.admin.export.modal.row_unit" class="ecommerce:w-full" value="{{_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit}}" options="{{(_global.ecommerceExportCatalog?.row_units ?? []).map(u => ({ value: u.key, label: u.label }))}}">
                 <on type="change">
                   <!-- 행 단위가 바뀌면 고를 수 있는 필드도 달라진다. 데이터 선택이면 화면 컬럼이 새 단위에서 덮는 필드를 화면 순서로
@@ -229,7 +231,8 @@
             <p data-if="{{(_global.ecommerceExportForm?.period?.mode ?? 'current') === 'current' &amp;&amp; !!_global.ecommerceExportContext?.filters?.start_date &amp;&amp; !!_global.ecommerceExportContext?.filters?.end_date}}" class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.export.modal.period_current_range|start={{_global.ecommerceExportContext?.filters?.start_date}}|end={{_global.ecommerceExportContext?.filters?.end_date}}</p>
             <p data-if="{{_global.ecommerceExportCatalog?.list_period_usable === false &amp;&amp; _global.ecommerceExportPeriodDefaulted !== true}}" class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.export.modal.period_current_unavailable</p>
             <div data-if="{{_global.ecommerceExportForm?.period?.mode === 'custom'}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
-              <div class="ecommerce:w-full ecommerce:md:w-64">
+              <div class="ecommerce:w-full">
+                <responsive on="768-" class="ecommerce:w-64"/>
               <select name="exportDateType" aria-label="$t:sirsoft-ecommerce.admin.export.modal.date_type" class="ecommerce:w-full" value="{{_global.ecommerceExportForm?.period?.date_type ?? ''}}" options="{{(_global.ecommerceExportCatalog?.date_types ?? []).map(d => ({ value: d.key, label: d.label }))}}">
                 <on type="change">
                   <!-- 기간 기준이 바뀌면 그 칸 오류를 지우고 예상 건수를 다시 부른다 -->
@@ -301,7 +304,8 @@
             </div>
             <div data-if="{{(_global.ecommerceExportForm?.locale_mode ?? 'locale') === 'locale' &amp;&amp; (_global.ecommerceExportCatalog?.locales ?? []).length > 1}}" class="ecommerce-flex-center ecommerce:gap-3">
               <span class="ecommerce-text-label ecommerce:shrink-0 ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.export.modal.locale_select</span>
-              <div class="ecommerce:w-full ecommerce:md:w-64">
+              <div class="ecommerce:w-full">
+                <responsive on="768-" class="ecommerce:w-64"/>
               <select name="exportLocale" aria-label="$t:sirsoft-ecommerce.admin.export.modal.locale_select" class="ecommerce:w-full" value="{{_global.ecommerceExportForm?.locale ?? _global.ecommerceExportCatalog?.default_locale}}" options="{{(_global.ecommerceExportCatalog?.locales ?? []).map(l => ({ value: l.code, label: l.label }))}}">
                 <on type="change">
                   <!-- 한 언어로 낼 때 쓸 언어 — 건수와 무관하다 -->
@@ -368,7 +372,7 @@
           </div>
         </div>
       </div>
-      <div class="ecommerce-modal-footer-buttons">
+      <footer>
         <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRequesting}}">
           <on type="click">
             <close-modal/>
@@ -424,6 +428,6 @@
           <icon data-if="{{!_global.ecommerceExportIsRequesting}}" name="download" class="ecommerce:text-base"/>
           <span>{{_global.ecommerceExportIsRequesting ? '$t:sirsoft-ecommerce.admin.export.modal.submitting' : '$t:sirsoft-ecommerce.admin.export.modal.submit'}}</span>
         </button>
-      </div>
+      </footer>
     </modal>
 </partial>

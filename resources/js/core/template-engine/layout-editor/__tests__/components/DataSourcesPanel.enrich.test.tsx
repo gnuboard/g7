@@ -11,7 +11,6 @@
  *  ⑥ 종류 전환 시 무관 필드 보존(__source)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
@@ -33,6 +32,10 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('DataSourcesPanel — 보강', () => {
+  /**
+   * @scenario subject=data_sources_panel_enrich
+   * @effects ds_panel_form_renders_enriched_sections
+   */
   it('편집 폼에 contentType/refetchOnMount/onSuccess/onError/errorHandling/조건부 섹션 렌더', () => {
     const raw = { data_sources: [{ id: 'products', type: 'api', endpoint: '/api/products' }] };
     render(<DataSourcesPanel raw={raw} onChange={vi.fn()} t={t} onClose={vi.fn()} />);
@@ -45,6 +48,10 @@ describe('DataSourcesPanel — 보강', () => {
     expect(screen.getByTestId('g7le-ds-loadcondition')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=data_sources_panel_enrich
+   * @effects ds_panel_content_type_refetch_round_trip
+   */
   it('contentType/refetchOnMount 저장 라운드트립', () => {
     const onChange = vi.fn();
     const raw = { data_sources: [{ id: 'products', type: 'api', endpoint: '/api/products' }] };
@@ -57,6 +64,10 @@ describe('DataSourcesPanel — 보강', () => {
     expect(merged[0]).toMatchObject({ contentType: 'multipart/form-data', refetchOnMount: true });
   });
 
+  /**
+   * @scenario subject=data_sources_panel_enrich
+   * @effects ds_panel_error_handling_code_adds_row
+   */
   it('errorHandling 코드 추가 → 행 생성', () => {
     const raw = { data_sources: [{ id: 'products', type: 'api', endpoint: '/api/products' }] };
     render(<DataSourcesPanel raw={raw} onChange={vi.fn()} t={t} onClose={vi.fn()} />);
@@ -65,6 +76,10 @@ describe('DataSourcesPanel — 보강', () => {
     expect(screen.getByTestId('g7le-ds-eh-row-403')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=data_sources_panel_enrich
+   * @effects ds_panel_websocket_kind_shows_channel_sections
+   */
   it('websocket 종류 → 채널/이벤트/채널타입/타겟소스/onReceive 섹션 분기', () => {
     const raw = { data_sources: [{ id: 'live', type: 'websocket' }] };
     render(<DataSourcesPanel raw={raw} onChange={vi.fn()} t={t} onClose={vi.fn()} />);
@@ -78,6 +93,10 @@ describe('DataSourcesPanel — 보강', () => {
     expect(screen.queryByTestId('g7le-ds-contenttype')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=data_sources_panel_enrich
+   * @effects ds_panel_kind_switch_keeps_source_field
+   */
   it('종류 전환 시 무관 필드(__source) 보존', () => {
     const onChange = vi.fn();
     const raw = { data_sources: [{ id: 'products', type: 'api', endpoint: '/api/products', __source: { kind: 'route' } }] };

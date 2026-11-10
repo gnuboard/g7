@@ -5,7 +5,6 @@
  * 초기화 useEffect 가 `innerHTML = initialValue` 로 정화 없이 넣어, 초기값의 <script>·on* 이 편집 영역에서
  * 살아나는 XSS 싱크였다(현재 번들 레이아웃 사용처 0). HtmlContent 와 같은 DOMPurify 로 거른다.
  */
-import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import RichTextEditor from '../RichTextEditor';

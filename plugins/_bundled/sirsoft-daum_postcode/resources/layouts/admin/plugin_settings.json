@@ -63,8 +63,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "daumpostcode:p-6 daumpostcode:min-h-screen daumpostcode:bg-gray-50 daumpostcode:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "daumpostcode:p-8 daumpostcode:min-h-screen daumpostcode:bg-gray-50 daumpostcode:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "daumpostcode-admin-page-content-responsive"
+                    "className": "daumpostcode:p-4 daumpostcode:min-h-screen daumpostcode:bg-gray-50 daumpostcode:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -225,15 +237,26 @@
                                         "id": "field_display_mode",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "daumpostcode:grid daumpostcode:grid-cols-3 daumpostcode:gap-4 daumpostcode:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "daumpostcode-grid-3col-responsive"
+                                            "className": "daumpostcode:grid daumpostcode:grid-cols-1 daumpostcode:gap-4 daumpostcode:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "daumpostcode:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "daumpostcode:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -257,8 +280,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "daumpostcode:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "daumpostcode:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -299,15 +326,26 @@
                                         "id": "field_popup_width",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "daumpostcode:grid daumpostcode:grid-cols-3 daumpostcode:gap-4 daumpostcode:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "daumpostcode-grid-3col-responsive"
+                                            "className": "daumpostcode:grid daumpostcode:grid-cols-1 daumpostcode:gap-4 daumpostcode:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "daumpostcode:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "daumpostcode:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -331,8 +369,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "daumpostcode:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "daumpostcode:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -365,15 +407,26 @@
                                         "id": "field_popup_height",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "daumpostcode:grid daumpostcode:grid-cols-3 daumpostcode:gap-4 daumpostcode:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "daumpostcode-grid-3col-responsive"
+                                            "className": "daumpostcode:grid daumpostcode:grid-cols-1 daumpostcode:gap-4 daumpostcode:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "daumpostcode:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "daumpostcode:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -397,8 +450,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "daumpostcode:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "daumpostcode:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -430,15 +487,26 @@
                                         "id": "field_theme_color",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "daumpostcode:grid daumpostcode:grid-cols-3 daumpostcode:gap-4 daumpostcode:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "daumpostcode-grid-3col-responsive"
+                                            "className": "daumpostcode:grid daumpostcode:grid-cols-1 daumpostcode:gap-4 daumpostcode:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "daumpostcode:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "daumpostcode:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -462,8 +530,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "daumpostcode:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "daumpostcode:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {

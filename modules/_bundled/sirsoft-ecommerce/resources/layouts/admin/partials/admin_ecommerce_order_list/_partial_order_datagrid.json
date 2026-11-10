@@ -326,7 +326,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "ecommerce:p-0 ecommerce:md:p-0"
+                "className": "ecommerce:p-0"
             },
             "children": [
                 {
@@ -516,6 +516,9 @@
                                                 "if": "{{row.first_option?.thumbnail_url}}",
                                                 "props": {
                                                     "src": "{{row.first_option?.thumbnail_url}}",
+                                                    "thumbPreset": "sm",
+                                                    "loading": "lazy",
+                                                    "decoding": "async",
                                                     "alt": "{{row.first_option?.product_name}}",
                                                     "className": "ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700"
                                                 }

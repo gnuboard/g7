@@ -102,10 +102,11 @@ describe('ColorSchemeSignal', () => {
     // @scenario case=color_signal_c07
     // @effects html_color_scheme_marker_follows_template
     it('media-query — prefers-color-scheme 변경을 따라간다', () => {
-        let listener: (() => void) | null = null;
+        // 콜백 안에서 채워지는 값이라 변수 대신 보관 객체에 둔다(변수면 초기값 null 로 좁혀져 호출할 수 없다)
+        const captured: { listener: (() => void) | null } = { listener: null };
         const mql = {
             matches: false,
-            addEventListener: (_: string, cb: () => void) => { listener = cb; },
+            addEventListener: (_: string, cb: () => void) => { captured.listener = cb; },
             removeEventListener: vi.fn(),
         };
         vi.spyOn(window, 'matchMedia').mockImplementation(() => mql as unknown as MediaQueryList);
@@ -114,7 +115,7 @@ describe('ColorSchemeSignal', () => {
         expect(document.documentElement.getAttribute(COLOR_SCHEME_ATTRIBUTE)).toBe('light');
 
         mql.matches = true;
-        listener?.();
+        captured.listener?.();
         expect(document.documentElement.getAttribute(COLOR_SCHEME_ATTRIBUTE)).toBe('dark');
     });
 

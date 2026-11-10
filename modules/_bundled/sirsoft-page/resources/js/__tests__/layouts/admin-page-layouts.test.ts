@@ -1,3 +1,4 @@
+// e2e:allow 화면이 바뀌지 않는 클래스 표기 정리 — 폭 미디어를 품은 의미 클래스를 접두 유틸과 엔진 responsive 로 펼쳤고, 구조는 이 시험이, 폭별 결과는 레이아웃 동등성 대조가 확인한다
 /**
  * sirsoft-page 모듈 레이아웃 JSON 구조 검증 테스트
  */
@@ -711,9 +712,9 @@ describe('admin_page_form.json', () => {
     it('slug_published_grid 가 grid-2col-responsive 자산을 단독 사용함 (호출처 gap-* 토큰 제거)', () => {
         const grid = findById(adminPageForm, 'slug_published_grid');
         expect(grid).not.toBeNull();
-        expect(grid.props.className).toBe('page-grid-2col-responsive');
-        // 자산이 반응형을 포함하므로 호출처 responsive override 없어야 함
-        expect(grid.responsive).toBeUndefined();
+        // 좁은 폭 1열, 768px 이상 2열 — 폭 미디어를 품은 의미 클래스 대신 접두 유틸 + 엔진 responsive 로 쓴다(호출처 gap-* 덧붙임 없음)
+        expect(grid.props.className).toBe('page:grid page:grid-cols-1 page:gap-4');
+        expect(grid.responsive).toEqual({ '768-': { props: { className: 'page:grid page:grid-cols-2 page:gap-4' } } });
     });
 
     // @scenario case=form_field_layout
@@ -1290,7 +1291,10 @@ describe('admin_page_detail.json', () => {
         // 메타 4항목(작성자/발행일시/생성일/수정일)을 PC 2열·모바일 1열로.
         const infoGrid = findById(adminPageDetail, 'info_grid');
         expect(infoGrid).not.toBeNull();
-        expect(infoGrid.props.className).toContain('grid-2col-responsive');
+        // 폭 미디어를 품은 의미 클래스 대신 접두 유틸 + 엔진 responsive(768px 이상 2열)로 쓴다
+        expect(infoGrid.props.className.split(/\s+/)).toEqual(expect.arrayContaining(['page:grid', 'page:grid-cols-1']));
+        expect(String(infoGrid.responsive?.['768-']?.props?.className ?? '').split(/\s+/)).toContain('page:grid-cols-2');
+        expect(infoGrid.props.className).not.toContain('grid-2col-responsive');
         // 세로 나열 원인이던 panel-header-row 단독 사용 금지
         expect(infoGrid.props.className).not.toBe('panel-header-row');
     });

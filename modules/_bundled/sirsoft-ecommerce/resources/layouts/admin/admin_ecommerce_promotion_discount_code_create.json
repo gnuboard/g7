@@ -107,8 +107,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H1",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "ecommerce-page-title ecommerce:mb-1"
+                                                    "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title"
                                             },

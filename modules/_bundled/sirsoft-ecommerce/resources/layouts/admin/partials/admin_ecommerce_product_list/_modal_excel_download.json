@@ -9,7 +9,47 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-primary"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "download",
+                            "className": "ecommerce:text-base ecommerce:mr-2"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.download"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -132,54 +172,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "excel_download_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-outline"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-btn ecommerce-btn-primary"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "download",
-                                "className": "ecommerce:text-base ecommerce:mr-2"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.download"
                         }
                     ]
                 }

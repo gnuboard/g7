@@ -61,8 +61,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-page-title ecommerce:mb-1"
+                                            "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.main_banner.title"
                                     },
@@ -183,8 +190,15 @@
                         "id": "panel_layout",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "1024-": {
+                                "props": {
+                                    "className": "ecommerce:grid ecommerce:gap-6 ecommerce:grid-cols-3"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "ecommerce-grid-cols-1-lg-3"
+                            "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-6"
                         },
                         "children": [
                             {
@@ -192,7 +206,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "ecommerce-col-span-1-lg"
+                                    "className": "ecommerce:col-span-1"
                                 },
                                 "children": [
                                     {
@@ -204,8 +218,15 @@
                                 "id": "right_panel",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "1024-": {
+                                        "props": {
+                                            "className": "ecommerce:col-span-2"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-col-span-2-lg"
+                                    "className": "ecommerce:col-span-1"
                                 },
                                 "children": [
                                     {

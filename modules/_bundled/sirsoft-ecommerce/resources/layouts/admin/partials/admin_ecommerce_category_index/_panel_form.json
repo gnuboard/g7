@@ -794,8 +794,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {

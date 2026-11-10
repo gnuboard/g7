@@ -9,11 +9,9 @@
  *  - 바인딩(`{{...}}`)/비배열 → null (정적값만 가드)
  *  - 측정 전(cellBoxes 없음) → null
  *
- * @scenario unit=inplace_add
- * @effects tabnav_header_shows_add_remove_move_affordances, inplace_add_pushes_new_tab_to_node_props_tabs, inplace_add_front_inserts_at_index_zero, inplace_new_tab_id_is_max_plus_one_no_collision, inplace_patch_preserves_other_props_keys, canvas_overlay_dispatched_kind_agnostic_by_capability_canvasoverlay_kind
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
  */
 
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TabNavInplaceOverlay } from '../TabNavInplaceOverlay';
@@ -52,6 +50,8 @@ function renderOverlay(tabs: unknown, onPatchNode = vi.fn(), cellBoxes = boxesFo
 }
 
 describe('TabNavInplaceOverlay (registerCanvasOverlay 레퍼런스)', () => {
+  // @scenario unit=inplace_add
+  // @effects tabnav_header_shows_add_remove_move_affordances
   it('각 탭 측정 박스마다 삭제/추가 어포던스를 렌더한다', () => {
     renderOverlay([
       { id: 1, label: 'A' },
@@ -67,6 +67,8 @@ describe('TabNavInplaceOverlay (registerCanvasOverlay 레퍼런스)', () => {
     expect(screen.getByTestId('g7le-tabnav-add-2')).toBeInTheDocument();
   });
 
+  // @scenario unit=inplace_add
+  // @effects inplace_add_pushes_new_tab_to_node_props_tabs
   it('+추가(끝) → tabs 끝에 새 탭 push (노드 전체 교체)', () => {
     const onPatchNode = renderOverlay([{ id: 1, label: 'A' }]);
     fireEvent.click(screen.getByTestId('g7le-tabnav-add-1'));
@@ -76,6 +78,8 @@ describe('TabNavInplaceOverlay (registerCanvasOverlay 레퍼런스)', () => {
     expect(patched.props.tabs[1].label).toBe('editor.tabnav_inplace.new_tab');
   });
 
+  // @scenario unit=inplace_add
+  // @effects inplace_add_front_inserts_at_index_zero
   it('+추가(앞) → tabs 맨 앞에 삽입', () => {
     const onPatchNode = renderOverlay([{ id: 1, label: 'A' }]);
     fireEvent.click(screen.getByTestId('g7le-tabnav-add-0'));
@@ -113,6 +117,8 @@ describe('TabNavInplaceOverlay (registerCanvasOverlay 레퍼런스)', () => {
     expect(patched.props.tabs.map((x: any) => x.label)).toEqual(['B', 'A']);
   });
 
+  // @scenario unit=inplace_move
+  // @effects inplace_move_swaps_adjacent_with_boundary_guard
   it('경계 이동 어포던스는 미렌더(첫 탭 ◀ / 끝 탭 ▶ 없음)', () => {
     renderOverlay([
       { id: 1, label: 'A' },
@@ -124,6 +130,8 @@ describe('TabNavInplaceOverlay (registerCanvasOverlay 레퍼런스)', () => {
     expect(screen.getByTestId('g7le-tabnav-move-left-1')).toBeInTheDocument();
   });
 
+  // @scenario unit=inplace_add
+  // @effects inplace_new_tab_id_is_max_plus_one_no_collision
   it('새 탭 id 는 기존 최대 id+1 (충돌 회피)', () => {
     const onPatchNode = renderOverlay([
       { id: 3, label: 'A' },
@@ -152,6 +160,8 @@ describe('TabNavInplaceOverlay (registerCanvasOverlay 레퍼런스)', () => {
     expect(container.querySelector('[data-testid="g7le-tabnav-inplace"]')).toBeNull();
   });
 
+  // @scenario unit=static_value_guard
+  // @effects binding_or_non_array_or_unmeasured_tabs_renders_no_overlay
   it('측정 전(cellBoxes 없음) → null', () => {
     const { container } = render(
       <TabNavInplaceOverlay
@@ -166,6 +176,8 @@ describe('TabNavInplaceOverlay (registerCanvasOverlay 레퍼런스)', () => {
     expect(container.querySelector('[data-testid="g7le-tabnav-inplace"]')).toBeNull();
   });
 
+  // @scenario unit=inplace_add
+  // @effects inplace_patch_preserves_other_props_keys
   it('동일 패치 경로 SSoT — 다른 props 키는 보존', () => {
     const onPatchNode = vi.fn();
     render(

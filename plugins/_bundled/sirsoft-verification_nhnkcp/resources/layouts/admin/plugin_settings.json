@@ -63,8 +63,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "verificationnhnkcp:p-6 verificationnhnkcp:min-h-screen verificationnhnkcp:bg-gray-50 verificationnhnkcp:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "verificationnhnkcp:p-8 verificationnhnkcp:min-h-screen verificationnhnkcp:bg-gray-50 verificationnhnkcp:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "verification-nhnkcp-admin-page-content-responsive"
+                    "className": "verificationnhnkcp:p-4 verificationnhnkcp:min-h-screen verificationnhnkcp:bg-gray-50 verificationnhnkcp:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -360,15 +372,26 @@
                                         "id": "field_live_site_cd",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-3 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verification-nhnkcp-grid-3col-responsive"
+                                            "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -392,8 +415,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -443,15 +470,26 @@
                                         "id": "field_live_enc_key",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-3 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verification-nhnkcp-grid-3col-responsive"
+                                            "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -475,8 +513,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -509,15 +551,26 @@
                                         "id": "field_web_siteid",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "1024-": {
+                                                "props": {
+                                                    "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-3 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verification-nhnkcp-grid-3col-responsive"
+                                            "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-1"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-1"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -541,8 +594,12 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-2"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-2"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -612,15 +669,26 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-12 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:lg:grid-cols-12 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
+                                            "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-8"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-8"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -644,8 +712,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-4 verificationnhnkcp:space-y-3"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-4 verificationnhnkcp:space-y-3"
+                                                    "className": "verificationnhnkcp:space-y-3"
                                                 },
                                                 "children": [
                                                     {
@@ -787,15 +862,26 @@
                                         "id": "field_duplicate_block_enabled",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-12 verificationnhnkcp:gap-4 verificationnhnkcp:items-start verificationnhnkcp:pt-6 verificationnhnkcp:border-t verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:lg:grid-cols-12 verificationnhnkcp:gap-4 verificationnhnkcp:items-start verificationnhnkcp:pt-6 verificationnhnkcp:border-t verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700"
+                                            "className": "verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start verificationnhnkcp:pt-6 verificationnhnkcp:border-t verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": {
-                                                    "className": "verificationnhnkcp:lg:col-span-8"
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verificationnhnkcp:col-span-8"
+                                                        }
+                                                    }
                                                 },
                                                 "children": [
                                                     {
@@ -827,8 +913,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "props": {
+                                                            "className": "verification-nhnkcp-flex-center verificationnhnkcp:col-span-4 verificationnhnkcp:justify-end"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "verification-nhnkcp-flex-center verificationnhnkcp:lg:col-span-4 verificationnhnkcp:justify-end"
+                                                    "className": "verification-nhnkcp-flex-center verificationnhnkcp:justify-end"
                                                 },
                                                 "children": [
                                                     {

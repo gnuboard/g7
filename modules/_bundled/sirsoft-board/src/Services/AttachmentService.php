@@ -8,6 +8,7 @@ use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
@@ -18,8 +19,10 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Models\Attachment;
+use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -33,6 +36,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class AttachmentService
 {
     use ChecksBoardPermission;
+    use ResolvesRowStorage;
 
     /**
      * AttachmentService 생성자
@@ -438,6 +442,20 @@ class AttachmentService
     }
 
     /**
+     * 첨부가 속한 글을 게이트용으로 읽습니다.
+     *
+     * 서빙 한 번의 게이트 셋과 캐시 판정이 이 값 하나를 함께 쓴다 — 저마다 읽으면 갤러리 한 화면의 이미지 수만큼 쿼리가 곱으로 는다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  Attachment  $attachment  첨부파일 모델
+     * @return Post|null 글 (글에 이어지지 않은 임시 첨부이거나 글을 찾지 못하면 null)
+     */
+    private function gatePost(string $slug, Attachment $attachment): ?Post
+    {
+        return $attachment->post_id ? $this->repository->findPostForGate($slug, $attachment->post_id) : null;
+    }
+
+    /**
      * 삭제된 게시글의 첨부파일 접근 권한을 검증합니다.
      *
      * 첨부가 속한 게시글이 삭제 상태이면 관리 권한(manager/admin.manage)
@@ -445,18 +463,14 @@ class AttachmentService
      * 정상 게시글(또는 게시글 미연결 임시 첨부)은 통과시킵니다.
      *
      * @param  string  $slug  게시판 슬러그
-     * @param  Attachment  $attachment  첨부파일 모델
+     * @param  Post|null  $post  gatePost() 로 읽은 글
      * @return void 반환값 없음
      *
      * @throws AccessDeniedHttpException 삭제글 첨부에 권한 없이 접근한 경우
      */
-    private function assertDeletedPostAttachmentAccess(string $slug, Attachment $attachment): void
+    private function assertDeletedPostAttachmentAccess(string $slug, ?Post $post): void
     {
-        if (! $attachment->post_id) {
-            return;
-        }
-
-        if (! $this->repository->isPostDeleted($slug, $attachment->post_id)) {
+        if (! $post || ($post->deleted_at === null && $post->status !== PostStatus::Deleted)) {
             return;
         }
 
@@ -478,19 +492,17 @@ class AttachmentService
      * 않으므로, 비회원이 비밀번호로 검증한 경우는 이 경로에서 인정되지 않습니다
      * (안전 측 실패 — 해시/ID 만으로 비밀글 첨부를 가져가는 것을 차단).
      *
-     * @param  string  $slug  게시판 슬러그
      * @param  Attachment  $attachment  첨부파일 모델
+     * @param  Post|null  $post  gatePost() 로 읽은 글
      * @return void 반환값 없음
      *
      * @throws AccessDeniedHttpException 비밀글 첨부에 권한 없이 접근한 경우
      */
-    private function assertSecretPostAttachmentAccess(string $slug, Attachment $attachment): void
+    private function assertSecretPostAttachmentAccess(Attachment $attachment, ?Post $post): void
     {
         if (! $attachment->post_id) {
             return;
         }
-
-        $post = $this->repository->findPostForGate($slug, $attachment->post_id);
 
         // 부모 글을 못 읽으면 막는다(fail-closed). 첨부에 post_id 가 있는데 그 글을 못 찾는
         // 것은 정상 상태가 아니다 — 슬러그가 다른 게시판이거나 글이 사라진 경우이며, 통과시키면
@@ -518,19 +530,13 @@ class AttachmentService
      * 서명된 preview(게이트를 통과한 직렬화가 발급)는 getFileInfo 가 이 검사를 건너뛴다.
      *
      * @param  string  $slug  게시판 슬러그
-     * @param  Attachment  $attachment  첨부파일 모델
+     * @param  Post|null  $post  gatePost() 로 읽은 글
      * @return void 반환값 없음
      *
      * @throws AccessDeniedHttpException 블라인드 글 첨부에 권한 없이 접근한 경우
      */
-    private function assertBlindedPostAttachmentAccess(string $slug, Attachment $attachment): void
+    private function assertBlindedPostAttachmentAccess(string $slug, ?Post $post): void
     {
-        if (! $attachment->post_id) {
-            return;
-        }
-
-        $post = $this->repository->findPostForGate($slug, $attachment->post_id);
-
         if (! $post || $post->status !== PostStatus::Blinded) {
             return;
         }
@@ -787,29 +793,6 @@ class AttachmentService
     }
 
     /**
-     * 첨부 행에 기록된 disk 기준 스토리지를 반환합니다.
-     *
-     * 디스크를 전환한 뒤에도 전환 이전 행의 파일을 그 행의 실제 저장 위치에서 지우기 위한
-     * 해석입니다. 미등록 disk(그 디스크를 제공하던 확장이 비활성화된 경우)는 주입 스토리지로
-     * 폴백합니다 — withDisk 로 미등록 disk 인스턴스를 만들면 이후 호출이 예외가 됩니다.
-     *
-     * @param  string|null  $disk  행의 disk 컬럼 값
-     * @return StorageInterface 행 disk 의 스토리지
-     */
-    private function storageForRow(?string $disk): StorageInterface
-    {
-        if ($disk === null || $disk === '' || $disk === $this->storage->getDisk()) {
-            return $this->storage;
-        }
-
-        if (config("filesystems.disks.{$disk}") === null) {
-            return $this->storage;
-        }
-
-        return $this->storage->withDisk($disk);
-    }
-
-    /**
      * 순서 변경
      *
      * @param  string  $slug  게시판 슬러그
@@ -998,7 +981,7 @@ class AttachmentService
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
      * @param  string  $context  권한 컨텍스트 (admin | user)
-     * @return array{response: StreamedResponse, mime_type: string, filename: string, etag_source: string, last_modified: int|null}|null 서빙 정보 또는 null
+     * @return array{response: StreamedResponse, mime_type: string, filename: string, etag_source: string, last_modified: int|null, private: true}|null 서빙 정보 또는 null (`private` 는 항상 true)
      *
      * @throws AccessDeniedHttpException 스코프 밖 첨부이거나 삭제글·비밀글 게이트에 막힌 경우
      */
@@ -1019,15 +1002,17 @@ class AttachmentService
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
 
+        $post = $this->gatePost($slug, $attachment);
+
         // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
-        $this->assertDeletedPostAttachmentAccess($slug, $attachment);
+        $this->assertDeletedPostAttachmentAccess($slug, $post);
 
         // 비밀글 첨부파일은 열람 권한자만 접근
-        $this->assertSecretPostAttachmentAccess($slug, $attachment);
+        $this->assertSecretPostAttachmentAccess($attachment, $post);
 
         // 블라인드 글 첨부는 작성자·게시판 관리자만 (관리자 화면 내려받기는 관리자 권한 미들웨어가 이미 가른다)
         if ($context !== 'admin') {
-            $this->assertBlindedPostAttachmentAccess($slug, $attachment);
+            $this->assertBlindedPostAttachmentAccess($slug, $post);
         }
 
         // 다운로드 활동이력 기록 훅
@@ -1057,6 +1042,7 @@ class AttachmentService
         }
 
         // nosniff — 다운로드 응답도 브라우저가 내용을 추측해 렌더하지 않도록 (KVE-2026-2366)
+        // thumbnail-exempt: 내려받기 전용 통로(Content-Disposition: attachment)라 이미지도 원본 파일로 낸다. 썸네일은 미리보기 통로가 낸다
         InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
 
         return [
@@ -1064,6 +1050,11 @@ class AttachmentService
             'mime_type' => (string) $attachment->mime_type,
             'filename' => (string) $attachment->original_filename,
             ...$this->validatorMeta($attachment),
+            // 내려받기는 글 상태와 무관하게 공유 캐시에 남기지 않는다. 다운로드 권한은 요청자마다
+            // 갈리고(운영자가 비회원을 뺄 수 있다) 기록 훅도 이 메서드에서만 발화한다 — 공개 캐시로
+            // 나가면 앞단 CDN 이 저장한 사본을 권한 없는 방문자가 받고 기록도 건너뛴다.
+            // 미리보기(`getFileInfo()`)는 글 상태 판정(비밀글·삭제글·블라인드 글만 private)을 유지한다.
+            'private' => true,
         ];
     }
 
@@ -1154,6 +1145,7 @@ class AttachmentService
         $response = $this->streamFile($fileInfo);
 
         // 인라인은 래스터 이미지만 — is_image 가 이미 거르지만 서빙 응답에도 nosniff 를 건다 (KVE-2026-2366)
+        // thumbnail-exempt: 원본 스트림만 만드는 확장용 메서드다(호출부 없음). HTTP 미리보기 통로는 컨트롤러 preview() 가 getFileInfo() 뒤에서 썸네일 헬퍼를 부른다
         if ($response) {
             InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
         }
@@ -1172,10 +1164,13 @@ class AttachmentService
      * 검증된 서명은 그 게이트 통과 자격의 위임으로 보고 콘텐츠 상태 게이트를
      * 재적용하지 않는다 (<img> 는 인증 헤더를 실을 수 없는 렌더 경로).
      *
+     * 썸네일 헬퍼가 쓸 원본 정보(`thumbnail_source`)와 원본 응답의 공유 캐시 금지 여부(`private`)도
+     * 함께 싣는다. 둘 다 게이트를 지난 행에서만 만든다.
+     *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  첨부파일 ID
      * @param  bool  $signatureVerified  한시 서명 검증 통과 여부
-     * @return array{path: string, disk: string|null, mime_type: string, filename: string, etag_source: string, last_modified: int|null, size: int}|null 파일 정보 또는 null
+     * @return array{path: string, disk: string|null, mime_type: string, filename: string, etag_source: string, last_modified: int|null, size: int, thumbnail_source: ThumbnailSource|null, private: bool}|null 파일 정보 또는 null
      */
     public function getFileInfo(string $slug, int $id, bool $signatureVerified = false): ?array
     {
@@ -1185,15 +1180,19 @@ class AttachmentService
             return null;
         }
 
+        $post = null;
+
         if (! $signatureVerified) {
+            $post = $this->gatePost($slug, $attachment);
+
             // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
-            $this->assertDeletedPostAttachmentAccess($slug, $attachment);
+            $this->assertDeletedPostAttachmentAccess($slug, $post);
 
             // 비밀글 첨부파일은 열람 권한자만 접근
-            $this->assertSecretPostAttachmentAccess($slug, $attachment);
+            $this->assertSecretPostAttachmentAccess($attachment, $post);
 
             // 블라인드 글 첨부는 작성자·게시판 관리자만
-            $this->assertBlindedPostAttachmentAccess($slug, $attachment);
+            $this->assertBlindedPostAttachmentAccess($slug, $post);
         }
 
         // 파일 존재 확인 — **행의 disk** 를 따른다.
@@ -1237,7 +1236,68 @@ class AttachmentService
             // Content-Length 선지정용 — 넘기지 않으면 어댑터가 size() 로 원격 메타를
             // 한 번 더 조회한다. 업로드 시점의 저장 바이트 수가 그대로 기록된 값이다.
             'size' => (int) $attachment->size,
+            // 썸네일 헬퍼가 쓸 원본 정보 — 위 게이트를 지난 행에서만 만든다(래스터가 아니면 null)
+            'thumbnail_source' => $this->thumbnailSourceFor($attachment),
+            // 원본 응답을 공유 캐시(CDN·프록시)에 남기지 않을지. 서명 URL 은 비밀글·삭제글·블라인드 글에만
+            // 발급되고, 서명 없이 통과했어도 그 글이면 요청자마다 볼 수 있는지가 갈린다 — 공유 캐시에
+            // 남으면 다음 방문자가 게이트 없이 받는다. 정상글은 종전처럼 public 이다.
+            'private' => $signatureVerified || $this->isRestrictedPostAttachment($attachment, $post),
         ];
+    }
+
+    /**
+     * 첨부 행의 썸네일 원본 정보를 만듭니다 (서빙 통로·썸네일 원본 제공자 공용).
+     *
+     * 게시판 첨부는 비밀글·삭제글·블라인드 글 게이트가 걸린 원본이라 항상 `gated` 다 — 파생본은
+     * 비공개 썸네일 디스크에 두고 `private` 캐시로 낸다. 같은 원본의 파생본이 글 상태에 따라
+     * 두 디스크로 갈리지 않게 글 상태와 무관하게 고정한다. 디스크는 행이 정한다.
+     *
+     * @param  Attachment  $attachment  첨부 행
+     * @return ThumbnailSource|null 원본 정보 (래스터 이미지가 아니거나 드라이버가 썸네일을 지원하지 않으면 null)
+     */
+    public function thumbnailSourceFor(Attachment $attachment): ?ThumbnailSource
+    {
+        if (! $attachment->is_image) {
+            return null;
+        }
+
+        $meta = is_array($attachment->meta) ? $attachment->meta : [];
+
+        return ThumbnailSource::fromStorage(
+            $this->storageForRow($attachment->disk),
+            'attachments',
+            (string) $attachment->path,
+            $attachment->mime_type,
+            gated: true,
+            width: isset($meta['width']) ? (int) $meta['width'] : null,
+            height: isset($meta['height']) ? (int) $meta['height'] : null,
+        );
+    }
+
+    /**
+     * 첨부가 속한 글이 열람이 제한된 상태인지 (비밀글·삭제글·블라인드 글)
+     *
+     * 게이트 판정이 아니다 — 통과한 요청의 원본 응답을 공유 캐시에 남겨도 되는지만 본다.
+     * 글에 이어지지 않은 임시 첨부는 제한 대상이 아니다.
+     *
+     * @param  Attachment  $attachment  첨부 행
+     * @param  Post|null  $post  gatePost() 로 읽은 글
+     * @return bool 제한된 글의 첨부면 true
+     */
+    private function isRestrictedPostAttachment(Attachment $attachment, ?Post $post): bool
+    {
+        if (! $attachment->post_id) {
+            return false;
+        }
+
+        // 게이트가 글 없음을 막으므로 보통 닿지 않는다 — 안전 측으로 제한 취급
+        if (! $post) {
+            return true;
+        }
+
+        return (bool) $post->is_secret
+            || $post->deleted_at !== null
+            || in_array($post->status, [PostStatus::Blinded, PostStatus::Deleted], true);
     }
 
     /**

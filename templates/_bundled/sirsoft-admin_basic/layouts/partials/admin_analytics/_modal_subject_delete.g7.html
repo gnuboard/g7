@@ -18,7 +18,7 @@
         <span class="text-label">$t:admin.analytics.modals.subject_delete.confirm_label</span>
       </label>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsSubjectDeleting}}">
         <on type="click">
           <!-- 취소 — 체크를 걷고 닫는다. 지울 기준(`analyticsSubject`)은 여는 쪽이 매번 새로 채우므로 여기서 비우지 않는다. -->
@@ -58,6 +58,6 @@
         <icon data-if="{{_global.analyticsSubjectDeleting}}" name="spinner" :spin="true" class="text-sm"/>
         <span>$t:admin.analytics.modals.subject_delete.button</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

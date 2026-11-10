@@ -3,6 +3,17 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminSidebar, MenuItem } from '../AdminSidebar';
 
+/**
+ * 시험 동안 window.location 을 바꿔 끼운다.
+ * 원래 속성을 지운 뒤 같은 이름의 쓰기 가능한 속성으로 다시 정의한다(대입과 같은 결과를 타입 단언 없이 얻는다).
+ *
+ * @param value 새로 둘 location 값
+ */
+function replaceWindowLocation(value: Location): void {
+  Reflect.deleteProperty(window, 'location');
+  Object.defineProperty(window, 'location', { value, writable: true, configurable: true, enumerable: true });
+}
+
 // G7Core 모킹
 const mockDispatch = vi.fn();
 const mockLocale = {
@@ -226,9 +237,7 @@ describe('AdminSidebar', () => {
 
       // window.location.href 모킹
       const originalLocation = window.location;
-      // @ts-ignore
-      delete window.location;
-      window.location = { ...originalLocation, href: '' } as Location;
+      replaceWindowLocation({ ...originalLocation, href: '' } as Location);
 
       render(<AdminSidebar menu={mockMenu} />);
 
@@ -238,7 +247,7 @@ describe('AdminSidebar', () => {
       expect(window.location.href).toBe('/admin');
 
       // 원복
-      window.location = originalLocation;
+      replaceWindowLocation(originalLocation);
     });
 
     // @scenario surface=leaf
@@ -248,9 +257,7 @@ describe('AdminSidebar', () => {
 
       const user = userEvent.setup();
       const originalLocation = window.location;
-      // @ts-ignore
-      delete window.location;
-      window.location = { ...originalLocation, href: '' } as Location;
+      replaceWindowLocation({ ...originalLocation, href: '' } as Location);
 
       render(<AdminSidebar menu={mockMenu} />);
 
@@ -260,7 +267,7 @@ describe('AdminSidebar', () => {
 
       expect(window.location.href).toBe('');
 
-      window.location = originalLocation;
+      replaceWindowLocation(originalLocation);
     });
   });
 
@@ -287,13 +294,11 @@ describe('AdminSidebar', () => {
     });
 
     afterEach(() => {
-      window.location = originalLocation;
+      replaceWindowLocation(originalLocation);
     });
 
     const setPathname = (pathname: string) => {
-      // @ts-ignore
-      delete window.location;
-      window.location = { ...originalLocation, pathname } as Location;
+      replaceWindowLocation({ ...originalLocation, pathname } as Location);
     };
 
     // URL 메뉴는 `<a href>` 로 그린다(#757 링크 단계) — 활성 스타일도 링크에 붙는다

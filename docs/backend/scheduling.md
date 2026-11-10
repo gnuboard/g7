@@ -380,6 +380,7 @@ HookManager::addFilter('core.schedule.filter_allowed_job_classes', function (arr
 | `auth-process-password-expiry` | `auth:process-password-expiry --scheduled` | `15 5 * * *` | |
 | `identity-expire-challenges` | `identity:expire-challenges` | `0 * * * *` | |
 | `analytics-prune` | `analytics:prune` | `10 5 * * *` | |
+| `thumbnails-prune` | `thumbnails:prune --scheduled` | `20 5 * * *` | 설정 `upload.thumbnail_prune_enabled`(기본 켬)를 커맨드가 재확인 |
 | `dashboard-broadcast-resources` | `dashboard:broadcast-resources` | 30초 | 잠금 5분 · 모든 서버 · 실패만 기록 |
 | `analytics-archive-hour` | `analytics:archive --period=hour --scheduled` | `5 * * * *` | 잠금 55분 · 실패 알림 끔 |
 | `analytics-archive-day` | `analytics:archive --period=day --scheduled` | `15 0 * * *` | 잠금 120분 · 실패 알림 끔 |

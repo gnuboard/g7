@@ -81,15 +81,26 @@
                             "id": "field_email_conflict_policy",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -113,8 +124,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -181,15 +196,26 @@
                             "id": "field_extra_info_mode",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -213,8 +239,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -262,15 +292,26 @@
                             "id": "field_webhook_unlink_policy",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -294,8 +335,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -600,15 +645,26 @@
                             "id": "field_state_ttl_minutes",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -632,8 +688,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -666,15 +726,26 @@
                             "id": "field_pending_signup_ttl_minutes",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -698,8 +769,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -732,15 +807,26 @@
                             "id": "field_custom_provider_limit",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -764,8 +850,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -798,15 +888,26 @@
                             "id": "field_profile_raw_retention_days",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -830,8 +931,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -864,15 +969,26 @@
                             "id": "field_attempt_log_retention_days",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -896,8 +1012,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -930,15 +1050,26 @@
                             "id": "field_webhook_event_retention_days",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -962,8 +1093,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -996,15 +1131,26 @@
                             "id": "field_signup_surge_threshold_per_hour",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -1057,8 +1203,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -1091,15 +1241,26 @@
                             "id": "field_provider_failure_streak_threshold",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "1024-": {
+                                    "props": {
+                                        "className": "sl:grid sl:grid-cols-3 sl:gap-4 sl:items-start"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sl-grid-3col-responsive"
+                                "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-1"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-1"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {
@@ -1152,8 +1313,12 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": {
-                                        "className": "sl:lg:col-span-2"
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sl:col-span-2"
+                                            }
+                                        }
                                     },
                                     "children": [
                                         {

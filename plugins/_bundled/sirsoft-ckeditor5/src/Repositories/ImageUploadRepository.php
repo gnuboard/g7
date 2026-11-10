@@ -168,6 +168,27 @@ class ImageUploadRepository implements ImageUploadRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return $this->model->newQuery()->whereIn('mime_type', $mimeTypes)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->whereIn('mime_type', $mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get(['id', 'file_path', 'storage_disk', 'mime_type']);
+    }
+
+    /**
      * 목록 필터를 쿼리에 적용합니다.
      *
      * @param  Builder<Ckeditor5ImageUpload>  $query  대상 쿼리

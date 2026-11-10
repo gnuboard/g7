@@ -21,9 +21,7 @@
  * 이미 개인정보 기능을 쓰고 있는 사이트(둘 중 하나라도 켜져 있음)에서는 **건드리지 않고
  * 건너뛴다** — 남의 운영 설정을 시험 삼아 덮어쓰지 않는다.
  *
- * @scenario toggle=off, toggle=on, row_age=beyond_retention, run_mode=dry_run
- *
- * @effects settings_tab_opens_with_every_feature_off, period_field_appears_only_when_its_toggle_is_on, disabled_handler_is_reported_separately_from_zero_targets, core_settings_mirror_exposes_the_privacy_category, target_list_modal_pages_with_infinite_scroll, target_list_requires_domain_read_permission
+ * 조합과 효과 표식은 그 효과를 재는 각 시험 앞에 있다.
  */
 import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -294,7 +292,8 @@ test('화면에서 기간을 바꿔 저장하면 새로고침 없이 뱃지가 �
     await convertButton.click();
     await expect(page.locator('#privacy_targets_empty')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#privacy_targets_list tbody tr')).toHaveCount(0);
-    await page.locator('#privacy_targets_footer button').click();
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    await page.getByRole('dialog').locator('.modal-footer-bar button').click();
   } finally {
     seedDormant('--purge-users');
   }
@@ -367,7 +366,8 @@ test('「대상 보기」 명단 창은 꺼진 상태에서도 열리고 스크�
     await expect(rows).toHaveCount(Math.min(total, 40), { timeout: 20_000 });
 
     // 닫고 다시 열면 첫 쪽부터다(목록 상태를 되돌린다).
-    await page.locator('#privacy_targets_footer button').click();
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(modal).toHaveCount(0);
     await openButton.click();
     await expect(rows).toHaveCount(20, { timeout: 20_000 });

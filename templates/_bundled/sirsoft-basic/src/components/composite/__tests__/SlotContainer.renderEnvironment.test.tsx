@@ -9,7 +9,6 @@
  * > 호스트 `G7Core.getXxx()`.
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { SlotContainer } from '../SlotContainer';

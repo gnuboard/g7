@@ -10,7 +10,214 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.export.modal.title|type={{_global.ecommerceExportContext?.label ?? ''}}",
-        "size": "large"
+        "size": "large",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_global.ecommerceExportIsRequesting}}"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.export.modal.close"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "내보내기 요청 — 중복 방지 키는 창을 열 때 만든 것을 그대로 보낸다(연속 클릭·재시도가 같은 작업을 돌려받는다).\n                 검증 오류는 창 위에 모아 보이고, 접수되면 안내를 띄우고 창을 닫는다. 진행 깃발은 성공·실패 양쪽에서 푼다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "ecommerceExportIsRequesting": true,
+                                    "ecommerceExportErrors": null
+                                }
+                            },
+                            {
+                                "comment": "「전체」도 화면 조건을 보낸다 — 「현재 조회 기간」이 그 안의 기간 값을 쓰고, 서버가 기간 밖의 조건은 버린다",
+                                "handler": "apiCall",
+                                "target": "/api/modules/sirsoft-ecommerce/admin/exports",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "type": "{{_global.ecommerceExportContext?.type}}",
+                                        "format": "{{_global.ecommerceExportForm?.format}}",
+                                        "column_mode": "{{_global.ecommerceExportForm?.column_mode ?? 'current'}}",
+                                        "screen_columns": "{{_global.ecommerceExportForm?.screen_columns ?? []}}",
+                                        "fields": "{{_global.ecommerceExportForm?.fields ?? []}}",
+                                        "row_unit": "{{_global.ecommerceExportForm?.row_unit}}",
+                                        "scope": "{{_global.ecommerceExportForm?.scope ?? 'filter'}}",
+                                        "filters": "{{_global.ecommerceExportForm?.scope === 'selected' ? {} : (_global.ecommerceExportContext?.filters ?? {}) }}",
+                                        "selected_ids": "{{_global.ecommerceExportForm?.scope === 'selected' ? (_global.ecommerceExportContext?.selected_ids ?? []) : []}}",
+                                        "period": "{{_global.ecommerceExportForm?.scope === 'selected' ? null : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}",
+                                        "locale_mode": "{{_global.ecommerceExportForm?.locale_mode ?? 'locale'}}",
+                                        "locale": "{{_global.ecommerceExportForm?.locale}}",
+                                        "include_totals": "{{_global.ecommerceExportForm?.include_totals === true}}",
+                                        "reason": "{{_global.ecommerceExportForm?.reason ?? ''}}"
+                                    },
+                                    "headers": {
+                                        "Idempotency-Key": "{{_global.ecommerceExportIdempotencyKey}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "ecommerceExportIsRequesting": false
+                                        }
+                                    },
+                                    {
+                                        "comment": "목록의 진행 표시를 켠다 — 방금 접수한 작업 1건만 따라가며 5초마다 상세를 받고, 대기·진행중이 끝나면 멈춘다.\n                       상세를 못 받으면(조회 권한 없음 등) 표시를 끈다. 페이지를 옮기면 코어가 반복을 멈추고 목록의 init 이 표시를 비운다.\n                       작업 id 는 방금 넣은 전역 값이 아니라 접수 응답에서 읽는다 — 같은 흐름에서 전역 값은 아직 낡은 값으로 읽힌다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "ecommerceExportTracking": "{{ { id: response?.data?.id, status: response?.data?.status ?? 'pending', file_name: response?.data?.file_name ?? null, can_download: false } }}",
+                                            "ecommerceExportTrackingDownloading": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "startInterval",
+                                        "params": {
+                                            "id": "ecommerce_export_track_poll",
+                                            "intervalMs": 5000,
+                                            "actions": [
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/modules/sirsoft-ecommerce/admin/exports/{{response?.data?.id}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "GET"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportTracking.status": "{{response?.data?.status}}",
+                                                                "ecommerceExportTracking.file_name": "{{response?.data?.file_name ?? null}}",
+                                                                "ecommerceExportTracking.can_download": "{{response?.data?.abilities?.can_download === true}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "stopInterval",
+                                                            "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
+                                                            "params": {
+                                                                "id": "ecommerce_export_track_poll"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "끝나면 종 모양 알림을 다시 부른다 — 실시간 전송(웹소켓)이 꺼진 사이트는 새 알림이 와도 개수가 그대로다",
+                                                            "handler": "refetchDataSource",
+                                                            "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
+                                                            "params": {
+                                                                "dataSourceId": "notification_unread_count"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
+                                                            "params": {
+                                                                "dataSourceId": "notifications"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "stopInterval",
+                                                            "params": {
+                                                                "id": "ecommerce_export_track_poll"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportTracking": null
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-ecommerce.admin.export.modal.requested_notice"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "ecommerceExportIsRequesting": false,
+                                            "ecommerceExportErrors": "{{error.errors ?? { _general: [error.message] } }}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-500 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{!_global.ecommerceExportCatalog || _global.ecommerceExportIsRequesting || _global.ecommerceExportIsEstimating === true || _global.ecommerceExportEstimate === 0 || _global.ecommerceExportEstimateFailed === true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.ecommerceExportIsRequesting}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce-spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{!_global.ecommerceExportIsRequesting}}",
+                        "props": {
+                            "name": "download",
+                            "className": "ecommerce:text-base"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.ecommerceExportIsRequesting ? '$t:sirsoft-ecommerce.admin.export.modal.submitting' : '$t:sirsoft-ecommerce.admin.export.modal.submit'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -155,8 +362,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:w-64"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "ecommerce:w-full ecommerce:md:w-64"
+                                        "className": "ecommerce:w-full"
                                     },
                                     "children": [
                                         {
@@ -624,8 +838,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "ecommerce:w-64"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "ecommerce:w-full ecommerce:md:w-64"
+                                                "className": "ecommerce:w-full"
                                             },
                                             "children": [
                                                 {
@@ -1052,8 +1273,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "ecommerce:w-64"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "ecommerce:w-full ecommerce:md:w-64"
+                                                "className": "ecommerce:w-full"
                                             },
                                             "children": [
                                                 {
@@ -1385,8 +1613,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "768-": {
+                                                    "props": {
+                                                        "className": "ecommerce:w-64"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "ecommerce:w-full ecommerce:md:w-64"
+                                                "className": "ecommerce:w-full"
                                             },
                                             "children": [
                                                 {
@@ -1676,220 +1911,6 @@
                                     "text": "$t:sirsoft-ecommerce.admin.export.modal.estimate_recalc"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_global.ecommerceExportIsRequesting}}"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.export.modal.close"
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "내보내기 요청 — 중복 방지 키는 창을 열 때 만든 것을 그대로 보낸다(연속 클릭·재시도가 같은 작업을 돌려받는다).\n                 검증 오류는 창 위에 모아 보이고, 접수되면 안내를 띄우고 창을 닫는다. 진행 깃발은 성공·실패 양쪽에서 푼다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "ecommerceExportIsRequesting": true,
-                                        "ecommerceExportErrors": null
-                                    }
-                                },
-                                {
-                                    "comment": "「전체」도 화면 조건을 보낸다 — 「현재 조회 기간」이 그 안의 기간 값을 쓰고, 서버가 기간 밖의 조건은 버린다",
-                                    "handler": "apiCall",
-                                    "target": "/api/modules/sirsoft-ecommerce/admin/exports",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "type": "{{_global.ecommerceExportContext?.type}}",
-                                            "format": "{{_global.ecommerceExportForm?.format}}",
-                                            "column_mode": "{{_global.ecommerceExportForm?.column_mode ?? 'current'}}",
-                                            "screen_columns": "{{_global.ecommerceExportForm?.screen_columns ?? []}}",
-                                            "fields": "{{_global.ecommerceExportForm?.fields ?? []}}",
-                                            "row_unit": "{{_global.ecommerceExportForm?.row_unit}}",
-                                            "scope": "{{_global.ecommerceExportForm?.scope ?? 'filter'}}",
-                                            "filters": "{{_global.ecommerceExportForm?.scope === 'selected' ? {} : (_global.ecommerceExportContext?.filters ?? {}) }}",
-                                            "selected_ids": "{{_global.ecommerceExportForm?.scope === 'selected' ? (_global.ecommerceExportContext?.selected_ids ?? []) : []}}",
-                                            "period": "{{_global.ecommerceExportForm?.scope === 'selected' ? null : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}",
-                                            "locale_mode": "{{_global.ecommerceExportForm?.locale_mode ?? 'locale'}}",
-                                            "locale": "{{_global.ecommerceExportForm?.locale}}",
-                                            "include_totals": "{{_global.ecommerceExportForm?.include_totals === true}}",
-                                            "reason": "{{_global.ecommerceExportForm?.reason ?? ''}}"
-                                        },
-                                        "headers": {
-                                            "Idempotency-Key": "{{_global.ecommerceExportIdempotencyKey}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "ecommerceExportIsRequesting": false
-                                            }
-                                        },
-                                        {
-                                            "comment": "목록의 진행 표시를 켠다 — 방금 접수한 작업 1건만 따라가며 5초마다 상세를 받고, 대기·진행중이 끝나면 멈춘다.\n                       상세를 못 받으면(조회 권한 없음 등) 표시를 끈다. 페이지를 옮기면 코어가 반복을 멈추고 목록의 init 이 표시를 비운다.\n                       작업 id 는 방금 넣은 전역 값이 아니라 접수 응답에서 읽는다 — 같은 흐름에서 전역 값은 아직 낡은 값으로 읽힌다",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "ecommerceExportTracking": "{{ { id: response?.data?.id, status: response?.data?.status ?? 'pending', file_name: response?.data?.file_name ?? null, can_download: false } }}",
-                                                "ecommerceExportTrackingDownloading": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "startInterval",
-                                            "params": {
-                                                "id": "ecommerce_export_track_poll",
-                                                "intervalMs": 5000,
-                                                "actions": [
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "target": "/api/modules/sirsoft-ecommerce/admin/exports/{{response?.data?.id}}",
-                                                        "auth_required": true,
-                                                        "params": {
-                                                            "method": "GET"
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "ecommerceExportTracking.status": "{{response?.data?.status}}",
-                                                                    "ecommerceExportTracking.file_name": "{{response?.data?.file_name ?? null}}",
-                                                                    "ecommerceExportTracking.can_download": "{{response?.data?.abilities?.can_download === true}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "stopInterval",
-                                                                "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
-                                                                "params": {
-                                                                    "id": "ecommerce_export_track_poll"
-                                                                }
-                                                            },
-                                                            {
-                                                                "comment": "끝나면 종 모양 알림을 다시 부른다 — 실시간 전송(웹소켓)이 꺼진 사이트는 새 알림이 와도 개수가 그대로다",
-                                                                "handler": "refetchDataSource",
-                                                                "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
-                                                                "params": {
-                                                                    "dataSourceId": "notification_unread_count"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
-                                                                "params": {
-                                                                    "dataSourceId": "notifications"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "stopInterval",
-                                                                "params": {
-                                                                    "id": "ecommerce_export_track_poll"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "ecommerceExportTracking": null
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:sirsoft-ecommerce.admin.export.modal.requested_notice"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "ecommerceExportIsRequesting": false,
-                                                "ecommerceExportErrors": "{{error.errors ?? { _general: [error.message] } }}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-500 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{!_global.ecommerceExportCatalog || _global.ecommerceExportIsRequesting || _global.ecommerceExportIsEstimating === true || _global.ecommerceExportEstimate === 0 || _global.ecommerceExportEstimateFailed === true}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.ecommerceExportIsRequesting}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "ecommerce-spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{!_global.ecommerceExportIsRequesting}}",
-                            "props": {
-                                "name": "download",
-                                "className": "ecommerce:text-base"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.ecommerceExportIsRequesting ? '$t:sirsoft-ecommerce.admin.export.modal.submitting' : '$t:sirsoft-ecommerce.admin.export.modal.submit'}}"
                         }
                     ]
                 }

@@ -11,7 +11,7 @@
         <set-state target="local" presetName="{{$event.target.value}}"/>
       </on>
     </input>
-    <div data-ref="preset_save_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-4">
+    <footer>
       <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal/>
@@ -63,6 +63,6 @@
         </on>
         $t:sirsoft-ecommerce.admin.product.modal.preset_save.save
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

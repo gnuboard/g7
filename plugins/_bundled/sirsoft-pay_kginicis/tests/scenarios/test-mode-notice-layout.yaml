@@ -1,0 +1,20 @@
+feature: 이커머스 결제수단 설정 화면에 넣는 kginicis 테스트 모드 경고 — 레이아웃 보정 리스너
+
+description: |
+  리스너는 이커머스 환경설정 레이아웃(admin_ecommerce_settings)의 주문 설정 탭에 테스트 모드 경고(안내 문구와
+  플러그인 설정으로 가는 단추)를 한 번만 넣고, 코어의 결제수단 분기 표현식은 건드리지 않으며, 다른 레이아웃은 그대로 둔다.
+  경고의 폭 분기(좁은 화면 세로 쌓기와 전체 폭 단추, 640px 이상 가로 배치와 자동 폭 단추)는 엔진 responsive 로만 정한다 —
+  Tailwind 폭 접두는 편집기 미리보기 기기 폭을 따르지 못한다(#869).
+
+axes:
+  case: [subscription, pg_branch, test_mode_notice, other_layout, test_mode_notice_width]
+
+effects:
+  - subscribes_layout_after_apply_filter
+  - core_pg_branch_expressions_preserved
+  - test_mode_notice_injected_once
+  - other_layouts_unchanged
+  - test_mode_notice_width_branch_uses_engine_responsive
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/AdjustEcommercePaymentMethodsLayoutListenerTest.php

@@ -257,12 +257,12 @@ export interface UseInlineEditResult {
    *
    * @param path 대상 노드 path
    * @param editedKeyValue 칩 편집기에서 편집된 자리표시 키 값(`"발행일: {p0}"`)
-   * @return 생성된 키 또는 error
+   * @return 생성된 키(created), 이미 custom param 키라 현재 로케일 값만 버퍼에 쓴 경우(updated), 또는 error
    */
   keyifyChipValue: (
     path: ComponentPath,
     editedKeyValue: string,
-  ) => Promise<{ kind: 'created' | 'error'; translationKey?: string; message?: string }>;
+  ) => Promise<{ kind: 'created' | 'updated' | 'error'; translationKey?: string; message?: string }>;
 }
 
 /**

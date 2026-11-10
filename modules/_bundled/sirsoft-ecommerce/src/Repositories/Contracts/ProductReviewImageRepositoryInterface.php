@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 
 /**
@@ -40,4 +41,22 @@ interface ProductReviewImageRepositoryInterface
      * @return int 삭제된 건수
      */
     public function deleteByIds(array $ids): int;
+
+    /**
+     * 래스터 이미지 MIME 리뷰 이미지 행 수 (썸네일 미리 만들기 진행률)
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 행 수
+     */
+    public function countByMimeTypes(array $mimeTypes): int;
+
+    /**
+     * 래스터 이미지 MIME 리뷰 이미지 행을 id 순으로 나눠 조회합니다 (썸네일 미리 만들기 — 커서는 마지막 id).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 id 보다 큰 행부터
+     * @param  int  $limit  최대 행 수
+     * @return Collection<int, ProductReviewImage> 행 (id·disk·path·mime_type·width·height)
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
 }

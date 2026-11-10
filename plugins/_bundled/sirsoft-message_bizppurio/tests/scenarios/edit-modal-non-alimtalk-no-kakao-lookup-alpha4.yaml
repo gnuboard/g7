@@ -1,0 +1,23 @@
+# 알림 설정 [편집] 창 — 알림톡이 아닌 채널을 열면 카카오 조회(카테고리, 발신프로필)를 부르지 않는다
+# #869 이월 0 회차(α4): 8차 2부 관찰 7(알림 템플릿 화면 콘솔 422 두 건)의 회귀 시험을 소유한다.
+feature: edit_modal_non_alimtalk_no_kakao_lookup_alpha4
+
+description: |
+  코어 알림 템플릿 [편집] 창에 주입되는 비즈뿌리오 섹션은 루트 if 가 channel === 'alimtalk' 이다. 엔진은 노드 if 가 거짓이어도
+  그 노드의 lifecycle.onMount 를 돌리므로, 메일과 사이트 알림 템플릿 창을 열 때마다 마운트 시퀀스가 카테고리, 발신프로필을 다시 받았다.
+  비즈뿌리오 자격증명이 없는 서버는 두 요청을 422 로 돌려줘 콘솔에 두 줄이 남았다(화면 알림은 suppress). 마운트 시퀀스에 같은 조건을 건다.
+  축 channel 은 편집 창이 연 템플릿의 채널이다.
+
+axes:
+  channel: [mail, database, alimtalk]
+
+effects:
+  - non_alimtalk_edit_modal_skips_kakao_lookups   # 메일, 사이트 알림 창의 마운트는 데이터소스를 다시 받지 않는다
+  - alimtalk_edit_modal_still_loads_kakao_lookups # 알림톡 창은 종전대로 카테고리와 발신프로필을 받는다
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/editModalNonAlimtalkNoKakaoLookup.test.ts
+
+validation:
+  note: |
+    fail-first: 시퀀스 if 없이 mail, database 2 실패(다시 받기 bizppurioCategories, bizppurioProfiles) → 시퀀스 if 뒤 3 통과.

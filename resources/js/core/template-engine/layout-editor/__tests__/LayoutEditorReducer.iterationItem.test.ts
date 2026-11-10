@@ -27,11 +27,23 @@ function baseState(overrides: Partial<LayoutEditorState> = {}): LayoutEditorStat
     previewCustomWidth: 1024,
     history: { canUndo: false, canRedo: false },
     isPaletteOpen: false,
+    previewColorScheme: 'light',
+    availableStates: [],
+    activeStateId: null,
+    lastActiveStateId: null,
+    activeStateScopeKey: null,
+    lastActiveStateScopeKey: null,
+    layoutVersions: {},
+    extensionVersions: {},
     ...overrides,
   };
 }
 
 describe('layoutEditorReducer — iteration_item 모드', () => {
+  /**
+   * @scenario reducer_action=iteration_item
+   * @effects iteration_enter_sets_mode_virtual_path_return_route
+   */
   it('ENTER_ITERATION_ITEM_EDIT → editMode=iteration_item + 가상 path + returnRoute 보존', () => {
     const start = baseState();
     const next = layoutEditorReducer(start, {
@@ -46,6 +58,10 @@ describe('layoutEditorReducer — iteration_item 모드', () => {
     expect(next.returnRoute).toEqual({ path: '/', layoutName: 'home' });
   });
 
+  /**
+   * @scenario reducer_action=iteration_item
+   * @effects iteration_exit_returns_route_mode_and_clears_return
+   */
   it('EXIT_ITERATION_ITEM_EDIT → route 모드 복귀 + returnRoute 초기화', () => {
     const entered = layoutEditorReducer(baseState(), {
       type: 'ENTER_ITERATION_ITEM_EDIT',
@@ -57,6 +73,10 @@ describe('layoutEditorReducer — iteration_item 모드', () => {
     expect(exited.returnRoute).toBeNull();
   });
 
+  /**
+   * @scenario reducer_action=iteration_item
+   * @effects iteration_enter_safe_without_selected_route
+   */
   it('selectedRoute 가 null 이어도 진입 안전 (layoutName null 폴백)', () => {
     const next = layoutEditorReducer(baseState({ selectedRoute: null }), {
       type: 'ENTER_ITERATION_ITEM_EDIT',
@@ -70,6 +90,10 @@ describe('layoutEditorReducer — iteration_item 모드', () => {
   // 회귀: 확장 편집 모드 안에서 반복 항목 편집에 진입했다가 종료하면
   // route 가 아니라 확장 편집 모드로 복귀해야 한다(중첩 진입). 종전엔 EXIT 가 editMode='route'
   // 를 강제해 확장 컨텍스트를 잃고 "라우트 선택" 화면으로 떨어졌다.
+  /**
+   * @scenario reducer_action=iteration_item
+   * @effects iteration_exit_returns_to_nested_extension_mode
+   */
   it('확장 편집 모드 안에서 진입 → 종료 시 확장 편집 모드로 복귀 (중첩, returnEditMode)', () => {
     const inExtension = baseState({
       editMode: 'extension',
@@ -91,6 +115,10 @@ describe('layoutEditorReducer — iteration_item 모드', () => {
     expect(exited.returnRoute).toBeNull();
   });
 
+  /**
+   * @scenario reducer_action=iteration_item
+   * @effects iteration_exit_returns_to_route_mode_from_route
+   */
   it('route 모드에서 진입 시 returnEditMode=route → 종료 시 route 복귀(기존 동작 유지)', () => {
     const entered = layoutEditorReducer(baseState(), {
       type: 'ENTER_ITERATION_ITEM_EDIT',
@@ -103,6 +131,10 @@ describe('layoutEditorReducer — iteration_item 모드', () => {
 
   // URL 다이렉트 진입: selectedRoute 가 null 이어도 호출자가 host 로부터 도출한
   // returnRoute 를 명시 전달하면 종료 시 그 호스트 라우트로 복귀한다("라우트 선택" 화면 회귀 방지).
+  /**
+   * @scenario reducer_action=iteration_item
+   * @effects iteration_exit_uses_explicit_return_route
+   */
   it('selectedRoute=null 이라도 returnRoute 명시 전달 시 종료 후 그 라우트로 복귀', () => {
     const entered = layoutEditorReducer(baseState({ selectedRoute: null }), {
       type: 'ENTER_ITERATION_ITEM_EDIT',
@@ -118,11 +150,20 @@ describe('layoutEditorReducer — iteration_item 모드', () => {
   });
 
   // returnRoute 를 명시 전달하지 않으면(클릭 진입) 종전대로 selectedRoute 를 보존한다(회귀 없음).
+  /**
+   * @scenario reducer_action=iteration_item
+   * @effects iteration_click_entry_keeps_selected_route
+   */
   it('returnRoute 미전달(클릭 진입) 시 selectedRoute 보존', () => {
     const entered = layoutEditorReducer(baseState(), {
       type: 'ENTER_ITERATION_ITEM_EDIT',
       sourcePath: '1',
     });
     expect(entered.returnRoute).toEqual({ path: '/', layoutName: 'home' });
+    // 진입 중에도 호스트 레이아웃명은 클릭 직전 selectedRoute 의 것을 유지한다.
+    expect(entered.selectedRoute?.layoutName).toBe('home');
+    // 종료하면 클릭 직전 selectedRoute 그대로 복귀한다.
+    const exited = layoutEditorReducer(entered, { type: 'EXIT_ITERATION_ITEM_EDIT' });
+    expect(exited.selectedRoute).toEqual({ path: '/', layoutName: 'home' });
   });
 });

@@ -64,7 +64,7 @@
         <span data-if="{{_global.mileageEdit?.errors?.errors?.expires_at}}" class="ecommerce-form-error">{{_global.mileageEdit?.errors?.errors?.expires_at?.[0] ?? ''}}</span>
       </div>
     </div>
-    <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6">
+    <footer>
       <button type="button" disabled="{{_global.mileageEdit?.isSaving ?? false}}" class="ecommerce-btn ecommerce-btn-secondary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
         <on type="click">
           <close-modal/>
@@ -97,6 +97,6 @@
         <icon data-if="{{_global.mileageEdit?.isSaving}}" name="spinner" size="sm" class="ecommerce:animate-spin"/>
         <span>{{_global.mileageEdit?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submitting') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_edit.submit')}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

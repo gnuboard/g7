@@ -12,7 +12,7 @@
  * 조건은 문자열 동일성이 아니라 실평가로 판정한다 — 게이트 식을 잘못 고쳐도 리터럴 단언은
  * 기대값을 함께 고치면 통과한다.
  *
- * @effects core_modal_hides_editor_for_hidden_template_editor_channel, edit_modal_hosts_alimtalk_and_sms_sections
+ * 효과 요약(마커 아님, 평문): core_modal_hides_editor_for_hidden_template_editor_channel, edit_modal_hosts_alimtalk_and_sms_sections
  */
 
 import { describe, it, expect } from 'vitest';
@@ -84,8 +84,9 @@ describe('이커머스 알림 템플릿 편집 모달 — 확장 슬롯 2종', (
      * @effects edit_modal_hosts_alimtalk_and_sms_sections
      */
     it('푸터 슬롯은 [취소] 와 코어 [저장] 사이에 놓인다', () => {
-        const footer = findById(modal, `${PREFIX}template_modal_footer`)!;
-        const right = footer.children[1].children as Node[];
+        // 바닥 단추는 Modal 고정 하단(props.footer)에 [미리보기, 취소, 확장 슬롯, 저장] 순서로 놓인다(#869)
+        const footer = (modal as Node).props.footer as Node[];
+        const right = footer.slice(1);
         expect(right.map((n: Node) => n.type ?? n.name)).toEqual(['basic', 'extension_point', 'basic']);
         expect(right[1].name).toBe('notification_template_form_footer_actions');
         expect(JSON.stringify(right[0])).toContain('$t:common.cancel');
@@ -146,9 +147,10 @@ describe('이커머스 알림 템플릿 편집 모달 — `template_editor` 게�
      * @effects core_modal_hides_editor_for_hidden_template_editor_channel
      */
     it('푸터의 코어 [미리보기]·[저장]은 게이트로 숨고 [취소]는 항상 남는다', () => {
-        const footer = findById(modal, `${PREFIX}template_modal_footer`)!;
-        const preview = footer.children[0].children[0] as Node;
-        const right = footer.children[1].children as Node[];
+        // 바닥 단추는 Modal 고정 하단(props.footer)에 [미리보기, 취소, 확장 슬롯, 저장] 순서로 놓인다(#869)
+        const footer = (modal as Node).props.footer as Node[];
+        const preview = footer[0];
+        const right = footer.slice(1);
         const cancel = right[0];
         const save = right[2];
         for (const b of [preview, save]) {

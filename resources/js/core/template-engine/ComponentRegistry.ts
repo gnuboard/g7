@@ -187,6 +187,21 @@ export class ComponentRegistryError extends Error {
  *
  * 싱글톤 패턴으로 전역 컴포넌트 레지스트리 관리
  */
+/**
+ * 렌더러가 컴포넌트 레지스트리에서 쓰는 조회 면
+ *
+ * DynamicRenderer 와 렌더 환경은 이름으로 컴포넌트·메타데이터를 찾는 일만 한다. 시험 도구의 모의 레지스트리와
+ * 레이아웃 편집기의 격리 레지스트리도 이 면만 갖추면 렌더러에 넘길 수 있다(#869).
+ */
+export interface ComponentLookup {
+  /** 이름으로 컴포넌트를 찾는다 — 없으면 null */
+  getComponent(name: string): ComponentType<any> | null;
+  /** 이름으로 메타데이터를 찾는다 — 없으면 null */
+  getMetadata(name: string): ComponentMetadata | null;
+  /** 이름 → 컴포넌트 맵 (선택 — 셀·슬롯 렌더가 있으면 쓴다) */
+  getComponentMap?(): Record<string, ComponentType<any>>;
+}
+
 export class ComponentRegistry {
   private static instance: ComponentRegistry | null = null;
 

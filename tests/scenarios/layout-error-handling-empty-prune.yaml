@@ -1,0 +1,21 @@
+# 레이아웃 오류 처리 빈 동작 항목 정리 — 서버 저장 요청과 버전 복원 (#869, π1)
+# 편집기 저장 직렬화의 정리는 tests/scenarios/layout-editor-page-actions-pi1.yaml(errorHandlingSavePrune.test.ts)이 잰다.
+feature: layout_error_handling_empty_prune
+
+description: |
+  편집기 [덮기]로 시작한 빈 동작(`{}`)이 저장되면 런타임이 그 코드를 「처리됨」으로 보아 default, onError,
+  템플릿 기본 처리를 가린다. 서버는 저장 요청에서 클라이언트와 같은 정리를 최종 방어선으로 다시 적용하고,
+  버전 복원은 버전 행 원문에서 같은 정리를 거쳐 옛 버전의 빈 항목을 되살리지 않는다.
+
+axes:
+  path: [restore, save, unit]
+
+effects:
+  - restore_prunes_empty_error_handling_entries
+  - save_request_prunes_empty_error_handling_entries
+  - prune_treats_empty_map_marker_object_and_array_as_empty
+  - prune_drops_empty_maps_and_leaves_other_values
+
+test_files:
+  - tests/Feature/Api/Admin/LayoutErrorHandlingEmptyPruneTest.php
+  - tests/Unit/Support/LayoutErrorHandlingPruneTest.php

@@ -150,7 +150,8 @@
                     <set-state target="local" form.active_reaction_types="{{(_local.form?.active_reaction_types ?? []).includes(reactionType.code) ? (_local.form?.active_reaction_types ?? []).filter(c => c !== reactionType.code) : [...(_local.form?.active_reaction_types ?? []), reactionType.code]}}" :hasChanges="true"/>
                   </on>
                 </input>
-                <img data-if="{{!!reactionType.icon_url}}" src="{{reactionType.icon_url}}" alt="" class="board:w-5 board:h-5 board:object-contain"/>
+                <!-- thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다 -->
+                <img data-if="{{!!reactionType.icon_url}}" src="{{reactionType.icon_url}}" loading="lazy" decoding="async" alt="" class="board:w-5 board:h-5 board:object-contain"/>
                 <icon data-if="{{!reactionType.icon_url}}" name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <span>{{reactionType.name ?? reactionType.code}}</span>
               </label>

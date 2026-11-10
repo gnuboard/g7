@@ -285,6 +285,9 @@
                                                     "name": "Img",
                                                     "props": {
                                                         "src": "{{claimImage.download_url ?? ''}}",
+                                                        "thumbPreset": "sm",
+                                                        "loading": "lazy",
+                                                        "decoding": "async",
                                                         "alt": "{{claimImage.original_name ?? ''}}",
                                                         "className": "w-10 h-10 rounded object-cover bg-gray-100 dark:bg-gray-700"
                                                     }

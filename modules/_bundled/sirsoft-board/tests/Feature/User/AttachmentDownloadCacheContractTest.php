@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
+use Modules\Sirsoft\Board\Services\AttachmentService as BoardAttachmentService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
@@ -277,5 +278,149 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
         );
 
         $this->assertNotModifiedMirrors200($full, $notModified);
+    }
+
+    /**
+     * 관리자 다운로드는 글 상태와 무관하게 공유 캐시에 남기지 않는다 — 관리자 권한을 지난 응답이다.
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
+     * @effects download_is_always_private_in_production
+     *
+     * @return void 반환값 없음
+     */
+    public function test_admin_download_is_private_in_production(): void
+    {
+        $row = $this->uploadTextAttachment();
+        $admin = $this->createAdminUser(["sirsoft-board.{$this->board->slug}.admin.attachments.download"]);
+
+        $this->app['env'] = 'production';
+
+        $cacheControl = (string) $this->actingAs($admin)->get($this->adminDownloadUrl($row->hash))
+            ->assertStatus(200)->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringNotContainsString('public', $cacheControl);
+    }
+
+    /**
+     * 정상글 첨부의 사용자 다운로드도 운영 환경에서 공유 캐시에 남기지 않는다.
+     *
+     * 다운로드 권한에서 비회원을 빼도 공개 캐시로 나가면 앞단 CDN 이 저장한 사본을 비회원이
+     * 받고, 다운로드 기록 훅도 건너뛴다. 권한이 요청자마다 갈리는 통로라 글 상태와 무관하게 private 이다.
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
+     * @effects download_is_always_private_in_production
+     *
+     * @return void 반환값 없음
+     */
+    public function test_user_download_of_a_normal_post_is_private_in_production(): void
+    {
+        $row = $this->uploadTextAttachment();
+
+        $this->app['env'] = 'production';
+
+        $cacheControl = (string) $this->get($this->userDownloadUrl($row->hash))->assertStatus(200)->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringNotContainsString('public', $cacheControl);
+    }
+
+    /**
+     * 정상글 이미지 첨부의 미리보기 원본은 종전처럼 공유 캐시 대상이다 — 다운로드만 private 로 바뀐다.
+     *
+     * @scenario serving_type=preview, contract_axis=conditional_request
+     *
+     * @effects preview_cache_keeps_the_post_state_gate
+     *
+     * @return void 반환값 없음
+     */
+    public function test_preview_of_a_normal_post_image_stays_public_in_production(): void
+    {
+        $postId = $this->createTestPost(['title' => '미리보기 캐시 대조', 'status' => 'published']);
+
+        $this->postJson(
+            "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachments",
+            ['file' => UploadedFile::fake()->image('photo.jpg', 40, 40), 'post_id' => $postId]
+        )->assertStatus(201);
+
+        $row = DB::table('board_attachments')->orderByDesc('id')->first();
+        $this->assertNotNull($row);
+
+        $this->app['env'] = 'production';
+
+        $cacheControl = (string) $this->get($this->userDownloadUrl($row->hash).'/preview')
+            ->assertStatus(200)->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringNotContainsString('private', $cacheControl);
+    }
+
+    /**
+     * 비밀글 첨부의 사용자 다운로드는 공유 캐시에 남기지 않는다 — 다음 방문자가 게이트 없이 받지 않게.
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
+     * @effects download_is_always_private_in_production
+     *
+     * @return void 반환값 없음
+     */
+    public function test_user_download_of_a_secret_post_is_private(): void
+    {
+        $row = $this->uploadTextAttachment();
+        $owner = $this->createAdminUser(["sirsoft-board.{$this->board->slug}.attachments.download"]);
+        DB::table('board_posts')->where('id', $row->post_id)->update(['is_secret' => true, 'user_id' => $owner->id]);
+
+        $this->app['env'] = 'production';
+
+        $cacheControl = (string) $this->actingAs($owner)->get($this->userDownloadUrl($row->hash))
+            ->assertStatus(200)->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringNotContainsString('public', $cacheControl);
+    }
+
+    /**
+     * 사용자 다운로드 컨트롤러는 공유 캐시 여부를 서비스(`getDownloadInfo()` 의 `private`)에서 읽는다 — 판정을 컨트롤러 사본으로
+     * 따로 두지 않는다. 서비스가 공개로 내라고 하면 공개로 나간다(지금 서비스는 늘 private 이다).
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
+     * @effects download_cache_scope_read_from_service
+     *
+     * @return void 반환값 없음
+     */
+    public function test_user_download_reads_the_cache_scope_from_the_service(): void
+    {
+        $row = $this->uploadTextAttachment();
+
+        $real = app(BoardAttachmentService::class);
+        [$repository, $boards, $storage] = (fn () => [$this->repository, $this->boardRepository, $this->storage])->call($real);
+
+        $this->app->instance(BoardAttachmentService::class, new class($repository, $boards, $storage) extends BoardAttachmentService
+        {
+            /**
+             * 서비스가 공개로 내라고 판정한 경우를 흉내 냅니다.
+             *
+             * @param  string  $slug  게시판 슬러그
+             * @param  int  $id  첨부 ID
+             * @param  string  $context  호출 문맥 (admin|user)
+             * @return array<string, mixed>|null 서빙 정보 (private false)
+             */
+            public function getDownloadInfo(string $slug, int $id, string $context = 'admin'): ?array
+            {
+                $info = parent::getDownloadInfo($slug, $id, $context);
+
+                return $info === null ? null : ['private' => false] + $info;
+            }
+        });
+
+        $this->app['env'] = 'production';
+
+        $cacheControl = (string) $this->get($this->userDownloadUrl($row->hash))->assertStatus(200)->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringNotContainsString('private', $cacheControl);
     }
 }

@@ -5,7 +5,6 @@
  *       (3) 빈 값 → onChange(undefined).
  */
 
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CoreDataKeyControl, sanitizeDataKey } from '../../components/property-controls/CoreDataKeyControl';
@@ -20,12 +19,20 @@ function renderControl(value: unknown, onChange = vi.fn()) {
 }
 
 describe('sanitizeDataKey (점 경로 허용)', () => {
+  /**
+   * @scenario subject=core_data_key_control
+   * @effects data_key_sanitize_keeps_dot_underscore_hyphen
+   */
   it('점/언더스코어/하이픈은 통과(점 경로 — _global.formData)', () => {
     expect(sanitizeDataKey('_global.formData')).toBe('_global.formData');
     expect(sanitizeDataKey('form')).toBe('form');
     expect(sanitizeDataKey('user-data_1')).toBe('user-data_1');
   });
 
+  /**
+   * @scenario subject=core_data_key_control
+   * @effects data_key_sanitize_strips_disallowed_chars
+   */
   it('공백/한글/중괄호 등 식별자 비허용 문자 제거', () => {
     expect(sanitizeDataKey('폼 데이터')).toBe('');
     expect(sanitizeDataKey('form {data}')).toBe('formdata');
@@ -34,6 +41,10 @@ describe('sanitizeDataKey (점 경로 허용)', () => {
 });
 
 describe('CoreDataKeyControl 위젯', () => {
+  /**
+   * @scenario subject=core_data_key_control
+   * @effects data_key_control_emits_sanitized_value
+   */
   it('정적 값 입력 시 안전 문자만 onChange 로 전달', () => {
     const onChange = renderControl('');
     const input = screen.getByTestId('g7le-widget-core-datakey') as HTMLInputElement;
@@ -41,6 +52,10 @@ describe('CoreDataKeyControl 위젯', () => {
     expect(onChange).toHaveBeenCalledWith('form.x');
   });
 
+  /**
+   * @scenario subject=core_data_key_control
+   * @effects data_key_control_empty_emits_undefined
+   */
   it('빈 입력은 onChange(undefined) — 노드 키 삭제', () => {
     const onChange = renderControl('form');
     const input = screen.getByTestId('g7le-widget-core-datakey') as HTMLInputElement;
@@ -48,6 +63,10 @@ describe('CoreDataKeyControl 위젯', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  /**
+   * @scenario subject=core_data_key_control
+   * @effects data_key_control_shows_static_value_and_hint
+   */
   it('정적 기존 값을 그대로 표시(읽기/편집 가능) + 힌트', () => {
     renderControl('form');
     const input = screen.getByTestId('g7le-widget-core-datakey') as HTMLInputElement;
@@ -55,6 +74,10 @@ describe('CoreDataKeyControl 위젯', () => {
     expect(input.disabled).toBe(false);
   });
 
+  /**
+   * @scenario subject=core_data_key_control
+   * @effects data_key_control_binding_value_degrades
+   */
   it('바인딩(`{{...}}`) 값이면 디그레이드(읽기전용 + 안내)', () => {
     const onChange = renderControl('{{_global.formData}}');
     expect(screen.getByTestId('g7le-core-datakey-bound')).toBeTruthy();

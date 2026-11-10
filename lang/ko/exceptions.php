@@ -206,6 +206,7 @@ return [
         'unregistered_handler' => '등록되지 않은 핸들러입니다: :handler — 코어·템플릿·확장 어디에도 없습니다.',
         'nesting_violation' => ':parent 는 자식으로 :child 를 받도록 선언되지 않았습니다.',
         'responsive_breakpoint_mix' => 'portable 프리셋과 mobile/tablet 프리셋을 함께 썼습니다 — 범위가 겹쳐 예측이 어렵습니다.',
+        'responsive_open_range_overlap' => ':name 의 responsive 구간 :keys 가 같은 폭에서 함께 맞습니다 — 엔진은 그중 하나만 골라(커스텀 구간이 프리셋보다, 좁은 구간이 넓은 구간보다 먼저이며, 위가 열린 구간끼리는 먼저 적은 것) 그 키의 값만 기본값 위에 덮어 쓰므로, 다른 키의 값은 그 폭에서 쓰이지 않습니다. 겹치지 않는 닫힌 구간으로 나누고 위가 열린 구간은 맨 위 하나만 두세요(예: 768-1023, 1024-).',
         'standalone_missing_global_host' => '독립 레이아웃이 :handler 를 발화하지만 그 전역 상태(:state)를 받는 자리가 없습니다 — 화면에 나타나지 않습니다. extends 로 베이스 레이아웃을 상속하거나 그 상태를 받는 컴포넌트를 두세요.',
         'switch_value_not_consumed' => '<switch value="…"> 는 엔진이 읽지 않습니다 — 분기 대상은 <switch on="…"> 으로 적어야 params.value 로 전달됩니다.',
         'set_state_underscore_global_target' => 'setState 의 target="_global" 은 전역이 아니라 지역 상태에 씁니다 — 전역 상태는 target="global" 로 적으세요.',

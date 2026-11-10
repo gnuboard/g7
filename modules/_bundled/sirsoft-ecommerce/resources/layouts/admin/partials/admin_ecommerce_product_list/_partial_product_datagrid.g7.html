@@ -9,13 +9,20 @@
   넓은 화면용 표다. 둘은 보이는 형태만 다르고 부르는 핸들러·필드가 같으므로, 한쪽을 고치면
   다른 쪽도 함께 고쳐야 한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다). -->
 <partial>
-  <div data-ref="table_card" class="ecommerce:p-0 ecommerce:md:p-0">
+  <div data-ref="table_card" class="ecommerce:p-0">
     <data-grid data-type="composite" pageHref="/admin/ecommerce/products?page={page}" :pageHrefMergeQuery="true" data-ref="product_datagrid" rowLabelField="name_localized" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" emptyMessage="{{products === undefined ? '' : $t('sirsoft-ecommerce.admin.product.table.no_data')}}" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
       <blur-until-loaded sources="products"/>
       <column field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image" width="140px" :sortable="false" :required="true">
         <cell>
-          <div class="ecommerce:w-full ecommerce:aspect-square ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:flex-shrink-0 {{row.thumbnail_url ? '' : 'ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:flex ecommerce:items-center ecommerce:justify-center'}}">
-            <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.name_localized ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:aspect-square ecommerce:object-cover ecommerce:rounded"/>
+          <div class="ecommerce:w-full ecommerce:aspect-square ecommerce:flex-shrink-0 {{row.thumbnail_url ? '' : 'ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:flex ecommerce:items-center ecommerce:justify-center'}}">
+            <responsive on="768-" class="ecommerce:aspect-square ecommerce:w-20 ecommerce:h-20 ecommerce:flex-shrink-0 {{row.thumbnail_url ? '' : 'ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:flex ecommerce:items-center ecommerce:justify-center'}}"/>
+            <!-- 상품 대표 이미지 — 넓은 화면은 80px 칸이라 sm(160 정사각)을 받는다. 767px 이하는 DataGrid 가 카드로 바꾸고 칸이 w-full
+                 aspect-square 로 카드 폭(휴대폰 300px 대)을 채워 sm 이 흐려지므로 가로 640 맞춤 md 를 받고 정사각 자르기는 object-cover 가 한다.
+                 이미지 분기는 바깥 칸의 크기 분기(768px 부터 80px)와 같은 경계 0-767 을 쓴다 — 칸이 80px 인 768px 이상은 sm 을 받는다.
+                 프리셋 mobile 대신 숫자 키인 것은 이 문서의 다른 노드가 portable 을 쓰고 한 문서에 portable 과 mobile 을 섞지 않는 규칙 때문이다. -->
+            <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{row.name_localized ?? ''}}" class="ecommerce:w-full ecommerce:h-full ecommerce:aspect-square ecommerce:object-cover ecommerce:rounded">
+              <responsive on="0-767" thumbPreset="md"/>
+            </img>
             <icon data-if="{{!row.thumbnail_url}}" name="image" class="ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
           </div>
         </cell>

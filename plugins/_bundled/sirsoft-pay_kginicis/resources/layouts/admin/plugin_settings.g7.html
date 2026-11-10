@@ -24,7 +24,9 @@
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paykginicis:p-4 paykginicis:sm:p-6 paykginicis:lg:p-8 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paykginicis:p-4 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900">
+      <responsive on="640-1023" class="paykginicis:p-6 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900"/>
+      <responsive on="1024-" class="paykginicis:p-8 paykginicis:min-h-screen paykginicis:bg-gray-50 paykginicis:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_kginicis.settings.title" description="$t:sirsoft-pay_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="pay-kginicis-alert-warning paykginicis:mt-6">
         <icon name="lock" class="paykginicis:text-xl paykginicis:leading-none paykginicis:text-amber-600 paykginicis:dark:text-amber-400 paykginicis:flex-shrink-0"/>
@@ -67,12 +69,15 @@
           <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.section_live_keys_hint</p>
         </div>
         <div class="paykginicis:p-6 paykginicis:space-y-6">
-          <div data-ref="field_live_mid" class="pay-kginicis-grid-3col-responsive">
-            <div class="paykginicis:lg:col-span-1">
+          <div data-ref="field_live_mid" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+            <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-1"/>
               <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.live_mid</label>
               <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.live_mid_hint</p>
             </div>
-            <div class="paykginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:flex paykginicis:rounded-lg paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:overflow-hidden paykginicis:focus-within:ring-2 paykginicis:focus-within:ring-blue-500 pay-kginicis-focus-group">
                 <span class="paykginicis:inline-flex paykginicis:items-center paykginicis:px-3 paykginicis:bg-gray-100 paykginicis:dark:bg-gray-600 paykginicis:border-r paykginicis:border-gray-300 paykginicis:dark:border-gray-600 pay-kginicis-text-body paykginicis:font-mono paykginicis:font-bold paykginicis:select-none">SIR</span>
                 <input type="text" name="live_mid" placeholder="shoptest" class="paykginicis:flex-1 paykginicis:px-3 paykginicis:py-2 paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:font-mono paykginicis:text-sm paykginicis:outline-none paykginicis:border-0" disabled="{{_computed.isPluginReadOnly}}"/>
@@ -80,12 +85,15 @@
               <p class="paykginicis:mt-1.5 pay-kginicis-text-tertiary">$t:sirsoft-pay_kginicis.settings.live_mid_example</p>
             </div>
           </div>
-          <div data-ref="field_live_sign_key" class="pay-kginicis-grid-3col-responsive">
-            <div class="paykginicis:lg:col-span-1">
+          <div data-ref="field_live_sign_key" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+            <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-1"/>
               <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.live_sign_key</label>
               <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.live_sign_key_hint</p>
             </div>
-            <div class="paykginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:relative">
                 <input type="{{_local._show_live_sign_key ? 'text' : 'password'}}" name="live_sign_key" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:pl-3 paykginicis:pr-10 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_sign_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_sign_key}}">
@@ -99,12 +107,15 @@
               </div>
             </div>
           </div>
-          <div data-ref="field_live_iniapi_key" class="pay-kginicis-grid-3col-responsive">
-            <div class="paykginicis:lg:col-span-1">
+          <div data-ref="field_live_iniapi_key" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+            <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-1"/>
               <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.live_iniapi_key</label>
               <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.live_iniapi_key_hint</p>
             </div>
-            <div class="paykginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:relative">
                 <input type="{{_local._show_live_iniapi_key ? 'text' : 'password'}}" name="live_iniapi_key" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:pl-3 paykginicis:pr-10 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_key}}">
@@ -118,12 +129,15 @@
               </div>
             </div>
           </div>
-          <div data-ref="field_live_iniapi_iv" class="pay-kginicis-grid-3col-responsive">
-            <div class="paykginicis:lg:col-span-1">
+          <div data-ref="field_live_iniapi_iv" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+            <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-1"/>
               <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.live_iniapi_iv</label>
               <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.live_iniapi_iv_hint</p>
             </div>
-            <div class="paykginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:relative">
                 <input type="{{_local._show_live_iniapi_iv ? 'text' : 'password'}}" name="live_iniapi_iv" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:pl-3 paykginicis:pr-10 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_iniapi_iv ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_iniapi_iv}}">
@@ -137,12 +151,15 @@
               </div>
             </div>
           </div>
-          <div data-ref="field_live_mobile_hash_key" class="pay-kginicis-grid-3col-responsive">
-            <div class="paykginicis:lg:col-span-1">
+          <div data-ref="field_live_mobile_hash_key" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+            <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-1"/>
               <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.live_mobile_hash_key</label>
               <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.live_mobile_hash_key_hint</p>
             </div>
-            <div class="paykginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-2"/>
               <div class="paykginicis:relative">
                 <input type="{{_local._show_live_mobile_hash_key ? 'text' : 'password'}}" name="live_mobile_hash_key" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:pl-3 paykginicis:pr-10 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
                 <button type="button" class="paykginicis:absolute paykginicis:right-2 paykginicis:top-1/2 paykginicis:-translate-y-1/2 paykginicis:p-1 paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hover:text-gray-600 paykginicis:dark:hover:text-gray-200" aria-label="{{_local._show_live_mobile_hash_key ? '$t:common.hide_value' : '$t:common.show_value'}}" aria-pressed="{{!!_local._show_live_mobile_hash_key}}">
@@ -311,19 +328,20 @@
                 <!-- IP 정보 카드 -->
                 <div class="paykginicis:p-3 paykginicis:rounded-md paykginicis:bg-white paykginicis:dark:bg-gray-800 paykginicis:border paykginicis:border-amber-200 paykginicis:dark:border-amber-700 paykginicis:text-xs paykginicis:space-y-2">
                   <div class="paykginicis:flex paykginicis:items-baseline paykginicis:gap-2">
-                    <span class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_egress_ip_label</span>
+                    <span class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300"><responsive on="640-" class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-col"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_egress_ip_label</span>
                     <span class="paykginicis:font-mono pay-kginicis-tone-warning paykginicis:font-bold paykginicis:select-all">{{_local.cbtConnCheckResult?.egress_ip ?? '$t:sirsoft-pay_kginicis.settings.cbt_connectivity_unknown'}}</span>
                   </div>
-                  <p class="paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-indent-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_egress</p>
+                  <p class="paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400"><responsive on="640-" class="paykginicis:text-[11px] paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-label-indent"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_hint_egress</p>
                   <div class="paykginicis:flex paykginicis:items-baseline paykginicis:gap-2">
-                    <span class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-wide">$t:sirsoft-pay_kginicis.settings.cbt_connectivity_server_ip_label</span>
+                    <span class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300"><responsive on="640-" class="paykginicis:font-semibold paykginicis:text-gray-700 paykginicis:dark:text-gray-300 pay-kginicis-label-col"/>$t:sirsoft-pay_kginicis.settings.cbt_connectivity_server_ip_label</span>
                     <span class="pay-kginicis-text-secondary paykginicis:font-mono paykginicis:select-all">{{_local.cbtConnCheckResult?.server_ip ?? '-'}}</span>
                   </div>
                 </div>
                 <!-- APP_URL / callback URL 사전 점검 -->
                 <div class="paykginicis:p-3 paykginicis:rounded-md paykginicis:bg-white paykginicis:dark:bg-gray-800 paykginicis:border paykginicis:border-amber-200 paykginicis:dark:border-amber-700 paykginicis:text-xs paykginicis:space-y-2">
                   <div class="paykginicis:font-semibold paykginicis:text-gray-800 paykginicis:dark:text-gray-200">$t:sirsoft-pay_kginicis.settings.cbt_callback_title</div>
-                  <div class="pay-kginicis-callback-grid paykginicis:gap-x-3 paykginicis:gap-y-1.5">
+                  <div class="pay-kginicis-callback-table paykginicis:gap-x-3 paykginicis:gap-y-1.5">
+                    <responsive on="640-" class="pay-kginicis-callback-table pay-kginicis-callback-table--wide paykginicis:gap-x-3 paykginicis:gap-y-1.5"/>
                     <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_app_url_label</span>
                     <span class="paykginicis:font-mono paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:break-all pay-kginicis-break-all paykginicis:select-all">{{_local.cbtConnCheckResult?.callback?.app_url ?? '-'}}</span>
                     <span class="paykginicis:text-gray-500 paykginicis:dark:text-gray-400">$t:sirsoft-pay_kginicis.settings.cbt_callback_url_label</span>
@@ -362,21 +380,27 @@
               </div>
               <div data-if="{{_local.cbtConnCheckError}}" class="paykginicis:mt-3 paykginicis:p-3 paykginicis:rounded-md paykginicis:bg-red-100 paykginicis:dark:bg-red-900/30 paykginicis:border paykginicis:border-red-200 paykginicis:dark:border-red-700 paykginicis:text-xs pay-kginicis-tone-danger-strong">{{_local.cbtConnCheckError}}</div>
             </div>
-            <div data-ref="field_live_japan_mid" class="pay-kginicis-grid-3col-responsive">
-              <div class="paykginicis:lg:col-span-1">
+            <div data-ref="field_live_japan_mid" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+              <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+              <div>
+                <responsive on="desktop" class="paykginicis:col-span-1"/>
                 <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.live_japan_mid</label>
                 <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.live_japan_mid_hint</p>
               </div>
-              <div class="paykginicis:lg:col-span-2">
+              <div>
+                <responsive on="desktop" class="paykginicis:col-span-2"/>
                 <input type="text" name="live_japan_mid" placeholder="" class="paykginicis:w-full paykginicis:px-3 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
             </div>
-            <div data-ref="field_live_japan_cbt_key" class="pay-kginicis-grid-3col-responsive">
-              <div class="paykginicis:lg:col-span-1">
+            <div data-ref="field_live_japan_cbt_key" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+              <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+              <div>
+                <responsive on="desktop" class="paykginicis:col-span-1"/>
                 <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.live_japan_cbt_key</label>
                 <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.live_japan_cbt_key_hint</p>
               </div>
-              <div class="paykginicis:lg:col-span-2">
+              <div>
+                <responsive on="desktop" class="paykginicis:col-span-2"/>
                 <input type="password" name="live_japan_sign_key" placeholder="••••••••••••••••" class="paykginicis:w-full paykginicis:px-3 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:font-mono paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
             </div>
@@ -385,7 +409,8 @@
                 <h4 class="paykginicis:text-sm paykginicis:font-semibold paykginicis:text-gray-900 paykginicis:dark:text-gray-100">$t:sirsoft-pay_kginicis.settings.jppg_merchant_info_title</h4>
                 <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.jppg_merchant_info_hint</p>
               </div>
-              <div class="pay-kginicis-grid-2col-responsive">
+              <div class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4">
+                <responsive on="768-" class="paykginicis:grid paykginicis:grid-cols-2 paykginicis:gap-4"/>
                 <div>
                   <label class="paykginicis:block paykginicis:text-xs paykginicis:font-medium paykginicis:text-gray-700 paykginicis:dark:text-gray-300 paykginicis:mb-1">$t:sirsoft-pay_kginicis.settings.japan_merchant_name</label>
                   <input type="text" name="japan_merchant_name" placeholder="サンプルストア" class="paykginicis:w-full paykginicis:px-3 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
@@ -443,21 +468,27 @@
           <h3 class="pay-kginicis-section-heading-md">$t:sirsoft-pay_kginicis.settings.section_redirect</h3>
         </div>
         <div class="paykginicis:p-6 paykginicis:space-y-6">
-          <div data-ref="field_redirect_success_url" class="pay-kginicis-grid-3col-responsive">
-            <div class="paykginicis:lg:col-span-1">
+          <div data-ref="field_redirect_success_url" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+            <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-1"/>
               <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.redirect_success_url</label>
               <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.redirect_success_url_hint</p>
             </div>
-            <div class="paykginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-2"/>
               <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="paykginicis:w-full paykginicis:px-3 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_redirect_fail_url" class="pay-kginicis-grid-3col-responsive">
-            <div class="paykginicis:lg:col-span-1">
+          <div data-ref="field_redirect_fail_url" class="paykginicis:grid paykginicis:grid-cols-1 paykginicis:gap-4 paykginicis:items-start">
+            <responsive on="1024-" class="paykginicis:grid paykginicis:grid-cols-3 paykginicis:gap-4 paykginicis:items-start"/>
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-1"/>
               <label class="pay-kginicis-form-label">$t:sirsoft-pay_kginicis.settings.redirect_fail_url</label>
               <p class="pay-kginicis-form-hint">$t:sirsoft-pay_kginicis.settings.redirect_fail_url_hint</p>
             </div>
-            <div class="paykginicis:lg:col-span-2">
+            <div>
+              <responsive on="desktop" class="paykginicis:col-span-2"/>
               <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="paykginicis:w-full paykginicis:px-3 paykginicis:py-2 paykginicis:border paykginicis:border-gray-300 paykginicis:dark:border-gray-600 paykginicis:rounded-lg paykginicis:bg-white paykginicis:dark:bg-gray-700 paykginicis:focus:ring-2 paykginicis:focus:ring-blue-500 paykginicis:dark:focus:ring-blue-400 paykginicis:focus:border-transparent paykginicis:text-sm" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>

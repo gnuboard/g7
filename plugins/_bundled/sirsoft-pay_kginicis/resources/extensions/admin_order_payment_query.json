@@ -153,8 +153,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr_120px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "paykginicis:grid paykginicis:grid-cols-[100px_1fr] paykginicis:sm:grid-cols-[120px_1fr_120px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"
+                                "className": "paykginicis:grid paykginicis:grid-cols-[100px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"
                             },
                             "children": [
                                 {
@@ -200,8 +207,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-1 paykginicis:sm:col-span-3 paykginicis:break-all pay-kginicis-break-all"
+                                        "className": "paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-1 paykginicis:break-all pay-kginicis-break-all"
                                     },
                                     "text": "{{kginicis_cbt_reconciliation.data?.reason ?? '-'}}"
                                 },
@@ -218,8 +232,15 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{kginicis_cbt_reconciliation.data?.refund_error}}",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-1 paykginicis:sm:col-span-3 paykginicis:break-all pay-kginicis-break-all"
+                                        "className": "paykginicis:text-red-950 paykginicis:dark:text-red-100 paykginicis:col-span-1 paykginicis:break-all pay-kginicis-break-all"
                                     },
                                     "text": "{{kginicis_cbt_reconciliation.data?.refund_error}}"
                                 },
@@ -444,8 +465,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "paykginicis:grid paykginicis:grid-cols-[130px_1fr_130px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "paykginicis:grid paykginicis:grid-cols-[110px_1fr] paykginicis:sm:grid-cols-[130px_1fr_130px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"
+                                "className": "paykginicis:grid paykginicis:grid-cols-[110px_1fr] paykginicis:gap-x-3 paykginicis:gap-y-1 paykginicis:text-xs"
                             },
                             "children": [
                                 {
@@ -555,8 +583,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:col-span-3 paykginicis:break-all pay-kginicis-break-all"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:col-span-1 paykginicis:sm:col-span-3 paykginicis:break-all pay-kginicis-break-all"
+                                        "className": "paykginicis:font-mono paykginicis:text-blue-950 paykginicis:dark:text-blue-100 paykginicis:col-span-1 paykginicis:break-all pay-kginicis-break-all"
                                     },
                                     "text": "{{kginicis_cbt_cvs.data?.notify_url ?? '-'}}"
                                 }
@@ -602,8 +637,15 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "paykginicis:grid paykginicis:grid-cols-[150px_90px_1fr_80px] paykginicis:gap-x-2 paykginicis:gap-y-1 paykginicis:rounded-md paykginicis:bg-white/70 paykginicis:dark:bg-gray-900/30 paykginicis:px-2 paykginicis:py-1.5 paykginicis:text-[11px]"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[150px_90px_1fr_80px] paykginicis:gap-x-2 paykginicis:gap-y-1 paykginicis:rounded-md paykginicis:bg-white/70 paykginicis:dark:bg-gray-900/30 paykginicis:px-2 paykginicis:py-1.5 paykginicis:text-[11px]"
+                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-2 paykginicis:gap-y-1 paykginicis:rounded-md paykginicis:bg-white/70 paykginicis:dark:bg-gray-900/30 paykginicis:px-2 paykginicis:py-1.5 paykginicis:text-[11px]"
                                             },
                                             "children": [
                                                 {
@@ -1046,8 +1088,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden paykginicis:sm:inline"
+                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.order_verify_description"
                                 }
@@ -1267,8 +1316,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                        "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
                                                     },
                                                     "children": [
                                                         {
@@ -1378,8 +1434,15 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "responsive": {
+                                                                "640-": {
+                                                                    "props": {
+                                                                        "className": "paykginicis:font-mono paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:col-span-3"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "paykginicis:font-mono paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:col-span-1 paykginicis:sm:col-span-3"
+                                                                "className": "paykginicis:font-mono paykginicis:text-gray-900 paykginicis:dark:text-gray-100 paykginicis:col-span-1"
                                                             },
                                                             "text": "{{((_local._kginicisResult ?? kginicis_status.data)?.resultCode ?? '') + ' ' + ((_local._kginicisResult ?? kginicis_status.data)?.resultMsg ?? '')}}"
                                                         }
@@ -1404,8 +1467,15 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
+                                                            "responsive": {
+                                                                "640-": {
+                                                                    "props": {
+                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
                                                             },
                                                             "children": [
                                                                 {
@@ -1522,8 +1592,15 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
+                                                            "responsive": {
+                                                                "640-": {
+                                                                    "props": {
+                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
                                                             },
                                                             "children": [
                                                                 {
@@ -1631,8 +1708,15 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
+                                                            "responsive": {
+                                                                "640-": {
+                                                                    "props": {
+                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
                                                             },
                                                             "children": [
                                                                 {
@@ -1690,8 +1774,15 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
+                                                            "responsive": {
+                                                                "640-": {
+                                                                    "props": {
+                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
                                                             },
                                                             "children": [
                                                                 {
@@ -1749,8 +1840,15 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
+                                                            "responsive": {
+                                                                "640-": {
+                                                                    "props": {
+                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
                                                             },
                                                             "children": [
                                                                 {
@@ -1824,8 +1922,15 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
+                                                            "responsive": {
+                                                                "640-": {
+                                                                    "props": {
+                                                                        "className": "paykginicis:grid paykginicis:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                    }
+                                                                }
+                                                            },
                                                             "props": {
-                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:sm:grid-cols-[140px_1fr_140px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
+                                                                "className": "paykginicis:grid paykginicis:grid-cols-[120px_1fr] paykginicis:gap-x-4 paykginicis:gap-y-1.5 paykginicis:text-xs"
                                                             },
                                                             "children": [
                                                                 {
@@ -2103,8 +2208,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden paykginicis:sm:inline"
+                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_description"
                                 }
@@ -2517,8 +2629,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 pay-kginicis-hidden paykginicis:inline"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden paykginicis:sm:inline"
+                                        "className": "paykginicis:text-xs paykginicis:text-gray-500 paykginicis:dark:text-gray-400 paykginicis:hidden pay-kginicis-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_description"
                                 }

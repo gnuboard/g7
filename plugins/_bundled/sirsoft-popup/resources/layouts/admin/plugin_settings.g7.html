@@ -31,7 +31,9 @@
     <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="g7pp-admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="gpp:p-4 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900">
+      <responsive on="640-1023" class="gpp:p-6 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"/>
+      <responsive on="1024-" class="gpp:p-8 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"/>
       <!-- PageHeader 는 돌아가기 props 가 없다 — 목록으로 가는 링크를 머리 위에 따로 둔다 -->
       <a data-ref="back_to_list_link" href="/admin/plugins/sirsoft-popup/popups" class="gpp:inline-flex gpp:items-center gpp:gap-1 gpp:mb-2 gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline">
         <on type="click">
@@ -46,8 +48,10 @@
         <icon name="lock" class="gpp:text-xl gpp:text-amber-600 gpp:dark:text-amber-400 gpp:flex-shrink-0"/>
         <span class="gpp:text-xs gpp:text-yellow-700 gpp:dark:text-yellow-300">$t:sirsoft-popup.plugin_read_only</span>
       </div>
-      <div data-ref="settings_columns" class="gpp:mt-6 gpp:grid gpp:grid-cols-1 gpp:lg:grid-cols-3 gpp:gap-6">
-        <div data-ref="settings_cards" class="gpp:lg:col-span-2 gpp:flex gpp:flex-col gpp:gap-6">
+      <div data-ref="settings_columns" class="gpp:mt-6 gpp:grid gpp:grid-cols-1 gpp:gap-6">
+        <responsive on="desktop" class="gpp:mt-6 gpp:grid gpp:grid-cols-3 gpp:gap-6"/>
+        <div data-ref="settings_cards" class="gpp:flex gpp:flex-col gpp:gap-6">
+          <responsive on="desktop" class="gpp:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"/>
           <!-- PC 표시 — 위치(중앙/좌상단 좌표)와 내용 영역 크기 -->
           <section data-ref="pc_card" class="g7pp-admin-card">
             <h2 class="g7pp-card-title">$t:sirsoft-popup.settings.pc.title</h2>

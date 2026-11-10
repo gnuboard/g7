@@ -11,7 +11,112 @@
     "props": {
         "title": "$t:mypage.withdraw.modal_title",
         "size": "sm",
-        "closeOnBackdropClick": false
+        "closeOnBackdropClick": false,
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "탈퇴 실행 — 먼저 버튼을 잠그고, 성공하면 알린 뒤 로그아웃까지 이어 간다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "profileWithdrawModal.isWithdrawing": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/me",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "profileWithdrawModal.isWithdrawing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:mypage.withdraw.success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "logout"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "profileWithdrawModal.isWithdrawing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.profileWithdrawModal?.confirm !== true || _global.profileWithdrawModal?.isWithdrawing === true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.profileWithdrawModal?.isWithdrawing === true}}",
+                        "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "className": "animate-spin"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:mypage.withdraw.confirm_button"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -175,118 +280,6 @@
                                 "className": "text-sm text-gray-700 dark:text-gray-300"
                             },
                             "text": "$t:mypage.withdraw.confirm_checkbox"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            },
-                            "text": "$t:common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "탈퇴 실행 — 먼저 버튼을 잠그고, 성공하면 알린 뒤 로그아웃까지 이어 간다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "profileWithdrawModal.isWithdrawing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/me",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "profileWithdrawModal.isWithdrawing": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:mypage.withdraw.success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "logout"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "profileWithdrawModal.isWithdrawing": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.profileWithdrawModal?.confirm !== true || _global.profileWithdrawModal?.isWithdrawing === true}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.profileWithdrawModal?.isWithdrawing === true}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "size": "sm",
-                                        "className": "animate-spin"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:mypage.withdraw.confirm_button"
-                                }
-                            ]
                         }
                     ]
                 }

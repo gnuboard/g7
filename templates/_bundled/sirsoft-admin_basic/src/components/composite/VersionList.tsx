@@ -3,6 +3,7 @@ import { Ul } from '../basic/Ul';
 import { Li } from '../basic/Li';
 import { Span } from '../basic/Span';
 import { Div } from '../basic/Div';
+import { activateOnKey, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 export interface VersionItem {
   id: string | number;
@@ -44,10 +45,13 @@ const VersionListItem: React.FC<VersionListItemProps> = React.memo(({ version, i
 
   return (
     <Li
-      role="listitem"
+      // 고르는 목록의 항목 — aria-selected 는 option 에만 뜻이 있다. Tab 으로 닿고 Enter·Space 로 고른다(#869 키보드 접근)
+      role="option"
       aria-selected={isSelected}
+      tabIndex={0}
+      onKeyDown={activateOnKey(handleClick)}
       className={`
-        p-3 rounded-lg border cursor-pointer transition-colors
+        ${FOCUS_VISIBLE_RING} p-3 rounded-lg border cursor-pointer transition-colors
         ${
           isSelected
             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -100,7 +104,7 @@ export const VersionList: React.FC<VersionListProps> = ({
 
   return (
     <Ul
-      role="list"
+      role="listbox"
       className="space-y-2"
     >
       {versions.map((version) => (

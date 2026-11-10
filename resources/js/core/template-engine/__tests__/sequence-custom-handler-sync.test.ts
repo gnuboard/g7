@@ -8,7 +8,7 @@
  * @see resources/js/core/template-engine/ActionDispatcher.ts handleSequence
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher, ActionDefinition } from '../ActionDispatcher';
 import { Logger } from '../../utils/Logger';
 
@@ -31,7 +31,7 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
   let dispatcher: ActionDispatcher;
-  let globalStateUpdater: ReturnType<typeof vi.fn>;
+  let globalStateUpdater: Mock;
 
   beforeEach(() => {
     dispatcher = new ActionDispatcher({
@@ -59,6 +59,11 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
   });
 
   describe('커스텀 핸들러가 setLocal() 호출 후 후속 setState가 변경을 보존', () => {
+    /**
+     * @scenario case=custom_sets_sync_single_key
+     *
+     * @effects following_set_state_merges_on_custom_handler_state
+     */
     it('커스텀 핸들러가 __g7SequenceLocalSync를 설정하면 후속 setState가 해당 상태를 기반으로 병합해야 함', async () => {
       // 초기 상태: country_settings 빈 배열, _selectedCountryToAdd에 'US' 선택됨
       const initialState = {
@@ -141,6 +146,11 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
       expect(lastCall._local._selectedCountryToAdd).toBeNull();
     });
 
+    /**
+     * @scenario case=custom_sets_sync_multiple_keys
+     *
+     * @effects following_set_state_preserves_all_custom_handler_keys
+     */
     it('커스텀 핸들러가 여러 키를 변경해도 후속 setState에서 모두 보존되어야 함', async () => {
       const initialState = {
         form: { items: [], total: 0 },
@@ -210,6 +220,11 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
   });
 
   describe('커스텀 핸들러가 setLocal() 호출하지 않은 경우', () => {
+    /**
+     * @scenario case=custom_without_sync
+     *
+     * @effects sync_skipped_without_sequence_local_sync
+     */
     it('__g7SequenceLocalSync가 없으면 동기화를 건너뛰어야 함', async () => {
       const initialState = {
         counter: 0,
@@ -266,6 +281,11 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
   });
 
   describe('_computed 재계산', () => {
+    /**
+     * @scenario case=computed_recalculated
+     *
+     * @effects computed_recalculated_after_custom_handler_sync
+     */
     it('커스텀 핸들러 후 상태가 동기화되면 _computed도 재계산되어야 함', async () => {
       const initialState = {
         form: { price: 100, quantity: 1 },
@@ -334,6 +354,11 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
   });
 
   describe('기존 setState 경로 영향 없음 (회귀 방지)', () => {
+    /**
+     * @scenario case=set_state_only
+     *
+     * @effects set_state_only_sequence_unchanged
+     */
     it('setState만 있는 sequence는 기존과 동일하게 동작해야 함', async () => {
       const initialState = {
         currencies: [{ code: 'KRW', name: '원화' }],
@@ -391,6 +416,11 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
       expect(lastCall._local.newCurrency).toBeNull();
     });
 
+    /**
+     * @scenario case=set_state_then_custom
+     *
+     * @effects set_state_then_custom_handler_state_passed
+     */
     it('setState 후 커스텀 핸들러 순서에서도 상태가 올바르게 전달되어야 함', async () => {
       const initialState = {
         status: 'idle',
@@ -470,6 +500,11 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
   // 수정(engine-v1.51.1): emitEvent 가 __g7SequenceLocalSync 에 _eventResult 를 실어
   //       handleSequence 가 currentState 를 갱신 → 후속 setState 가 _eventResult.allFiles 를 본다.
   describe('emitEvent 결과의 sequence 전파', () => {
+    /**
+     * @scenario case=emit_event_then_set_state
+     *
+     * @effects emit_event_result_reaches_following_set_state
+     */
     it('emitEvent 후 setState 가 _eventResult.data.allFiles 를 form.images 로 반영해야 함', async () => {
       const initialState = {
         form: { name: '상품', images: [] },
@@ -544,6 +579,11 @@ describe('sequence 내 커스텀 핸들러 상태 동기화', () => {
       expect(lastCall._local.isSaving).toBe(true);
     });
 
+    /**
+     * @scenario case=emit_event_sync_payload
+     *
+     * @effects emit_event_result_carried_in_sequence_local_sync
+     */
     it('emitEvent 가 __g7SequenceLocalSync 에 _eventResult 를 실어야 함', async () => {
       const initialState = { form: { images: [] } };
       const mockG7Core = {

@@ -278,8 +278,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "gdpr:p-6 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "gdpr:p-8 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "gdpr-admin-page-content-responsive-fluid"
+                    "className": "gdpr:p-4 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -347,7 +359,7 @@
                                         ]
                                     },
                                     {
-                                        "comment": "상단 탭 스크롤 — settings_main_content(p-4 sm:p-6 lg:p-8) 안 카드들과 좌우 정렬을 맞추기 위해 header_content 패딩을 그대로 물려받는다(자체 좌우 패딩 없음). 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신.",
+                                        "comment": "상단 탭 스크롤 — settings_main_content(엔진 구간별 16/24/32px 여백) 안 카드들과 좌우 정렬을 맞추기 위해 header_content 패딩을 그대로 물려받는다(자체 좌우 패딩 없음). 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신.",
                                         "id": "settings_tab_navigation",
                                         "type": "composite",
                                         "name": "TabNavigationScroll",
@@ -512,15 +524,26 @@
                                                 "id": "field_legal_entity_name",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "1024-": {
+                                                        "props": {
+                                                            "className": "gdpr:grid gdpr:grid-cols-3 gdpr:gap-4 gdpr:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "gdpr-grid-3col-responsive"
+                                                    "className": "gdpr:grid gdpr:grid-cols-1 gdpr:gap-4 gdpr:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-1"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-1"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -544,8 +567,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-2"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-2"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -577,15 +604,26 @@
                                                 "id": "field_data_storage_location",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "1024-": {
+                                                        "props": {
+                                                            "className": "gdpr:grid gdpr:grid-cols-3 gdpr:gap-4 gdpr:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "gdpr-grid-3col-responsive"
+                                                    "className": "gdpr:grid gdpr:grid-cols-1 gdpr:gap-4 gdpr:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-1"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-1"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -609,8 +647,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-2"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-2"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -642,15 +684,26 @@
                                                 "id": "field_privacy_policy_url",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "1024-": {
+                                                        "props": {
+                                                            "className": "gdpr:grid gdpr:grid-cols-3 gdpr:gap-4 gdpr:items-start gdpr:pt-6 gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "gdpr-grid-3col-responsive gdpr:pt-6 gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700"
+                                                    "className": "gdpr:grid gdpr:grid-cols-1 gdpr:gap-4 gdpr:items-start gdpr:pt-6 gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-1"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-1"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -674,8 +727,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-2"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-2"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -779,15 +836,26 @@
                                                 "id": "field_banner_enabled",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "1024-": {
+                                                        "props": {
+                                                            "className": "gdpr:grid gdpr:grid-cols-3 gdpr:gap-4 gdpr:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "gdpr-grid-3col-responsive"
+                                                    "className": "gdpr:grid gdpr:grid-cols-1 gdpr:gap-4 gdpr:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-2"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-2"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -811,8 +879,15 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-1 gdpr:flex gdpr:justify-end"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "gdpr:lg:col-span-1 gdpr:flex gdpr:justify-end"
+                                                            "className": "gdpr:flex gdpr:justify-end"
                                                         },
                                                         "children": [
                                                             {
@@ -831,15 +906,26 @@
                                                 "id": "field_banner_position",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "1024-": {
+                                                        "props": {
+                                                            "className": "gdpr:grid gdpr:grid-cols-3 gdpr:gap-4 gdpr:items-start"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "gdpr-grid-3col-responsive"
+                                                    "className": "gdpr:grid gdpr:grid-cols-1 gdpr:gap-4 gdpr:items-start"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-1"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-1"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -863,8 +949,12 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "gdpr:lg:col-span-2"
+                                                        "responsive": {
+                                                            "desktop": {
+                                                                "props": {
+                                                                    "className": "gdpr:col-span-2"
+                                                                }
+                                                            }
                                                         },
                                                         "children": [
                                                             {
@@ -3027,8 +3117,15 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
+                                                                        "responsive": {
+                                                                            "640-": {
+                                                                                "props": {
+                                                                                    "className": "gdpr:flex gdpr:gap-2 gdpr:flex-row gdpr:items-center gdpr:justify-between"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "props": {
-                                                                            "className": "gdpr:flex gdpr:flex-col gdpr:gap-2 gdpr:sm:flex-row gdpr:sm:items-center gdpr:sm:justify-between"
+                                                                            "className": "gdpr:flex gdpr:flex-col gdpr:gap-2"
                                                                         },
                                                                         "children": [
                                                                             {

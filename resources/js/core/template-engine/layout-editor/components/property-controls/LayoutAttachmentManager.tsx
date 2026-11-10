@@ -11,6 +11,8 @@
  * 모든 요청은 공용 `layoutAttachments` 클라이언트(Authorization: Bearer 첨부)로 한다.
  * 편집기 코어 위젯이므로 `g7le-*` + 인라인 스타일만(CSS 라이브러리 비종속).
  *
+ * 카드 그림은 썸네일 주소로 그린다(가로로 긴 칸이라 자르지 않는 규격). `onSelect` 는 주소 원문을 넘긴다.
+ *
  * @since engine-v1.50.0
  */
 
@@ -20,6 +22,7 @@ import {
   listLayoutAttachments,
   uploadLayoutAttachment,
   deleteLayoutAttachment,
+  attachmentPreviewUrl,
   type LayoutAttachment,
 } from '../../utils/layoutAttachments';
 
@@ -167,7 +170,7 @@ export function LayoutAttachmentManager({
           <div style={grid} data-testid="g7le-attachment-grid">
             {items.map((att) => (
               <div key={att.id} style={card} data-testid={`g7le-attachment-card-${att.id}`}>
-                <div style={{ ...cardThumb, backgroundImage: `url(${att.url})` }} />
+                <div style={{ ...cardThumb, backgroundImage: `url(${attachmentPreviewUrl(att.url)})` }} />
                 <div style={cardName} title={att.original_name}>
                   {att.original_name}
                 </div>

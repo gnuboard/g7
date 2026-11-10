@@ -9,6 +9,11 @@ import { Breadcrumb, BreadcrumbItem } from './Breadcrumb';
 import type { EditorAttrs } from '../../types';
 import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { classAtWidth, isWidthAtMost } from '../layout/widthBreakpoints';
+
+/** 좁은 화면 상한(px, 포함) — 이 폭 이하에서는 액션 묶음이 한 줄을 다 쓰고 왼쪽부터 놓인다 */
+const NARROW_ACTIONS_MAX_WIDTH = 640;
 
 /**
  * 탭 아이템 인터페이스
@@ -88,6 +93,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 제목 글자 크기·액션 묶음 배치를 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭).
+  // 폭 미디어가 걸린 옛 의미 클래스(`page-title`·`page-actions`)는 붙이지 않는다 — 창 폭 미디어가 미리보기 폭 판정을 덮어쓴다.
+  // 폭과 무관한 바탕(`page-heading`·`page-action-group`)에 폭별 유틸만 더한다.
+  const renderWidth = useRenderWidth();
+  const titleClass = `page-heading ${classAtWidth(renderWidth, 'sm', 'text-2xl')} break-words`.replace(/\s+/g, ' ');
+  const narrowActions = isWidthAtMost(renderWidth, NARROW_ACTIONS_MAX_WIDTH) ? ' w-full justify-start' : '';
+
   /**
    * Variant별 버튼 스타일
    */
@@ -125,7 +137,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       <Div className="flex-between flex-wrap gap-3 mb-lg">
         <Div className="min-w-0">
           {/* 제목·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 들어간 제목도 화면을 넘지 않는다(#143). */}
-          <H1 className="page-title break-words">{title}</H1>
+          <H1 className={titleClass}>{title}</H1>
           {description && (
             <P className="page-description break-words">{description}</P>
           )}
@@ -133,9 +145,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 
         {/* 액션 버튼 또는 children */}
         {children ? (
-          <Div className="flex-center page-actions">{children}</Div>
+          <Div className={`flex-center page-action-group${narrowActions}`}>{children}</Div>
         ) : actions && actions.length > 0 ? (
-          <Div className="page-actions">
+          <Div className={`page-action-group${narrowActions}`}>
             {actions.map((action) => {
               const content = (
                 <>

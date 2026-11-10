@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\BuildsRowThumbnailSource;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
@@ -26,6 +28,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class CategoryImageService
 {
+    use BuildsRowThumbnailSource;
     use ResolvesRowStorage;
     use ResolvesStoredExtension;
     use ServesImageWithRowValidators;
@@ -204,7 +207,7 @@ class CategoryImageService
      * (14차 G3 라운드).
      *
      * @param  string  $hash  이미지 해시
-     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, max_age: int}|null 서빙 정보 또는 null
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, max_age: int, thumbnail_source: ThumbnailSource|null}|null 서빙 정보 또는 null
      */
     public function getFileInfo(string $hash): ?array
     {
@@ -233,7 +236,23 @@ class CategoryImageService
         // 캐시 계약을 더해 내보낸다.
         InlineMediaPolicy::harden($info['response'], $image->mime_type, $image->original_filename);
 
+        // 썸네일 헬퍼가 쓸 원본 — 컨트롤러가 원본 응답 바로 앞에서 `ThumbnailResponder::respond()` 에 넘긴다.
+        // 카테고리 이미지는 완전 공개 원본이라 파생본은 공개 썸네일 디스크에 둔다. 공개 자산 디스크(CDN) 행은
+        // 화면 주소가 이미 직접 URL 이라 이 서빙 경로를 지나지 않는다.
+        $info['thumbnail_source'] = $this->thumbnailSourceFor($image);
+
         return $info;
+    }
+
+    /**
+     * 카테고리 이미지 행의 썸네일 원본 (공개)
+     *
+     * @param  CategoryImage  $image  카테고리 이미지 행
+     * @return ThumbnailSource|null 원본 (래스터가 아니면 null)
+     */
+    public function thumbnailSourceFor(CategoryImage $image): ?ThumbnailSource
+    {
+        return $this->rowThumbnailSource($image, gated: false);
     }
 
     /**

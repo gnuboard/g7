@@ -9,7 +9,40 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.modal.save_template.title",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.confirmSaveNoticeTemplate"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-primary",
+                    "disabled": "{{!_global.ui.saveTemplateData?.name}}"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.save_button"
+            }
+        ]
     },
     "children": [
         {
@@ -326,46 +359,6 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.info"
                                 }
                             ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:mt-6"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-outline"
-                            },
-                            "text": "$t:sirsoft-ecommerce.common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sirsoft-ecommerce.confirmSaveNoticeTemplate"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-primary",
-                                "disabled": "{{!_global.ui.saveTemplateData?.name}}"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.save_button"
                         }
                     ]
                 }

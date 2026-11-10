@@ -1,0 +1,22 @@
+feature: 조건 평가기(ConditionEvaluator) 단위 검사
+
+description: |
+  레이아웃의 if, conditions 는 helpers/ConditionEvaluator 가 평가한다. 문자열 조건은 {{...}} 를 풀어 참거짓으로 바꾸고
+  (리터럴 우선, "false" 와 빈 문자열은 거짓, 파이프 식은 비트 OR 가 아니라 파이프로), AND, OR 그룹은 단락 평가하며,
+  if/else 체인은 처음 맞는 브랜치를 고른다. 이 매니페스트는 그 단위 시험 파일(ConditionEvaluator.test.ts)을 영역별로
+  소유한다. RenderHelpers.evaluateIfCondition 의 리터럴 처리도 같은 파일이 다룬다(#869 표식 소급, 설계 확정 2026-11-09).
+
+axes:
+  area: [string_literal, string_binding, string_expression, string_pipe, string_empty, group_expression, branch_chain, conditions_property, type_guard, usage_scenario, if_literal]
+
+effects:
+  - condition_string_truthiness
+  - condition_group_and_or
+  - condition_group_short_circuits
+  - condition_branch_first_match
+  - conditions_property_dispatch
+  - condition_type_guards
+  - if_condition_literal_and_path
+
+test_files:
+  - resources/js/core/__tests__/ConditionEvaluator.test.ts

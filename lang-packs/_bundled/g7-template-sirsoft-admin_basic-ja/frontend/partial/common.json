@@ -1,4 +1,6 @@
 {
+  "zoom_image": "画像を拡大表示",
+  "zoom_image_named": "{{name}}を拡大表示",
   "range_start": "{{label}} 開始日",
   "range_end": "{{label}} 終了日",
   "all": "すべて",

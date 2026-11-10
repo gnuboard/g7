@@ -1,0 +1,25 @@
+feature: DevTools 탭이 코어가 넣는 값 모양대로 읽는다
+
+description: |
+  DevTools 패널의 Sequence 탭과 Stale Closure 탭은 G7DevToolsCore 가 기록한 값을 그린다. 두 탭이 타입에 없는 필드를 읽어
+  화면이 비거나 틀렸다(#869 타입 검사로 드러남).
+    - Sequence 탭: 실행 id 를 sequenceId 대신 id 로 읽어 목록을 눌러도 상세가 열리지 않았고, 총 실행 수를
+      totalExecutions 대신 totalSequences 로 읽어 비었고, 성공 상태를 'success' 대신 'completed' 로 비교해 성공한 실행도
+      ⏳ 로 보였다. 액션별 상태 변경은 없는 stateChanges 대신 stateDiff(global, local, isolated)의 추가, 변경, 제거 키를
+      `_global.theme` 처럼 스코프 접두를 붙여 보인다.
+    - Stale Closure 탭: 상태 경로, 캡처 값, 현재 값을 경고 최상위(statePath, capturedValue, currentValue)에서 읽어 비었다.
+      capturedState.path, capturedState.capturedValue, currentState.currentValue 에서 읽는다.
+    - Actions 탭과 Named Actions 참조 이력: 엔진은 type 을 적지 않은 액션(event 만 적은 진입점, 풀리지 않은 actionRef)과
+      핸들러 없이 actionRef 만 적은 정의를 type 이나 resolvedHandler 없이 기록한다. 두 탭의 필터가 그 값에 바로
+      toLowerCase() 를 불러, 필터 글자를 넣는 순간 TypeError 로 탭이 깨졌다. 없는 값은 필터에 맞지 않는 것으로 본다.
+  탭에는 실제 코어가 기록한 값을 그대로 넣어 검사한다.
+
+axes:
+  tab: [sequence, stale_closure, actions_filter, named_action_refs_filter]
+
+effects:
+  - devtools_tab_reads_core_shape
+  - devtools_filter_tolerates_missing_field
+
+test_files:
+  - resources/js/core/devtools/__tests__/DevToolsTabsDataShape.test.tsx

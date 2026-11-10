@@ -1,7 +1,6 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ThemeToggle, ThemeMode } from '../ThemeToggle';
+import { ThemeToggle } from '../ThemeToggle';
 
 describe('ThemeToggle', () => {
   let localStorageMock: { [key: string]: string };
@@ -146,7 +145,7 @@ describe('ThemeToggle', () => {
    */
   it('자동 모드 선택 시 시스템 설정을 따라야 함', async () => {
     // 시스템이 다크 모드인 경우
-    matchMediaMock.mockImplementation((query) => ({
+    matchMediaMock.mockImplementation((query: string) => ({
       matches: query === '(prefers-color-scheme: dark)',
       media: query,
       onchange: null,

@@ -8,7 +8,6 @@
  *  ③ scripts 읽기전용 섹션(0건 안내)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 
@@ -26,6 +25,10 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('DataSourceTab', () => {
+  /**
+   * @scenario subject=data_source_tab
+   * @effects ds_tab_embeds_data_sources_panel
+   */
   it('DataSourcesPanel 을 임베드한다(목록)', () => {
     const raw = { data_sources: [{ id: 'products', type: 'api', endpoint: '/api/products' }] };
     render(<DataSourceTab raw={raw} onChange={vi.fn()} t={t} onClose={vi.fn()} />);
@@ -33,6 +36,10 @@ describe('DataSourceTab', () => {
     expect(screen.getByTestId('g7le-data-sources-list')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=data_source_tab
+   * @effects ds_tab_global_headers_read_only_section
+   */
   it('globalHeaders 읽기전용 섹션 — 패턴→헤더 키', () => {
     const raw = {
       data_sources: [],
@@ -44,12 +51,20 @@ describe('DataSourceTab', () => {
     expect(row.textContent).toContain('X-Shop-Token');
   });
 
+  /**
+   * @scenario subject=data_source_tab
+   * @effects ds_tab_empty_headers_scripts_notice
+   */
   it('globalHeaders/scripts 0건 안내', () => {
     render(<DataSourceTab raw={{ data_sources: [] }} onChange={vi.fn()} t={t} onClose={vi.fn()} />);
     expect(screen.getByTestId('g7le-global-header-empty')).toBeInTheDocument();
     expect(screen.getByTestId('g7le-script-empty')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=data_source_tab
+   * @effects ds_tab_scripts_read_only_section
+   */
   it('scripts 읽기전용 섹션', () => {
     const raw = { data_sources: [], scripts: [{ id: 'analytics', src: 'https://x.js', loading: 'async' }] };
     render(<DataSourceTab raw={raw} onChange={vi.fn()} t={t} onClose={vi.fn()} />);

@@ -4,10 +4,13 @@ namespace Modules\Sirsoft\Page\Http\Controllers\User;
 
 use App\Enums\PermissionType;
 use App\Http\Controllers\Api\Base\PublicBaseController;
+use App\Thumbnails\ThumbnailQuery;
+use App\Thumbnails\ThumbnailResponder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -27,9 +30,11 @@ class PublicPageAttachmentController extends PublicBaseController
      * 컨트롤러를 생성합니다.
      *
      * @param  PageAttachmentService  $attachmentService  첨부파일 서비스
+     * @param  ThumbnailResponder  $thumbnails  썸네일 헬퍼
      */
     public function __construct(
         private PageAttachmentService $attachmentService,
+        private ThumbnailResponder $thumbnails,
     ) {}
 
     /**
@@ -78,7 +83,9 @@ class PublicPageAttachmentController extends PublicBaseController
             immutable: false,
             skipCompression: true,
             logContext: ['hash' => $hash],
-            errorMessageKey: 'sirsoft-page::messages.attachment.file_not_found'
+            errorMessageKey: 'sirsoft-page::messages.attachment.file_not_found',
+            // 미리보기와 같은 판정 — 미발행 첨부는 관리자만 받는 응답이라 공유 캐시에 남기지 않는다.
+            private: ! $published
         );
     }
 
@@ -90,12 +97,20 @@ class PublicPageAttachmentController extends PublicBaseController
      * 편집 중인 초안(미발행)의 <img> 썸네일은 편집 권한을 가진 관리자가 보므로
      * 정상 노출되며, 무인가 사용자에게만 미발행 썸네일이 차단됩니다.
      *
-     * @param  Request  $request  HTTP 요청 객체 (미리보기 권한 판정용)
+     * `?size={규격}`·`?w={숫자}` 가 붙으면 발행상태 게이트를 지난 뒤 썸네일로 낸다. 페이지 첨부는 게이트
+     * 원본이라 썸네일은 비공개 디스크·`private` 캐시다. 낼 수 없으면 원본에 `X-G7-Thumbnail: bypass:{사유}`
+     * 를 붙인다. 서명은 `size`·`w` 를 빼고 검증한다 — 관리자 화면이 서명 주소 뒤에 `size` 를 덧붙여도
+     * 서명이 깨지지 않게(썸네일은 같은 게이트를 지난 뒤 크기만 바꾼다).
+     *
+     * 미발행 페이지 첨부의 원본은 `private` 캐시로 낸다 — 관리자·서명 요청만 볼 수 있는 응답이 공유
+     * 캐시(CDN·프록시)에 남으면 다음 방문자가 게이트 없이 받는다.
+     *
+     * @param  Request  $request  HTTP 요청 객체 (미리보기 권한 판정·서명 검증·썸네일 파라미터용)
      * @param  string  $hash  첨부파일 해시 (12자)
-     * @return StreamedResponse|Response|JsonResponse 파일 스트리밍 응답, 304, 또는 오류
+     * @return SymfonyResponse|JsonResponse 파일·썸네일 스트리밍 응답(200·304) 또는 오류
      */
-    // audit:allow controller-base-request-injection reason: GET 이미지 서빙. 인증 사용자만 read-only 참조($request->user())해 미발행 첨부 미리보기 권한을 판정. 검증할 body 없음(hash 는 라우트 파라미터)
-    public function preview(Request $request, string $hash): StreamedResponse|Response|JsonResponse
+    // audit:allow controller-base-request-injection reason: GET 이미지 서빙. 인증 사용자만 read-only 참조($request->user())해 미발행 첨부 미리보기 권한을 판정하고, 서명 검증과 썸네일 쿼리(size·w)를 읽는다. 검증할 body 없음(hash 는 라우트 파라미터)
+    public function preview(Request $request, string $hash): SymfonyResponse|JsonResponse
     {
         $attachment = $this->attachmentService->getByHash($hash);
         if (! $attachment) {
@@ -111,7 +126,8 @@ class PublicPageAttachmentController extends PublicBaseController
             'sirsoft-page.pages.read',
             PermissionType::Admin
         ) ?? false;
-        $hasValidSignature = $request->hasValidSignature(absolute: false);
+        // 서명은 썸네일 파라미터(size·w)를 빼고 검증한다 — 서명 주소에 size 를 덧붙인 <img> 가 404 가 되지 않게.
+        $hasValidSignature = $request->hasValidRelativeSignatureWhileIgnoring(ThumbnailQuery::ignoreClosure());
 
         if (! $published && ! $canReadUnpublished && ! $hasValidSignature) {
             return $this->notFound('sirsoft-page::messages.attachment.not_found');
@@ -122,6 +138,24 @@ class PublicPageAttachmentController extends PublicBaseController
         // 게이트 뒤에 두어 미발행 첨부의 형식이 무인가 요청에 드러나지 않게 한다.
         if (! $attachment->isImage()) {
             return $this->error('sirsoft-page::messages.attachment.preview_not_supported', 404);
+        }
+
+        // 게이트(발행상태·권한·서명)를 지난 뒤, 원본 응답 바로 앞.
+        // 원본 정보는 썸네일을 요청했을 때만 만든다(무파라미터 요청은 헬퍼가 곧바로 null).
+        // 그때는 원본이 저장소에 있는지부터 본다 — 원격 저장소에서 원본만 지워진 경우 남은 파생본으로 200 을 내면
+        // 무파라미터 주소(아래 `preview()` 가 null → 404)와 갈린다.
+        $source = null;
+
+        if (ThumbnailQuery::requested($request)) {
+            if (! $this->attachmentService->originalExists($attachment)) {
+                return $this->error('sirsoft-page::messages.attachment.file_not_found', 404);
+            }
+
+            $source = $this->attachmentService->thumbnailSourceFor($attachment);
+        }
+
+        if ($thumbnail = $this->thumbnails->respond($request, $source)) {
+            return $thumbnail;
         }
 
         $response = $this->attachmentService->preview($attachment);
@@ -148,7 +182,10 @@ class PublicPageAttachmentController extends PublicBaseController
         $validators = $this->attachmentService->previewValidators($attachment);
 
         // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다 (16차 G3 라운드 E-6).
-        return $this->streamedFileResponseFromMeta(
+        //
+        // 미발행 페이지의 첨부는 `private` 다 — 관리자·서명 요청만 통과한 응답이 공유 캐시(CDN·프록시)에
+        // 남으면 다음 방문자가 게이트 없이 받는다. 발행 페이지는 종전처럼 public 이다.
+        $response = $this->streamedFileResponseFromMeta(
             [
                 ...$validators,
                 'response' => $response,
@@ -161,7 +198,11 @@ class PublicPageAttachmentController extends PublicBaseController
             immutable: false,
             skipCompression: true,
             logContext: ['hash' => $hash],
-            errorMessageKey: 'sirsoft-page::messages.attachment.file_not_found'
+            errorMessageKey: 'sirsoft-page::messages.attachment.file_not_found',
+            private: ! $published
         );
+
+        // 썸네일을 요청했는데 원본을 내면 사유를 붙인다(X-G7-Thumbnail: bypass:{사유}).
+        return ThumbnailResponder::markBypass($response, $request);
     }
 }

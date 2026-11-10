@@ -64,6 +64,7 @@
   "fileDeleteRouteRequired": false,
   "layoutVersionLimit": 100,
   "extensionViewMode": "gallery",
+  "thumbnailStatsFailed": false,
   "appConfig": {
     "version": "1.1.0",
     "releaseYear": 2026,

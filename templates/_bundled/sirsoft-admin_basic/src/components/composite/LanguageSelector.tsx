@@ -7,6 +7,7 @@ import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { getLocaleDisplayName } from '../../support/localeName';
+import { useLocaleSwitchFocusReturn } from '../../support/localeSwitchFocus';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
 // 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
@@ -105,6 +106,16 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const pendingFocusRef = useRef<number | null>(null);
+  // 인라인 모양의 여닫는 단추와 감싸개 — 언어를 고른 뒤 포커스를 돌릴 자리다
+  const inlineRootRef = useRef<HTMLDivElement>(null);
+  const inlineTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // 언어 전환은 같은 화면을 새로 마운트한다 — 고를 때 단추에 있던 포커스를 새 단추로 돌린다(#869 브라우저 실측)
+  useLocaleSwitchFocusReturn(
+    `language-selector:${id ?? 'default'}:${inline ? 'inline' : 'menu'}`,
+    inline ? inlineRootRef : menuRef,
+    () => (inline ? inlineTriggerRef.current : triggerRef.current)
+  );
 
   /**
    * 외부 클릭 감지 (인라인 모드가 아닐 때만)
@@ -137,6 +148,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
    * @param where 현재 언어가 목록에 없을 때 초점을 둘 쪽
    */
   const openMenu = (where: 'first' | 'last' = 'first') => {
+    // 전환 중에는 열지 않는다 — 곧 화면 전체가 다시 그려져 연 목록과 그 안의 포커스가 사라진다. 단추는 잠그지 않고(aria-busy)
+    // 포커스를 그대로 둔다. 다시 그린 뒤 열면 선택지로 들어간다(#869 8차 7부)
+    if (isChanging) return;
     const selected = availableLocales.indexOf(currentLocale);
     const index = selected >= 0 ? selected : (where === 'last' ? availableLocales.length - 1 : 0);
     if (showMenu) {
@@ -221,6 +235,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
     const G7Core = (window as any).G7Core;
 
+    // 고른 항목(목록이나 칩)은 곧 사라진다 — 포커스가 이 부품 안에 있었으면 먼저 여는 단추로 옮긴다
+    const root = inline ? inlineRootRef.current : menuRef.current;
+    if (root?.contains(document.activeElement)) {
+      (inline ? inlineTriggerRef.current : triggerRef.current)?.focus();
+    }
+    // 목록은 고른 즉시 닫는다 — 저장 요청이 끝난 뒤에 닫으면, 그 사이 단추를 누른 것이 닫는 토글이 되어 목록이 엇갈렸다(#869 8차 7부)
+    setShowMenu(false);
+
     try {
       setIsChanging(true);
 
@@ -269,10 +291,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   // 인라인 모드: 접기/펼치기 가능한 뱃지 방식
   if (inline) {
     return (
-      <Div className={`${className}`} id={id} {...editorAttrs}>
+      <Div ref={inlineRootRef} className={`${className}`} id={id} {...editorAttrs}>
         <Button
-          onClick={() => setShowMenu(!showMenu)}
-          disabled={isChanging}
+          ref={inlineTriggerRef}
+          onClick={() => { if (!isChanging) setShowMenu(!showMenu); }}
+          // 바꾸는 동안에도 잠그지 않는다 — 고른 뒤 포커스가 머무는 자리라, 잠그면 포커스가 body 로 빠진다(칩은 잠긴다)
+          aria-busy={isChanging || undefined}
           className="justify-start w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
         >
           <Icon
@@ -323,6 +347,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         ref={triggerRef}
         onClick={() => (showMenu ? closeMenu(false) : openMenu())}
         onKeyDown={handleTriggerKeyDown}
+        aria-busy={isChanging || undefined}
         className={
           showCode
             ? 'flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer'

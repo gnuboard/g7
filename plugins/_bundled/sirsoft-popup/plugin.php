@@ -10,6 +10,7 @@ use Plugins\Sirsoft\Popup\Listeners\PluginLifecycleListener;
 use Plugins\Sirsoft\Popup\Listeners\PopupActivityLogListener;
 use Plugins\Sirsoft\Popup\Listeners\PopupCacheListener;
 use Plugins\Sirsoft\Popup\Listeners\ProvideNecessaryStorageKeysListener;
+use Plugins\Sirsoft\Popup\Listeners\ThumbnailRegistrationListener;
 use Plugins\Sirsoft\Popup\Services\PublicPopupService;
 
 /**
@@ -38,6 +39,7 @@ class Plugin extends AbstractPlugin
             PopupCacheListener::class,
             PluginLifecycleListener::class,
             ProvideNecessaryStorageKeysListener::class,
+            ThumbnailRegistrationListener::class,
         ];
     }
 

@@ -1,0 +1,18 @@
+feature: 환경설정 저장 본문 — .env 로 잠긴 칸을 보내지 않는다
+
+description: |
+  `.env` 가 값을 정하는 칸은 화면에서 잠기지만(`_computed.envLocked['{탭}.{키}']`, 출처 `_meta.env_locked`) 저장 본문에는
+  그 값이 실렸다(서버가 빼서 결과는 같았다, #869 ζ). 저장 단추의 본문 식(admin_settings 레이아웃)이 잠긴 키를 뺀다.
+  업로드 탭은 썸네일 행 변환과 함께, 다른 탭은 그 탭 묶음 전체에서 같은 방식으로 뺀다.
+
+# axis 의미:
+#   case — upload_locked 업로드 탭의 잠긴 키, other_tab_locked 다른 탭(드라이버)의 잠긴 키, no_lock 잠금 정보 없음.
+axes:
+  case: [upload_locked, other_tab_locked, no_lock]
+
+effects:
+  - save_body_omits_env_locked_keys   # 잠긴 키는 저장 본문에서 빠진다
+  - save_body_keeps_unlocked_keys     # 잠금 정보가 없거나 잠기지 않은 키는 종전 그대로 실린다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-env-locked-save-body.test.tsx

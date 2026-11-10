@@ -201,9 +201,16 @@ class SeoOgPreviewService
                 $source = 'core';
             }
 
+            $effectiveValue = $locked ? ($afterFilter[$key] ?? $value) : $value;
+
+            // 이미지는 실제 메타 태그와 같은 주소를 보인다 — 렌더(`renderOgHtml`·`renderTwitterHtml`)가 og 규격 주소로 바꾼다.
+            if (in_array($key, ['image', 'image_secure_url'], true) && is_string($effectiveValue)) {
+                $effectiveValue = $this->metaResolver->ogThumbnail($effectiveValue, is_array($afterFilter) ? $afterFilter : $filled);
+            }
+
             $row = [
                 'key' => $key,
-                'effectiveValue' => $locked ? ($afterFilter[$key] ?? $value) : $value,
+                'effectiveValue' => $effectiveValue,
                 'source' => $source,
                 // overriddenByLayout = 이 레이아웃이 직접 덮었는가(상속은 false). 프론트의
                 // "값 채우면 출처칩 사라짐" 판정이 이 플래그(+inherited 출처)에 종속.

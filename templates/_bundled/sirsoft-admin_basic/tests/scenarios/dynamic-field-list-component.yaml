@@ -1,0 +1,24 @@
+feature: 관리자 동적 필드 목록(DynamicFieldList) 계약
+
+description: |
+  항목 배열을 행으로 그리고(순번, 빈 상태 문구), 추가와 삭제를 onChange 나 외부 핸들러로 알린다(maxItems, minItems 경계).
+  텍스트, 숫자, 다국어, select 칸 편집은 해당 값만 바꾼다. readOnly 면 입력과 추가, 삭제가 막히고, enableDrag 로 끌기 손잡이를
+  켜고 끈다. rowActions 는 행마다 버튼을 그린다. 빠르게 이어서 고치거나 지워도 앞선 수정분이 사라지지 않는다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 컴포넌트 하나(단위 시험이 그 컴포넌트를 직접 그린다).
+axes:
+  component: [dynamic_field_list]
+
+effects:
+  - dynamic_field_list_renders_rows              # 행, 순번, 빈 상태 문구, className 을 그리고 빈 입력에도 깨지지 않는다
+  - dynamic_field_list_adds_items                # 추가 버튼이 onChange 나 onAddItem 을 부르고 maxItems 에서 막히며 기본 항목 팩토리를 쓴다
+  - dynamic_field_list_removes_items_within_min  # 삭제가 onChange 나 onRemoveItem 을 부르고 minItems 아래로는 지울 수 없다
+  - dynamic_field_list_edits_cell_values         # 텍스트, 숫자, 다국어, select 칸 편집이 해당 값만 바꿔 onChange 로 알린다
+  - dynamic_field_list_read_only_hides_controls  # readOnly 면 입력이 막히고 추가, 삭제 버튼이 없다
+  - dynamic_field_list_drag_handle_toggle        # enableDrag 에 따라 끌기 손잡이를 보이거나 숨긴다
+  - dynamic_field_list_custom_row_actions        # rowActions 버튼을 그리고 onClick 과 disabled 조건을 따른다
+  - dynamic_field_list_rapid_edits_accumulate    # 빠른 연속 편집, 연속 삭제, 편집 뒤 추가에서 앞선 수정분이 유지된다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DynamicFieldList.test.tsx

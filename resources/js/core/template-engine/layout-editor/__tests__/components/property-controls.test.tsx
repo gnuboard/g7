@@ -25,7 +25,7 @@ import { CompositeSettingsForm } from '../../components/property-controls/Compos
 import { AdvancedPropsForm } from '../../components/property-controls/AdvancedPropsForm';
 import { ControlRenderer } from '../../components/property-controls/ControlRenderer';
 import { NumberWidget } from '../../components/property-controls/StyleControlWidgets';
-import { registerWidget, clearWidgetRegistry } from '../../spec/widgetRegistry';
+import { clearWidgetRegistry } from '../../spec/widgetRegistry';
 import { registerCoreWidgets, resetCoreWidgetRegistration } from '../../spec/registerCoreWidgets';
 import { LayoutEditorProvider } from '../../LayoutEditorContext';
 import { EditorModalProvider } from '../../EditorModalContext';

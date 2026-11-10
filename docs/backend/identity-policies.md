@@ -72,6 +72,16 @@ Route::put('/sensitive', [...])->middleware('identity.policy:vendor.module.sensi
 
 `EnforceIdentityPolicyListener::loadDynamicHookTargets()` 가 부팅 시 DB 의 `scope='hook'` 정책 target 을 자동 구독. 훅 이름이 매칭하면 `enforce()` 호출. Service/잡/Artisan 등 라우트 외 진입점도 일괄 보호.
 
+리스너는 먼저 캐시된 `IdentityPolicyRepository::getHookScopeIndex()`(`[hook_name => Collection<IdentityPolicy>]`, route 인덱스와 같은 `identity_policy` 태그)를 보고, 켜진 정책이 없는 훅은 정책 표를 조회하지 않고 지나간다. 색인에 있으면 그 자리에서 행을 다시 읽어(`resolveByScopeTarget()`) 판정한다. 색인을 비우는 사건:
+
+- 정책 저장·삭제(모델 `saved`·`deleted` 이벤트)
+- 모듈·플러그인 상태가 바뀌는 모든 전이 — 설치·제거·활성화·비활성화, **업데이트 뒤 상태 복원(성공·실패 롤백 모두)**. 상태 캐시 무효화(`invalidateModuleStatusCache()`·`invalidatePluginStatusCache()`)가 함께 비운다. 업데이트 중(`updating`)에는 그 확장의 정책이 색인에서 빠지므로(비활성 확장 제외 규칙), 그 창에 색인이 다시 만들어진 뒤 상태 복원이 비우지 않으면 캐시 수명(`cache.identity_policy_ttl`, 기본 3600초) 동안 그 확장의 정책이 걸리지 않는다.
+- 쿼리 빌더로 직접 바꾼 행은 모델 이벤트가 없으므로 route 인덱스와 마찬가지로 `IdentityPolicy::flushRouteScopeCache()` 를 불러야 반영된다.
+
+색인 조회가 실패하면(캐시 장애) 리스너는 종전처럼 정책 표로 판정한다 — 색인 장애가 before_* 훅의 오류로 번지거나 정책을 건너뛰지 않는다.
+
+**코어 첨부(`/api/attachment/{hash}`)**: hook 범위 대상 `core.attachment.before_download_action` 은 이미지(인라인) 경로와 내려받기 경로에서 한 요청에 한 번 발화한다(7.2.0 전에는 내려받기 경로에서만 발화해 이미지 첨부는 정책을 지나갔다). route 범위 대상 `api.attachment.download` 는 두 경로를 원래 모두 덮는다. 둘 중 하나라도 켜진 정책이 있으면 원본·썸네일 응답이 `Cache-Control: private` 다(인증한 사람의 응답이 공유 캐시에 남지 않게). `<img>` 요청은 428 을 받아도 본인인증 창을 띄우지 못하고 깨진 이미지로 보인다 — 다른 화면에서 먼저 인증하도록 유예 시간(`grace_minutes`)을 두는 것을 권한다. 상세: [api/attachment.md](api/attachment.md).
+
 scope=route 가 자동 매핑으로 동일한 "DB toggle = 즉시 효과" 모델을 따르므로, 두 경로 모두 운영자가 admin UI 에서 정책을 토글하는 것만으로 즉시 보안 정책이 변경됩니다 — 라우트/Service 코드 수정 불필요.
 
 ### 2.3 catch-all 안전망 — IdentityVerificationRequiredException 의 \Error 상속

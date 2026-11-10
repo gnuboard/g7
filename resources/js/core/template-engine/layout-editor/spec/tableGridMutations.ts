@@ -219,6 +219,34 @@ export function removeRow(
     }
     c += ref ? ref.colSpan : 1;
   }
+  // 대상 행에서 시작해 아래로 내려가는 세로 병합 셀은 바로 아래 행으로 옮기고 rowSpan-- (#869: 종전엔 행째
+  // 버려 아래 행 칸이 왼쪽으로 밀렸다). 아래 행의 셀 인덱스가 어긋나지 않게 오른쪽 셀부터 넣는다.
+  const below = grid.rows.find(
+    (r) => r.sectionIndex === target.sectionIndex && r.rowIndexInSection === target.rowIndexInSection + 1,
+  );
+  if (below) {
+    const carried = target.cells.filter((x) => x.rowSpan > 1).sort((x, y) => y.gridCol - x.gridCol);
+    for (const ref of carried) {
+      const leftOfIt = below.cells.filter((x) => x.gridCol < ref.gridCol);
+      const afterIdx = leftOfIt.length > 0 ? leftOfIt[leftOfIt.length - 1]!.cellIndexInRow : -1;
+      const moved = withSpan(ref.cell, p.rowSpanProp, ref.rowSpan - 1);
+      next = patchSection(next, treeToGrid(next, params), below.sectionIndex, (container) =>
+        patchRowNode(container, p.row, below.rowIndexInSection, (r) => {
+          const kids = [...childArray(r)];
+          let insertAt: number;
+          if (afterIdx < 0) {
+            insertAt = kids.findIndex((k) => isCell(k, p));
+            if (insertAt < 0) insertAt = kids.length;
+          } else {
+            const ci = childIndexOfCell(r, p, afterIdx);
+            insertAt = ci < 0 ? kids.length : ci + 1;
+          }
+          kids.splice(insertAt, 0, moved);
+          return { ...r, children: kids };
+        }),
+      );
+    }
+  }
   // 대상 행 노드 제거.
   const grid2 = treeToGrid(next, params);
   next = patchSection(next, grid2, target.sectionIndex, (container) => {
@@ -260,10 +288,8 @@ export function moveRow(
   // 각 밴드의 행은 grid.rows 의 rowIndexInSection 으로 식별 → 섹션 children 의 row 노드.
   const rowsInBand = (band: { start: number; end: number }): number[] =>
     grid.rows
-      .filter((r) => {
-        const no = r.cells[0]?.gridRow ?? -1;
-        return r.sectionIndex === sectionIndex && no >= band.start && no < band.end;
-      })
+      // 행 번호는 grid.rows 순번이다 — origin 셀이 없는(통째로 덮인) 행도 밴드에 넣어야 블록과 함께 옮겨진다(#869).
+      .filter((r, no) => r.sectionIndex === sectionIndex && no >= band.start && no < band.end)
       .map((r) => r.rowIndexInSection);
 
   const aRows = rowsInBand(A);
@@ -369,8 +395,9 @@ export function addColumn(
   let next = table;
   const bumped = new Set<EditorNode>();
 
-  for (const row of grid.rows) {
-    const no = row.cells[0]?.gridRow ?? 0;
+  // 행 번호는 grid.rows 순번이다 — origin 셀이 없는(통째로 덮인) 행을 0행으로 착각하면 그 행에 엉뚱한 칸을
+  // 넣거나 빼 격자가 깨진다(#869).
+  for (const [no, row] of grid.rows.entries()) {
     const leftRef = boundary > 0 ? cellRefAt(grid, no, boundary - 1) : null;
     const rightRef = boundary < grid.colCount ? cellRefAt(grid, no, boundary) : null;
 
@@ -390,12 +417,11 @@ export function addColumn(
       }
       continue;
     }
-    // 흡수칸(위에서 내려오는 rowSpan)이 경계를 덮으면 origin 행에서 처리됨 — skip.
-    if (leftRef && leftRef.gridRow < no) continue;
-    if (rightRef && rightRef.gridRow < no) continue;
-
-    // origin 사이 경계 — 이 행에 빈 셀 삽입(leftRef 셀 노드 뒤, 없으면 맨 앞).
-    const afterCellIdx = leftRef && leftRef.gridRow === no ? leftRef.cellIndexInRow : -1;
+    // 경계를 가로지르는 셀이 없으면 이 행에 새 칸이 필요하다 — 경계 양옆이 위에서 내려온 흡수칸이어도
+    // 같다(#869: 종전엔 흡수칸이면 건너뛰어 그 행에 칸이 생기지 않고 표가 깨졌다). 새 칸은 이 행 origin
+    // 셀 중 경계 왼쪽의 마지막 셀 뒤에, 없으면 맨 앞에 넣는다.
+    const leftOrigins = row.cells.filter((x) => x.gridCol < boundary);
+    const afterCellIdx = leftOrigins.length > 0 ? leftOrigins[leftOrigins.length - 1]!.cellIndexInRow : -1;
     const headerRow = row.cells.length > 0 && row.cells.every((x) => x.isHeader);
     const g = treeToGrid(next, params);
     next = patchSection(next, g, row.sectionIndex, (container) =>
@@ -429,8 +455,9 @@ export function removeColumn(
 
   let next = table;
   const handled = new Set<EditorNode>();
-  for (const row of grid.rows) {
-    const no = row.cells[0]?.gridRow ?? 0;
+  // 행 번호는 grid.rows 순번이다 — origin 셀이 없는(통째로 덮인) 행을 0행으로 착각하면 그 행에 엉뚱한 칸을
+  // 넣거나 빼 격자가 깨진다(#869).
+  for (const no of grid.rows.keys()) {
     const ref = cellRefAt(grid, no, atGridCol);
     if (!ref || handled.has(ref.cell) || ref.gridRow < no) continue;
     handled.add(ref.cell);
@@ -485,6 +512,10 @@ export function mergeCells(
   const right = Math.max(c0, c1);
   if (top === bottom && left === right) return { table, ok: false, reason: 'single' };
   if (!grid.valid) return { table, ok: false, reason: 'invalid-grid' };
+  // 세로 병합은 한 섹션(Thead/Tbody/Tfoot) 안에서만 — HTML rowspan 은 섹션을 넘지 못한다. 넘는 병합을 허용하면
+  // 이후 행 삭제와 추가가 섹션 단위로 셀을 옮기다 병합 셀을 잃어 구멍이 생긴다(#869 λ 실측).
+  const areaSections = new Set(grid.rows.slice(top, bottom + 1).map((row) => row.sectionIndex));
+  if (areaSections.size > 1) return { table, ok: false, reason: 'section' };
 
   const originsInArea = new Set<GridCellRef>();
   for (let r = top; r <= bottom; r++) {

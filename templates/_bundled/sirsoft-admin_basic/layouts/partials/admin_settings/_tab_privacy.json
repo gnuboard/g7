@@ -48,8 +48,15 @@
                             "id": "consent_provider_field",
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "flex gap-2 flex-row items-center justify-between"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+                                "className": "flex flex-col gap-2"
                             },
                             "children": [
                                 {
@@ -64,8 +71,15 @@
                                     "comment": "고른 제공자가 사라진 missing 상태에서는 저장된 id 를 선택지 끝에 덧붙여 선택 상자가 빈 글자로 보이지 않게 한다(경고 문구가 사유를 알린다).",
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "w-96"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "w-full md:w-96"
+                                        "className": "w-full"
                                     },
                                     "children": [
                                         {
@@ -485,8 +499,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "flex gap-2 flex-row items-center justify-between"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                        "className": "flex flex-col gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -847,8 +868,15 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
+                                                    "responsive": {
+                                                        "640-": {
+                                                            "props": {
+                                                                "className": "flex gap-2 flex-row items-center justify-between"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                        "className": "flex flex-col gap-2"
                                                     },
                                                     "children": [
                                                         {

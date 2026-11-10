@@ -30,7 +30,7 @@
         <div class="ecommerce-flex-center ecommerce:gap-3">
           <icon name="percent" class="ecommerce:text-2xl ecommerce:text-gray-700 ecommerce:dark:text-gray-300"/>
           <div>
-            <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.title</h1>
+            <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.promotion_discount_code.title</h1>
             <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.promotion_discount_code.description</p>
           </div>
         </div>
@@ -76,8 +76,11 @@
           </div>
         </div>
         <div data-ref="basic_filters" class="ecommerce:space-y-4 ecommerce-filter-grid">
-          <div data-ref="filter_benefit_type" class="ecommerce-filter-row">
-            <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_type</span>
+          <div data-ref="filter_benefit_type" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+            <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+            <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_type</span>
             <div class="ecommerce-filter-buttons">
               <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer">
                 <input type="radio" name="benefitType" value="" class="ecommerce-radio" checked="{{_local.benefitType === ''}}">
@@ -108,8 +111,11 @@
               </label>
             </div>
           </div>
-          <div data-ref="filter_code_type" class="ecommerce-filter-row">
-            <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.code_type</span>
+          <div data-ref="filter_code_type" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+            <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+            <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.code_type</span>
             <div class="ecommerce-filter-buttons">
               <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer">
                 <input type="radio" name="codeType" value="" class="ecommerce-radio" checked="{{_local.codeType === ''}}">
@@ -140,8 +146,11 @@
               </label>
             </div>
           </div>
-          <div data-ref="filter_benefit_amount" class="ecommerce-filter-row">
-            <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount</span>
+          <div data-ref="filter_benefit_amount" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+            <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+            <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount</span>
             <div class="ecommerce-flex-center ecommerce:gap-2">
               <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-2 ecommerce:w-full"/>
               <select name="benefitAmountType" aria-label="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_unit" class="ecommerce:w-24" value="{{_local.benefitAmountType}}">
@@ -176,8 +185,11 @@
               </div>
             </div>
           </div>
-          <div data-ref="filter_created_at" class="ecommerce-filter-row">
-            <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at</span>
+          <div data-ref="filter_created_at" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+            <responsive on="768-" class="ecommerce:flex ecommerce:flex-row ecommerce:gap-2 ecommerce:items-center"/>
+            <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:block ecommerce:mb-2 ecommerce:dark:text-gray-400">
+              <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:w-14 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center"/>
+$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at</span>
             <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap">
               <div class="ecommerce-flex-center ecommerce:gap-2">
                 <div class="ecommerce:relative">

@@ -13,7 +13,7 @@
  *
  * 커버 축: takeover_signal worker_superseded / handoff_target polling·none / stateUrl present·absent / cancellation after_handoff
  *
- * @effects sse_monitor_hands_off_to_polling_when_superseded
+ * 효과 표식은 각 시험 앞에 있다.
  */
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -29,6 +29,11 @@ const STATE_URL = '/install/api/state-management.php?action=get';
 /** EventSource 스텁 — 이 파일은 번들러를 거치지 않으므로 소스를 그대로 평가해 돌린다. */
 class FakeEventSource {
   static last: FakeEventSource | null = null;
+
+  /** 마지막으로 만든 인스턴스 — 정적 필드를 바로 읽으면 앞의 `last = null` 대입으로 null 로 좁혀진다 */
+  static latest(): FakeEventSource | null {
+    return FakeEventSource.last;
+  }
 
   url: string;
   closed = false;
@@ -72,7 +77,7 @@ afterEach(() => {
 /** 서버 상태 조회를 대신한다 (호출된 URL 을 기록한다). */
 function stubStateFetch(state: Record<string, unknown> = { status: 'running', logs: [] }) {
   const spy = vi.fn(
-    async () =>
+    async (_input: RequestInfo | URL, _init?: RequestInit) =>
       ({
         status: 200,
         ok: true,
@@ -121,7 +126,7 @@ function startSse(overrides: Record<string, any> = {}) {
   });
   monitor.start();
 
-  const source = FakeEventSource.last;
+  const source = FakeEventSource.latest();
   expect(source, 'EventSource 가 생성되지 않았다').toBeTruthy();
 
   return { monitor, source: source as FakeEventSource, calls: c.calls };

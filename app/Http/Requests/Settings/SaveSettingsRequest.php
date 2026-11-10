@@ -24,6 +24,10 @@ use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\IpAccessMatcher;
 use App\Support\PhpExtensionProbe;
+use App\Support\ThumbnailDiskOptions;
+use App\Thumbnails\DTO\ThumbnailSpec;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailStore;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -650,6 +654,54 @@ class SaveSettingsRequest extends FormRequest
             // 고아 첨부 정리 — 사용자 파일을 파기하므로 보존기간 하한을 서버가 강제한다.
             'upload.orphan_cleanup_enabled' => ['nullable', 'boolean'],
             'upload.orphan_retention_days' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_orphan_retention_days_min', 1), 'max:'.config('core.settings_limits.upload_orphan_retention_days_max', 3650)],
+            // 이미지 썸네일 (#869) — 규격 표는 행마다 검증해 오류 키가 `upload.thumbnail_presets.{i}.name` 처럼
+            // 칸 하나를 가리키게 한다(화면이 그 칸 아래 인라인으로 띄운다). og 행은 크기를 SEO 탭이 소유하고
+            // 저장하지 않으므로(ThumbnailPresetSettings::mergeForSave) 크기 검증에서 뺀다. SEO 탭은 8000px 까지 받는다.
+            // 행 수 상한은 표 전체(고정 5행, og, 확장 규격 포함) 기준이다.
+            'upload.thumbnail_enabled' => ['nullable', 'boolean'],
+            'upload.thumbnail_prune_enabled' => ['nullable', 'boolean'],
+            'upload.thumbnail_animated_original' => ['nullable', 'boolean'],
+            'upload.thumbnail_presets' => ['nullable', 'array', 'max:'.config('core.settings_limits.upload_thumbnail_presets_max', 30)],
+            'upload.thumbnail_presets.*' => ['array'],
+            'upload.thumbnail_presets.*.name' => ['required', 'string', 'max:100', 'distinct', $this->thumbnailPresetNameRule()],
+            'upload.thumbnail_presets.*.source' => ['nullable', 'string', 'max:100'],
+            'upload.thumbnail_presets.*.width' => [
+                'exclude_if:upload.thumbnail_presets.*.name,'.ThumbnailPresetRegistry::OG,
+                'required',
+                'integer',
+                'min:'.config('core.settings_limits.upload_thumbnail_width_min', 16),
+                'max:'.config('core.settings_limits.upload_thumbnail_width_max', 4096),
+            ],
+            // 세로가 없으면 자르기와 맞추기가 성립하지 않는다. 가로 맞춤(width)이 아니면 세로를 요구한다.
+            'upload.thumbnail_presets.*.height' => [
+                'exclude_if:upload.thumbnail_presets.*.name,'.ThumbnailPresetRegistry::OG,
+                'nullable',
+                'required_unless:upload.thumbnail_presets.*.fit,'.ThumbnailSpec::FIT_WIDTH,
+                'integer',
+                'min:'.config('core.settings_limits.upload_thumbnail_height_min', 16),
+                'max:'.config('core.settings_limits.upload_thumbnail_height_max', 4096),
+            ],
+            'upload.thumbnail_presets.*.fit' => ['required', Rule::in(ThumbnailSpec::FITS)],
+            'upload.thumbnail_presets.*.anchor' => ['nullable', Rule::in(ThumbnailSpec::ANCHORS)],
+            // 비우면 업로드 탭 이미지 품질을 쓴다
+            'upload.thumbnail_presets.*.quality' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_quality_min', 1), 'max:'.config('core.settings_limits.upload_image_quality_max', 100)],
+            'upload.thumbnail_presets.*.format' => ['nullable', Rule::in(ThumbnailSpec::FORMATS)],
+            'upload.thumbnail_presets.*.upscale' => ['nullable', 'boolean'],
+            'upload.thumbnail_presets.*.pregenerate' => ['nullable', 'boolean'],
+            'upload.thumbnail_presets.*.numeric' => ['nullable', 'boolean'],
+            'upload.thumbnail_presets.*.enabled' => ['nullable', 'boolean'],
+            'upload.thumbnail_content_preset' => ['nullable', 'string', 'max:100', $this->thumbnailContentPresetRule()],
+            // 공개 원본은 비공개 thumbnails 와 공개 자산 디스크(직접 URL), 권한 원본은 thumbnails 와 s3 만(스트림).
+            // 권한이 걸린 그림의 썸네일이 공개 URL 로 새면 권한 검사를 건너뛴다. 런타임(ThumbnailStore::diskFor)도 한 번 더 막는다.
+            'upload.thumbnail_disk_public' => ['nullable', 'string', 'max:100', $this->thumbnailDiskRule(ThumbnailStore::KIND_PUBLIC)],
+            'upload.thumbnail_disk_gated' => ['nullable', 'string', 'max:100', $this->thumbnailDiskRule(ThumbnailStore::KIND_GATED)],
+            // 서버 보호 값(「고급」 칸) — 비우면 서버 기본값(.env 또는 config). 정수·범위는 단건 저장과 같은 표를 쓴다.
+            'upload.thumbnail_generate_per_minute' => ['nullable', ...SettingShapeRules::rulesFor('upload.thumbnail_generate_per_minute')],
+            'upload.thumbnail_lock_wait_seconds' => ['nullable', ...SettingShapeRules::rulesFor('upload.thumbnail_lock_wait_seconds')],
+            'upload.thumbnail_max_source_pixels' => ['nullable', ...SettingShapeRules::rulesFor('upload.thumbnail_max_source_pixels')],
+            'upload.thumbnail_pregenerate_batch' => ['nullable', ...SettingShapeRules::rulesFor('upload.thumbnail_pregenerate_batch')],
+            'upload.thumbnail_pregenerate_time_budget' => ['nullable', ...SettingShapeRules::rulesFor('upload.thumbnail_pregenerate_time_budget')],
+            'upload.thumbnail_purge_time_budget' => ['nullable', ...SettingShapeRules::rulesFor('upload.thumbnail_purge_time_budget')],
 
             // SEO 설정
             'seo.meta_title_suffix' => ['nullable', 'string', 'max:100'],
@@ -831,6 +883,9 @@ class SaveSettingsRequest extends FormRequest
             'drivers.websocket_server_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_websocket_server_port_min', 1), 'max:'.config('core.settings_limits.drivers_websocket_server_port_max', 65535)],
             'drivers.websocket_server_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.search_engine_driver' => ['nullable', Rule::in($this->getSupportedSearchEngineDrivers())],
+            // 이미지 처리 엔진 (#869) — 코어 엔진(gd, imagick)은 이 서버에서 쓸 수 있는지, 플러그인 엔진은 카탈로그에 있는지 본다.
+            // 화면 목록은 쓸 수 없는 코어 엔진을 이미 빼지만(DriverRegistryService::buildCoreDrivers) 직접 호출은 여기서 막는다.
+            'drivers.image_driver' => ['nullable', 'string', 'max:100', $this->getImageDriverCatalogRule(), $this->getDriverUsabilityRule('image')],
             'drivers.log_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_DRIVERS)]),
             'drivers.log_level' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_LEVELS)]),
             'drivers.log_days' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_log_days_min', 1), 'max:'.config('core.settings_limits.drivers_log_days_max', 365)],
@@ -1116,6 +1171,157 @@ class SaveSettingsRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    /**
+     * 이미지 처리 엔진이 카탈로그(코어 엔진 + 플러그인 등록 엔진)에 있는지 검사하는 규칙을 반환합니다.
+     *
+     * 코어 엔진은 카탈로그 소속을 묻지 않는다. 카탈로그는 쓸 수 없는 코어 엔진을 빼므로, 여기서 함께 거르면
+     * imagick 이 없는 서버의 오류가 「올바른 엔진을 고르라」가 되어 진짜 사유(확장 없음)가 가려진다.
+     * 그 판정은 뒤의 `getDriverUsabilityRule('image')` 가 사유와 함께 낸다.
+     *
+     * @return \Closure 검증 클로저
+     */
+    private function getImageDriverCatalogRule(): \Closure
+    {
+        return function ($attribute, $value, $fail) {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            $registry = app(DriverRegistryService::class);
+
+            if (! $registry->isCoreDriver('image', $value) && ! $registry->isDriverAvailable('image', $value)) {
+                $fail(__('validation.settings.image_driver_invalid'));
+            }
+        };
+    }
+
+    /**
+     * 썸네일 규격 행 이름 규칙을 반환합니다.
+     *
+     * 행의 종류는 출처(`source`)와 화면이 붙인 `kind` 로 가린다. 고정 행과 og 행은 `core`, 확장 행은 확장 식별자,
+     * 운영자 행은 `custom`(또는 없음)이다. 잠긴 행(고정, og, 확장)의 이름이 바뀌어 오면 막는다. 이름이 곧 `?size=` 값이라
+     * 바꾸면 그 이름을 쓰던 화면과 레이아웃의 썸네일이 모두 원본으로 돌아간다.
+     *
+     *  - 고정 이름과 og(`xs` ~ `xl`, `og`)를 운영자 행이 쓰면 예약어 오류
+     *  - `true`, `false`, `null`, `undefined`(`ThumbnailPresetRegistry::LITERAL_NAMES`)는 어느 행이든 오류 — 레이아웃
+     *    `thumb('true')` 의 인자가 리터럴로 바뀌어 규격이 붙지 않는다
+     *  - 확장 형식 이름(`{vendor-name}.{key}`)은 지금 켜진 확장이 등록한 이름만
+     *  - 운영자 이름은 `ThumbnailPresetRegistry::CUSTOM_NAME_PATTERN`
+     *
+     * 중복은 같은 칸의 `distinct` 규칙이 낸다.
+     *
+     * @return \Closure 검증 클로저
+     */
+    private function thumbnailPresetNameRule(): \Closure
+    {
+        return function ($attribute, $value, $fail) {
+            if (! is_string($value) || $value === '') {
+                return;
+            }
+
+            $index = explode('.', (string) $attribute)[2] ?? null;
+            $row = $index !== null ? $this->input("upload.thumbnail_presets.{$index}") : null;
+            $row = is_array($row) ? $row : [];
+            $source = is_string($row['source'] ?? null) ? $row['source'] : '';
+            $kind = is_string($row['kind'] ?? null) ? $row['kind'] : '';
+            $locked = in_array($kind, ['fixed', 'og', 'extension'], true)
+                || ($source !== '' && $source !== ThumbnailSpec::SOURCE_CUSTOM);
+
+            // 파이프 인자에서 불리언, null, undefined 로 바뀌는 낱말 — 행 종류와 무관하게 규격 이름이 될 수 없다
+            if (in_array($value, ThumbnailPresetRegistry::LITERAL_NAMES, true)) {
+                $fail(__('validation.settings.thumbnail_preset_name_literal', ['name' => $value]));
+
+                return;
+            }
+
+            if (in_array($value, ThumbnailPresetRegistry::RESERVED, true)) {
+                if (! $locked && ($source === ThumbnailSpec::SOURCE_CUSTOM || $kind === 'custom')) {
+                    $fail(__('validation.settings.thumbnail_preset_name_reserved', ['name' => $value]));
+                }
+
+                return;
+            }
+
+            if (preg_match(ThumbnailPresetRegistry::EXTENSION_NAME_PATTERN, $value) === 1) {
+                if (! array_key_exists($value, app(ThumbnailPresetRegistry::class)->extensionDefaults())) {
+                    $fail(__('validation.settings.thumbnail_preset_extension_unknown', ['name' => $value]));
+                }
+
+                return;
+            }
+
+            if ($locked) {
+                $fail(__('validation.settings.thumbnail_preset_name_locked'));
+
+                return;
+            }
+
+            if (! ThumbnailPresetRegistry::isValidCustomName($value)) {
+                $fail(__('validation.settings.thumbnail_preset_name_format'));
+            }
+        };
+    }
+
+    /**
+     * 본문 이미지 규격이 「저장 뒤에 켜져 있을」 규격인지 검사하는 규칙을 반환합니다.
+     *
+     * 같은 저장 요청이 규격 표도 함께 보내면 그 표 기준이다. 새로 추가한 규격을 바로 고르거나, 지금 고른 규격을
+     * 끄면서 그대로 두는 경우를 저장 전에 판정해야 한다. 표에 없는 고정 규격과 확장 규격은 지금 값을 그대로 쓴다
+     * (저장이 기존 값을 보충한다). 운영자 규격은 표에 있는 것만 남는다.
+     *
+     * @return \Closure 검증 클로저
+     */
+    private function thumbnailContentPresetRule(): \Closure
+    {
+        return function ($attribute, $value, $fail) {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            $submitted = $this->input('upload.thumbnail_presets');
+            $enabled = [];
+
+            foreach (app(ThumbnailPresetRegistry::class)->all() as $spec) {
+                if (! is_array($submitted) || $spec->source !== ThumbnailSpec::SOURCE_CUSTOM) {
+                    $enabled[$spec->name] = $spec->enabled;
+                }
+            }
+
+            foreach (is_array($submitted) ? $submitted : [] as $row) {
+                if (is_array($row) && is_string($row['name'] ?? null) && $row['name'] !== '') {
+                    $enabled[$row['name']] = filter_var($row['enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
+                }
+            }
+
+            if (($enabled[$value] ?? false) !== true) {
+                $fail(__('validation.settings.thumbnail_content_preset_invalid'));
+            }
+        };
+    }
+
+    /**
+     * 썸네일 저장 디스크가 그 종류의 선택지에 있는지 검사하는 규칙을 반환합니다.
+     *
+     * 선택지는 화면 메타와 같은 `ThumbnailDiskOptions` 에서 읽는다.
+     *
+     * @param  string  $kind  `public` 또는 `gated`
+     * @return \Closure 검증 클로저
+     */
+    private function thumbnailDiskRule(string $kind): \Closure
+    {
+        return function ($attribute, $value, $fail) use ($kind) {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            if (! in_array($value, app(ThumbnailDiskOptions::class)->ids($kind), true)) {
+                $fail(__($kind === ThumbnailStore::KIND_GATED
+                    ? 'validation.settings.thumbnail_disk_gated_invalid'
+                    : 'validation.settings.thumbnail_disk_public_invalid'));
+            }
+        };
     }
 
     /**
@@ -1517,6 +1723,25 @@ class SaveSettingsRequest extends FormRequest
             'upload.orphan_retention_days.integer' => __('validation.settings.orphan_retention_days_integer'),
             'upload.orphan_retention_days.min' => __('validation.settings.orphan_retention_days_min'),
             'upload.orphan_retention_days.max' => __('validation.settings.orphan_retention_days_max'),
+            'upload.thumbnail_presets.array' => __('validation.settings.thumbnail_presets_array'),
+            'upload.thumbnail_presets.max' => __('validation.settings.thumbnail_presets_max', ['max' => config('core.settings_limits.upload_thumbnail_presets_max', 30)]),
+            'upload.thumbnail_presets.*.name.required' => __('validation.settings.thumbnail_preset_name_required'),
+            'upload.thumbnail_presets.*.name.distinct' => __('validation.settings.thumbnail_preset_name_distinct'),
+            'upload.thumbnail_presets.*.width.required' => __('validation.settings.thumbnail_preset_width_required'),
+            'upload.thumbnail_presets.*.width.integer' => __('validation.settings.thumbnail_preset_size_integer'),
+            'upload.thumbnail_presets.*.width.min' => __('validation.settings.thumbnail_preset_size_range', ['min' => config('core.settings_limits.upload_thumbnail_width_min', 16), 'max' => config('core.settings_limits.upload_thumbnail_width_max', 4096)]),
+            'upload.thumbnail_presets.*.width.max' => __('validation.settings.thumbnail_preset_size_range', ['min' => config('core.settings_limits.upload_thumbnail_width_min', 16), 'max' => config('core.settings_limits.upload_thumbnail_width_max', 4096)]),
+            'upload.thumbnail_presets.*.height.required_unless' => __('validation.settings.thumbnail_preset_height_required'),
+            'upload.thumbnail_presets.*.height.integer' => __('validation.settings.thumbnail_preset_size_integer'),
+            'upload.thumbnail_presets.*.height.min' => __('validation.settings.thumbnail_preset_size_range', ['min' => config('core.settings_limits.upload_thumbnail_height_min', 16), 'max' => config('core.settings_limits.upload_thumbnail_height_max', 4096)]),
+            'upload.thumbnail_presets.*.height.max' => __('validation.settings.thumbnail_preset_size_range', ['min' => config('core.settings_limits.upload_thumbnail_height_min', 16), 'max' => config('core.settings_limits.upload_thumbnail_height_max', 4096)]),
+            'upload.thumbnail_presets.*.quality.integer' => __('validation.settings.thumbnail_preset_quality_range', ['min' => config('core.settings_limits.upload_image_quality_min', 1), 'max' => config('core.settings_limits.upload_image_quality_max', 100)]),
+            'upload.thumbnail_presets.*.quality.min' => __('validation.settings.thumbnail_preset_quality_range', ['min' => config('core.settings_limits.upload_image_quality_min', 1), 'max' => config('core.settings_limits.upload_image_quality_max', 100)]),
+            'upload.thumbnail_presets.*.quality.max' => __('validation.settings.thumbnail_preset_quality_range', ['min' => config('core.settings_limits.upload_image_quality_min', 1), 'max' => config('core.settings_limits.upload_image_quality_max', 100)]),
+            'upload.thumbnail_presets.*.fit.required' => __('validation.settings.thumbnail_preset_fit_invalid'),
+            'upload.thumbnail_presets.*.fit.in' => __('validation.settings.thumbnail_preset_fit_invalid'),
+            'upload.thumbnail_presets.*.anchor.in' => __('validation.settings.thumbnail_preset_anchor_invalid'),
+            'upload.thumbnail_presets.*.format.in' => __('validation.settings.thumbnail_preset_format_invalid'),
 
             // SEO 설정
             'seo.meta_title_suffix.max' => __('validation.settings.meta_title_suffix_max'),
@@ -1751,6 +1976,8 @@ class SaveSettingsRequest extends FormRequest
             'drivers.websocket_server_port.max' => __('validation.settings.websocket_server_port_max'),
             'drivers.websocket_server_scheme.in' => __('validation.settings.websocket_server_scheme_invalid'),
             'drivers.search_engine_driver.in' => __('validation.settings.search_engine_driver_invalid'),
+            'drivers.image_driver.string' => __('validation.settings.image_driver_invalid'),
+            'drivers.image_driver.max' => __('validation.settings.image_driver_invalid'),
             'drivers.log_driver.required' => __('validation.settings.log_driver_required'),
             'drivers.log_driver.in' => __('validation.settings.log_driver_invalid'),
             'drivers.log_level.required' => __('validation.settings.log_level_required'),
@@ -1901,6 +2128,32 @@ class SaveSettingsRequest extends FormRequest
             'upload.image_quality' => __('validation.attributes.image_quality'),
             'upload.orphan_cleanup_enabled' => __('validation.attributes.orphan_cleanup_enabled'),
             'upload.orphan_retention_days' => __('validation.attributes.orphan_retention_days'),
+            'upload.thumbnail_enabled' => __('validation.attributes.thumbnail_enabled'),
+            'upload.thumbnail_prune_enabled' => __('validation.attributes.thumbnail_prune_enabled'),
+            'upload.thumbnail_animated_original' => __('validation.attributes.thumbnail_animated_original'),
+            'upload.thumbnail_presets' => __('validation.attributes.thumbnail_presets'),
+            'upload.thumbnail_presets.*' => __('validation.attributes.thumbnail_preset_row'),
+            'upload.thumbnail_presets.*.name' => __('validation.attributes.thumbnail_preset_name'),
+            'upload.thumbnail_presets.*.source' => __('validation.attributes.thumbnail_preset_source'),
+            'upload.thumbnail_presets.*.width' => __('validation.attributes.thumbnail_preset_width'),
+            'upload.thumbnail_presets.*.height' => __('validation.attributes.thumbnail_preset_height'),
+            'upload.thumbnail_presets.*.fit' => __('validation.attributes.thumbnail_preset_fit'),
+            'upload.thumbnail_presets.*.anchor' => __('validation.attributes.thumbnail_preset_anchor'),
+            'upload.thumbnail_presets.*.quality' => __('validation.attributes.thumbnail_preset_quality'),
+            'upload.thumbnail_presets.*.format' => __('validation.attributes.thumbnail_preset_format'),
+            'upload.thumbnail_presets.*.upscale' => __('validation.attributes.thumbnail_preset_upscale'),
+            'upload.thumbnail_presets.*.pregenerate' => __('validation.attributes.thumbnail_preset_pregenerate'),
+            'upload.thumbnail_presets.*.numeric' => __('validation.attributes.thumbnail_preset_numeric'),
+            'upload.thumbnail_presets.*.enabled' => __('validation.attributes.thumbnail_preset_enabled'),
+            'upload.thumbnail_content_preset' => __('validation.attributes.thumbnail_content_preset'),
+            'upload.thumbnail_disk_public' => __('validation.attributes.thumbnail_disk_public'),
+            'upload.thumbnail_disk_gated' => __('validation.attributes.thumbnail_disk_gated'),
+            'upload.thumbnail_generate_per_minute' => __('validation.attributes.thumbnail_generate_per_minute'),
+            'upload.thumbnail_lock_wait_seconds' => __('validation.attributes.thumbnail_lock_wait_seconds'),
+            'upload.thumbnail_max_source_pixels' => __('validation.attributes.thumbnail_max_source_pixels'),
+            'upload.thumbnail_pregenerate_batch' => __('validation.attributes.thumbnail_pregenerate_batch'),
+            'upload.thumbnail_pregenerate_time_budget' => __('validation.attributes.thumbnail_pregenerate_time_budget'),
+            'upload.thumbnail_purge_time_budget' => __('validation.attributes.thumbnail_purge_time_budget'),
             // seo
             'seo.meta_title_suffix' => __('validation.attributes.meta_title_suffix'),
             'seo.meta_description' => __('validation.attributes.meta_description'),
@@ -2021,6 +2274,7 @@ class SaveSettingsRequest extends FormRequest
             'drivers.websocket_server_port' => __('validation.attributes.websocket_server_port'),
             'drivers.websocket_server_scheme' => __('validation.attributes.websocket_server_scheme'),
             'drivers.search_engine_driver' => __('validation.attributes.search_engine_driver'),
+            'drivers.image_driver' => __('validation.attributes.image_driver'),
             'drivers.log_driver' => __('validation.attributes.log_driver'),
             'drivers.log_level' => __('validation.attributes.log_level'),
             'drivers.log_days' => __('validation.attributes.log_days'),

@@ -1,0 +1,15 @@
+feature: 관리자 게시판 반응 아이콘의 썸네일 면제 (#869 검토)
+
+description: |
+  반응 아이콘은 20px 칸에 `object-contain` 으로 모양을 그대로 보인다. 썸네일 규격 `xs`(64×64 가운데 자르기)를 붙이면
+  정사각이 아닌 아이콘의 양 끝이 서버에서 잘려 모양이 바뀌므로, 규격 없이 원본을 받고 바로 위 주석에 면제 사유
+  (`thumb-exempt:`)를 남긴다. 굽힌 `.json` 의 반응 아이콘 Img 전부에 규격이 없고 면제 주석이 있는지 본다.
+
+axes:
+  screen: [admin_board_reaction_icons]
+
+effects:
+  - reaction_icon_keeps_original_shape
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-icon-thumbnail-exempt.test.ts

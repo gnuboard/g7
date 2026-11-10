@@ -55,7 +55,7 @@
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isModuleRefreshingLayouts}}">
         <on type="click">
           <close-modal/>
@@ -89,6 +89,6 @@
         <icon data-if="{{_global.isModuleRefreshingLayouts}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isModuleRefreshingLayouts ? '$t:admin.modules.refreshing_layouts' : '$t:admin.modules.actions.refresh_layouts'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

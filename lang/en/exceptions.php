@@ -207,6 +207,7 @@ return [
         'unregistered_handler' => 'Unregistered handler: :handler — not a core, template, or extension handler.',
         'nesting_violation' => ':parent is not declared to accept :child as a child.',
         'responsive_breakpoint_mix' => 'The portable preset is mixed with the mobile/tablet presets — overlapping ranges make behavior hard to predict.',
+        'responsive_open_range_overlap' => 'The responsive ranges :keys on :name match at the same widths — the engine picks only one of them (custom ranges before presets, narrower before wider, and among ranges open at the top, the one written first) and lays only the values of that key over the defaults, so the values of the other keys are not used at those widths. Split them into non-overlapping closed ranges and keep only the topmost one open (e.g. 768-1023, 1024-).',
         'standalone_missing_global_host' => 'A standalone layout fires :handler but nothing reads its global state (:state) — nothing appears on screen. Extend a base layout or add a component that reads that state.',
         'switch_value_not_consumed' => '<switch value="…"> is not read by the engine — write the branch subject as <switch on="…"> so it reaches params.value.',
         'set_state_underscore_global_target' => 'setState target="_global" writes to local state, not global — use target="global" for global state.',

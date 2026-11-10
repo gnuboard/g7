@@ -6,7 +6,7 @@
  * @see 트러블슈팅 가이드 troubleshooting-cache.md
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { Logger } from '../../utils/Logger';
 
 describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
@@ -19,6 +19,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: DataGrid 행 클릭 시 항상 첫 번째 행의 ID가 사용됨
      * 해결: row 컨텍스트 변수 사용
      */
+    // @scenario case=row_action_id
+    // @effects row_action_reads_id_from_row_context
     it('row 컨텍스트에서 ID를 가져와야 함', () => {
       const rows = [
         { id: 1, name: 'Row 1' },
@@ -41,6 +43,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: 페이지 변경 시 이전 페이지 데이터가 표시됨
      * 해결: 캐시 키에 쿼리 파라미터 포함
      */
+    // @scenario case=pagination_cache_key
+    // @effects cache_key_includes_page_number
     it('캐시 키에 페이지 번호가 포함되어야 함', () => {
       const generateCacheKey = (endpoint: string, params: Record<string, any>) => {
         const queryString = Object.entries(params)
@@ -64,6 +68,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: 모달을 다시 열면 이전 데이터가 표시됨
      * 해결: 모달 열 때 캐시 무효화 또는 fresh 옵션
      */
+    // @scenario case=modal_datasource_cache
+    // @effects modal_open_bypasses_cache_with_fresh
     it('모달 열 때 fresh 옵션으로 캐시를 우회해야 함', () => {
       const fetchOptions = {
         fresh: true, // 캐시 우회
@@ -78,6 +84,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: cellChildren이 비효율적으로 반복 렌더링됨
      * 해결: 메모이제이션 및 key prop 최적화
      */
+    // @scenario case=cellchildren_repeat_render
+    // @effects cell_keys_are_unique
     it('각 셀의 key가 고유해야 함', () => {
       const rows = [
         { id: 1, cells: ['A', 'B', 'C'] },
@@ -86,7 +94,7 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
 
       const keys: string[] = [];
       rows.forEach((row) => {
-        row.cells.forEach((cell, cellIndex) => {
+        row.cells.forEach((_cell, cellIndex) => {
           const key = `row-${row.id}-cell-${cellIndex}`;
           keys.push(key);
         });
@@ -103,6 +111,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: iteration source가 캐싱되어 상태 변경이 반영되지 않음
      * 해결: 의존성 기반 캐시 무효화
      */
+    // @scenario case=iteration_source_reeval
+    // @effects iteration_source_reevaluates_on_state_change
     it('상태 변경 시 iteration source가 재평가되어야 함', () => {
       const cache = new Map<string, any>();
       const cacheKey = '{{_local.items}}';
@@ -127,6 +137,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: 빈 배열이 falsy로 처리되어 잘못된 fallback 사용
      * 해결: Array.isArray()로 타입 체크
      */
+    // @scenario case=array_type_check
+    // @effects empty_array_treated_as_valid_value
     it('빈 배열은 유효한 값으로 처리해야 함', () => {
       const emptyArray: any[] = [];
 
@@ -154,6 +166,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: reloadTranslations 호출 후 모듈의 다국어가 반영되지 않음
      * 해결: 모듈 네임스페이스 포함하여 리로드
      */
+    // @scenario case=reload_translations_module
+    // @effects module_translation_key_includes_namespace
     it('모듈 다국어 키는 네임스페이스를 포함해야 함', () => {
       const moduleKey = 'sirsoft-ecommerce.admin.product.title';
       const coreKey = 'admin.common.save';
@@ -172,8 +186,10 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: SPA 네비게이션 후 이전 페이지의 _localInit 값이 남아있음
      * 해결: 레이아웃 변경 시 _localInit 캐시 무효화
      */
+    // @scenario case=spa_local_init_cache
+    // @effects layout_change_resets_local_init
     it('레이아웃 변경 시 _localInit이 초기화되어야 함', () => {
-      let _localInit = { prevPageField: 'value' };
+      let _localInit: Record<string, string> = { prevPageField: 'value' };
 
       // 레이아웃 변경 시뮬레이션
       const handleLayoutChange = () => {
@@ -191,6 +207,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: _local 값 변경 후에도 캐싱된 이전 값이 사용됨
      * 해결: _local 관련 캐시 무효화
      */
+    // @scenario case=local_path_cache
+    // @effects local_change_invalidates_related_cache
     it('_local 상태 변경 시 관련 캐시가 무효화되어야 함', () => {
       const cache = new Map<string, any>();
       cache.set('_local.filter.status', 'active');
@@ -219,6 +237,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: $event 기반 조건이 항상 첫 번째 이벤트 값으로 평가됨
      * 해결: $event 표현식은 캐싱하지 않음
      */
+    // @scenario case=event_expression_cache
+    // @effects event_expression_not_cached
     it('$event 표현식은 캐싱하지 않아야 함', () => {
       const shouldCache = (expression: string) => {
         // $event, $args 등 동적 변수는 캐싱하지 않음
@@ -239,6 +259,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: 같은 표현식이 반복 평가되어 성능 저하
      * 해결: 정적 표현식 캐싱
      */
+    // @scenario case=dynamic_path_duplicate_eval
+    // @effects static_expression_cached_once
     it('정적 표현식은 캐싱으로 중복 평가를 방지해야 함', () => {
       const cache = new Map<string, any>();
       let evaluationCount = 0;
@@ -268,10 +290,12 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      * 증상: iteration 내 모달이 모두 같은 ID를 가져 충돌
      * 해결: 모달 ID에 인덱스 또는 고유 식별자 포함
      */
+    // @scenario case=iteration_action_target_id
+    // @effects iteration_modal_ids_unique
     it('iteration 내 모달 ID는 고유해야 함', () => {
       const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
 
-      const modalIds = items.map((item, index) => `edit_modal_${item.id}`);
+      const modalIds = items.map((item) => `edit_modal_${item.id}`);
 
       // 모든 ID가 고유해야 함
       const uniqueIds = new Set(modalIds);
@@ -298,6 +322,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
      *
      * @since engine-v1.38.0 / 1.38.1 / 1.38.2
      */
+    // @scenario case=extension_lifecycle_reload
+    // @effects extension_lifecycle_refreshes_routes_and_translations
     it('Router.loadRoutes 는 cacheVersion 전달 시 ?v= 쿼리를 부착해야 함 (사례 16-a)', () => {
       const buildUrl = (templateId: string, cacheVersion?: number) => {
         const versionQuery = cacheVersion !== undefined && cacheVersion > 0
@@ -310,6 +336,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
       expect(buildUrl('x', undefined)).toBe('/api/templates/x/routes.json');
     });
 
+    // @scenario case=extension_lifecycle_reload
+    // @effects extension_lifecycle_refreshes_routes_and_translations
     it('setCacheVersion 직후에도 활성 translations 가 유지되어야 함 (사례 16-b)', () => {
       const translations = new Map<string, any>();
       const ttlCache = new Map<string, any>();
@@ -323,6 +351,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
       expect(ttlCache.has('x:ko')).toBe(false);
     });
 
+    // @scenario case=extension_lifecycle_reload
+    // @effects extension_lifecycle_refreshes_routes_and_translations
     it('$t() fallback — context.$templateId 누락 시 window.__templateApp.getConfig() 사용 (사례 16-c)', () => {
       const mockTemplateApp = {
         getConfig: () => ({ templateId: 'sirsoft-admin_basic', locale: 'ko' }),
@@ -343,6 +373,8 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
 
 describe('트러블슈팅 회귀 테스트 - 바인딩 엔진 캐시', () => {
   describe('캐시 무효화 전략', () => {
+    // @scenario case=binding_cache_invalidation
+    // @effects state_change_invalidates_dependent_cache
     it('상태 변경 시 의존성 기반으로 캐시를 무효화해야 함', () => {
       const cache = new Map<string, { value: any; deps: string[] }>();
 
@@ -369,6 +401,8 @@ describe('트러블슈팅 회귀 테스트 - 바인딩 엔진 캐시', () => {
   });
 
   describe('캐시 히트율 최적화', () => {
+    // @scenario case=binding_cache_hit_rate
+    // @effects frequent_expression_hits_cache
     it('자주 사용되는 표현식은 캐시 히트율이 높아야 함', () => {
       let hits = 0;
       let misses = 0;

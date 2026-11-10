@@ -9,7 +9,138 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-gdpr.settings.policy_version.material_modal.title",
-        "size": "medium"
+        "size": "medium",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_local.isPublishing}}",
+                    "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:text-gray-700 gdpr:dark:text-gray-200 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-200 gdpr:dark:hover:bg-gray-600 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "comment": "발행 확정 — isPublishing 플래그로 발행 동안 스피너 노출 + 양쪽 버튼 disabled. closeModal 을 sequence 마지막에서 onSuccess 로 이동 (이전: 클릭 즉시 닫혀서 사용자가 발행 진행 상태 파악 불가). 발행 실패 시 모달 유지 → memo 수정 후 재시도 가능.",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "isPublishing": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/plugins/sirsoft-gdpr/admin/policy-versions",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": "{{({memo: _local.publishMemo ?? ''})}}"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "isPublishing": false,
+                                            "publishMemo": ""
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "gdprPolicyVersionCurrent"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "gdprPolicyVersionHistory"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:sirsoft-gdpr.settings.policy_version.publish_success"
+                                        }
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "isPublishing": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}",
+                    "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-gray-900 gdpr:dark:bg-white gdpr:text-white gdpr:dark:text-gray-900 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-800 gdpr:dark:hover:bg-gray-100 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_local.isPublishing}}",
+                        "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "spin": true,
+                            "className": "gdpr:mr-1"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{!_local.isPublishing}}",
+                        "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.confirm"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{_local.isPublishing}}",
+                        "text": "$t:sirsoft-gdpr.settings.policy_version.publishing"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -107,144 +238,6 @@
                                 "className": "gdpr-text-primary gdpr:w-full gdpr:px-3 gdpr:py-2 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded-lg gdpr:bg-white gdpr:dark:bg-gray-700 gdpr:text-sm gdpr:focus:ring-2 gdpr:focus:ring-blue-500 gdpr:dark:focus:ring-blue-400 gdpr:focus:border-blue-500 gdpr:dark:focus:border-blue-400",
                                 "disabled": "{{$parent._computed.isPluginReadOnly}}"
                             }
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "gdpr:flex gdpr:justify-end gdpr:gap-2 gdpr:pt-3 gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:mt-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_local.isPublishing}}",
-                                "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:text-gray-700 gdpr:dark:text-gray-200 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-200 gdpr:dark:hover:bg-gray-600 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "comment": "발행 확정 — isPublishing 플래그로 발행 동안 스피너 노출 + 양쪽 버튼 disabled. closeModal 을 sequence 마지막에서 onSuccess 로 이동 (이전: 클릭 즉시 닫혀서 사용자가 발행 진행 상태 파악 불가). 발행 실패 시 모달 유지 → memo 수정 후 재시도 가능.",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "isPublishing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/plugins/sirsoft-gdpr/admin/policy-versions",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": "{{({memo: _local.publishMemo ?? ''})}}"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "isPublishing": false,
-                                                        "publishMemo": ""
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "gdprPolicyVersionCurrent"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "gdprPolicyVersionHistory"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-gdpr.settings.policy_version.publish_success"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "isPublishing": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}",
-                                "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-gray-900 gdpr:dark:bg-white gdpr:text-white gdpr:dark:text-gray-900 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-800 gdpr:dark:hover:bg-gray-100 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_local.isPublishing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "size": "sm",
-                                        "spin": true,
-                                        "className": "gdpr:mr-1"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{!_local.isPublishing}}",
-                                    "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.confirm"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_local.isPublishing}}",
-                                    "text": "$t:sirsoft-gdpr.settings.policy_version.publishing"
-                                }
-                            ]
                         }
                     ]
                 }

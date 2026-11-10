@@ -9,13 +9,17 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
 use App\Models\Module;
+use App\Models\Plugin;
 use App\Models\Template;
 use App\Services\ModuleService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\ValidationException;
 use Mockery;
 use Tests\TestCase;
 
@@ -110,6 +114,15 @@ class ExtensionLifecycleHookContractTest extends TestCase
     ];
 
     /**
+     * 비활성화 완료 훅 — 켜진 확장을 제거할 때 비활성화를 먼저 거치는지 본다(설계 확정 2026-11-08).
+     */
+    private const AFTER_DEACTIVATE_HOOKS = [
+        'core.modules.after_deactivate',
+        'core.plugins.after_deactivate',
+        'core.templates.after_deactivate',
+    ];
+
+    /**
      * 발화 기록 — 훅 이름 → 발화마다의 인자 배열 목록.
      *
      * @var array<string, array<int, array<int, mixed>>>
@@ -133,6 +146,16 @@ class ExtensionLifecycleHookContractTest extends TestCase
     private array $createdActiveDirs = [];
 
     /**
+     * 이 테스트 시작 시점에 이미 있던 샘플 확장 활성 디렉토리 → 사본 경로 (tearDown 이 되돌린다).
+     *
+     * 시험 DB 와 달리 파일 시스템은 개발 환경과 같다. 개발 환경에 샘플 확장이 설치돼 있으면 이 시험의 제거 단계가 그
+     * 활성 디렉토리를 지워 개발 DB 에는 활성 행만 남는다(2026-11-05 실측: gnuboard7-hello_module 고아 활성 행).
+     *
+     * @var array<string, string>
+     */
+    private array $preservedActiveDirs = [];
+
+    /**
      * 샘플 확장 활성 디렉토리 존재 여부 기록, 다른 활성 디렉토리 보호, 훅 캐시 굽기 차단,
      * 정규·구훅 스파이 등록을 준비합니다.
      *
@@ -149,6 +172,10 @@ class ExtensionLifecycleHookContractTest extends TestCase
         ] as $dir) {
             if (! File::isDirectory($dir)) {
                 $this->createdActiveDirs[] = $dir;
+            } else {
+                $copy = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-lifecycle-preserve-'.basename($dir).'-'.uniqid();
+                File::copyDirectory($dir, $copy);
+                $this->preservedActiveDirs[$dir] = $copy;
             }
         }
 
@@ -163,7 +190,7 @@ class ExtensionLifecycleHookContractTest extends TestCase
         // 실제 리스너(큐 재시작·활동 로그·언어팩)를 떼고 스파이만 단다 — 발화 자체만 관찰한다.
         HookManager::resetAll();
         $this->fired = [];
-        foreach ([...self::CANONICAL_HOOKS, ...self::LEGACY_HOOKS, ...array_values(self::BEFORE_OF), ...self::BEFORE_DEACTIVATE_HOOKS] as $hook) {
+        foreach ([...self::CANONICAL_HOOKS, ...self::LEGACY_HOOKS, ...array_values(self::BEFORE_OF), ...self::BEFORE_DEACTIVATE_HOOKS, ...self::AFTER_DEACTIVATE_HOOKS] as $hook) {
             HookManager::addAction($hook, function (...$args) use ($hook) {
                 $this->fired[$hook][] = $args;
                 $this->sequence[] = $hook;
@@ -193,6 +220,15 @@ class ExtensionLifecycleHookContractTest extends TestCase
             if (File::isDirectory($dir)) {
                 File::deleteDirectory($dir);
             }
+        }
+
+        // 개발 환경에 있던 샘플 확장 활성 디렉토리는 시작 때 모습으로 되돌린다
+        foreach ($this->preservedActiveDirs as $dir => $copy) {
+            if (File::isDirectory($dir)) {
+                File::deleteDirectory($dir);
+            }
+            File::copyDirectory($copy, $dir);
+            File::deleteDirectory($copy);
         }
 
         parent::tearDown();
@@ -552,9 +588,295 @@ class ExtensionLifecycleHookContractTest extends TestCase
         $this->assertTrue($modules->uninstallModule(self::MODULE, true));
     }
 
+    /**
+     * 켜진 모듈 제거 — 의존 확장·진행 중 상태 가드에 막히면 끄지 않고, 지나면 비활성화(훅 포함)를 먼저 거친 뒤 제거한다.
+     * 제거 트랜잭션이 롤백되면 모듈 행은 남고 꺼진 상태다(비활성화는 트랜잭션 밖에서 끝난다).
+     *
+     * 종전에는 켜진 모듈을 바로 제거해 `core.modules.after_deactivate` 가 돌지 않았다(설계 확정 2026-11-08).
+     *
+     * @scenario extension_type=module, lifecycle_event=uninstall, entry_point=cli_manager
+     *
+     * @effects active_uninstall_deactivates_first_with_hooks, uninstall_guards_run_before_deactivation, uninstall_rollback_keeps_extension_deactivated
+     *
+     * @return void 반환값 없음
+     */
+    public function test_z_active_module_uninstall_deactivates_first_after_guards(): void
+    {
+        $modules = app(ModuleManager::class);
+        $plugins = app(PluginManager::class);
+        $modules->loadModules();
+        $plugins->loadPlugins();
+        $this->assertTrue($modules->installModule(self::MODULE));
+        $this->assertTrue($modules->activateModule(self::MODULE)['success']);
+        $this->assertTrue($plugins->installPlugin(self::PLUGIN));
+        $this->assertTrue($plugins->activatePlugin(self::PLUGIN)['success']);
+
+        // ① 의존 확장 검사가 비활성화보다 먼저 — 켜진 플러그인이 의존하면 모듈은 켜진 채 남는다
+        $this->resetFired();
+        $this->assertThrows(fn () => $modules->uninstallModule(self::MODULE));
+        $this->assertSame('active', Module::where('identifier', self::MODULE)->value('status'));
+        $this->assertNotDeactivated('modules');
+
+        // 켜진 플러그인 제거도 비활성화를 먼저 거친다 (의존 확장이 사라져 모듈 제거가 가능해진다)
+        $this->resetFired();
+        $this->assertTrue($plugins->uninstallPlugin(self::PLUGIN));
+        $this->assertDeactivatedBeforeUninstall('plugins', self::PLUGIN);
+
+        // ② 진행 중 상태 가드가 비활성화보다 먼저
+        $this->assertInProgressGuardRunsBeforeDeactivation(Module::class, self::MODULE, 'modules', fn () => $modules->uninstallModule(self::MODULE));
+
+        // ③ 롤백 — 행 삭제 쿼리에서 실패시키면 제거는 롤백되고 비활성화는 남는다
+        $this->resetFired();
+        $this->failOnRowDelete('modules', fn () => $modules->uninstallModule(self::MODULE));
+        $this->assertCount(1, $this->fired['core.modules.after_deactivate'] ?? [], '롤백 전에 비활성화가 끝나 있어야 한다');
+        $this->assertArrayNotHasKey('core.modules.after_uninstall', $this->fired);
+        $this->assertSame('inactive', Module::where('identifier', self::MODULE)->value('status'), '롤백 뒤 모듈은 꺼진 채 남는다');
+
+        // ④ 다시 켠 뒤 제거 — 비활성화 훅이 제거 직전·완료 훅 사이에 한 번
+        $this->assertTrue($modules->activateModule(self::MODULE)['success']);
+        $this->resetFired();
+        $this->assertTrue($modules->uninstallModule(self::MODULE, true));
+        $this->assertDeactivatedBeforeUninstall('modules', self::MODULE);
+        $this->assertNull(Module::where('identifier', self::MODULE)->first());
+    }
+
+    /**
+     * 켜진 플러그인 제거 — 진행 중 상태 가드에 막히면 끄지 않고, 지나면 비활성화를 먼저 거친다. 롤백되면 꺼진 채 남는다.
+     *
+     * @scenario extension_type=plugin, lifecycle_event=uninstall, entry_point=admin_service
+     *
+     * @effects active_uninstall_deactivates_first_with_hooks, uninstall_guards_run_before_deactivation, uninstall_rollback_keeps_extension_deactivated
+     *
+     * @return void 반환값 없음
+     */
+    public function test_z_active_plugin_uninstall_deactivates_first_after_guards(): void
+    {
+        $modules = app(ModuleManager::class);
+        $plugins = app(PluginManager::class);
+        $modules->loadModules();
+        $plugins->loadPlugins();
+        $this->assertTrue($modules->installModule(self::MODULE));
+        $this->assertTrue($modules->activateModule(self::MODULE)['success']);
+        $this->assertTrue($plugins->installPlugin(self::PLUGIN));
+        $this->assertTrue($plugins->activatePlugin(self::PLUGIN)['success']);
+
+        $this->assertInProgressGuardRunsBeforeDeactivation(Plugin::class, self::PLUGIN, 'plugins', fn () => $plugins->uninstallPlugin(self::PLUGIN));
+
+        $this->resetFired();
+        $this->failOnRowDelete('plugins', fn () => $plugins->uninstallPlugin(self::PLUGIN));
+        $this->assertCount(1, $this->fired['core.plugins.after_deactivate'] ?? [], '롤백 전에 비활성화가 끝나 있어야 한다');
+        $this->assertArrayNotHasKey('core.plugins.after_uninstall', $this->fired);
+        $this->assertSame('inactive', Plugin::where('identifier', self::PLUGIN)->value('status'), '롤백 뒤 플러그인은 꺼진 채 남는다');
+
+        // 어드민 UI 진입점도 같은 순서
+        $this->assertTrue($plugins->activatePlugin(self::PLUGIN)['success']);
+        $this->resetFired();
+        $this->assertTrue(app(PluginService::class)->uninstallPlugin(self::PLUGIN, true));
+        $this->assertDeactivatedBeforeUninstall('plugins', self::PLUGIN);
+        $this->assertNull(Plugin::where('identifier', self::PLUGIN)->first());
+
+        $modules->deactivateModule(self::MODULE);
+        $modules->uninstallModule(self::MODULE, true);
+    }
+
+    /**
+     * 켜진 템플릿 제거 — 서비스의 「유형의 마지막 활성 템플릿」 거절과 진행 중 상태 가드에 막히면 끄지 않고,
+     * 지나면 비활성화를 먼저 거친다. 롤백되면 꺼진 채 남는다.
+     *
+     * @scenario extension_type=template, lifecycle_event=uninstall, entry_point=admin_service
+     *
+     * @effects active_uninstall_deactivates_first_with_hooks, uninstall_guards_run_before_deactivation, uninstall_rollback_keeps_extension_deactivated
+     *
+     * @return void 반환값 없음
+     */
+    public function test_z_active_template_uninstall_deactivates_first_after_guards(): void
+    {
+        $manager = app(TemplateManager::class);
+        $service = app(TemplateService::class);
+        $manager->loadTemplates();
+        $this->assertTrue($manager->installTemplate(self::TEMPLATE));
+        $this->assertTrue($manager->activateTemplate(self::TEMPLATE)['success']);
+        $this->assertSame(
+            [self::TEMPLATE],
+            Template::query()->where('type', 'admin')->where('status', 'active')->pluck('identifier')->all(),
+            '전제: 이 템플릿이 유일한 활성 관리자 템플릿이어야 한다'
+        );
+
+        // ① 유형의 마지막 활성 템플릿은 서비스가 거절한다 — 끄지 않는다
+        $this->resetFired();
+        $this->assertThrows(fn () => $service->uninstallTemplate(self::TEMPLATE), ValidationException::class);
+        $this->assertSame('active', Template::where('identifier', self::TEMPLATE)->value('status'));
+        $this->assertNotDeactivated('templates');
+
+        // ② 진행 중 상태 가드가 비활성화보다 먼저
+        $this->assertInProgressGuardRunsBeforeDeactivation(Template::class, self::TEMPLATE, 'templates', fn () => $manager->uninstallTemplate(self::TEMPLATE));
+
+        // ③ 롤백
+        $this->resetFired();
+        $this->failOnRowDelete('templates', fn () => $manager->uninstallTemplate(self::TEMPLATE));
+        $this->assertCount(1, $this->fired['core.templates.after_deactivate'] ?? [], '롤백 전에 비활성화가 끝나 있어야 한다');
+        $this->assertArrayNotHasKey('core.templates.after_uninstall', $this->fired);
+        $this->assertSame('inactive', Template::where('identifier', self::TEMPLATE)->value('status'), '롤백 뒤 템플릿은 꺼진 채 남는다');
+
+        // ④ 다른 활성 관리자 템플릿(레코드 대역)이 있으면 서비스가 받고, 비활성화를 먼저 거쳐 제거한다
+        $this->assertTrue($manager->activateTemplate(self::TEMPLATE)['success']);
+        $standIn = Template::factory()->create(['type' => 'admin', 'status' => 'active']);
+        $this->resetFired();
+        $this->assertNotNull($service->uninstallTemplate(self::TEMPLATE, true));
+        $this->assertDeactivatedBeforeUninstall('templates', self::TEMPLATE);
+        $this->assertNull(Template::where('identifier', self::TEMPLATE)->first());
+        $standIn->delete();
+    }
+
+    /**
+     * DB 행은 있는데 활성 디렉토리만 지워진 확장(파일만 지워진 사이트)을 번들 소스 업데이트로 되살린다.
+     *
+     * 종전에는 그 상태를 되돌릴 길이 없었다 — 업데이트는 「모듈을 찾을 수 없습니다」, 설치는 「이미 설치되어 있습니다」로
+     * 막혔다. 모듈·플러그인·템플릿 모두 `--source=bundled`(그리고 기본 소스의 강제 업데이트)가 활성 디렉토리가 없으면
+     * `_pending`·`_bundled` 원본을 복사한 뒤 업데이트를 잇고, 활성 상태는 그대로다. 새 CLI 프로세스처럼 메모리에 확장이
+     * 없도록 관리자를 새로 만든다.
+     *
+     * @scenario extension_type=module, lifecycle_event=update, entry_point=cli_manager
+     *
+     * @effects update_restores_missing_active_directory_from_bundled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_z_update_restores_missing_active_directory_from_bundled(): void
+    {
+        $modules = app(ModuleManager::class);
+        $plugins = app(PluginManager::class);
+        $templates = app(TemplateManager::class);
+        $modules->loadModules();
+        $plugins->loadPlugins();
+        $templates->loadTemplates();
+        $this->assertTrue($modules->installModule(self::MODULE));
+        $this->assertTrue($modules->activateModule(self::MODULE)['success']);
+        $this->assertTrue($plugins->installPlugin(self::PLUGIN));
+        $this->assertTrue($plugins->activatePlugin(self::PLUGIN)['success']);
+        $this->assertTrue($templates->installTemplate(self::TEMPLATE));
+
+        $cases = [
+            [ModuleManager::class, 'modules', self::MODULE, 'module.php', Module::class, 'active', fn ($m) => $m->updateModule(self::MODULE, true, null, VendorMode::Auto, 'overwrite', null, 'bundled')],
+            [PluginManager::class, 'plugins', self::PLUGIN, 'plugin.php', Plugin::class, 'active', fn ($m) => $m->updatePlugin(self::PLUGIN, true, null, VendorMode::Auto, 'overwrite', null, 'bundled')],
+            [TemplateManager::class, 'templates', self::TEMPLATE, 'template.json', Template::class, 'inactive', fn ($m) => $m->updateTemplate(self::TEMPLATE, true, null, 'overwrite', 'bundled')],
+        ];
+
+        foreach ($cases as [$managerClass, $kind, $id, $entry, $model, $status, $update]) {
+            File::deleteDirectory(base_path("{$kind}/{$id}"));
+            $this->assertDirectoryDoesNotExist(base_path("{$kind}/{$id}"));
+
+            // 새 프로세스 — 메모리에 그 확장이 없다
+            $this->app->forgetInstance($managerClass);
+            $manager = app($managerClass);
+            match ($kind) {
+                'modules' => $manager->loadModules(),
+                'plugins' => $manager->loadPlugins(),
+                'templates' => $manager->loadTemplates(),
+            };
+
+            $result = $update($manager);
+
+            $this->assertTrue($result['success'] ?? false, "{$id} 활성 디렉토리 복구 업데이트 실패: ".($result['message'] ?? ''));
+            $this->assertFileExists(base_path("{$kind}/{$id}/{$entry}"), "{$id} 활성 디렉토리가 되살아나지 않았다");
+            $this->assertSame($status, $model::where('identifier', $id)->value('status'), "{$id} 상태가 업데이트 전과 다르다");
+        }
+
+        app(PluginManager::class)->deactivatePlugin(self::PLUGIN);
+        app(PluginManager::class)->uninstallPlugin(self::PLUGIN, true);
+        app(ModuleManager::class)->uninstallModule(self::MODULE, true);
+        app(TemplateManager::class)->uninstallTemplate(self::TEMPLATE, null, $backups, true);
+    }
+
     // ========================================================================
     // Helpers
     // ========================================================================
+
+    /**
+     * 비활성화 훅이 제거 직전 훅 뒤, 제거 완료 훅 앞에서 각각 한 번 돌았는지 단언합니다.
+     *
+     * @param  string  $kind  modules, plugins 또는 templates
+     * @param  string  $identifier  확장 식별자
+     * @return void 반환값 없음
+     */
+    private function assertDeactivatedBeforeUninstall(string $kind, string $identifier): void
+    {
+        $order = [
+            "core.{$kind}.before_uninstall",
+            "core.{$kind}.before_deactivate",
+            "core.{$kind}.after_deactivate",
+            "core.{$kind}.after_uninstall",
+        ];
+
+        foreach ($order as $hook) {
+            $this->assertCount(1, $this->fired[$hook] ?? [], "{$hook} 발화 횟수가 1이 아니다 — 켜진 확장 제거는 비활성화를 거쳐야 한다");
+            $this->assertSame($identifier, $this->fired[$hook][0][0] ?? null, "{$hook} 첫 인자는 식별자");
+        }
+
+        $positions = array_map(fn (string $hook) => array_search($hook, $this->sequence, true), $order);
+        $sorted = $positions;
+        sort($sorted);
+        $this->assertSame($sorted, $positions, '훅 순서가 before_uninstall → before_deactivate → after_deactivate → after_uninstall 이 아니다');
+    }
+
+    /**
+     * 비활성화 훅이 하나도 돌지 않았는지 단언합니다 (가드에 막힌 제거는 끄지 않는다).
+     *
+     * @param  string  $kind  modules, plugins 또는 templates
+     * @return void 반환값 없음
+     */
+    private function assertNotDeactivated(string $kind): void
+    {
+        $this->assertArrayNotHasKey("core.{$kind}.before_deactivate", $this->fired, '가드에 막힌 제거가 비활성화를 시작했다');
+        $this->assertArrayNotHasKey("core.{$kind}.after_deactivate", $this->fired, '가드에 막힌 제거가 확장을 껐다');
+    }
+
+    /**
+     * 행 상태를 진행 중(updating)으로 두면 제거가 막히고 비활성화도 일어나지 않는지 확인한 뒤 상태를 되돌립니다.
+     *
+     * @param  class-string  $model  확장 모델
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $kind  modules, plugins 또는 templates
+     * @param  \Closure  $uninstall  제거 호출
+     * @return void 반환값 없음
+     */
+    private function assertInProgressGuardRunsBeforeDeactivation(string $model, string $identifier, string $kind, \Closure $uninstall): void
+    {
+        $model::query()->where('identifier', $identifier)->update(['status' => 'updating']);
+        $this->resetFired();
+
+        $this->assertThrows($uninstall, \RuntimeException::class);
+        $this->assertNotDeactivated($kind);
+        $this->assertSame('updating', $model::query()->where('identifier', $identifier)->value('status'));
+
+        $model::query()->where('identifier', $identifier)->update(['status' => 'active']);
+    }
+
+    /**
+     * 확장 행 삭제 쿼리가 실행된 순간 예외를 던지게 해 제거 트랜잭션을 롤백시키고, 제거가 실패하는지 확인합니다.
+     *
+     * @param  string  $table  확장 테이블 (접두사 제외)
+     * @param  \Closure  $uninstall  제거 호출
+     * @return void 반환값 없음
+     */
+    private function failOnRowDelete(string $table, \Closure $uninstall): void
+    {
+        $armed = true;
+        $needle = 'delete from `'.strtolower(DB::connection()->getTablePrefix()).$table.'`';
+        DB::listen(function (QueryExecuted $query) use (&$armed, $needle) {
+            if ($armed && str_starts_with(strtolower($query->sql), $needle)) {
+                $armed = false;
+
+                throw new \RuntimeException('시험: 제거 트랜잭션 실패 주입');
+            }
+        });
+
+        try {
+            $this->assertThrows($uninstall, \RuntimeException::class, '시험: 제거 트랜잭션 실패 주입');
+        } finally {
+            $armed = false;
+        }
+    }
 
     /**
      * 정규 훅이 정확히 1회, 규정된 인자 타입으로 발화했는지 단언합니다.

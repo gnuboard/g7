@@ -8,11 +8,13 @@
     <div data-ref="claim_addresses_loading_notice" data-if="{{!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true}}" class="ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mb-3">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_loading_notice</div>
     <!-- 등록 모드에서 수정 권한이 없으면 회수지 입력 묶음을 감추고 이유를 알린다 — 회수지는 정책을 만든 뒤 별도 저장(claim-settings PUT = 수정 권한)으로 반영되므로, 입력을 받으면 정책만 만들어지고 회수지는 거절되는 부분 실패가 난다. -->
     <div data-ref="claim_addresses_no_update_notice" data-if="{{!route.id &amp;&amp; _computed.lacksUpdate}}" class="ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mb-3">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_requires_update</div>
-    <div data-ref="claim_addresses_snapshot_notice" class="ecommerce-alert-info">
+    <!-- 아래 회수지 묶음이 보일 때만 그 사이에 여백을 둔다 — 묶음이 감춰지면 이 안내가 구역의 마지막 줄이다. -->
+    <div data-ref="claim_addresses_snapshot_notice" class="{{(!!route.id || !_computed.lacksUpdate) ? 'ecommerce-alert-info ecommerce:mb-4' : 'ecommerce-alert-info'}}">
       <icon name="circle-info" class="ecommerce:text-base ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0"/>
       <span class="ecommerce-tone-info-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_snapshot_notice</span>
     </div>
-    <div data-ref="claim_address_blocks" data-if="{{!!route.id || !_computed.lacksUpdate}}" class="ecommerce-grid-2col-responsive">
+    <div data-ref="claim_address_blocks" data-if="{{!!route.id || !_computed.lacksUpdate}}" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">
+      <responsive on="768-" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"/>
       <div data-ref="claim_address_block_exchange" class="ecommerce-row-stack">
         <h3 class="ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_exchange</h3>
         <div>

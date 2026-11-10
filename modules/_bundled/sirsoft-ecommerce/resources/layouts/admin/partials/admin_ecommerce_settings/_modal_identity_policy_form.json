@@ -11,7 +11,132 @@
     "props": {
         "title": "{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}",
         "size": "lg",
-        "closeOnOverlayClick": false
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "identity_policy_form_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "저장. 만들기와 고치기가 같은 버튼을 쓰고 `isNew` 가 주소와 메서드를 가른다. 시작할 때 이전 오류를 함께 지우고, 성공하면 폼 자리를 통째로 비운 뒤 정책 목록을 다시 부른다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "identity_policy_form_modal.isSaving": true,
+                                    "identity_policy_form_modal.errors": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "{{_global.identity_policy_form_modal?.isNew ? '/api/modules/sirsoft-ecommerce/admin/identity-policies' : '/api/modules/sirsoft-ecommerce/admin/identity-policies/' + _global.identity_policy_form_modal?.form?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}",
+                                    "body": {
+                                        "key": "{{_global.identity_policy_form_modal?.form?.key}}",
+                                        "scope": "{{_global.identity_policy_form_modal?.form?.scope}}",
+                                        "target": "{{_global.identity_policy_form_modal?.form?.target}}",
+                                        "purpose": "{{_global.identity_policy_form_modal?.form?.purpose}}",
+                                        "provider_id": "{{_global.identity_policy_form_modal?.form?.provider_id || null}}",
+                                        "grace_minutes": "{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}",
+                                        "applies_to": "{{_global.identity_policy_form_modal?.form?.applies_to}}",
+                                        "fail_mode": "{{_global.identity_policy_form_modal?.form?.fail_mode}}",
+                                        "enabled": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
+                                        "priority": "{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}",
+                                        "conditions": "{{_global.identity_policy_form_modal?.form?.conditions ?? null}}",
+                                        "source_type": "{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}",
+                                        "source_identifier": "{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-ecommerce' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-ecommerce')}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "message": "$t:admin.identity.policies.save_success",
+                                            "type": "success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "identity_policy_form_modal"
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "ecommerceIdentityPolicies"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "identity_policy_form_modal": null
+                                        }
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "identity_policy_form_modal.isSaving": false,
+                                        "identity_policy_form_modal.errors": "{{error}}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "disabled": "{{_global.identity_policy_form_modal?.isSaving || ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:dark:bg-indigo-500 ecommerce:hover:bg-indigo-700 ecommerce:dark:hover:bg-indigo-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:text-white ecommerce:rounded-lg"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.identity_policy_form_modal?.isSaving}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce:animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -142,8 +267,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -252,8 +384,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -338,8 +477,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -501,8 +647,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce-grid-2col-responsive"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -659,139 +812,6 @@
                                 "className": "ecommerce-alert-warning ecommerce-tone-warning-soft ecommerce:text-xs"
                             },
                             "text": "$t:admin.identity.policies.form.declared_policy_notice"
-                        }
-                    ]
-                },
-                {
-                    "id": "policy_form_footer",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce-flex-center ecommerce:justify-end ecommerce:gap-2 ecommerce:px-4 ecommerce:py-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:flex-shrink-0 ecommerce:bg-white ecommerce:dark:bg-gray-800"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal",
-                                    "target": "identity_policy_form_modal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
-                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "저장. 만들기와 고치기가 같은 버튼을 쓰고 `isNew` 가 주소와 메서드를 가른다. 시작할 때 이전 오류를 함께 지우고, 성공하면 폼 자리를 통째로 비운 뒤 정책 목록을 다시 부른다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "identity_policy_form_modal.isSaving": true,
-                                                "identity_policy_form_modal.errors": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "{{_global.identity_policy_form_modal?.isNew ? '/api/modules/sirsoft-ecommerce/admin/identity-policies' : '/api/modules/sirsoft-ecommerce/admin/identity-policies/' + _global.identity_policy_form_modal?.form?.id}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}",
-                                                "body": {
-                                                    "key": "{{_global.identity_policy_form_modal?.form?.key}}",
-                                                    "scope": "{{_global.identity_policy_form_modal?.form?.scope}}",
-                                                    "target": "{{_global.identity_policy_form_modal?.form?.target}}",
-                                                    "purpose": "{{_global.identity_policy_form_modal?.form?.purpose}}",
-                                                    "provider_id": "{{_global.identity_policy_form_modal?.form?.provider_id || null}}",
-                                                    "grace_minutes": "{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}",
-                                                    "applies_to": "{{_global.identity_policy_form_modal?.form?.applies_to}}",
-                                                    "fail_mode": "{{_global.identity_policy_form_modal?.form?.fail_mode}}",
-                                                    "enabled": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
-                                                    "priority": "{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}",
-                                                    "conditions": "{{_global.identity_policy_form_modal?.form?.conditions ?? null}}",
-                                                    "source_type": "{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}",
-                                                    "source_identifier": "{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-ecommerce' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-ecommerce')}}"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "message": "$t:admin.identity.policies.save_success",
-                                                        "type": "success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal",
-                                                    "target": "identity_policy_form_modal"
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "ecommerceIdentityPolicies"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "identity_policy_form_modal": null
-                                                    }
-                                                }
-                                            ],
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "identity_policy_form_modal.isSaving": false,
-                                                    "identity_policy_form_modal.errors": "{{error}}"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.identity_policy_form_modal?.isSaving || ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}",
-                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:dark:bg-indigo-500 ecommerce:hover:bg-indigo-700 ecommerce:dark:hover:bg-indigo-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:text-white ecommerce:rounded-lg"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.identity_policy_form_modal?.isSaving}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "ecommerce:animate-spin",
-                                        "size": "sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
-                                }
-                            ]
                         }
                     ]
                 }

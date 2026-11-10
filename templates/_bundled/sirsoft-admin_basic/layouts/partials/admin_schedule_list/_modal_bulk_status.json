@@ -10,7 +10,125 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.schedules.modals.bulk_status_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "schedule_bulk_status_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isBulkStatusChanging}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "id": "schedule_bulk_status_submit",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "상태 일괄 변경. 연타는 300ms 로 모아 요청 1회(버튼 disabled 는 첫 클릭의 상태 변경이 그려진 뒤에야 걸린다).\n               진행 깃발은 성공·실패 양쪽에서 풀어야 버튼이 잠긴 채 남지 않는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isBulkStatusChanging": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/schedules/bulk-status",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "PATCH",
+                                    "body": {
+                                        "ids": "{{_global.selectedScheduleIds}}",
+                                        "is_active": "{{_global.bulkStatusAction === 'active'}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isBulkStatusChanging": false,
+                                            "selectedScheduleIds": [],
+                                            "bulkStatusAction": ""
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "schedules"
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{response.message ?? '$t:admin.schedules.messages.bulk_status_updated'}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "schedule_bulk_status_modal"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isBulkStatusChanging": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:admin.schedules.errors.bulk_status_failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "debounce": 300
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-primary flex-center gap-2",
+                    "disabled": "{{_global.isBulkStatusChanging || !(_global.selectedScheduleIds ?? []).length || !_global.bulkStatusAction}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isBulkStatusChanging}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isBulkStatusChanging ? '$t:common.processing' : '$t:common.confirm'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -30,131 +148,6 @@
                 "className": "text-secondary"
             },
             "text": "$t:admin.schedules.modals.bulk_status_confirm_inactive|count={{(_global.selectedScheduleIds ?? []).length}}"
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "schedule_bulk_status_modal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isBulkStatusChanging}}"
-                    },
-                    "text": "$t:common.cancel"
-                },
-                {
-                    "id": "schedule_bulk_status_submit",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "상태 일괄 변경. 연타는 300ms 로 모아 요청 1회(버튼 disabled 는 첫 클릭의 상태 변경이 그려진 뒤에야 걸린다).\n               진행 깃발은 성공·실패 양쪽에서 풀어야 버튼이 잠긴 채 남지 않는다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isBulkStatusChanging": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/schedules/bulk-status",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "PATCH",
-                                        "body": {
-                                            "ids": "{{_global.selectedScheduleIds}}",
-                                            "is_active": "{{_global.bulkStatusAction === 'active'}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isBulkStatusChanging": false,
-                                                "selectedScheduleIds": [],
-                                                "bulkStatusAction": ""
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "schedules"
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "{{response.message ?? '$t:admin.schedules.messages.bulk_status_updated'}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal",
-                                            "target": "schedule_bulk_status_modal"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isBulkStatusChanging": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.schedules.errors.bulk_status_failed'}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "debounce": 300
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-primary flex-center gap-2",
-                        "disabled": "{{_global.isBulkStatusChanging || !(_global.selectedScheduleIds ?? []).length || !_global.bulkStatusAction}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isBulkStatusChanging}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isBulkStatusChanging ? '$t:common.processing' : '$t:common.confirm'}}"
-                        }
-                    ]
-                }
-            ]
         }
     ]
 }

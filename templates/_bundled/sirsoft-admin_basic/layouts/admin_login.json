@@ -197,6 +197,18 @@
             "id": "login_page_wrapper",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "640-1023": {
+                    "props": {
+                        "className": "flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-6"
+                    }
+                },
+                "desktop": {
+                    "props": {
+                        "className": "flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-8"
+                    }
+                }
+            },
             "lifecycle": {
                 "onMount": [
                     {
@@ -211,7 +223,7 @@
                 ]
             },
             "props": {
-                "className": "flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8"
+                "className": "flex-center min-h-screen justify-center bg-gray-50 dark:bg-gray-900 px-4"
             },
             "children": [
                 {
@@ -245,6 +257,8 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{_global.settings?.general?.site_logo_url}}",
+                                                "thumbPreset": "md",
+                                                "loading": "eager",
                                                 "alt": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}",
                                                 "className": "h-16 w-auto max-w-[200px] mx-auto object-contain"
                                             }
@@ -1074,8 +1088,15 @@
                                             "id": "login_two_factor_actions",
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "flex flex-row gap-2"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "flex flex-col sm:flex-row gap-2"
+                                                "className": "flex flex-col gap-2"
                                             },
                                             "children": [
                                                 {
@@ -1460,8 +1481,15 @@
                                             "id": "login_password_change_actions",
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "flex flex-row gap-2"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "flex flex-col sm:flex-row gap-2"
+                                                "className": "flex flex-col gap-2"
                                             },
                                             "children": [
                                                 {

@@ -23,7 +23,9 @@ description: |
 axes:
   deployment_layout: [docroot_public, docroot_project_root, docroot_parent_subdir]  # 표준 배치 / 레이아웃 ② / 레이아웃 ③(서브디렉토리 + /public 노출)
   protection: [htaccess_ok, htaccess_absent]                        # 루트 보호 동작 여부 (rewrite 유무 포함)
-  exposure_probe: [safe, exposed, unknown, unknown_confirmed]       # Step 2 판정 상태 (D3·D21)
+  exposure_probe: [pending, safe, exposed, unknown, unknown_confirmed]  # Step 2 판정 상태 (D3·D21)
+  # pending = 판정 대기. 서버가 대상 목록을 내려준 뒤 프로브가 끝나기 전의 화면 상태이자 숨은 판정 필드의
+  # 초기값이다(initialExposureState, 2-requirements.php). 게이트는 닫혀 있고 서버는 이 값을 닫힌 집합으로 받는다.
   probe_response: [marker_200, clean_200, denied_403, missing_404, auth_401, server_5xx, network_error]  # 프로브 1건의 응답 종류
   probe_target: [env_example, composer_json, storage_sentinel]      # 노출 계열 3종 (비밀 무유출 — R3)
   asset_url_mode: [extension, extensionless]                        # 서빙 라우트 이중 모드 (R33)
@@ -195,6 +197,14 @@ axes:
 # cross product 가 크므로 pairwise 로 잰다 — 축을 줄이면 위 회귀 불변식 중 하나가
 # 모집단에서 빠진다(축 자체가 결함이 났던 자리다).
 coverage_strategy: pairwise
+
+# 판정 대기(pending)는 프로브 결과가 하나도 판정에 반영되기 전 상태다. 대조와 프로브 응답은 refreshWebExposureCard
+# 한 번의 호출 안에서 판정으로 접히고, 불능 사유는 unknown 판정에만 있으므로 아래 조합은 만들 수 없다.
+exclusions:
+  - { exposure_probe: pending, exposure_unknown_cause: [control_unreachable, unmeasured_only, probe_failed, shape_unavailable, no_targets, mixed], reason: "불능 사유는 unknown 판정에만 있다 — 판정 대기에는 사유가 없다" }
+  - { exposure_probe: pending, exposure_control: [reachable, unreachable], reason: "양성 대조 결과는 같은 호출 안에서 판정으로 접혀 대기 상태와 함께 존재하지 않는다" }
+  - { exposure_probe: pending, exposure_absent_control: [signature, unavailable, empty_body], reason: "음성 대조 결과는 같은 호출 안에서 판정으로 접혀 대기 상태와 함께 존재하지 않는다" }
+  - { exposure_probe: pending, probe_response: [marker_200, clean_200, denied_403, missing_404, auth_401, server_5xx, network_error], reason: "프로브 응답을 받으면 같은 호출 안에서 판정이 정해진다 — 응답을 받은 대기 상태는 없다" }
 
 effects:
   # 10차 라운드 등재 — 9차가 만든 「빈 세그먼트 가드」 계약과 그 회차가 연 축들이
@@ -389,7 +399,10 @@ effects:
   - installer_redirects_derive_from_base_url
   # 4차 검증 라운드 — 양성 대조·기준 URL 실측·200 인터스티셜
   - exposure_positive_control_detects_broken_delegation
-  - exposure_project_root_is_chosen_by_measurement_not_guess
+  # 앞 검증 라운드에 선언한 「대조로 후보를 고른다」 효과는 뒤 회차의 제품 결정으로
+  # 뒤집혔다 — 지금은 언제나 첫 후보를 쓰고 대조는 게이트로만 선다(installer.js resolveProjectRoot 주석).
+  # 이름을 현재 동작으로 바꿨다(#869 κ3, 머리말 전용이던 효과를 그 동작을 재는 시험으로 옮기며).
+  - exposure_project_root_is_not_switched_by_the_control
   - exposure_probe_treats_marker_less_200_as_undetermined
   - exposure_missing_env_example_is_reported_as_unmeasured
   - exposure_missing_composer_json_is_reported_as_unmeasured
@@ -436,6 +449,9 @@ effects:
   - exposure_unknown_detail_names_its_actual_cause
   - exposure_manual_criteria_judges_by_content_not_status
   - exposure_absent_control_is_shown_as_the_comparison_address
+  # #869 κ3 표식 바로잡기 — exposure_probe=unknown 과 판정 대기 효과로 거짓 커버하던 시험이 실제로 재는 동작
+  - exposure_probe_base_is_the_project_root_not_the_app_root   # 기준 URL 의 install, public 꼬리를 표기와 무관하게 벗겨 프로젝트 루트에 대고 잰다
+  - exposure_server_guide_points_at_the_servers_own_protection_file   # 노출 카드의 보호 설정 안내가 서버 종류별 조치를 지목하고, 모르는 값은 범용 안내로 떨어진다
   # 14차 검증 라운드(회차 14 W5) 등재 — 아래 effects 는 테스트 docblock 에 마커가 달려
   # 있었으나 **어느 매니페스트에도 선언되지 않았다.** effects 대조는 「매니페스트가 요구하는
   # 항목이 마커에 있는가」 한 방향만 보므로, 이 상태에서는 그 테스트가 통째로 사라져도

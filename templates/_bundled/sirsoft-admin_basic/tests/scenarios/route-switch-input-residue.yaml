@@ -31,7 +31,7 @@ description: |
 #     control_settled_debounce                     디바운스가 끝난 뒤 이동 — 다시 마운트 없음
 #     control_dropped_equals_destination           버린 대기 값이 새 화면 표시 값과 같음 — 다시 마운트 없음
 axes:
-  case: [cleared_retype_focus_kept_dispatch_navigate, same_value_before_and_after_blurred, timer_drops_before_destination_render, back_forward_after_typing, typing_after_remount, retype_on_destination_before_late_render, multilingual_edit_then_create, multilingual_edit_then_copy_create, change_action_navigates_after_write, change_action_clears_and_navigates_after_write, flush_click_navigate, ime_composition_before_late_render, layout_key_prop, replace_navigate_path_change, replace_url_path_change, control_query_only, control_no_debounce, control_settled_debounce, control_dropped_equals_destination]
+  case: [cleared_retype_focus_kept_dispatch_navigate, same_value_before_and_after_blurred, timer_drops_before_destination_render, back_forward_after_typing, typing_after_remount, retype_on_destination_before_late_render, multilingual_edit_then_create, multilingual_edit_then_copy_create, change_action_navigates_after_write, change_action_clears_and_navigates_after_write, flush_click_navigate, ime_composition_before_late_render, layout_key_prop, replace_navigate_path_change, replace_navigate_after_write, replace_url_path_change, control_query_only, control_no_debounce, control_settled_debounce, control_dropped_equals_destination]
 
 effects:
   - destination_field_shows_destination_value   # 새 화면 칸이 새 화면 상태 값(등록이면 빈 칸)을 보인다
@@ -61,3 +61,12 @@ validation:
     첫 새 경로 렌더가 방금 쓴 값을 보여(버린 값 = 표시 값) 조건 없이도 green 인 회귀 잠금이다.
     G52(engine-v1.81.2 보강): 조합 중인 같은 이름 칸 판정·compositionstart 기록 지움을 끄면 ime_composition_before_late_render 가 red(칸 요소 바뀜·포커스 잃음),
     레이아웃 key 합침을 끄면 layout_key_prop 이 red(칸 「32222」), 주소만 바뀐 경로 별칭(isUrlOnlyPathAlias)을 끄면 replace_navigate_path_change·replace_url_path_change 가 red(칸 요소 바뀜·칸·상태 10000).
+    #869 G6(engine-v1.89.0): same_value_before_and_after_blurred 를 원본 300ms 로 되돌렸다. 부하(바쁜 루프 8개 + 이 파일 사본 6벌 병렬)에서
+    정가 타이머가 이동 직전에 쓰기를 끝내고 경로 전환의 상태 초기화가 확정 렌더보다 먼저 오면, 종전 엔진은 12회 중 2회 red(칸 「32222」).
+    change 동작 없는 칸의 쓴 대기 값도 버림 기록을 남기게 고친 뒤 36회 0 실패(replace 두 사례 포함 72회 0 실패). 부하 없이 이 순서를 매번
+    만드는 방법(디스패처 디바운스 실행 직후 이동)은 확정 렌더가 먼저 커밋돼 종전 엔진에서도 green 이라 잠금으로 두지 않았다.
+    #869 replace 부하 실패(`'10000' to be '32222'`): replace_navigate_path_change 의 전제(replace 순간 대기 중)가 부하로 깨져 쓰기가 먼저 끝나면,
+    replace 의 다시 받기가 쿼리 갱신 계약(TemplateApp.updateQueryParams.dirtyForm)대로 폼을 서버 값으로 되돌린다 — 엔진 결함이 아니다. 그 사례는
+    디바운스 2000ms 로 전제를 고정하고, 쓰기가 끝난 뒤의 계약은 replace_navigate_after_write 가 잠근다(칸 요소 유지, 칸 = 상태 = 서버 값).
+    replace_navigate_after_write 는 부하 18회 중 1회 red(상태 10000, 칸 32222) 로 같은 계열 결함을 드러냈다 — 다시 받기가 쓰기 확정 렌더보다 먼저 오면
+    「다시 쓰임」 으로 대기 값을 버리지만 되돌린 값이 칸이 마지막으로 받은 value 와 같아 칸이 따라오지 않았다. autoBindingCommittedValueRef 로 고쳤다.

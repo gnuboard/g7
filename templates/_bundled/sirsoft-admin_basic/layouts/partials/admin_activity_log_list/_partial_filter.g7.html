@@ -33,8 +33,9 @@
       </div>
     </div>
     <div data-ref="filter_grid" class="filter-grid">
-      <div data-ref="log_type_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.activity_log.filter.log_type_label</span>
+      <div data-ref="log_type_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.activity_log.filter.log_type_label</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{!_local.filter.logTypes || _local.filter.logTypes.length === 0}}">
@@ -76,8 +77,9 @@
           </label>
         </div>
       </div>
-      <div data-ref="actor_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.activity_log.filter.actor_label</span>
+      <div data-ref="actor_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.activity_log.filter.actor_label</span>
         <div class="flex-center gap-2">
           <searchable-dropdown data-type="composite" aria-label="$t:admin.activity_log.filter.actor_label" options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
             <on event="onSearch">
@@ -108,8 +110,9 @@
           </button>
         </div>
       </div>
-      <div data-ref="date_range_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.activity_log.filter.date_range_label</span>
+      <div data-ref="date_range_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.activity_log.filter.date_range_label</span>
         <div class="flex-center gap-2 flex-wrap">
           <input name="dateFrom" type="datetime-local" aria-label="$t:common.range_start|label={{$t('admin.activity_log.filter.date_range_label')}}" step="1" class="input w-56" value="{{_local.filter.dateFrom || ''}}">
             <on type="change">

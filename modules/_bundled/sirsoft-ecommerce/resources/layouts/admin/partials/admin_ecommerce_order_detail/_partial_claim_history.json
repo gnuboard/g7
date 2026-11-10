@@ -353,6 +353,9 @@
                                                                     "if": "{{!!item.thumbnail_url}}",
                                                                     "props": {
                                                                         "src": "{{item.thumbnail_url}}",
+                                                                        "thumbPreset": "sm",
+                                                                        "loading": "lazy",
+                                                                        "decoding": "async",
                                                                         "alt": "{{item.product_name ?? ''}}",
                                                                         "className": "ecommerce:w-full ecommerce:h-full ecommerce:object-cover"
                                                                     }
@@ -735,6 +738,9 @@
                                                                             "if": "{{!!item.thumbnail_url}}",
                                                                             "props": {
                                                                                 "src": "{{item.thumbnail_url}}",
+                                                                                "thumbPreset": "sm",
+                                                                                "loading": "lazy",
+                                                                                "decoding": "async",
                                                                                 "alt": "{{item.product_name ?? ''}}",
                                                                                 "className": "ecommerce:w-full ecommerce:h-full ecommerce:object-cover"
                                                                             }

@@ -14,8 +14,8 @@
  * 이름이 없다(정적 전수 20칸, 2026-10-09). 관리자 템플릿의 라벨 잇기 규칙을 시험 안 함수로 옮겨 관리자 레이아웃·
  * 관리자 확장 전체에서 「라벨 하나 뒤 칸 둘 이상이면 칸마다 이름(aria-label·aria-labelledby·placeholder·label[for])」을 잠근다.
  *
- * @scenario surface=admin_shared_label
- * @effects admin_controls_after_shared_label_have_own_names
+ * 조합 요약(마커 아님, 평문): surface=admin_shared_label
+ * 효과 요약(마커 아님, 평문): admin_controls_after_shared_label_have_own_names
  *
  * @vitest-environment node
  */
@@ -102,13 +102,13 @@ function isControl(n: any): boolean {
 }
 
 /**
- * 노드가 곁 라벨인지 봅니다 — Label, 또는 class 에 form-label·filter-label·text-heading.
+ * 노드가 곁 라벨인지 봅니다 — Label, 또는 class 에 form-label·filter-field-label·filter-label(폐지 예정, 사이트에서 직접 고친 레이아웃 호환)·text-heading.
  *
  * @param n 노드
  * @return 라벨 여부
  */
 function isLabelEl(n: any): boolean {
-    return Boolean(n && (n.name === 'Label' || /\b(form-label|filter-label|text-heading)\b/.test(String(n.props?.className ?? ''))));
+    return Boolean(n && (n.name === 'Label' || /\b(form-label|filter-field-label|filter-label|text-heading)\b/.test(String(n.props?.className ?? ''))));
 }
 
 /**

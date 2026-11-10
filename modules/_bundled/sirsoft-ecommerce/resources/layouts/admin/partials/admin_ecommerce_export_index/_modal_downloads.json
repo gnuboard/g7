@@ -24,7 +24,24 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.export.modal_downloads.title",
-        "size": "large"
+        "size": "large",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.export.modal.close"
+            }
+        ]
     },
     "children": [
         {
@@ -37,8 +54,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-sm"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:md:grid-cols-2 ecommerce:gap-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-sm"
+                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-sm"
                     },
                     "children": [
                         {
@@ -110,8 +134,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:col-span-2"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:md:col-span-2"
+                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1"
                             },
                             "children": [
                                 {
@@ -152,8 +183,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{_global.ecommerceExportTarget?.reason}}",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:col-span-2"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:md:col-span-2"
+                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1"
                             },
                             "children": [
                                 {
@@ -178,8 +216,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{(_global.ecommerceExportTarget?.warnings ?? []).length > 0}}",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap ecommerce:col-span-2"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap ecommerce:md:col-span-2"
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap"
                             },
                             "children": [
                                 {
@@ -432,30 +477,6 @@
                             ]
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce-modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.export.modal.close"
                 }
             ]
         }

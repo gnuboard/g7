@@ -8,7 +8,10 @@ use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
+use App\Thumbnails\ThumbnailResponder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,9 +25,10 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimImageRepositoryInterfa
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\BuildsRowThumbnailSource;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 /**
@@ -52,6 +56,7 @@ use Throwable;
  */
 class ClaimAttachmentService
 {
+    use BuildsRowThumbnailSource;
     use ResolvesRowStorage;
     use ResolvesStoredExtension;
 
@@ -67,12 +72,21 @@ class ClaimAttachmentService
     public const ALLOWED_EXTENSIONS = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
 
     /**
+     * 첨부 응답의 캐시 유지 상한 (초, `private`)
+     *
+     * 원본과 썸네일이 같은 값을 쓴다. 썸네일만 레이아웃 캐시 TTL(하루)로 나가면 서명 주소가 만료되거나 신청자가
+     * 첨부를 지운 뒤에도 브라우저가 썸네일을 그만큼 들고 있어 원본 통로의 짧은 캐시가 무의미해진다.
+     */
+    public const CACHE_MAX_AGE = 300;
+
+    /**
      * @param  StorageInterface  $storage  스토리지 (images 카테고리 디스크 주입)
      * @param  EcommerceSettingsService  $settingsService  설정 서비스
      * @param  ClaimImageRepositoryInterface  $repository  첨부 Repository
      * @param  OrderExchangeRepositoryInterface  $exchangeRepository  교환 신청서 Repository
      * @param  OrderReturnRepositoryInterface  $returnRepository  반품 신청서 Repository
      * @param  OrderRefundRepositoryInterface  $refundRepository  환불신청서 Repository
+     * @param  ThumbnailResponder  $thumbnails  썸네일 헬퍼 (게이트 뒤 `?size=`·`?w=` 응답)
      */
     public function __construct(
         protected StorageInterface $storage,
@@ -81,6 +95,7 @@ class ClaimAttachmentService
         protected OrderExchangeRepositoryInterface $exchangeRepository,
         protected OrderReturnRepositoryInterface $returnRepository,
         protected OrderRefundRepositoryInterface $refundRepository,
+        protected ThumbnailResponder $thumbnails,
     ) {}
 
     /**
@@ -556,12 +571,17 @@ class ClaimAttachmentService
     /**
      * 첨부 서빙 응답을 만듭니다. (게이트 통과 시에만)
      *
+     * 요청에 `?size={규격}`·`?w={숫자}` 가 실렸으면 게이트를 지난 뒤 래스터 이미지를 썸네일로 낸다. 클레임 첨부는
+     * 신청자 본인과 운영자만 보는 게이트 원본이라 파생본도 비공개 썸네일 디스크·`private` 캐시다. 썸네일을 낼 수
+     * 없으면 원본 응답에 `X-G7-Thumbnail: bypass:{사유}` 를 붙인다.
+     *
      * @param  string  $hash  첨부 해시
      * @param  bool  $signatureVerified  한시 서명 검증 통과 여부
      * @param  int|null  $viewerUserId  열람 회원 ID
-     * @return StreamedResponse|null 응답 (게이트 불통·부재 시 null)
+     * @param  Request|null  $request  요청 (`size`·`w` — null 이면 썸네일 없이 원본)
+     * @return Response|null 원본·썸네일 응답 (게이트 불통·부재 시 null)
      */
-    public function download(string $hash, bool $signatureVerified = false, ?int $viewerUserId = null): ?StreamedResponse
+    public function download(string $hash, bool $signatureVerified = false, ?int $viewerUserId = null, ?Request $request = null): ?Response
     {
         $image = $this->repository->findByHash($hash);
 
@@ -577,13 +597,28 @@ class ClaimAttachmentService
             return null;
         }
 
-        $response = $this->storageForRow($image->disk)->response(
+        $rowStorage = $this->storageForRow($image->disk);
+
+        // 원본 확인은 썸네일보다 먼저 한다 — 원격 저장소에서 원본만 지워진 행이면 남은 파생본으로 `?size=` 만
+        // 200 이 되고 무파라미터는 404 가 되어, 같은 첨부가 요청 모양에 따라 있다·없다가 갈린다.
+        if (! $rowStorage->exists('images', $image->path)) {
+            Log::error('클레임 첨부 스토리지에 없음', ['claim_image_id' => $image->id, 'path' => $image->path]);
+
+            return null;
+        }
+
+        // 게이트(서명·운영자·본인)와 원본 확인을 지난 뒤, 원본 응답 바로 앞
+        if ($request !== null && ($thumbnail = $this->thumbnails->respond($request, $this->thumbnailSourceFor($image)))) {
+            return $thumbnail;
+        }
+
+        $response = $rowStorage->response(
             'images',
             $image->path,
             $image->original_name,
             [
                 'Content-Type' => $image->mime_type,
-                'Cache-Control' => 'private, max-age=300',
+                'Cache-Control' => 'private, max-age='.self::CACHE_MAX_AGE,
             ]
         );
 
@@ -597,7 +632,18 @@ class ClaimAttachmentService
         // 업로드가 래스터만 받더라도 서빙 계층은 저장된 MIME 과 무관하게 같은 판정을 거친다(다른 이미지 서빙 지점과 동일).
         InlineMediaPolicy::harden($response, $image->mime_type, $image->original_name);
 
-        return $response;
+        return $request !== null ? ThumbnailResponder::markBypass($response, $request) : $response;
+    }
+
+    /**
+     * 클레임 첨부 행의 썸네일 원본 (게이트, 캐시 상한은 원본과 같은 `CACHE_MAX_AGE`)
+     *
+     * @param  ClaimImage  $image  첨부 행
+     * @return ThumbnailSource|null 원본 (래스터가 아니면 null)
+     */
+    public function thumbnailSourceFor(ClaimImage $image): ?ThumbnailSource
+    {
+        return $this->rowThumbnailSource($image, gated: true, maxAge: self::CACHE_MAX_AGE);
     }
 
     /**

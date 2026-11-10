@@ -102,8 +102,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paynhnkcp:text-xs paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400 pay-nhnkcp-hidden paynhnkcp:inline"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paynhnkcp:text-xs paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400 paynhnkcp:hidden pay-nhnkcp-hidden paynhnkcp:sm:inline"
+                                        "className": "paynhnkcp:text-xs paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400 paynhnkcp:hidden pay-nhnkcp-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.order_info_description"
                                 },
@@ -396,8 +403,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "responsive": {
+                                        "640-": {
+                                            "props": {
+                                                "className": "paynhnkcp:text-xs paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400 pay-nhnkcp-hidden paynhnkcp:inline"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "paynhnkcp:text-xs paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400 paynhnkcp:hidden pay-nhnkcp-hidden paynhnkcp:sm:inline"
+                                        "className": "paynhnkcp:text-xs paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400 paynhnkcp:hidden pay-nhnkcp-hidden"
                                     },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_description"
                                 }

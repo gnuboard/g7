@@ -37,14 +37,21 @@
                 }
             },
             "props": {
-                "className": "sl:flex sl:flex-col sl:gap-2 sl:md:flex-row sl:md:items-center"
+                "className": "sl:flex sl:gap-2 sl:flex-row sl:items-center"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:mb-0 sl:shrink-0 sl:flex sl:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sl:block sl:mb-2 sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:md:mb-0 sl:shrink-0 sl:md:flex sl:md:items-center"
+                        "className": "sl:block sl:mb-2 sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:shrink-0"
                     },
                     "text": "$t:sirsoft-social_login.admin.users.filter_label"
                 },

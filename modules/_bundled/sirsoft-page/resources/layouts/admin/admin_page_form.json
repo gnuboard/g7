@@ -170,8 +170,20 @@
                 "dataKey": "form",
                 "trackChanges": true,
                 "blur_until_loaded": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "page:p-6 page:bg-gray-50 page:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "page:p-8 page:bg-gray-50 page:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "page-admin-page-content-responsive-fluid"
+                    "className": "page:p-4 page:bg-gray-50 page:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -343,8 +355,15 @@
                                         "id": "slug_published_grid",
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "page:grid page:grid-cols-2 page:gap-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "page-grid-2col-responsive"
+                                            "className": "page:grid page:grid-cols-1 page:gap-4"
                                         },
                                         "children": [
                                             {
@@ -1112,8 +1131,33 @@
                                                         }
                                                     },
                                                     {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "uploadFailedCount": "{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "업로드가 하나라도 실패하면 저장하지 않는다 — 실패한 파일 없이 저장된 줄 알게 된다(#869 브라우저 실측). 실패 문구는 업로더가 파일마다 이미 알린다.",
+                                                        "handler": "setState",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) > 0}}",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "saving": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) > 0}}",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:attachment.upload_failed_save_stopped"
+                                                        }
+                                                    },
+                                                    {
                                                         "handler": "apiCall",
                                                         "target": "{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}",
+                                                        "if": "{{(_local.uploadFailedCount ?? 0) === 0}}",
                                                         "auth_required": true,
                                                         "params": {
                                                             "method": "{{route?.id ? 'PUT' : 'POST'}}",

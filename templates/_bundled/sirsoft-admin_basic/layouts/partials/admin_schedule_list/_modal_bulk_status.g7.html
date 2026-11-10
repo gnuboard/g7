@@ -7,7 +7,7 @@
   <modal data-type="composite" data-ref="schedule_bulk_status_modal" title="$t:admin.schedules.modals.bulk_status_title" size="sm">
     <p data-if="{{_global.bulkStatusAction === 'active'}}" class="text-secondary">$t:admin.schedules.modals.bulk_status_confirm_active|count={{(_global.selectedScheduleIds ?? []).length}}</p>
     <p data-if="{{_global.bulkStatusAction !== 'active'}}" class="text-secondary">$t:admin.schedules.modals.bulk_status_confirm_inactive|count={{(_global.selectedScheduleIds ?? []).length}}</p>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkStatusChanging}}">
         <on type="click">
           <close-modal target="schedule_bulk_status_modal"/>
@@ -38,6 +38,6 @@
         <icon data-if="{{_global.isBulkStatusChanging}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isBulkStatusChanging ? '$t:common.processing' : '$t:common.confirm'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

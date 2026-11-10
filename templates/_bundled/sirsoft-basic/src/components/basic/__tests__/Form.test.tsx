@@ -3,13 +3,12 @@
  * @description Basic Form 컴포넌트 — `action` 은 브라우저가 라우터 없이 직접 제출하는 주소라
  *              하위 폴더 마운트의 접두사를 컴포넌트가 붙여야 한다 (`A` 의 `href` 와 같은 축).
  *
- * @scenario base_path=subpath, navigation_direction=request
- * @effects template_form_component_applies_base_prefix
+ * 조합 요약(마커 아님, 평문): base_path=subpath, navigation_direction=request
+ * 효과 요약(마커 아님, 평문): template_form_component_applies_base_prefix
  *
  * @vitest-environment jsdom
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { Form } from '../Form';

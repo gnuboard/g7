@@ -40,8 +40,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{!_global.currentUser?.uuid}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "flex flex-row gap-3"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "flex flex-col sm:flex-row gap-3"
+                                "className": "flex flex-col gap-3"
                             },
                             "children": [
                                 {

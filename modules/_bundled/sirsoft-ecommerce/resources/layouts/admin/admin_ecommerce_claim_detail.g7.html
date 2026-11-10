@@ -77,9 +77,10 @@
   <slot name="content">
     <div data-ref="claim_detail_wrapper" class="ecommerce-admin-page-content">
       <div data-ref="claim_detail_header_section" class="ecommerce:mb-6">
-        <div data-ref="cd_page_header" class="ecommerce-page-header-padded">
+        <div data-ref="cd_page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+          <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6"/>
           <div>
-            <h1 data-ref="cd_001_page_title" class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.claim.detail.title</h1>
+            <h1 data-ref="cd_001_page_title" class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>$t:sirsoft-ecommerce.admin.claim.detail.title</h1>
             <div data-ref="cd_002_header_meta" class="ecommerce-page-description ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap">
               <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.claim_number:</span>
               <span data-ref="cd_003_claim_number" class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100">{{claim?.data?.claim?.claim_number ?? ''}}</span>
@@ -113,19 +114,20 @@
               <span data-ref="cd_008d_withdrawn_by_admin" data-if="{{!!claim?.data?.claim?.withdrawn_by_admin_name}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.withdrawn_by_admin|name={{claim?.data?.claim?.withdrawn_by_admin_name}}</span>
             </div>
           </div>
-          <div class="ecommerce-page-actions">
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
+            <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
             <!-- 고객 요청 대리 철회(S14) — 고객이 전화로 신청 취소를 요청하면 반려가 아니라 철회다. 단계는 고객 철회와 같고, 판매자가 접수한 건도 거둘 수 있다(게이트는 서버의 `on_behalf.can_withdraw`). -->
-            <button data-ref="cd_011_withdraw_on_behalf" data-if="{{claim?.data?.on_behalf?.can_withdraw === true &amp;&amp; claim?.data?.abilities?.can_update_status === true}}" type="button" class="ecommerce-btn ecommerce-btn-outline">
+            <button data-ref="cd_011_withdraw_on_behalf" data-if="{{claim?.data?.on_behalf?.can_withdraw === true &amp;&amp; claim?.data?.abilities?.can_update_status === true}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap">
               <on type="click">
                 <action handler="sirsoft-ecommerce.openClaimWithdrawOnBehalf" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}"/>
               </on>
               $t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.button
             </button>
             <!-- 원 주문은 이 목록 클러스터 밖이다 — 새 창 링크로 열어 지금 보던 신청서를 잃지 않게 한다(주소가 href 에 있어 가운데 클릭·새 탭도 같다). -->
-            <a href="/admin/ecommerce/orders/{{claim.data.claim.order_number}}" target="_blank" rel="noopener noreferrer" data-ref="cd_009_order_link_button" data-if="{{!!claim?.data?.claim?.order_number}}" class="ecommerce-btn ecommerce-btn-outline">
+            <a href="/admin/ecommerce/orders/{{claim.data.claim.order_number}}" target="_blank" rel="noopener noreferrer" data-ref="cd_009_order_link_button" data-if="{{!!claim?.data?.claim?.order_number}}" class="ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap">
               $t:sirsoft-ecommerce.admin.claim.detail.view_order
             </a>
-            <a href="/admin/ecommerce/claims" :mergeQuery="true" data-ref="cd_010_list_button" class="ecommerce-btn ecommerce-btn-outline">
+            <a href="/admin/ecommerce/claims" :mergeQuery="true" data-ref="cd_010_list_button" class="ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap">
               <on type="click">
                 <!-- 목록 복귀는 보던 조건 그대로다 — 검색어·필터·페이지·유형 서브탭을 URL 에서 승계한다. -->
                 <navigate :mergeQuery="true">

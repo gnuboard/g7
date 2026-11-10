@@ -9,7 +9,82 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.title",
-        "width": "1125px"
+        "width": "1125px",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "닫기 — 타이머 정리가 창 닫기보다 **먼저**다. 수량 입력에 걸린 지연 재조회가 창이 사라진 뒤 도착하면 없는 화면의 상태를 건드린다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "sirsoft-ecommerce.clearCancelOrderTimers"
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_local.isCancelling}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.close_btn"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 실행 — 화면에 흩어진 여섯 값을 그대로 핸들러에 넘긴다. 클레임 열람 가능 여부(`canViewClaims`)도 함께 넘긴다 — 셸의 orderClaims 가 403 이면 unavailable 이고, 그 운영자를 방금 만든 신청서 상세로 보내면 403 화면에 떨어진다. 재고 복원·마일리지 회수·PG 취소가 한 흐름으로 얽혀 있어 화면에서 조립하지 않고, 검증 오류 표시와 창 닫기도 핸들러 몫이다.",
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.executeCancelOrder",
+                        "params": {
+                            "orderId": "{{route.orderNumber}}",
+                            "cancelItems": "{{_local.cancelItems}}",
+                            "cancelReason": "{{_local.cancelReason ?? ''}}",
+                            "cancelReasonDetail": "{{_local.cancelReasonDetail ?? ''}}",
+                            "autoAdvanceRefund": "{{_local.autoAdvanceRefund === true && order.data?.abilities?.can_execute_refund === true}}",
+                            "refundPriority": "{{_local.refundPriority ?? 'pg_first'}}",
+                            "canViewClaims": "{{orderClaims?.data?.unavailable !== true}}"
+                        }
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                    "disabled": "{{_local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_local.isCancelling}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "ecommerce:animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_btn"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -298,6 +373,9 @@
                                             "if": "{{cancelItem.thumbnail_url}}",
                                             "props": {
                                                 "src": "{{cancelItem.thumbnail_url}}",
+                                                "thumbPreset": "sm",
+                                                "loading": "lazy",
+                                                "decoding": "async",
                                                 "className": "ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0"
                                             }
                                         },
@@ -2096,89 +2174,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "comment": "액션 버튼 (하단 고정)",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:pt-4 ecommerce:pb-1 ecommerce:sticky ecommerce:bottom-0 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:-mx-6 ecommerce:px-6 ecommerce:-mb-4"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "닫기 — 타이머 정리가 창 닫기보다 **먼저**다. 수량 입력에 걸린 지연 재조회가 창이 사라진 뒤 도착하면 없는 화면의 상태를 건드린다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "sirsoft-ecommerce.clearCancelOrderTimers"
-                                },
-                                {
-                                    "handler": "closeModal"
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_local.isCancelling}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.close_btn"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "취소 실행 — 화면에 흩어진 여섯 값을 그대로 핸들러에 넘긴다. 클레임 열람 가능 여부(`canViewClaims`)도 함께 넘긴다 — 셸의 orderClaims 가 403 이면 unavailable 이고, 그 운영자를 방금 만든 신청서 상세로 보내면 403 화면에 떨어진다. 재고 복원·마일리지 회수·PG 취소가 한 흐름으로 얽혀 있어 화면에서 조립하지 않고, 검증 오류 표시와 창 닫기도 핸들러 몫이다.",
-                            "type": "click",
-                            "handler": "sirsoft-ecommerce.executeCancelOrder",
-                            "params": {
-                                "orderId": "{{route.orderNumber}}",
-                                "cancelItems": "{{_local.cancelItems}}",
-                                "cancelReason": "{{_local.cancelReason ?? ''}}",
-                                "cancelReasonDetail": "{{_local.cancelReasonDetail ?? ''}}",
-                                "autoAdvanceRefund": "{{_local.autoAdvanceRefund === true && order.data?.abilities?.can_execute_refund === true}}",
-                                "refundPriority": "{{_local.refundPriority ?? 'pg_first'}}",
-                                "canViewClaims": "{{orderClaims?.data?.unavailable !== true}}"
-                            }
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
-                        "disabled": "{{_local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_local.isCancelling}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "ecommerce:animate-spin",
-                                "size": "sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_btn"
                         }
                     ]
                 }

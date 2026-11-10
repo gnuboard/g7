@@ -9,7 +9,71 @@
     "name": "Modal",
     "props": {
         "title": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 대기시켜 둔 선택을 버린다(그대로 두면 다음에 창을 열 때 지난 선택이 적용된다)",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "pendingNoticeTemplateId": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-outline"
+                },
+                "text": "$t:sirsoft-ecommerce.common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "확정 — 창을 닫고 대기 중이던 템플릿을 적용한 뒤 그 자리를 비운다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal"
+                            },
+                            {
+                                "handler": "sirsoft-ecommerce.selectNoticeTemplate",
+                                "params": {
+                                    "templateId": "{{_global.pendingNoticeTemplateId}}"
+                                }
+                            },
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "pendingNoticeTemplateId": null
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce-btn ecommerce-btn-warning"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_button"
+            }
+        ]
     },
     "children": [
         {
@@ -52,77 +116,6 @@
                                     "text": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_description"
                                 }
                             ]
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "취소 — 대기시켜 둔 선택을 버린다(그대로 두면 다음에 창을 열 때 지난 선택이 적용된다)",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "pendingNoticeTemplateId": null
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-outline"
-                            },
-                            "text": "$t:sirsoft-ecommerce.common.cancel"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "확정 — 창을 닫고 대기 중이던 템플릿을 적용한 뒤 그 자리를 비운다",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "sirsoft-ecommerce.selectNoticeTemplate",
-                                            "params": {
-                                                "templateId": "{{_global.pendingNoticeTemplateId}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "pendingNoticeTemplateId": null
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "ecommerce-btn ecommerce-btn-warning"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_button"
                         }
                     ]
                 }

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Rules\ValidIpAllowList;
 use App\Rules\ValidTrustedProxyAddress;
+use App\Thumbnails\ThumbnailConfig;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
@@ -39,7 +40,31 @@ final class SettingShapeRules
             // 신뢰 프록시 목록 (#609) — 벌크(`advanced.trusted_proxies`)와 같은 형태.
             // 문자열을 받으면 항목 검증(`value.*`)이 걸리지 않아 아무 값이나 저장된다.
             'debug.trusted_proxies' => ['array', 'max:50'],
+
+            // 썸네일 서버 보호 값 (#869) — 기본값이 비운 값(null)이라 단건 경로는 선언 타입으로 정수를 강제하지 못한다.
+            // 범위는 화면 칸과 같은 `core.settings_limits` 이고, 근거는 config/core.php 「이미지 썸네일」 절에 있다.
+            ...self::thumbnailServerLimitRules(),
         ];
+    }
+
+    /**
+     * 썸네일 서버 보호 값(`ThumbnailConfig::SERVER_LIMIT_KEYS`)의 정수·범위 규칙을 만듭니다.
+     *
+     * @return array<string, list<string>> 설정 키 → 규칙 목록
+     */
+    private static function thumbnailServerLimitRules(): array
+    {
+        $rules = [];
+
+        foreach (ThumbnailConfig::SERVER_LIMIT_KEYS as $key) {
+            $rules['upload.thumbnail_'.$key] = [
+                'integer',
+                'min:'.config("core.settings_limits.upload_thumbnail_{$key}_min"),
+                'max:'.config("core.settings_limits.upload_thumbnail_{$key}_max"),
+            ];
+        }
+
+        return $rules;
     }
 
     /**

@@ -7,14 +7,14 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 194개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 195개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 2개 |
 | `auth` | 6개 |
 | `board` | 5개 |
-| `errors` | 6개 |
+| `errors` | 7개 |
 | `mypage` | 15개 |
 | `page` | 1개 |
 | `partials` | 145개 |
@@ -41,6 +41,7 @@
 | `404` | `errors` | 화면 | `_user_base` |
 | `500` | `errors` | 화면 | `_user_base` |
 | `503` | `errors` | 화면 | `_user_base` |
+| `default` | `errors` | 화면 | `_user_base` |
 | `maintenance` | `errors` | 화면 | `_user_base` |
 | `home` | `(root)` | 화면 | `_user_base` |
 | `addresses` | `mypage` | 화면 | `_user_base` |
@@ -239,7 +240,9 @@
 비회원 기준 메뉴(회원용 게시판이 빠진 목록)가 나옵니다 — `_user_base` 의 `boards`(헤더·모바일 메뉴·마이페이지 게시판
 선택칸이 함께 읽는다)가 그 예입니다.
 
-`errors/` 6종(401·403·404·500·503·maintenance)은 코어가 오류 상황에서 직접 부릅니다. 401 은
+`errors/` 7종(401·403·404·500·503·maintenance·default)은 코어가 오류 상황에서 직접 부릅니다. `default` 는 코드별 레이아웃이 없는
+코드(400·422·429·502·504 등)를 맡는 공통 오류 화면으로 `template.json` 의 `error_config.layouts.default` 에 등록돼 있고, 코드를 박지 않고
+엔진이 넘기는 `{{errorCode}}` 와 일반 문구, 새로고침과 홈으로 단추를 보입니다(없으면 엔진 내장 오류 화면이 머리글과 바닥글까지 덮습니다). 401 은
 **로그인 리다이렉트를 여기서 구현하지 않습니다** — 코어 `TemplateApp.showRouteError` 가드가
 처리하므로, 이 레이아웃에서 다시 이동시키면 이중 리다이렉트가 됩니다.
 
@@ -490,7 +493,7 @@ API 를 부르지도, 갈 곳 없는 링크를 그리지도 않는다. 판정은
 1. 베이스: _user_base.g7.html (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯)
 2. 코어 페이지 30개+: 인증, 게시판, 쇼핑몰, 마이페이지, 검색, 프로필
 3. Partial 100개+: 폼, 모달, 탭, 카드, 목록, 필터, 타입별 렌더러
-4. 에러 페이지 6개: 401, 403, 404, 500, 503, maintenance
+4. 에러 페이지 7개: 401, 403, 404, 500, 503, maintenance, default(코드별 레이아웃이 없는 코드)
 5. 패턴: 게시판(타입별 렌더러), 쇼핑몰(장바구니/결제 플로우), 마이페이지(탭 네비게이션)
 ```
 
@@ -760,7 +763,8 @@ _user_base.g7.html (베이스 레이아웃)
     ├── 404.g7.html (페이지 없음)
     ├── 500.g7.html (서버 오류)
     ├── 503.g7.html (서비스 불가)
-    └── maintenance.g7.html (점검 중)
+    ├── maintenance.g7.html (점검 중)
+    └── default.g7.html (공통 오류 화면 — 코드별 레이아웃이 없는 코드, `{{errorCode}}` 표시)
 ```
 
 관리자 화면의 이 템플릿 설정 화면은 레이아웃 트리 밖 `templates/_bundled/sirsoft-basic/settings/template_settings.g7.html` 이다 — 코어가 켜진 관리자 템플릿마다 `sirsoft-basic.template_settings` 로 교차 등록하고, 화면은 설정 묶음 부품 `sirsoft-basic.TemplateSettingsScreen` 이 그린다([components.md](components.md) 「템플릿 설정 화면 부품」).
@@ -1234,17 +1238,18 @@ slots.content:
 
 **구성**:
 ```text
-(extends 없음 — 독립 레이아웃)
-components:
-  └── Div (전체 화면 중앙 정렬)
-      ├── Icon (에러 아이콘)
-      ├── H1 (에러 코드)
-      ├── P (에러 메시지)
-      └── Button (홈으로 이동)
+extends: _user_base (content 슬롯만 채운다 — 머리글·바닥글은 베이스가 그린다)
+slots.content:
+  └── Div (본문 중앙 정렬)
+      ├── Div (에러 코드 — 코드 레이아웃은 숫자를 박고, default 는 {{errorCode}})
+      ├── H1 (제목)
+      ├── P (설명)
+      └── A (홈으로 이동 — default 는 새로고침 Button 을 앞에 둔다)
 ```
 
 **핸들러 패턴**:
 - `navigate` — 홈으로 이동
+- `refresh` — 새로고침 (`errors/default`)
 
 ---
 

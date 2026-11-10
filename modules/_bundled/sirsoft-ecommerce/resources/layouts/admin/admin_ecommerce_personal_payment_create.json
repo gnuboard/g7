@@ -65,8 +65,15 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "ecommerce-page-title ecommerce:mb-1"
+                                            "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.title"
                                     },
@@ -429,10 +436,17 @@
                                     {
                                         "type": "basic",
                                         "name": "Input",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "ecommerce-input ecommerce:w-80"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "type": "text",
                                             "name": "buyer_name",
-                                            "className": "ecommerce-input ecommerce:md:w-80",
+                                            "className": "ecommerce-input",
                                             "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.name_placeholder"
                                         }
                                     }
@@ -442,8 +456,15 @@
                                 "id": "buyer_contact_grid",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-grid-2col-responsive"
+                                    "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                                 },
                                 "children": [
                                     {
@@ -614,8 +635,15 @@
                                 "id": "amount_expiry_grid",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-4"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "ecommerce-grid-2col-responsive ecommerce:mb-4"
+                                    "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4 ecommerce:mb-4"
                                 },
                                 "children": [
                                     {

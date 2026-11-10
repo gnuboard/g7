@@ -1,7 +1,7 @@
 /**
  * 연간 통지 설정·시험 발송·이력·새로고침. 변경 설정은 finally에서 복구합니다.
- * @scenario flow=browser
- * @effects settings_validated, self_test_only, history_paginated
+ * 조합 요약(마커 아님, 평문): flow=browser
+ * 효과 요약(마커 아님, 평문): settings_validated, self_test_only, history_paginated
  */
 import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -162,7 +162,8 @@ test('이번 주기 대상 회원 수가 보이고 「대상 보기」 창이 �
     await expect(rows.first()).toBeVisible({ timeout: 20_000 });
     await expect(rows.first().locator('a').first()).toHaveAttribute('href', /^\/admin\/users\//);
 
-    await page.locator('#privacy_targets_footer button').click();
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   } finally {
     artisanSeed('playwright:seed-dormant --purge-users');

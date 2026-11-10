@@ -1,0 +1,34 @@
+feature: 사용자 템플릿 부품의 폭 분기 — Tailwind 반응형 접두 대신 엔진 폭
+
+description: |
+  헤더·푸터 본문 여백, 헤더 회원 이름, 쪽 이동의 맨 앞·맨 끝 단추, 첨부 썸네일 열 수, 방문자 카운터 열 수,
+  화면 뼈대의 헤더·푸터가 Tailwind 반응형 접두(창 폭 판정) 대신 엔진 폭(G7Core.useResponsive().width,
+  편집기 미리보기에서는 기기 폭)으로 접두 없는 클래스를 고르는지 잠근다. 경계는 Tailwind 와 같아(sm 640,
+  md 768, lg 1024) 일반 화면은 바뀌지 않는다. 판정은 src/components/layout/viewportWidth.ts 한 곳이며,
+  폭을 전혀 모를 때는 엔진 기본 폭(1024, 검색 봇 렌더 폭)으로 고르고 Grid·PageSkeleton 도 같은 값을 쓴다. 시험 하나가 시나리오 하나다.
+
+axes:
+  case:
+    # templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ResponsiveWidthClasses.test.tsx — 부품별 폭 계약
+    - width_c01   # 폭별 클래스(375·639·640·767·768·1023·1024·1280)
+    - width_c02   # 어느 폭에서도 반응형 접두 0
+    - width_c03   # 창 크기 변경에 따라 갱신
+    - width_c04   # 편집기 미리보기 폭(overrideWidth) 우선
+    - width_c05   # 폭을 모르면 엔진 기본 폭(1024)
+    - width_c06   # Grid·화면 뼈대 Grid 도 같은 기본 폭
+    # templates/_bundled/sirsoft-basic/src/components/layout/__tests__/viewportWidth.test.ts — 공용 판정
+    - viewport_c01
+    - viewport_c02
+    - viewport_c03
+    - viewport_c04
+    - viewport_c05
+
+effects:
+  - component_width_classes_follow_engine_width        # 폭에 맞는 접두 없는 클래스
+  - component_width_classes_have_no_breakpoint_prefix  # 반응형 접두 클래스를 내지 않음
+  - component_width_classes_follow_preview_width       # 편집기 미리보기 기기 폭을 따름
+  - component_width_unknown_defaults_to_engine_default  # 폭을 모르면 엔진 기본 폭(1024)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ResponsiveWidthClasses.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/layout/__tests__/viewportWidth.test.ts

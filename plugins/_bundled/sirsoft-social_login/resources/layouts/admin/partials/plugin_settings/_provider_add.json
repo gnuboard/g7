@@ -15,8 +15,15 @@
         {
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:px-6 sl:py-4"
+                    }
+                }
+            },
             "props": {
-                "className": "sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:px-4 sl:sm:px-6 sl:py-4"
+                "className": "sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:px-4 sl:py-4"
             },
             "children": [
                 {
@@ -93,15 +100,29 @@
             "name": "Div",
             "if": "{{_local.showAddForm}}",
             "dataKey": "newProvider",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "sl:px-6 sl:pb-5 sl:space-y-3"
+                    }
+                }
+            },
             "props": {
-                "className": "sl:px-4 sl:sm:px-6 sl:pb-5 sl:space-y-3"
+                "className": "sl:px-4 sl:pb-5 sl:space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "sl:grid sl:grid-cols-2 sl:gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sl-grid-2col-responsive"
+                        "className": "sl:grid sl:grid-cols-1 sl:gap-4"
                     },
                     "children": [
                         {
@@ -249,8 +270,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "640-": {
+                            "props": {
+                                "className": "sl:flex sl:flex-row sl:items-end sl:gap-2"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-end sl:gap-2"
+                        "className": "sl:flex sl:flex-col sl:gap-2"
                     },
                     "children": [
                         {
@@ -348,8 +376,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "sl:grid sl:grid-cols-2 sl:gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sl-grid-2col-responsive"
+                        "className": "sl:grid sl:grid-cols-1 sl:gap-4"
                     },
                     "children": [
                         {
@@ -606,8 +641,15 @@
             "id": "extension_providers_note",
             "type": "basic",
             "name": "P",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "sl:px-6 sl:pb-4 sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                    }
+                }
+            },
             "props": {
-                "className": "sl:px-4 sl:sm:px-6 sl:pb-4 sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                "className": "sl:px-4 sl:pb-4 sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
             },
             "text": "$t:sirsoft-social_login.admin.providers.extension_hint"
         }

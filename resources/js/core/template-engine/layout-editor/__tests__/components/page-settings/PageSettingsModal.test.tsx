@@ -154,6 +154,10 @@ beforeEach(() => {
 });
 
 describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_renders_eight_tabs_meta_default
+   */
   it('8탭 헤더 전부 렌더 + 기본 탭(meta) 패널 = MetaForm', () => {
     renderShell();
     for (const key of ['meta', 'seo', 'init', 'overlay', 'computed', 'state', 'error', 'data']) {
@@ -162,6 +166,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(screen.getByTestId('mock-meta-form')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_tab_click_switches_panel
+   */
   it('탭 클릭 → 해당 폼으로 패널 전환', () => {
     renderShell();
     fireEvent.click(screen.getByTestId('g7le-page-settings-tab-seo'));
@@ -170,11 +178,19 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(screen.getByTestId('mock-data-form')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_initial_tab_opens_that_tab
+   */
   it('initialTab prop → 그 탭으로 직접 진입', () => {
     renderShell({ initialTab: 'error' });
     expect(screen.getByTestId('mock-error-form')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_tab_underline_longhand_only
+   */
   it('D-H: 탭 밑줄은 longhand 만 사용(shorthand borderBottom 미사용) — 비활성 탭 색 잔존 방지', () => {
     renderShell();
     // 활성→비활성 전환을 일으켜 본다(meta→seo→meta).
@@ -191,6 +207,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(metaTab.style.borderBottomColor).not.toBe('transparent');
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_tab_bar_overflow_y_hidden
+   */
   it('탭바 세로 overflow=hidden — ▲▼ 세로 스크롤바/탭 사라짐 방지', () => {
     renderShell();
     const tabRow = screen.getByTestId('g7le-page-settings-tab-meta').parentElement as HTMLElement;
@@ -200,15 +220,25 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(tabRow.getAttribute('role')).toBe('tablist');
   });
 
-  it('D-N: [에러 처리] 탭 → 셸이 표준 HTTP 코드 + 병합본 키를 ErrorHandlingForm 에 주입', () => {
+  /**
+   * @scenario subject=error_handling_template_override
+   * @effects error_shell_passes_template_config_codes_not_merged_keys
+   */
+  it('D-N: [에러 처리] 탭 → 셸이 표준 HTTP 코드와, 템플릿 설정의 errorHandling 코드를 ErrorHandlingForm 에 주입', async () => {
     mockRaw = { errorHandling: { '418': { handler: 'toast' } } };
-    renderShell({ initialTab: 'error' });
+    renderShell({ initialTab: 'error', templateErrorCodesFetcher: async () => ['500'] });
     // 표준 코드(401/403/404/500/503) 항상 주입 → buildRowCodes 가 default 행을 덧붙인다.
     expect(errorFormProps.errorConfigCodes).toEqual(['401', '403', '404', '500', '503']);
-    // 레이아웃이 추가 선언한 코드(418)는 templateCodes 로 합쳐져 행으로 노출.
-    expect(errorFormProps.templateCodes).toContain('418');
+    // templateCodes 는 템플릿 설정(/api/templates/{id}/config)의 errorHandling 코드다 — 병합본 키(418)가 아니다.
+    // 병합본 키를 넘기면 그 코드는 〔상속〕으로 먼저 판정돼 〔템플릿〕 출처와 [덮기] 가 나올 수 없다(#869 λ 실측).
+    // 레이아웃이 따로 선언한 코드(418)의 행은 폼이 value 키로 만든다(ErrorHandlingTemplateOverride.test.tsx).
+    await vi.waitFor(() => expect(errorFormProps.templateCodes).toEqual(['500']));
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_overlay_tab_derives_base_and_own
+   */
   it(' 로딩화면: [로딩 화면] 탭 → 셸이 병합본−own 으로 baseValue/ownValue 도출해 주입(상속 표기 결함 수정)', () => {
     // 병합본 = base(enabled/style/target) + 자식(wait_for). own = 자식 직접 선언(wait_for 만).
     mockRaw = {
@@ -225,6 +255,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(overlayFormProps.baseValue).toEqual({ enabled: true, style: 'spinner', target: 'main' });
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_overlay_tab_full_own_no_base
+   */
   it(' 로딩화면: own 이 모든 키를 덮으면 baseValue 미도출(상속 없음 → undefined)', () => {
     mockRaw = {
       transition_overlay: { enabled: true, wait_for: ['x'] },
@@ -234,6 +268,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(overlayFormProps.baseValue).toBeUndefined();
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_overlay_tab_all_inherited_empty_own
+   */
   it(' 로딩화면: own 에 transition_overlay 가 아예 없으면(전부 상속) ownValue={} + baseValue=병합본 전체', () => {
     // 실데이터(shop/show) — 자식은 로딩 화면을 직접 선언 안 함, 전부 base(_user_base) 상속.
     // 종전 버그: 셸이 own 부재 시 undefined 를 흘려 폼이 병합본을 own 으로 폴백 → 상속 키가 〔재정의〕로 오판.
@@ -248,6 +286,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(overlayFormProps.baseValue).toEqual({ enabled: true, style: 'spinner', target: 'main' });
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_unreduced_items_badge_and_summary
+   */
   it('init_actions/computed 미환원 항목 → 탭 배지(N) + 전체 고급 요약', () => {
     mockRaw = {
       init_actions: [{ handler: 'a' }, { handler: 'b' }],
@@ -263,24 +305,40 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(screen.getByTestId('g7le-page-settings-advanced-summary')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_no_advanced_hides_summary
+   */
   it('고급 0 → 요약 줄 미노출', () => {
     mockRaw = {};
     renderShell();
     expect(screen.queryByTestId('g7le-page-settings-advanced-summary')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_title_uses_meta_title
+   */
   it('모달 제목 = meta.title 해석값(평문)', () => {
     mockRaw = { meta: { title: '우리 사이트 홈' } };
     renderShell();
     expect(screen.getByTestId('g7le-page-settings-title')).toHaveTextContent('우리 사이트 홈');
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_title_falls_back_to_editor_label
+   */
   it('meta.title 없으면 editor_label 폴백', () => {
     mockRaw = { meta: { editor_label: '홈 화면' } };
     renderShell();
     expect(screen.getByTestId('g7le-page-settings-title')).toHaveTextContent('홈 화면');
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_title_falls_back_to_path
+   */
   it('meta 전체 없으면 path 폴백', () => {
     mockRaw = {};
     renderShell();
@@ -288,6 +346,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(screen.getByTestId('g7le-page-settings-title')).toHaveTextContent('/');
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_seo_extensions_fetched_into_form
+   */
   it('D-4b: seo-candidates extensions fetch → SeoForm availableExtensions 결선', async () => {
     const exts = [{ type: 'module', id: 'sirsoft-ecommerce', name: '쇼핑몰' }];
     renderShell({ initialTab: 'seo', extensionsFetcher: async () => exts });
@@ -297,6 +359,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(seoFormProps.availableExtensions).toEqual(exts);
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_seo_preview_gets_sample_context
+   */
   it(' SEO 미리보기: 셸이 샘플 컨텍스트를 SeoForm.seedContext 로 결선(빈 컨텍스트 호출 방지)', async () => {
     renderShell({ initialTab: 'seo' });
     await screen.findByTestId('mock-seo-form');
@@ -305,6 +371,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
     expect(seoFormProps.seedContext).toEqual(MOCK_SAMPLE_CONTEXT);
   });
 
+  /**
+   * @scenario subject=page_settings_modal
+   * @effects shell_close_buttons_call_on_close
+   */
   it('✕ / 하단 닫기 → onClose 호출', () => {
     const { onClose } = renderShell();
     fireEvent.click(screen.getByTestId('g7le-page-settings-close-x'));
@@ -319,6 +389,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
   // 프리셋(first_of/group_items 등)이 raw 키로 노출됐다. 셸은 이 폼들에 resolveLabel(editorAwareT:
   // 편집 대상 우선 → chrome 폴백)을 t 로 넘겨야 한다. (MetaForm.fieldT / DataSourceTab.resolveLabel 과 동형)
   describe('레시피 라벨 폼은 resolveLabel(편집 대상 우선 t)을 받는다 — S10-1 라벨 네임스페이스 결함', () => {
+    /**
+     * @scenario subject=page_settings_modal
+     * @effects shell_forms_get_resolve_label
+     */
     it('[자동 계산] ComputedForm.t = resolveLabel (chrome t 아님)', () => {
       renderShell();
       fireEvent.click(screen.getByTestId('g7le-page-settings-tab-computed'));
@@ -326,6 +400,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
       expect(recipeFormT.computed).not.toBe(t);
     });
 
+    /**
+     * @scenario subject=page_settings_modal
+     * @effects shell_forms_get_resolve_label
+     */
     it('[화면 동작] InitActionsForm.t = resolveLabel', () => {
       renderShell();
       fireEvent.click(screen.getByTestId('g7le-page-settings-tab-init'));
@@ -333,6 +411,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
       expect(recipeFormT.init).not.toBe(t);
     });
 
+    /**
+     * @scenario subject=page_settings_modal
+     * @effects shell_forms_get_resolve_label
+     */
     it('[에러 처리] ErrorHandlingForm.t = resolveLabel', () => {
       renderShell();
       fireEvent.click(screen.getByTestId('g7le-page-settings-tab-error'));
@@ -340,6 +422,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
       expect(recipeFormT.error).not.toBe(t);
     });
 
+    /**
+     * @scenario subject=page_settings_modal
+     * @effects shell_forms_get_resolve_label
+     */
     it('[로딩 화면] TransitionOverlayForm.t = resolveLabel', () => {
       renderShell();
       fireEvent.click(screen.getByTestId('g7le-page-settings-tab-overlay'));
@@ -353,6 +439,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
   // 셸이 snake 우선 → camel 폴백으로 둘 다 읽어야 [화면 동작] 탭이 기존 동작을 표시한다.
   // 종전 snake 단독 조회는 새 로드 시 서버 camel 응답을 못 읽어 빈 목록 → 저장 시 기존 동작 삭제.
   describe('init_actions 키 표기(camel/snake) 흡수 — 기존 동작 보존', () => {
+    /**
+     * @scenario subject=page_settings_modal
+     * @effects shell_init_actions_camel_shown
+     */
     it('서버 응답 initActions(camel)만 있어도 화면 동작에 표시된다', () => {
       mockRaw = { initActions: [{ handler: 'loadFromLocalStorage' }, { handler: 'closeModal' }] };
       renderShell();
@@ -363,6 +453,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
       ]);
     });
 
+    /**
+     * @scenario subject=page_settings_modal
+     * @effects shell_init_actions_session_snake_wins
+     */
     it('세션 패치 init_actions(snake)가 서버 initActions(camel)보다 우선한다', () => {
       mockRaw = {
         initActions: [{ handler: 'loadFromLocalStorage' }],
@@ -373,6 +467,10 @@ describe('PageSettingsModal 셸 — 8탭 라우팅/배지/패널', () => {
       expect(initFormProps.actions).toEqual([{ handler: 'toast' }]);
     });
 
+    /**
+     * @scenario subject=page_settings_modal
+     * @effects shell_init_actions_empty_fallback
+     */
     it('둘 다 없으면 빈 배열(폴백)', () => {
       mockRaw = {};
       renderShell();

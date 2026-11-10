@@ -66,3 +66,36 @@ export async function editorPath(
 
   return relative ? `${root}.${relative}` : root;
 }
+
+/**
+ * 편집기 문서 스크롤이 멈출 때까지 기다린다(좌표를 재기 전에 부른다).
+ *
+ * 편집기가 열리면 미리보기 안 컴포넌트(창 포커스 트랩 등)가 focus() 로 문서를 움직이고, 노드를 고르면
+ * 그 노드 쪽으로 다시 움직일 수 있다. 편집 대상 템플릿 CSS 의 `html { scroll-behavior: smooth }` 가 편집기
+ * 문서에 걸리던 번들(engine-v1.89.0 이전 격리)에서는 이 움직임이 수백 ms 이어졌다. 그 도중에 잰 좌표로
+ * 누르면 다른 곳을 눌러 드래그가 시작되지 않거나(λ 실측 C1), 열린 ⓘ 메뉴가 포인터 밑을 지나가며
+ * mouseleave 로 닫혔다(C4). scrollX·scrollY 가 연속 3회(약 150ms) 그대로면 멈춘 것으로 본다.
+ *
+ * @param page Playwright 페이지
+ * @param timeoutMs 최대 대기(ms)
+ */
+export async function waitForEditorScrollSettled(page: Page, timeoutMs = 5_000): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const w = window as unknown as { __g7leScrollProbe?: { x: number; y: number; same: number } };
+      const now = { x: window.scrollX, y: window.scrollY };
+      const prev = w.__g7leScrollProbe;
+      if (prev && prev.x === now.x && prev.y === now.y) {
+        prev.same += 1;
+      } else {
+        w.__g7leScrollProbe = { ...now, same: 0 };
+      }
+      return (w.__g7leScrollProbe?.same ?? 0) >= 3;
+    },
+    undefined,
+    { timeout: timeoutMs, polling: 50 },
+  );
+  await page.evaluate(() => {
+    delete (window as unknown as { __g7leScrollProbe?: unknown }).__g7leScrollProbe;
+  });
+}

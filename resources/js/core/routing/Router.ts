@@ -444,13 +444,35 @@ export class Router {
       let isAuthenticated = authManager.isAuthenticated() && authManager.getAuthType() === authType;
 
       // 인증 상태가 없거나 타입이 다른 경우에만 API 호출
-      if (!isAuthenticated) {
+      // 방금(부팅 preloadAuth 등) 재시도 끝에 「확인 불가」로 끝났으면 다시 묻지 않는다 — 같은 장애에 재시도를 한 번 더 하면
+      // 백지가 두 배로 길어진다. 유효 시간은 AuthManager.UNAVAILABLE_REUSE_MS (설계 확정 2026-11-08, engine-v1.89.0)
+      if (!isAuthenticated && !authManager.isRecentlyUnavailable(authType)) {
         isAuthenticated = await authManager.checkAuth(authType);
       }
 
       // 인증 확인을 기다리는 동안 더 새 이동이 대기열에 들어왔으면 이 경로는 그리지 않는다 (engine-v1.82.0)
       if (this.isNavigating && this.pendingNavigation !== null) {
         logger.log(`Route ${pathname} superseded while checking auth`);
+        return;
+      }
+
+      // 서버 일시 오류(5xx·네트워크)로 인증 여부를 알 수 없다 — 유효한 토큰을 가진 사람을 로그인 화면으로 보내지 않는다.
+      // 받는 쪽(TemplateApp 의 중립 오류 화면)이 없으면 종전처럼 로그인으로 보낸다(빈 화면으로 멈추지 않게) (engine-v1.89.0)
+      if (
+        !isAuthenticated
+        && authManager.getLastCheckStatus(authType) === 'unavailable'
+        && (this.eventHandlers.get('authUnavailable')?.length ?? 0) > 0
+      ) {
+        // 재시도하는 사이 뒤로 가기(popstate)로 다른 주소가 이미 그려졌으면 그 위를 덮지 않는다 — popstate 는 navigate 대기열을
+        // 거치지 않아 위의 대체 판정에 걸리지 않는다
+        // base-path:allow 접두사를 품은 원본 주소끼리 같은지만 본다(라우트 대조가 아니다)
+        if (window.location.pathname !== normalizedPathname) {
+          logger.log(`Route ${pathname} left while checking auth`);
+          return;
+        }
+        logger.warn(`Auth check unavailable for ${pathname} — not redirecting to login`);
+        endLeaveApproval();
+        await this.emit('authUnavailable', { path: pathname, authType });
         return;
       }
 

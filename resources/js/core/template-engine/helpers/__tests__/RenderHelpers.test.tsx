@@ -4,6 +4,9 @@ import { renderItemChildren } from '../RenderHelpers';
 import { responsiveManager } from '../../ResponsiveManager';
 import { Logger } from '../../../utils/Logger';
 
+/** 렌더 결과 요소의 props — 시험은 몇 개 키만 읽는다(React 19 의 ReactElement 기본 props 는 unknown) */
+type RenderedProps = Record<string, unknown>;
+
 // 테스트용 컴포넌트
 const MockDiv: React.FC<{ className?: string; children?: React.ReactNode }> = ({ className, children }) => (
   <div className={className}>{children}</div>
@@ -36,6 +39,8 @@ describe('RenderHelpers', () => {
   });
 
   describe('renderItemChildren', () => {
+    // @scenario area=basic
+    // @effects item_children_render_bound_components
     it('기본 컴포넌트를 렌더링한다', () => {
       const children = [
         {
@@ -52,6 +57,8 @@ describe('RenderHelpers', () => {
       expect(React.isValidElement(result[0])).toBe(true);
     });
 
+    // @scenario area=basic
+    // @effects item_children_render_bound_components
     it('컨텍스트의 row 데이터를 바인딩한다', () => {
       const children = [
         {
@@ -69,10 +76,12 @@ describe('RenderHelpers', () => {
       const result = renderItemChildren(children, context, componentMap, 'test');
 
       expect(result).toHaveLength(1);
-      const element = result[0] as React.ReactElement;
+      const element = result[0] as React.ReactElement<RenderedProps>;
       expect(element.props.children).toBe('홍길동');
     });
 
+    // @scenario area=basic
+    // @effects item_children_render_bound_components
     it('중첩된 자식 컴포넌트를 렌더링한다', () => {
       const children = [
         {
@@ -98,11 +107,13 @@ describe('RenderHelpers', () => {
       const result = renderItemChildren(children, context, componentMap, 'test');
 
       expect(result).toHaveLength(1);
-      const container = result[0] as React.ReactElement;
+      const container = result[0] as React.ReactElement<RenderedProps>;
       expect(container.props.className).toBe('container');
     });
 
     describe('iteration 지원', () => {
+      // @scenario area=iteration
+      // @effects item_children_iteration_repeats
       it('iteration이 있는 컴포넌트를 반복 렌더링한다', () => {
         const children = [
           {
@@ -132,15 +143,17 @@ describe('RenderHelpers', () => {
         // 3개의 역할에 대해 3개의 Span이 생성되어야 함
         expect(result).toHaveLength(3);
 
-        const element0 = result[0] as React.ReactElement;
-        const element1 = result[1] as React.ReactElement;
-        const element2 = result[2] as React.ReactElement;
+        const element0 = result[0] as React.ReactElement<RenderedProps>;
+        const element1 = result[1] as React.ReactElement<RenderedProps>;
+        const element2 = result[2] as React.ReactElement<RenderedProps>;
 
         expect(element0.props.children).toBe('관리자');
         expect(element1.props.children).toBe('편집자');
         expect(element2.props.children).toBe('뷰어');
       });
 
+      // @scenario area=iteration
+      // @effects item_children_iteration_repeats
       it('iteration 아이템의 인덱스를 사용할 수 있다', () => {
         const children = [
           {
@@ -177,6 +190,8 @@ describe('RenderHelpers', () => {
         expect(element1.props.children).toBe('두 번째');
       });
 
+      // @scenario area=iteration
+      // @effects item_children_iteration_repeats
       it('iteration과 props를 함께 사용할 수 있다', () => {
         const children = [
           {
@@ -207,8 +222,8 @@ describe('RenderHelpers', () => {
 
         expect(result).toHaveLength(2);
 
-        const element0 = result[0] as React.ReactElement;
-        const element1 = result[1] as React.ReactElement;
+        const element0 = result[0] as React.ReactElement<RenderedProps>;
+        const element1 = result[1] as React.ReactElement<RenderedProps>;
 
         expect(element0.props.className).toBe('text-red-500');
         expect(element0.props.children).toBe('중요');
@@ -216,6 +231,8 @@ describe('RenderHelpers', () => {
         expect(element1.props.children).toBe('일반');
       });
 
+      // @scenario area=iteration
+      // @effects item_children_iteration_repeats
       it('빈 배열에 대해 빈 결과를 반환한다', () => {
         const children = [
           {
@@ -241,6 +258,8 @@ describe('RenderHelpers', () => {
         expect(result).toHaveLength(0);
       });
 
+      // @scenario area=iteration
+      // @effects item_children_iteration_repeats
       it('iteration source가 배열이 아닌 경우 빈 결과를 반환한다', () => {
         const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -271,6 +290,8 @@ describe('RenderHelpers', () => {
         consoleSpy.mockRestore();
       });
 
+      // @scenario area=iteration
+      // @effects item_children_iteration_repeats
       it('iteration이 없는 컴포넌트와 있는 컴포넌트를 함께 렌더링한다', () => {
         const children = [
           {
@@ -305,15 +326,17 @@ describe('RenderHelpers', () => {
         // 1개 정적 + 2개 반복 = 3개
         expect(result).toHaveLength(3);
 
-        const element0 = result[0] as React.ReactElement;
+        const element0 = result[0] as React.ReactElement<RenderedProps>;
         expect(element0.props.children).toBe('역할: ');
 
-        const element1 = result[1] as React.ReactElement;
-        const element2 = result[2] as React.ReactElement;
+        const element1 = result[1] as React.ReactElement<RenderedProps>;
+        const element2 = result[2] as React.ReactElement<RenderedProps>;
         expect(element1.props.children).toBe('관리자');
         expect(element2.props.children).toBe('사용자');
       });
 
+      // @scenario area=iteration
+      // @effects item_children_iteration_repeats
       it('중첩된 iteration 자식 컴포넌트를 렌더링한다', () => {
         const children = [
           {
@@ -349,14 +372,16 @@ describe('RenderHelpers', () => {
         expect(result).toHaveLength(2);
 
         // 각 Div는 children으로 Span을 가짐
-        const element0 = result[0] as React.ReactElement;
-        const element1 = result[1] as React.ReactElement;
+        const element0 = result[0] as React.ReactElement<RenderedProps>;
+        const element1 = result[1] as React.ReactElement<RenderedProps>;
 
         expect(Array.isArray(element0.props.children)).toBe(true);
         expect(Array.isArray(element1.props.children)).toBe(true);
       });
     });
 
+    // @scenario area=basic
+    // @effects item_children_render_bound_components
     it('존재하지 않는 컴포넌트에 대해 빈 배열을 반환한다 (필터링)', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -378,12 +403,16 @@ describe('RenderHelpers', () => {
       consoleSpy.mockRestore();
     });
 
+    // @scenario area=basic
+    // @effects item_children_render_bound_components
     it('빈 children 배열에 대해 빈 결과를 반환한다', () => {
       const result = renderItemChildren([], {}, componentMap, 'test');
       expect(result).toHaveLength(0);
     });
 
     describe('if 조건부 렌더링', () => {
+      // @scenario area=if_condition
+      // @effects item_children_if_filters
       it('if 조건이 true면 컴포넌트를 렌더링한다', () => {
         const children = [
           {
@@ -406,6 +435,8 @@ describe('RenderHelpers', () => {
         expect(element.props.children).toBe('활성화');
       });
 
+      // @scenario area=if_condition
+      // @effects item_children_if_filters
       it('if 조건이 false면 컴포넌트를 렌더링하지 않는다', () => {
         const children = [
           {
@@ -426,6 +457,8 @@ describe('RenderHelpers', () => {
         expect(result).toHaveLength(0);
       });
 
+      // @scenario area=if_condition
+      // @effects item_children_if_filters
       it('여러 if 조건이 있는 컴포넌트 중 조건에 맞는 것만 렌더링한다', () => {
         const children = [
           {
@@ -462,6 +495,8 @@ describe('RenderHelpers', () => {
         expect(element.props.children).toBe('비활성화');
       });
 
+      // @scenario area=if_condition
+      // @effects item_children_if_filters
       it('if 조건이 없는 컴포넌트는 항상 렌더링한다', () => {
         const children = [
           {
@@ -477,6 +512,8 @@ describe('RenderHelpers', () => {
         expect(result).toHaveLength(1);
       });
 
+      // @scenario area=if_condition
+      // @effects item_children_if_filters
       it('중첩된 자식의 if 조건도 평가한다', () => {
         const children = [
           {
@@ -509,11 +546,13 @@ describe('RenderHelpers', () => {
         const result = renderItemChildren(children, context, componentMap, 'test');
 
         expect(result).toHaveLength(1);
-        const container = result[0] as React.ReactElement;
+        const container = result[0] as React.ReactElement<RenderedProps>;
         // 중첩된 자식 중 조건이 맞는 것만 렌더링됨
         expect(container.props.children).toHaveLength(1);
       });
 
+      // @scenario area=if_condition
+      // @effects item_children_if_filters
       it('iteration 내에서 if 조건을 평가한다', () => {
         const children = [
           {
@@ -543,8 +582,8 @@ describe('RenderHelpers', () => {
 
         // visible이 true인 아이템만 렌더링됨
         expect(result).toHaveLength(2);
-        const element0 = result[0] as React.ReactElement;
-        const element1 = result[1] as React.ReactElement;
+        const element0 = result[0] as React.ReactElement<RenderedProps>;
+        const element1 = result[1] as React.ReactElement<RenderedProps>;
         expect(element0.props.children).toBe('아이템1');
         expect(element1.props.children).toBe('아이템3');
       });
@@ -556,6 +595,8 @@ describe('RenderHelpers', () => {
         responsiveManager._setWidthForTesting(1024);
       });
 
+      // @scenario area=responsive
+      // @effects item_children_responsive_overrides
       it('모바일에서 responsive props 오버라이드를 적용한다', () => {
         // 모바일 너비로 설정 (0-767px)
         responsiveManager._setWidthForTesting(400);
@@ -593,6 +634,8 @@ describe('RenderHelpers', () => {
         expect(element.props.className).toBe('flex flex-col gap-4');
       });
 
+      // @scenario area=responsive
+      // @effects item_children_responsive_overrides
       it('데스크톱에서 기본 props를 유지한다', () => {
         // 데스크톱 너비로 설정 (1024px+)
         responsiveManager._setWidthForTesting(1280);
@@ -622,6 +665,8 @@ describe('RenderHelpers', () => {
         expect(element.props.className).toBe('flex items-start gap-4');
       });
 
+      // @scenario area=responsive
+      // @effects item_children_responsive_overrides
       it('태블릿에서 tablet responsive를 적용한다', () => {
         // 태블릿 너비로 설정 (768-1023px)
         responsiveManager._setWidthForTesting(800);
@@ -656,6 +701,8 @@ describe('RenderHelpers', () => {
         expect(element.props.className).toBe('grid-cols-2');
       });
 
+      // @scenario area=responsive
+      // @effects item_children_responsive_overrides
       it('중첩된 컴포넌트에서도 responsive를 적용한다', () => {
         responsiveManager._setWidthForTesting(400);
 
@@ -689,10 +736,12 @@ describe('RenderHelpers', () => {
 
         expect(result).toHaveLength(1);
         const container = result[0] as React.ReactElement<{ children: React.ReactNode[] }>;
-        const innerChildren = container.props.children as React.ReactElement[];
+        const innerChildren = container.props.children as React.ReactElement<RenderedProps>[];
         expect(innerChildren[0].props.className).toBe('flex-col');
       });
 
+      // @scenario area=responsive
+      // @effects item_children_responsive_overrides
       it('iteration과 responsive를 함께 사용할 수 있다', () => {
         responsiveManager._setWidthForTesting(400);
 
@@ -734,6 +783,8 @@ describe('RenderHelpers', () => {
         expect(element1.props.className).toBe('flex-col gap-2');
       });
 
+      // @scenario area=responsive
+      // @effects item_children_responsive_overrides
       it('커스텀 범위 breakpoint를 지원한다', () => {
         responsiveManager._setWidthForTesting(500);
 
@@ -767,6 +818,8 @@ describe('RenderHelpers', () => {
         expect(element.props.className).toBe('small-mobile');
       });
 
+      // @scenario area=responsive
+      // @effects item_children_responsive_overrides
       it('responsive text 오버라이드를 적용한다', () => {
         responsiveManager._setWidthForTesting(400);
 
@@ -802,6 +855,8 @@ describe('RenderHelpers', () => {
       getEffectiveContext = module.getEffectiveContext;
     });
 
+    // @scenario area=effective_context
+    // @effects effective_context_merges_state_layers
     it('should return baseContext when componentContext is undefined', () => {
       const baseContext = {
         _local: { user: { name: 'test' } },
@@ -813,6 +868,8 @@ describe('RenderHelpers', () => {
       expect(result).toEqual(baseContext);
     });
 
+    // @scenario area=effective_context
+    // @effects effective_context_merges_state_layers
     it('should merge componentContext.state into _local', () => {
       const baseContext = {
         _local: { user: { name: 'test' } },
@@ -832,6 +889,8 @@ describe('RenderHelpers', () => {
       expect(result._global).toEqual({ settings: { theme: 'dark' } });
     });
 
+    // @scenario area=effective_context
+    // @effects effective_context_merges_state_layers
     it('should include _isolated from isolatedContext', () => {
       const baseContext = {
         _local: { user: { name: 'test' } },
@@ -855,6 +914,8 @@ describe('RenderHelpers', () => {
       });
     });
 
+    // @scenario area=effective_context
+    // @effects effective_context_merges_state_layers
     it('should not include _isolated when isolatedContext is null', () => {
       const baseContext = {
         _local: { user: { name: 'test' } },
@@ -869,6 +930,8 @@ describe('RenderHelpers', () => {
       expect(result._isolated).toBeUndefined();
     });
 
+    // @scenario area=effective_context
+    // @effects effective_context_merges_state_layers
     it('should handle empty baseContext._local', () => {
       const baseContext = {
         _global: { settings: {} },
@@ -882,6 +945,8 @@ describe('RenderHelpers', () => {
       expect(result._local).toEqual({ newKey: 'value' });
     });
 
+    // @scenario area=effective_context
+    // @effects effective_context_merges_state_layers
     it('should preserve all three state layers', () => {
       const baseContext = {
         _local: { localData: true },
@@ -905,6 +970,8 @@ describe('RenderHelpers', () => {
     });
 
     describe('parentDataContext 병합 (engine-v1.19.1)', () => {
+      // @scenario area=parent_data_context
+      // @effects effective_context_merges_parent_data
       it('parentDataContext의 데이터소스 키가 컨텍스트에 병합된다', () => {
         const baseContext = {
           _local: { filter: 'active' },
@@ -923,6 +990,8 @@ describe('RenderHelpers', () => {
         expect(result.active_carriers).toEqual({ data: [] });
       });
 
+      // @scenario area=parent_data_context
+      // @effects effective_context_merges_parent_data
       it('기존 baseContext 키와 충돌 시 baseContext가 우선한다', () => {
         const baseContext = {
           _local: { filter: 'active' },
@@ -941,6 +1010,8 @@ describe('RenderHelpers', () => {
         expect(result.order).toEqual({ data: { id: 999, overridden: true } });
       });
 
+      // @scenario area=parent_data_context
+      // @effects effective_context_merges_parent_data
       it('parentDataContext와 state가 함께 병합된다', () => {
         const baseContext = {
           _local: { page: 1 },
@@ -960,6 +1031,8 @@ describe('RenderHelpers', () => {
         expect(result._global).toEqual({ theme: 'dark' });
       });
 
+      // @scenario area=parent_data_context
+      // @effects effective_context_merges_parent_data
       it('parentDataContext가 undefined면 병합하지 않는다', () => {
         const baseContext = {
           _local: { filter: 'active' },
@@ -975,6 +1048,8 @@ describe('RenderHelpers', () => {
         expect(result.order).toBeUndefined();
       });
 
+      // @scenario area=parent_data_context
+      // @effects effective_context_merges_parent_data
       it('_local, _global 등 예약 키는 parentDataContext에서 병합되지 않는다', () => {
         const baseContext = {
           _local: { original: true },

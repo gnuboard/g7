@@ -10,7 +10,212 @@
     "name": "Modal",
     "props": {
         "title": "{{_global.queueConfirm?.action === 'delete' ? $t('admin.schedules.queue.confirm.delete_title') : $t('admin.schedules.queue.confirm.retry_title')}}",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "id": "queue_confirm_cancel",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "queue_confirm_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.queueConfirmBusy}}"
+                },
+                "text": "{{_global.queueConfirmResults ? $t('common.close') : $t('common.cancel')}}"
+            },
+            {
+                "id": "queue_confirm_submit",
+                "type": "basic",
+                "name": "Button",
+                "if": "{{!_global.queueConfirmResults}}",
+                "actions": [
+                    {
+                        "comment": "진행 표시를 켜고 갈래(재시도/삭제)대로 보낸다. 성공·실패 양쪽에서 진행 표시를 끈다.\n               연타는 300ms 로 모아 요청 1회 — 버튼 disabled 는 첫 클릭의 상태 변경이 렌더된 뒤에야 걸려 같은 틱의 두 번째 클릭을 못 막는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "queueConfirmBusy": true
+                                }
+                            },
+                            {
+                                "handler": "conditions",
+                                "conditions": [
+                                    {
+                                        "if": "{{_global.queueConfirm?.action === 'retry'}}",
+                                        "then": {
+                                            "handler": "apiCall",
+                                            "target": "{{_global.queueConfirm?.single ? '/api/admin/schedules/queue/failed/' + _global.queueConfirm.uuids[0] + '/retry' : '/api/admin/schedules/queue/failed/retry'}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "uuids": "{{_global.queueConfirm?.single ? undefined : _global.queueConfirm?.uuids}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "queueConfirmBusy": false,
+                                                        "queueConfirmResults": "{{response.data?.results ?? []}}",
+                                                        "queueConfirmMessage": "{{response.message ?? '$t:admin.schedules.queue.messages.retry_done'}}",
+                                                        "selectedFailedJobUuids": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "queue_failed"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "queue_status"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "schedule_status"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "queueConfirmBusy": false,
+                                                        "queueConfirmResults": "{{error.errors?.results ?? [{uuid: _global.queueConfirm?.uuids?.[0] ?? '', ok: false, message: error.message ?? ''}]}}",
+                                                        "queueConfirmMessage": "{{error.message ?? ''}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:admin.schedules.queue.errors.retry_failed'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "queue_failed"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "if": "{{_global.queueConfirm?.action === 'delete'}}",
+                                        "then": {
+                                            "handler": "apiCall",
+                                            "target": "{{_global.queueConfirm?.single ? '/api/admin/schedules/queue/failed/' + _global.queueConfirm.uuids[0] : '/api/admin/schedules/queue/failed'}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "DELETE",
+                                                "body": {
+                                                    "uuids": "{{_global.queueConfirm?.single ? undefined : _global.queueConfirm?.uuids}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "queueConfirmBusy": false,
+                                                        "queueConfirmResults": "{{response.data?.results ?? []}}",
+                                                        "queueConfirmMessage": "{{response.message ?? '$t:admin.schedules.queue.messages.delete_done'}}",
+                                                        "selectedFailedJobUuids": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "queue_failed"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "queue_status"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "schedule_status"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "queueConfirmBusy": false,
+                                                        "queueConfirmResults": "{{error.errors?.results ?? [{uuid: _global.queueConfirm?.uuids?.[0] ?? '', ok: false, message: error.message ?? ''}]}}",
+                                                        "queueConfirmMessage": "{{error.message ?? ''}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:admin.schedules.queue.errors.delete_failed'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "queue_failed"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "debounce": 300
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "{{_global.queueConfirm?.action === 'delete' ? 'btn btn-danger flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed' : 'btn btn-info flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'}}",
+                    "disabled": "{{_global.queueConfirmBusy || !(_global.queueConfirm?.uuids ?? []).length}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.queueConfirmBusy}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.queueConfirmBusy ? $t('common.processing') : (_global.queueConfirm?.action === 'delete' ? $t('common.delete') : $t('admin.schedules.queue.action.retry'))}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -123,218 +328,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "id": "queue_confirm_cancel",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal",
-                            "target": "queue_confirm_modal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.queueConfirmBusy}}"
-                    },
-                    "text": "{{_global.queueConfirmResults ? $t('common.close') : $t('common.cancel')}}"
-                },
-                {
-                    "id": "queue_confirm_submit",
-                    "type": "basic",
-                    "name": "Button",
-                    "if": "{{!_global.queueConfirmResults}}",
-                    "actions": [
-                        {
-                            "comment": "진행 표시를 켜고 갈래(재시도/삭제)대로 보낸다. 성공·실패 양쪽에서 진행 표시를 끈다.\n               연타는 300ms 로 모아 요청 1회 — 버튼 disabled 는 첫 클릭의 상태 변경이 렌더된 뒤에야 걸려 같은 틱의 두 번째 클릭을 못 막는다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "queueConfirmBusy": true
-                                    }
-                                },
-                                {
-                                    "handler": "conditions",
-                                    "conditions": [
-                                        {
-                                            "if": "{{_global.queueConfirm?.action === 'retry'}}",
-                                            "then": {
-                                                "handler": "apiCall",
-                                                "target": "{{_global.queueConfirm?.single ? '/api/admin/schedules/queue/failed/' + _global.queueConfirm.uuids[0] + '/retry' : '/api/admin/schedules/queue/failed/retry'}}",
-                                                "auth_required": true,
-                                                "params": {
-                                                    "method": "POST",
-                                                    "body": {
-                                                        "uuids": "{{_global.queueConfirm?.single ? undefined : _global.queueConfirm?.uuids}}"
-                                                    }
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "queueConfirmBusy": false,
-                                                            "queueConfirmResults": "{{response.data?.results ?? []}}",
-                                                            "queueConfirmMessage": "{{response.message ?? '$t:admin.schedules.queue.messages.retry_done'}}",
-                                                            "selectedFailedJobUuids": []
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "queue_failed"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "queue_status"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "schedule_status"
-                                                        }
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "queueConfirmBusy": false,
-                                                            "queueConfirmResults": "{{error.errors?.results ?? [{uuid: _global.queueConfirm?.uuids?.[0] ?? '', ok: false, message: error.message ?? ''}]}}",
-                                                            "queueConfirmMessage": "{{error.message ?? ''}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? '$t:admin.schedules.queue.errors.retry_failed'}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "queue_failed"
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "if": "{{_global.queueConfirm?.action === 'delete'}}",
-                                            "then": {
-                                                "handler": "apiCall",
-                                                "target": "{{_global.queueConfirm?.single ? '/api/admin/schedules/queue/failed/' + _global.queueConfirm.uuids[0] : '/api/admin/schedules/queue/failed'}}",
-                                                "auth_required": true,
-                                                "params": {
-                                                    "method": "DELETE",
-                                                    "body": {
-                                                        "uuids": "{{_global.queueConfirm?.single ? undefined : _global.queueConfirm?.uuids}}"
-                                                    }
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "queueConfirmBusy": false,
-                                                            "queueConfirmResults": "{{response.data?.results ?? []}}",
-                                                            "queueConfirmMessage": "{{response.message ?? '$t:admin.schedules.queue.messages.delete_done'}}",
-                                                            "selectedFailedJobUuids": []
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "queue_failed"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "queue_status"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "schedule_status"
-                                                        }
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "queueConfirmBusy": false,
-                                                            "queueConfirmResults": "{{error.errors?.results ?? [{uuid: _global.queueConfirm?.uuids?.[0] ?? '', ok: false, message: error.message ?? ''}]}}",
-                                                            "queueConfirmMessage": "{{error.message ?? ''}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? '$t:admin.schedules.queue.errors.delete_failed'}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "refetchDataSource",
-                                                        "params": {
-                                                            "dataSourceId": "queue_failed"
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "debounce": 300
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "{{_global.queueConfirm?.action === 'delete' ? 'btn btn-danger flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed' : 'btn btn-info flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'}}",
-                        "disabled": "{{_global.queueConfirmBusy || !(_global.queueConfirm?.uuids ?? []).length}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.queueConfirmBusy}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.queueConfirmBusy ? $t('common.processing') : (_global.queueConfirm?.action === 'delete' ? $t('common.delete') : $t('admin.schedules.queue.action.retry'))}}"
                         }
                     ]
                 }

@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "ecommerce-admin-card ecommerce-col-span-1-lg ecommerce:flex ecommerce:flex-col"
+        "className": "ecommerce-admin-card ecommerce:col-span-1 ecommerce:flex ecommerce:flex-col"
     },
     "children": [
         {
@@ -65,8 +65,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:flex-row ecommerce:gap-3 ecommerce:flex-wrap ecommerce:items-center"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "ecommerce-search-bar"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -112,6 +119,13 @@
                                 {
                                     "type": "basic",
                                     "name": "Select",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "ecommerce:h-9 ecommerce:shrink-0"
+                                            }
+                                        }
+                                    },
                                     "actions": [
                                         {
                                             "comment": "정렬 변경도 URL 로 간다. 검색 쪽과 달리 `mergeQuery` 없이 두 값을 통째로 다시 쓰므로,\n                브랜드 선택 같은 다른 파라미터는 여기서 떨어져 나간다 — 정렬을 바꾸면 오른쪽 패널\n                선택이 풀리는 것이 그 결과다.",
@@ -130,7 +144,7 @@
                                     "props": {
                                         "name": "sortOrder",
                                         "aria-label": "$t:common.sort_order",
-                                        "className": "ecommerce:h-9 ecommerce:md:shrink-0",
+                                        "className": "ecommerce:h-9",
                                         "value": "{{query.sort || 'name_asc'}}",
                                         "options": [
                                             {

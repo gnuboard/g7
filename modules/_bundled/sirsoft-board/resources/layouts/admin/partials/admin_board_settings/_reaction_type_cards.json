@@ -36,12 +36,15 @@
                             },
                             "children": [
                                 {
+                                    "comment": "thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다",
                                     "type": "basic",
                                     "name": "Img",
                                     "if": "{{!!row.icon_url}}",
                                     "props": {
                                         "data-testid": "reaction-type-icon-m-{{row.code}}",
                                         "src": "{{row.icon_url}}",
+                                        "loading": "lazy",
+                                        "decoding": "async",
                                         "alt": "",
                                         "className": "board:w-5 board:h-5 board:object-contain board:shrink-0"
                                     }

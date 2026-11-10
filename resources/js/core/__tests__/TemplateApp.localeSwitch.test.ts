@@ -39,6 +39,8 @@ vi.mock('../template-engine', async () => {
     initTemplateEngine: vi.fn().mockResolvedValue(undefined),
     renderTemplate: renderTemplateMock,
     destroyTemplate: vi.fn(),
+    // TemplateApp 이 오류 화면·언어 전환 경로에서 부른다 — 대역에 없으면 import 단계에서 시험 전체가 깨진다
+    releaseTemplateRoot: vi.fn(),
     updateTemplateData: updateTemplateDataMock,
     DataSourceManager: actual.DataSourceManager,
     getActionDispatcher: vi.fn().mockReturnValue(sharedActionDispatcher),
@@ -47,7 +49,8 @@ vi.mock('../template-engine', async () => {
       reactRoot: null,
       currentLayoutJson: null,
       currentDataContext: { _global: {} },
-      bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startRenderCycle: vi.fn() },
+      // startCacheEpoch: 화면 전환이 바인딩 캐시 새 세대를 연다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+      bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startCacheEpoch: vi.fn(() => 1), startRenderCycle: vi.fn() },
     }),
   };
 });

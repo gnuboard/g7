@@ -4,24 +4,14 @@
  * @since engine-v1.78.3
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { loadEditorSpecBundle } from '../../spec/editorSpecLoader';
 import type { EditorSpec } from '../../spec/specTypes';
+import { makeBundleFetcher } from './editorSpecBundleFetcher';
 
+/** 식별자 → spec 매핑으로 묶음 엔드포인트 fetch 를 모킹 (engine-v1.89.0 — 편집기는 묶음 한 요청으로 받는다) */
 function makeFetcher(specs: Record<string, EditorSpec | null>): typeof fetch {
-  return vi.fn(async (url: string | URL | Request) => {
-    const u = String(url);
-    const m = /\/(templates|modules|plugins)\/([^/]+)\/editor-spec/.exec(u);
-    const id = m ? decodeURIComponent(m[2]) : '';
-    if (!(id in specs)) {
-      return { ok: false, status: 404, json: async () => ({}) } as unknown as Response;
-    }
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ success: true, data: { identifier: id, spec: specs[id] } }),
-    } as unknown as Response;
-  }) as unknown as typeof fetch;
+  return makeBundleFetcher(specs);
 }
 
 /**

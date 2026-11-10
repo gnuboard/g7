@@ -10,7 +10,7 @@
     <div class="alert-danger">
       <p class="text-error-soft">$t:admin.settings.notification_definitions.channel_off_confirm.message</p>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button data-ref="channel_off_cancel_button" type="button" class="btn btn-secondary" disabled="{{_global.notification_channel_off_modal?.isSaving ?? false}}">
         <on type="click">
           <!-- 취소 — 저장을 멈추고 부모 화면의 메일 토글을 켜짐으로 되돌린다(다른 채널 변경은 그대로 둔다).
@@ -55,6 +55,6 @@
         <icon data-if="{{_global.notification_channel_off_modal?.isSaving}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.notification_channel_off_modal?.isSaving ? '$t:common.saving' : '$t:admin.settings.notification_definitions.channel_off_confirm.btn_confirm'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

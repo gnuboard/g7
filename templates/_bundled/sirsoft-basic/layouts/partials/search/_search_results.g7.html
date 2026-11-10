@@ -28,7 +28,9 @@
       <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.failed.suggestion</p>
     </div>
     <!-- 상품 탭 - 결과 있을 때 -->
-    <div data-if="{{query?.type === 'products' &amp;&amp; (searchResults?.data?.products_count ?? 0) > 0}}" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div data-if="{{query?.type === 'products' &amp;&amp; (searchResults?.data?.products_count ?? 0) > 0}}" class="grid grid-cols-2 gap-4">
+      <responsive on="640-1023" class="grid gap-4 grid-cols-3"/>
+      <responsive on="desktop" class="grid gap-4 grid-cols-4"/>
       <div data-each="product in {{searchResults.data.products ?? []}}">
         <include src="partials/search/products/_item_card.g7.html"/>
       </div>

@@ -265,7 +265,6 @@ const input: React.CSSProperties = { padding: '5px 8px', fontSize: 12, border: '
 const inputError: React.CSSProperties = { border: '1px solid #ef4444' };
 const condBox: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 };
 const condRow: React.CSSProperties = { display: 'flex', gap: 4, alignItems: 'center', minWidth: 0 };
-const condInput: React.CSSProperties = { flex: 1, minWidth: 0, padding: '4px 6px', fontSize: 12, border: '1px solid #cbd5e1', borderRadius: 6 };
 const condCmp: React.CSSProperties = { padding: '4px 6px', fontSize: 12, border: '1px solid #cbd5e1', borderRadius: 6 };
 const condRemove: React.CSSProperties = { border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: 12 };
 const addCondBtn: React.CSSProperties = { alignSelf: 'flex-start', padding: '2px 8px', fontSize: 11, border: '1px dashed #94a3b8', borderRadius: 6, background: '#fff', color: '#475569', cursor: 'pointer' };

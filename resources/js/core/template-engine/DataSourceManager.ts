@@ -699,6 +699,14 @@ export interface DataSourceResult {
    * @since engine-v1.82.0
    */
   kept?: 'last' | 'fallback';
+
+  /**
+   * 미뤄 둔 onSuccess 실행 함수 — `deferOnSuccess` 로 받았고 성공 처리가 돌 응답일 때만 있다(errorCondition·실패·fallback 은 없음).
+   * 호출부가 새 화면 상태를 세운 뒤 부른다. 받기를 시작한 경로 세대가 지났으면 실행하지 않는다.
+   *
+   * @since engine-v1.89.0
+   */
+  runOnSuccess?: () => Promise<void>;
 }
 
 /**
@@ -775,9 +783,9 @@ export interface ConditionContext {
   route?: Record<string, string>;
 
   /**
-   * 쿼리 파라미터
+   * 쿼리 파라미터 — 배열 쿼리(`key[]=a&key[]=b`)는 문자열 배열로 담긴다
    */
-  query?: Record<string, string>;
+  query?: Record<string, string | string[]>;
 
   /**
    * 전역 상태
@@ -1432,6 +1440,8 @@ export class DataSourceManager {
    * @returns 데이터 소스 결과 배열
    * @param options fetch 옵션
    *   - ignoreAutoFetch: true면 auto_fetch: false인 소스도 강제 fetch (refetchDataSource 용)
+   *   - deferOnSuccess: true면 onSuccess 를 돌리지 않고 결과의 `runOnSuccess` 로 넘긴다 — 다른 화면으로 옮기는 전환의 blocking 받기는
+   *     아직 앞 화면 상태 위라, 거기서 돌린 `_local` 쓰기·다시 받기가 뒤이은 상태 초기화와 렌더 문맥 재구성에 버려진다 (engine-v1.89.0, #869)
    */
   async fetchDataSourcesWithResults(
     sources: DataSource[],
@@ -1439,7 +1449,7 @@ export class DataSourceManager {
     queryParams: URLSearchParams = new URLSearchParams(),
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
-    options?: { ignoreAutoFetch?: boolean; refetch?: boolean | ((source: DataSource) => boolean); isolatedState?: Record<string, any> },
+    options?: { ignoreAutoFetch?: boolean; refetch?: boolean | ((source: DataSource) => boolean); isolatedState?: Record<string, any>; deferOnSuccess?: boolean },
   ): Promise<DataSourceResult[]> {
     const routeGeneration = this.currentRouteGeneration();
     // 이 화면에서 이미 받은 소스를 다시 받는 호출인지 — 오류 처리기 문맥 `error.refetch` 로 싣는다 (engine-v1.82.0).
@@ -1537,15 +1547,30 @@ export class DataSourceManager {
 
           // onSuccess 핸들러 실행
           if (source.onSuccess) {
-            try {
-              const successContext: SuccessContext = {
+            const successContext: SuccessContext = {
+              data,
+              sourceId: source.id,
+            };
+            const onSuccess = source.onSuccess;
+            const runOnSuccess = async (): Promise<void> => {
+              try {
+                await this.executeOnSuccessHandler(onSuccess, successContext, routeGeneration);
+              } catch (handlerError) {
+                logger.error(`Error executing onSuccess handler for ${source.id}:`, handlerError);
+              }
+            };
+
+            // 호출부가 새 화면 상태를 세운 뒤 돌린다 (engine-v1.89.0)
+            if (options?.deferOnSuccess) {
+              return {
+                id: source.id,
+                state: 'success',
                 data,
-                sourceId: source.id,
+                runOnSuccess,
               };
-              await this.executeOnSuccessHandler(source.onSuccess, successContext, routeGeneration);
-            } catch (handlerError) {
-              logger.error(`Error executing onSuccess handler for ${source.id}:`, handlerError);
             }
+
+            await runOnSuccess();
           }
 
           return {
@@ -2055,9 +2080,10 @@ export class DataSourceManager {
         // 값이 없는(undefined·null) 파라미터는 싣지 않는다 — 그대로 넘기면 `page=undefined` 처럼 문자열로
         // 나가 서버 검증이 422 로 거절한다(ApiClient 경로의 axios 는 이미 뺀다). @since engine-v1.79.0
         if (method === 'GET') {
-          const presentParams = Object.fromEntries(
-            Object.entries(params).filter(([, value]) => value !== undefined && value !== null),
-          );
+          // URLSearchParams 는 레코드 값을 문자열로 바꿔 싣는다 — 같은 변환을 여기서 먼저 한다(결과 같음)
+          const presentParams = Object.entries(params)
+            .filter(([, value]) => value !== undefined && value !== null)
+            .map(([key, value]) => [key, String(value)]);
           const queryString = new URLSearchParams(presentParams).toString();
           url = queryString ? `${endpoint}?${queryString}` : endpoint;
         }

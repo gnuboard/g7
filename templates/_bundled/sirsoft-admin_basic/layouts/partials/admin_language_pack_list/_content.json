@@ -561,6 +561,13 @@
                             "type": "basic",
                             "name": "Select",
                             "if": "{{!_local.scopeLocked}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "이 칸은 확장 상세에서 들어왔을 때 통째로 감춰진다 — 그때는 범위가 그 확장으로 이미 정해져 있어 고를 여지가 없다.",
@@ -588,7 +595,7 @@
                             "props": {
                                 "aria-label": "$t:admin.language_packs.columns.scope",
                                 "value": "{{query.scope ?? ''}}",
-                                "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
                                 "options": [
                                     {
                                         "value": "",
@@ -617,6 +624,13 @@
                             "id": "lp_filter_status",
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "상태 다섯 중 「미설치」는 아직 깔지 않은 번들 팩이고, 「오류」는 파일이나 매니페스트가 깨져 읽히지 않는 팩이다.",
@@ -644,7 +658,7 @@
                             "props": {
                                 "aria-label": "$t:admin.language_packs.columns.status",
                                 "value": "{{query.status ?? ''}}",
-                                "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
                                 "options": [
                                     {
                                         "value": "",

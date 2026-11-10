@@ -14,8 +14,9 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import imageCompression from 'browser-image-compression';
 
 import type { Attachment, PendingFile, FileUploaderProps, ApiEndpoints } from './types';
-import { formatFileSize, extractErrorMessage, t } from './utils';
+import { formatFileSize, extractErrorMessage, t, detectAnimatedImageFormat, isFileAccepted } from './utils';
 import { isDirectAssetUrl } from '../assetOrigin';
+import { attachmentThumbUrl } from '../../../support/thumbnail';
 import { routePath } from '../../../support/apiUrl';
 import { secretContentHeaders } from '../../../support/secretContentHeaders';
 
@@ -50,6 +51,20 @@ function resolveCompressionLibUrl(): string | undefined {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
+
+/**
+ * 썸네일로 그리는 기존 첨부를 확대 보기에서 blob 없이 열 수 있는 원본 주소.
+ *
+ * 미리보기 주소(`preview_url`)는 서버가 열람 규칙(비밀글 서명·공개 여부)을 담아 낸 주소라 그대로 연다. 다운로드
+ * 주소만 있는 첨부는 권한이 걸려 있을 수 있어(인증 헤더가 있어야 열린다) 주소로 열지 않는다 — 업로더가 인증 요청으로
+ * 받아 둔 blob 을 쓴다. 종전에는 이 경우에도 인증 없는 원본 주소를 열어 권한 첨부의 확대 보기가 깨졌다.
+ *
+ * @param file 기존 첨부
+ * @returns 바로 열 주소 (없으면 undefined)
+ */
+export function directZoomSource(file: Attachment): string | undefined {
+  return typeof file.preview_url === 'string' && file.preview_url !== '' ? file.preview_url : undefined;
+}
 
 export interface UseFileUploaderOptions {
   attachmentableType?: string;
@@ -115,6 +130,8 @@ export interface UseFileUploaderReturn {
 
   // 인증된 이미지 URL 캐시
   authenticatedImageUrls: Map<number, string>;
+  /** 썸네일로 그리는 첨부도 원본 blob 을 받아 두게 한다 (썸네일 실패·확대 보기) */
+  requestAuthenticatedImage: (ids: number[]) => void;
 
   // 초기화
   clear: () => void;
@@ -196,6 +213,17 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const [authenticatedImageUrls, setAuthenticatedImageUrls] = useState<Map<number, string>>(new Map());
   // ref로 URL 캐시 추적 (stale closure 방지 — cleanup/has 체크에서 항상 최신 참조)
   const authenticatedImageUrlsRef = useRef<Map<number, string>>(new Map());
+  // 썸네일로 그리지만 원본 blob 이 필요한 첨부 id — 썸네일이 실패한 칸(권한 거부 등)과, 미리보기 주소 없이 확대 보기를
+  // 연 첨부. 칸이 따로 받으면 그 blob 이 칸 안에만 있어 확대 보기가 인증 없는 원본 주소를 열었다.
+  const [blobRequestedIds, setBlobRequestedIds] = useState<ReadonlySet<number>>(() => new Set());
+  const requestAuthenticatedImage = useCallback((ids: number[]) => {
+    setBlobRequestedIds((prev) => (ids.every((id) => prev.has(id)) ? prev : new Set([...prev, ...ids])));
+  }, []);
+  // 받는 중인 첨부 id — 마운트 직후 initialFiles 동기화로 이 effect 가 한 번 더 돌 때 같은 원본을 다시 받지 않게 한다
+  const loadingImageIdsRef = useRef<Set<number>>(new Set());
+  // 지금 목록에 있는 이미지 첨부 id (앞 회차가 받아 온 결과를 쓸지 판정)
+  const currentImageIdsRef = useRef<Set<number>>(new Set());
+  const unmountedRef = useRef(false);
 
   // 대기 파일 변경 시 콜백 — 처음 그려질 때의 빈 목록은 알리지 않는다.
   // 레이아웃이 이 이벤트를 「변경 있음」으로 받으므로, 마운트에서 부르면 폼 데이터 초기화(initLocal)
@@ -300,22 +328,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
         // 확장자/MIME 타입 검증
         if (accept) {
-          const ext = '.' + file.name.split('.').pop()?.toLowerCase();
-          const acceptedTypes = accept.split(',').map((e) => e.trim().toLowerCase());
-          const isAccepted = acceptedTypes.some((accepted) => {
-            // MIME 타입 와일드카드 (예: image/*, video/*, audio/*)
-            if (accepted.includes('/')) {
-              if (accepted.endsWith('/*')) {
-                const mimePrefix = accepted.slice(0, -2);
-                return file.type.toLowerCase().startsWith(mimePrefix + '/');
-              }
-              // 정확한 MIME 타입 매칭 (예: image/jpeg)
-              return file.type.toLowerCase() === accepted;
-            }
-            // 확장자 매칭 (예: .jpg, .png)
-            return ext === accepted;
-          });
-          if (!isAccepted) {
+          if (!isFileAccepted(file, accept)) {
             onUploadError?.(t('attachment.file_type_not_allowed', { name: file.name, accept }), file);
             continue;
           }
@@ -339,22 +352,26 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
         setPendingFiles((prev) => [...prev, pendingFile]);
 
-        // 이미지인 경우 압축 처리
-        if (file.type.startsWith('image/') && compressionOptions) {
+        // 이미지인 경우 압축 처리 — 움직이는 GIF·WebP·APNG 는 건너뛰고 원본을 올린다. 압축기는 첫 프레임만 다시
+        // 인코딩해 정지 그림이 올라갔다(#869 P4). 움직임은 MIME 이 아니라 파일 바이트로 가린다.
+        if (file.type.startsWith('image/') && compressionOptions && (await detectAnimatedImageFormat(file)) === null) {
           setPendingFiles((prev) =>
             prev.map((f) => (f.id === pendingFile.id ? { ...f, status: 'compressing' } : f))
           );
 
           try {
             const compressedBlob = await compressImage(file);
+            // 압축본이 원본보다 작을 때만 쓴다 — 줄인 PNG 가 원본보다 커지는 일이 있었다(2400→2000px, 22,273→28,823바이트,
+            // #869 브라우저 실측). 크거나 같으면 원본을 올린다.
+            const useCompressed = compressedBlob.size < file.size;
             setPendingFiles((prev) =>
               prev.map((f) =>
                 f.id === pendingFile.id
                   ? {
                       ...f,
-                      compressedBlob,
-                      size: compressedBlob.size,
-                      size_formatted: formatFileSize(compressedBlob.size),
+                      ...(useCompressed
+                        ? { compressedBlob, size: compressedBlob.size, size_formatted: formatFileSize(compressedBlob.size) }
+                        : {}),
                       status: 'pending',
                       progress: 0,
                     }
@@ -365,7 +382,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
             setPendingFiles((prev) =>
               prev.map((f) =>
                 f.id === pendingFile.id
-                  ? { ...f, status: 'error', error: '이미지 압축 실패' }
+                  ? { ...f, status: 'error', error: t('attachment.compression_failed', { name: file.name }) }
                   : f
               )
             );
@@ -433,6 +450,10 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   );
 
   // 모든 파일 업로드
+  // 마지막 업로드에서 실패한 파일 수 — 업로드 신호 리스너가 결과에 실어, 저장 흐름이 실패를 보고 멈춘다(#869 브라우저 실측).
+  // 실패 문구는 onUploadError 가 이미 알린다.
+  const lastUploadFailedRef = useRef<number>(0);
+
   const handleUploadAll = useCallback(async (): Promise<Attachment[]> => {
     // 화면 순서(고른 순서, 드래그했으면 드래그 순서)대로 올린다.
     // 게시판 첨부처럼 서버가 도착 순서로 번호를 매기는 화면에서는 이 순서가 곧 저장 순서다.
@@ -451,6 +472,8 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     const selectionPosition = new Map(filesToUpload.map((f, idx) => [String(f.id), idx]));
 
     if (filesToUpload.length === 0) {
+
+      lastUploadFailedRef.current = 0;
       return [];
     }
 
@@ -549,6 +572,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     await Promise.all(workers);
 
     const uploadedAttachments = uploadedByPosition.filter((item): item is Attachment => Boolean(item));
+    lastUploadFailedRef.current = filesToUpload.length - uploadedAttachments.length;
 
     if (uploadedAttachments.length > 0) {
       onUploadComplete?.(uploadedAttachments);
@@ -593,6 +617,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         uploadedAttachments,
         existingFiles,
         allFiles: [...existingFiles, ...uploadedAttachments],
+        failedCount: lastUploadFailedRef.current,
       };
     });
 
@@ -780,9 +805,17 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         galleryKeyRef.current += 1;
         setGalleryStartIndex(imageIndex);
         setGalleryOpen(true);
+        // 썸네일로 그리던 첨부 중 바로 열 주소(미리보기 주소)가 없는 것은 지금 원본을 받는다 — 확대 보기는 같은 본문의
+        // 이미지를 오가므로 누른 것 하나가 아니라 전부.
+        const needed = existingFiles
+          .filter((f) => f.is_image && attachmentThumbUrl(f, 'sm') && !directZoomSource(f))
+          .map((f) => f.id);
+        if (needed.length > 0) {
+          requestAuthenticatedImage(needed);
+        }
       }
     },
-    [imageFiles]
+    [imageFiles, existingFiles, requestAuthenticatedImage]
   );
 
   // 기존 첨부파일 인증된 이미지 URL 로드 (갤러리용)
@@ -790,11 +823,16 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     let cancelled = false;
 
     const loadAuthenticatedUrls = async () => {
-      // is_image 필드 사용 (imageFiles 필터와 일치)
-      const existingImageFiles = existingFiles.filter((f) => f.is_image);
+      // is_image 필드 사용 (imageFiles 필터와 일치). 썸네일을 <img> 로 바로 그리는 첨부(미리보기 주소가 서빙 경로)는
+      // 원본을 받지 않는다 — 칸이 sm 썸네일을 그리고, 확대 보기는 미리보기 주소를 직접 연다. 썸네일이 실패했거나
+      // 미리보기 주소 없이 확대 보기를 연 첨부(blobRequestedIds)는 여기서 받아 칸과 확대 보기가 함께 쓴다.
+      const existingImageFiles = existingFiles.filter(
+        (f) => f.is_image && (!attachmentThumbUrl(f, 'sm') || blobRequestedIds.has(f.id)),
+      );
 
       // existingFiles에서 제거된 파일의 URL 정리
       const currentIds = new Set(existingImageFiles.map((f) => f.id));
+      currentImageIdsRef.current = currentIds;
       for (const [id, url] of authenticatedImageUrlsRef.current) {
         if (!currentIds.has(id)) {
           URL.revokeObjectURL(url);
@@ -805,7 +843,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       for (const file of existingImageFiles) {
         if (cancelled) break;
         // ref 기반 has 체크 (stale closure 방지)
-        if (authenticatedImageUrlsRef.current.has(file.id)) continue;
+        if (authenticatedImageUrlsRef.current.has(file.id) || loadingImageIdsRef.current.has(file.id)) continue;
 
         // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 공개 자산이므로 XHR 없이 직접 사용한다.
         // (CORS 미설정 CDN 에서의 실패 방지 + 제3자 origin 으로의 토큰 노출 차단)
@@ -815,6 +853,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
           continue;
         }
 
+        loadingImageIdsRef.current.add(file.id);
         try {
           // 비밀글 첨부는 서버가 열람 권한을 재확인한다. globalHeaders 는 이 경로에
           // 적용되지 않으므로 열람 확인 토큰을 직접 싣는다 (없으면 빈 객체라 영향 없음).
@@ -822,13 +861,18 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
             responseType: 'blob',
             headers: secretContentHeaders(),
           });
-          if (!cancelled && blob) {
+          // 앞 회차가 취소됐어도 받아 온 원본은 버리지 않는다 — 버리면 다음 회차가 같은 원본을 다시 받는다
+          // (종전: 마운트 직후 initialFiles 동기화로 effect 가 두 번 돌아 첨부마다 원본 2회). 목록에서 빠진 첨부와
+          // 언마운트 뒤 결과만 버린다.
+          if (blob && !unmountedRef.current && currentImageIdsRef.current.has(file.id)) {
             const objectUrl = URL.createObjectURL(blob);
             authenticatedImageUrlsRef.current.set(file.id, objectUrl);
             setAuthenticatedImageUrls(new Map(authenticatedImageUrlsRef.current));
           }
         } catch (error) {
           console.error('Failed to load authenticated image:', error);
+        } finally {
+          loadingImageIdsRef.current.delete(file.id);
         }
       }
     };
@@ -838,7 +882,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     return () => {
       cancelled = true;
     };
-  }, [existingFiles]);
+  }, [existingFiles, blobRequestedIds]);
 
   // 언어 전환으로 언마운트되면 아직 올리지 않은 대기 파일을 인계 저장소에 맡긴다 (engine-v1.79.0)
   useEffect(() => {
@@ -853,7 +897,9 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
   // 언마운트 시에만 모든 인증된 이미지 URL 해제
   useEffect(() => {
+    unmountedRef.current = false;
     return () => {
+      unmountedRef.current = true;
       authenticatedImageUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
       authenticatedImageUrlsRef.current.clear();
     };
@@ -933,6 +979,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
     // 인증된 이미지 URL 캐시
     authenticatedImageUrls,
+    requestAuthenticatedImage,
 
     // 초기화
     clear,

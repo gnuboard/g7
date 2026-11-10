@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { basic, translate } from '../../support/editor';
 import { ImageFrame } from '../../lib/ImageFrame';
+import { SM_MIN_WIDTH, useViewportWidth } from '../../support/viewportWidth';
 import {
   MAX_BOXES, MAX_OPACITY, MAX_SIZE, MAX_TEXT, MIN_CONTRAST, MIN_SIZE, MIN_WIDTH,
   boxContrast, clampPct, newBox, overlayStyle, type OverlayAlign, type OverlayBox, type Overlays,
@@ -101,6 +102,8 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
   const languages = locales.length ? locales : [defaultLocale].filter(Boolean);
   const baseLocale = defaultLocale || languages[0] || '';
   const [deviceChoice, setDeviceChoice] = useState<Device>('pc');
+  // 크기·색 칸 2열 배치는 엔진 폭으로 고른다 — 창 폭 미디어(`gpp:sm:`)는 편집기 미리보기 기기 폭을 따르지 못한다(#869)
+  const wide = useViewportWidth(1024) >= SM_MIN_WIDTH;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locale, setLocale] = useState(baseLocale);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -375,7 +378,7 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
             }} />
           <P className="g7pp-form-hint">{t('text_hint')}</P>
         </Div>
-        <Div className="gpp:grid gpp:grid-cols-1 gpp:sm:grid-cols-2 gpp:gap-3">
+        <Div className={`gpp:grid ${wide ? 'gpp:grid-cols-2' : 'gpp:grid-cols-1'} gpp:gap-3`}>
           <Label className="gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm">
             <Span className="gpp:w-24 gpp:shrink-0">{t('size')}</Span>
             <Input type="range" min={MIN_SIZE} max={MAX_SIZE} step={0.5} value={selected.size} aria-label={t('size')} data-overlay-field="size"
@@ -386,7 +389,7 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
             // 작은 휴대폰에서 이미지가 보이는 폭 기준 예상 글자 크기 — 너무 작으면 알린다
             const px = Math.round(selected.size * PHONE_IMAGE_WIDTH) / 100;
             const small = px < PHONE_MIN_TEXT_PX;
-            return <P className={`gpp:text-xs gpp:sm:col-span-2 ${small ? 'gpp:text-amber-700 gpp:dark:text-amber-300' : 'gpp:text-gray-500 gpp:dark:text-gray-400'}`} data-overlay-phone-size={px} data-small={small || undefined}>
+            return <P className={`gpp:text-xs${wide ? ' gpp:col-span-2' : ''} ${small ? 'gpp:text-amber-700 gpp:dark:text-amber-300' : 'gpp:text-gray-500 gpp:dark:text-gray-400'}`} data-overlay-phone-size={px} data-small={small || undefined}>
               {t('phone_size', { width: PHONE_IMAGE_WIDTH, px })}{small ? ` ${t('phone_small')}` : ''}
             </P>;
           })()}

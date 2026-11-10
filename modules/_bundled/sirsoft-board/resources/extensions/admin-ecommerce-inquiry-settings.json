@@ -137,8 +137,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{!!(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.id}}",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "board:flex board:gap-2 board:flex-row"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "board:flex board:flex-col board:gap-2 board:md:flex-row"
+                                "className": "board:flex board:flex-col board:gap-2"
                             },
                             "children": [
                                 {

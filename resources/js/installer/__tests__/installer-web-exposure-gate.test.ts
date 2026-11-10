@@ -6,21 +6,7 @@
  * 게이팅(updateStep2Gate)을 프로덕션 소스의 `region:web-exposure` 구간 그대로 평가해
  * 검증한다 (installer-ui-state.test.ts 와 같은 방식 — 사본 금지).
  *
- * @scenario probe_outcome=exposed, judgement=exposed, gate_state=pending, server_pass=true
- *
- * @effects exposure_judgement_prefers_exposed_over_unknown, step2_gate_blocks_until_exposure_judged,
- *          exposure_probe_distinguishes_denied_from_unreachable, step2_gate_treats_missing_server_item_as_undetermined,
- *          symlink_probe_result_is_shown_to_the_operator,
- *          exposure_unmeasured_family_blocks_safe_verdict,
- *          exposure_probe_treats_redirect_as_undetermined,
- *          exposure_card_renders_even_when_server_item_is_missing,
- *          exposure_manual_confirm_path_survives_the_link_notice,
- *          exposure_positive_control_detects_broken_delegation,
- *          exposure_project_root_is_chosen_by_measurement_not_guess,
- *          exposure_probe_treats_marker_less_200_as_undetermined,
- *          exposure_manual_confirm_wording_matches_the_listed_addresses,
- *          exposure_verdict_is_recorded_for_later_audit,
- *          exposure_card_busy_state_clears_only_after_the_verdict
+ * 조합과 효과 표식은 그 효과를 재는 각 시험 앞에 있다.
  */
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -51,9 +37,10 @@ type ExposureRegion = {
   initialExposureState: (exposure: unknown) => string;
   storageLinkNoticeNeeded: (exposure: unknown) => boolean;
   judgeExposureResults: (
-    results: Array<{ exposed: boolean; judged: boolean }>,
+    results: Array<{ exposed: boolean; judged: boolean; status?: number; length?: number | null }>,
     unmeasuredCount?: number,
     controlResults?: Array<{ reachable: boolean }>,
+    absentSignature?: { status: number; length: number } | null,
   ) => string;
   probeExposureTarget: (
     root: string,
@@ -164,9 +151,10 @@ describe('getProjectRootUrl — 프로브 기준점은 앱 루트가 아니라 �
   const origin = window.location.origin;
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario project_root_candidate=stripped
+   * @scenario project_root_candidate=unstripped
    *
-   * @effects step2_gate_blocks_until_exposure_judged
+   * @effects exposure_probe_base_is_the_project_root_not_the_app_root
    */
   it.each([
     // [INSTALLER_BASE_URL, 기대 접미사] — /public 꼬리를 벗겨야 문서루트=프로젝트 루트
@@ -190,7 +178,7 @@ describe('getProjectRootUrl — 프로브 기준점은 앱 루트가 아니라 �
 
 describe('initialExposureState — 서버 항목 부재는 「안전」이 아니다 (D3 게이트 자동 개방 차단)', () => {
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=pending
    *
    * @effects step2_gate_treats_missing_server_item_as_undetermined
    */
@@ -199,7 +187,7 @@ describe('initialExposureState — 서버 항목 부재는 「안전」이 아�
   });
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=pending
    *
    * @effects step2_gate_treats_missing_server_item_as_undetermined
    */
@@ -237,9 +225,9 @@ describe('storageLinkNoticeNeeded — symlink 실측 결과의 소비 지점 (B-
   });
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario storage_link=usable
    *
-   * @effects step2_gate_blocks_until_exposure_judged
+   * @effects symlink_probe_result_is_shown_to_the_operator
    */
   it.each([
     ['가능', { symlink_supported: true }],
@@ -332,7 +320,7 @@ describe('양성 대조 — 「열려야 하는 주소」로 위임 부재·기�
   /**
    * @scenario exposure_control=unreachable
    *
-   * @effects exposure_positive_control_detects_broken_delegation
+   * @effects exposure_positive_control_detects_broken_delegation, exposure_project_root_is_not_switched_by_the_control
    */
   it('첫 후보에서 대조가 열리지 않으면 후보를 바꾸지 않는다 — 판정 불능으로 떨어뜨린다 (5차 G3, 제품 결정)', async () => {
     // 4차까지는 「대조가 열리는 후보를 찾을 때까지 후보를 바꾼다」였다. 그러면 대조는
@@ -477,7 +465,7 @@ describe('judgeExposureResults (D3 · D21)', () => {
   });
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=safe
    *
    * @effects exposure_unmeasured_family_blocks_safe_verdict
    */
@@ -488,7 +476,7 @@ describe('judgeExposureResults (D3 · D21)', () => {
   });
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=safe
    *
    * @effects step2_gate_blocks_until_exposure_judged
    */
@@ -507,7 +495,7 @@ describe('updateStep2Gate — [다음 단계] 게이팅 (§12 W1)', () => {
   const recheckBtn = () => document.getElementById('recheck-btn') as HTMLButtonElement;
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=safe
    *
    * @effects step2_gate_blocks_until_exposure_judged
    */
@@ -521,6 +509,8 @@ describe('updateStep2Gate — [다음 단계] 게이팅 (§12 W1)', () => {
   });
 
   /**
+   * @scenario exposure_probe=pending
+   * @scenario exposure_probe=exposed
    * @scenario exposure_probe=unknown
    *
    * @effects step2_gate_treats_missing_server_item_as_undetermined
@@ -537,6 +527,7 @@ describe('updateStep2Gate — [다음 단계] 게이팅 (§12 W1)', () => {
 
   /**
    * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=unknown_confirmed
    *
    * @effects step2_gate_blocks_until_exposure_judged
    */
@@ -551,7 +542,7 @@ describe('updateStep2Gate — [다음 단계] 게이팅 (§12 W1)', () => {
   });
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=safe
    *
    * @effects step2_gate_blocks_until_exposure_judged
    */
@@ -571,9 +562,9 @@ describe('probeExposureTarget — 마커 기반 판정 (asset-probe 규약)', ()
   };
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=exposed, probe_response=marker_200
    *
-   * @effects step2_gate_blocks_until_exposure_judged
+   * @effects exposure_judgement_prefers_exposed_over_unknown
    */
   it('200 + 마커 포함 본문이면 노출', async () => {
     const body = 'APP_NAME=G7\nAPP_KEY=';
@@ -682,7 +673,7 @@ describe('probeExposureTarget — 마커 기반 판정 (asset-probe 규약)', ()
    * @effects exposure_probe_treats_redirect_as_undetermined
    */
   it('프로브는 리다이렉트를 따라가지 않는다 (요청 옵션 계약)', async () => {
-    const spy = vi.fn(async () => ({ ok: false, status: 403 }));
+    const spy = vi.fn(async (_url: string, _init?: RequestInit) => ({ ok: false, status: 403 }));
     vi.stubGlobal('fetch', spy);
 
     await region.probeExposureTarget('http://x', target);
@@ -757,6 +748,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
 
   /**
    * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=unknown_confirmed
    *
    * @effects step2_gate_blocks_until_exposure_judged
    */
@@ -802,6 +794,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
 
   /**
    * @scenario exposure_probe=exposed
+   * @scenario probe_outcome=exposed, judgement=exposed, gate_state=pending, server_pass=true
    *
    * @effects exposure_judgement_prefers_exposed_over_unknown
    */
@@ -922,7 +915,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
   });
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=safe
    *
    * @effects step2_gate_blocks_until_exposure_judged
    */
@@ -1082,9 +1075,11 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
    * 「확인 중…」을 최종 상태로 듣고 [다음 단계] 가 왜 비활성인지 알 수 없다.
    */
   /**
+   * @scenario exposure_probe=safe
    * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=exposed
    *
-   * @effects step2_gate_blocks_until_exposure_judged
+   * @effects exposure_card_busy_state_clears_only_after_the_verdict
    */
   it.each([
     ['보호 확인됨', async () => ({ ok: false, status: 403 })],
@@ -1115,11 +1110,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
  * 현장에서는 프로브 3건이 전부 정상 응답을 받고 `vendor/` 미배포 하나로 보류된 상태에
  * 그 문장이 떠서, 운영자가 **정상 배치를 이상으로** 읽었다.
  *
- * @scenario exposure_probe=unknown, exposure_control=unreachable, exposure_absent_control=signature
- *
- * @effects exposure_unknown_detail_names_its_actual_cause,
- *          exposure_manual_criteria_judges_by_content_not_status,
- *          exposure_absent_control_is_shown_as_the_comparison_address
+ * 사유별 선두 문장, 판정 기준, 비교용 주소를 각 시험이 재고, 조합과 효과 표식은 그 시험 앞에 있다.
  */
 describe('판정 불능 — 사유별 선두 문장 · 판정 기준 · 비교용 주소 (D1)', () => {
   const nextBtn = () => document.getElementById('next-btn') as HTMLButtonElement;
@@ -1382,6 +1373,7 @@ describe('판정 불능 — 사유별 선두 문장 · 판정 기준 · 비교�
    */
   /**
    * @scenario exposure_absent_control=signature, exposure_probe=unknown
+   * @scenario exposure_absent_control=signature, exposure_probe=safe
    *
    * @effects exposure_unknown_detail_names_its_actual_cause
    */
@@ -1407,6 +1399,43 @@ describe('판정 불능 — 사유별 선두 문장 · 판정 기준 · 비교�
     const allPromoted = region.promotedJudged([{ judged: true }], signature);
     expect(allPromoted).toEqual([true]);
     expect(region.judgeExposureResults([{ judged: true }] as never, 0, [], signature as never)).toBe('safe');
+  });
+
+  /**
+   * 음성 대조 승격의 안전 조건은 호출부의 양성 대조 게이트에 기댄다(promotedJudged 주석) — 대상이
+   * 「파일 없는 주소」와 같은 형태로 답해도 양성 대조가 열리지 않으면 승격이 판정을 되살리지 못한다.
+   * 이때 선두 문장은 대조 사유 하나만 말하고, 비교용 주소는 그대로 함께 뜬다.
+   *
+   * @scenario exposure_probe=unknown, exposure_control=unreachable, exposure_absent_control=signature
+   *
+   * @effects exposure_positive_control_detects_broken_delegation,
+   *          exposure_unknown_detail_names_its_actual_cause,
+   *          exposure_absent_control_is_shown_as_the_comparison_address
+   */
+  it('형태가 맞는 응답이어도 양성 대조가 열리지 않으면 판정 불능이고, 대조 사유와 비교용 주소를 함께 띄운다', async () => {
+    region.setStep2GateState(true, 'pending');
+    // 인스톨러 자산은 열리지 않고(위임 사망), 대상과 음성 대조는 같은 형태(200, 길이 120)로 답한다.
+    stubByUrl((url) =>
+      url.includes('/install/assets/')
+        ? { ok: false, status: 404 }
+        : { ok: true, status: 200, type: 'basic', text: async () => 'x'.repeat(120) },
+    );
+
+    await region.refreshWebExposureCard({
+      targets: [target],
+      controls: [control],
+      absent_control: absent,
+      symlink_supported: true,
+    });
+    await tick();
+
+    expect(nextBtn().disabled, '양성 대조가 깨진 배치가 승격으로 「보호 확인됨」이 되면 위임 사망을 놓친다').toBe(true);
+    expect(document.getElementById('web-exposure-confirm'), '판정 불능이면 운영자 확인 경로가 있어야 한다').not.toBeNull();
+    expectOnlyDetail('L:web_exposure_unknown_detail_control');
+    const link = Array.from(card().querySelectorAll('a')).find((a) =>
+      a.getAttribute('href')?.includes('g7-absent-7f3a91'),
+    );
+    expect(link, '대조 실패 사유가 서도 비교용 주소는 함께 떠야 한다').toBeTruthy();
   });
 });
 
@@ -1481,7 +1510,7 @@ describe('소스 계약 — 게이트가 조용히 열리는 형태를 금지한
    * 소스에서 뽑아 대조한다: 화면 쪽은 `region:web-exposure` 안에서 상태를 쓰는 두 지점의
    * 문자열 리터럴(판정 함수의 반환값 포함) + 숨은 필드의 초기값, 서버 쪽은 `match` 팔.
    *
-   * @scenario exposure_probe=safe, exposure_probe=exposed, exposure_probe=unknown, exposure_probe=unknown_confirmed
+   * @scenario exposure_probe=pending, exposure_probe=safe, exposure_probe=exposed, exposure_probe=unknown, exposure_probe=unknown_confirmed
    *
    * @effects installer_web_exposure_verdict_vocabulary_matches_between_screen_and_server
    */
@@ -1566,9 +1595,9 @@ describe('서버별 보호 설정 안내', () => {
   // Apache·LiteSpeed 뿐이고 IIS 는 web.config 를, nginx·Caddy 는 **어떤 동봉 파일도**
   // 읽지 않는다 — 그 서버 운영자는 존재하지 않는 조치를 찾게 된다.
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=exposed
    *
-   * @effects step2_gate_blocks_until_exposure_judged
+   * @effects exposure_server_guide_points_at_the_servers_own_protection_file
    */
   it.each([
     ['apache', 'L:web_exposure_server_guide_apache'],
@@ -1583,9 +1612,9 @@ describe('서버별 보호 설정 안내', () => {
   });
 
   /**
-   * @scenario exposure_probe=unknown
+   * @scenario exposure_probe=exposed
    *
-   * @effects step2_gate_blocks_until_exposure_judged
+   * @effects exposure_server_guide_points_at_the_servers_own_protection_file
    */
   it.each([
     ['알 수 없는 값', { server_kind: 'caddy' }],
@@ -1598,9 +1627,9 @@ describe('서버별 보호 설정 안내', () => {
   });
 
   /**
-   * @scenario server_kind=apache_htaccess
+   * @scenario exposure_probe=exposed
    *
-   * @effects exposure_card_renders_even_when_server_item_is_missing
+   * @effects exposure_server_guide_points_at_the_servers_own_protection_file
    */
   it('서버가 밝힌 값을 화면에 그대로 싣지 않는다 — 위조 가능한 문자열이다', () => {
     const html = region.renderServerProtectionGuide({

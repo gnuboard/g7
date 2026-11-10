@@ -10,7 +10,160 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.language_packs.modals.install_bundled_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "event": "onClick",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isLanguagePackInstalling}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "켜지 않고 깔기만 한다는 뜻을 본문에 명시해 보낸다. 성공하면 고른 팩을 비워 다음에 열 때 지난 값이 남지 않게 한다.",
+                        "event": "onClick",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isLanguagePackInstalling": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/language-packs/install-from-bundled",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "identifier": "{{_global.selectedBundledLanguagePack?.identifier}}",
+                                        "auto_activate": "{{_global.languagePackReinstallMode === true && _global.selectedBundledLanguagePack?.abilities?.can_activate === true}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isLanguagePackInstalling": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.language_packs.messages.install_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "language_packs"
+                                        }
+                                    },
+                                    {
+                                        "handler": "reloadExtensions"
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "comment": "고른 팩은 창을 닫은 뒤에 비운다 — 먼저 비우면 목록을 다시 받는 동안 열린 창의 식별자·범위·버전 칸이 빈 값으로 다시 그려진다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedBundledLanguagePack": null
+                                        }
+                                    },
+                                    {
+                                        "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                            "lifecycleWarningsOpen": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "lifecycle_warnings_modal",
+                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isLanguagePackInstalling": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:admin.language_packs.messages.install_failed'}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isLanguagePackInstalling || _global.selectedBundledLanguagePack?.install_blocked_reason || _global.selectedBundledLanguagePack?.abilities?.can_install !== true}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{!_global.isLanguagePackInstalling}}",
+                        "props": {
+                            "name": "fas fa-download",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isLanguagePackInstalling}}",
+                        "props": {
+                            "name": "fas fa-spinner",
+                            "className": "animate-spin",
+                            "size": "sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -36,6 +189,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다)",
                                     "type": "basic",
                                     "name": "Img",
                                     "if": "{{_global.selectedBundledLanguagePack?.icon_url}}",
@@ -241,166 +395,6 @@
                                     "text": "$t:admin.language_packs.modals.install_notice_target_inactive|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "event": "onClick",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isLanguagePackInstalling}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "켜지 않고 깔기만 한다는 뜻을 본문에 명시해 보낸다. 성공하면 고른 팩을 비워 다음에 열 때 지난 값이 남지 않게 한다.",
-                            "event": "onClick",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isLanguagePackInstalling": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/language-packs/install-from-bundled",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "identifier": "{{_global.selectedBundledLanguagePack?.identifier}}",
-                                            "auto_activate": "{{_global.languagePackReinstallMode === true && _global.selectedBundledLanguagePack?.abilities?.can_activate === true}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isLanguagePackInstalling": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.language_packs.messages.install_success"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "language_packs"
-                                            }
-                                        },
-                                        {
-                                            "handler": "reloadExtensions"
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "comment": "고른 팩은 창을 닫은 뒤에 비운다 — 먼저 비우면 목록을 다시 받는 동안 열린 창의 식별자·범위·버전 칸이 빈 값으로 다시 그려진다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedBundledLanguagePack": null
-                                            }
-                                        },
-                                        {
-                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                "lifecycleWarningsOpen": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "lifecycle_warnings_modal",
-                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isLanguagePackInstalling": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.language_packs.messages.install_failed'}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isLanguagePackInstalling || _global.selectedBundledLanguagePack?.install_blocked_reason || _global.selectedBundledLanguagePack?.abilities?.can_install !== true}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{!_global.isLanguagePackInstalling}}",
-                            "props": {
-                                "name": "fas fa-download",
-                                "size": "sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isLanguagePackInstalling}}",
-                            "props": {
-                                "name": "fas fa-spinner",
-                                "className": "animate-spin",
-                                "size": "sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}"
                         }
                     ]
                 }

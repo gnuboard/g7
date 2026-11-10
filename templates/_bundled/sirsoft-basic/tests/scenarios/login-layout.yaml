@@ -1,0 +1,25 @@
+feature: 로그인 폼의 입력, 로그인 중 표시, 오류, 2단계 인증 전환 (Issue #72)
+
+description: |
+  로그인 폼은 이메일, 비밀번호, 제출 단추를 그린다. 로그인 중에는 화면을 흐리는 덮개 없이 단추에 스피너와
+  「로그인 중...」 을 보이고 입력칸을 막는다. 오류가 있으면 메시지를 보인다. 인증번호를 요구받으면 자격 증명 입력과
+  제출 단추를 숨긴다.
+
+# axis 의미:
+#   phase — 폼 상태(평소 / 로그인 중 / 오류 / 2단계 인증)
+axes:
+  phase: [idle, logging_in, error, two_factor]
+
+effects:
+  - login_form_fields_render                 # 이메일, 비밀번호, 제출 단추가 그려진다
+  - login_no_error_initially                 # 처음에는 오류 메시지가 없다
+  - login_no_blur_overlay_while_submitting   # 로그인 중에도 흐림 덮개가 없다
+  - login_button_spinner_while_submitting    # 로그인 중 단추에 스피너와 진행 문구가 보인다
+  - login_inputs_disabled_while_submitting   # 로그인 중 입력칸이 막힌다
+  - login_no_spinner_when_idle               # 로그인 중이 아니면 스피너가 없다
+  - login_error_message_shown                # loginError 가 있으면 메시지가 보인다
+  - login_credentials_shown_without_two_factor  # 2단계 인증이 없으면 자격 증명 입력이 보인다
+  - login_credentials_hidden_on_two_factor   # 인증번호를 요구하면 자격 증명 입력과 제출 단추가 사라진다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/login.test.tsx

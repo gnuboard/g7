@@ -432,8 +432,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "p-8 min-h-screen bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "p-4 min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -449,8 +461,20 @@
                         "id": "sticky_header",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "640-1023": {
+                                "props": {
+                                    "className": "sticky top-0 z-40 -mx-6 px-6 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                }
+                            },
+                            "1024-": {
+                                "props": {
+                                    "className": "sticky top-0 z-40 -mx-8 px-8 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "sticky-tab-nav-responsive"
+                            "className": "sticky top-0 z-40 -mx-4 px-4 border-b bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700"
                         },
                         "children": [
                             {
@@ -699,8 +723,15 @@
                                                 "comment": "이메일은 **연락처** 칸에 있다 — 상세가 그 자리에 두고, 두 화면이 어긋나면\n                 상세에서 본 값을 수정 화면에서 다시 찾아야 한다. 수정 모드에서는 계정 식별자라\n                 잠긴다(종전과 같다).",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1084,8 +1115,15 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "if": "{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1590,8 +1628,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1683,8 +1728,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1830,8 +1882,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -2343,8 +2402,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "grid grid-cols-2 gap-4"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "grid-2col-responsive"
+                                            "className": "grid grid-cols-1 gap-4"
                                         },
                                         "children": [
                                             {
@@ -2573,8 +2639,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -2662,8 +2735,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "768-": {
+                                                        "props": {
+                                                            "className": "grid grid-cols-2 gap-4"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "grid-2col-responsive"
+                                                    "className": "grid grid-cols-1 gap-4"
                                                 },
                                                 "children": [
                                                     {
@@ -2982,7 +3062,174 @@
                     "width": "520px",
                     "closeOnEscape": false,
                     "closeOnOverlayClick": false,
-                    "showCloseButton": false
+                    "showCloseButton": false,
+                    "footer": [
+                        {
+                            "id": "withdraw_confirm_cancel_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "탈퇴 확인 취소. 확인 문구만 접고 폼은 그대로 둔다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "showWithdrawConfirm": false
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "withdraw_confirm_submit_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "탈퇴 실행. 확인 문구를 먼저 접는 것은 요청이 끝난 뒤 화면이 바뀌어도 확인 창이 남지 않게 하기 위해서다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "showWithdrawConfirm": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSaving": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                "body": "{{_local.form}}"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isSaving": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "bypassLeaveGuard": true,
+                                                        "path": "/admin/users",
+                                                        "mergeQuery": true,
+                                                        "query": {}
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isSaving": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "errors": "{{error.errors ?? null}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:admin.users.form.validation_error'}}"
+                                                    }
+                                                }
+                                            ],
+                                            "errorHandling": {
+                                                "403": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isSaving": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "서버 문구(비밀번호 인증 정책 거절 등)를 보인다 — 없을 때만 공통 「권한이 없습니다」",
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message ?? '$t:auth.permission_denied'}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                "500": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isSaving": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:errors.server_error"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_global.isSaving}}",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.users.modals.withdraw_confirm_submit"
+                                }
+                            ]
+                        }
+                    ]
                 },
                 "children": [
                     {
@@ -3038,180 +3285,6 @@
                                             "className": "list-disc list-inside"
                                         },
                                         "text": "$t:admin.users.modals.withdraw_confirm_effect_linked"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                            "className": "modal-footer-buttons"
-                        },
-                        "children": [
-                            {
-                                "id": "withdraw_confirm_cancel_button",
-                                "type": "basic",
-                                "name": "Button",
-                                "actions": [
-                                    {
-                                        "comment": "탈퇴 확인 취소. 확인 문구만 접고 폼은 그대로 둔다",
-                                        "type": "click",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "local",
-                                            "showWithdrawConfirm": false
-                                        }
-                                    }
-                                ],
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:common.cancel"
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "withdraw_confirm_submit_button",
-                                "type": "basic",
-                                "name": "Button",
-                                "actions": [
-                                    {
-                                        "comment": "탈퇴 실행. 확인 문구를 먼저 접는 것은 요청이 끝난 뒤 화면이 바뀌어도 확인 창이 남지 않게 하기 위해서다",
-                                        "type": "click",
-                                        "handler": "sequence",
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "local",
-                                                    "showWithdrawConfirm": false
-                                                }
-                                            },
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "isSaving": true
-                                                }
-                                            },
-                                            {
-                                                "handler": "apiCall",
-                                                "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
-                                                "auth_required": true,
-                                                "params": {
-                                                    "method": "{{route?.id ? 'PUT' : 'POST'}}",
-                                                    "body": "{{_local.form}}"
-                                                },
-                                                "onSuccess": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isSaving": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "success",
-                                                            "message": "{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "bypassLeaveGuard": true,
-                                                            "path": "/admin/users",
-                                                            "mergeQuery": true,
-                                                            "query": {}
-                                                        }
-                                                    }
-                                                ],
-                                                "onError": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isSaving": false
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "errors": "{{error.errors ?? null}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? '$t:admin.users.form.validation_error'}}"
-                                                        }
-                                                    }
-                                                ],
-                                                "errorHandling": {
-                                                    "403": {
-                                                        "handler": "sequence",
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "isSaving": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "comment": "서버 문구(비밀번호 인증 정책 거절 등)를 보인다 — 없을 때만 공통 「권한이 없습니다」",
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "{{error.message ?? '$t:auth.permission_denied'}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    "500": {
-                                                        "handler": "sequence",
-                                                        "actions": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "isSaving": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:errors.server_error"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{_global.isSaving}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.users.modals.withdraw_confirm_submit"
                                     }
                                 ]
                             }

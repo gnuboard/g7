@@ -111,8 +111,15 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{(user?.data?.sso?.accounts ?? []).length > 0}}",
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "sso:grid sso:grid-cols-2 sso:gap-3"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "sso:grid sso:grid-cols-1 sso:lg:grid-cols-2 sso:gap-3"
+                                        "className": "sso:grid sso:grid-cols-1 sso:gap-3"
                                     },
                                     "children": [
                                         {

@@ -96,6 +96,31 @@ effects:
   - plain_cell_blur_creates_custom_key_replaces_text_token
   # 라이브(E2E)
   - live_add_row_col_merge_save_persists_to_user_page
+  # 연산 × span 문맥 매트릭스(#869 π1 — 떠 있던 조합을 재는 시험)
+  - grid_add_row_under_colspan_fills_col_count
+  - grid_add_row_below_rowspan_keeps_span
+  - grid_remove_row_drops_that_row
+  - grid_remove_row_with_colspan_keeps_valid
+  - grid_remove_rowspan_origin_row_keeps_valid
+  - grid_move_row_with_colspan_swaps_rows
+  - grid_add_col_outside_colspan_keeps_span
+  - grid_add_col_beside_rowspan_fills_each_row
+  - grid_remove_col_drops_that_col
+  - grid_remove_col_beside_rowspan_keeps_span
+  - grid_remove_absorbed_col_shrinks_colspan
+  - grid_move_col_with_rowspan_swaps_cols
+  - grid_merge_area_containing_colspan
+  - grid_merge_area_containing_rowspan
+  - grid_unmerge_plain_cell_is_noop
+  - grid_unmerge_colspan_restores_cells
+  - grid_unmerge_rowspan_restores_cells
+  - grid_unmerge_from_absorbed_coordinate
+  - grid_cell_border_on_span_cell_keeps_span
+  - grid_cell_border_on_absorbed_coordinate_hits_origin
+  - grid_cell_text_on_span_cell_keeps_span
+  - grid_cell_text_on_absorbed_coordinate_hits_origin
+  - grid_complex_cell_text_on_span_cell_keeps_span
+  - grid_complex_cell_text_on_absorbed_coordinate_hits_origin
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/spec/tableGridModel.test.ts

@@ -3,13 +3,11 @@
  * @description Basic Img 컴포넌트 — `src` 는 브라우저가 라우터 없이 직접 여는 주소라
  *              하위 폴더 마운트의 접두사를 컴포넌트가 붙여야 한다 (`A` 의 `href` 와 같은 축).
  *
- * @scenario base_path=subpath, navigation_direction=request
- * @effects template_img_component_applies_base_prefix
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
  *
  * @vitest-environment jsdom
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Img } from '../Img';

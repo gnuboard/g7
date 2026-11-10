@@ -344,6 +344,7 @@ class CategoryController extends AdminBaseController
      */
     public function downloadImage(string $hash): StreamedResponse|Response|JsonResponse
     {
+        // thumbnail-exempt: 라우트 없는 관리 내부 메서드 — 공개 서빙은 Public\CategoryImageController
         try {
             // 서빙은 서비스의 StorageInterface::response() 스트리밍에 위임한다.
             // (파일 전체를 메모리에 적재하는 streamDownload+Storage::get 안티패턴 금지)

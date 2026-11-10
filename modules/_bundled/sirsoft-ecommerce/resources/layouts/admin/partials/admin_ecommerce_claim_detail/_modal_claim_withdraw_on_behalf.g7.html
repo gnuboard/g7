@@ -9,25 +9,25 @@
           <set-state target="global" claimWithdrawReason="{{$event.target.value}}"/>
         </on>
       </textarea>
-      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2">
-        <button data-ref="cwo_003_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
-          <on type="click">
-            <close-modal/>
-          </on>
-          $t:common.cancel
-        </button>
-        <button data-ref="cwo_004_confirm" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isWithdrawingClaim === true || (_global.claimWithdrawReason ?? '').trim() === ''}}">
-          <on type="click">
-            <!-- 고객 요청으로 신청서를 대리 철회한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다 -->
-            <action handler="sirsoft-ecommerce.withdrawClaimOnBehalf" pathSegment="{{_global.claimWithdrawContext?.pathSegment ?? ''}}" claimId="{{_global.claimWithdrawContext?.claimId ?? null}}" reason="{{_global.claimWithdrawReason ?? ''}}">
-              <fail>
-                <suppress/>
-              </fail>
-            </action>
-          </on>
-          $t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.confirm
-        </button>
-      </div>
     </div>
+    <footer>
+      <button data-ref="cwo_003_cancel" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button data-ref="cwo_004_confirm" type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isWithdrawingClaim === true || (_global.claimWithdrawReason ?? '').trim() === ''}}">
+        <on type="click">
+          <!-- 고객 요청으로 신청서를 대리 철회한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다 -->
+          <action handler="sirsoft-ecommerce.withdrawClaimOnBehalf" pathSegment="{{_global.claimWithdrawContext?.pathSegment ?? ''}}" claimId="{{_global.claimWithdrawContext?.claimId ?? null}}" reason="{{_global.claimWithdrawReason ?? ''}}">
+            <fail>
+              <suppress/>
+            </fail>
+          </action>
+        </on>
+        $t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.confirm
+      </button>
+    </footer>
   </modal>
 </partial>

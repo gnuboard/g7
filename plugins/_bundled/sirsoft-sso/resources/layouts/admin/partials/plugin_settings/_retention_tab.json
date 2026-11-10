@@ -39,15 +39,26 @@
                         "item_var": "field"
                     },
                     "dataKey": "{{field}}",
+                    "responsive": {
+                        "1024-": {
+                            "props": {
+                                "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso-grid-3col-responsive"
+                        "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-1"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-1"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -63,8 +74,12 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-2"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-2"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -116,15 +131,26 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "1024-": {
+                            "props": {
+                                "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso-grid-3col-responsive"
+                        "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-1"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-1"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -148,8 +174,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-2 sso:grid sso:grid-cols-2 sso:gap-3"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso:lg:col-span-2 sso:grid sso:grid-cols-2 sso:gap-3"
+                                "className": "sso:grid sso:grid-cols-2 sso:gap-3"
                             },
                             "children": [
                                 {
@@ -213,15 +246,26 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "1024-": {
+                            "props": {
+                                "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso-grid-3col-responsive"
+                        "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-1"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-1"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -245,8 +289,12 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-2"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-2"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -268,15 +316,26 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "1024-": {
+                            "props": {
+                                "className": "sso:grid sso:grid-cols-3 sso:gap-4 sso:items-start"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "sso-grid-3col-responsive"
+                        "className": "sso:grid sso:grid-cols-1 sso:gap-4 sso:items-start"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "sso:lg:col-span-1"
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-1"
+                                    }
+                                }
                             },
                             "children": [
                                 {
@@ -300,8 +359,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "sso:col-span-2 sso:grid sso:grid-cols-2 sso:gap-3"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "sso:lg:col-span-2 sso:grid sso:grid-cols-2 sso:gap-3"
+                                "className": "sso:grid sso:grid-cols-2 sso:gap-3"
                             },
                             "children": [
                                 {

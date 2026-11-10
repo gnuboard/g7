@@ -1860,8 +1860,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:gap-4 ecommerce:flex-row ecommerce:items-center ecommerce:justify-between"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-4 ecommerce:sm:flex-row ecommerce:sm:items-center ecommerce:sm:justify-between"
+                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -1966,8 +1973,15 @@
                                                 "comment": "그룹 헤더 — 드래그핸들 + 그룹명(다국어) + 필수 토글 + 그룹 삭제",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "responsive": {
+                                                    "640-": {
+                                                        "props": {
+                                                            "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-end"
+                                                        }
+                                                    }
+                                                },
                                                 "props": {
-                                                    "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:sm:flex-row ecommerce:sm:items-end"
+                                                    "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -2142,8 +2156,15 @@
                                                             "item_var": "addVal",
                                                             "index_var": "addValIdx"
                                                         },
+                                                        "responsive": {
+                                                            "640-": {
+                                                                "props": {
+                                                                    "className": "ecommerce:flex ecommerce:gap-2 ecommerce:flex-row ecommerce:items-start ecommerce:p-3 ecommerce:bg-white ecommerce:dark:bg-gray-900/40 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
-                                                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:sm:flex-row ecommerce:sm:items-start ecommerce:p-3 ecommerce:bg-white ecommerce:dark:bg-gray-900/40 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded",
+                                                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:p-3 ecommerce:bg-white ecommerce:dark:bg-gray-900/40 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded",
                                                             "data-testid": "additional-value-{{addIdx}}-{{addValIdx}}"
                                                         },
                                                         "children": [
@@ -2216,8 +2237,15 @@
                                                                 "comment": "추가금 (KRW, 0 이상) + 다통화 환산 읽기전용",
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "ecommerce:w-40"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "ecommerce:w-full ecommerce:sm:w-40"
+                                                                    "className": "ecommerce:w-full"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2308,11 +2336,18 @@
                                                                 ]
                                                             },
                                                             {
-                                                                "comment": "기본 선택지 (라디오 — 그룹당 1개). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋(라벨+인풋) baseline 에 정렬",
+                                                                "comment": "기본 선택지 (라디오 — 그룹당 1개). 라벨 없는 컨트롤이라 640px 이상 구간(`<responsive on=\"640-\">`)에서 mt-6 으로 인풋(라벨+인풋) baseline 에 정렬",
                                                                 "type": "basic",
                                                                 "name": "Label",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6 ecommerce:cursor-pointer"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:sm:mt-6 ecommerce:cursor-pointer"
+                                                                    "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2351,11 +2386,18 @@
                                                                 ]
                                                             },
                                                             {
-                                                                "comment": "활성 토글. 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬",
+                                                                "comment": "활성 토글. 라벨 없는 컨트롤이라 640px 이상 구간(`<responsive on=\"640-\">`)에서 mt-6 으로 인풋 baseline 에 정렬",
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:sm:mt-6"
+                                                                    "className": "ecommerce-flex-center ecommerce:gap-1"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2393,11 +2435,18 @@
                                                                 ]
                                                             },
                                                             {
-                                                                "comment": "직접입력 허용 토글 — 유저가 이 선택지 선택 시 자유 텍스트 입력 필수. 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬",
+                                                                "comment": "직접입력 허용 토글 — 유저가 이 선택지 선택 시 자유 텍스트 입력 필수. 라벨 없는 컨트롤이라 640px 이상 구간(`<responsive on=\"640-\">`)에서 mt-6 으로 인풋 baseline 에 정렬",
                                                                 "type": "basic",
                                                                 "name": "Div",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:mt-6"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
-                                                                    "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce:sm:mt-6"
+                                                                    "className": "ecommerce-flex-center ecommerce:gap-1"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2435,10 +2484,17 @@
                                                                 ]
                                                             },
                                                             {
-                                                                "comment": "선택지 삭제 (최소 1개 유지). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬",
+                                                                "comment": "선택지 삭제 (최소 1개 유지). 라벨 없는 컨트롤이라 640px 이상 구간(`<responsive on=\"640-\">`)에서 mt-6 으로 인풋 baseline 에 정렬",
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "if": "{{!_computed.isReadOnly}}",
+                                                                "responsive": {
+                                                                    "640-": {
+                                                                        "props": {
+                                                                            "className": "ecommerce-btn ecommerce-btn-ghost ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:mt-6"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "comment": "선택지 하나 빼기 — 그룹은 최소 하나를 남긴다",
@@ -2452,7 +2508,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "ecommerce-btn ecommerce-btn-ghost ecommerce-btn-sm ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:sm:mt-6",
+                                                                    "className": "ecommerce-btn ecommerce-btn-ghost ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300",
                                                                     "aria-label": "$t:common.delete"
                                                                 },
                                                                 "children": [

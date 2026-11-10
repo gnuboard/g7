@@ -123,6 +123,10 @@ return [
         'search' => [
             'mysql-fulltext' => 'MySQL 전문검색',
         ],
+        'image' => [
+            'gd' => 'GD',
+            'imagick' => 'Imagick (ImageMagick)',
+        ],
     ],
 
     // 드라이버 연결 테스트 메시지
@@ -168,6 +172,14 @@ return [
     'driver_unusable_s3_adapter' => 'S3 스토리지 어댑터(league/flysystem-aws-s3-v3)가 설치되어 있지 않습니다.',
     'driver_unusable_redis_client' => 'phpredis 확장과 predis 라이브러리가 모두 없습니다.',
     'driver_unusable_memcached_extension' => 'memcached PHP 확장이 설치되어 있지 않습니다.',
+    'driver_unusable_gd_extension' => 'gd PHP 확장이 설치되어 있지 않습니다.',
+    'driver_unusable_imagick_extension' => 'imagick PHP 확장이 설치되어 있지 않습니다.',
+
+    // 업로드 탭 썸네일 저장 위치 선택지 라벨 (ThumbnailDiskOptions)
+    'thumbnail_disks' => [
+        'thumbnails' => '서버 비공개 저장소 (기본)',
+        's3' => 'Amazon S3 (비공개, 서버를 거쳐 전송)',
+    ],
     'websocket_invalid_host' => 'Websocket 호스트 설정이 올바르지 않습니다. 호스트에는 주소만 입력하고 계정 정보(@)나 http/https 이외의 프로토콜은 사용할 수 없습니다.',
     'websocket_connection_refused' => 'Websocket 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.',
 

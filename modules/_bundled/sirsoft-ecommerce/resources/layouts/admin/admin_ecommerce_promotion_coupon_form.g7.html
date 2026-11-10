@@ -133,7 +133,8 @@
   <slot name="content">
     <div data-ref="coupon_form_container" class="ecommerce-admin-page-content">
       <div data-ref="page_header_section" class="ecommerce:mb-6">
-        <div data-ref="page_header" class="ecommerce-page-header-padded">
+        <div data-ref="page_header" class="ecommerce:flex ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6 ecommerce:flex-col ecommerce:items-start ecommerce:gap-4">
+          <responsive on="641-" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-6 ecommerce:px-6"/>
           <div class="ecommerce-flex-center ecommerce:gap-3">
             <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="back_button" class="ecommerce-button ecommerce:p-1.5 ecommerce:rounded-lg ecommerce:hover:bg-gray-200 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors" aria-label="$t:common.back">
               <on type="click">
@@ -145,14 +146,15 @@
               <icon name="arrow-left" size="sm"/>
             </a>
             <div>
-              <h1 class="ecommerce-page-title">{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}</h1>
+              <h1 class="ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"><responsive on="640-" class="ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"/>{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}</h1>
               <p data-if="{{!!route.id}}" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_edit|id={{route.id}}</p>
               <p data-if="{{!route.id}}" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_create</p>
             </div>
           </div>
-          <div class="ecommerce-page-actions">
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3 ecommerce:justify-start ecommerce:w-full">
+            <responsive on="641-" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-3"/>
             <!-- 취소하고 목록으로. 위 뒤로가기 버튼과 같은 이동이며 화면 위아래 어디서든 빠져나갈 수 있게 둘 다 둔다 -->
-            <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="cancel_button_top" class="ecommerce-button ecommerce-btn ecommerce-btn-outline">
+            <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="cancel_button_top" class="ecommerce-button ecommerce-btn ecommerce-btn-outline ecommerce:shrink-0 ecommerce:whitespace-nowrap">
               <on type="click">
                 <navigate :bypassLeaveGuard="true" :mergeQuery="true">
                   <query/>
@@ -160,7 +162,7 @@
               </on>
               $t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel
             </a>
-            <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
+            <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:shrink-0 ecommerce:whitespace-nowrap">
               <on type="click">
                 <!-- 저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
                 <sequence>

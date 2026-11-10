@@ -392,6 +392,7 @@ namespace 를 선언한 확장의 CSS 는 코어가 서빙할 때 층을 정리�
 @source "../layouts";
 @source "../extensions";
 @source "../js";
+@source not "../js/**/__tests__"; /* 시험 파일 문자열은 빌드 CSS 로 보내지 않는다 */
 @custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
 
 @layer g7-extension {
@@ -403,12 +404,14 @@ namespace 를 선언한 확장의 CSS 는 코어가 서빙할 때 층을 정리�
 ```
 
 ```html
-<div class="acmememo:grid acmememo:gap-4 acmememo:md:grid-cols-2">
+<div class="acmememo:grid acmememo:gap-4">
+    <responsive on="768-" class="acmememo:grid acmememo:gap-4 acmememo:grid-cols-2"/>
     <h3 class="acme-memo-card__title acmememo:dark:text-white">{{memo.title}}</h3>
 </div>
 ```
 
 - `@custom-variant dark` 로 `{letters}:dark:` 가 중립 표식을 따르게 한다.
+- 화면 폭에 따라 바뀌는 클래스는 `{letters}:md:` 같은 반응형 접두로 쓰지 않는다. 노드의 `<responsive on="…">` 구간에 그 폭에서 쓸 클래스 전체를 둔다([반응형 레이아웃](../frontend/responsive-layout.md)). 레이아웃 정적 검사가 반응형 접두를 막는다.
 - `theme`·`utilities` 층은 서빙 때 벗겨져 유틸리티가 ② 칸에 실린다.
 - 빌드 배선(`@tailwindcss/vite`, `package.json`)과, 기존 레이아웃 클래스를 자동으로 옮기는 변환 도구는 [확장 CSS 도구](../../scripts/extension-css/README.md) 에 있다.
 

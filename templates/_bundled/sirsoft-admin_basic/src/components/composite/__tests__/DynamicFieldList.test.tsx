@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DynamicFieldList } from '../DynamicFieldList';
 import type { DynamicFieldColumn, RowAction } from '../DynamicFieldList/types';
@@ -77,6 +77,8 @@ const simpleItems = [
 
 describe('DynamicFieldList', () => {
   describe('기본 렌더링', () => {
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_renders_rows
     it('컴포넌트가 렌더링됨', () => {
       render(<DynamicFieldList items={sampleItems} columns={sampleColumns} />);
 
@@ -85,6 +87,8 @@ describe('DynamicFieldList', () => {
       expect(screen.getByText('내용')).toBeInTheDocument();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_renders_rows
     it('빈 목록일 때 빈 상태 메시지가 표시됨', () => {
       render(
         <DynamicFieldList
@@ -97,6 +101,8 @@ describe('DynamicFieldList', () => {
       expect(screen.getByText('데이터가 없습니다.')).toBeInTheDocument();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_renders_rows
     it('항목 추가 버튼이 표시됨', () => {
       render(
         <DynamicFieldList
@@ -109,6 +115,8 @@ describe('DynamicFieldList', () => {
       expect(screen.getByText('+ 항목 추가')).toBeInTheDocument();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_renders_rows
     it('className prop이 적용됨', () => {
       const { container } = render(
         <DynamicFieldList
@@ -121,6 +129,8 @@ describe('DynamicFieldList', () => {
       expect(container.firstChild).toHaveClass('custom-list');
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_renders_rows
     it('순번이 표시됨', () => {
       render(
         <DynamicFieldList
@@ -135,6 +145,8 @@ describe('DynamicFieldList', () => {
       expect(screen.getByText('2')).toBeInTheDocument();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_renders_rows
     it('showIndex=false일 때 순번이 표시되지 않음', () => {
       render(
         <DynamicFieldList
@@ -149,6 +161,8 @@ describe('DynamicFieldList', () => {
   });
 
   describe('항목 추가', () => {
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_adds_items
     it('항목 추가 버튼 클릭 시 onChange가 호출됨', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -172,6 +186,8 @@ describe('DynamicFieldList', () => {
       expect(newItems[0].title).toBe('');
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_adds_items
     it('onAddItem이 정의되면 외부 핸들러가 호출됨', async () => {
       const user = userEvent.setup();
       const onAddItem = vi.fn();
@@ -194,6 +210,8 @@ describe('DynamicFieldList', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_adds_items
     it('maxItems에 도달하면 추가 버튼이 비활성화됨', () => {
       render(
         <DynamicFieldList
@@ -207,6 +225,8 @@ describe('DynamicFieldList', () => {
       expect(screen.queryByText('항목 추가')).not.toBeInTheDocument();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_adds_items
     it('createDefaultItem이 정의되면 해당 팩토리 사용', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -237,6 +257,8 @@ describe('DynamicFieldList', () => {
   });
 
   describe('항목 삭제', () => {
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_removes_items_within_min
     it('삭제 버튼 클릭 시 onChange가 호출됨', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -258,8 +280,9 @@ describe('DynamicFieldList', () => {
       expect(newItems[0]._id).toBe('item_2');
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_removes_items_within_min
     it('minItems 이하로 삭제할 수 없음', async () => {
-      const user = userEvent.setup();
       const onChange = vi.fn();
 
       render(
@@ -275,6 +298,8 @@ describe('DynamicFieldList', () => {
       expect(removeButtons.length).toBe(0);
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_removes_items_within_min
     it('onRemoveItem이 정의되면 외부 핸들러가 호출됨', async () => {
       const user = userEvent.setup();
       const onRemoveItem = vi.fn();
@@ -299,6 +324,8 @@ describe('DynamicFieldList', () => {
   });
 
   describe('값 변경', () => {
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_edits_cell_values
     it('입력 필드 변경 시 onChange가 호출됨', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -318,6 +345,8 @@ describe('DynamicFieldList', () => {
       expect(onChange).toHaveBeenCalled();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_edits_cell_values
     it('숫자 필드 변경 시 onChange가 호출됨', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -339,6 +368,8 @@ describe('DynamicFieldList', () => {
   });
 
   describe('읽기 전용 모드', () => {
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_read_only_hides_controls
     it('readOnly=true일 때 입력 필드가 비활성화됨', () => {
       render(
         <DynamicFieldList
@@ -354,6 +385,8 @@ describe('DynamicFieldList', () => {
       });
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_read_only_hides_controls
     it('readOnly=true일 때 삭제 버튼이 표시되지 않음', () => {
       render(
         <DynamicFieldList
@@ -366,6 +399,8 @@ describe('DynamicFieldList', () => {
       expect(screen.queryByTitle('삭제')).not.toBeInTheDocument();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_read_only_hides_controls
     it('readOnly=true일 때 추가 버튼이 표시되지 않음', () => {
       render(
         <DynamicFieldList
@@ -381,6 +416,8 @@ describe('DynamicFieldList', () => {
   });
 
   describe('드래그 앤 드롭', () => {
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_drag_handle_toggle
     it('enableDrag=true일 때 드래그 핸들이 표시됨', () => {
       const { container } = render(
         <DynamicFieldList
@@ -394,6 +431,8 @@ describe('DynamicFieldList', () => {
       expect(dragHandles.length).toBeGreaterThan(0);
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_drag_handle_toggle
     it('enableDrag=false일 때 드래그 핸들이 표시되지 않음', () => {
       const { container } = render(
         <DynamicFieldList
@@ -425,6 +464,8 @@ describe('DynamicFieldList', () => {
       },
     ];
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_custom_row_actions
     it('rowActions이 정의되면 커스텀 액션 버튼이 표시됨', () => {
       render(
         <DynamicFieldList
@@ -438,6 +479,8 @@ describe('DynamicFieldList', () => {
       expect(screen.getAllByTitle('삭제').length).toBe(2);
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_custom_row_actions
     it('커스텀 액션 클릭 시 onClick이 호출됨', async () => {
       const user = userEvent.setup();
       const onClick = vi.fn();
@@ -464,13 +507,15 @@ describe('DynamicFieldList', () => {
       expect(onClick).toHaveBeenCalledWith(simpleItems[0], 0);
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_custom_row_actions
     it('disabled 조건이 적용됨', () => {
       const rowActions: RowAction[] = [
         {
           key: 'edit',
           label: '편집',
           icon: 'edit',
-          disabled: (item, index) => index === 0,
+          disabled: (_item, index) => index === 0,
         },
       ];
 
@@ -489,6 +534,8 @@ describe('DynamicFieldList', () => {
   });
 
   describe('다국어 지원', () => {
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_edits_cell_values
     it('multilingual 타입 컬럼이 현재 로케일 값을 표시', () => {
       render(
         <DynamicFieldList
@@ -502,6 +549,8 @@ describe('DynamicFieldList', () => {
       expect(screen.getByDisplayValue('(주)테스트')).toBeInTheDocument();
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_edits_cell_values
     it('multilingual 필드 변경 시 해당 로케일 값만 업데이트', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -544,6 +593,8 @@ describe('DynamicFieldList', () => {
       { _id: 'item_2', status: 'inactive' },
     ];
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_edits_cell_values
     it('select 타입 컬럼이 렌더링됨', () => {
       render(
         <DynamicFieldList
@@ -556,6 +607,8 @@ describe('DynamicFieldList', () => {
       expect(selects.length).toBe(2);
     });
 
+    // @scenario component=dynamic_field_list
+    // @effects dynamic_field_list_edits_cell_values
     it('select 값 변경 시 onChange가 호출됨', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -579,6 +632,8 @@ describe('DynamicFieldList', () => {
 });
 
 describe('DynamicFieldList - 빠른 연속 편집 (stale closure 방지)', () => {
+  // @scenario component=dynamic_field_list
+  // @effects dynamic_field_list_rapid_edits_accumulate
   it('빠른 연속 편집 시 모든 수정분이 누적 반영됨', async () => {
     const onChange = vi.fn();
     const items = [
@@ -587,7 +642,7 @@ describe('DynamicFieldList - 빠른 연속 편집 (stale closure 방지)', () =>
       { _id: 'item_3', title: 'C', count: 3 },
     ];
 
-    const { rerender } = render(
+    render(
       <DynamicFieldList
         items={items}
         columns={simpleColumns}
@@ -615,6 +670,8 @@ describe('DynamicFieldList - 빠른 연속 편집 (stale closure 방지)', () =>
     expect(lastCallItems[2].title).toBe('C1');
   });
 
+  // @scenario component=dynamic_field_list
+  // @effects dynamic_field_list_rapid_edits_accumulate
   it('연속 삭제 시 올바른 아이템이 삭제됨', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -643,6 +700,8 @@ describe('DynamicFieldList - 빠른 연속 편집 (stale closure 방지)', () =>
     expect(afterFirstDelete[1]._id).toBe('item_3');
   });
 
+  // @scenario component=dynamic_field_list
+  // @effects dynamic_field_list_rapid_edits_accumulate
   it('편집 후 추가 시 기존 편집분이 유지됨', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -676,6 +735,8 @@ describe('DynamicFieldList - 빠른 연속 편집 (stale closure 방지)', () =>
 });
 
 describe('DynamicFieldList - 엣지 케이스', () => {
+  // @scenario component=dynamic_field_list
+  // @effects dynamic_field_list_renders_rows
   it('items가 undefined일 때 에러 없이 렌더링됨', () => {
     render(
       <DynamicFieldList
@@ -687,6 +748,8 @@ describe('DynamicFieldList - 엣지 케이스', () => {
     expect(screen.getByText('항목이 없습니다.')).toBeInTheDocument();
   });
 
+  // @scenario component=dynamic_field_list
+  // @effects dynamic_field_list_renders_rows
   it('columns가 빈 배열일 때 에러 없이 렌더링됨', () => {
     const { container } = render(
       <DynamicFieldList
@@ -698,6 +761,8 @@ describe('DynamicFieldList - 엣지 케이스', () => {
     expect(container).toBeInTheDocument();
   });
 
+  // @scenario component=dynamic_field_list
+  // @effects dynamic_field_list_renders_rows
   it('itemIdKey로 커스텀 ID 필드 사용 가능', () => {
     const customItems = [
       { customId: 'a', title: '항목 A' },

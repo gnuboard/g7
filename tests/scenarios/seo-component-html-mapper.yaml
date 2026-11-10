@@ -34,6 +34,13 @@ effects:
   - pagination_render_mode_emits_page_links
   - all_props_source_feeds_item_attrs
   - class_map_applies_conditional_classes
+  # #869 — Img 의 thumbPreset 이 봇 화면에서도 썸네일 src·srcset 이 되고, raw 본문(HtmlContent)의 이미지가 썸네일로 바뀐다
+  - img_thumb_preset_renders_thumbnail_src
+  - content_image_uses_thumbnail
+  # #869 — responsive 로 thumbPreset 이 바뀌는 노드는 봇 폭(1024px) 한 구간의 규격을 쓴다(프리셋·커스텀 구간 우선순위·식·반복·children·if)
+  - img_thumb_preset_responsive_uses_desktop_breakpoint
+  - img_thumb_preset_responsive_custom_ranges_follow_desktop_width
+  - img_thumb_preset_responsive_node_grammar_on_bot_html
 
 test_files:
   - tests/Unit/Seo/ComponentHtmlMapperTest.php

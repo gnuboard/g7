@@ -64,7 +64,7 @@
                 <div class="flex items-center gap-3 min-w-0">
                   <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 공개 서빙 -->
                   <div data-if="{{att_item.is_image}}" class="flex-shrink-0 w-10 h-10 rounded overflow-hidden bg-gray-100 dark:bg-gray-800">
-                    <img src="{{att_item.preview_url}}" alt="{{att_item.original_filename}}" class="w-full h-full object-cover"/>
+                    <img src="{{att_item.preview_url}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{att_item.original_filename}}" class="w-full h-full object-cover"/>
                   </div>
                   <!-- 파일 아이콘 (일반 파일인 경우) -->
                   <icon data-if="{{!att_item.is_image}}" name="file" class="text-gray-500 dark:text-gray-400 text-sm flex-shrink-0"/>
