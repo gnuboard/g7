@@ -7,9 +7,9 @@
  * - 선택지 목록은 선언(config/settings/defaults.json)에서 읽는다 — 손으로 적은 목록과 갈라지지 않게
  * - 기본값(파랑)은 덮지 않는다. 빌드 CSS(dist/css/components.css)에도 규칙과 바꿔 넣을 색 변수가 남아 있어야 한다
  *
- * @scenario case=settings_layout
+ * 시나리오: case=settings_layout
  *
- * @effects template_settings_exposed_to_global, accent_palette_defined_per_option
+ * 효과: template_settings_exposed_to_global, accent_palette_defined_per_option
  */
 
 import fs from 'node:fs';

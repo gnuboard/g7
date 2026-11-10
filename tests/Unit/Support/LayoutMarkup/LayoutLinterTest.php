@@ -782,7 +782,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
-     * `sirsoft-basic` 의 Modal 은 hoist 3종을 하나도 선언하지 않는다 — 마크업이 조용히 사라진다.
+     * `sirsoft-basic` 의 Modal 은 hoist 3종 중 `footer` 만 선언한다 — 나머지 둘은 마크업이 조용히 사라진다.
      *
      * @scenario compile_unit=linter,source_health=valid
      *
@@ -794,7 +794,10 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     {
         $linter = $this->linterFor('sirsoft-basic');
 
-        foreach (['footer', 'titlePrefix', 'titleSuffix'] as $prop) {
+        // `footer` 는 #869 에서 sirsoft-basic Modal 이 고정 하단으로 선언했다 — 그 prop 만 경고하지 않는다.
+        $this->assertNoLint(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, $this->modalJson('footer'), linter: $linter);
+
+        foreach (['titlePrefix', 'titleSuffix'] as $prop) {
             $this->assertHasLint(
                 LayoutMarkupLintCode::HoistPropNotSupportedByTemplate,
                 $this->modalJson($prop),

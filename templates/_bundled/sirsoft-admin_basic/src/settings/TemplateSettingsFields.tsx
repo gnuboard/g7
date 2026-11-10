@@ -30,6 +30,8 @@ import { MultilingualInput } from '../components/composite/MultilingualInput';
 import { FileUploader } from '../components/composite/FileUploader';
 import type { EditorAttrs } from '../types';
 import { translate } from '../utils/translate';
+import { useRenderWidth } from '../hooks/useRenderWidth';
+import { isWidthAtLeast } from '../components/layout/widthBreakpoints';
 
 // G7Core.t() 번역 함수 참조 — 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const t = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -147,6 +149,9 @@ export const TemplateSettingsFields: React.FC<TemplateSettingsFieldsProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  const twoColumns = isWidthAtLeast(useRenderWidth(), 'md');
+
   // 업로더 콜백이 연달아 와도 직전 결과 위에 쌓이게 최신 값을 따로 들고 있는다
   const latestRef = useRef<TemplateSettingsValue>(value ?? {});
 
@@ -323,13 +328,13 @@ export const TemplateSettingsFields: React.FC<TemplateSettingsFieldsProps> = ({
                 </Div>
               )}
             </Div>
-            <Div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Div className={`grid ${twoColumns ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
               {itemFields.map((itemField) => {
                 const itemPath = `${path}.${index}.${itemField.key}`;
                 const itemError = errorAt(errors, itemPath);
 
                 return (
-                  <Div key={itemField.key} className={itemField.type === 'multilingual' ? 'md:col-span-2' : ''}>
+                  <Div key={itemField.key} className={itemField.type === 'multilingual' && twoColumns ? 'col-span-2' : ''}>
                     <Label className="form-label">{itemField.label}{itemField.required ? ' *' : ''}</Label>
                     {renderControl(itemField, row?.[itemField.key], (next) => updateRow(index, itemField.key, next), itemPath)}
                     {itemError && itemField.type !== 'multilingual' && <Span className="form-error">{itemError}</Span>}

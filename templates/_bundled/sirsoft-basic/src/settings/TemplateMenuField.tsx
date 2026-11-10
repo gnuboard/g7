@@ -54,6 +54,7 @@ import {
   updateMenuItem,
 } from './templateMenuTree';
 import { translate } from '../support/translate';
+import { BREAKPOINTS, useViewportWidth } from '../components/layout/viewportWidth';
 
 // G7Core.t() 번역 함수 참조 — 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const t = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -190,6 +191,10 @@ export const TemplateMenuField: React.FC<TemplateMenuFieldProps> = ({
   errors,
   disabled = false,
 }) => {
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  const viewportWidth = useViewportWidth();
+  const sideBySide = viewportWidth >= BREAKPOINTS.lg;
+  const roleColumns = viewportWidth >= BREAKPOINTS.sm;
   const items = useMemo<TemplateMenuNode[]>(() => (Array.isArray(value) ? value : []), [value]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -318,7 +323,7 @@ export const TemplateMenuField: React.FC<TemplateMenuFieldProps> = ({
   const selectedVisibility = selected?.visibility ?? 'all';
 
   return (
-    <Div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="template-menu-field" aria-label={label}>
+    <Div className={`grid ${sideBySide ? 'grid-cols-2' : 'grid-cols-1'} gap-4`} data-testid="template-menu-field" aria-label={label}>
       {/* 왼쪽 — 끌어서 놓는 트리 */}
       <Div className="space-y-3">
         <Div className="flex flex-wrap items-center gap-2">
@@ -443,7 +448,7 @@ export const TemplateMenuField: React.FC<TemplateMenuFieldProps> = ({
                 data-testid="template-menu-visibility"
               />
               {selectedVisibility === 'roles' && (
-                <Div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="template-menu-roles">
+                <Div className={`mt-2 grid ${roleColumns ? 'grid-cols-2' : 'grid-cols-1'} gap-2`} data-testid="template-menu-roles">
                   {roleOptions.length === 0 && <P className="form-hint">{t('settings.screen.menu.roles_unavailable', 'No roles to choose from.')}</P>}
                   {/* 기본 Checkbox 는 이름표를 그리지 않는다 — Label 로 감싸 이름을 보이고 누르기 영역을 넓힌다 */}
                   {roleOptions.map((role) => (
@@ -460,7 +465,7 @@ export const TemplateMenuField: React.FC<TemplateMenuFieldProps> = ({
                       <Span>{pickMenuLabel(role.name as any, locale) || role.identifier}</Span>
                     </Label>
                   ))}
-                  {selectedPrefix && firstError(errors, `${selectedPrefix}.roles`) && <Span className="form-error sm:col-span-2">{firstError(errors, `${selectedPrefix}.roles`)}</Span>}
+                  {selectedPrefix && firstError(errors, `${selectedPrefix}.roles`) && <Span className={`form-error ${roleColumns ? 'col-span-2' : ''}`}>{firstError(errors, `${selectedPrefix}.roles`)}</Span>}
                 </Div>
               )}
               <P className="form-hint mt-1">{t('settings.screen.menu.visibility_hint', 'This only hides the menu item. It does not block access to the page.')}</P>

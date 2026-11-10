@@ -13,7 +13,10 @@ import { render } from '@testing-library/react';
 import { Flex } from '../layout/Flex';
 import { Grid } from '../layout/Grid';
 
-const css = fs.readFileSync(path.resolve(__dirname, '../../styles/main.css'), 'utf8');
+// 바탕 규칙(`@layer base`, 확대 이미지 커서)은 main.css, 의미 클래스(눌러 쓰는 카드 등)는 semantic.css 에 있다(#434 분리).
+const css = ['main.css', 'semantic.css']
+  .map((name) => fs.readFileSync(path.resolve(__dirname, '../../styles', name), 'utf8'))
+  .join('\n');
 
 describe('눌러 쓰는 요소의 커서 (#869 κ)', () => {
   // @scenario element=flex

@@ -7,14 +7,13 @@
  * 편집기에서 값을 바꾸려 해 두 주인 상태가 된다(실측: 푸터 저작권 칸). 이미지·숫자 칸의 BoundValueNotice 와
  * 같은 안내만 보이는지 실물 컴포넌트로 잠근다. 모킹은 prop-i18n-text-field.test.tsx 와 같다(네트워크·번역만).
  *
- * @scenario case=editor_bound_value
+ * 시나리오: case=editor_bound_value
  *
- * @effects template_settings_bound_text_shows_owner_notice
+ * 효과: template_settings_bound_text_shows_owner_notice
  */
 
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 
 // useLayoutEditor — layoutName/locale/templateIdentifier 공급 모킹(공통 hook 이 읽음).
 const editorContext = {
@@ -79,12 +78,7 @@ vi.mock('../../components/property-controls/inlineBindingApi', () => ({
   insertBindingIntoParamKey: (...a: unknown[]) => insertBindingIntoParamKey(...a),
 }));
 
-import { classifyCustomText } from '../../hooks/useCustomTranslation';
 import { I18nTextField } from '../../components/property-controls/I18nTextField';
-import { ControlRenderer } from '../../components/property-controls/ControlRenderer';
-import { registerCoreWidgets } from '../../spec/registerCoreWidgets';
-import type { EditorControlSpec } from '../../spec/specTypes';
-import type { EditorNode } from '../../utils/layoutTreeUtils';
 
 const t = (k: string, p?: Record<string, string | number>) =>
   p ? `${k}:${Object.values(p).join(',')}` : k;

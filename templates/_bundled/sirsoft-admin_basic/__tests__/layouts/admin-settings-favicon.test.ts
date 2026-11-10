@@ -9,11 +9,11 @@
  * - 저장 성공 뒤 전역 설정은 응답의 공개 설정(`frontend_settings`)으로 바꾼다 — 관리자 형태로 바꾸면 계산 필드(site_logo_url)가 없어
  *   상단 로고가 새로고침 전까지 사라졌다(S-3). 같은 갱신을 하는 알림 채널 확인 창도 같다.
  *
- * @scenario surface=admin_settings
+ * 시나리오: surface=admin_settings
  *
- * @effects site_favicon_saved_and_replaced
- * @effects save_response_carries_frontend_settings
- * @effects priority_meta_described
+ * 효과: site_favicon_saved_and_replaced
+ * 효과: save_response_carries_frontend_settings
+ * 효과: priority_meta_described
  */
 
 import fs from 'node:fs';

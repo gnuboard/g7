@@ -10,7 +10,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 
-const css = fs.readFileSync(path.resolve(__dirname, '../../../styles/main.css'), 'utf8');
+// 의미 클래스는 semantic.css 에 있다(#434 분리 — main.css 는 불러오기와 바탕 규칙만 둔다).
+const css = fs.readFileSync(path.resolve(__dirname, '../../../styles/semantic.css'), 'utf8');
 const block = (name: string) => {
   const at = css.indexOf(`.${name} {`);
   return at < 0 ? '' : css.slice(at, css.indexOf('}', at));

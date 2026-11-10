@@ -71,7 +71,8 @@ describe('관리자 헤더 사용자 사진·로고 썸네일', () => {
   it('사이드바·모바일 로고는 md 규격, eager 로딩이다', () => {
     for (const id of ['logo_image', 'mobile_logo_image']) {
       const img = byId(layout, id);
-      expect(img?.props?.src, id).toBe('{{_global.settings?.general?.site_logo_url}}');
+      // 템플릿 설정 로고(branding.logo)가 있으면 그것, 없으면 환경설정 사이트 로고(#434). 규격은 그대로 md 다.
+      expect(img?.props?.src, id).toBe('{{(_global.templateSettings?.branding?.logo_url || _global.settings?.general?.site_logo_url)}}');
       expect(img?.props?.thumbPreset, id).toBe('md');
       expect(img?.props?.loading, id).toBe('eager');
     }

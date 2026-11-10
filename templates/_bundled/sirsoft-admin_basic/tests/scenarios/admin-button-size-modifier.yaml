@@ -7,7 +7,7 @@ description: |
   `{ns}-btn-sm` 도 같은 순서를 물려받는다.
 
   적용 지점:
-    - `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `.btn-sm` 선언 위치(`.btn` 바로 뒤).
+    - `templates/_bundled/sirsoft-admin_basic/src/styles/semantic.css` 의 `.btn-sm` 선언 위치(`.btn` 바로 뒤).
     - 번들 확장의 resources/css/g7-extension.generated.css(변환기로 다시 만든 복사본).
 
 # axis 의미:

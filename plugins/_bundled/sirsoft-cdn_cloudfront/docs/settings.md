@@ -29,7 +29,7 @@ _선언된 권한이 없습니다._
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
-플러그인 자체 권한이 없다. 설정 화면과 보조 API 는 코어 플러그인 권한 축을 그대로 쓴다 — 현황 조회는 `core.plugins.read`, 외부로 요청을 보내는 연결 시험은 `core.plugins.update`.
+플러그인 자체 권한이 없다. 설정 화면과 보조 API 는 코어 플러그인 권한 축을 그대로 쓴다 — 설정 화면 진입과 현황 조회는 `core.plugins.read`(보기 권한만 있으면 읽기 전용으로 열린다), 저장과 외부로 요청을 보내는 연결 시험은 `core.plugins.update`.
 <!-- @intent END -->
 
 ## 메뉴

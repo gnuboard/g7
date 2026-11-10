@@ -583,7 +583,8 @@ describe('부품 폭 분기 — 렌더 폭으로 접두 없는 클래스를 고�
   // @scenario case=wcls_c09
   // @effects component_width_classes_avoid_width_media_semantic_classes
   it('부품이 쓰는 바탕 클래스는 정의가 있고 그 정의는 폭으로 갈리지 않는다', () => {
-    const css = fs.readFileSync(path.join(stylesDir, 'main.css'), 'utf8');
+    // 의미 클래스 정의는 semantic.css 에 있다(#434 분리 — main.css 는 불러오기와 바탕 규칙만 둔다)
+    const css = fs.readFileSync(path.join(stylesDir, 'semantic.css'), 'utf8');
     for (const name of ['page-heading', 'page-action-group', 'admin-footer-bar', 'modal-footer-bar']) {
       expect(css, `.${name} 정의가 없다`).toMatch(new RegExp(`^\\s*\\.${name}\\s*\\{`, 'm'));
       expect(WIDTH_MEDIA_CLASSES.has(name), `.${name} 정의가 폭으로 갈린다`).toBe(false);

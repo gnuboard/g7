@@ -7,7 +7,7 @@
  * 폭·배경과 헤더 사용자 이름 칸의 숨김·표시가 사라진다. 폐지 예정 정의는 다음 출시 이후에 지운다.
  *
  * 대상은 7.1.4 원본 CSS 에 있던 클래스 가운데 이번 정리에서 정의가 빠졌던 것이다.
- *   - `search-bar-select`·`search-bar-select-custom` (main.css) — 7.1.4 이커머스 관리자 목록 검색 줄이 쓴다.
+ *   - `search-bar-select`·`search-bar-select-custom` (semantic.css) — 7.1.4 이커머스 관리자 목록 검색 줄이 쓴다.
  *   - `user_info` (layout/_admin_base.css) — 7.1.4 `_admin_base` 헤더의 사용자 이름 칸이 쓴다.
  *
  * @scenario-manifest tests/scenarios/admin-deprecated-semantic-classes-kept.yaml

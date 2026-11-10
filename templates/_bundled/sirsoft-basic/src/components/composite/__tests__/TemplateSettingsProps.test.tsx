@@ -9,12 +9,11 @@
  *
  * @vitest-environment jsdom
  *
- * @scenario case=settings_layout
+ * 시나리오: case=settings_layout
  *
- * @effects template_settings_exposed_to_global
+ * 효과: template_settings_exposed_to_global
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Header, { pickLocalizedLabel } from '../Header';

@@ -11,6 +11,7 @@ import { getSiteLocale } from './siteLocale';
 import { getLocaleDisplayName } from '../../support/localeName';
 import { findAdjacentLabel } from './useAdjacentLabel';
 import { translate } from '../../support/translate';
+import { BREAKPOINTS, useViewportWidth } from '../../components/layout/viewportWidth';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -148,6 +149,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   ariaLabel,
   'aria-label': ariaLabelAttr,
 }) => {
+  // 폭 분기는 엔진 폭으로 고른다 — Tailwind 반응형 접두는 창 폭으로 판정되어 편집기 미리보기·엔진 responsive 와 경계가 갈린다(#869).
+  const wideLabel = useViewportWidth() >= BREAKPOINTS.md;
   const rootRef = useRef<HTMLDivElement>(null);
 
   // 이름 prop 이 없으면 바깥 상자 곁의 라벨 글자를 이름으로 삼는다. 종전에는 그 라벨을 `aria-labelledby` 로만 이어
@@ -603,8 +606,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
               {/* showCodeOnMobile: 모바일에서는 언어 코드, 데스크탑에서는 전체 언어명 표시 */}
               {showCodeOnMobile ? (
                 <>
-                  <Span className="hidden md:inline">{getLocaleName(localeCode)}</Span>
-                  <Span className="inline md:hidden">{localeCode.toUpperCase()}</Span>
+                  <Span className={wideLabel ? 'inline' : 'hidden'}>{getLocaleName(localeCode)}</Span>
+                  <Span className={wideLabel ? 'hidden' : 'inline'}>{localeCode.toUpperCase()}</Span>
                 </>
               ) : (
                 getLocaleName(localeCode)

@@ -6,12 +6,11 @@
  * - 파일을 고르면 저장 단추를 풀고, 저장 신호를 받아서야 올린 뒤 값을 바꾼다
  * - 이 화면이 그리지 못하는 칸 종류는 입력칸으로 떨어뜨리지 않고 안내만 보인다
  *
- * @scenario case=settings_layout
+ * 시나리오: case=settings_layout
  *
- * @effects settings_layout_saves_template_settings
+ * 효과: settings_layout_saves_template_settings
  */
 
-import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { TemplateSettingsScreen } from '../TemplateSettingsScreen';

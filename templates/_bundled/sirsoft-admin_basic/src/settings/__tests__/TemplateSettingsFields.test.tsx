@@ -9,14 +9,13 @@
  * - 칸 종류별 부품: text 여러 줄, color 고르개+16진 글자, 선택지 5개 이상 목록 상자, email·url 입력 형식, boolean 스위치
  * - 다국어 칸은 언어 탭 — 탭을 바꾸면 그 언어 값을 보이고, 입력은 그 언어 키에만 쓴다
  *
- * @scenario case=settings_layout
+ * 시나리오: case=settings_layout
  *
- * @effects settings_layout_saves_template_settings
- * @effects field_type_controls_rendered
- * @effects multilingual_field_language_tabs
+ * 효과: settings_layout_saves_template_settings
+ * 효과: field_type_controls_rendered
+ * 효과: multilingual_field_language_tabs
  */
 
-import React from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 
@@ -114,9 +113,9 @@ describe('TemplateSettingsFields (#434)', () => {
     expect(onChange).toHaveBeenLastCalledWith({ ...value, header: { ...value.header, max_boards: 7 } });
 
     fireEvent.click(screen.getByLabelText('초록'));
-    expect(onChange.mock.lastCall[0].branding.accent).toBe('green');
+    expect(onChange.mock.lastCall![0].branding.accent).toBe('green');
     // 앞서 바꾼 칸이 그대로 이어진다(최신 값 위에 쌓는다)
-    expect(onChange.mock.lastCall[0].header.max_boards).toBe(7);
+    expect(onChange.mock.lastCall![0].header.max_boards).toBe(7);
   });
 
   // @scenario case=settings_layout
@@ -134,8 +133,8 @@ describe('TemplateSettingsFields (#434)', () => {
     favicon.onUploadComplete([{ id: 11, hash: 'a' }]);
     logo.onUploadComplete([{ id: 12, hash: 'b' }]);
 
-    expect(onChange.mock.lastCall[0].branding.favicon).toEqual([{ id: 11, hash: 'a' }]);
-    expect(onChange.mock.lastCall[0].branding.logo_dark).toEqual([{ id: 12, hash: 'b' }]);
+    expect(onChange.mock.lastCall![0].branding.favicon).toEqual([{ id: 11, hash: 'a' }]);
+    expect(onChange.mock.lastCall![0].branding.logo_dark).toEqual([{ id: 12, hash: 'b' }]);
   });
 
   // @scenario case=settings_layout
@@ -155,7 +154,7 @@ describe('TemplateSettingsFields (#434)', () => {
     const { rerender } = render(<TemplateSettingsFields sections={sections} value={value} onChange={onChange} />);
 
     fireEvent.click(screen.getByText(/settings.screen.fields.add_item|Add/));
-    const added = onChange.mock.lastCall[0].header.links;
+    const added = onChange.mock.lastCall![0].header.links;
     expect(added).toHaveLength(2);
     expect(added[1]).toEqual({ label: {}, url: '' });
 
@@ -165,10 +164,10 @@ describe('TemplateSettingsFields (#434)', () => {
     expect((screen.getByText(/settings.screen.fields.add_item|Add/).closest('button') as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.click(screen.getAllByLabelText('Move down')[0]);
-    expect(onChange.mock.lastCall[0].header.links.map((row: any) => row.url)).toEqual(['/b', '/a']);
+    expect(onChange.mock.lastCall![0].header.links.map((row: any) => row.url)).toEqual(['/b', '/a']);
 
     fireEvent.click(screen.getAllByLabelText('Remove')[1]);
-    expect(onChange.mock.lastCall[0].header.links.map((row: any) => row.url)).toEqual(['/a']);
+    expect(onChange.mock.lastCall![0].header.links.map((row: any) => row.url)).toEqual(['/a']);
   });
 
   // @scenario case=settings_layout
@@ -287,7 +286,7 @@ describe('TemplateSettingsFields — 칸 종류별 부품 (#434)', () => {
     expect(inputs[1].value).toBe('#112233');
 
     fireEvent.change(inputs[0], { target: { value: '#abcdef' } });
-    expect(onChange.mock.lastCall[0].profile.brand_color).toBe('#abcdef');
+    expect(onChange.mock.lastCall![0].profile.brand_color).toBe('#abcdef');
 
     fireEvent.change(inputs[1], { target: { value: '#00ff00' } });
     expect(onChange).toHaveBeenLastCalledWith({ ...typedValue, profile: { ...typedValue.profile, brand_color: '#00ff00' } });
@@ -334,7 +333,7 @@ describe('TemplateSettingsFields — 칸 종류별 부품 (#434)', () => {
     expect(url.value).toBe('https://example.com');
 
     fireEvent.change(email, { target: { value: 'b@example.com' } });
-    expect(onChange.mock.lastCall[0].profile.contact).toBe('b@example.com');
+    expect(onChange.mock.lastCall![0].profile.contact).toBe('b@example.com');
 
     fireEvent.change(url, { target: { value: 'https://example.org' } });
     expect(onChange).toHaveBeenLastCalledWith({ ...typedValue, profile: { ...typedValue.profile, contact: 'b@example.com', homepage: 'https://example.org' } });
@@ -355,12 +354,12 @@ describe('TemplateSettingsFields — 칸 종류별 부품 (#434)', () => {
 
     fireEvent.click(toggle);
     expect(onChange).toHaveBeenLastCalledWith({ ...typedValue, profile: { ...typedValue.profile, show_badge: true } });
-    expect(onChange.mock.lastCall[0].profile.show_badge).toBe(true);
+    expect(onChange.mock.lastCall![0].profile.show_badge).toBe(true);
 
     // 켜진 값에서 다시 누르면 false 를 쓴다(문자열이 아니라 불리언)
     rerender(<TemplateSettingsFields sections={typedSections} value={{ ...typedValue, profile: { ...typedValue.profile, show_badge: true } }} onChange={onChange} />);
     fireEvent.click(screen.getByRole('switch', { name: '배지 보이기' }));
-    expect(onChange.mock.lastCall[0].profile.show_badge).toBe(false);
+    expect(onChange.mock.lastCall![0].profile.show_badge).toBe(false);
   });
 
   // @scenario case=settings_layout

@@ -6,7 +6,7 @@ description: |
   다음 출시 이후까지 정의(폭 부분 포함)를 남기고 폐지 예정으로 안내한다.
 
   적용 지점:
-    - `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `.search-bar-select`·`.search-bar-select-custom`.
+    - `templates/_bundled/sirsoft-admin_basic/src/styles/semantic.css` 의 `.search-bar-select`·`.search-bar-select-custom`.
     - `templates/_bundled/sirsoft-admin_basic/src/styles/layout/_admin_base.css` 의 `.user_info`.
 
 # axis 의미:

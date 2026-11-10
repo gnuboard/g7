@@ -82,7 +82,9 @@ class FileServingHelperSourceContractTest extends TestCase
     // 45 → 47: develop-7.2.0 4차 병합으로 히어로섹션·팝업 플러그인의 공개 이미지 서빙
     // (`BannerImageController::show()`·`PopupImageController::show()`)이 들어왔다 — 둘 다 코어 헬퍼
     // (`streamedFileResponseFromMeta`·`fileResponse`)를 지나도록 고친 뒤 모집단에 남는다(실측).
-    private const MIN_FILE_SERVING_METHODS = 47;
+    // 47 → 48: #434 파비콘 공개 서빙(`FaviconController`)이 들어왔다 — issue869 → develop-7.2.0 리베이스 트리 실측
+    // (파일별 집계에서 한쪽에만 있는 서빙 메서드는 이것 하나다).
+    private const MIN_FILE_SERVING_METHODS = 48;
 
     /**
      * 컨트롤러 소스 파일 전수 (코어 + 번들 확장).
