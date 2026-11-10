@@ -1,0 +1,17 @@
+feature: 다통화 절사 계산 사본 동일성
+
+description: |
+  applyRounding() 과 보조 roundingUnitScale() 은 CurrencyConversionService(주문·클레임·결제 금액)와
+  HasMultiCurrencyPrices(상품·리소스 표시 금액) 두 곳에 복사돼 있다. 한쪽만 고치면 같은 절사 설정에서
+  두 경로가 예외 없이 다른 금액을 낸다. 사본 모집단은 src/ 스캔으로 파생하며, 2개 미만이면 스캔이
+  깨진 것으로 보고 실패한다. 공백·주석 차이를 걷어 낸 본문이 전부 같아야 한다.
+
+axes:
+  case: [rounding_helper_copies]
+
+effects:
+  - rounding_helper_copies_discovered_from_source
+  - rounding_helper_copies_identical
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CurrencyRoundingParityTest.php

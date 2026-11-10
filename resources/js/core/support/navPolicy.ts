@@ -100,7 +100,7 @@ export function sanitizeNavPath(target: unknown): string | null {
  *
  * @param path navigate 목적지(경로·쿼리)
  * @returns 사이트 밖 목적지면 true
- * @since engine-v1.87.0
+ * @since engine-v1.93.0
  */
 export function isOffSiteNavTarget(path: unknown): boolean {
     if (typeof path !== 'string') {

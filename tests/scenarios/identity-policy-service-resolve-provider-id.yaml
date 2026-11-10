@@ -1,0 +1,18 @@
+feature: 본인인증 정책의 provider_id 해석 fallback
+
+description: |
+  IdentityPolicyService::resolveProviderId 가 428 응답에 실을 provider_id 를 정하는 규칙을 지킨다(#275).
+  정책의 provider_id 가 등록된 provider 면 그대로 쓰고, NULL 이거나 미등록이면 Manager 의 목적 기반
+  fallback 체인(정책 값을 0순위로 전달)을 따르며, Manager 가 예외를 던지면 정책의 원본 값을 보존한다.
+
+axes:
+  case: [registered, null_provider, unregistered_provider, manager_failure]
+
+effects:
+  - registered_policy_provider_returned_as_is
+  - null_policy_provider_falls_back_to_manager
+  - unregistered_policy_provider_passed_to_manager_fallback
+  - manager_failure_keeps_original_provider_id
+
+test_files:
+  - tests/Unit/Services/IdentityPolicyServiceResolveProviderIdTest.php

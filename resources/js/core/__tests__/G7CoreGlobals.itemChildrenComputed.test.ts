@@ -1,6 +1,6 @@
 // e2e:allow 단위·레이아웃 시험 파일 — 실화면 측정은 같은 엔진 변경의 브라우저 매트릭스
 /**
- * 회귀: 반복 셀·확장 행 안의 `_computed` 가 늘 빈 객체였다 (engine-v1.86.0)
+ * 회귀: 반복 셀·확장 행 안의 `_computed` 가 늘 빈 객체였다 (engine-v1.92.0)
  *
  * DataGrid 셀(`cellChildren`·`subRowChildren`)은 `G7Core.renderItemChildren` 으로, 확장 행(`expandChildren`)은
  * `G7Core.renderExpandContent` 로 그려진다. 두 래퍼가 셀 문맥에 `_computed: {}`(또는 `globalState._computed || {}`)를

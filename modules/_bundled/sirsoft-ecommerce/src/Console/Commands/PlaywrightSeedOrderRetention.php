@@ -127,6 +127,7 @@ class PlaywrightSeedOrderRetention extends Command
      */
     private function order(string $tag, OrderStatusEnum $status, array $timestamps, \DateTimeInterface $updatedAt): string
     {
+        // audit:allow datetime-display-user-timezone reason: E2E·API 문서 시드 식별자 — 기계값
         $number = self::ORDER_PREFIX.$tag.'-'.now()->format('His');
 
         // 비회원 주문으로 만든다 — 팩토리 기본값은 회원을 새로 만들어, 정리 뒤에도 개발 DB 에 회원이 쌓인다.

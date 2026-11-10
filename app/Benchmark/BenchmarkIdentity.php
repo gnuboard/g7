@@ -68,6 +68,37 @@ class BenchmarkIdentity
     }
 
     /**
+     * 트랜잭션 밖에서 발급한 계측 토큰과 임시 계정을 지웁니다.
+     *
+     * 부팅 축은 회차마다 새 프로세스로 요청을 보내므로, 롤백되는 트랜잭션 안의 계정을 자식
+     * 프로세스가 볼 수 없습니다. 그래서 커밋해 발급하고 계측이 끝나면 이 메서드로 되돌립니다.
+     * 지정 계정(`--as`)은 계측용 토큰만 지우고 계정·역할은 건드리지 않습니다.
+     *
+     * @param  array{token: string, user: User, ephemeral: bool}  $issued  `issueToken()` 결과
+     * @return void 반환값 없음
+     */
+    public function discard(array $issued): void
+    {
+        $user = $issued['user'];
+
+        $user->tokens()->where('name', 'like', 'g7-bench-%')->delete();
+
+        if (! $issued['ephemeral']) {
+            return;
+        }
+
+        $benchRoles = $user->roles()->where('identifier', 'like', 'g7_bench_%')->get();
+        $user->roles()->detach();
+
+        foreach ($benchRoles as $role) {
+            $role->permissions()->detach();
+            $role->delete();
+        }
+
+        $user->delete();
+    }
+
+    /**
      * 지정된 기존 계정을 찾습니다.
      *
      * @param  string  $identifier  계정 ID 또는 이메일

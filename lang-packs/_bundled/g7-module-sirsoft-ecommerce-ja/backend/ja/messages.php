@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'content_media' => [
+        'upload_success' => '本文メディアをアップロードしました。',
+        'upload_failed' => '本文メディアをアップロードできませんでした。',
+        'target_success' => '本文メディアのアップロード情報を読み込みました。',
+        'not_found' => '本文メディアが見つかりません。',
+    ],
+
     'copy_suffix' => '（コピー）',
     'vbank_close_reason' => '入金前の注文キャンセル',
     'categories' => [
@@ -1452,6 +1459,12 @@ return [
         ],
     ],
     'seeders' => [
+        'issue162_measure' => [
+            'guard' => 'ブラウザ実測シーダーは CLI かつ G7_PLAYWRIGHT_BYPASS=1 のときだけ実行します。',
+            'product' => '  - 実測商品 #:id (オプション #:option_id)',
+            'done' => 'ブラウザ実測データの準備が完了しました',
+            'cleanup_done' => 'ブラウザ実測データを整理しました — 注文 :orders 件、商品 :products 件、本文メディア :media 件',
+        ],
         'activity_log_sample' => [
             'skip_no_admin' => '管理者ユーザーがいないため、eコマースのアクティビティログシーダーをスキップします。',
             'purged' => '既存のeコマースサンプルアクティビティログ :count 件を削除しました (マーカーのない実際のログは保持します)。',
@@ -1778,5 +1791,9 @@ return [
         'category_image' => 'カテゴリ画像',
         'review_image' => 'レビュー画像',
         'claim_image' => '交換/返品/返金の添付画像',
+    ],
+    // 最近の検索語の範囲名 (module.json search_scopes.products.label)
+    'search_history' => [
+        'scope_products' => '商品検索',
     ],
 ];

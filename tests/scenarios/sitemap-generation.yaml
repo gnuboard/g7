@@ -53,6 +53,11 @@ effects:
   - incremental_skips_rebalance
   # ── 다국어 (P1) ──
   - hreflang_bounded
+  # ── 기여자 배열 ↔ 지연 스트림 브리지 (P1) ──
+  - contributor_lazy_streams_array_urls
+  - contributor_array_materializes_lazy_urls
+  - contributor_lazy_defers_execution_until_iterated
+  - contributor_base_implements_contributor_interface
   # ── 진행상황 / 실시간 (P3) ──
   - progress_recorded_per_phase
   - progress_broadcast_when_reverb_on
@@ -101,6 +106,11 @@ effects:
   - sitemap_url_block_escapes_xml_special_characters
   - sitemap_contributors_are_streamed_one_at_a_time
   - sitemap_loc_origin_follows_configured_site_url
+  # ── 동기 실행(--sync·sync 큐)의 중복 방지 잠금 (#161 F2) ──
+  - sitemap_sync_run_holds_job_unique_lock            # 큐 잡과 같은 잠금을 잡은 채 돌고 끝나면 푼다
+  - sitemap_sync_run_skips_while_job_holds_lock       # 큐 잡이 잠금을 쥐고 있으면 「이미 생성 중」 + 성공 종료
+  - sitemap_sync_run_releases_only_its_own_lock       # 실행 중 주인이 바뀐 잠금은 풀지 않는다
+  - sitemap_sync_run_fails_when_lock_store_errors     # 잠금 저장소 오류면 돌리지 않고 실패 종료
 
 # scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
 scale:

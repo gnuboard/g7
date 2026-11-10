@@ -20,7 +20,7 @@
 이 파일은 자동 생성 산출물이 아니라 **수작업으로 작성**한다. 확장 루트(`module.json`/`plugin.json`/`template.json` 옆)에 둔다.
 
 - 타입 SSoT: `resources/js/core/template-engine/layout-editor/spec/specTypes.ts` 의 `EditorSpec` 인터페이스 — 각 블록의 의도·병합 규칙·플레이스홀더 문법이 JSDoc 으로 명시되어 있다. 본 문서와 타입이 어긋나면 타입이 정본이다.
-- 서빙 엔드포인트: 편집기는 묶음 엔드포인트 `GET /api/templates/{id}/editor-spec-bundle?modules[]=..&plugins[]=..` 한 요청으로 받는다(7.2.0, engine-v1.89.0). 항목마다 개별 엔드포인트 `/api/{templates|modules|plugins}/{id}/editor-spec` 과 같은 판정(활성 확장만, 설치본만)을 하고, 한 확장이 실패해도 그 항목만 비운다. 개별 엔드포인트는 서드파티 호환을 위해 그대로 있다 — [templates.md](../backend/api/templates.md#get-apitemplatesidentifiereditor-spec-bundle)
+- 서빙 엔드포인트: 편집기는 묶음 엔드포인트 `GET /api/templates/{id}/editor-spec-bundle?modules[]=..&plugins[]=..` 한 요청으로 받는다(7.2.0, engine-v1.94.0). 항목마다 개별 엔드포인트 `/api/{templates|modules|plugins}/{id}/editor-spec` 과 같은 판정(활성 확장만, 설치본만)을 하고, 한 확장이 실패해도 그 항목만 비운다. 개별 엔드포인트는 서드파티 호환을 위해 그대로 있다 — [templates.md](../backend/api/templates.md#get-apitemplatesidentifiereditor-spec-bundle)
 - 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 묶음으로 받아 네임스페이스 병합한다.
 
 ## 확장 컴포넌트의 팔레트 등재
@@ -241,6 +241,8 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 ### actionRecipes — 친화 명칭 → 핸들러 JSON
 
 `params`(친화 입력란) + `build`(핸들러 JSON 생성 틀)로 구성한다. `build` 값의 `{{paramKey}}`(중괄호 2개)가 입력값으로 치환된다. `onSuccess`/`onError` 가 `{{key}}` 이고 그 파라미터가 `action-list` 면 치환 결과는 중첩 액션 **배열**이 된다. 핸들러명/파라미터 키는 사용자에게 노출하지 않는다 — 사용자는 `label` 친화 명칭만 본다. `build.handler` 는 코어 핸들러 규칙의 올바른 핸들러(`navigate`/`apiCall`/`setState`/...)를 쓴다. `comment` 키는 레시피가 아닌 작성자 메모다.
+
+`build` 틀에 없는 핸들러 인자는 친화 폼으로 그 액션을 열어 적용·저장할 때 **사라진다**(역해석이 틀에 있는 키만 값으로 꺼낸다). 핸들러에 인자가 새로 생기면 레시피 `params` 칸과 `build` 틀 양쪽에 함께 넣는다 — 코어 `navigate` 레시피는 `fallbackPath`·`scrollBehavior`·`returnScroll`(떠나는 화면에 돌아올 때의 스크롤, engine-v1.85.0)·`bypassLeaveGuard`·`refetch_data_sources` 를 담는다. 확장이 같은 핸들러를 쓰는 더 좁은 레시피(예: 경로만 받는 「페이지로 이동」)를 두더라도, 역해석은 값을 가장 많이 꺼내는 레시피를 고르므로 이런 인자가 있는 액션은 코어 레시피로 열린다.
 
 `build.handler` 는 리터럴 핸들러명 대신 `{{paramKey}}` **placeholder** 도 가능하다 — 호출할 핸들러를 응답값 등 데이터로 결정하는 provider-agnostic 액션(예: ecommerce 모듈 `requestPgPayment` "결제 진입" — 핸들러를 `{{response.data.pg_payment_handler}}` 데이터 칩으로 연결)에 쓴다. 결제 같은 **도메인 동작은 코어가 아니라 그 도메인 확장(모듈/플러그인/템플릿)이 자기 editor-spec `actionRecipes` 에 소유**한다 — 코어는 PG/도메인을 모른다. 확장 레시피는 로더가 `__source` 메타를 붙여 〔확장식별자〕 배지·'extension' 그룹으로 자동 분류한다. 라벨은 그 확장의 lang 네임스페이스를 명시한다(예: `$t:sirsoft-ecommerce.editor.action.request_pg_payment.label`).
 

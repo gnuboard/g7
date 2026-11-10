@@ -60,4 +60,33 @@ return [
     'results_found_at_least' => ':count件以上の検索結果が見つかりました。',
     'result_cap_notice' => '一致する項目が :cap件を超えており、合計件数を正確にカウントしていません。次のページに続行できます。',
     'refine_query_hint' => '検索キーワードをより具体的に入力すると、正確な件数と最後のページを確認できます。',
+    'history' => [
+        'scopes' => [
+            'core_site' => '統合検索',
+        ],
+        'owner_core' => 'コア',
+        'messages' => [
+            'list_success' => '最近の検索語を読み込みました。',
+            'record_success' => '検索語を保存しました。',
+            'record_skipped' => '検索語を保存しませんでした。',
+            'delete_success' => '検索語を削除しました。',
+            'not_found' => '検索語が見つかりません。',
+            'clear_success' => '最近の検索語をすべて削除しました。',
+            'merge_success' => 'ブラウザにあった最近の検索語を統合しました。',
+            'auto_save_on' => '検索語の自動保存をオンにしました。',
+            'auto_save_off' => '検索語の自動保存をオフにしました。',
+            'failed' => '最近の検索語を処理できませんでした。',
+        ],
+        'attributes' => [
+            'scope' => '検索範囲',
+            'keyword' => '検索語',
+            'items' => '統合する検索語',
+            'searched_at' => '検索日時',
+            'auto_save' => '自動保存',
+        ],
+        'validation' => [
+            'scope_unknown' => '使用できない検索範囲です。',
+            'items_max' => '一度に統合できる検索語は:max件までです。',
+        ],
+    ],
 ];

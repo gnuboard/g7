@@ -13,6 +13,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SequenceRepositoryInterface
  */
 class SequenceRepository implements SequenceRepositoryInterface
 {
+    /**
+     * @param  Sequence  $model  시퀀스 모델
+     */
     public function __construct(
         protected Sequence $model
     ) {}
@@ -59,7 +62,9 @@ class SequenceRepository implements SequenceRepositoryInterface
      */
     public function updateLastResetDate(Sequence $sequence, Carbon $date): bool
     {
-        return $sequence->update(['last_reset_date' => $date]);
+        // 호출자가 넘긴 날짜(사이트 시간대의 오늘)를 그 날짜 그대로 남긴다 — UTC 로 옮기면 하루 전 날짜가 된다.
+        // audit:allow datetime-display-user-timezone reason: 사이트 날짜 그대로 저장 — 호출자가 사이트 시간대 Carbon 을 넘김
+        return $sequence->update(['last_reset_date' => $date->format('Y-m-d')]);
     }
 
     /**

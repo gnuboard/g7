@@ -93,6 +93,7 @@ class CoreUpdateService
      */
     public static function updateReportPath(string $status): string
     {
+        // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
         return storage_path('logs/'.self::UPDATE_REPORT_PREFIX.$status.'_'.date('Ymd_His').'.log');
     }
 
@@ -4237,6 +4238,7 @@ class CoreUpdateService
 
         $content = implode("\n", [
             '=== 그누보드7 코어 업데이트 실패 리포트 ===',
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             '날짜: '.date('Y-m-d H:i:s'),
             "시작 버전: {$fromVersion}",
             "대상 버전: {$toVersion}",

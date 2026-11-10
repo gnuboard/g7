@@ -2,7 +2,7 @@
 
 namespace Modules\Gnuboard7\HelloModule\Tests\Unit\Layouts;
 
-use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 마크업 형식 예시 화면(admin_markup_demo)의 글자 표시 테스트.
@@ -14,7 +14,7 @@ use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
  *
  * @scenario-manifest tests/scenarios/markup-demo-text.yaml
  */
-class MarkupDemoTextTest extends ModuleTestCase
+class MarkupDemoTextTest extends PureTestCase
 {
     /**
      * 예시 레이아웃의 짝 JSON 을 읽습니다.

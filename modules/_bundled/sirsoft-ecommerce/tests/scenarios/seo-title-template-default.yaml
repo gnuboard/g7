@@ -1,0 +1,19 @@
+feature: SEO 제목 틀 기본값에서 쇼핑몰명 제거 (1.3.4)
+
+description: |
+  코어 7.1.5 는 검색엔진 제목과 방문자 브라우저 탭 제목을 한 규칙으로 정하고, 사이트 이름은 코어 「타이틀 접미사」
+  (비면 ` - {사이트 이름}`)로만 붙인다. 그래서 1.3.4 의 상품·분류·검색 제목 틀 기본값은 쇼핑몰명을 빼고 화면 정보만 둔다
+  (`{product_name}`·`{category_name}`·`{keyword_name}`). 쇼핑몰 메인(`{commerce_name}`)은 그대로다.
+
+  업그레이드 데이터 단계(`upgrades/data/1.3.4/migrations/02_DropShopNameFromSeoTitleTemplates.php`)는 저장된 값이
+  옛 기본값과 글자 그대로 같을 때만 새 기본값으로 바꾸고, 운영자가 고친 틀은 그대로 둔다.
+
+axes:
+  case: [old_default_rewritten_custom_kept, settings_file_absent]
+
+effects:
+  - seo_title_template_old_default_rewritten_custom_kept  # 옛 기본값만 바꾸고 고친 값·다른 키는 유지, 재실행 멱등
+  - seo_title_template_absent_file_untouched              # 저장 파일이 없으면 만들지 않는다(새 기본값 적용)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/DropShopNameFromSeoTitleTemplatesTest.php

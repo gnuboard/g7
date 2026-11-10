@@ -7,12 +7,14 @@ use App\Models\Role;
 use App\Models\User;
 use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
+use App\Support\ContentMedia\ContentMediaPolicyRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\MapsBoardSettingAttributes;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\NamesContentMediaPolicyFields;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
@@ -22,6 +24,7 @@ use Modules\Sirsoft\Board\Rules\SlugUniqueRule;
 class StoreBoardRequest extends FormRequest
 {
     use MapsBoardSettingAttributes;
+    use NamesContentMediaPolicyFields;
     use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
     use ValidatesLengthRange;
@@ -69,6 +72,8 @@ class StoreBoardRequest extends FormRequest
             'secret_reply_visibility' => $settings['secret_reply_visibility'] ?? SecretReplyVisibility::ThreadPath->value,
             'max_comment_depth' => $settings['max_comment_depth'] ?? 10,
             'use_file_upload' => $settings['use_file_upload'] ?? false,
+            // 본문 미디어 정책 기본값 (null: 첨부 정책을 따름, #883)
+            'content_media_policy' => $settings['content_media_policy'] ?? null,
             'comment_order' => $settings['comment_order'] ?? 'ASC',
             'notify_admin_on_post' => $settings['notify_admin_on_post'] ?? true,
             'notify_author' => $settings['notify_author'] ?? true,
@@ -118,6 +123,11 @@ class StoreBoardRequest extends FormRequest
             if (isset($data[$field])) {
                 $data[$field] = filter_var($data[$field], FILTER_VALIDATE_BOOLEAN);
             }
+        }
+
+        // 본문 미디어 정책: 「직접 정하기」 스위치가 꺼져 있으면 null(첨부 정책을 따름)로, 스위치 문자열은 불리언으로 (#883)
+        if (array_key_exists('content_media_policy', $data)) {
+            $data['content_media_policy'] = ContentMediaPolicyRules::normalizeInput($data['content_media_policy']);
         }
 
         $this->merge($data);
@@ -248,6 +258,9 @@ class StoreBoardRequest extends FormRequest
             // 보안 설정 (배열도 허용)
             'blocked_keywords' => ['nullable', 'array'],
             'blocked_keywords.*' => ['string', 'max:100'],
+
+            // 본문 미디어 정책 (null: 첨부 정책을 따름, #883) — 형식은 코어가 정한다
+            ...ContentMediaPolicyRules::settingsRules('content_media_policy'),
         ];
 
         // 훅: 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 필터 제공
@@ -287,6 +300,9 @@ class StoreBoardRequest extends FormRequest
         // 「new display hours 필드는…」처럼 필드 키가 그대로 보인다
         $attributes = array_merge($attributes, $this->boardSettingAttributes());
 
+        // 본문 미디어 정책 하위 칸 (#883) — 수정·일괄 적용 요청과 같은 이름
+        $attributes = array_merge($attributes, $this->contentMediaPolicyAttributes('content_media_policy'));
+
         // 권한 필드에 대한 동적 속성 매핑
         $permissionDefinitions = config('sirsoft-board.board_permission_definitions', []);
 
@@ -318,7 +334,7 @@ class StoreBoardRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
+        return ContentMediaPolicyRules::messages('content_media_policy') + [
             // slug 검증 메시지
             'slug.required' => __('sirsoft-board::validation.slug.required'),
             'slug.regex' => __('sirsoft-board::validation.slug.format'),

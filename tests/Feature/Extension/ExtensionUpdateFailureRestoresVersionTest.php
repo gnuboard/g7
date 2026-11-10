@@ -3,6 +3,8 @@
 namespace Tests\Feature\Extension;
 
 use App\Extension\ExtensionManager;
+use App\Extension\Helpers\ExtensionPendingHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -72,7 +74,7 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
     {
         $bundled = base_path("{$type}/_bundled/{$identifier}");
         $this->fixturePaths[] = $bundled;
-        File::copyDirectory(base_path("{$type}/{$identifier}"), $bundled);
+        FilePermissionHelper::copyDirectory(base_path("{$type}/{$identifier}"), $bundled, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
 
         $manifest = json_decode(File::get("{$bundled}/{$manifestFile}"), true);
         $manifest['version'] = '1.1.0';
@@ -237,7 +239,7 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
         $this->fixtureTemplateModel->update(['latest_version' => '1.1.0', 'update_available' => true]);
         $bundled = base_path("templates/_bundled/{$this->fixtureTemplate}");
         $this->fixturePaths[] = $bundled;
-        File::copyDirectory(base_path("templates/{$this->fixtureTemplate}"), $bundled);
+        FilePermissionHelper::copyDirectory(base_path("templates/{$this->fixtureTemplate}"), $bundled, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
         $manifest = json_decode(File::get("{$bundled}/template.json"), true);
         $manifest['version'] = '1.1.0';
         File::put("{$bundled}/template.json", json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

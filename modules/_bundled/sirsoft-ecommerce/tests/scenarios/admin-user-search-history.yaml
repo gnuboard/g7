@@ -1,0 +1,24 @@
+feature: 관리자 회원 상세 「쇼핑 데이터」 탭 — 최근 상품 검색어
+
+description: |
+  최근 검색어는 회원 정보라 관리자 회원 조회에서 볼 수 있어야 한다(코어 7.1.5). 저장과 응답은 코어가 맡는다 —
+  코어 회원 상세 응답 `search_history.scopes` 에 범위 id 를 키로 싣는다. 이 모듈이 선언한 상품 검색 범위
+  (`sirsoft-ecommerce.products`)는 모듈의 회원 데이터라 코어 본문이 아니라 이 모듈의 「쇼핑 데이터」 탭에
+  선다(모듈 소유 회원 데이터는 모듈 탭 — 설계 결정 2026-09-21).
+
+  범위가 응답에 없으면(검색어 기능이 없는 옛 코어) 블록이 서지 않는다. 0건이면 자리를 남기고 없다고 말한다.
+
+axes:
+  case:
+    - ecommerce_scope_block
+
+effects:
+  - ecommerce_tab_lists_product_scope_keywords_only      # 상품 검색 범위만, 받은 순서(최신순)·일시, 카드 안 링크 묶음 앞
+  - ecommerce_tab_search_block_stands_when_empty         # 0건이면 자리를 남기고 없다고 말한다
+  - ecommerce_tab_search_block_hidden_without_scope      # 범위가 응답에 없으면 블록이 서지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-user-search-history-block.test.tsx
+
+limitations:
+  - "응답 모양(범위 키·최신순·끈 확장 범위 제외)은 코어 시험(tests/Feature/Api/Admin/UserSearchHistoryDetailTest.php)이 잠근다."

@@ -4,7 +4,9 @@ namespace App\Http\Requests\User;
 
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Models\Role;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -251,16 +253,18 @@ class UserListRequest extends FormRequest
             'date_filter' => $this->date_filter ?? 'all',
         ]);
 
-        // 날짜 필터에 따른 기본 날짜 설정
+        // 날짜 필터에 따른 기본 날짜 설정 — 보는 사람의 오늘 기준.
+        // 저장소가 이 날짜를 보는 사람 시간대의 하루로 해석하므로(applyViewerDateRangeFilter) 같은 기준으로 만든다.
+        $today = CarbonImmutable::now(TimezoneHelper::getUserTimezone());
         if ($this->date_filter === 'week' && ! $this->start_date && ! $this->end_date) {
             $this->merge([
-                'start_date' => now()->subWeek()->format('Y-m-d'),
-                'end_date' => now()->format('Y-m-d'),
+                'start_date' => $today->subWeek()->toDateString(),
+                'end_date' => $today->toDateString(),
             ]);
         } elseif ($this->date_filter === 'month' && ! $this->start_date && ! $this->end_date) {
             $this->merge([
-                'start_date' => now()->subMonth()->format('Y-m-d'),
-                'end_date' => now()->format('Y-m-d'),
+                'start_date' => $today->subMonth()->toDateString(),
+                'end_date' => $today->toDateString(),
             ]);
         }
     }

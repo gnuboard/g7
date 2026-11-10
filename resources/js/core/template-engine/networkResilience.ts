@@ -46,7 +46,7 @@ const DEFAULT_TIMEOUT_MS = 15000;
  * 공용 기본값 15초를 쓰던 때는 첫 요청이 16~18초 걸리는 느린 서버에서 정상 응답이 세 번 모두 끊겨 「페이지 로딩 실패」 로
  * 끝났고 서버는 같은 요청을 세 번 받았다(설계 확정 2026-11-09, #869). 라우트·컴포넌트·언어 파일 같은 다른 요청은 기본값 그대로다.
  *
- * @since engine-v1.89.0
+ * @since engine-v1.94.0
  */
 export const LAYOUT_REQUEST_TIMEOUT_MS = 30000;
 

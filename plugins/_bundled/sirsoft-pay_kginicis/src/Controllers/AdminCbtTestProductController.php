@@ -39,6 +39,7 @@ class AdminCbtTestProductController extends AdminBaseController
     public function create(): JsonResponse
     {
         try {
+            // audit:allow datetime-display-user-timezone reason: 시험 상품 코드 고유 접미사(서버 시각) — 기계값
             $timestamp = now()->format('YmdHis');
             $productCode = 'CBT-TEST-'.$timestamp;
 

@@ -130,7 +130,7 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 키(`cellChildren`·`expandChildren`·`expandContext`·`render`, 메타데이터 `skipBindingKeys`) 아래 정의에 `responsive` 가
 있으면, 그 분기 판정을 문자열로 묶은 `__responsiveBand` prop 을 composite 컴포넌트에 넘긴다. 값은 구간 경계에서만 바뀌므로
 그때만 컴포넌트가 다시 그려지고(레지스트리의 `React.memo` 비교도 이 값에서 깨진다), 같은 구간 안의 폭 변경에는 다시 그리지
-않는다(engine-v1.89.0). 셀 responsive 가 없으면 이 prop 은 오지 않는다. 그래서 composite 는 폭을 구독하지 않아도 셀이
+않는다(engine-v1.94.0). 셀 responsive 가 없으면 이 prop 은 오지 않는다. 그래서 composite 는 폭을 구독하지 않아도 셀이
 구간을 따라간다. 다만 다음 경우는 컴포넌트가 `G7Core.useResponsive()` 를 구독하고 그 폭을 메모 의존성에 넣는다.
 
 ```text

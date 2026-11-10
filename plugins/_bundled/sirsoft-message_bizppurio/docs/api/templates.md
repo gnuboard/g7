@@ -165,6 +165,9 @@ _단건 응답: `data` 객체의 필드._
 | templates[].requested_at | string\|null | `2026-08-10T09:12:00+09:00` | 검수 신청 시각 (ISO 8601) |
 | templates[].approved_at | string\|null | `2026-08-12T14:30:00+09:00` | 승인 시각 (ISO 8601) |
 | templates[].last_synced_at | string\|null | `2026-08-19T03:00:00+09:00` | 마지막 카카오 동기화 시각 (ISO 8601) |
+| templates[].requested_at_date_formatted | string\|null | `2026-08-10` | 검수 신청 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| templates[].approved_at_date_formatted | string\|null | `2026-08-12` | 승인 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| templates[].last_synced_at_date_formatted | string\|null | `2026-08-19` | 마지막 동기화 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
 | templates[].fallback_sms_enabled | boolean | `true` | 알림톡 실패 시 SMS 대체발송 여부 |
 | templates[].sms_only | boolean | `false` | SMS 단독 발송 여부 (알림톡 미사용) |
 | templates[].is_active | boolean | `true` | 발송 활성 여부 |
@@ -264,6 +267,9 @@ _단건 응답: `data` 객체의 필드._
 | templates.{notification_type}.requested_at | string\|null | `2026-08-10T09:12:00+09:00` | 검수 신청 시각 (ISO 8601) |
 | templates.{notification_type}.approved_at | string\|null | `2026-08-12T14:30:00+09:00` | 승인 시각 (ISO 8601) |
 | templates.{notification_type}.last_synced_at | string\|null | `2026-08-19T03:00:00+09:00` | 마지막 동기화 시각 (ISO 8601) |
+| templates.{notification_type}.requested_at_date_formatted | string\|null | `2026-08-10` | 검수 신청 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| templates.{notification_type}.approved_at_date_formatted | string\|null | `2026-08-12` | 승인 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| templates.{notification_type}.last_synced_at_date_formatted | string\|null | `2026-08-19` | 마지막 동기화 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
 | templates.{notification_type}.inspection_detail | array\|null | `null` | 반려 사유(comments) 등 검수 상세 |
 | templates.{notification_type}.fallback_sms_enabled | boolean | `true` | SMS 대체발송 여부 |
 | templates.{notification_type}.sms_body | object\|null | `{"ko":"#{user_name}님, 주문이 완료되었습니다.","en":"#{user_name}, your…` | 대체/단독 SMS 본문의 로케일 맵 (`{"ko": "...", "en": "..."}`) |
@@ -362,6 +368,9 @@ Authorization: Bearer {YOUR_TOKEN}
 | template.requested_at | string\|null | `2026-08-10T09:12:00+09:00` | 검수 신청 시각 (ISO 8601) |
 | template.approved_at | string\|null | `2026-08-12T14:30:00+09:00` | 승인 시각 (ISO 8601) |
 | template.last_synced_at | string\|null | `2026-08-19T03:00:00+09:00` | 마지막 동기화 시각 (ISO 8601) |
+| template.requested_at_date_formatted | string\|null | `2026-08-10` | 검수 신청 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| template.approved_at_date_formatted | string\|null | `2026-08-12` | 승인 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
+| template.last_synced_at_date_formatted | string\|null | `2026-08-19` | 마지막 동기화 날짜 — 보는 사람 시간대 (`Y-m-d`, 화면 표시용) |
 | template.fallback_sms_enabled | boolean | `true` | SMS 대체발송 여부 |
 | template.sms_body | object\|null | `{"ko":"#{user_name}님, 주문이 완료되었습니다.","en":"#{user_name}, your…` | 대체/단독 SMS 본문의 로케일 맵 (`{"ko": "...", "en": "..."}`) |
 | template.sms_only | boolean | `false` | SMS 단독 발송 여부 |

@@ -1,0 +1,14 @@
+feature: 통합 검색 페이지 결과의 발행일 — 보는 사람 시간대 날짜 (#160)
+
+description: |
+  SearchPagesListener 가 published_at 을 UTC 날짜 그대로 내보내, 한국 시간 새벽 0~9시에 발행한 페이지가
+  통합 검색 「발행일」에 전날로 보였다. 검색은 웹 요청이므로 보는 사람(user_timezone) 날짜로 내보낸다.
+
+axes:
+  surface: [search_published_at]
+
+effects:
+  - search_published_date_uses_viewer_timezone
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Listeners/SearchPagesPublishedDateTest.php

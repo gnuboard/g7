@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Koreaexim\Tests\Feature;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
+use App\Jobs\DispatchHookListenerJob;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -84,7 +85,8 @@ class RateLifecycleTest extends PluginTestCase
         app(HookListenerRegistrar::class)->register(ReapplyRatesOnCurrencyChangeListener::class);
         HookManager::doAction('sirsoft-ecommerce.settings.after_save', ['general']);
         HookManager::doAction('sirsoft-ecommerce.settings.after_save', ['language_currency']);
-        Queue::assertNothingPushed();
+        // 같은 훅을 구독하는 다른 리스너(이커머스 활동 로그 등)는 큐로 갈 수 있다 — 재적용 리스너만 큐에 실리지 않으면 된다.
+        Queue::assertNotPushed(DispatchHookListenerJob::class, fn (DispatchHookListenerJob $job) => $job->listenerClass === ReapplyRatesOnCurrencyChangeListener::class);
         Http::assertNothingSent();
     }
 
@@ -328,7 +330,7 @@ class RateLifecycleTest extends PluginTestCase
         }
         $input = ['auto_manage' => true, 'auth_key' => '••••••••', 'run_days' => []];
         $this->assertFalse(Validator::make($input, $listener->rules([], 'sirsoft-koreaexim', $input))->fails());
-        // 갱신 시각은 스케줄 관리로 옮겼다(1.0.2) — 설정 검증 규칙에 남지 않는다
+        // 갱신 시각은 스케줄 관리로 옮겼다(1.1.0) — 설정 검증 규칙에 남지 않는다
         $this->assertArrayNotHasKey('update_time', $listener->rules([], 'sirsoft-koreaexim', $input));
     }
 

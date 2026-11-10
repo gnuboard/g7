@@ -2,7 +2,7 @@
 
 namespace Modules\Gnuboard7\HelloModule\Tests\Unit\Routes;
 
-use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * Hello 모듈 프론트엔드 라우트 파일 구조 테스트.
@@ -15,7 +15,7 @@ use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
  *
  * @scenario-manifest tests/scenarios/frontend-routes.yaml
  */
-class FrontendRoutesFileTest extends ModuleTestCase
+class FrontendRoutesFileTest extends PureTestCase
 {
     /**
      * 모듈 루트 경로.

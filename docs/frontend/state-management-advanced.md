@@ -891,7 +891,7 @@ await G7Core.componentEvent.emit('eventName', { key: 'value' });
 // 구독 해제 — on() 이 돌려준 해제 함수 (권장)
 unsubscribe();
 
-// 또는 콜백 참조로 그 구독만 해제 (engine-v1.87.0)
+// 또는 콜백 참조로 그 구독만 해제 (engine-v1.93.0)
 G7Core.componentEvent.off('eventName', callback);
 ```
 

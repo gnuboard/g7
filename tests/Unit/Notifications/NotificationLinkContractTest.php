@@ -64,7 +64,7 @@ class NotificationLinkContractTest extends TestCase
     }
 
     /**
-     * 알림 본문·링크가 쓰는 `{변수}` 는 전부 그 정의의 variables 에 선언돼 있다(수신자 이름 예약 자리 제외).
+     * 템플릿(제목·본문·링크)이 쓰는 모든 변수가 정의의 variables 에 선언돼 있는지 검증합니다.
      *
      * @effects every_notification_placeholder_is_declared_as_a_variable
      *

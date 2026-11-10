@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 1.1.0 업그레이드 스텝 — 1.0.4 가 시드한 확장 소유 키 정리 검증
@@ -73,7 +74,7 @@ class RemoveExtensionOwnedKeysFromNecessaryAllowlistTest extends PluginTestCase
         parent::setUp();
 
         // 업그레이드 마이그레이션은 오토로드되지 않는다 — 실행 시점과 같은 방식으로 싣는다.
-        require_once __DIR__.'/../../../upgrades/data/1.1.0/migrations/04_RemoveExtensionOwnedKeysFromNecessaryAllowlist.php';
+        UpgradeFiles::requireOnce(__DIR__.'/../../../upgrades/data/1.1.0/migrations/04_RemoveExtensionOwnedKeysFromNecessaryAllowlist.php');
 
         $this->path = ExtensionStoragePath::plugin('sirsoft-gdpr', 'settings').'/setting.json';
 

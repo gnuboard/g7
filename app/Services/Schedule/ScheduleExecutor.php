@@ -10,6 +10,7 @@ use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
 use App\Enums\ScheduleType;
 use App\Exceptions\ScheduleExecutionException;
+use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Extension\HookManager;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
@@ -71,6 +72,7 @@ class ScheduleExecutor
      * @return ScheduleHistory|null 실행 이력 (「실패만 기록」 성공이거나 예약 실행이 중복으로 건너뛰면 null)
      *
      * @throws ScheduleExecutionException 소유 확장이 비활성일 때, 수동 실행인데 앞선 실행이 잠금을 잡고 있을 때
+     * @throws ScheduleRunLockUnavailableException 수동 실행인데 잠금 저장소가 오류를 낼 때 (503)
      */
     public function execute(Schedule $schedule, ScheduleTriggerType $trigger, ?int $userId = null): ?ScheduleHistory
     {
@@ -78,7 +80,7 @@ class ScheduleExecutor
             throw ScheduleExecutionException::ownerInactive();
         }
 
-        $lock = $this->acquireLock($schedule);
+        $lock = $this->acquireLock($schedule, $trigger);
 
         if ($lock === false) {
             if ($trigger === ScheduleTriggerType::Manual) {
@@ -157,9 +159,12 @@ class ScheduleExecutor
      * 중복 방지 잠금을 잡습니다.
      *
      * @param  Schedule  $schedule  스케줄
-     * @return Lock|false|null 잡은 잠금, 이미 잡혀 있으면 false, 잠금이 필요 없거나 캐시 장애면 null
+     * @param  ScheduleTriggerType  $trigger  실행 계기 (예약 / 수동)
+     * @return Lock|false|null 잡은 잠금, 이미 잡혀 있으면 false, 잠금이 필요 없거나 예약 실행 중 캐시 장애면 null
+     *
+     * @throws ScheduleRunLockUnavailableException 수동 실행인데 잠금 저장소가 오류를 낼 때 (503)
      */
-    private function acquireLock(Schedule $schedule): Lock|false|null
+    private function acquireLock(Schedule $schedule, ScheduleTriggerType $trigger): Lock|false|null
     {
         $minutes = (int) $schedule->without_overlapping;
 
@@ -172,7 +177,15 @@ class ScheduleExecutor
 
             return $lock->get() ? $lock : false;
         } catch (Throwable $e) {
-            // 캐시가 잠금을 못 주면 실행을 막지 않는다 — 작업이 영영 멈추는 쪽이 겹쳐 도는 쪽보다 해롭다.
+            // 수동 실행(「지금 실행」)은 잠금 없이 돌리지 않는다 — 중복 실행 방지를 보장할 수 없고, 누른 사람이 다시
+            // 시도할 수 있다(#161 F4). 원본 저장소 오류 문구는 응답에 싣지 않고 로그에만 남긴다.
+            if ($trigger === ScheduleTriggerType::Manual) {
+                Log::error('스케줄 실행 잠금 저장소 오류 — 실행하지 않습니다', ['schedule_id' => $schedule->id, 'error' => $e->getMessage()]);
+
+                throw new ScheduleRunLockUnavailableException((int) $schedule->id);
+            }
+
+            // 예약 실행은 캐시가 잠금을 못 줘도 실행을 막지 않는다 — 작업이 영영 멈추는 쪽이 겹쳐 도는 쪽보다 해롭다.
             Log::warning('DB 스케줄 중복 방지 잠금 실패 — 잠금 없이 실행합니다', [
                 'schedule_id' => $schedule->id,
                 'error' => $e->getMessage(),

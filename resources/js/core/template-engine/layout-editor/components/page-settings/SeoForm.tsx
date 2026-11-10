@@ -137,7 +137,8 @@ export function SeoForm({
   const seo = (getValue('meta', {}) as Record<string, unknown>).seo as Record<string, unknown> | undefined;
   const seoVals = (seo && typeof seo === 'object' ? seo : {}) as Record<string, unknown>;
 
-  // meta.seo 서브트리 1건 패치(meta 최상위 키 라운드트립 유지).
+  // meta.seo 서브트리 1건 패치(meta 최상위 키 라운드트립 유지). getValue 는 부르는 시점의 최신 문서를 읽는다
+  // (usePageSettings) — 다국어 칸의 키 생성 응답이 늦게 와도 그사이 다른 칸이 적은 값을 지우지 않는다.
   const patchSeo = useCallback(
     (key: string, value: unknown): void => {
       const meta = { ...(getValue('meta', {}) as Record<string, unknown>) };
@@ -148,6 +149,21 @@ export function SeoForm({
       patch('meta', meta);
     },
     [getValue, patch],
+  );
+
+  // meta.seo.og / meta.seo.twitter 의 키 하나 패치 — 부르는 시점의 최신 og/twitter 에 그 키만 반영한다(빈 값이면 키 제거,
+  // 남은 키가 없으면 og/twitter 자체 제거 — SeoOgForm onChangeOg 경로와 같은 결과).
+  const patchSeoChild = useCallback(
+    (parentKey: 'og' | 'twitter', key: string, value: unknown): void => {
+      const meta = getValue('meta', {}) as Record<string, unknown>;
+      const seoNow = (meta.seo as Record<string, unknown> | undefined) ?? {};
+      const cur = seoNow[parentKey];
+      const next: Record<string, unknown> = { ...(cur && typeof cur === 'object' && !Array.isArray(cur) ? (cur as Record<string, unknown>) : {}) };
+      if (value === undefined || value === null || value === '') delete next[key];
+      else next[key] = value;
+      patchSeo(parentKey, Object.keys(next).length > 0 ? next : undefined);
+    },
+    [getValue, patchSeo],
   );
 
   const enabled = seoVals.enabled === true;
@@ -566,6 +582,8 @@ export function SeoForm({
             twitter={seoVals.twitter as Record<string, unknown> | undefined}
             onChangeOg={(next) => patchSeo('og', Object.keys(next).length > 0 ? next : undefined)}
             onChangeTwitter={(next) => patchSeo('twitter', Object.keys(next).length > 0 ? next : undefined)}
+            onPatchOg={(key, value) => patchSeoChild('og', key, value)}
+            onPatchTwitter={(key, value) => patchSeoChild('twitter', key, value)}
             ogPreview={ogPreview?.og}
             twitterPreview={ogPreview?.twitter}
             defaultsAvailable={ogPreview?.defaultsAvailable ?? false}

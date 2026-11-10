@@ -4,6 +4,7 @@ namespace Tests\Feature\Cache;
 
 use App\Extension\Cache\ModuleCacheDriver;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
@@ -73,14 +74,19 @@ class CacheKeyIndexConcurrencyTest extends TestCase
     {
         $this->cleanup();
 
-        $startAt = microtime(true) + 8.0;
+        // 출발 장벽: 고정 8초를 기다리는 대신, 각 워커가 부팅을 마치면 ready-<n> 을 만들고 go 파일이 생길 때까지 돈다.
+        // 부모는 모두 준비되면(최대 30초) go 를 만든다 — 부팅이 빠르면 그만큼 일찍 출발한다.
+        $barrier = storage_path('framework/testing/cache-race-'.getmypid().'-'.uniqid());
+        File::ensureDirectoryExists($barrier);
+        $go = $barrier.'/go';
         $processes = [];
 
         for ($i = 0; $i < self::WORKERS; $i++) {
             $code = sprintf(
-                '$d = new App\Extension\Cache\ModuleCacheDriver(%s, "file"); while (microtime(true) < %F) { usleep(200); } $d->remember("k%d", fn () => "v%d", 600, ["race-tag"]);',
+                '$d = new App\Extension\Cache\ModuleCacheDriver(%s, "file"); touch(%s); $until = microtime(true) + 60; while (! is_file(%s) && microtime(true) < $until) { usleep(200); } $d->remember("k%d", fn () => "v%d", 600, ["race-tag"]);',
                 var_export(self::IDENTIFIER, true),
-                $startAt,
+                var_export($barrier.'/ready-'.$i, true),
+                var_export($go, true),
                 $i,
                 $i
             );
@@ -90,10 +96,17 @@ class CacheKeyIndexConcurrencyTest extends TestCase
             $processes[] = $process;
         }
 
+        $deadline = microtime(true) + 30;
+        while (count(glob($barrier.'/ready-*') ?: []) < self::WORKERS && microtime(true) < $deadline) {
+            usleep(50_000);
+        }
+        touch($go);
+
         foreach ($processes as $process) {
             $process->wait();
             $this->assertTrue($process->isSuccessful(), $process->getErrorOutput());
         }
+        File::deleteDirectory($barrier);
 
         $driver = new ModuleCacheDriver(self::IDENTIFIER, 'file');
         // 키 목록은 키 해시로 64조각(`g7:_idx:{접두사}:{0..63}`)에 나뉘어 있다(#798 — 조각마다 잠금, 키가 많은 확장의 put 비용 축소).

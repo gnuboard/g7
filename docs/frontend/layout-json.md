@@ -99,6 +99,7 @@
 | `meta.seo` | object | ❌ | SEO 페이지 생성기 설정 (아래 참조) |
 | `meta.leave_guard` | string | ❌ | 저장하지 않은 변경 이탈 확인 식 `{{…}}` (engine-v1.82.0, 아래 참조) |
 | `meta.leave_message` | string | ❌ | 이탈 확인 문구(`$t:키` 또는 글자). 없으면 코어 기본 문구 |
+| `meta.scroll_restoration` | object | ❌ | 뒤로/앞으로 가기·새로고침으로 돌아왔을 때의 스크롤 동작 (engine-v1.85.0, 아래 참조) |
 | `meta.icon` | string | ❌ | 레이아웃 편집기 라우트 트리의 메뉴 아이콘 (편집기 [기본 정보] 탭) |
 | `meta.editor_label` | string | ❌ | 레이아웃 편집기 트리·후보 목록의 표시 이름(`$t:키` 허용). 없으면 `title` |
 | `components` | array | ✅ | 컴포넌트 배열 |
@@ -149,6 +150,7 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 > - `globalHeaders`: [아래 섹션](#전역-헤더-globalheaders)
 > - `meta.seo`: [아래 섹션](#metaseo-seo-페이지-생성기)
 > - `meta.leave_guard`: [아래 섹션](#metaleave_guard-저장하지-않은-변경-이탈-확인)
+> - `meta.scroll_restoration`: [아래 섹션](#metascroll_restoration-뒤로-가기와-새로고침-스크롤-복원)
 
 ### meta.seo (SEO 페이지 생성기)
 
@@ -222,6 +224,65 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 - 이 키는 브라우저 화면 전용이다. 검색엔진용 화면(SEO 렌더러)은 `meta.seo` 만 읽으므로 출력에 영향이 없다.
 - 상속 레이아웃은 `meta` 를 키 단위로 병합하므로 자식이 선언하면 그 화면에만 적용된다.
 - 확장 핸들러에서 확인 여부를 알아야 하면 `G7Core.navigation.isLeaveGuarded()` 를 쓴다([g7core-api.md](g7core-api.md#저장하지-않은-변경-확인--isleaveguarded)).
+
+### meta.scroll_restoration (뒤로 가기와 새로고침 스크롤 복원)
+
+화면은 뒤로/앞으로 가기에서 데이터를 다시 받느라 높이가 늦게 늘어난다. 브라우저 기본 복원은 그 직후 한 번만 시도해 문서가 짧으면 맨 위에 머문다. 엔진은 히스토리 항목마다 스크롤 위치를 기억했다가, 화면을 다시 그린 뒤 이 설정에 따라 되돌린다 (engine-v1.85.0). 설정이 없으면 기억한 위치로 복원한다.
+
+```html
+<meta title="…" :scroll_restoration='{"wait":"data","timeout_ms":8000,"containers":["#admin-main"]}'/>
+```
+
+```json
+"meta": {
+  "scroll_restoration": {
+    "mode": "restore",
+    "on_reload": true,
+    "wait": "height",
+    "timeout_ms": 5000,
+    "containers": [],
+    "snapshot": { "enabled": true, "ttl_seconds": 600, "revalidate": true, "item_key": "id", "state": [] }
+  }
+}
+```
+
+| 키 | 값 | 기본 | 뜻 |
+| --- | --- | --- | --- |
+| `mode` | `"restore"` · `"top"` · `"none"` · `"#선택자"` | `"restore"` | 돌아왔을 때 동작. `none` 은 엔진이 관여하지 않는다(브라우저·템플릿 몫). 선택자는 그 요소로 이동(`navigate` 의 `scroll` 과 같은 문법) |
+| `on_reload` | boolean | `true` | 새로고침 뒤에도 같은 동작. `false` 면 새로고침 뒤 맨 위 |
+| `wait` | `"height"` · `"data"` | `"height"` | `height`: 문서가 그 위치를 담을 만큼 자라면 맞추고 높이가 멈추면 끝낸다. `data`: 화면 데이터 소스 응답이 모두 온 뒤 한 번 맞춘다 |
+| `timeout_ms` | 정수 0~60000 | `5000` | 최대 대기. 넘으면 닿을 수 있는 가장 아래로. 사용자가 휠·터치·키·포인터로 만지면 바로 멈춘다 |
+| `containers` | 선택자 배열 | `[]` | 창 말고 함께 기억·복원할 안쪽 스크롤 영역(예: 관리자 본문 `#admin-main`) |
+| `snapshot.enabled` | boolean | `true` | 더보기(`appendDataSource`)로 늘어난 데이터 소스를 항목별로 기억해, 돌아왔을 때 먼저 그려 늘어났던 위치까지 복원 |
+| `snapshot.ttl_seconds` | 정수 0~86400 | `600` | 스냅샷 유효 시간. 넘으면 버리고 새로 받는다 |
+| `snapshot.revalidate` | boolean | `true` | 스냅샷으로 그린 뒤 첫 묶음을 다시 받아 바뀐 항목만 갈아끼운다 |
+| `snapshot.item_key` | 문자열 (최대 100자) | `"id"` | 갈아끼울 때 같은 항목을 알아보는 필드 |
+| `snapshot.state` | 상태 경로 배열 (`_global.*` · `_local.*`) | `[]` | 더보기 스냅샷과 함께 기억했다가, 돌아올 때 화면 초기화 뒤 첫 렌더 직전에 되돌릴 진행 상태(다음 쪽 번호·끝 여부 등). 각 경로는 `^_(global\|local)\.[A-Za-z0-9_$][\w$.]*$` 형식, 최대 200자 |
+
+더보기 목록이 다음 쪽 번호를 상태에 들고 있으면(예: `_global.infiniteScroll` 에 `{ "page": 3, "hasMore": true }`), 그 경로를 `snapshot.state` 에 적어야 돌아온 뒤 「더보기」가 1쪽이 아니라 4쪽부터 받는다:
+
+```json
+"meta": {
+  "scroll_restoration": {
+    "snapshot": { "state": ["_global.infiniteScroll"] }
+  }
+}
+```
+
+모든 키는 선택이다 — 적은 키만 위 단계 값을 덮는다(부분 덮어쓰기). 적용 순서(뒤가 우선):
+
+1. 엔진 기본값 (위 표의 「기본」)
+2. 템플릿 `template.json` 의 `scroll_restoration` — 제작자가 배포한 초깃값([template-basics.md](../extension/template-basics.md#템플릿-메타데이터-templatejson))
+3. 베이스 레이아웃(`_user_base`·`_admin_base` 등)의 `meta.scroll_restoration` — 레이아웃 편집기에서 고치는 「템플릿 기본값」
+4. 화면 레이아웃의 `meta.scroll_restoration` — 서버가 베이스→화면을 키 단위(하위 `snapshot` 까지)로 깊게 병합한다([layout-json-inheritance.md](layout-json-inheritance.md))
+5. 이 화면을 떠날 때 쓴 `navigate` 의 `returnScroll` — 그 이동으로 떠난 화면에 뒤로 가기로 돌아올 때만([actions-handlers-navigation.md](actions-handlers-navigation.md#navigate))
+
+- 화면별 예: 주문 완료 `{"mode":"top"}`, 관리자 목록 `{"containers":["#admin-main"]}`, 긴 상품 목록 `{"timeout_ms":8000}`.
+- 레이아웃 편집기의 편집 화면에서는 복원하지 않는다(편집 중 위치가 튀지 않게). 미리보기·운영 화면만 복원한다.
+- 레이아웃 편집기 [페이지 설정 → 스크롤] 탭이 이 키를 고친다. 비운 칸은 키를 지워 위 단계 값을 따른다.
+- 이 키는 브라우저 화면 전용이다. 검색엔진용 화면(SEO 렌더러)에는 영향이 없다.
+- 저장 검증: `UpdateLayoutContentRequest` 가 하위 키까지 규칙을 둔다(`mode` 최대 200자, `wait` 은 `height`·`data`, `timeout_ms` 0~60000, `containers.*` 최대 200자, `snapshot.ttl_seconds` 0~86400, `snapshot.item_key` 최대 100자, `snapshot.state.*` 위 상태 경로 형식·최대 200자). 규칙 밖 값은 422.
+- 목록 값(`containers`·`snapshot.state`)은 상속에서 통째로 바뀐다 — 화면이 적으면 베이스 목록에 덧붙지 않고 그 목록이 쓰인다.
 
 ---
 

@@ -3,17 +3,23 @@
 namespace Tests\Unit\Enums;
 
 use App\Enums\SitemapChangeFreq;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * SitemapChangeFreq Enum 테스트
  *
  * sitemaps.org 폐쇄 어휘(7값)와 normalize() 정규화/차단 동작을 검증합니다.
  */
-class SitemapChangeFreqTest extends TestCase
+class SitemapChangeFreqTest extends PureTestCase
 {
     /**
      * sitemaps.org 의 7개 값이 모두 존재해야 한다.
+     *
+     * @scenario case=vocabulary
+     *
+     * @effects vocabulary_matches_sitemaps_org
+     *
+     * @return void 반환값 없음
      */
     public function test_cases_cover_sitemaps_org_vocabulary(): void
     {
@@ -27,6 +33,12 @@ class SitemapChangeFreqTest extends TestCase
 
     /**
      * 유효한 값은 그대로 정규화된다.
+     *
+     * @scenario case=normalize_valid
+     *
+     * @effects valid_value_passes_through
+     *
+     * @return void 반환값 없음
      */
     public function test_normalize_returns_valid_value(): void
     {
@@ -36,6 +48,12 @@ class SitemapChangeFreqTest extends TestCase
 
     /**
      * 대소문자·앞뒤 공백은 흡수한다.
+     *
+     * @scenario case=normalize_valid
+     *
+     * @effects case_and_whitespace_absorbed
+     *
+     * @return void 반환값 없음
      */
     public function test_normalize_absorbs_case_and_whitespace(): void
     {
@@ -45,6 +63,12 @@ class SitemapChangeFreqTest extends TestCase
 
     /**
      * 폐쇄 어휘에 없는 값·빈 값·null 은 null 로 떨어진다 (XML 유입 차단).
+     *
+     * @scenario case=normalize_invalid
+     *
+     * @effects invalid_or_empty_value_yields_null
+     *
+     * @return void 반환값 없음
      */
     public function test_normalize_rejects_invalid_and_empty(): void
     {

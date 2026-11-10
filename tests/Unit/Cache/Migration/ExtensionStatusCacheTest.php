@@ -24,15 +24,13 @@ use Tests\TestCase;
  *
  * 모델 모킹은 복잡하므로 keys/cache 동작 검증에 집중하고,
  * DB 통합 검증은 기존 ModuleManagerLayoutTest / TemplateManagerOverrideTest 에 의존합니다.
- *
- * @scenario-manifest tests/scenarios/cache-extension-status-migration.yaml
  */
 class ExtensionStatusCacheTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
     /**
-     * 각 테스트 전에 캐시를 비우고 array 저장소 코어 캐시 드라이버를 CacheInterface 로 바인딩합니다.
+     * 캐시를 비우고 array 저장소 기반 코어 캐시 드라이버를 CacheInterface 로 바인딩한다.
      *
      * @return void 반환값 없음
      */
@@ -46,7 +44,7 @@ class ExtensionStatusCacheTest extends TestCase
     }
 
     /**
-     * 각 테스트 뒤에 캐시를 비웁니다.
+     * 테스트가 남긴 캐시를 비운다.
      *
      * @return void 반환값 없음
      */
@@ -65,7 +63,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=module_status
      *
-     * @effects key_uses_core_prefix, status_value_cached
+     * @effects status_cache_key_uses_core_ext_prefix, status_cache_returns_stored_identifiers
      *
      * @return void 반환값 없음
      */
@@ -90,7 +88,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=module_status
      *
-     * @effects status_keys_invalidated
+     * @effects module_status_invalidation_clears_active_and_installed
      *
      * @return void 반환값 없음
      */
@@ -119,7 +117,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=plugin_status
      *
-     * @effects key_uses_core_prefix, status_value_cached
+     * @effects status_cache_key_uses_core_ext_prefix
      *
      * @return void 반환값 없음
      */
@@ -140,7 +138,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=plugin_status
      *
-     * @effects status_keys_invalidated
+     * @effects plugin_status_invalidation_clears_active_and_installed
      *
      * @return void 반환값 없음
      */
@@ -169,7 +167,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=template_status
      *
-     * @effects key_uses_core_prefix, status_value_cached
+     * @effects status_cache_key_uses_core_ext_prefix
      *
      * @return void 반환값 없음
      */
@@ -194,7 +192,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=template_status
      *
-     * @effects status_keys_invalidated
+     * @effects template_status_invalidation_clears_all_four_keys
      *
      * @return void 반환값 없음
      */
@@ -227,7 +225,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=cache_version
      *
-     * @effects cache_version_incremented, key_uses_core_prefix
+     * @effects extension_cache_version_increments_monotonically, status_cache_key_uses_core_ext_prefix
      *
      * @return void 반환값 없음
      */
@@ -259,9 +257,9 @@ class ExtensionStatusCacheTest extends TestCase
      * `?v=0` 으로 수렴해 immutable 에셋이 stale 고착된다. 키가 없으면 새 `time()`
      * 버전을 생성·저장·반환해야 한다.
      *
-     * @scenario case=cache_version_unset
+     * @scenario case=cache_version
      *
-     * @effects cache_version_regenerated
+     * @effects extension_cache_version_regenerated_when_missing
      *
      * @return void 반환값 없음
      */
@@ -291,7 +289,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=module_status
      *
-     * @effects status_value_cached
+     * @effects status_cache_returns_stored_identifiers
      *
      * @return void 반환값 없음
      */
@@ -311,7 +309,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=module_status
      *
-     * @effects status_value_cached
+     * @effects status_cache_returns_stored_identifiers
      *
      * @return void 반환값 없음
      */
@@ -331,7 +329,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=module_status
      *
-     * @effects status_keys_invalidated
+     * @effects module_status_invalidation_clears_active_and_installed
      *
      * @return void 반환값 없음
      */
@@ -354,7 +352,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=module_status
      *
-     * @effects status_keys_invalidated
+     * @effects module_status_invalidation_clears_active_and_installed
      *
      * @return void 반환값 없음
      */
@@ -377,9 +375,9 @@ class ExtensionStatusCacheTest extends TestCase
     /**
      * A-1-7: 빈 배열 처리 — 빈 배열도 정상 캐시 가능 (무효화로 보장).
      *
-     * @scenario case=empty_array
+     * @scenario case=module_status
      *
-     * @effects status_value_cached, status_keys_invalidated
+     * @effects status_cache_returns_stored_identifiers, module_status_invalidation_clears_active_and_installed
      *
      * @return void 반환값 없음
      */
@@ -410,7 +408,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=plugin_status
      *
-     * @effects status_value_cached
+     * @effects status_cache_returns_stored_identifiers
      *
      * @return void 반환값 없음
      */
@@ -428,7 +426,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=plugin_status
      *
-     * @effects status_keys_invalidated
+     * @effects plugin_status_invalidation_clears_active_and_installed
      *
      * @return void 반환값 없음
      */
@@ -465,7 +463,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=template_status
      *
-     * @effects status_value_cached
+     * @effects status_cache_returns_stored_identifiers
      *
      * @return void 반환값 없음
      */
@@ -488,7 +486,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=cache_version
      *
-     * @effects cache_version_incremented
+     * @effects extension_cache_version_increments_monotonically
      *
      * @return void 반환값 없음
      */
@@ -504,7 +502,7 @@ class ExtensionStatusCacheTest extends TestCase
             }
         };
 
-        sleep(1); // time() 기반 증가 보장
+        // 버전은 max(time(), 현재+1) 이라 기다리지 않아도 1000 보다 커진다
         $stub->callIncrement();
 
         $this->assertGreaterThan(1000, ClearsTemplateCaches::getExtensionCacheVersion());
@@ -515,7 +513,7 @@ class ExtensionStatusCacheTest extends TestCase
      *
      * @scenario case=cache_version
      *
-     * @effects cache_version_incremented
+     * @effects extension_cache_version_increments_monotonically
      *
      * @return void 반환값 없음
      */
@@ -532,11 +530,10 @@ class ExtensionStatusCacheTest extends TestCase
         $stub->callIncrement();
         $t1 = ClearsTemplateCaches::getExtensionCacheVersion();
 
-        sleep(1);
+        // 버전은 max(time(), 현재+1) 이라 같은 초에도 단조 증가한다 — 기다리지 않는다
         $stub->callIncrement();
         $t2 = ClearsTemplateCaches::getExtensionCacheVersion();
 
-        sleep(1);
         $stub->callIncrement();
         $t3 = ClearsTemplateCaches::getExtensionCacheVersion();
 

@@ -3,9 +3,10 @@
 namespace App\Extension\Storage;
 
 use App\Contracts\Extension\ProvidesThumbnailSource;
-use App\Contracts\Extension\StorageInterface;
+use App\Contracts\Extension\StreamingStorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\Storage\Concerns\GuardsStoragePaths;
+use App\Extension\Storage\Concerns\ProvidesStreamingAccess;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
 use App\Extension\Storage\Concerns\SyncsThumbnails;
 use Illuminate\Support\Facades\Storage;
@@ -17,9 +18,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 코어 서비스(AttachmentService 등)에서 사용하는 파일 저장소를 제공합니다.
  * 모듈/플러그인과 달리 identifier 없이 {category}/{path} 경로 패턴을 사용합니다.
  */
-class CoreStorageDriver implements ProvidesThumbnailSource, StorageInterface
+class CoreStorageDriver implements ProvidesThumbnailSource, StreamingStorageInterface
 {
     use GuardsStoragePaths;
+    use ProvidesStreamingAccess;
     use ResolvesPublicUrl;
     use SyncsThumbnails;
 

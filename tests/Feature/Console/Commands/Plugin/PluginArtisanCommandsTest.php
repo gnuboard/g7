@@ -6,12 +6,15 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\ExtensionMiddlewareRegistry;
+use App\Extension\Helpers\ExtensionPendingHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\PluginManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
 
@@ -55,22 +58,31 @@ use Tests\TestCase;
  */
 class PluginArtisanCommandsTest extends TestCase
 {
+    use FakesGithubReleases;
     use ProtectsExtensionDirectories;
     use RefreshDatabase;
 
     /** @var bool 활성 디렉토리가 테스트 전에 이미 존재했는지 (tearDown에서 정리 판단용) */
     private bool $daumPostcodeExistedBefore = false;
 
+    /**
+     * GitHub 접속을 가짜로 막고, 번들 daum_postcode 플러그인을 활성 디렉토리로 복사한 뒤 확장 디렉토리 보호와 플러그인 스캔을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
 
         // cache-clear 단일 플러그인 테스트를 위해 _bundled에서 활성 디렉토리로 복사
         $activePath = base_path('plugins/sirsoft-daum_postcode');
         $bundledPath = base_path('plugins/_bundled/sirsoft-daum_postcode');
         $this->daumPostcodeExistedBefore = File::isDirectory($activePath);
         if (! $this->daumPostcodeExistedBefore && File::isDirectory($bundledPath)) {
-            File::copyDirectory($bundledPath, $activePath);
+            FilePermissionHelper::copyDirectory($bundledPath, $activePath, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
         }
 
         // 확장 디렉토리 보호 활성화
@@ -81,6 +93,11 @@ class PluginArtisanCommandsTest extends TestCase
         $pluginManager->loadPlugins();
     }
 
+    /**
+     * 확장 디렉토리 보호를 풀고, 이 테스트가 복사해 만든 활성 플러그인 디렉토리만 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 확장 디렉토리 보호 해제
@@ -104,6 +121,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:list 커맨드가 플러그인 목록을 정상적으로 출력하는지 테스트
+     *
+     * @scenario case=list
+     *
+     * @effects list_command_exits_successfully
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_displays_plugins(): void
     {
@@ -113,6 +136,14 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:list 커맨드가 상태 필터를 정상적으로 처리하는지 테스트
+     *
+     * 유효한 상태 필터는 성공하고 알 수 없는 상태 값은 실패 종료 코드를 돌려주는지 확인한다.
+     *
+     * @scenario case=list
+     *
+     * @effects list_command_exits_successfully, list_status_filter_rejects_invalid_status
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_filters_by_status(): void
     {
@@ -131,6 +162,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:list 커맨드가 플러그인이 없을 때 적절한 메시지를 출력하는지 테스트
+     *
+     * @scenario case=list
+     *
+     * @effects list_shows_empty_message_without_plugins
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_shows_message_when_no_plugins(): void
     {
@@ -143,6 +180,12 @@ class PluginArtisanCommandsTest extends TestCase
      * plugin:install 커맨드가 존재하지 않는 플러그인에 대해 실패하는지 테스트
      *
      * 이 테스트는 DDL을 유발하지 않음 (플러그인이 없어서 마이그레이션 실행 안 됨)
+     *
+     * @scenario case=nonexistent_or_uninstalled
+     *
+     * @effects missing_or_uninstalled_plugin_command_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_install_command_fails_for_nonexistent_plugin(): void
     {
@@ -154,6 +197,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:check-updates 커맨드가 존재하지 않는 플러그인에 대해 실패하는지 테스트
+     *
+     * @scenario case=nonexistent_or_uninstalled
+     *
+     * @effects missing_or_uninstalled_plugin_command_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_check_updates_fails_for_nonexistent_plugin(): void
     {
@@ -165,6 +214,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:update 커맨드가 미설치 플러그인에 대해 실패하는지 테스트
+     *
+     * @scenario case=nonexistent_or_uninstalled
+     *
+     * @effects missing_or_uninstalled_plugin_command_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_update_fails_for_noninstalled_plugin(): void
     {
@@ -176,6 +231,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:update --force 커맨드가 미설치 플러그인에 대해 실패하는지 테스트
+     *
+     * @scenario case=nonexistent_or_uninstalled
+     *
+     * @effects missing_or_uninstalled_plugin_command_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_update_force_fails_for_noninstalled_plugin(): void
     {
@@ -190,6 +251,12 @@ class PluginArtisanCommandsTest extends TestCase
      *
      * 실재하는 상태 키(ext.plugins.*_identifiers)가 소멸하고 캐시 버전이 bump 되는지
      * 검증한다 (#588 — 기존 forget 대상은 writer 없는 유령 키였다).
+     *
+     * @scenario case=cache_clear
+     *
+     * @effects cache_clear_removes_state_caches_and_bumps_version
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_clear_command_clears_all_caches(): void
     {
@@ -226,6 +293,14 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:cache-clear 커맨드가 특정 플러그인의 캐시만 삭제하는지 테스트
+     *
+     * 단일 플러그인 지정 시에도 상태 캐시·미들웨어 인덱스가 지워지고 캐시 버전이 올라가는지 확인한다.
+     *
+     * @scenario case=cache_clear
+     *
+     * @effects cache_clear_removes_state_caches_and_bumps_version
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_clear_command_clears_single_plugin_cache(): void
     {
@@ -259,6 +334,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * plugin:cache-clear 커맨드가 존재하지 않는 플러그인에 대해 실패하는지 테스트
+     *
+     * @scenario case=cache_clear
+     *
+     * @effects missing_or_uninstalled_plugin_command_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_clear_command_fails_for_nonexistent_plugin(): void
     {
@@ -314,6 +395,12 @@ class PluginArtisanCommandsTest extends TestCase
      * Part 6: 전체 라이프사이클 워크플로우
      *   - install → activate → deactivate → uninstall 순서 실행
      * ─────────────────────────────────────────────────────────────────────
+     *
+     * @scenario case=lifecycle_workflow
+     *
+     * @effects lifecycle_commands_transition_plugin_status, duplicate_lifecycle_action_warns_and_fails, uninstall_confirmation_controls_deletion, missing_or_uninstalled_plugin_command_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_z_plugin_commands_full_workflow(): void
     {
@@ -499,6 +586,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * 잘못된 식별자 형식으로 플러그인 설치 시 FAILURE 반환
+     *
+     * @scenario case=invalid_identifier
+     *
+     * @effects invalid_identifier_install_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_invalid_identifier_format(): void
     {
@@ -508,6 +601,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * 숫자로 시작하는 단어가 포함된 식별자로 플러그인 설치 시 FAILURE 반환
+     *
+     * @scenario case=invalid_identifier
+     *
+     * @effects invalid_identifier_install_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_digit_starting_identifier(): void
     {
@@ -517,6 +616,12 @@ class PluginArtisanCommandsTest extends TestCase
 
     /**
      * 특수문자가 포함된 식별자로 플러그인 설치 시 FAILURE 반환
+     *
+     * @scenario case=invalid_identifier
+     *
+     * @effects invalid_identifier_install_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_special_char_identifier(): void
     {

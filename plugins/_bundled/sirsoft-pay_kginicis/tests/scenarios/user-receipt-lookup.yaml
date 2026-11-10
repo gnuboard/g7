@@ -35,6 +35,7 @@ effects:
   - base_payment_label_kept
   - cbt_confirmation_returned_without_inicis_url
   - cbt_cvs_waiting_uses_cvs_labels
+  - cbt_cvs_payment_term_marked_jst   # 편의점 입금 마감은 일본 시각 그대로 + (JST) (#160 D11)
   - lookup_denied_as_not_found
   - response_uses_common_envelope
   - vbank_bank_code_returned

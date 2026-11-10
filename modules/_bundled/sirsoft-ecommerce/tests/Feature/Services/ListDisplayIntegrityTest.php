@@ -26,7 +26,11 @@ class ListDisplayIntegrityTest extends ModuleTestCase
     /**
      * 소프트 삭제된 상품의 찜 행이 목록에서 빠지는지 검증합니다.
      *
-     * @return void
+     * @scenario surface=wishlist_soft_deleted_product
+     *
+     * @effects wishlist_excludes_soft_deleted_products
+     *
+     * @return void 반환값 없음
      */
     public function test_wishlist_excludes_soft_deleted_products(): void
     {
@@ -57,7 +61,11 @@ class ListDisplayIntegrityTest extends ModuleTestCase
     /**
      * 유효기간이 지난 쿠폰이 만료 라벨로 표시되는지 검증합니다.
      *
-     * @return void
+     * @scenario surface=coupon_issue_expired
+     *
+     * @effects expired_coupon_labelled_expired
+     *
+     * @return void 반환값 없음
      */
     public function test_expired_coupon_issue_is_labelled_as_expired(): void
     {
@@ -84,7 +92,11 @@ class ListDisplayIntegrityTest extends ModuleTestCase
     /**
      * 유효기간이 남은 쿠폰은 원래 라벨을 유지하는지 검증합니다.
      *
-     * @return void
+     * @scenario surface=coupon_issue_active
+     *
+     * @effects active_coupon_keeps_available_label
+     *
+     * @return void 반환값 없음
      */
     public function test_active_coupon_issue_keeps_available_label(): void
     {
@@ -105,7 +117,13 @@ class ListDisplayIntegrityTest extends ModuleTestCase
     /**
      * 관리자 차감 거래에 내용(description)이 기록되는지 검증합니다.
      *
-     * @return void
+     * 금액은 지급·사용 거래와 같은 통화 서식으로 들어간다.
+     *
+     * @scenario surface=mileage_admin_deduct
+     *
+     * @effects admin_deduct_description_uses_formatted_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_deduct_records_description(): void
     {
@@ -129,7 +147,7 @@ class ListDisplayIntegrityTest extends ModuleTestCase
             '차감 거래의 내용이 비어 있어 회원 마일리지 내역의 「내용」 칸이 공백이 됩니다.'
         );
         $this->assertSame(
-            __('sirsoft-ecommerce::activity_log.description.mileage_admin_deduct', ['amount' => 1200]),
+            __('sirsoft-ecommerce::activity_log.description.mileage_admin_deduct', ['amount' => ecommerce_format_price(1200, 'KRW')]),
             $deduct->description
         );
     }

@@ -8,7 +8,7 @@ description: |
 
 axes:
   owner: [module, plugin, data_migration, core]
-  defect: [class_missing, interface_missing, none, out_of_range]
+  defect: [class_missing, interface_missing, none, out_of_range, duplicate_copy]
 
 exclusions:
   - { owner: plugin, defect: interface_missing, reason: "플러그인 수집은 모듈 수집과 같은 assertUsable 한 줄 — 인터페이스 판정은 module 칸이 덮는다" }
@@ -20,12 +20,14 @@ exclusions:
   - { owner: plugin, defect: out_of_range, reason: "플러그인 매니저도 같은 UnusableUpgradeStep::assertNoneIn 한 줄을 범위 거르기 뒤에 둔다 — module 칸이 덮는다" }
   - { owner: data_migration, defect: out_of_range, reason: "데이터 마이그레이션은 범위 안 단계가 실행될 때만 수집된다 — 범위 밖 개념 없음" }
   - { owner: core, defect: out_of_range, reason: "코어 수집은 원래 범위 안 파일만 require 한다(CoreUpdateService::runUpgradeSteps)" }
+  - { owner: core, defect: duplicate_copy, reason: "코어 upgrades/ 는 사본이 하나뿐이다" }
 
 effects:
   - missing_upgrade_class_fails_update
   - non_step_class_fails_update
   - valid_step_still_collected
   - out_of_range_broken_step_does_not_block_update
+  - identical_copy_already_declared_is_reused
 
 test_files:
   - tests/Unit/Extension/UpgradeStepDiscoveryTest.php

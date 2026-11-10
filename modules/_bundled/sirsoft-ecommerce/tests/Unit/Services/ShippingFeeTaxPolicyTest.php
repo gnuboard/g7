@@ -4,10 +4,10 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionMethod;
+use Tests\PureTestCase;
 
 /**
  * 배송비 과세 정책 테스트 (A-4)
@@ -16,7 +16,7 @@ use ReflectionMethod;
  * 정책 3종 × 과세/면세/복합 = 9케이스 + 안분 반올림 잔차의 합계 보존을 검증한다.
  * #612 — 영세 갈래가 더해진 세 갈래 분류(정책 3종 × 영세 조합)도 함께 검증한다.
  */
-class ShippingFeeTaxPolicyTest extends ModuleTestCase
+class ShippingFeeTaxPolicyTest extends PureTestCase
 {
     /**
      * classifyShippingFeeTaxStatus 를 지정 정책으로 호출합니다.

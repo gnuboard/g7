@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\Log;
  */
 class SeoCacheRegenerator
 {
+    /**
+     * @param  SeoRendererInterface  $renderer  SEO 렌더러
+     * @param  SeoCacheManagerInterface  $cacheManager  SEO 캐시 매니저
+     */
     public function __construct(
         private readonly SeoRendererInterface $renderer,
         private readonly SeoCacheManagerInterface $cacheManager,
@@ -58,6 +62,19 @@ class SeoCacheRegenerator
 
                 // 레이아웃명 가져오기 (SeoRenderer가 request attribute로 저장)
                 $layoutName = $request->attributes->get('seo_layout_name', '');
+
+                // 데이터 소스가 일시 장애로 대체값을 쓴 렌더는 데워 두지 않는다 — 봇 미스가 다시 그린다
+                $degraded = $request->attributes->get('seo_render_degraded', []);
+                if ($degraded !== []) {
+                    Log::warning('[SEO] Degraded render not cached', [
+                        'url' => $url,
+                        'locale' => $locale,
+                        'layout' => $layoutName,
+                        'data_sources' => $degraded,
+                    ]);
+
+                    continue;
+                }
 
                 $this->cacheManager->putWithLayout($url, $locale, $html, $layoutName);
                 $success = true;

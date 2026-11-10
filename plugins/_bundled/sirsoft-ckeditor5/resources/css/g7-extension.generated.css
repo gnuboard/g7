@@ -776,13 +776,6 @@
     border-color: oklch(37.3% .034 259.733);
   }
 
-  .ckeditor-modal-footer-buttons {
-    margin-top: calc(.25rem * 6);
-    justify-content: flex-end;
-    gap: calc(.25rem * 3);
-    display: flex;
-  }
-
   .ckeditor-section-heading-md {
     font-size: 1rem;
     line-height: var(--tw-leading,1.5 );
@@ -793,19 +786,6 @@
 
   .ckeditor-section-heading-md:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
     color: #fff;
-  }
-
-  .ckeditor-grid-3col-responsive {
-    align-items: flex-start;
-    gap: calc(.25rem * 4);
-    grid-template-columns: repeat(1,minmax(0,1fr));
-    display: grid;
-  }
-
-  @media (min-width:64rem) {
-    .ckeditor-grid-3col-responsive {
-      grid-template-columns: repeat(3,minmax(0,1fr));
-    }
   }
 
   .ckeditor-text-error-soft {
@@ -854,25 +834,6 @@
     }
   }
 
-  .ckeditor-page-title {
-    font-size: 1.25rem;
-    line-height: var(--tw-leading,calc(1.75 / 1.25));
-    --tw-font-weight: 600;
-    font-weight: 600;
-    color: oklch(21% .034 264.665);
-  }
-
-  @media (min-width:40rem) {
-    .ckeditor-page-title {
-      font-size: 1.5rem;
-      line-height: var(--tw-leading,calc(2 / 1.5));
-    }
-  }
-
-  .ckeditor-page-title:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    color: #fff;
-  }
-
   .ckeditor-sticky-footer-buttons {
     bottom: calc(.25rem * 0);
     z-index: 10;
@@ -906,28 +867,6 @@
     background-color: oklch(21% .034 264.665);
   }
 
-  .ckeditor-admin-page-content-responsive {
-    background-color: oklch(98.5% .002 247.839);
-    min-height: 100vh;
-    padding: calc(.25rem * 4);
-  }
-
-  @media (min-width:40rem) {
-    .ckeditor-admin-page-content-responsive {
-      padding: calc(.25rem * 6);
-    }
-  }
-
-  @media (min-width:64rem) {
-    .ckeditor-admin-page-content-responsive {
-      padding: calc(.25rem * 8);
-    }
-  }
-
-  .ckeditor-admin-page-content-responsive:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    background-color: oklch(21% .034 264.665);
-  }
-
   .ckeditor-data-grid-cell :is(.ckeditor\:wrap-anywhere,.ckeditor\:break-words,.ckeditor-break-all,.ckeditor\:wrap-break-word) {
     white-space: normal;
   }
@@ -938,6 +877,10 @@
 
   .ckeditor-break-all {
     word-break: break-all;
+  }
+
+  .ckeditor\:\[\&_\.btn\]\:w-full .ckeditor-btn {
+    width: 100%;
   }
 }
 

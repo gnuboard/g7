@@ -8,7 +8,8 @@
     "byDataSourceId": {
       "settings": {
         "data": {
-          "display_mode": "layer",
+          "display_mode_pc": "layer",
+          "display_mode_mobile": "inline",
           "popup_width": 500,
           "popup_height": 600,
           "theme_color": "#2563eb",
@@ -20,7 +21,7 @@
     }
   },
   "states": {
-    "comment": "표시 방식(레이어/팝업)에 따라 크기 입력 구역이 갈린다. 입력칸은 initLocal 로 채워지는데 편집기는 그 흐름을 실행하지 않아 _local.form 을 직접 시드한다.",
+    "comment": "PC 표시 방식(레이어/팝업)·모바일 표시 방식(펼치기/전체 화면) 조합 상태다. 입력칸은 initLocal 로 채워지는데 편집기는 그 흐름을 실행하지 않아 _local.form 을 직접 시드한다.",
     "groups": [
       {
         "scope": {
@@ -38,7 +39,8 @@
                 "hasChanges": false,
                 "errors": null,
                 "form": {
-                  "display_mode": "layer",
+                  "display_mode_pc": "layer",
+                  "display_mode_mobile": "inline",
                   "popup_width": 500,
                   "popup_height": 600,
                   "theme_color": "#2563eb"
@@ -55,7 +57,8 @@
                 "hasChanges": false,
                 "errors": null,
                 "form": {
-                  "display_mode": "popup",
+                  "display_mode_pc": "popup",
+                  "display_mode_mobile": "fullscreen",
                   "popup_width": 500,
                   "popup_height": 600,
                   "theme_color": "#2563eb"
@@ -71,7 +74,8 @@
                 "isSaving": false,
                 "hasChanges": true,
                 "form": {
-                  "display_mode": "popup",
+                  "display_mode_pc": "popup",
+                  "display_mode_mobile": "fullscreen",
                   "popup_width": "",
                   "popup_height": 600,
                   "theme_color": "#2563eb"

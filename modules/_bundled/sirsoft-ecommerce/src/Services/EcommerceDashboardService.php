@@ -117,6 +117,7 @@ class EcommerceDashboardService
      */
     public function getOverview(): array
     {
+        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $today = $this->siteToday()->toDateString();
         $dayFilters = [
             'date_type' => 'ordered_at',
@@ -159,18 +160,24 @@ class EcommerceDashboardService
         $previousEnd = $currentStart->subDay();
 
         $currentRows = $this->statRepository->getByDateRange(
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $currentStart->toDateString(),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $today->toDateString(),
         );
         $previousRows = $this->statRepository->getByDateRange(
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousStart->toDateString(),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousEnd->toDateString(),
         );
 
+        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $indexed = $currentRows->keyBy(fn ($row) => $row->date->toDateString());
 
         $days = [];
         for ($i = 0; $i < $graphDays; $i++) {
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $currentStart->addDays($i)->toDateString();
             $row = $indexed->get($date);
             $days[] = [
@@ -259,6 +266,7 @@ class EcommerceDashboardService
         $result = [];
 
         for ($i = 0; $i < $days; $i++) {
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $today->subDays($i)->toDateString();
 
             $salesQuantity = $this->orderOptionRepository->sumNetQuantityOnDate($date);

@@ -1,0 +1,14 @@
+feature: 실측 정리 시더 — 게시판 서비스와 같은 모듈 저장소에서 실측 회원의 임시 본문 미디어 파일을 지운다
+
+description: |
+  정리 시더는 서비스가 주입받는 모듈 인스턴스 저장소(모듈 디스크)로 파일을 지운다. 실측 회원이 남긴 연결 전 본문
+  미디어는 행·파일을 지우고 회원도 지운다.
+
+axes:
+  case: [cleanup]
+
+effects:
+  - member_temp_media_files_deleted
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Seeders/Issue162MeasureCleanupSeederTest.php

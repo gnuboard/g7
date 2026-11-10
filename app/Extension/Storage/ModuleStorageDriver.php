@@ -3,9 +3,10 @@
 namespace App\Extension\Storage;
 
 use App\Contracts\Extension\ProvidesThumbnailSource;
-use App\Contracts\Extension\StorageInterface;
+use App\Contracts\Extension\StreamingStorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\Storage\Concerns\GuardsStoragePaths;
+use App\Extension\Storage\Concerns\ProvidesStreamingAccess;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
 use App\Extension\Storage\Concerns\SyncsThumbnails;
 use Illuminate\Support\Facades\Storage;
@@ -17,9 +18,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 모듈별로 격리된 파일 저장소를 제공합니다.
  * 경로 패턴: storage/app/modules/{identifier}/{category}/{path}
  */
-class ModuleStorageDriver implements ProvidesThumbnailSource, StorageInterface
+class ModuleStorageDriver implements ProvidesThumbnailSource, StreamingStorageInterface
 {
     use GuardsStoragePaths;
+    use ProvidesStreamingAccess;
     use ResolvesPublicUrl;
     use SyncsThumbnails;
 

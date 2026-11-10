@@ -4,6 +4,8 @@ return [
     // Messages
     'fetch_success' => 'Schedules retrieved successfully.',
     'fetch_failed' => 'Failed to retrieve schedules.',
+    'already_running' => 'This schedule is already running (overlap prevention). Run it again after it finishes.',
+    'run_lock_unavailable' => 'The schedule run lock store (cache) is unavailable, so it was not run.',
     'create_success' => 'Schedule created successfully.',
     'create_failed' => 'Failed to create schedule.',
     'update_success' => 'Schedule updated successfully.',
@@ -33,7 +35,6 @@ return [
     'artisan_not_allowed' => 'This Artisan command cannot be run as a schedule for security reasons.',
     'owned_not_deletable' => 'Tasks registered by the core or an extension cannot be deleted. Deactivate them to stop them from running.',
     'owner_inactive' => 'The extension that owns this schedule is inactive, so it cannot run. Activate the extension and try again.',
-    'already_running' => 'This schedule is already running. Try again after the previous run finishes.',
     'job_not_found' => 'Job class not found: :class',
     'artisan_command_failed' => 'The Artisan command exited with code :code.',
     'job_not_allowed' => 'This job class is not allowed. Only jobs on the security allowlist can run as schedules.',

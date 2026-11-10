@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Thumbnails\ThumbnailResponder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
@@ -20,9 +21,9 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class CategoryImageController extends PublicBaseController
 {
     /**
-     * 카테고리 이미지 서빙에 쓸 서비스를 주입받는다.
+     * 분류 이미지 서비스를 주입받습니다.
      *
-     * @param  CategoryImageService  $categoryImageService  카테고리 이미지 서비스
+     * @param  CategoryImageService  $categoryImageService  분류 이미지 서비스
      * @param  ThumbnailResponder  $thumbnails  썸네일 헬퍼 (`?size=`·`?w=` 응답)
      */
     public function __construct(
@@ -75,6 +76,13 @@ class CategoryImageController extends PublicBaseController
 
             return $response instanceof JsonResponse ? $response : ThumbnailResponder::markBypass($response, $request);
         } catch (\Exception $e) {
+            Log::error('category_image.download failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+                'hash' => $hash,
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',

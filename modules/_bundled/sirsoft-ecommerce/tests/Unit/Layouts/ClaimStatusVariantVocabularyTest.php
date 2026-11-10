@@ -6,7 +6,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CancelStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 클레임 배지 색 어휘 ↔ 두 소비 화면의 색 사전 파리티
@@ -33,7 +33,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 효과 요약(마커 아님 — 평문): claim_status_variant_vocabulary_covered_by_both_screens
  */
-class ClaimStatusVariantVocabularyTest extends ModuleTestCase
+class ClaimStatusVariantVocabularyTest extends PureTestCase
 {
     /** 관리자 배지 컴포넌트 (색 사전 보유) */
     private const STATUS_BADGE = __DIR__.'/../../../../../../templates/_bundled/sirsoft-admin_basic/src/components/composite/StatusBadge.tsx';
@@ -65,6 +65,8 @@ class ClaimStatusVariantVocabularyTest extends ModuleTestCase
 
     /**
      * 관리자 배지 컴포넌트의 색 사전이 Enum 어휘를 전부 덮습니다.
+     *
+     * StatusBadge 의 statusStyles 블록 키에 교환·반품·환불·취소 Enum variant 가 모두 있어야 무색 뱃지가 나지 않습니다.
      *
      * @scenario reason_type=exchange
      *
@@ -99,7 +101,9 @@ class ClaimStatusVariantVocabularyTest extends ModuleTestCase
     /**
      * 구매자 마이페이지의 classMap 사전이 Enum 어휘를 전부 덮습니다.
      *
-     * @scenario reason_type=exchange
+     * 주문 카드 파셜에서 status_variant 를 key 로 쓰는 classMap.variants 에 모든 Enum variant 가 있어야 default 색으로 뭉개지지 않습니다.
+     *
+     * @scenario claim_presence=with_claim
      *
      * @effects claim_status_variant_vocabulary_covered_by_both_screens
      *

@@ -152,13 +152,14 @@
                             "text": "{{(mileage_balance?.data?.mileage?.expiring_soon ?? 0).toLocaleString()}} P"
                         },
                         {
+                            "comment": "소멸 예정일은 서버가 보는 사람 날짜로 만든 값(expiring_date_formatted)을 쓴다 — ISO 원문(expiring_date)을 그대로 넣으면 시각·오프셋이 그대로 보인다",
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{mileage_balance?.data?.mileage?.expiring_date}}",
+                            "if": "{{mileage_balance?.data?.mileage?.expiring_date_formatted}}",
                             "props": {
                                 "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
                             },
-                            "text": "$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date}}"
+                            "text": "$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date_formatted}}"
                         }
                     ]
                 },

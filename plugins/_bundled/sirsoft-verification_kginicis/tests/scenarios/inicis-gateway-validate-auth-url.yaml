@@ -1,0 +1,16 @@
+feature: 이니시스 본인인증 authRequestUrl 목적지 위조 차단
+
+description: |
+  콜백 body 의 authRequestUrl 은 인증 없이 외부에서 들어와 서버-서버 STEP3 POST 의 목적지가 된다.
+  InicisGateway::validateAuthUrl 이 https 이니시스 표준 도메인(대소문자 무관)만 통과시키고,
+  userinfo·접미사 도메인·내부 IP·경로 위장·http 다운그레이드·scheme 부재·빈 값 등 우회 벡터를 모두 거부하는지 지킨다.
+
+axes:
+  case: [official_domain, forged_destination]
+
+effects:
+  - official_inicis_auth_url_accepted
+  - forged_auth_url_rejected
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Unit/Services/InicisGatewayValidateAuthUrlTest.php

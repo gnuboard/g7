@@ -5,7 +5,7 @@
  * 개발 서버에서 27건(건당 2~5.7초)이 나갔다. 로더가 묶음 엔드포인트
  * (`/api/templates/{id}/editor-spec-bundle`)를 한 번만 부르고, 항목 단위 부분 실패를 견디는지 잠근다.
  *
- * @since engine-v1.89.0
+ * @since engine-v1.94.0
  */
 
 import { describe, it, expect, vi } from 'vitest';

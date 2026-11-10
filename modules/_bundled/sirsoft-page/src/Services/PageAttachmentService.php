@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
@@ -180,6 +181,7 @@ class PageAttachmentService
 
         // 경로 결정: 페이지가 있으면 최종 경로, 없으면 임시 경로
         if ($pageId) {
+            // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $path = date('Y/m/d').'/'.$storedFilename;
         } else {
             $path = 'temp/'.$tempKey.'/'.$storedFilename;
@@ -264,18 +266,19 @@ class PageAttachmentService
 
         foreach ($tempAttachments as $index => $attachment) {
             // 최종 경로 생성
+            // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $newPath = date('Y/m/d').'/'.$attachment->stored_filename;
 
-            // 파일 물리적 이동 (get + put + delete) — 디스크는 행이 정한다.
+            // 파일 이동 — 페이지 저장 트랜잭션 안에서는 복사해 두고 커밋되면 원본을 지운다 (StorageTransaction, #883).
+            // 디스크는 행이 정한다.
             //
             // 읽기 실패를 조용히 지나가지 않는다. 종전에는 `if ($content)` 라 ①읽기 실패
             // (null)와 ②0 바이트 파일이 모두 falsy 로 접혀 이동을 건너뛰면서 **DB `path` 는
             // 아래에서 갱신**됐다 — 행은 최종 경로를 가리키는데 파일은 임시 경로에 남거나
             // 아예 없어, 첨부가 오류도 로그도 없이 영구 유실된다.
             $storage = $this->storageForRow($attachment->disk);
-            $content = $storage->get('attachments', $attachment->path);
 
-            if ($content === null) {
+            if (! StorageTransaction::move($storage, 'attachments', $attachment->path, $newPath)) {
                 Log::error('임시 페이지 첨부 파일을 읽지 못해 연결을 건너뜁니다 — 행을 그대로 둡니다', [
                     'attachment_id' => $attachment->id,
                     'disk' => $attachment->disk,
@@ -285,9 +288,6 @@ class PageAttachmentService
 
                 continue;
             }
-
-            $storage->put('attachments', $newPath, $content);
-            $storage->delete('attachments', $attachment->path);
 
             // DB 업데이트: page_id 설정, temp_key 제거, path 변경, order 재배치 (조회 순서 = 업로드 순서, 기존 첨부 뒤)
             $this->attachmentRepository->update($attachment, [
@@ -307,18 +307,22 @@ class PageAttachmentService
         // 둘(ecommerce·board)은 이미 disk 별 순회를 갖는다 (12차 G3 라운드 D5).
         // 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
         // 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
-        try {
-            foreach ($tempAttachments->pluck('disk')->filter()->unique() as $tempDisk) {
-                $this->storageForRow($tempDisk)->deleteDirectory('attachments', 'temp/'.$tempKey);
-            }
+        // 원본 삭제가 커밋 뒤라 정리도 커밋 뒤에 한다.
+        $tempDisks = $tempAttachments->pluck('disk')->filter()->unique();
+        StorageTransaction::afterCommit(function () use ($tempDisks, $tempKey) {
+            try {
+                foreach ($tempDisks as $tempDisk) {
+                    $this->storageForRow($tempDisk)->deleteDirectory('attachments', 'temp/'.$tempKey);
+                }
 
-            $this->storage->deleteDirectory('attachments', 'temp/'.$tempKey);
-        } catch (\Throwable $e) {
-            Log::warning('페이지 임시 첨부 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
-                'temp_key' => $tempKey,
-                'error' => $e->getMessage(),
-            ]);
-        }
+                $this->storage->deleteDirectory('attachments', 'temp/'.$tempKey);
+            } catch (\Throwable $e) {
+                Log::warning('페이지 임시 첨부 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
+                    'temp_key' => $tempKey,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
 
         return $linkedCount;
     }
@@ -341,9 +345,11 @@ class PageAttachmentService
         // 행 disk 를 따르는데 이 지점만 주입 디스크로 갔다. 디스크를 옮긴 사이트에서는
         // 삭제가 다른 디스크를 향해 파일이 남고, 행은 소프트 삭제되어 그 파일을 다시
         // 가리키는 것이 사라진다 — 오류도 로그도 없이 스토리지에만 쌓인다.
-        $this->storageForRow($attachment->disk)->delete('attachments', $attachment->path);
+        //
+        // 트랜잭션 안(페이지 삭제 등)이면 커밋된 뒤에 지워, 롤백되어 행이 되돌아와도 파일이 남게 한다 (#887)
+        StorageTransaction::deleteAfterCommit($this->storageForRow($attachment->disk), 'attachments', $attachment->path);
 
-        // DB 소프트 삭제
+        // DB 행 삭제
         $result = $this->attachmentRepository->delete($attachment);
 
         HookManager::doAction('sirsoft-page.attachment.after_delete', $attachment);
@@ -359,6 +365,8 @@ class PageAttachmentService
      * "끝내 연결되지 않았다" 는 뜻이고, 그래서 오탐 여지가 없습니다.
      *
      * 파일 → 행 순서를 지켜, 행이 먼저 사라져 파일을 못 찾는 상태를 만들지 않습니다.
+     * 본문 미디어 임시 행(`collection = content_media`)은 대상이 아닙니다 — 코어 골격의 정리
+     * (`PageContentMediaService::pruneStaleTemp`)가 공용 삭제 훅과 함께 지웁니다 (#887).
      *
      * @param  int  $days  보존기간(일)
      * @param  int  $limit  한 회차에 처리할 최대 건수

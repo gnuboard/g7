@@ -1,7 +1,7 @@
 // e2e:allow 실제 엔진 구조(TemplateApp.changeLocale · destroyTemplate · initTemplateEngine · renderTemplate · DynamicRenderer)로 언어 전환 뒤 포커스 자리를 잰다 — 브라우저 축은 총괄의 빌드 뒤 실측(모바일 서랍 언어 칩, 관리자 머리 언어 단추)이 덮는다
 /**
  * @file TemplateApp.localeSwitchFocus.test.tsx
- * @description 언어 전환(엔진을 내리고 같은 화면을 새로 마운트) 뒤 포커스가 body 로 빠지지 않고 전환 직전 요소로 돌아오는지 (engine-v1.89.0, #869)
+ * @description 언어 전환(엔진을 내리고 같은 화면을 새로 마운트) 뒤 포커스가 body 로 빠지지 않고 전환 직전 요소로 돌아오는지 (engine-v1.94.0, #869)
  *
  * 레이아웃의 `<set-locale>` 단추(모바일 서랍 언어 칩 등)와 서드파티 레이아웃은 부품 훅(`G7Core.locale.handoff`)이 닿지 않는다.
  * 엔진이 전환 직전 포커스 요소의 식별자(렌더러가 싣는 노드 id, 없으면 id 있는 조상과 순번)를 맡겼다가 다시 그린 뒤 되돌린다.
@@ -138,7 +138,7 @@ async function mount(afterReentry?: () => Promise<void>): Promise<any> {
     return app;
 }
 
-describe('언어 전환 뒤 포커스 자리 (engine-v1.89.0)', () => {
+describe('언어 전환 뒤 포커스 자리 (engine-v1.94.0)', () => {
     afterEach(() => {
         try { engine.destroyTemplate(); } catch { /* 정리 */ }
         delete (window as any).__templateApp;

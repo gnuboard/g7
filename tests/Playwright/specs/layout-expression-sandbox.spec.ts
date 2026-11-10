@@ -395,7 +395,7 @@ test.describe('레이아웃 표현식 평가 샌드박스', () => {
   });
 
   // replace 이동은 폴백 판정을 건너뛰고 주소만 바꾸는 갈래라, 사이트 밖 판정이 없으면 `history.replaceState('//host')` 가
-  // 교차 출처 SecurityError 를 던진다 (engine-v1.87.0 — 사이트 밖 판정은 support/navPolicy `isOffSiteNavTarget`)
+  // 교차 출처 SecurityError 를 던진다 (engine-v1.93.0 — 사이트 밖 판정은 support/navPolicy `isOffSiteNavTarget`)
   // @scenario target_kind=offsite, sink=same_tab
   // @effects nav_sink_rejects_offsite_target
   test('replace 이동으로 흘러든 사이트 밖 주소는 주소창을 바꾸지 않고 오류도 남기지 않는다', async ({ page }) => {

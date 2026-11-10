@@ -323,7 +323,10 @@ class MobileApprovalControllerTest extends PluginTestCase
     }
 
     /**
-     * 로그인하지 않은 요청은 401 이다.
+     * 로그인하지 않은 요청으로 회원 주문의 승인키를 받을 수 없다(403).
+     *
+     * 라우트가 비회원 주문 결제를 위해 optional.sanctum 으로 바뀌었다(#883) — 회원 주문은 로그인한 본인만 통과하고
+     * 비로그인 요청은 남의 주문과 같이 403 이다. 비회원 주문의 토큰 판정은 MobileApprovalGuestOwnershipTest 가 잠근다.
      *
      * @return void 반환값 없음
      *
@@ -334,12 +337,13 @@ class MobileApprovalControllerTest extends PluginTestCase
     public function test_get_approval_key_requires_authentication(): void
     {
         $order = $this->createOrder(10000);
-        $this->mockSoapService();
+        $this->expectSoapServiceNotCalled();
         $this->mockPluginSettings();
 
         $response = $this->postJson(self::APPROVAL_KEY_ENDPOINT, $this->approvalKeyPayload($order));
 
-        $response->assertUnauthorized();
+        $response->assertForbidden()
+            ->assertJsonPath('success', false);
     }
 
     /**

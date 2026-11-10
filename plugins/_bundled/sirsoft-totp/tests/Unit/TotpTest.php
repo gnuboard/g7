@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\Totp\Tests\Unit;
 use PHPUnit\Framework\Attributes\Test;
 use Plugins\Sirsoft\Totp\Support\Base32;
 use Plugins\Sirsoft\Totp\Support\Totp;
-use Plugins\Sirsoft\Totp\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * RFC 6238 TOTP 계산기·Base32 인코더 단위 테스트.
@@ -19,7 +19,7 @@ use Plugins\Sirsoft\Totp\Tests\PluginTestCase;
  *
  * @since 1.0.0
  */
-class TotpTest extends PluginTestCase
+class TotpTest extends PureTestCase
 {
     /** RFC 6238 Appendix B 의 시드 (ASCII "12345678901234567890") */
     private const RFC_SEED = '12345678901234567890';

@@ -520,19 +520,6 @@
     color: #fff;
   }
 
-  .pay-tosspayments-grid-3col-responsive {
-    align-items: flex-start;
-    gap: calc(.25rem * 4);
-    grid-template-columns: repeat(1,minmax(0,1fr));
-    display: grid;
-  }
-
-  @media (min-width:64rem) {
-    .pay-tosspayments-grid-3col-responsive {
-      grid-template-columns: repeat(3,minmax(0,1fr));
-    }
-  }
-
   .pay-tosspayments-text-error-soft {
     font-size: .875rem;
     line-height: var(--tw-leading,calc(1.25 / .875));
@@ -602,26 +589,8 @@
     background-color: oklch(27.8% .033 256.848);
   }
 
-  .pay-tosspayments-admin-page-content-responsive {
-    background-color: oklch(98.5% .002 247.839);
-    min-height: 100vh;
-    padding: calc(.25rem * 4);
-  }
-
-  @media (min-width:40rem) {
-    .pay-tosspayments-admin-page-content-responsive {
-      padding: calc(.25rem * 6);
-    }
-  }
-
-  @media (min-width:64rem) {
-    .pay-tosspayments-admin-page-content-responsive {
-      padding: calc(.25rem * 8);
-    }
-  }
-
-  .pay-tosspayments-admin-page-content-responsive:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    background-color: oklch(21% .034 264.665);
+  .paytosspayments\:\[\&_\.btn\]\:w-full .pay-tosspayments-btn {
+    width: 100%;
   }
 
   .pay-tosspayments-user-flex-between {

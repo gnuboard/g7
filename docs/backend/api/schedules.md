@@ -1726,7 +1726,9 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.schedules.run`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 실행을 시작하지 않은 경우 — 소유 확장이 비활성(`schedule.owner_inactive`) 또는 앞선 실행이 아직 중복 방지 잠금을 쥐고 있음(`schedule.already_running`). 최상위 `message` 는 `schedule.run_failed`, 사유는 `errors.general[0]` |
+| 422 | Unprocessable Entity | 실행을 시작하지 않은 경우 — 소유 확장이 비활성(`schedule.owner_inactive`). 최상위 `message` 는 `schedule.run_failed`, 사유는 `errors.general[0]` |
+| 409 | Conflict | 「중복 실행 방지」를 켠 스케줄이 이미 실행 중인 경우 (`schedule.already_running`). 실행 이력을 만들지 않는다 (7.1.5) |
+| 503 | Service Unavailable | 「중복 실행 방지」 스케줄의 실행 잠금 저장소(캐시)를 쓸 수 없는 경우 (`schedule.run_lock_unavailable`). 실행 이력을 만들지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 

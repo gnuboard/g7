@@ -25,7 +25,8 @@ class RecentReviewResource extends BaseApiResource
             'product_id' => $this->product_id,
             'product_name' => $this->product?->getLocalizedName() ?? '',
             'rating' => (int) $this->rating,
-            'author_name' => $this->user?->name ?? '',
+            // 회원 후기는 회원 이름, 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 작성자 이름
+            'author_name' => $this->resource->displayAuthorName(),
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
         ];
     }

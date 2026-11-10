@@ -1,0 +1,52 @@
+feature: 편집기가 본문 미디어 업로드 계약(`mediaUpload`)을 읽어 화면의 업로드 주소·정책으로 올린다 (#883 4단계)
+
+description: |
+  화면(확장 레이아웃)이 `html_editor` 확장점에 코어 계약(`ContentMediaUploadTarget`)을 넘기면, 이 플러그인은 그 계약을
+  읽기만 한다 — 업로드 단추는 계약 정책(이미지 허용)이, 파일 형식은 정책 확장자가, 업로드는 코어 `G7Core.contentMedia`
+  (판정·문서당 개수 사전 차단·어댑터)가 맡는다. 정책이 동영상·오디오를 켜면 그 단추도 선다. 계약이 없으면 종전
+  규칙(관리자만 이 플러그인 자체 업로드)이라 계약 prop 이 없는 복제 템플릿도 그대로 동작한다.
+
+axes:
+  case:
+    - contract_upload
+    - policy_rejected
+    - limit_reached
+    - anonymous_401
+    - no_contract
+    - buttons_by_policy
+    - insert_markup
+    - upload_and_insert
+    - guest_with_contract
+    - contract_image_disabled
+    - no_contract_clone_template
+    - helpers
+    - policy_embed_providers
+    - policy_embed_off
+    - policy_preview_html
+
+effects:
+  - uploads_through_core_contract
+  - legacy_endpoint_not_used
+  - rejected_before_request
+  - limit_blocked_before_request
+  - anonymous_401_keeps_draft_message
+  - legacy_path_without_contract
+  - buttons_follow_policy
+  - inserted_media_markup_escaped
+  - uploaded_media_inserted
+  - contract_enables_upload_for_guest
+  - upload_types_follow_policy
+  - media_buttons_follow_policy
+  - contract_image_disabled_hides_upload
+  - legacy_rule_without_contract
+  - contract_parsing_helpers
+  - editor_embed_providers_from_policy
+  - editor_disallows_forbidden_tags
+  - editor_embed_hidden_when_off
+  - editor_preview_uses_player_from_id
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/uploadAdapter.contract.test.ts
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/mediaUploadButtons.test.ts
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/html-editor-contract-props.test.tsx
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/initEditor-content-policy.test.tsx

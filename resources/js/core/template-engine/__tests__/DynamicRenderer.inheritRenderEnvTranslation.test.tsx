@@ -1,7 +1,7 @@
 // e2e:allow 실물 DynamicRenderer · TranslationEngine 로 컴포넌트가 엔진 렌더러를 직접 그릴 때의 번역 문맥을 잰다 — 브라우저 축은 두 템플릿 Modal 고정 하단 실측(총괄 엔진 회귀 단계)이 덮는다
 /**
  * @file DynamicRenderer.inheritRenderEnvTranslation.test.tsx
- * @description 번역 문맥 없이 그린 렌더러가 부모 렌더러의 렌더 환경에서 번역 문맥을 이어받는다 (engine-v1.89.0, #869)
+ * @description 번역 문맥 없이 그린 렌더러가 부모 렌더러의 렌더 환경에서 번역 문맥을 이어받는다 (engine-v1.94.0, #869)
  *
  * 컴포넌트(Modal 고정 하단 같은 서드파티 꼴)가 정의를 엔진 렌더러로 직접 그리면서 `translationContext` 를 넘기지 않으면, 엔진은
  * `parentComponentContext.renderEnvRef` 에 담긴 부모의 번역 문맥을 쓴다(DynamicRenderer.tsx 「번역 문맥이 빠진 렌더러」). 두 번들 템플릿
@@ -41,7 +41,7 @@ const SelfRenderingHost: React.FC<any> = ({ __componentContext }) => {
     } as any);
 };
 
-describe('번역 문맥이 빠진 렌더러는 부모 렌더 환경의 번역 문맥을 이어받는다 (engine-v1.89.0)', () => {
+describe('번역 문맥이 빠진 렌더러는 부모 렌더 환경의 번역 문맥을 이어받는다 (engine-v1.94.0)', () => {
     /**
      * @scenario renderer=component_draws_engine_renderer_without_translation_prop
      * @effects inner_renderer_uses_parent_translation_context

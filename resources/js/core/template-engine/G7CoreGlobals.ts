@@ -1,4 +1,4 @@
-// e2e:allow 엔진 변경(engine-v1.86.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
+// e2e:allow 엔진 변경(engine-v1.92.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -47,6 +47,10 @@ import {
   withThumbnailSize,
 } from '../support/thumbnailUrl';
 import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
+import { getContentMediaRuntime } from '../contentMedia';
+import { getContentPolicyRuntime } from '../contentPolicy';
+import { SEARCH_HISTORY_CHANGED_EVENT, getSearchHistoryRuntime } from '../searchHistory';
+import { useSearchHistory } from '../searchHistory/useSearchHistory';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
@@ -88,6 +92,7 @@ import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from
 import { getSiteLocale, pickLocalized } from '../support/localeTag';
 import { isPlainLeftClick, mergeQueryIntoHref, mergeRelForTarget, resolveInternalHref, subscribeLocationSearch, useLocationSearch, type LinkClickLike } from './navigationLinks';
 import { configureLeaveGuard, isLeaveGuarded } from '../routing/LeaveGuard';
+import { markDataSourceGrown } from './dataSourceSnapshot';
 import {
   notifyAssetFailure,
   drainExternalAssetFailures,
@@ -740,6 +745,93 @@ function initConsentAPI(G7Core: any): void {
 }
 
 /**
+ * 본문 콘텐츠 규칙 API 초기화 — `G7Core.contentPolicy` (engine-v1.90.0, #883).
+ *
+ * 코어 환경설정 「본문 콘텐츠」 규칙(`_global.settings.content.render_policy`)으로 본문을 정화하고 외부 영상을 플레이어로 바꾼다.
+ * 템플릿 HtmlContent·편집기 플러그인이 쓰며, 규칙이 없으면 `sanitize` 가 null 을 돌려 호출자가 종전 경로를 쓴다.
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initContentPolicyAPI(G7Core: any): void {
+  const runtime = () => getContentPolicyRuntime();
+  G7Core.contentPolicy = Object.freeze({
+    getPolicy: () => runtime().getPolicy(),
+    sanitize: (purify: any, html: string, baseConfig: Record<string, any>) => runtime().sanitize(purify, html, baseConfig),
+    renderEmbeds: (root: any, policy?: any) => runtime().renderEmbeds(root, policy),
+    resolveEmbed: (url: string) => runtime().resolveEmbed(url),
+    editorConstraints: () => runtime().editorConstraints(),
+  });
+}
+
+/**
+ * 본문 미디어 업로드 파사드 초기화 — `G7Core.contentMedia` (engine-v1.89.0, #883)
+ *
+ * 확장(게시판·페이지·이커머스)이 확장점 `html_editor` 의 prop `mediaUpload` 로 넘긴 업로드 계약을 편집기 플러그인이
+ * 확장의 API 경로를 모른 채 쓰게 한다. 런타임은 코어 본문 미디어 런타임(`resources/js/core/contentMedia`) 하나다.
+ *
+ * - `normalizeTarget(raw)` — 형식이 틀리거나 다른 출처면 null
+ * - `validateFile(target, file)` → `{ok, kind, messageKey?, params?}`
+ * - `countReferences(html, target)` · `isAtLimit(html, target)` — 문서당 개수 사전 차단
+ * - `upload(target, file, {signal, onProgress})` → `{url, id?, kind}` (무토큰 401 은 거절 그대로 — engine-v1.88.2)
+ * - `registerAdapter(adapter)` → 해제 함수 · `listAdapters()`
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initContentMediaAPI(G7Core: any): void {
+  const runtime = () => getContentMediaRuntime();
+  G7Core.contentMedia = Object.freeze({
+    normalizeTarget: (raw: unknown) => runtime().normalizeTarget(raw),
+    validateFile: (target: any, file: any) => runtime().validateFile(target, file),
+    countReferences: (html: string | null | undefined, target: any) => runtime().countReferences(html, target),
+    isAtLimit: (html: string | null | undefined, target: any) => runtime().isAtLimit(html, target),
+    upload: (target: any, file: File, ctx?: any) => runtime().upload(target, file, ctx),
+    registerAdapter: (adapter: any) => runtime().registerAdapter(adapter),
+    listAdapters: () => runtime().listAdapters().map((a) => Object.freeze({ id: a.id, priority: a.priority ?? 0 })),
+  });
+}
+
+/**
+ * 최근 검색어 파사드·훅 초기화 — `G7Core.searchHistory` · `G7Core.useSearchHistory` (engine-v1.87.0)
+ *
+ * 검색창 컴포넌트가 범위(scope)별 최근 검색어를 읽고 고친다. 런타임은 코어 최근 검색어 런타임
+ * (`resources/js/core/searchHistory`) 하나이고 이 파사드는 그것을 감싸기만 한다. 런타임이 없는 화면(관리자)에서는
+ * 모든 범위가 `enabled: false` 이고 동작은 false 를 돌려준다.
+ *
+ * - `isEnabled(scope)` — 선언된 범위인지 (`G7Config.searchScopes`)
+ * - `getSnapshot(scope)` — 지금 상태 사본 `{scope, enabled, autoSave, items, maxCount, loading, source}`
+ * - `list(scope, {force?})` — 최근 검색어 읽기 (회원은 서버에서 받아 캐시)
+ * - `record(scope, keyword)` · `remove(scope, item|id|keyword)` · `clear(scope?)`
+ * - `getAutoSave()` · `setAutoSave(on)` — 사람 단위 자동 저장 (끄면 기록 멈춤·목록 감춤)
+ * - `subscribe(listener)` — 변경(`searchHistory:changed`, `{scope, reason}`)을 구독하고 **해제 함수**를 돌려준다.
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initSearchHistoryAPI(G7Core: any): void {
+  const disabled = (scope: string) => ({ scope, enabled: false, autoSave: true, items: [], maxCount: 0, loading: false, source: 'none' as const });
+
+  G7Core.searchHistory = Object.freeze({
+    isEnabled: (scope: string) => getSearchHistoryRuntime()?.isScopeAvailable(scope) ?? false,
+    getSnapshot: (scope: string) => getSearchHistoryRuntime()?.getSnapshot(scope) ?? disabled(scope),
+    list: async (scope: string, options?: { force?: boolean }) => {
+      const runtime = getSearchHistoryRuntime();
+      return runtime ? runtime.list(scope, options) : disabled(scope);
+    },
+    record: async (scope: string, keyword: unknown) => (await getSearchHistoryRuntime()?.record(scope, keyword)) ?? false,
+    remove: async (scope: string, target: any) => (await getSearchHistoryRuntime()?.remove(scope, target)) ?? false,
+    clear: async (scope?: string | null) => (await getSearchHistoryRuntime()?.clear(scope)) ?? false,
+    getAutoSave: () => getSearchHistoryRuntime()?.getAutoSave() ?? true,
+    setAutoSave: async (autoSave: boolean) => (await getSearchHistoryRuntime()?.setAutoSave(autoSave)) ?? false,
+    subscribe: (listener: (change: unknown) => void): (() => void) => {
+      if (typeof listener !== 'function') return () => {};
+      return G7Core.componentEvent.on(SEARCH_HISTORY_CHANGED_EVENT, listener);
+    },
+  });
+
+  // 템플릿 컴포넌트용 훅 — 같은 범위의 검색창끼리 목록을 공유한다
+  G7Core.useSearchHistory = useSearchHistory;
+}
+
+/**
  * 전역 상태 공개 계약 조회 API 초기화 — `G7Core.stateContracts` (engine-v1.78.0, #639)
  *
  * 서버가 인라인한 `G7Config.stateContracts`(코어 예약 + 활성 확장이 manifest `state_contracts` 로 선언한
@@ -866,7 +958,7 @@ function initComponentEventSystem(G7Core: any): void {
      *
      * - `off(eventName, callback)`: 그 콜백만 지운다 — 같은 이벤트의 다른 구독자는 그대로 받는다.
      * - `off(eventName)`: 그 이벤트의 구독을 **전부** 지운다. 다른 컴포넌트·확장의 구독까지 끊기므로
-     *   구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.87.0).
+     *   구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.93.0).
      *
      * @deprecated 콜백 없는 `off(eventName)` 은 폐지 예정이다. `on()` 이 돌려준 해제 함수나
      *   `off(eventName, callback)` 을 쓴다. 콜백 있는 형태는 폐지 대상이 아니다.
@@ -901,7 +993,7 @@ function initComponentEventSystem(G7Core: any): void {
     /**
      * 모든 이벤트 리스너를 제거합니다.
      *
-     * 다른 컴포넌트·확장의 구독까지 끊으므로 구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.87.0).
+     * 다른 컴포넌트·확장의 구독까지 끊으므로 구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.93.0).
      */
     clear: () => {
       let removed = 0;
@@ -1273,7 +1365,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     // 전역 상태를 컨텍스트에 자동 병합 (cellChildren에서 _global 접근 가능)
     // itemContext에 이미 해당 키가 있으면 itemContext 값 우선 (명시적 전달 존중)
     // _local 은 itemContext에서 전달받거나 비어있음(셀 렌더 함수가 componentContext.state 를 병합한다)
-    // _computed 는 부모 컴포넌트의 최신 계산값이 기본값이다 (@since engine-v1.86.0) — 종전에는 `{}` 를 먼저 넣어
+    // _computed 는 부모 컴포넌트의 최신 계산값이 기본값이다 (@since engine-v1.92.0) — 종전에는 `{}` 를 먼저 넣어
     // getEffectiveContext 의 부모 문맥 병합(없는 키만)이 막혀 셀 안 `{{_computed.x}}` 가 늘 undefined 였다
     const parentComputed = options?.componentContext?.computedRef?.current
       ?? options?.componentContext?.parentDataContext?._computed;
@@ -1579,7 +1671,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       _local: mergedLocal,
       // 위 cellChildren 과 같은 이유로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
       _global: globalState,
-      // expandContext 평가와 같은 최신 계산값 (@since engine-v1.86.0) — 종전 `globalState._computed || {}` 는 늘 빈 객체라
+      // expandContext 평가와 같은 최신 계산값 (@since engine-v1.92.0) — 종전 `globalState._computed || {}` 는 늘 빈 객체라
       // 확장 행 children 이 `{{_computed.x}}` 를 직접 읽으면 undefined 였다(셀 렌더 함수의 부모 문맥 병합도 이 자리에 막혔다)
       _computed: latestComputed,
       ...resolvedExpandContext,
@@ -2958,6 +3050,9 @@ function initDataSourceAPI(G7Core: any): void {
         templateApp.setDataSource(dataSourceId, mergedArray, { merge: false });
       }
 
+      // 더보기로 늘어났다 — 화면을 떠날 때 스냅샷으로 기억해 뒤로 가기로 돌아오면 그 길이로 되살린다 (@since engine-v1.85.0)
+      markDataSourceGrown(dataSourceId, dataPath || null);
+
       logger.log(`G7Core.dataSource.updateData: '${dataSourceId}'에 ${newData.length}개 항목 ${mode === 'prepend' ? '앞에' : '뒤에'} 추가됨`);
       return true;
     },
@@ -3026,7 +3121,7 @@ function initUrlAPI(G7Core: any): void {
  * ```
  *
  * @param G7Core - window.G7Core 전역 객체
- * @since engine-v1.89.0
+ * @since engine-v1.94.0
  */
 function initThumbnailAPI(G7Core: any): void {
   G7Core.thumbnail = {
@@ -3040,7 +3135,7 @@ function initThumbnailAPI(G7Core: any): void {
     contentSrcset: (url: unknown): string => contentSrcset(url),
     /**
      * 원본 가로를 넘지 않는 본문 srcset — `includeOriginal` 이면 원본보다 작은 후보 + 원본, 아니면 원본 가로 이하 후보
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     contentSrcsetWithin: (url: unknown, maxWidth: unknown, options?: ContentSrcsetWithinOptions | null): string =>
       contentSrcsetWithin(url, maxWidth, options),
@@ -3791,6 +3886,9 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
   initConsentAPI(G7Core);
+  initContentMediaAPI(G7Core);
+  initContentPolicyAPI(G7Core);
+  initSearchHistoryAPI(G7Core);
   initStateContractsAPI(G7Core);
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
   initLayoutEditorStub(G7Core);

@@ -305,7 +305,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
             ? hostDispatcher.getHandler(name)
             : undefined;
           if (typeof fn === 'function') {
-            // 원래 주인을 그대로 넘긴다 — 복제 표기를 등록자로 쓰면 이름공간 소유권 경고가 난다 (engine-v1.87.0)
+            // 원래 주인을 그대로 넘긴다 — 복제 표기를 등록자로 쓰면 이름공간 소유권 경고가 난다 (engine-v1.93.0)
             actionDispatcherRef.current.registerHandler(name, fn, {
               category: 'plugin',
               source: hostDispatcher.getHandlerSource?.(name) ?? 'unknown',
@@ -343,7 +343,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
         if (typeof disp.getHandler === 'function' && disp.getHandler(name)) continue;
         const fn = typeof globalDisp.getHandler === 'function' ? globalDisp.getHandler(name) : undefined;
         if (typeof fn === 'function') {
-          // 원래 주인을 그대로 넘긴다 (engine-v1.87.0 — 위 최초 복제와 같은 이유)
+          // 원래 주인을 그대로 넘긴다 (engine-v1.93.0 — 위 최초 복제와 같은 이유)
           disp.registerHandler(name, fn, {
             category: 'plugin',
             source: globalDisp.getHandlerSource?.(name) ?? 'unknown',
@@ -1293,7 +1293,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
           // 가 편집기용 CSS 의 `.dark` 셀렉터를 이 마커로 치환해 서빙하므로, 프리뷰 프레임의 이
           // 마커만으로 다크가 켜지고 조상 html.dark 와 독립된다(라이트 토글 시 확실히 라이트).
           // document.documentElement 가 아니라 프리뷰 프레임에만 적용 → 편집기 chrome 비다크.
-          // 확장 CSS 는 템플릿 `.dark` 대신 코어 중립 표식 `data-g7-color-scheme` 만 본다(engine-v1.87.0).
+          // 확장 CSS 는 템플릿 `.dark` 대신 코어 중립 표식 `data-g7-color-scheme` 만 본다(engine-v1.93.0).
           // 프레임에 같은 표식을 달아, 관리자 화면 테마와 무관하게 프리뷰 안 확장 화면이 프리뷰 테마를 따른다.
           className={colorScheme === 'dark' ? `${PREVIEW_FRAME_CLASS} g7le-preview-dark` : PREVIEW_FRAME_CLASS}
           data-testid="g7le-preview-frame"

@@ -1,0 +1,40 @@
+feature: 관리자 모듈 관리 API (목록·설치·활성화·changelog·라이선스)
+
+description: |
+  /api/admin/modules 계열 엔드포인트는 인증되지 않은 요청을 401 로 막고, 목록은 페이지네이션·필터·custom_menus(with[] 요청 시에만)와
+  사용자 권한에 맞는 abilities 를 돌려주며 core.menus.read 만 있으면 빈 목록을, 관련 권한이 없으면 403 을 낸다.
+  설치는 파일·GitHub URL·식별자 형식을 422 로 검증하고, 서비스의 도메인 실패는 해석된 문구와 함께 422, 예상 밖 실패는 500 으로 구분한다.
+  활성화·비활성화는 의존성 미충족·의존 확장 존재 시 409 경고를 내고 force 로 우회하며, 응답에 모듈 에셋을 싣는다.
+  changelog 는 파싱·버전 범위 필터를 지원하고 파일이 없으면 빈 배열, 라이선스는 _bundled 폴백을 쓰고 없으면 404 다.
+
+axes:
+  case: [unauthenticated, index_listing, index_permission, index_abilities, install_validation, install_permission, install_service_outcome, dependency_guard, asset_response, changelog, license]
+
+effects:
+  - unauthenticated_requests_rejected_401
+  - module_list_returns_paginated_data
+  - custom_menus_included_only_when_requested
+  - invalid_with_param_rejected_422
+  - list_filters_accepted
+  - menus_read_permission_gets_empty_list_with_custom_menus
+  - list_without_relevant_permission_forbidden_403
+  - abilities_reflect_user_permissions
+  - upload_install_rejects_missing_wrong_type_or_oversized_file
+  - github_install_requires_valid_github_url
+  - valid_github_url_passes_validation
+  - invalid_identifier_format_rejected_422
+  - install_without_create_permission_forbidden_403
+  - install_success_returns_201_with_identifier
+  - domain_install_failure_returns_422_with_resolved_message
+  - unexpected_install_failure_returns_500
+  - unmet_dependency_activation_returns_409_warning
+  - dependent_extensions_block_deactivation_with_409_warning
+  - force_flag_bypasses_dependency_warning
+  - toggle_response_includes_module_assets
+  - changelog_parsed_and_range_filtered
+  - changelog_missing_file_returns_empty
+  - license_content_served_with_bundled_fallback
+  - license_missing_file_returns_404
+
+test_files:
+  - tests/Feature/Api/Admin/ModuleControllerTest.php

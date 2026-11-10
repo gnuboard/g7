@@ -1,4 +1,4 @@
-feature: 편집기가 노드 정의를 바꿔 끼우면(props 참조는 그대로, 다른 필드만 바뀜) 조건과 props 해석을 다시 계산한다 (engine-v1.89.0)
+feature: 편집기가 노드 정의를 바꿔 끼우면(props 참조는 그대로, 다른 필드만 바뀜) 조건과 props 해석을 다시 계산한다 (engine-v1.94.0)
 
 description: |
   DynamicRenderer 의 조건 메모(shouldRender)는 condition 을, props 메모(resolvedProps)는 type·slot·component_layout·children 을

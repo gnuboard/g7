@@ -55,7 +55,7 @@ class PublicTemplateCacheAmplificationTest extends TestCase
      */
     private const UNTHROTTLED_PUBLIC_ROUTES = [
         'api.public.analytics.collect',
-        // CSP 위반 보고 — 자체 제한(`throttle:60,1,csp_report`)을 가진 비콘 수신 경로(#158)
+        // CSP 위반 보고 — 자체 제한(`throttle:60,1,csp_report`)을 가진 비콘 경로 (#850)
         'api.public.csp_report',
         'api.public.consent',
         'api.public.analytics.summary',

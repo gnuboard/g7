@@ -326,6 +326,14 @@ HookManager::addFilter('core.search.like_operators', function (array $operators)
 훅으로 교체)으로 해결한다. 상한 COUNT 가 매칭 시간을 줄이지 못하는 이유와 실측치는
 [pagination.md](pagination.md) 참조.
 
+### 토큰 하나는 128 글자까지만 쓴다
+
+InnoDB 는 따옴표 구문 하나에 낱말이 128개를 넘으면 `191 Too many words in a FTS phrase`
+오류를 낸다. ngram 파서는 공백 없는 토큰을 글자 단위 n-gram 낱말로 쪼개므로(L 글자 → L-n+1
+낱말), 한글 130자를 붙여 쓴 검색어 하나가 목록 화면 전체를 500 으로 만든다.
+`sanitizeBooleanModeKeyword()` 는 토큰마다 앞 128 글자만 구문으로 쓴다
+(`ngram_token_size` 가 1 이어도 한도 안). 자른 앞부분 구문은 원래 토큰을 담은 문서도 그대로 찾는다.
+
 ---
 
 ## 확장 포인트

@@ -11,7 +11,7 @@
       <div class="ecommerce-row-stack">
         <div data-ref="field_category_title" class="ecommerce-form-group">
           <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
-          <input type="text" name="seo.meta_category_title" placeholder="{commerce_name} - {category_name}" class="{{_local.errors?.['seo.meta_category_title'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" disabled="{{_computed.isReadOnly}}"/>
+          <input type="text" name="seo.meta_category_title" placeholder="{category_name}" class="{{_local.errors?.['seo.meta_category_title'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_category_title']}}" class="ecommerce-form-error">{{_local.errors?.['seo.meta_category_title']?.[0] ?? ''}}</span>
           <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {category_name}</p>
         </div>
@@ -28,7 +28,7 @@
       <div class="ecommerce-row-stack">
         <div data-ref="field_search_title" class="ecommerce-form-group">
           <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
-          <input type="text" name="seo.meta_search_title" placeholder="{commerce_name} - {keyword_name}" class="{{_local.errors?.['seo.meta_search_title'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" disabled="{{_computed.isReadOnly}}"/>
+          <input type="text" name="seo.meta_search_title" placeholder="{keyword_name}" class="{{_local.errors?.['seo.meta_search_title'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_search_title']}}" class="ecommerce-form-error">{{_local.errors?.['seo.meta_search_title']?.[0] ?? ''}}</span>
           <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {keyword_name}</p>
         </div>
@@ -44,7 +44,7 @@
       <div class="ecommerce-row-stack">
         <div data-ref="field_product_title" class="ecommerce-form-group">
           <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title</label>
-          <input type="text" name="seo.meta_product_title" placeholder="{commerce_name} - {product_name}" class="{{_local.errors?.['seo.meta_product_title'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" disabled="{{_computed.isReadOnly}}"/>
+          <input type="text" name="seo.meta_product_title" placeholder="{product_name}" class="{{_local.errors?.['seo.meta_product_title'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.['seo.meta_product_title']}}" class="ecommerce-form-error">{{_local.errors?.['seo.meta_product_title']?.[0] ?? ''}}</span>
           <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}, {product_name}</p>
         </div>

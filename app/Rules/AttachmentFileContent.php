@@ -2,6 +2,7 @@
 
 namespace App\Rules;
 
+use App\Support\Files\FileContentSniffer;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\UploadedFile;
@@ -65,7 +66,8 @@ class AttachmentFileContent implements ValidationRule
             return;
         }
 
-        $inferred = $value->guessExtension();
+        // 내용 판정 입구는 본문 미디어 규칙과 같은 FileContentSniffer — 판정식(`guessExtension()`)은 7.1.0 그대로다
+        $inferred = FileContentSniffer::extension($value);
 
         if ($inferred === null || ! in_array($inferred, $this->acceptedContentExtensions($value), true)) {
             $fail(__('attachment.validation.file_mimetype_invalid', [

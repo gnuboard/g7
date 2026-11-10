@@ -5,6 +5,7 @@ namespace Tests\Feature\Installer;
 use App\Support\ComposerInstallInfo;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -22,18 +23,23 @@ use Tests\TestCase;
  */
 class DevVendorDetectionTest extends TestCase
 {
+    use FakesGithubReleases;
+
     private string $testBase;
 
     private string $vendorPath;
 
     /**
-     * 테스트마다 고유한 임시 vendor/composer 디렉터리를 만들고, 판정 함수가 든 인스톨러 vendor 번들 파일을 불러온다.
+     * GitHub 접속을 가짜로 막고 임시 vendor 디렉토리와 인스톨러 vendor 헬퍼를 준비한다.
      *
      * @return void 반환값 없음
      */
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
 
         $this->testBase = storage_path('app/test-dev-vendor-'.uniqid());
         $this->vendorPath = $this->testBase.'/vendor';
@@ -43,7 +49,7 @@ class DevVendorDetectionTest extends TestCase
     }
 
     /**
-     * 테스트가 만든 임시 vendor 디렉터리를 통째로 지운다.
+     * 테스트용 임시 vendor 디렉토리를 지운다.
      *
      * @return void 반환값 없음
      */
@@ -58,6 +64,8 @@ class DevVendorDetectionTest extends TestCase
 
     /**
      * dev 설치본을 감지한다.
+     *
+     * @scenario vendor_state=present_dev, surface=install_log
      *
      * @effects installer_detects_dev_vendor_from_installed_json
      *
@@ -77,7 +85,9 @@ class DevVendorDetectionTest extends TestCase
     /**
      * `--no-dev` 설치본은 경고 대상이 아니다.
      *
-     * @effects installer_reports_production_vendor_as_pass
+     * @scenario vendor_state=present_no_dev, surface=install_log
+     *
+     * @effects installer_reports_no_dev_packages_for_no_dev_vendor, installer_reports_production_vendor_as_pass
      *
      * @return void 반환값 없음
      */
@@ -95,6 +105,8 @@ class DevVendorDetectionTest extends TestCase
     /**
      * installed.json 이 없으면 판정 불가(null) — 경고도 차단도 하지 않는다.
      *
+     * @scenario surface=install_log
+     *
      * @effects installer_treats_missing_installed_json_as_unknown
      *
      * @return void 반환값 없음
@@ -110,6 +122,8 @@ class DevVendorDetectionTest extends TestCase
 
     /**
      * 인스톨러 shim 과 코어 판정기가 같은 답을 낸다 — 갈라지면 화면과 로그가 어긋난다.
+     *
+     * @scenario vendor_state=present_dev
      *
      * @effects installer_shim_matches_core_composer_install_info
      *
@@ -137,6 +151,8 @@ class DevVendorDetectionTest extends TestCase
      *
      * 감지·경고·"설치 계속" 셋이 한 분기 안에 있어야 한다 — 차단으로 바뀌면 설계 결정(D1) 위반이다.
      *
+     * @scenario vendor_state=present_dev, surface=install_log
+     *
      * @effects installer_warns_and_keeps_dev_vendor
      *
      * @return void 반환값 없음
@@ -160,6 +176,8 @@ class DevVendorDetectionTest extends TestCase
      * 종전에는 정리 없이 return 해, `key_generate` 가 이미 완료된 재개 설치에서는 어디서도
      * 정리되지 않았다.
      *
+     * @scenario install_resume_state=resumed_key_generate_done
+     *
      * @effects installer_clears_compiled_cache_on_reuse_path
      *
      * @return void 반환값 없음
@@ -182,6 +200,8 @@ class DevVendorDetectionTest extends TestCase
      *
      * 한쪽만 있으면 그 로케일에서 키 문자열이 그대로 화면에 노출되고, 치환 자리가 빠지면
      * 건수·패키지 목록이 사라진 문장이 나간다 — 둘 다 오류 없이 통과한다.
+     *
+     * @scenario surface=env_check_card
      *
      * @effects installer_lang_keys_exist_in_both_locales
      *
@@ -253,6 +273,8 @@ class DevVendorDetectionTest extends TestCase
      * 처음 놓친 원인이었다: 리터럴 `"composer install"` 만 보는 파생식이 `{$composer} install` 을
      * 못 봤다). 그래서 디렉토리 트리를 훑어 매칭되는 파일 자체를 찾는다. 파생이 비면 그 자체로
      * 실패시켜 "검사했으나 0건" 과 "보지 않음" 을 구분한다.
+     *
+     * @scenario composer_available=yes
      *
      * @effects installer_composer_commands_all_carry_no_dev
      *

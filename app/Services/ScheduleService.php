@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ScheduleTriggerType;
+use App\Exceptions\ScheduleAlreadyRunningException;
 use App\Exceptions\ScheduleExecutionException;
+use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Extension\HookManager;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
@@ -43,11 +45,23 @@ class ScheduleService
      * @return ScheduleHistory|null 바로 실행이면 이력(실패도 이력으로 온다), 큐로 보냈거나
      *                              실패만 기록하는 행이 성공했으면 null
      *
-     * @throws ScheduleExecutionException 소유 확장 비활성·앞선 실행이 아직 도는 중일 때
+     * @throws ScheduleExecutionException 소유 확장이 비활성일 때
+     * @throws ScheduleAlreadyRunningException 「중복 실행 방지」 스케줄의 앞선 실행이 아직 도는 중일 때 (409)
+     * @throws ScheduleRunLockUnavailableException 실행 잠금 저장소 오류일 때 (503)
      */
     public function runNow(Schedule $schedule, ?int $userId = null): ?ScheduleHistory
     {
-        return $this->dispatcher->dispatch($schedule, ScheduleTriggerType::Manual, $userId);
+        try {
+            return $this->dispatcher->dispatch($schedule, ScheduleTriggerType::Manual, $userId);
+        } catch (ScheduleExecutionException $e) {
+            // 「지금 실행」이 앞선 실행과 겹치면 409 로 거절한다(#161 F4). 실행기는 틱·큐 경로와 같은 사유 코드로 알리고,
+            // 잠금을 이력 생성보다 먼저 잡으므로 거절된 요청은 이력·last_result 를 남기지 않는다.
+            if ($e->reasonCode === 'already_running') {
+                throw new ScheduleAlreadyRunningException((int) $schedule->id);
+            }
+
+            throw $e;
+        }
     }
 
     /**

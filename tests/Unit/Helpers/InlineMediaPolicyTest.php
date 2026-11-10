@@ -4,7 +4,7 @@ namespace Tests\Unit\Helpers;
 
 use App\Helpers\InlineMediaPolicy;
 use Symfony\Component\HttpFoundation\Response;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 업로드 파일 인라인 표시 정책 단위 테스트 (KVE-2026-2366)
@@ -12,7 +12,7 @@ use Tests\TestCase;
  * `image/` 접두사 판정은 image/svg+xml 을 이미지로 오인해 인라인 서빙했다.
  * 인라인 표시는 래스터 이미지로만 한정하고, 그 밖은 다운로드 + CSP 로 격리한다.
  */
-class InlineMediaPolicyTest extends TestCase
+class InlineMediaPolicyTest extends PureTestCase
 {
     /**
      * 래스터 이미지만 인라인 대상이고 SVG·비이미지는 제외된다.

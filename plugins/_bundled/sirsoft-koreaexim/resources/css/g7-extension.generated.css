@@ -2,6 +2,7 @@
  * 생성 파일 — 손으로 고치지 않는다.
  * scripts/extension-css/convert-layout-classes.mjs 가 템플릿 의미 클래스 정의를 복사해 만든다.
  * 템플릿이 같은 이름을 덮을 수 있도록 가장 낮은 칸(@layer g7-extension)에 둔다.
+ * 다만 템플릿에서 층 밖(@layer 미소속)이던 규칙은 유틸리티를 이기던 우선순위를 지키려고 층 밖에 둔다.
  */
 @layer g7-extension {
   @supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))) {
@@ -625,13 +626,6 @@
     color: oklch(87.2% .01 258.338);
   }
 
-  .koreaexim-modal-footer-buttons {
-    margin-top: calc(.25rem * 6);
-    justify-content: flex-end;
-    gap: calc(.25rem * 3);
-    display: flex;
-  }
-
   .koreaexim-spinner-sm {
     height: calc(.25rem * 4);
     width: calc(.25rem * 4);
@@ -693,37 +687,6 @@
     }
   }
 
-  .koreaexim-sticky-tab-nav-responsive {
-    top: calc(.25rem * 0);
-    z-index: 40;
-    margin-inline: calc(.25rem * -4);
-    border-bottom-style: var(--tw-border-style);
-    border-bottom-width: 1px;
-    border-color: oklch(92.8% .006 264.531);
-    background-color: oklch(98.5% .002 247.839);
-    padding-inline: calc(.25rem * 4);
-    position: sticky;
-  }
-
-  @media (min-width:40rem) {
-    .koreaexim-sticky-tab-nav-responsive {
-      margin-inline: calc(.25rem * -6);
-      padding-inline: calc(.25rem * 6);
-    }
-  }
-
-  @media (min-width:64rem) {
-    .koreaexim-sticky-tab-nav-responsive {
-      margin-inline: calc(.25rem * -8);
-      padding-inline: calc(.25rem * 8);
-    }
-  }
-
-  .koreaexim-sticky-tab-nav-responsive:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    border-color: oklch(37.3% .034 259.733);
-    background-color: oklch(21% .034 264.665);
-  }
-
   .koreaexim-sticky-footer-buttons {
     bottom: calc(.25rem * 0);
     z-index: 10;
@@ -751,41 +714,30 @@
     padding-top: calc(.25rem * 6);
   }
 
-  .koreaexim-admin-page-content-responsive {
-    background-color: oklch(98.5% .002 247.839);
-    min-height: 100vh;
-    padding: calc(.25rem * 4);
+  .koreaexim\:\[\&_\.btn\]\:w-full .koreaexim-btn {
+    width: 100%;
   }
+}
 
-  @media (min-width:40rem) {
-    .koreaexim-admin-page-content-responsive {
-      padding: calc(.25rem * 6);
-    }
+/* 템플릿에서 층 밖이던 의미 규칙 — 확장 유틸리티 뒤에서 이기도록 층 밖에 둔다 */
+.koreaexim-flex-between {
+  justify-content: space-between;
+  align-items: center;
+  display: flex;
+}
+
+@media (max-width:640px) {
+  .koreaexim-modal-footer,
+  .koreaexim-modal-footer-row {
+    flex-direction: column;
+    gap: .5rem;
   }
+}
 
-  @media (min-width:64rem) {
-    .koreaexim-admin-page-content-responsive {
-      padding: calc(.25rem * 8);
-    }
-  }
-
-  .koreaexim-admin-page-content-responsive:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    background-color: oklch(21% .034 264.665);
-  }
-
-  @media (max-width:640px) {
-    .koreaexim-modal-footer,
-    .koreaexim-modal-footer-row {
-      flex-direction: column;
-      gap: .5rem;
-    }
-  }
-
-  @media (max-width:640px) {
-    .koreaexim-modal-footer .koreaexim-btn,
-    .koreaexim-modal-footer-row .koreaexim-btn {
-      width: 100%;
-    }
+@media (max-width:640px) {
+  .koreaexim-modal-footer .koreaexim-btn,
+  .koreaexim-modal-footer-row .koreaexim-btn {
+    width: 100%;
   }
 }
 
@@ -843,4 +795,9 @@
   syntax: "*";
   inherits: false;
   initial-value: 0;
+}
+
+/* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
+i:is(.koreaexim\:leading-none, .koreaexim\:text-xl, .koreaexim\:text-xs) {
+  line-height: 1;
 }

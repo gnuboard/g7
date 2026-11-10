@@ -1,12 +1,12 @@
 /**
  * ActionDispatcher.handlerOwnership.test.ts
  *
- * 핸들러 이름의 소유자 간 간섭을 실행 중 경고로 드러내는 계약을 잠근다 (engine-v1.87.0, #816 S1).
+ * 핸들러 이름의 소유자 간 간섭을 실행 중 경고로 드러내는 계약을 잠근다 (engine-v1.93.0, #816 S1).
  *
  * ## 무엇이 깨져 있었나
  *
  *   1) 핸들러는 하나의 Map 에 담기고 같은 이름이면 마지막 등록이 **조용히** 이긴다. 엔진 기본 핸들러
- *      18종(`refresh`·`refetchDataSource` …)도 확장·템플릿이 같은 이름으로 등록하면 덮인다.
+ *      19종(`refresh`·`refetchDataSource` …)도 확장·템플릿이 같은 이름으로 등록하면 덮인다.
  *   2) `executeAction` 의 switch 가 직접 처리하는 이름(`navigate`·`setState`·`toast` …)은 Map 을
  *      보지 않으므로, 그 이름으로 등록한 핸들러는 **영원히 호출되지 않는다** — 그래도 아무 신호가 없다.
  *   3) `unregisterHandler` 로 엔진 기본 핸들러를 누구나 지울 수 있다.
@@ -19,7 +19,7 @@
  *   - 같은 주인의 재등록(로케일 전환 재등록)·같은 함수의 재등록은 무경고
  *   - 경고가 나도 등록·해제 동작은 종전과 같다
  *
- * 실물 `ActionDispatcher` 를 쓴다 — 경고 판정은 기본 등록 18종의 등록자 기억에 기대므로 모의로는 잠글 수 없다.
+ * 실물 `ActionDispatcher` 를 쓴다 — 경고 판정은 기본 등록 19종의 등록자 기억에 기대므로 모의로는 잠글 수 없다.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -32,7 +32,7 @@ function g7Warnings(spy: ReturnType<typeof vi.spyOn>): string[] {
     .filter((msg: string) => msg.startsWith('[G7]'));
 }
 
-describe('ActionDispatcher 핸들러 소유권 경고 (engine-v1.87.0)', () => {
+describe('ActionDispatcher 핸들러 소유권 경고 (engine-v1.93.0)', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
   let dispatcher: ActionDispatcher;
 
@@ -60,7 +60,7 @@ describe('ActionDispatcher 핸들러 소유권 경고 (engine-v1.87.0)', () => {
 
   // @scenario case=handler_owner_c03
   // @effects handler_overwrite_warned_with_owner_once
-  it('엔진 이름 목록 상수 — Map 18종은 실제 기본 등록과 같고, switch 이름은 Map 과 겹치지 않는다', async () => {
+  it('엔진 이름 목록 상수 — Map 19종은 실제 기본 등록과 같고, switch 이름은 Map 과 겹치지 않는다', async () => {
     const mod: any = await import('../ActionDispatcher');
     const mapNames: ReadonlySet<string> | undefined = mod.ENGINE_MAP_HANDLERS;
     const switchNames: ReadonlySet<string> | undefined = mod.ENGINE_SWITCH_HANDLERS;
@@ -68,7 +68,7 @@ describe('ActionDispatcher 핸들러 소유권 경고 (engine-v1.87.0)', () => {
     expect(mapNames).toBeDefined();
     expect(switchNames).toBeDefined();
     expect([...mapNames!].sort()).toEqual([...dispatcher.getRegisteredHandlers()].sort());
-    expect(mapNames!.size).toBe(18);
+    expect(mapNames!.size).toBe(19);
     for (const name of ['navigate', 'setState', 'toast', 'openModal', 'apiCall', 'sequence']) {
       expect(switchNames!.has(name)).toBe(true);
     }

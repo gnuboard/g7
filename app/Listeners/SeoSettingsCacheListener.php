@@ -12,10 +12,11 @@ use Illuminate\Support\Facades\Log;
 /**
  * 코어 SEO 설정 변경 시 SEO 캐시 전체 무효화 리스너
  *
- * 코어 환경설정의 SEO 탭·일반 탭 저장, 템플릿 설정 저장 시 전체 SEO 캐시를 삭제합니다.
+ * 코어 환경설정의 SEO 탭·일반 탭·「본문 콘텐츠」 탭 저장, 템플릿 설정 저장 시 전체 SEO 캐시를 삭제합니다.
  * SEO 설정(title suffix, cache TTL 등)과 일반 탭의 사이트 이름·로고·파비콘, 템플릿 파비콘은
  * 모든 봇 화면에 실리므로 전체 캐시를 무효화합니다(#434 — 종전에는 SEO 탭만 구독해 일반 탭 변경이
- * 캐시 TTL 까지 봇 화면에 반영되지 않았다).
+ * 캐시 TTL 까지 봇 화면에 반영되지 않았다). 봇 화면은 본문 표시 규칙(캡션·외부 영상·추가 태그)으로 정화되므로
+ * 「본문 콘텐츠」 탭의 규칙이 바뀌어도 캐시된 봇 화면을 비운다(#887).
  *
  * 업로드 탭의 이미지 썸네일 설정(`thumbnail_*`, #869)이 실제로 바뀌어도 비운다. 봇 화면의 og:image 와 본문 이미지 주소에
  * 규격(`?size=`)이 구워지므로(SeoMetaResolver, ThumbnailUrl), 규격을 끄거나 기능을 끄면 캐시의 주소가 원본과 어긋난다.
@@ -30,11 +31,12 @@ use Illuminate\Support\Facades\Log;
 class SeoSettingsCacheListener implements HookListenerInterface
 {
     /**
-     * 봇 화면에 실리는 코어 설정 카테고리 — seo(제목 접미·메타), general(사이트 이름·로고·파비콘)
+     * 저장하면 봇 화면 캐시를 비워야 하는 코어 설정 카테고리 — seo(제목 접미·메타), general(사이트 이름·로고·파비콘),
+     * content(본문 표시 규칙 — 본문 콘텐츠, #887)
      *
      * @var array<int, string>
      */
-    private const BOT_VISIBLE_CATEGORIES = ['seo', 'general'];
+    private const BOT_VISIBLE_CATEGORIES = ['seo', 'general', 'content'];
 
     /**
      * 구독할 훅 목록 반환
@@ -102,8 +104,9 @@ class SeoSettingsCacheListener implements HookListenerInterface
     /**
      * 코어 설정 저장 시 SEO 캐시를 무효화합니다.
      *
-     * 봇 화면에 실리는 탭(SEO·일반)이 저장된 경우 전체 캐시를 삭제합니다. 업로드 탭은 썸네일 값이
+     * 봇 화면에 실리는 탭(SEO·일반·「본문 콘텐츠」)이 저장된 경우 전체 캐시를 삭제합니다. 업로드 탭은 썸네일 값이
      * 실제로 바뀐 경우에만 삭제합니다.
+     * 봇 화면은 본문 표시 규칙(캡션·외부 영상·추가 태그)으로 정화되므로 그 규칙이 바뀌면 캐시된 봇 화면도 비운다 (#887).
      *
      * @param  mixed  ...$args  훅 인자 ($tab, $mergedSettings, $result)
      * @return void 반환값 없음
@@ -117,7 +120,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
         self::$uploadThumbnailSnapshot = null;
 
         DB::afterCommit(function () use ($args, $tab, $snapshot) {
-            // 봇 화면에 실리는 탭(SEO·일반)이면 전체를 비운다
+            // 봇 화면에 실리는 탭(SEO·일반·본문 콘텐츠)이면 전체를 비운다
             if (in_array($tab, self::BOT_VISIBLE_CATEGORIES, true)) {
                 $this->clearSeoCaches(['tab' => $tab]);
 
@@ -200,7 +203,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
     /**
      * 코어 설정 단건 저장 시 SEO 캐시를 무효화합니다.
      *
-     * 봇 화면에 실리는 카테고리(seo·general) 키나 업로드 탭 썸네일 키가 실제로 저장된 경우에만 전체 캐시를 삭제합니다.
+     * 봇 화면에 실리는 카테고리(seo·general·content) 키나 업로드 탭 썸네일 키가 실제로 저장된 경우에만 전체 캐시를 삭제합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($key, $value, $result)
      * @return void 반환값 없음
@@ -211,7 +214,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             $key = $args[0] ?? null;
             $result = $args[2] ?? false;
 
-            // 봇 화면에 실리는 카테고리(seo·general) 키, 그리고 업로드 탭 썸네일 키(#869)도 봇 화면의 이미지 주소를
+            // 봇 화면에 실리는 카테고리(seo·general·content) 키, 그리고 업로드 탭 썸네일 키(#869)도 봇 화면의 이미지 주소를
             // 바꾼다 — 클래스 설명 참조.
             $botVisible = is_string($key) && str_contains($key, '.')
                 && in_array(explode('.', $key)[0], self::BOT_VISIBLE_CATEGORIES, true);

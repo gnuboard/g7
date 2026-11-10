@@ -178,6 +178,11 @@ class ShippingPolicy extends Model
             return '';
         }
 
+        // 배송 국가가 하나뿐이면 국가 코드를 붙이지 않는다 — 국내만 배송하는 쇼핑몰에 「KR: 」은 쓸모없는 표기다
+        if ($settings->count() === 1) {
+            return $settings->first()->getFeeSummary();
+        }
+
         $summaries = $settings->map(function (ShippingPolicyCountrySetting $setting) {
             return $setting->country_code.': '.$setting->getFeeSummary();
         });

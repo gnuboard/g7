@@ -1,0 +1,28 @@
+feature: 우편번호 레이어·전체 화면 창의 Esc 는 그 창만 닫는다
+
+description: |
+  배송지 등록 같은 창(템플릿 Modal) 안에서 주소 검색을 레이어나 모바일 전체 화면 창으로 연 뒤 Esc 를 한 번 누르면
+  우편번호 창과 그 아래 창이 함께 닫혀 입력이 사라졌다. 우편번호 창과 템플릿 Modal 이 각자 document keydown 리스너로
+  Esc 를 받고, 우편번호 창은 body 에 붙어 Modal 의 「창 안에 펼친 팝업이면 Esc 양보」 규칙에 잡히지 않았다. 우편번호 창이
+  열려 있는 동안 Esc 는 맨 위 창인 그 창 몫이다 — window 캡처 단계에서 받아 처리하고 다른 리스너로 넘기지 않으며, 닫힌
+  뒤에는 리스너를 걷어 다음 Esc 가 다시 아래 창에 간다. 레이어도 전체 화면 창처럼 닫힌 뒤 초점을 「주소 검색」 버튼으로
+  돌린다(닫기 단추·주소 선택·Esc 모두). 템플릿마다 창 구현이 달라도 같은 결과여야 하므로 템플릿 규칙에 기대지 않는다.
+  팝업(새 창) 방식은 해당 없음, 페이지 안에 펼치기(inline)는 창이 아닌 펼침 영역이라 Esc 를 받지 않는다.
+
+axes:
+  host:
+    - modal                      # 사용자·관리자 템플릿 Modal 안의 「주소 검색」 버튼
+    - generic_document_listener  # 팝업 양보 규칙을 모르는 다른 document Esc 리스너
+  mode:
+    - pc_layer                   # PC 레이어
+    - mobile_fullscreen          # 모바일 전체 화면 창
+
+exclusions:
+  - { host: generic_document_listener, mode: mobile_fullscreen, reason: "레이어와 전체 화면 창이 같은 Esc 가로채기(window 캡처 단계)를 쓴다 — 다른 document 리스너 차단은 pc_layer 에서, 전체 화면 분기는 host=modal 에서 잰다" }
+
+effects:
+  - escape_closes_only_postcode_window  # Esc 한 번 = 우편번호 창만 닫힘, 아래 창 유지, 다음 Esc 는 아래 창 몫
+  - focus_returns_to_trigger            # 닫힌 뒤 초점이 「주소 검색」 버튼으로 (Esc·닫기 단추·주소 선택)
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/postcode-escape-in-modal.test.tsx

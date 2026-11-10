@@ -3,8 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use Modules\Sirsoft\Ecommerce\Listeners\Ckeditor5ReferenceSourcesListener;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\PureTestCase;
 
 /**
  * 이커머스 참조 소스 등록 리스너 테스트
@@ -12,10 +12,14 @@ use PHPUnit\Framework\Attributes\Test;
  * 이 리스너가 빠지면 상품 설명에만 쓰이는 이미지가 "미참조" 로 판정돼 자동 정리 대상이
  * 되므로, 구독 형식(filter)과 append 계약을 회귀로 고정합니다.
  */
-class Ckeditor5ReferenceSourcesListenerTest extends ModuleTestCase
+class Ckeditor5ReferenceSourcesListenerTest extends PureTestCase
 {
     /**
+     * 리스너가 CKEditor5 참조 소스 훅을 filter 형식으로 구독하고 addEcommerceSources 로 처리하는지 검증한다.
+     *
      * @effects reference_source_listener_subscribes_as_filter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_subscribes_to_the_reference_source_filter_hook(): void
@@ -28,7 +32,11 @@ class Ckeditor5ReferenceSourcesListenerTest extends ModuleTestCase
     }
 
     /**
+     * 기존 참조 소스를 지우지 않고 상품 설명·상품 공통정보 본문 소스를 덧붙이는지 검증한다.
+     *
      * @effects reference_source_listener_appends_without_dropping
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_appends_ecommerce_sources_while_preserving_existing_ones(): void
@@ -43,7 +51,11 @@ class Ckeditor5ReferenceSourcesListenerTest extends ModuleTestCase
     }
 
     /**
+     * 추가된 참조 소스마다 문자열 table 과 비어 있지 않은 columns 배열을 갖춰 선언된 스키마를 따르는지 검증한다.
+     *
      * @effects reference_source_listener_schema_contract
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function appended_sources_follow_the_declared_schema(): void

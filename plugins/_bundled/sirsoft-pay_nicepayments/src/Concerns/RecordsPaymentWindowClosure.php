@@ -172,6 +172,7 @@ trait RecordsPaymentWindowClosure
             'payment_meta' => array_merge($payment->payment_meta ?? [], [
                 'failure_code' => $failureCode,
                 'failure_message' => $failureMessage,
+                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'failed_at' => now()->toIso8601String(),
                 'failure_source' => 'nicepayments',
             ]),

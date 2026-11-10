@@ -49,6 +49,8 @@ effects:
   - request_validation_not_loosened          # 소수/비숫자는 캐스트 제외 → 검증 실패 유지
   # 설정 조회 정규화 (전 확장 공통 계층)
   - settings_read_returns_schema_scalar_type
+  - settings_read_leaves_non_castable_values_untouched   # 비숫자·빈 값·null·bool/문자열 기본값·스키마 밖 키는 그대로
+  - settings_read_preserves_multilingual_conversion      # 다국어 분기(문자열 → 로케일 배열)·다국어 맵 비회귀
   # 모델 캐스트
   - board_new_display_hours_is_integer
   # nullable 컬럼이 Carbon 경계에 닿는 경로 (설정이 아니라 모델 속성 출처)
@@ -72,6 +74,8 @@ sub_flows:
     description: 코어 트레이트가 defaults 스키마 스칼라 타입으로 정규화 (모듈/플러그인 공통)
     effects:
       - settings_read_returns_schema_scalar_type
+      - settings_read_leaves_non_castable_values_untouched
+      - settings_read_preserves_multilingual_conversion
 
   - id: model_cast_consistency
     description: 숫자 컬럼을 모델 casts 로 통일해 조회 시점과 무관하게 정수 보장

@@ -1,3 +1,4 @@
+// e2e:allow 전환 때 떠나는 화면 _localInit 슬롯 은퇴 전달(engine-v1.88.0) — Chrome MCP 실제 키 재실측과 DynamicRenderer.localInitStaleScreenReapply 시험으로 잠근다.
 /**
  * TemplateApp 클래스
  * 템플릿 엔진의 모든 모듈을 통합하고 초기화하는 메인 애플리케이션 클래스
@@ -9,6 +10,7 @@ import { createRoot as createReactRoot } from 'react-dom/client';
 import { Router } from './routing/Router';
 import type { Route } from './routing/Router';
 import { normalizePathname } from './routing/normalizePathname';
+import { documentTitle, type SeoTitlePayload } from './routing/DocumentTitle';
 import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { BINDING_CACHE_EPOCH, DataBindingEngine } from './template-engine/DataBindingEngine';
@@ -58,6 +60,26 @@ import { buildProgressiveDataInit, isSameScreen, type RenderedScreen } from './t
 import { beginLocaleSwitchHandoff, closeLocaleSwitchHandoff, clearLocaleSwitchHandoff } from './template-engine/localeSwitchHandoff';
 import { createPublicApi, createTracker, type TrackerHandle } from './analytics';
 import { defaultConsentRuntimeDeps, getConsentRuntime, installConsentRuntime } from './consent';
+import { defaultSearchHistoryRuntimeDeps, installSearchHistoryRuntime } from './searchHistory';
+import {
+    mergeScrollRestorationConfig,
+    notifyScrollRestoreDataReady,
+    resumeScrollSaving,
+    runScrollRestore,
+    setActiveScrollContainers,
+    setScrollMemoryDisabled,
+    takeScrollRestoreTicket,
+    type ScrollRestorationConfig,
+    type ScrollRestoreTicket,
+} from './routing/ScrollMemory';
+import {
+    captureGrownDataSources,
+    markDataSourceGrown,
+    mergeSnapshotWithFresh,
+    unmarkDataSourceGrown,
+    takeDataSourceSnapshots,
+    type TakenSnapshot,
+} from './template-engine/dataSourceSnapshot';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
  */
@@ -160,9 +182,9 @@ export interface UploadSettings {
     thumbnail_enabled?: boolean;
     /** 본문 이미지 규격 이름 (기본 lg) */
     thumbnail_content_preset?: string;
-    /** 공개 규격 목록 (서버 계산 필드 — 사용 중인 규격만) @since engine-v1.89.0 */
+    /** 공개 규격 목록 (서버 계산 필드 — 사용 중인 규격만) @since engine-v1.94.0 */
     thumbnail_presets_public?: import('./support/thumbnailUrl').ThumbnailPresetInfo[];
-    /** `size` 를 붙여도 되는 서빙 경로 패턴 (서버 계산 필드 — 꺼짐이면 빈 배열) @since engine-v1.89.0 */
+    /** `size` 를 붙여도 되는 서빙 경로 패턴 (서버 계산 필드 — 꺼짐이면 빈 배열) @since engine-v1.94.0 */
     thumbnail_url_patterns?: string[];
 }
 
@@ -366,14 +388,14 @@ export class TemplateApp {
     private earlySpinnerTimer: ReturnType<typeof setTimeout> | null = null;
     /** 앞당겨 띄운 덮개가 보이는 중인지 (@since engine-v1.81.2) */
     private earlySpinnerVisible = false;
-    /** 인증 확인 중 표시 띄우기 예약 (engine-v1.89.0, installAuthCheckIndicator 참조) */
+    /** 인증 확인 중 표시 띄우기 예약 (engine-v1.94.0, installAuthCheckIndicator 참조) */
     private authCheckIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
     /**
      * 인증 확인이 이 시간 안에 끝나지 않으면 확인 중 표시를 띄운다(ms) — 보통의 빠른 확인에서는 깜빡이지 않을 만큼, 첫 요청이 늦는
      * 서버 일시 오류에서는 백지로 느껴지기 전에 (설계 확정 2026-11-08, 브라우저 실측)
      */
     private static readonly AUTH_CHECK_INDICATOR_DELAY_MS = 500;
-    /** 포커스 가능한 요소 (언어 전환 뒤 포커스 되돌리기, engine-v1.89.0) */
+    /** 포커스 가능한 요소 (언어 전환 뒤 포커스 되돌리기, engine-v1.94.0) */
     private static readonly FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
     /** 언어 전환 뒤 포커스 자리를 다시 보는 최대 횟수(16ms 간격) — 다시 그린 화면의 커밋·지연 부품 로드를 기다린다 */
     private static readonly LOCALE_FOCUS_RESTORE_ATTEMPTS = 30;
@@ -403,7 +425,7 @@ export class TemplateApp {
      */
     private routeChangeInFlight = false;
     /**
-     * 새 화면을 그리기 전(미룬 blocking onSuccess·init_actions)에 다시 받은 소스의 initLocal 수집 상자 (@since engine-v1.89.0).
+     * 새 화면을 그리기 전(미룬 blocking onSuccess·init_actions)에 다시 받은 소스의 initLocal 수집 상자 (@since engine-v1.94.0).
      * 종전에는 그 다시 받기가 initLocal 을 `_localInit` 갱신으로만 넘겨, SPA 진입이면 떠나는 화면 문맥에 적용됐다가 새 화면 렌더가
      * 버렸고, 첫 진입이면 대기열을 거쳐 첫 렌더 뒤 적용되며 그 사이 init_actions 가 같은 키에 쓴 값을 통째로 덮었다. 상자가 열려 있으면
      * 받는 즉시 정본 `_local` 에 쓰고(뒤이은 setState 가 그 위에 쌓인다) 키만 적어 두며, 렌더 직전에 닫으면서 그 키의 현재 값을 첫 렌더
@@ -422,6 +444,10 @@ export class TemplateApp {
     private localeSwitchConsumed = false;
     /** 템플릿 레벨 에러 핸들링 설정 */
     private templateErrorHandling: ErrorHandlingMap | null = null;
+    /** 템플릿 config.json 의 `scroll_restoration` (뒤로/앞으로 가기·새로고침 스크롤 기본값) @since engine-v1.85.0 */
+    private templateScrollRestoration: unknown = null;
+    /** 지금 화면의 합친 스크롤 복원 설정 — 떠날 때 스냅샷과 함께 기억할 상태 경로를 읽는다 @since engine-v1.85.0 */
+    private currentScrollConfig: ScrollRestorationConfig | null = null;
     /** 현재 WebSocket 구독 키 (라우트 변경 시 해제용) */
     private currentWebSocketSubscriptions: string[] = [];
     /** 확장 기능 캐시 버전 (모듈/플러그인 활성화 시 갱신됨) */
@@ -548,7 +574,7 @@ export class TemplateApp {
                 logger.log('Loaded module settings from G7Config:', Object.keys(g7Config.modules));
             }
 
-            // 활성 템플릿 공개 설정 로드 (engine-v1.87.0, #434) — 이 화면 종류(사용자·관리자)의 활성 템플릿 하나의
+            // 활성 템플릿 공개 설정 로드 (engine-v1.93.0, #434) — 이 화면 종류(사용자·관리자)의 활성 템플릿 하나의
             // `frontend_schema` 노출값(평면 객체). `_global.plugins` 대칭. 키가 없는 옛 코어에서는 만들지 않는다.
             if (g7Config.templateSettings && typeof g7Config.templateSettings === 'object') {
                 this.globalState.templateSettings = g7Config.templateSettings;
@@ -669,7 +695,7 @@ export class TemplateApp {
             installUnloadGuard();
 
             // 색상 테마 중립 표식 — 확장 CSS 가 템플릿 다크 방식과 무관하게 `<html data-g7-color-scheme>` 만
-            // 보도록, 확장 자산을 싣기 전에 관찰을 시작한다 (@since engine-v1.87.0)
+            // 보도록, 확장 자산을 싣기 전에 관찰을 시작한다 (@since engine-v1.93.0)
             this.startColorSchemeSignal();
 
             // 1. 템플릿 엔진 초기화, ComponentRegistry, routes.json, 사용자 정보를 병렬 로딩
@@ -821,6 +847,9 @@ export class TemplateApp {
                 }
             }
 
+            // 템플릿 레벨 스크롤 복원 기본값 (@since engine-v1.85.0) — 레이아웃 meta·이동 액션이 덮어쓴다
+            this.templateScrollRestoration = templateConfig?.scroll_restoration ?? null;
+
             // 템플릿 레벨 에러 핸들링 설정 저장 및 ErrorHandlingResolver에 등록
             if (templateConfig?.errorHandling) {
                 this.templateErrorHandling = templateConfig.errorHandling;
@@ -856,6 +885,11 @@ export class TemplateApp {
                     ),
                     (window as any).G7Config?.consentInitial,
                 );
+
+                // 2.2 최근 검색어 런타임 (사용자 템플릿 전용, engine-v1.87.0)
+                // 동의 런타임과 같은 자리 — `preloadAuth` 뒤라 회원 여부가 정해져 있다. 이미 회원이면 브라우저(비회원)
+                // 목록을 서버에 병합하고, 이후 로그인(authStateChange false→true)마다 같은 병합을 한다. 기다리지 않는다.
+                installSearchHistoryRuntime(defaultSearchHistoryRuntimeDeps());
             }
 
             // 2.5 ApiClient에 onUnauthorized 콜백 설정
@@ -870,7 +904,8 @@ export class TemplateApp {
                 apiClient.removeToken();
 
                 // onUnauthorized 콜백이 발동했다는 것은 토큰이 서버에서 거부되었다는 의미
-                // (apiClient 는 토큰 미보유 시 요청을 skip 하므로 콜백도 발동 안 함).
+                // (토큰을 싣지 않고 보낸 요청의 401 은 ApiClient 가 걸러 호출자에게 돌려주므로 이 콜백까지 오지 않는다
+                // — engine-v1.88.2. 데이터소스는 토큰이 없으면 required 요청을 아예 보내지 않는다).
                 // 즉 사용자는 로그인된 상태였다가 세션이 만료된 케이스이므로
                 // reason='session_expired' 를 부여해 로그인 페이지에서 안내 토스트가 노출되도록 한다.
                 // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다
@@ -970,7 +1005,7 @@ export class TemplateApp {
             // 8.5 routeNotFound 이벤트 핸들러 등록 (404 에러 페이지 처리)
             this.router.on('routeNotFound', (path: string) => this.handleRouteNotFound(path));
 
-            // 8.5.1 인증 확인 불가(서버 일시 오류) — 로그인 화면 대신 503 오류 화면 (engine-v1.89.0)
+            // 8.5.1 인증 확인 불가(서버 일시 오류) — 로그인 화면 대신 503 오류 화면 (engine-v1.94.0)
             this.router.on('authUnavailable', ({ path }: { path: string }) => this.handleAuthUnavailable(path));
 
             // 8.6 레이아웃 편집기 모드 가드
@@ -986,6 +1021,8 @@ export class TemplateApp {
             // fetch 가 발생하며, 후속 Phase 에서 라우트 의존 기능 도입 시 회귀 위험이 있다.
             if (typeof window !== 'undefined' && checkLayoutEditorMode(window.location.pathname)) {
                 logger.log('Layout editor mode detected — skipping router match');
+                // 편집 모드에서는 스크롤 기억·복원을 끈다 — 편집 중 위치가 튀지 않게 (@since engine-v1.85.0)
+                setScrollMemoryDisabled(true);
                 await renderTemplate({
                     containerId: 'app',
                     layoutJson: { components: [] } as any,
@@ -998,6 +1035,11 @@ export class TemplateApp {
                 logger.log('Template App initialized in layout editor mode');
                 return;
             }
+
+            // 8.7 브라우저 탭 제목 — 사용자 템플릿은 검색엔진 제목과 같은 규칙으로 document.title 을 정한다 (@since engine-v1.86.0).
+            // 관리자 템플릿은 「{화면 제목} - {사이트 이름} 관리자」(@since engine-v1.88.0). 레이아웃 편집기는 위에서 돌아갔고,
+            // 사용자 템플릿이 편집 중 경로가 되면 isSuppressed 가 막는다.
+            this.configureDocumentTitle();
 
             // 9. 초기 라우트 처리
             this.router.navigateToCurrentPath();
@@ -1042,11 +1084,11 @@ export class TemplateApp {
             await moduleAssetLoader.loadBundle('module', bundleUrls.moduleJs, bundleUrls.moduleCss);
             await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
 
-            // 템플릿이 공급한 설정 화면 부품 묶음 — 관리자 화면만 서버가 목록을 싣는다(#434, engine-v1.87.0)
+            // 템플릿이 공급한 설정 화면 부품 묶음 — 관리자 화면만 서버가 목록을 싣는다(#434, engine-v1.93.0)
             await moduleAssetLoader.loadTemplateSettingsBundles();
 
             // 템플릿의 확장 CSS 덮기 파일은 확장 번들 뒤에 붙인다 — 같은 특이도의 확장 규칙을
-            // 나중에 와서 덮는다(engine-v1.87.0). 운영자 자산보다는 앞이다.
+            // 나중에 와서 덮는다(engine-v1.93.0). 운영자 자산보다는 앞이다.
             await moduleAssetLoader.loadExtensionCssOverrides();
 
             // 운영자가 덧붙인 자산은 **마지막**에 붙인다 — CSS 는 나중에 온 규칙이 이기므로,
@@ -1067,7 +1109,7 @@ export class TemplateApp {
      * 넣어 준다. 실패해도 부팅을 막지 않는다 — 표식이 없으면 확장 CSS 는 라이트 모양으로 남을 뿐이다.
      *
      * @returns 없음
-     * @since engine-v1.87.0
+     * @since engine-v1.93.0
      */
     private startColorSchemeSignal(): void {
         try {
@@ -1183,6 +1225,40 @@ export class TemplateApp {
      * 라우트 변경 핸들러
      */
     private async handleRouteChange(route: Route): Promise<void> {
+        // 이 이동의 스크롤 복원 정보(뒤로/앞으로 가기·새로고침이면 기억한 위치) — 라우터가 표시한 직후 동기로 가져간다 (@since engine-v1.85.0)
+        const scrollTicket = takeScrollRestoreTicket();
+        let scrollConfig: ScrollRestorationConfig | null = null;
+        // 떠나는 화면에서 더보기로 늘어난 데이터소스를 그 항목 키로 기억한다 — 돌아오면 그 데이터로 먼저 그린다 (@since engine-v1.85.0)
+        if (scrollTicket !== null) {
+            captureGrownDataSources(
+                scrollTicket.fromKey,
+                (id) => this.currentFetchedData[id],
+                this.currentScrollConfig?.snapshot.state ?? [],
+                (path) => this.readScrollStatePath(path),
+                this.scrollSnapshotContext(),
+            );
+        }
+        let dataSnapshots: TakenSnapshot = { sources: new Map(), state: {} };
+        /** 스냅샷이 있으면 다시 받은 값에 반영한다(revalidate 끄면 스냅샷 그대로) */
+        const applySnapshot = (id: string, fresh: unknown): unknown => {
+            const snapshot = dataSnapshots.sources.get(id);
+            if (!snapshot || scrollConfig === null) {
+                return fresh;
+            }
+            return scrollConfig.snapshot.revalidate
+                ? mergeSnapshotWithFresh(snapshot, fresh, scrollConfig.snapshot.item_key)
+                : snapshot.data;
+        };
+        let scrollRestoreStarted = false;
+        const startScrollRestore = (ticket: ScrollRestoreTicket | null, config: ScrollRestorationConfig | null): void => {
+            // 더 새 화면 처리가 시작됐으면 이 화면의 복원으로 새 화면 스크롤을 옮기지 않는다
+            if (scrollRestoreStarted || ticket === null || config === null || routeChangeId !== this.currentRouteChangeId) {
+                return;
+            }
+            scrollRestoreStarted = true;
+            void runScrollRestore(ticket, config);
+        };
+
         // 언어 전환이 엔진을 다시 올리는 중이면 새 엔진·핸들러 준비를 기다린다 (engine-v1.79.0) —
         // 기다리지 않으면 내려간 엔진에 데이터 갱신과 init_actions 가 닿는다
         if (this.localeSwitchEngineReady) {
@@ -1191,6 +1267,10 @@ export class TemplateApp {
 
         // 새 요청 ID 생성 (이전 요청 무시용)
         const routeChangeId = ++this.currentRouteChangeId;
+
+        // 브라우저 탭 제목 — 이동을 시작한 순간 새 라우트 제목(+접미사)으로 바꾸고 앞 화면 레이아웃과의 연결을 끊는다.
+        // 데이터를 받으면 bind/recompute 가 같은 규칙으로 바꾼다 — 앞 화면 제목이 남지 않는다 (@since engine-v1.86.0)
+        documentTitle.beginRoute(route);
 
         // 이 화면 처리가 대기열의 새 이동에 밀렸음을 알릴 약속 (@since engine-v1.82.0)
         {
@@ -1230,7 +1310,7 @@ export class TemplateApp {
         (window as any).__g7ForcedLocalFields = undefined;
         (window as any).__g7ActionContext = undefined;
         (window as any).__g7PendingLocalState = undefined;
-        // 밀려서 렌더까지 가지 못한 앞 화면 처리의 렌더 전 수집 상자를 닫는다 — 새 처리는 자기 상자를 연다 (@since engine-v1.89.0)
+        // 밀려서 렌더까지 가지 못한 앞 화면 처리의 렌더 전 수집 상자를 닫는다 — 새 처리는 자기 상자를 연다 (@since engine-v1.94.0)
         this.preRenderInitCollector = null;
         // engine-v1.24.6: 추가 전역 변수 초기화 (이전 페이지 잔존 방지)
         // - __g7LastSetLocalSnapshot: getLocal() fallback — 이전 페이지 setLocal 스냅샷 잔존
@@ -1279,6 +1359,15 @@ export class TemplateApp {
             }
 
             logger.log('Layout loaded:', layoutData);
+
+            // 스크롤 복원 설정 — 템플릿 기본값 위에 이 화면의 meta 를 덮어쓴다(이동 액션 returnScroll 은 기억에 실려 온다) (@since engine-v1.85.0)
+            scrollConfig = mergeScrollRestorationConfig(this.templateScrollRestoration, (layoutData as any)?.meta?.scroll_restoration);
+            setActiveScrollContainers(scrollConfig.containers);
+            this.currentScrollConfig = scrollConfig;
+            // 뒤로/앞으로 가기로 돌아온 화면 — 유효 시간 안의 더보기 스냅샷을 가져온다 (@since engine-v1.85.0)
+            if (scrollTicket !== null && scrollTicket.type === 'pop' && scrollConfig.snapshot.enabled && scrollConfig.mode !== 'none') {
+                dataSnapshots = takeDataSourceSnapshots(scrollTicket.key, scrollConfig.snapshot.ttl_seconds, this.scrollSnapshotContext());
+            }
 
             // 1.4 확장 컴포넌트 등록 누락 관측 (렌더 전에 원인을 가리킨다)
             this.reportMissingExtensionComponents(layoutData);
@@ -1453,7 +1542,7 @@ export class TemplateApp {
             let localInit: Record<string, any> = {};
             // initIsolated 옵션으로 초기화할 격리된 상태
             let isolatedInit: Record<string, any> = {};
-            // 다른 화면으로 옮길 때 새 화면 상태를 세운 뒤 돌릴 blocking onSuccess (@since engine-v1.89.0)
+            // 다른 화면으로 옮길 때 새 화면 상태를 세운 뒤 돌릴 blocking onSuccess (@since engine-v1.94.0)
             let deferredBlockingOnSuccess: Array<() => Promise<void>> = [];
 
             // 이전 WebSocket 구독 해제
@@ -1497,7 +1586,7 @@ export class TemplateApp {
 
                 // fetchDataSourcesWithResults를 사용하여 에러 상태도 추적
                 // 대기열에 새 이동이 들어오면 응답을 기다리지 않고 물러난다 — 늦게 온 응답은 세대 판정으로 버려진다 (@since engine-v1.82.0)
-                // 다른 화면으로 옮기면 onSuccess 를 미룬다 (@since engine-v1.89.0, #869) — 여기는 아직 앞 화면 상태 위라, 종전에는 그 `_local` 쓰기가
+                // 다른 화면으로 옮기면 onSuccess 를 미룬다 (@since engine-v1.94.0, #869) — 여기는 아직 앞 화면 상태 위라, 종전에는 그 `_local` 쓰기가
                 // 아래 레이아웃 전환 초기화에 지워지고 그 안의 다시 받기 결과도 렌더 문맥 재구성에 버려졌다. 첫 진입(비울 앞 화면 없음)은
                 // 결과가 남아 같은 주소를 바로 열면 되고 SPA 로 들어오면 빈 화면이었다(클레임 신청 「신청할 수 있는 상품이 없습니다」,
                 // 신청 상세 원 주문 카드). 같은 화면(쿼리만 다름)은 상태를 비우지 않으므로 종전대로 여기서 돌린다
@@ -1536,6 +1625,19 @@ export class TemplateApp {
                         };
                     }
                 });
+
+                // 더보기 스냅샷 — 다시 받은 첫 묶음을 스냅샷 목록에 반영해 늘어난 길이로 그린다 (@since engine-v1.85.0)
+                // 받기에 실패해 대체 값(kept: 마지막 값·fallback)을 받은 소스는 스냅샷을 버린다 — 권한이 바뀐 뒤 앞 계정 목록을
+                // 다시 그리지 않게(트러블슈팅 cache 사례 21 과 같은 축)
+                for (const [id, snapshot] of [...dataSnapshots.sources]) {
+                    const result = results.find((r) => r.id === id);
+                    if (blockingData[id] === undefined || result?.kept) {
+                        dataSnapshots.sources.delete(id);
+                        continue;
+                    }
+                    blockingData[id] = applySnapshot(id, blockingData[id]);
+                    markDataSourceGrown(id, snapshot.path, snapshot.savedAt);
+                }
 
                 // initLocal/initGlobal/initIsolated 처리 (blocking 데이터 소스)
                 // 다른 화면이면 앞 화면 _local 과 병합하지 않는다 — 이 시점에는 아직 _local 을 비우기 전이라, 종전에는
@@ -1684,13 +1786,15 @@ export class TemplateApp {
                 // @since engine-v1.52.2: _localInit 추적 레지스트리도 함께 초기화.
                 // _local 을 비웠는데 추적 해시가 남아 있으면, 새 레이아웃의 _localInit payload 가
                 // 이전 레이아웃과 우연히 동일할 때 "이미 적용됨"으로 오판되어 건너뛴다.
-                resetLocalInitTracking();
+                // @since engine-v1.88.0: 떠나는 화면의 _localInit 슬롯은 은퇴로 표시한다 — 새 화면이 그려지기 전 앞 화면 트리가
+                // 다시 그려지며 새로 붙는 렌더러가 그 슬롯을 적용하면 앞 화면 폼·hasChanges 가 새 _local 에 남았다(상품 수정 → 뒤로)
+                resetLocalInitTracking((previousDataContext as any)._localInit);
             } else if (previousRoutePath !== null && previousRoutePath !== route.path) {
                 // @since engine-v1.79.0: 같은 레이아웃의 다른 경로도 `_localInit` 추적을 초기화한다.
                 // 경로가 바뀌면 상태 소유 루트의 저장소 A 를 비우는데(DynamicRenderer storeResetKey), 추적이 남아 있으면
                 // 「수정 → 등록 → 뒤로 가기」처럼 같은 payload 로 돌아왔을 때 「이미 적용됨」으로 건너뛰어 빈 A 를
-                // 다시 채우지 못한다(트러블슈팅 cache 사례 8 의 같은 레이아웃 판).
-                resetLocalInitTracking();
+                // 다시 채우지 못한다(트러블슈팅 cache 사례 8 의 같은 레이아웃 판). 떠나는 경로의 슬롯도 은퇴로 표시한다 (engine-v1.88.0)
+                resetLocalInitTracking((previousDataContext as any)._localInit);
             }
 
             this.currentLayoutName = newLayoutName;
@@ -1744,11 +1848,11 @@ export class TemplateApp {
                 logger.log('initIsolated applied:', Object.keys(layoutData.initIsolated));
             }
 
-            // 이제부터 렌더 전까지(미룬 onSuccess·init_actions) 다시 받은 소스의 initLocal 을 정본에 바로 쓰고 키를 모은다 (@since engine-v1.89.0)
+            // 이제부터 렌더 전까지(미룬 onSuccess·init_actions) 다시 받은 소스의 initLocal 을 정본에 바로 쓰고 키를 모은다 (@since engine-v1.94.0)
             const preRenderInit: { keys: Set<string>; force?: unknown } = { keys: new Set<string>() };
             this.preRenderInitCollector = preRenderInit;
 
-            // 미뤄 둔 blocking onSuccess — 새 화면 `_local` 을 세운 뒤(레이아웃 initLocal 다음, init_actions 앞) 돌린다 (@since engine-v1.89.0).
+            // 미뤄 둔 blocking onSuccess — 새 화면 `_local` 을 세운 뒤(레이아웃 initLocal 다음, init_actions 앞) 돌린다 (@since engine-v1.94.0).
             // 첫 진입과 같은 결과가 되게 한다: 그 `_local` 쓰기는 정본 B 에 남고, 그 안의 다시 받기 결과는 첫 렌더 문맥에 싣는다.
             if (deferredBlockingOnSuccess.length > 0) {
                 if (isLayoutChanged) {
@@ -1869,7 +1973,7 @@ export class TemplateApp {
                 }
             }
 
-            // 렌더 전 다시 받기의 initLocal 을 첫 렌더 상태에 싣는다 (@since engine-v1.89.0) — 받을 때 정본 B 에 이미 썼으므로(그 뒤
+            // 렌더 전 다시 받기의 initLocal 을 첫 렌더 상태에 싣는다 (@since engine-v1.94.0) — 받을 때 정본 B 에 이미 썼으므로(그 뒤
             // init_actions 의 setState 가 그 위에 쌓였다) 그 키의 지금 B 값을 문맥 `_local`(첫 그림·핸들러)과 `_localInit`(마운트 뒤 저장소 A
             // 반영)에 싣는다. initGlobal 은 다시 받기가 정본 `_global` 에 바로 쓰고 위 init 뒤 스냅샷이 싣는다. 언어 전환 재진입은 아래에서
             // 전환 직전 `_local` 로 바꾸고 `_localInit` 을 비운다(종전 계약)
@@ -1958,13 +2062,39 @@ export class TemplateApp {
             };
             this.renderedTransitionOverlay = layoutData.transition_overlay ?? null;
 
+            // 더보기 스냅샷과 함께 기억한 진행 상태(다음 쪽 번호 등)를 되돌린다 — 화면 초기화(init_global·init_local·init_actions)가
+            // 끝난 뒤라야 초기화가 덮지 않는다. 되살린 목록 길이와 맞춰 다음 더보기가 받은 쪽을 다시 받지 않게 (@since engine-v1.85.0)
+            // 더보기 스냅샷 — progressive 소스는 받기 전부터 스냅샷 데이터로 그려 높이를 확보한다(받으면 반영). init 이 끝난 이 자리에서
+            // 심어 init_actions 는 앞으로 가기와 같은 값(받기 전)을 본다. 자동으로 받지 않는 소스(auto_fetch:false)는 다시 받지 않아 갱신·
+            // 대상 비교를 거치지 못하므로 심지 않는다 (@since engine-v1.85.0)
+            for (const [id, snapshot] of [...dataSnapshots.sources]) {
+                const source = progressiveAndBackgroundSources.find((s: any) => s.id === id);
+                if (!source || source.auto_fetch === false) {
+                    if (!blockingSources.some((s: any) => s.id === id)) {
+                        dataSnapshots.sources.delete(id);
+                    }
+                    continue;
+                }
+                (initialDataContext as any)[id] = snapshot.data;
+                this.currentFetchedData[id] = snapshot.data;
+                markDataSourceGrown(id, snapshot.path, snapshot.savedAt);
+            }
+
+            if (Object.keys(dataSnapshots.state).length > 0 && dataSnapshots.sources.size > 0) {
+                this.applyScrollSnapshotState(dataSnapshots.state);
+                (initialDataContext as any)._global = { ...this.globalState, layoutWarnings: layoutData.warnings || [] };
+                if (this.globalState._local) {
+                    (initialDataContext as any)._local = this.globalState._local;
+                }
+            }
+
             // 바인딩 값 캐시는 경로 글자가 키라 컨텍스트가 바뀌어도 그대로 맞는다 — 새 화면을 그리기 직전에 비운다.
             // 종전에는 같은 레이아웃의 다른 대상(클레임 A → B)으로 가면 props 의 `{{claim.data.order_number}}` 가
             // 30초 동안 앞 대상 값이었다. 받는 동안(blocking·init_actions 대기) 떠나는 화면이 전환 상태로 다시 그려지며
             // 앞 값을 다시 채울 수 있어 대기 뒤인 이 자리에서 비우고, 렌더 사이클 캐시도 함께 비운다 (engine-v1.82.1)
             // 비운 뒤에도 떠나는 화면의 다시 그리기(받는 동안 전역 상태가 바뀌어 startTransition 으로 예약된 것)가 늦게 처리되면 앞 대상
             // 문맥으로 평가한 값을 비운 캐시에 다시 채웠다 — 새 세대를 열고 새 화면 문맥에 그 번호를 실어, 앞 세대 문맥의 평가가 캐시를
-            // 읽지도 쓰지도 않게 한다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+            // 읽지도 쓰지도 않게 한다 (engine-v1.94.0, BINDING_CACHE_EPOCH)
             const routeBindingEngine = getState().bindingEngine;
             if (routeBindingEngine) {
                 (initialDataContext as Record<symbol, unknown>)[BINDING_CACHE_EPOCH] = routeBindingEngine.startCacheEpoch();
@@ -1983,8 +2113,14 @@ export class TemplateApp {
 
             logger.log('Initial render complete with blocking data');
 
-            // 화면이 그려졌다 — 인증 확인 불가 뒤에도 공개 화면이면 오류 화면이 오지 않으므로 확인 중 표시를 여기서 걷는다 (engine-v1.89.0)
+            // 화면이 그려졌다 — 인증 확인 불가 뒤에도 공개 화면이면 오류 화면이 오지 않으므로 확인 중 표시를 여기서 걷는다 (engine-v1.94.0)
             this.hideAuthCheckIndicator();
+
+            // 브라우저 탭 제목 — 이 화면 레이아웃에 연결하고 지금 데이터로 계산한다. 이후 데이터 갱신(updateTemplateData)은
+            // 같은 레이아웃 객체일 때만 다시 계산한다 (@since engine-v1.86.0)
+            if (routeChangeId === this.currentRouteChangeId) {
+                documentTitle.bind(layoutData, getState().currentDataContext);
+            }
 
             // 새 화면이 그려졌다 — 받는 동안 걸어 둔 앞 화면 입력 잠금은 커밋 뒤에 푼다(renderTemplate 은 커밋 전에 돌아온다 — 바로
             // 풀면 커밋 전 앞 화면이 잠깐 다시 조작된다) (@since engine-v1.82.0)
@@ -1994,6 +2130,11 @@ export class TemplateApp {
             // init 단계에서 렌더 뒤로 미룬 동작(showErrorPage 등)을 실행한다 — 기다리지 않는다(컨테이너 대기는
             // 동작 자신이 한다). 그사이 경로가 바뀌었으면 버린다 (engine-v1.80.1)
             void this.flushAfterRenderTasks(routeChangeId);
+
+            // 스크롤 복원 — 높이 대기면 첫 렌더 직후 시작해 데이터가 오며 문서가 자라는 동안 맞춘다 (@since engine-v1.85.0)
+            if (scrollConfig?.wait !== 'data') {
+                startScrollRestore(scrollTicket, scrollConfig);
+            }
 
             // renderTemplate이 #app DOM을 교체하면 타겟 내부의 spinner도 사라짐
             // 새 DOM의 타겟에 spinner를 재생성 (@since engine-v1.29.0)
@@ -2071,6 +2212,17 @@ export class TemplateApp {
                                 // 개별 데이터 소스 로드 완료 - 즉시 업데이트하여 해당 위젯 blur 해제
                                 logger.log(`Progressive data source loaded: ${source.id}`);
 
+                                // 더보기 스냅샷이 있으면 다시 받은 첫 묶음을 스냅샷 목록에 반영한다 (@since engine-v1.85.0)
+                                if (dataSnapshots.sources.has(source.id)) {
+                                    if (result.kept) {
+                                        // 대체 값 — 스냅샷을 버리고 그 값으로 그린다(다시 떠나도 스냅샷으로 남지 않게)
+                                        dataSnapshots.sources.delete(source.id);
+                                        unmarkDataSourceGrown(source.id);
+                                    } else {
+                                        result.data = applySnapshot(source.id, result.data);
+                                    }
+                                }
+
                                 // fetch된 데이터 업데이트
                                 this.currentFetchedData[source.id] = result.data;
 
@@ -2112,6 +2264,12 @@ export class TemplateApp {
                                 updateTemplateData(singleUpdateData);
 
                             } else if (result.state === 'error' && result.error) {
+                                // 스냅샷으로 그렸던 소스가 다시 받기에 실패했다 — 스냅샷을 버려 다시 떠날 때 유효 시간이 연장되지 않게 (@since engine-v1.85.0)
+                                if (dataSnapshots.sources.has(source.id)) {
+                                    dataSnapshots.sources.delete(source.id);
+                                    unmarkDataSourceGrown(source.id);
+                                    delete this.currentFetchedData[source.id];
+                                }
                                 // 에러 처리
                                 const axiosError = result.error as any;
                                 const apiMessage = axiosError.response?.data?.message;
@@ -2236,7 +2394,7 @@ export class TemplateApp {
                 );
 
                 // 구독을 준비하는 사이(모듈 import 대기) 새 화면 전환이 시작됐으면, 새 전환은 이미 해제 목록을 비운
-                // 뒤라 이 구독은 아무도 해제하지 않는다. 같은 channel:event 다중 구독이 각각 수신되는 지금은(engine-v1.87.0)
+                // 뒤라 이 구독은 아무도 해제하지 않는다. 같은 channel:event 다중 구독이 각각 수신되는 지금은(engine-v1.93.0)
                 // 그대로 두면 새 화면 구독과 겹쳐 같은 이벤트를 두 번 받는다 — 바로 해제하고 목록에 싣지 않는다.
                 if (routeChangeId !== this.currentRouteChangeId) {
                     logger.log('Route changed while subscribing WebSocket sources — releasing stale subscriptions:', webSocketSubscriptions);
@@ -2246,6 +2404,13 @@ export class TemplateApp {
                     logger.log('WebSocket subscriptions established:', this.currentWebSocketSubscriptions);
                 }
             }
+
+            // 스크롤 복원 — 이 화면의 데이터를 다 받았다. 높이 대기 복원에 알려 이제부터 높이가 안정되면 끝내게 하고, 데이터 기준이면
+            // 지금 한 번 시작한다 (@since engine-v1.85.0)
+            if (routeChangeId === this.currentRouteChangeId) {
+                notifyScrollRestoreDataReady();
+            }
+            startScrollRestore(scrollTicket, scrollConfig);
 
             logger.log('Layout rendered successfully');
         } catch (error) {
@@ -2262,6 +2427,11 @@ export class TemplateApp {
                 transitionManager.setPending(false);
             }
             this.showRouteError(error as Error);
+        } finally {
+            // 복원을 시작하지 못하고 끝났다(밀림·실패) — 이 화면에서 스크롤 기억을 다시 켠다 (@since engine-v1.85.0)
+            if (!scrollRestoreStarted && scrollTicket !== null && routeChangeId === this.currentRouteChangeId) {
+                resumeScrollSaving();
+            }
         }
     }
 
@@ -3109,7 +3279,7 @@ export class TemplateApp {
      * @since engine-v1.53.0 (이탈 가드 추가)
      */
     private showInitError(error: Error): void {
-        // 초기화 오류 화면이 대신 그려진다 — 확인 중 표시를 남기지 않는다 (engine-v1.89.0)
+        // 초기화 오류 화면이 대신 그려진다 — 확인 중 표시를 남기지 않는다 (engine-v1.94.0)
         this.hideAuthCheckIndicator();
         if (isDocumentUnloading()) {
             logger.warn('Init failed while document is unloading — skipping error screen', error);
@@ -3752,6 +3922,11 @@ export class TemplateApp {
                   )
                 : toTemplateEngineError(error);
 
+        // 브라우저 탭 제목 — 오류 화면 제목(+접미사). 경로 없음(404)은 handleRouteNotFound 가 이미 정했다 (@since engine-v1.86.0)
+        if (!(error instanceof Error && error.message.startsWith('Page not found:'))) {
+            documentTitle.showError(ErrorDisplay.text('core.errors.page_load_failed'));
+        }
+
         // 오류 화면이 #app 을 덮기 전에 React 루트를 내려놓는다 — 그대로 두면 지워진 노드에 토스트 등이
         // 다시 그려지며 NotFoundError 가 수백 건 쌓인다 (engine-v1.79.0)
         releaseTemplateRoot();
@@ -3856,8 +4031,16 @@ export class TemplateApp {
      */
     private async handleRouteNotFound(path: string): Promise<void> {
         logger.warn('Route not found:', path);
-        // 경로 없음 화면이 그려진다 — 확인 중 표시를 남기지 않는다 (engine-v1.89.0)
+        // 경로 없음 화면이 그려진다 — 확인 중 표시를 남기지 않는다 (engine-v1.94.0)
         this.hideAuthCheckIndicator();
+
+        // 브라우저 탭 제목 — 템플릿의 404 화면 라우트 제목(+접미사), 없으면 사이트 이름 (@since engine-v1.86.0)
+        documentTitle.showError(this.notFoundTitle());
+
+        // 경로 없음 화면 — 복원할 화면이 없으니 이 이동의 복원 정보를 버리고 스크롤 기억을 다시 켠다 (@since engine-v1.85.0)
+        if (takeScrollRestoreTicket() !== null) {
+            resumeScrollSaving();
+        }
 
         // 밀린 화면 처리(대기열의 새 이동이 경로 없음으로 끝남)가 켜 둔 전환 상태·입력 잠금·덮개를 걷는다 — 이 경로는 화면 처리
         // (handleRouteChange)를 거치지 않아, 걷지 않으면 흐림이 남고 뒤이은 다시 받기도 끄지 못한다 (@since engine-v1.82.0)
@@ -3910,7 +4093,7 @@ export class TemplateApp {
      * 오류 레이아웃 적재 요청을 서버에 더 보내지도 않는다. 템플릿 503 은 서버가 정한 의존 확장 미충족 화면으로 남는다 (#869 N5).
      *
      * @param path 인증을 확인하던 경로
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     private async handleAuthUnavailable(path: string): Promise<void> {
         logger.warn('Auth check unavailable:', path);
@@ -3918,6 +4101,11 @@ export class TemplateApp {
         // 재시도하는 사이 사용자가 문서를 떠나고 있으면 떠나는 문서에 오류 화면을 그리지 않는다(networkResilience 원칙)
         if (isDocumentUnloading()) {
             return;
+        }
+
+        // 경로 없음과 같다 — 복원할 화면이 없으니 이 이동의 스크롤 복원 정보를 버리고 스크롤 기억을 다시 켠다
+        if (takeScrollRestoreTicket() !== null) {
+            resumeScrollSaving();
         }
 
         // 경로 없음과 같다 — 이 경로도 화면 처리(handleRouteChange)를 거치지 않으므로 밀린 화면 처리가 켜 둔 전환 상태를 걷는다
@@ -3950,11 +4138,11 @@ export class TemplateApp {
      * 그린 뒤 걷는다. 확인 불가였지만 공개 화면이 그려지면 화면 처리가 걷는다(`hideAuthCheckIndicator`). #app 을 건드리지 않는 고정 위치
      * 요소라 보던 화면을 지우지 않고, 로그인 상태를 단정하지 않는다.
      *
-     * 종전(engine-v1.89.0 첫 판)은 재시도에서만 띄우고 재시도가 끝나면 걷어, 첫 요청이 늦는 동안과 확인 불가 뒤 오류 화면 전까지가 백지였다
+     * 종전(engine-v1.94.0 첫 판)은 재시도에서만 띄우고 재시도가 끝나면 걷어, 첫 요청이 늦는 동안과 확인 불가 뒤 오류 화면 전까지가 백지였다
      * (브라우저 실측: 표시 3.1초에 뜸, 걷힌 뒤 오류 화면까지 ko 2.6초·en 2.2초·ja 1.5초).
      *
      * @param authManager 인증 관리자
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     private installAuthCheckIndicator(authManager: AuthManager): void {
         authManager.on('authCheckStart', () => {
@@ -3984,7 +4172,7 @@ export class TemplateApp {
     /**
      * 확인 중 표시를 띄운다(이미 있으면 그대로).
      *
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     private showAuthCheckIndicator(): void {
         if (typeof document === 'undefined' || !document.body || this.findAuthCheckIndicator()) {
@@ -4009,7 +4197,7 @@ export class TemplateApp {
     /**
      * 확인 중 표시와 띄우기 예약을 걷는다 — 오류 화면을 그렸거나 화면 처리가 화면을 그렸을 때.
      *
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     private hideAuthCheckIndicator(): void {
         this.cancelAuthCheckIndicatorTimer();
@@ -4022,7 +4210,7 @@ export class TemplateApp {
     /**
      * 확인 중 표시 띄우기 예약을 취소한다.
      *
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     private cancelAuthCheckIndicatorTimer(): void {
         if (this.authCheckIndicatorTimer !== null) {
@@ -4258,7 +4446,7 @@ export class TemplateApp {
             // 엔진이 내려가 있는 동안 시작된 화면 전환은 새 엔진·핸들러가 준비될 때까지 기다린다
             this.localeSwitchEngineReady = new Promise<void>((resolve) => { releaseEngineReady = resolve; });
 
-            // 포커스 자리를 맡긴다 — 다시 그리면 포커스가 body 로 빠지므로 같은 요소로 되돌린다 (engine-v1.89.0, captureFocusForLocaleSwitch)
+            // 포커스 자리를 맡긴다 — 다시 그리면 포커스가 body 로 빠지므로 같은 요소로 되돌린다 (engine-v1.94.0, captureFocusForLocaleSwitch)
             const focusTarget = this.captureFocusForLocaleSwitch();
 
             // 기존 템플릿 엔진 정리 — 언마운트되는 컴포넌트가 인계 저장소에 맡긴 뒤 맡기기를 닫는다
@@ -4294,7 +4482,7 @@ export class TemplateApp {
 
             // 핸들러 재등록 — ActionDispatcher 가 새로 생성되었으므로 모두 다시 등록해야 한다.
             // 순서는 부트와 같게 모듈 → 플러그인 → 템플릿이다(부트: loadExtensionAssets → reinitializeTemplateHandlers).
-            // 종전에는 모듈 → 템플릿 → 플러그인이라 같은 이름이면 전환 전에는 템플릿, 전환 뒤에는 플러그인이 이겼다 (engine-v1.87.0)
+            // 종전에는 모듈 → 템플릿 → 플러그인이라 같은 이름이면 전환 전에는 템플릿, 전환 뒤에는 플러그인이 이겼다 (engine-v1.93.0)
             this.reinitializeModuleHandlers();
             logger.log('Module handlers re-initialized');
 
@@ -4313,7 +4501,7 @@ export class TemplateApp {
                 await this.router.navigateToCurrentPath();
             }
 
-            // 맡겨 둔 포커스 자리로 되돌린다 — 다시 그린 화면이 커밋될 때까지 몇 프레임 기다린다 (engine-v1.89.0)
+            // 맡겨 둔 포커스 자리로 되돌린다 — 다시 그린 화면이 커밋될 때까지 몇 프레임 기다린다 (engine-v1.94.0)
             this.restoreFocusAfterLocaleSwitch(focusTarget);
 
             // 수동으로 받아 둔 데이터소스를 새 언어로 다시 받는다 — 사용자 입력(`_local`)은 덮지 않는다
@@ -4336,7 +4524,7 @@ export class TemplateApp {
     }
 
     /**
-     * 언어 전환 직전 포커스 요소의 안정된 식별자를 잡습니다 (engine-v1.89.0, #869).
+     * 언어 전환 직전 포커스 요소의 안정된 식별자를 잡습니다 (engine-v1.94.0, #869).
      *
      * 언어 전환은 엔진을 내리고 같은 화면을 새로 마운트하므로 포커스가 body 로 빠진다. 레이아웃의 `<set-locale>` 단추(모바일 서랍
      * 언어 칩 등)와 서드파티 레이아웃은 부품 훅(`G7Core.locale.handoff`)이 닿지 않으므로 엔진이 맡는다. 식별자는 렌더러가 DOM 에 싣는
@@ -4359,7 +4547,7 @@ export class TemplateApp {
     }
 
     /**
-     * 언어 전환으로 다시 그린 뒤 맡겨 둔 자리로 포커스를 되돌립니다 (engine-v1.89.0, #869).
+     * 언어 전환으로 다시 그린 뒤 맡겨 둔 자리로 포커스를 되돌립니다 (engine-v1.94.0, #869).
      *
      * 다시 그린 화면은 비동기로 커밋되므로 요소가 나타날 때까지 `LOCALE_FOCUS_RESTORE_ATTEMPTS` 프레임까지 다시 본다. 끝내 없으면 본문
      * 시작점(`main`·`[role=main]`·`#main_content`, 없으면 #app)으로 보낸다. 매 시도마다 포커스가 body 일 때만 움직인다 — 그 사이 사용자가
@@ -4399,6 +4587,54 @@ export class TemplateApp {
             if (!start.hasAttribute('tabindex')) start.setAttribute('tabindex', '-1');
             start.focus({ preventScroll: true });
         }
+    }
+
+    /**
+     * 브라우저 탭 제목 컨트롤러를 켭니다.
+     *
+     * 사용자 템플릿은 검색엔진 제목과 같은 규칙, 관리자 템플릿은 레이아웃 화면 제목 → 라우트 제목에 관리자 접미사
+     * (`{화면 제목} - {사이트 이름} 관리자`, 셸이 언어별로 넘긴다 — engine-v1.88.0). 서버가 넘긴 제목 계산 값
+     * (`G7Config.seoTitle`)이 없으면 켜지 않는다 — 종전처럼 셸 제목이 남는다(옛 서버).
+     *
+     * @returns void
+     * @since engine-v1.86.0
+     */
+    private configureDocumentTitle(): void {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const isAdmin = this.config.templateType === 'admin';
+        const payload = (window as any).G7Config?.seoTitle as SeoTitlePayload | null | undefined;
+        documentTitle.configure({
+            payload,
+            mode: isAdmin ? 'admin' : 'user',
+            getLocale: () => this.config.locale ?? null,
+            translate: (text, context) => {
+                const state = getState();
+                if (!state.translationEngine || !state.translationContext) {
+                    return null;
+                }
+                return state.translationEngine.resolveTranslations(text, state.translationContext, context);
+            },
+            // 사용자 템플릿: 레이아웃 편집기(캔버스) 경로에서는 관리자 편집기 탭 제목을 바꾸지 않는다.
+            // 관리자 템플릿: 편집기 경로로 부팅하면 위 편집기 모드에서 이미 돌아가 이 컨트롤러가 켜지지 않는다.
+            isSuppressed: isAdmin ? undefined : () => checkLayoutEditorMode(window.location.pathname) !== null,
+        });
+    }
+
+    /**
+     * 경로 없음(404) 화면의 탭 제목 — 템플릿이 `/404` 라우트에 둔 제목.
+     *
+     * 코어에는 404 제목 번역 키가 없다(내장 문구는 문장형 안내다). 템플릿의 404 화면 라우트 제목을 쓰고, 없으면 빈 값
+     * (제목 규칙이 사이트 이름으로 채운다).
+     *
+     * @returns 제목 원값 (`$t:` 키 허용)
+     * @since engine-v1.86.0
+     */
+    private notFoundTitle(): string {
+        const title = this.router?.match('/404')?.route?.meta?.title;
+
+        return typeof title === 'string' ? title : '';
     }
 
     /**
@@ -4732,7 +4968,7 @@ export class TemplateApp {
             return;
         }
 
-        // 등록자를 활성 템플릿 식별자로 표시한다 — 다른 주인의 이름을 덮으면 엔진이 경고로 드러낸다 (engine-v1.87.0)
+        // 등록자를 활성 템플릿 식별자로 표시한다 — 다른 주인의 이름을 덮으면 엔진이 경고로 드러낸다 (engine-v1.93.0)
         const source = this.config.templateId
             || document.getElementById('app')?.getAttribute('data-template-id')
             || 'unknown';
@@ -4823,11 +5059,11 @@ export class TemplateApp {
             clearBindingCache: () => {
                 const bindingEngine = getState().bindingEngine;
                 // 화면 전환과 같이 새 세대를 연다 — 오류 화면으로 가는 동안 늦게 처리된 앞 화면의 렌더(앞 세대 문맥)가 비운 캐시를
-                // 다시 채우지 않게 한다. 오류 화면 문맥은 표지가 없어 종전처럼 캐시를 쓴다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+                // 다시 채우지 않게 한다. 오류 화면 문맥은 표지가 없어 종전처럼 캐시를 쓴다 (engine-v1.94.0, BINDING_CACHE_EPOCH)
                 bindingEngine?.startCacheEpoch();
                 bindingEngine?.startRenderCycle();
             },
-            // 템플릿에 그 코드의 오류 레이아웃도 default 도 없으면 엔진 내장 오류 화면 (engine-v1.89.0, #869 λ 4부 18) — 종전에는 아무것도
+            // 템플릿에 그 코드의 오류 레이아웃도 default 도 없으면 엔진 내장 오류 화면 (engine-v1.94.0, #869 λ 4부 18) — 종전에는 아무것도
             // 그리지 않아 화면이 오류 전 모습으로 남았다. 레이아웃 적재 실패 화면과 같이 React 루트를 내려놓고 #app 을 덮는다
             renderBuiltinFallback: (errorCode: number) => {
                 releaseTemplateRoot();
@@ -4944,7 +5180,7 @@ export class TemplateApp {
      * @returns fetch된 데이터 또는 undefined
      */
     async refetchDataSource(dataSourceId: string, options?: { sync?: boolean; globalStateOverride?: Record<string, any>; localStateOverride?: Record<string, any>; isolatedStateOverride?: Record<string, any>; skipInitLocal?: boolean }): Promise<any> {
-        // 시작 시점의 렌더 전 수집 상자 — 응답 때도 같은 상자가 열려 있을 때만 그 initLocal 을 첫 렌더 몫으로 모은다 (@since engine-v1.89.0).
+        // 시작 시점의 렌더 전 수집 상자 — 응답 때도 같은 상자가 열려 있을 때만 그 initLocal 을 첫 렌더 몫으로 모은다 (@since engine-v1.94.0).
         // 앞 화면에서 시작한 다시 받기(상자 없음)나 다른 화면 처리가 새로 연 상자에는 쓰지 않는다
         const preRenderCollector = this.preRenderInitCollector;
 
@@ -4983,7 +5219,7 @@ export class TemplateApp {
 
             // _global 상태 가져오기 (endpoint 표현식에서 {{_global.xxx}} 접근 지원)
             // globalStateOverride가 있으면 기존 상태와 병합 (sequence에서 setState 후 업데이트된 값 반영)
-            // engine-v1.89.0 (#869 λ 4부 17): 다시 그리기 전 화면 문맥이 아니라 정본 최신 상태를 기준으로 쓴다 — `G7Core.state.set` 은
+            // engine-v1.94.0 (#869 λ 4부 17): 다시 그리기 전 화면 문맥이 아니라 정본 최신 상태를 기준으로 쓴다 — `G7Core.state.set` 은
             // 정본(this.globalState)을 바로 바꾸는데 화면 문맥은 다시 그린 뒤에야 바뀌어, state.set 직후의 다시 받기가 앞 값으로 나갔다
             // (늦게 받은 장바구니 키를 싣고 바로 다시 받으면 키 없이 400). 레이아웃 refetchDataSource 핸들러와 handleApiCall 은 이미 최신
             // 상태를 쓴다. 화면 문맥에만 있는 값(layoutWarnings 등)은 남기고 정본이 이긴다. override 는 그대로 우선한다
@@ -4994,7 +5230,7 @@ export class TemplateApp {
 
             // _local 상태 가져오기 (params 표현식에서 {{_local.xxx}} 접근 지원)
             // localStateOverride가 있으면 기존 상태와 병합 (sequence에서 setState local 후 업데이트된 값 반영)
-            // engine-v1.89.0: 기준은 페이지 `_local` 정본 B 와 아직 반영 대기 중인 값(latestLocalForRequest). 화면 문맥의 `_local` 도
+            // engine-v1.94.0: 기준은 페이지 `_local` 정본 B 와 아직 반영 대기 중인 값(latestLocalForRequest). 화면 문맥의 `_local` 도
             // 페이지 루트 범위라 범위가 같고, 모달·격리 범위의 값은 종전처럼 호출부가 override(refetchDataSource 핸들러의 동작 문맥
             // `_local`, isolatedStateOverride)로 넘긴다
             const currentLocalState = this.latestLocalForRequest();
@@ -5088,7 +5324,7 @@ export class TemplateApp {
                 // initLocal이 있으면 추가 — skipInitLocal(언어 전환 재조회)은 사용자 입력을 덮지 않는다 (@since engine-v1.79.0)
                 if (Object.keys(localInit).length > 0 && !options?.skipInitLocal) {
                     if (preRenderCollector && this.preRenderInitCollector === preRenderCollector) {
-                        // 새 화면을 그리기 전이다 (@since engine-v1.89.0) — 정본 B(와 반영 대기 값)에 바로 써서 뒤이은 setState 가 그 위에
+                        // 새 화면을 그리기 전이다 (@since engine-v1.94.0) — 정본 B(와 반영 대기 값)에 바로 써서 뒤이은 setState 가 그 위에
                         // 쌓이게 하고, 키만 적어 두면 렌더 직전에 그 키의 지금 값을 첫 렌더 상태(`_local`·`_localInit`)에 싣는다. `_localInit`
                         // 갱신으로 넘기면 떠나는 화면 문맥(SPA)이나 첫 렌더 뒤 대기열(첫 진입)로 가서 버려지거나 뒤 값을 덮는다
                         const { _forceLocalInit: forceFlag, ...fields } = localInit;
@@ -5190,6 +5426,75 @@ export class TemplateApp {
     unregisterModalDataSources(modalId: string): void {
         this.modalDataSources.delete(modalId);
         logger.log(`Modal data sources unregistered: ${modalId}`);
+    }
+
+    /**
+     * 더보기 스냅샷 문맥 — 언어와 계정이 같을 때만 되살린다
+     *
+     * @returns `{로케일}|{사용자 id 또는 guest}`
+     * @since engine-v1.85.0
+     */
+    private scrollSnapshotContext(): string {
+        const user = AuthManager.getInstance().getUser() as { id?: unknown } | null;
+
+        return `${this.config.locale}|${user?.id ?? 'guest'}`;
+    }
+
+    /**
+     * 스냅샷과 함께 기억할 상태 경로 값을 읽습니다 (`_global.…` · `_local.…`)
+     *
+     * `_local` 은 화면이 쓰는 저장소(G7Core.state.getLocal)에서 읽는다 — 떠나는 화면이 아직 마운트된 시점에 부른다.
+     *
+     * @param path 상태 경로
+     * @returns 값 (없으면 undefined)
+     * @since engine-v1.85.0
+     */
+    private readScrollStatePath(path: string): unknown {
+        const [root, ...rest] = path.split('.');
+        let current: any = root === '_local'
+            ? ((window as any).G7Core?.state?.getLocal?.() ?? this.globalState._local)
+            : this.globalState;
+        for (const part of rest) {
+            if (current === null || typeof current !== 'object') {
+                return undefined;
+            }
+            current = current[part];
+        }
+
+        return current;
+    }
+
+    /**
+     * 스냅샷과 함께 기억한 상태를 되돌립니다 — 첫 렌더 직전, 레이아웃 init 과 같은 경로(`globalState`·`globalState._local`)로.
+     *
+     * @param state 경로 → 값
+     * @since engine-v1.85.0
+     */
+    private applyScrollSnapshotState(state: Record<string, unknown>): void {
+        for (const [path, value] of Object.entries(state)) {
+            const [root, ...rest] = path.split('.');
+            if (rest.length === 0) {
+                continue;
+            }
+            let target: any;
+            if (root === '_local') {
+                if (!this.globalState._local || typeof this.globalState._local !== 'object') {
+                    this.globalState._local = {};
+                }
+                target = this.globalState._local;
+            } else {
+                target = this.globalState;
+            }
+            const last = rest.pop() as string;
+            for (const part of rest) {
+                if (target[part] === null || typeof target[part] !== 'object') {
+                    target[part] = {};
+                }
+                target = target[part];
+            }
+            target[last] = value;
+        }
+        logger.log('Scroll snapshot state restored:', Object.keys(state));
     }
 
     /**
@@ -5556,7 +5861,7 @@ export class TemplateApp {
         // 원본(currentRawDataSources)을 변경된 query + 최신 _global 로 다시 filterByCondition 한다.
         // 원본 미보존(구버전 캐시 등) 시 기존 currentDataSources 로 안전 폴백.
         const reevalManager = new DataSourceManager();
-        // engine-v1.89.0 (ρ 9부): 다시 받기(refetchDataSource)와 같은 기준 — 정본 최신 `_global`
+        // engine-v1.94.0 (ρ 9부): 다시 받기(refetchDataSource)와 같은 기준 — 정본 최신 `_global`
         const latestGlobal = this.latestGlobalForRequest();
         const reevalContext = {
             route: this.currentRouteParams || {},
@@ -5645,7 +5950,7 @@ export class TemplateApp {
                 dataSourceManager.setGlobalHeaders(this.currentGlobalHeaders);
             }
 
-            // _global 상태 가져오기 — engine-v1.89.0 (ρ 9부): 다시 받기(refetchDataSource)와 같은 기준인 정본 최신 `_global`.
+            // _global 상태 가져오기 — engine-v1.94.0 (ρ 9부): 다시 받기(refetchDataSource)와 같은 기준인 정본 최신 `_global`.
             // 종전에는 다시 그리기 전 화면 문맥을 써서 state.set 직후의 쿼리 갱신이 앞 값으로 요청됐다
             const state = getState();
             const globalState = this.latestGlobalForRequest();
@@ -5967,7 +6272,7 @@ export class TemplateApp {
     }
 
     /**
-     * 화면 처리 밖의 데이터 요청(다시 받기, 쿼리 갱신 재조회)에 쓸 `_global` — 정본 최신 상태 (engine-v1.89.0, #869).
+     * 화면 처리 밖의 데이터 요청(다시 받기, 쿼리 갱신 재조회)에 쓸 `_global` — 정본 최신 상태 (engine-v1.94.0, #869).
      *
      * `G7Core.state.set` 은 정본(this.globalState)을 바로 바꾸지만 화면 문맥(`currentDataContext._global`)은 다시 그린 뒤에야 바뀐다.
      * 화면 문맥에만 있는 값(layoutWarnings 등)은 남기고 정본이 이긴다.
@@ -5980,7 +6285,7 @@ export class TemplateApp {
 
     /**
      * 화면 처리 밖의 데이터 요청에 쓸 페이지 `_local` — 정본 B 위에 아직 반영 대기 중인 값(`__g7PendingLocalState`)만 얹는다
-     * (engine-v1.89.0, #869 ρ 9부 M9).
+     * (engine-v1.94.0, #869 ρ 9부 M9).
      *
      * `G7Core.state.getLocal()` 은 마지막 setLocal 사본(`__g7LastSetLocalSnapshot`)이 B 와 다르면 그 사본을 B 위에 덮는데, 그 사본은
      * 렌더에서 지워지지 않아 setLocal 뒤 사본을 지우지 않는 B 쓰기가 있으면 낡은 값이 된다. 반영 대기 값은 렌더마다 비워져 B 보다

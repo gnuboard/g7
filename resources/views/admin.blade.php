@@ -94,6 +94,8 @@
                 'appConfig' => (object) ($appConfig ?? []),
                 // routes/custom.php 로 등록된 개발자 화면 GET 주소(#792) — 엔진 라우터가 이 주소로는 전체 페이지 이동한다
                 'customRoutes' => $customRoutes ?? ['user' => [], 'admin' => []],
+                // 브라우저 탭 제목 계산 값(사이트 이름 + 언어별 관리자 접미사) — 엔진 DocumentTitle 이 「{화면 제목} - {사이트 이름} 관리자」로 쓴다
+                'seoTitle' => $seoTitle ?? null,
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
                 // 미빌드 상태 대비 file_exists 가드.

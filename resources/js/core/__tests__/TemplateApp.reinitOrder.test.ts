@@ -1,6 +1,6 @@
 /**
  * @file TemplateApp.reinitOrder.test.ts
- * @description 언어 전환 뒤 핸들러 재등록 순서가 부트와 달라 같은 이름의 승자가 뒤바뀌던 결함 (engine-v1.87.0, #816 S1 F3)
+ * @description 언어 전환 뒤 핸들러 재등록 순서가 부트와 달라 같은 이름의 승자가 뒤바뀌던 결함 (engine-v1.93.0, #816 S1 F3)
  *
  * 결함:
  *   부트는 「확장 에셋 로드(모듈·플러그인 등록) → 템플릿 핸들러 등록」 순서라 같은 이름이면 템플릿이 마지막에 이긴다.
@@ -95,7 +95,7 @@ vi.mock('../template-engine/ComponentRegistry', () => {
 import { TemplateApp } from '../TemplateApp';
 import { clearLocaleSwitchHandoff } from '../template-engine/localeSwitchHandoff';
 
-describe('TemplateApp 언어 전환 재등록 순서 (engine-v1.87.0)', () => {
+describe('TemplateApp 언어 전환 재등록 순서 (engine-v1.93.0)', () => {
   let app: TemplateApp;
 
   beforeEach(() => {

@@ -109,7 +109,7 @@ class PublicHeroServiceTest extends PluginTestCase
     }
 
     /**
-     * [case:backend-67] 캐시 버전 번호가 먼저 만료돼도(사이트 공통 캐시 시간이 배너 캐시보다 짧은 경우) 고치기 전 화면이 다시 나오지 않는다 —
+     * [case:backend-68] 캐시 버전 번호가 먼저 만료돼도(사이트 공통 캐시 시간이 배너 캐시보다 짧은 경우) 고치기 전 화면이 다시 나오지 않는다 —
      * 버전이 처음 값으로 돌아가 아직 살아 있는 옛 캐시와 같은 키를 만들면 안 된다.
      *
      * @scenario surface=cache_version_expiry_never_serves_stale

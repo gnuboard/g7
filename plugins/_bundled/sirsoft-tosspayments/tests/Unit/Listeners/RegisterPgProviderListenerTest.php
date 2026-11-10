@@ -3,12 +3,12 @@
 namespace Plugins\Sirsoft\Tosspayments\Tests\Unit\Listeners;
 
 use Plugins\Sirsoft\Tosspayments\Listeners\RegisterPgProviderListener;
-use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * RegisterPgProviderListener 단위 테스트
  */
-class RegisterPgProviderListenerTest extends PluginTestCase
+class RegisterPgProviderListenerTest extends PureTestCase
 {
     private RegisterPgProviderListener $listener;
 

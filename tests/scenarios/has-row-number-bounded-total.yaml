@@ -1,0 +1,17 @@
+feature: 상한에 걸린 총 건수에서의 목록 순번 처리 (#519)
+
+description: |
+  HasRowNumber 트레이트의 내림차순 순번은 총 건수로 역산하므로, 총 건수가 상한에서 잘리면(TotalRelation::AtLeast)
+  틀린 순번·0·음수를 내보내는 대신 null 로 둔다. 총 건수가 정확하면 종전대로 총 건수부터 내림차순으로 매기고,
+  오름차순 순번은 총 건수와 무관하므로 잘린 경우에도 유지한다.
+
+axes:
+  case: [exact_total, truncated_total]
+
+effects:
+  - row_number_null_when_total_truncated
+  - row_number_exact_when_total_exact
+  - row_number_ascending_unaffected_by_truncation
+
+test_files:
+  - tests/Unit/Http/Resources/HasRowNumberBoundedTotalTest.php

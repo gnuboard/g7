@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\Gdpr\Tests\Unit;
 
 use Plugins\Sirsoft\Gdpr\Plugin;
-use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * 발행 훅 설명의 언어별 선언 테스트.
@@ -12,7 +12,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  * 설명이 ko/en 만 선언돼 ja 화면에서 한국어로 보였다(7.1.0 실측 P-11, TOTP 는 설명이 한국어 문자열
  * 하나뿐이라 en 화면에서도 한국어). 선언한 훅마다 언어별 설명이 있고 en·ja 에 한글이 남지 않는지 본다.
  */
-class HookDescriptionLocalesTest extends PluginTestCase
+class HookDescriptionLocalesTest extends PureTestCase
 {
     /**
      * 선언한 훅마다 ko 설명이 채워져 있다.

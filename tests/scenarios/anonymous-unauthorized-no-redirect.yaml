@@ -1,0 +1,18 @@
+feature: 토큰 없이 보낸 요청의 401 은 세션 만료로 보지 않는다 (#883, engine-v1.88.2)
+
+description: |
+  비회원이 권한 없는 기능(편집기 이미지 업로드·비회원 주문 모바일 결제 승인키·비회원 클레임 신청)을 누르면 서버는
+  401 을 준다. 종전 ApiClient 는 그 401 도 세션 만료로 보고 토큰 갱신 → 실패 → onUnauthorized(로그인 화면 이동,
+  reason=session_expired)를 불러 쓰던 글·입력이 사라졌다. 요청 인터셉터가 Authorization 을 실었는지 요청 시점에
+  기록하고, 무토큰 401 은 갱신·토큰 삭제·콜백 없이 `error.g7Auth = { tokenSent: false }` 를 붙여 호출자에게 돌려준다.
+  토큰을 실은 401 은 종전대로다. `G7Core.api.isAnonymousUnauthorized(error)` 로 호출자가 판정한다.
+
+axes:
+  request: [anonymous, authenticated, token_cleared_after_send, logged_in_after_send, caller_authorization_header, auth_or_cross_origin]
+
+effects:
+  - anonymous_unauthorized_not_redirected
+  - authenticated_unauthorized_still_redirects
+
+test_files:
+  - resources/js/core/api/__tests__/ApiClient.anonymousUnauthorized.test.ts

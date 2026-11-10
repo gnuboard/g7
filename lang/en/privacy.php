@@ -4,6 +4,7 @@ return [
     // Retention handler labels — shared by command output and the dry-run badge on the settings screen.
     'handlers' => [
         'user_withdrawn' => 'Residual personal data of withdrawn members',
+        'search_history' => 'Recent search retention',
     ],
 
     // Target list modal — column labels and target list API errors.
@@ -14,9 +15,14 @@ return [
             'withdrawn_at' => 'Withdrawn on',
             'last_activity_at' => 'Last activity',
             'dormant_at' => 'Dormant since',
+            'member' => 'Member',
+            'search_scope' => 'Search scope',
+            'keyword_count' => 'Searches',
+            'oldest_searched_at' => 'Oldest search',
         ],
         'unknown_handler' => 'This personal data processing target is not registered.',
         'unknown_stage' => 'Unknown dormant stage.',
+        'keyword_count_value' => ':count searches',
     ],
 
     // Manual run by an administrator — the "Run now" button on settings cards (queue → process → result on the card).
@@ -49,6 +55,7 @@ return [
     ],
     // `privacy:*` command output
     'console' => [
+        'lock_unavailable' => 'This item was not processed because the lock store (cache) is unavailable.',
         'process_retention' => [
             'handler_required' => 'Specify a handler identifier for --handler. To run all handlers, omit the option.',
             'registered_handlers' => 'Registered handlers: :handlers',

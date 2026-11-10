@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\Ckeditor5\Tests\Unit;
 
 use PHPUnit\Framework\Attributes\Test;
-use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * 동봉 자산 선언 ↔ 실제 파일 정합 테스트
@@ -16,7 +16,7 @@ use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
  * 경로가 세 곳(레이아웃 확장 JSON · TS 상수 · 실제 디렉토리)에 나뉘어 있으므로
  * 셋이 같은 버전을 가리키는지도 함께 본다.
  */
-class VendoredAssetManifestTest extends PluginTestCase
+class VendoredAssetManifestTest extends PureTestCase
 {
     /** 동봉 자산 루트 (플러그인 루트 기준) */
     private const VENDOR_ROOT = 'dist/vendor/ckeditor5';
@@ -51,9 +51,13 @@ class VendoredAssetManifestTest extends PluginTestCase
     }
 
     /**
+     * 선언 버전의 동봉 디렉토리에 UMD 본체·CSS·라이선스·한국어 번역 파일이 모두 있다.
+     *
      * @scenario asset_class=vendored, outcome=loaded
      *
      * @effects vendored_asset_declared_path_exists_on_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 동봉_디렉토리에_필수_파일이_모두_존재한다(): void
@@ -67,7 +71,13 @@ class VendoredAssetManifestTest extends PluginTestCase
     }
 
     /**
+     * 레이아웃 확장의 스크립트 src 가 same-origin 자산 경로이고 그 파일이 실제로 존재한다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
      * @effects vendored_asset_declared_path_exists_on_disk, runtime_asset_served_same_origin
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 레이아웃_확장이_가리키는_스크립트가_실제로_존재한다(): void
@@ -94,6 +104,15 @@ class VendoredAssetManifestTest extends PluginTestCase
         );
     }
 
+    /**
+     * TS 상수의 CKEDITOR5_VERSION 과 레이아웃 확장 스크립트 경로의 버전 디렉토리가 일치한다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects vendored_asset_version_matches_declaration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 선언한_버전과_레이아웃_확장_경로의_버전이_일치한다(): void
     {
@@ -110,6 +129,15 @@ class VendoredAssetManifestTest extends PluginTestCase
         );
     }
 
+    /**
+     * 동봉으로 전환한 플러그인 매니페스트에 trusted_script_hosts 외부 호스트 선언이 남아 있지 않다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects no_third_party_request_on_page_load
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 자체_제공으로_전환했으므로_신뢰_외부_호스트_선언이_없다(): void
     {
@@ -123,7 +151,13 @@ class VendoredAssetManifestTest extends PluginTestCase
     }
 
     /**
+     * 편집기 런타임 소스와 레이아웃 확장 JSON 에 외부 CKEditor CDN 주소가 남아 있지 않다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
      * @effects no_third_party_request_on_page_load
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 런타임_소스에_외부_cd_n_주소가_남아_있지_않다(): void

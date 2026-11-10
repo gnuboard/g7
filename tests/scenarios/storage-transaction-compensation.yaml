@@ -1,0 +1,32 @@
+feature: 트랜잭션 파일 보상 도구 StorageTransaction — 커밋되면 옮기고 롤백되면 원래대로 (#883 3단계)
+
+description: |
+  파일 저장소는 DB 트랜잭션에 참여하지 않는다. 글·상품 저장 도중 파일을 옮기고 뒤 단계가 실패해 DB 가 되돌아가면 파일만
+  새 자리에 남았다. `StorageTransaction` 은 트랜잭션 안에서는 되돌릴 수 있게(이동 = 복사 후 커밋 때 원본 삭제) 작업하고
+  롤백되면 보상하며, 밖에서는 즉시 수행한다. 롤백 감지는 `TransactionRolledBack` 이벤트 + 등록 깊이 비교라 안쪽 트랜잭션이
+  먼저 커밋된 뒤 바깥이 롤백돼도 보상된다(`DB::afterRollBack()` 은 이 경우를 놓친다). 커밋 마무리는 `afterCommit`.
+  `StreamingStorageInterface`(코어 드라이버 셋)는 스트림으로 복사하고 Range 구간을 읽는다.
+
+axes:
+  case: [commit, rollback, nested_commit_then_outer_rollback, sibling_savepoint_rollback, outside_transaction, compensation_failure, streaming_round_trip, streaming_path_guard]
+
+effects:
+  - move_finalized_on_commit
+  - move_compensated_on_rollback
+  - nested_savepoint_commit_then_outer_rollback_compensated
+  - committed_inner_work_survives_sibling_rollback
+  - immediate_outside_transaction
+  - compensation_failure_logged_not_thrown
+  - streaming_contract_guarded
+
+sub_flows:
+  - id: streaming_storage_contract
+    description: |
+      코어 드라이버 셋(Core·Module·Plugin)이 StreamingStorageInterface 를 구현한다 — readStream·writeStream·size·localPath·
+      readRangeStream 모두 기존 경로 가드(resolvePath·GuardsStoragePaths)를 거친다. Range 는 시작 위치로 시크한 스트림을 준다.
+    test_files:
+      - tests/Unit/Extension/Storage/StreamingStorageDriverTest.php
+
+test_files:
+  - tests/Unit/Extension/Helpers/StorageTransactionTest.php
+  - tests/Unit/Extension/Storage/StreamingStorageDriverTest.php

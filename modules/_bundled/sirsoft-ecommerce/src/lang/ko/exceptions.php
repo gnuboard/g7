@@ -231,4 +231,7 @@ return [
         'declaration_missing_personal' => ':model 의 내보내기 선언 :column 에 personal(개인정보 여부)이 없습니다.',
         'declaration_invalid_type' => ':model 의 내보내기 선언 :column 의 type 이 올바르지 않습니다.',
     ],
+
+    // 회원·주문 없이 등록하는 후기(다른 쇼핑몰 이관) 입력 오류
+    'imported_review_invalid_field' => '이관 후기 입력값이 올바르지 않습니다: :field',
 ];

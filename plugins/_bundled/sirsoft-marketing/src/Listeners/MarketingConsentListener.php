@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Marketing\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Services\PluginSettingsService;
 use Plugins\Sirsoft\Marketing\Models\MarketingConsent;
@@ -288,6 +289,7 @@ class MarketingConsentListener implements HookListenerInterface
         foreach ($allActiveKeys as $key) {
             $record = $consents->get($key);
             $data[$key] = $record?->is_consented ?? false;
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 브라우저 표시 변환은 후속(F1)
             $data["{$key}_at"] = $record?->consented_at?->toIso8601String();
         }
 
@@ -336,7 +338,8 @@ class MarketingConsentListener implements HookListenerInterface
                 'channel_key' => $history->channel_key,
                 'action' => $history->action,
                 'source' => $history->source,
-                'created_at' => $history->created_at?->format('Y-m-d H:i:s'),
+                // 화면 값 — 보는 사람(관리자) 시간대. 같은 화면의 가입일과 같은 기준
+                'created_at' => TimezoneHelper::toUserDateTimeString($history->created_at),
             ])
             ->toArray();
 

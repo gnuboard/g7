@@ -59,6 +59,12 @@ class CartController extends PublicBaseController
                 'cart_key' => $cartKey,
             ]);
         } catch (Exception $e) {
+            Log::error('cart.issue_key failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.key_issue_failed',
@@ -111,6 +117,13 @@ class CartController extends PublicBaseController
                 $this->buildCartPayload($result)
             );
         } catch (Exception $e) {
+            Log::error('cart.index failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+                'user_id' => Auth::id(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.fetch_failed',
@@ -484,6 +497,13 @@ class CartController extends PublicBaseController
                 'count' => $count,
             ]);
         } catch (Exception $e) {
+            Log::error('cart.count failed', [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile().':'.$e->getLine(),
+                'user_id' => Auth::id(),
+            ]);
+
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.cart.fetch_failed',

@@ -1,4 +1,4 @@
-feature: 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.89.0)
+feature: 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.94.0)
 
 description: |
   첫 렌더 전 다시 받기(레이아웃 init_actions 안의 refetchDataSource, 다른 화면 전환에서 미룬 blocking onSuccess 안의 다시 받기)는

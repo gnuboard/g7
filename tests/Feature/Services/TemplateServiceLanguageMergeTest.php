@@ -9,6 +9,8 @@ use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Extension\Helpers\ExtensionPendingHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Models\Template;
 use App\Repositories\TemplateRepository;
@@ -35,6 +37,11 @@ class TemplateServiceLanguageMergeTest extends TestCase
     /** @var bool 활성 디렉토리가 테스트 전에 이미 존재했는지 (tearDown에서 정리 판단용) */
     private bool $boardExistedBefore = false;
 
+    /**
+     * 번들 게시판 모듈을 활성 디렉토리로 복사하고, 템플릿·모듈·플러그인 매니저 목으로 TemplateService 를 조립한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,7 +51,7 @@ class TemplateServiceLanguageMergeTest extends TestCase
         $bundledPath = base_path('modules/_bundled/sirsoft-board');
         $this->boardExistedBefore = File::isDirectory($activePath);
         if (! $this->boardExistedBefore && File::isDirectory($bundledPath)) {
-            File::copyDirectory($bundledPath, $activePath);
+            FilePermissionHelper::copyDirectory($bundledPath, $activePath, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
         }
 
         // TemplateManager Mock 생성
@@ -75,6 +82,11 @@ class TemplateServiceLanguageMergeTest extends TestCase
         );
     }
 
+    /**
+     * 이 테스트가 복사해 만든 활성 모듈 디렉토리만 지우고 Mockery 목을 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트에서 생성한 활성 디렉토리만 정리 (기존에 있었으면 건드리지 않음)
@@ -91,6 +103,14 @@ class TemplateServiceLanguageMergeTest extends TestCase
 
     /**
      * 템플릿 다국어 데이터가 올바르게 반환되는지 테스트
+     *
+     * 활성 확장이 없을 때 성공 응답에 템플릿의 auth·admin 키가 담기는지 확인한다.
+     *
+     * @scenario case=template_only
+     *
+     * @effects template_language_data_returned
+     *
+     * @return void 반환값 없음
      */
     public function test_get_language_data_returns_template_data(): void
     {
@@ -138,6 +158,12 @@ class TemplateServiceLanguageMergeTest extends TestCase
 
     /**
      * 모듈 다국어 데이터가 템플릿 데이터와 병합되는지 테스트
+     *
+     * @scenario case=module_merge
+     *
+     * @effects template_language_data_returned, module_language_merged_under_module_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_module_language_data_is_merged_with_template_data(): void
     {
@@ -193,6 +219,14 @@ class TemplateServiceLanguageMergeTest extends TestCase
 
     /**
      * 플러그인 다국어 데이터도 병합되는지 테스트
+     *
+     * 다국어 파일이 없는 활성 플러그인은 병합 결과에 키를 추가하지 않는지 확인한다.
+     *
+     * @scenario case=plugin_merge
+     *
+     * @effects plugin_without_language_file_adds_no_key
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_language_data_is_merged(): void
     {
@@ -244,6 +278,14 @@ class TemplateServiceLanguageMergeTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿에 대한 에러 처리 테스트
+     *
+     * DB 에 없는 템플릿이면 실패 응답과 template_not_found 오류 코드를 돌려주는지 확인한다.
+     *
+     * @scenario case=error
+     *
+     * @effects nonexistent_template_returns_template_not_found
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_error_for_nonexistent_template(): void
     {
@@ -261,6 +303,14 @@ class TemplateServiceLanguageMergeTest extends TestCase
 
     /**
      * 지원하지 않는 로케일에 대한 에러 처리 테스트
+     *
+     * 템플릿이 선언하지 않은 로케일이면 실패 응답과 locale_not_supported 오류 코드를 돌려주는지 확인한다.
+     *
+     * @scenario case=error
+     *
+     * @effects unsupported_locale_returns_locale_not_supported
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_error_for_unsupported_locale(): void
     {
@@ -297,6 +347,12 @@ class TemplateServiceLanguageMergeTest extends TestCase
 
     /**
      * 병합된 데이터에서 모듈 식별자가 키로 사용되는지 테스트
+     *
+     * @scenario case=module_merge
+     *
+     * @effects module_language_merged_under_module_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_module_identifier_is_used_as_key(): void
     {
@@ -352,6 +408,12 @@ class TemplateServiceLanguageMergeTest extends TestCase
     /**
      * 코어 프론트엔드 다국어 자원(`lang/{locale}.json`)이 베이스 레이어로 병합되어
      * 어떤 템플릿이 부팅되든 `core.*` 키가 응답에 포함되는지 검증.
+     *
+     * @scenario case=core_base_layer
+     *
+     * @effects core_frontend_lang_loaded_as_base_layer
+     *
+     * @return void 반환값 없음
      */
     public function test_core_frontend_lang_data_is_loaded_as_base_layer(): void
     {
@@ -396,6 +458,12 @@ class TemplateServiceLanguageMergeTest extends TestCase
 
     /**
      * en 로케일에서도 코어 프론트엔드 키가 영어로 해석되는지 검증.
+     *
+     * @scenario case=core_base_layer
+     *
+     * @effects core_frontend_lang_loaded_as_base_layer
+     *
+     * @return void 반환값 없음
      */
     public function test_core_frontend_lang_data_resolved_in_english_locale(): void
     {
@@ -438,6 +506,12 @@ class TemplateServiceLanguageMergeTest extends TestCase
      * 정의한 `layout_editor.palette.*` 도 동시에 노출되어야 한다. 과거 array_merge
      * shallow 는 템플릿 partial 의 `layout_editor` 가 코어 `layout_editor` 를 통째
      * 덮어써서 chrome/device/zoom/save 키가 누락되었다.
+     *
+     * @scenario case=deep_merge
+     *
+     * @effects deep_merge_preserves_sibling_leaves
+     *
+     * @return void 반환값 없음
      */
     public function test_deep_merge_preserves_core_layout_editor_chrome_when_template_defines_palette(): void
     {
@@ -485,6 +559,12 @@ class TemplateServiceLanguageMergeTest extends TestCase
 
     /**
      * deep merge — 양쪽이 assoc 일 때 leaf 병합 + 충돌 leaf 는 뒤가 우선.
+     *
+     * @scenario case=deep_merge
+     *
+     * @effects deep_merge_preserves_sibling_leaves
+     *
+     * @return void 반환값 없음
      */
     public function test_deep_merge_recursive_leaf_resolution(): void
     {

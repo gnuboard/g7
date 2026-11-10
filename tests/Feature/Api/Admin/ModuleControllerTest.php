@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -22,15 +23,24 @@ use Tests\TestCase;
  */
 class ModuleControllerTest extends TestCase
 {
+    use FakesGithubReleases;
     use RefreshDatabase;
 
     private User $admin;
 
     private string $token;
 
+    /**
+     * GitHub 접속을 가짜로 바꾸고 모듈 관리 권한을 가진 관리자와 API 토큰을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
 
         $this->admin = $this->createAdminUser();
         $this->token = $this->admin->createToken('test-token')->plainTextToken;
@@ -43,6 +53,7 @@ class ModuleControllerTest extends TestCase
      * 따라서 역할 identifier는 반드시 'admin'이어야 합니다.
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
+     * @return User admin 역할과 지정 권한 역할을 함께 가진 사용자
      */
     private function createAdminUser(array $permissions = ['core.modules.read', 'core.modules.install', 'core.modules.activate', 'core.modules.uninstall']): User
     {
@@ -103,6 +114,8 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
+     *
+     * @return static Bearer 토큰과 JSON Accept 헤더가 붙은 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -118,6 +131,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 인증 없이 모듈 목록 조회 시 401 반환
+     *
+     * @scenario case=unauthenticated
+     *
+     * @effects unauthenticated_requests_rejected_401
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_401_without_authentication(): void
     {
@@ -128,6 +147,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 모듈 목록 조회 성공
+     *
+     * @scenario case=index_listing
+     *
+     * @effects module_list_returns_paginated_data
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_modules_list(): void
     {
@@ -149,6 +174,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 페이지네이션 파라미터 테스트
+     *
+     * @scenario case=index_listing
+     *
+     * @effects module_list_returns_paginated_data
+     *
+     * @return void 반환값 없음
      */
     public function test_index_supports_pagination(): void
     {
@@ -161,6 +192,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * with[] 파라미터로 custom_menus 조회 테스트
+     *
+     * @scenario case=index_listing
+     *
+     * @effects custom_menus_included_only_when_requested
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_custom_menus_with_param(): void
     {
@@ -178,6 +215,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * with[] 파라미터 없이 조회 시 custom_menus가 없음
+     *
+     * @scenario case=index_listing
+     *
+     * @effects custom_menus_included_only_when_requested
+     *
+     * @return void 반환값 없음
      */
     public function test_index_does_not_return_custom_menus_without_param(): void
     {
@@ -189,6 +232,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 유효하지 않은 with[] 파라미터 시 422 반환
+     *
+     * @scenario case=index_listing
+     *
+     * @effects invalid_with_param_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_422_for_invalid_with_param(): void
     {
@@ -204,6 +253,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * core.menus.read 권한만 가진 사용자가 모듈 목록 조회 시 200 반환
+     *
+     * @scenario case=index_permission
+     *
+     * @effects menus_read_permission_gets_empty_list_with_custom_menus
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_200_with_menus_read_permission(): void
     {
@@ -222,6 +277,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * core.menus.read 권한만 가진 사용자가 custom_menus 조회 시 데이터 반환
+     *
+     * @scenario case=index_permission
+     *
+     * @effects menus_read_permission_gets_empty_list_with_custom_menus
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_custom_menus_with_menus_read_permission(): void
     {
@@ -247,6 +308,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * core.menus.read도 core.modules.read도 없는 사용자는 403 반환
+     *
+     * @scenario case=index_permission
+     *
+     * @effects list_without_relevant_permission_forbidden_403
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_403_without_any_relevant_permission(): void
     {
@@ -267,6 +334,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 단일 검색어로 필터링 테스트
+     *
+     * @scenario case=index_listing
+     *
+     * @effects list_filters_accepted
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_search(): void
     {
@@ -277,6 +350,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * filters 파라미터로 다중 검색 조건 테스트
+     *
+     * @scenario case=index_listing
+     *
+     * @effects list_filters_accepted
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_with_multiple_conditions(): void
     {
@@ -297,6 +376,12 @@ class ModuleControllerTest extends TestCase
      * status 필터링 테스트
      *
      * status는 별도의 top-level 파라미터로 처리됨
+     *
+     * @scenario case=index_listing
+     *
+     * @effects list_filters_accepted
+     *
+     * @return void 반환값 없음
      */
     public function test_index_filters_by_status(): void
     {
@@ -308,6 +393,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 전체 권한 유저의 index 응답에 abilities 포함 확인
+     *
+     * @scenario case=index_abilities
+     *
+     * @effects abilities_reflect_user_permissions
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_abilities_for_full_permission_user(): void
     {
@@ -321,6 +412,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * read 전용 유저의 index 응답에 abilities false 확인
+     *
+     * @scenario case=index_abilities
+     *
+     * @effects abilities_reflect_user_permissions
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_false_abilities_for_read_only_user(): void
     {
@@ -340,6 +437,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 부분 권한 유저의 index 응답에 abilities 부분 확인
+     *
+     * @scenario case=index_abilities
+     *
+     * @effects abilities_reflect_user_permissions
+     *
+     * @return void 반환값 없음
      */
     public function test_index_returns_partial_abilities(): void
     {
@@ -363,6 +466,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 인증 없이 파일 업로드 설치 시 401 반환
+     *
+     * @scenario case=unauthenticated
+     *
+     * @effects unauthenticated_requests_rejected_401
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_401_without_authentication(): void
     {
@@ -373,6 +482,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 파일 없이 업로드 설치 요청 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects upload_install_rejects_missing_wrong_type_or_oversized_file
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_422_without_file(): void
     {
@@ -384,6 +499,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 잘못된 파일 형식으로 업로드 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects upload_install_rejects_missing_wrong_type_or_oversized_file
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_422_for_invalid_file_type(): void
     {
@@ -401,6 +522,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 파일 크기 초과 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects upload_install_rejects_missing_wrong_type_or_oversized_file
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_422_for_oversized_file(): void
     {
@@ -426,6 +553,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 인증 없이 GitHub 설치 시 401 반환
+     *
+     * @scenario case=unauthenticated
+     *
+     * @effects unauthenticated_requests_rejected_401
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_401_without_authentication(): void
     {
@@ -436,6 +569,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * GitHub URL 없이 설치 요청 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects github_install_requires_valid_github_url
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_422_without_url(): void
     {
@@ -447,6 +586,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 잘못된 GitHub URL 형식으로 요청 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects github_install_requires_valid_github_url
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_422_for_invalid_url(): void
     {
@@ -460,6 +605,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * GitHub이 아닌 URL로 요청 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects github_install_requires_valid_github_url
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_422_for_non_github_url(): void
     {
@@ -473,6 +624,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 유효한 GitHub URL 형식 테스트
+     *
+     * @scenario case=install_validation
+     *
+     * @effects valid_github_url_passes_validation
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_github_accepts_valid_github_url(): void
     {
@@ -499,6 +656,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 유효한 ZIP 파일로 모듈 설치 성공 (Service Mock)
+     *
+     * @scenario case=install_service_outcome
+     *
+     * @effects install_success_returns_201_with_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_succeeds_with_valid_zip(): void
     {
@@ -530,6 +693,12 @@ class ModuleControllerTest extends TestCase
      * 메시지 **키** 자리로 넘겨 그대로 내보냈다. 키 해석에 실패한 원문이 나가는 형태라
      * 계약 테스트가 이 지점을 위반으로 등재해 두고 있었다. 이제 도메인 실패는 키와
      * 파라미터를 들고 다니는 예외로 오고, 컨트롤러가 그 키를 해석해 내보낸다.
+     *
+     * @scenario case=install_service_outcome
+     *
+     * @effects domain_install_failure_returns_422_with_resolved_message
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_422_on_domain_exception(): void
     {
@@ -551,6 +720,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 도메인 예외가 아닌 raw RuntimeException 은 500 (인프라 장애를 입력 오류로 위장하지 않는다)
+     *
+     * @scenario case=install_service_outcome
+     *
+     * @effects unexpected_install_failure_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_500_on_raw_runtime_exception(): void
     {
@@ -576,6 +751,12 @@ class ModuleControllerTest extends TestCase
      * 컨트롤러 catch 가 도메인 예외로 좁혀지면서 서비스가 이를 승격하지 않으면, 종전
      * 422 였던 실패가 500(인프라 장애)으로 위장된다 — 서비스 계층의 승격을 고정한다.
      * (mock 이 아닌 실제 ZIP 으로 서비스 실경로를 태운다.)
+     *
+     * @scenario case=install_service_outcome
+     *
+     * @effects domain_install_failure_returns_422_with_resolved_message
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_with_zip_missing_manifest_returns_422(): void
     {
@@ -605,6 +786,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * ModuleService에서 일반 Exception 발생 시 500 반환
+     *
+     * @scenario case=install_service_outcome
+     *
+     * @effects unexpected_install_failure_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_500_on_general_exception(): void
     {
@@ -629,6 +816,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 유효한 GitHub URL로 모듈 설치 성공 (Service Mock)
+     *
+     * @scenario case=install_service_outcome
+     *
+     * @effects install_success_returns_201_with_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_github_calls_service_with_valid_url(): void
     {
@@ -654,6 +847,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * ModuleService에서 RuntimeException 발생 시 422 반환 (GitHub)
+     *
+     * @scenario case=install_service_outcome
+     *
+     * @effects domain_install_failure_returns_422_with_resolved_message
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_422_on_domain_exception(): void
     {
@@ -673,6 +872,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * ModuleService에서 일반 Exception 발생 시 500 반환 (GitHub)
+     *
+     * @scenario case=install_service_outcome
+     *
+     * @effects unexpected_install_failure_returns_500
+     *
+     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_500_on_general_exception(): void
     {
@@ -698,6 +903,12 @@ class ModuleControllerTest extends TestCase
      *
      * 이 테스트는 setUp에서 생성된 admin 역할에 core.modules.create 권한이 이미 연결되어 있으므로,
      * admin 역할에서 create 권한을 분리하여 테스트합니다.
+     *
+     * @scenario case=install_permission
+     *
+     * @effects install_without_create_permission_forbidden_403
+     *
+     * @return void 반환값 없음
      */
     public function test_install_returns_403_without_create_permission(): void
     {
@@ -741,6 +952,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 모듈 활성화 시 필요한 의존성이 충족되지 않으면 409 경고 응답
+     *
+     * @scenario case=dependency_guard
+     *
+     * @effects unmet_dependency_activation_returns_409_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_returns_409_when_dependencies_not_met(): void
     {
@@ -790,6 +1007,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 모듈 활성화 시 force=true로 의존성 경고 무시하고 강제 활성화
+     *
+     * @scenario case=dependency_guard
+     *
+     * @effects force_flag_bypasses_dependency_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_with_force_bypasses_dependency_check(): void
     {
@@ -820,6 +1043,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 모듈 비활성화 시 의존하는 확장이 있으면 409 경고 응답
+     *
+     * @scenario case=dependency_guard
+     *
+     * @effects dependent_extensions_block_deactivation_with_409_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_returns_409_when_dependents_exist(): void
     {
@@ -860,6 +1089,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 모듈 비활성화 시 force=true로 의존성 경고 무시하고 강제 비활성화
+     *
+     * @scenario case=dependency_guard
+     *
+     * @effects force_flag_bypasses_dependency_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_with_force_bypasses_dependent_check(): void
     {
@@ -894,6 +1129,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 모듈 활성화 응답에 assets 정보가 포함됨
+     *
+     * @scenario case=asset_response
+     *
+     * @effects toggle_response_includes_module_assets
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_response_includes_assets_when_module_has_assets(): void
     {
@@ -931,6 +1172,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 모듈 비활성화 응답에 assets 정보가 포함됨
+     *
+     * @scenario case=asset_response
+     *
+     * @effects toggle_response_includes_module_assets
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_response_includes_assets_when_module_has_assets(): void
     {
@@ -971,6 +1218,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * CHANGELOG.md가 있는 모듈의 changelog를 조회합니다.
+     *
+     * @scenario case=changelog
+     *
+     * @effects changelog_parsed_and_range_filtered
+     *
+     * @return void 반환값 없음
      */
     public function test_changelog_returns_parsed_entries(): void
     {
@@ -993,6 +1246,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * CHANGELOG.md가 없는 모듈은 빈 배열을 반환합니다.
+     *
+     * @scenario case=changelog
+     *
+     * @effects changelog_missing_file_returns_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_changelog_returns_empty_for_missing_file(): void
     {
@@ -1004,6 +1263,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 버전 범위 필터링이 동작합니다.
+     *
+     * @scenario case=changelog
+     *
+     * @effects changelog_parsed_and_range_filtered
+     *
+     * @return void 반환값 없음
      */
     public function test_changelog_with_version_range(): void
     {
@@ -1026,6 +1291,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 인증 없이 changelog 조회 시 401 반환
+     *
+     * @scenario case=unauthenticated
+     *
+     * @effects unauthenticated_requests_rejected_401
+     *
+     * @return void 반환값 없음
      */
     public function test_changelog_returns_401_without_authentication(): void
     {
@@ -1039,6 +1310,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * LICENSE 파일이 있는 모듈의 라이선스를 반환합니다.
+     *
+     * @scenario case=license
+     *
+     * @effects license_content_served_with_bundled_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_license_returns_content(): void
     {
@@ -1058,6 +1335,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * LICENSE 파일이 없는 모듈은 404를 반환합니다.
+     *
+     * @scenario case=license
+     *
+     * @effects license_missing_file_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_license_returns_404_for_missing_file(): void
     {
@@ -1068,6 +1351,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * _bundled 디렉토리의 LICENSE 파일도 반환합니다.
+     *
+     * @scenario case=license
+     *
+     * @effects license_content_served_with_bundled_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_license_falls_back_to_bundled(): void
     {
@@ -1088,6 +1377,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 잘못된 형식의 모듈 식별자로 설치 요청 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects invalid_identifier_format_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_invalid_identifier_format(): void
     {
@@ -1101,6 +1396,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 숫자로 시작하는 단어가 포함된 모듈 식별자로 설치 요청 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects invalid_identifier_format_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_digit_starting_identifier(): void
     {
@@ -1114,6 +1415,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 대문자가 포함된 모듈 식별자로 설치 요청 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects invalid_identifier_format_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_uppercase_identifier(): void
     {
@@ -1127,6 +1434,12 @@ class ModuleControllerTest extends TestCase
 
     /**
      * 특수문자가 포함된 모듈 식별자로 설치 요청 시 422 반환
+     *
+     * @scenario case=install_validation
+     *
+     * @effects invalid_identifier_format_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_special_char_identifier(): void
     {

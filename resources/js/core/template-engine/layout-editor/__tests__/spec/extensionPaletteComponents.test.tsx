@@ -268,7 +268,7 @@ describe('[case:wysiwyg-5] 확장 팔레트 컴포넌트 — 스펙 로더와 �
    * @effects extension_components_placed_where_template_accepts_block
    */
   it('스펙 로더가 병합 뒤 확장 컴포넌트에 Div 자리를 준다', async () => {
-    // 편집기는 스펙을 묶음 엔드포인트 한 요청으로 받는다(engine-v1.89.0).
+    // 편집기는 스펙을 묶음 엔드포인트 한 요청으로 받는다(engine-v1.94.0).
     const fetcher = makeBundleFetcher({ tpl: { nesting: templateNesting }, 'gnuboard7-hello_module': moduleSpec });
 
     const { spec } = await loadEditorSpecBundle({

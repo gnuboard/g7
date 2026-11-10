@@ -5,6 +5,7 @@ namespace App\Console\Commands\Core;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
+use App\Exceptions\ExtensionOperationLockUnavailableException;
 use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -58,7 +59,8 @@ use Illuminate\Support\Str;
  *   - 실패한 항목이 있으면 끝에 그 목록과 다시 실행할 명령을 출력
  *   - 종료 직전 `[BUNDLED-RESULT] {json}` 표식으로 최종 카운트 페이로드를 1회 출력 →
  *     부모가 stdout 파싱해 결과 복원. `success`·`failed` 는 항목 단위 수이고(이전 판 부모가 읽는 키),
- *     `failed_items` 는 실패 항목 목록이다(이전 판 부모는 읽지 않는다).
+ *     `failed_items` 는 실패 항목 목록이다(이전 판 부모는 읽지 않는다). 실패·중단이 있으면 `skipped`(시도하지 못한
+ *     항목 수)·`aborted`(잠금 저장소 장애로 멈췄는지)도 싣는다(7.1.5 부터).
  */
 class ExecuteBundledUpdatesCommand extends Command
 {
@@ -168,14 +170,22 @@ class ExecuteBundledUpdatesCommand extends Command
         $success = $outcome['success'];
         $failed = $outcome['failed'];
         $failedItems = $outcome['failed_items'];
+        // 잠금 저장소 장애로 일괄 업데이트를 멈췄는지와 시도하지 못한(건너뛴) 항목 수(#161 D8)
+        $skipped = $outcome['skipped'];
+        $aborted = $outcome['aborted'];
 
         if (! $isItemProcess) {
             $this->newLine();
             $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
             self::renderFailedItems($this, $failedItems);
+            // 언어팩 단계 자식이 중단을 알렸으면 그 자식이 이미 안내했다 — 여기서 다시 알리지 않는다
+            if ($aborted && ! $outcome['abort_reported']) {
+                $this->error(__('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
+            }
 
             // 검색 인덱스 재생성 — 운영자가 부모 단계에서 선택했을 때만 수행 (인덱스 잠금·재색인 비용)
-            if ($rebuildSearchIndex) {
+            // 잠금 저장소 장애로 멈췄으면 재생성하지 않는다 — 확장 갱신이 끝나지 않았다
+            if ($rebuildSearchIndex && ! $aborted) {
                 $report = app(SearchIndexMaintenanceManager::class)->repairStale();
                 $this->newLine();
                 $this->info(__('extensions.commands.bundled_update.search_index_result', ['summary' => $report->summary()]));
@@ -196,7 +206,12 @@ class ExecuteBundledUpdatesCommand extends Command
         }
 
         // 부모 프로세스가 결과를 복원할 수 있도록 표식 라인으로 페이로드 출력 — 실패가 없으면 이전 판과 같은 모양
+        // skipped·aborted 는 7.1.5 부터 — 실패·중단이 있을 때만 싣고, 옛 부모는 모르는 키를 무시한다
         $payload = ['success' => $success, 'failed' => $failed];
+        if ($failed > 0 || $aborted) {
+            $payload['skipped'] = $skipped;
+            $payload['aborted'] = $aborted;
+        }
         if ($failedItems !== []) {
             $payload['failed_items'] = $failedItems;
         }
@@ -318,10 +333,10 @@ class ExecuteBundledUpdatesCommand extends Command
      *
      * 항목 프로세스의 출력은 그대로 이어 보이고 결과 표식 줄만 받아 집계한다. 결과 줄 없이 끝난 항목 프로세스(메모리
      * 고갈 등)는 그 항목만 실패로 세고 다음 항목으로 간다. 어떤 항목의 프로세스를 띄우지 못하면 그 항목만 이
-     * 프로세스에서 처리한다.
+     * 프로세스에서 처리한다. 항목 프로세스가 잠금 저장소 장애로 멈췄다고 알리면 남은 항목을 띄우지 않고 건너뛴 수로 센다(#161 D8).
      *
      * @param  array<int, array{type: string, identifier: string, strategy: string|null}>  $items  항목 목록
-     * @return array{success: int, failed: int, failed_items: array<int, array<string, mixed>>}|null 집계, 프로세스를 쓸 수 없으면 null
+     * @return array{success: int, failed: int, failed_items: array<int, array<string, mixed>>, skipped: int, aborted: bool, abort_reported: bool}|null 집계, 프로세스를 쓸 수 없으면 null
      */
     private function runEachItemInFreshProcess(array $items): ?array
     {
@@ -329,15 +344,18 @@ class ExecuteBundledUpdatesCommand extends Command
             return null;
         }
 
-        $total = ['success' => 0, 'failed' => 0, 'failed_items' => []];
+        $total = ['success' => 0, 'failed' => 0, 'failed_items' => [], 'skipped' => 0, 'aborted' => false, 'abort_reported' => false];
+        $items = array_values($items);
 
-        foreach ($items as $item) {
+        foreach ($items as $index => $item) {
             $run = $this->runManifestInFreshProcess(self::manifestForItem($item), ['--item-process']);
 
             if ($run === null) {
                 $single = self::manifestForItem($item);
                 $outcome = $this->runItemsInProcess($single['modules'], $single['plugins'], $single['templates'], $single['lang_packs']);
+                $itemAborted = $outcome['aborted'];
             } else {
+                $itemAborted = (bool) ($run['payload']['aborted'] ?? false);
                 $outcome = self::itemOutcome($item, $run['payload'], $run['exit_code']);
                 if ($run['payload'] === null) {
                     $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $outcome['failed_items'][0]['reason']]));
@@ -347,6 +365,15 @@ class ExecuteBundledUpdatesCommand extends Command
 
             $total['success'] += $outcome['success'];
             $total['failed'] += $outcome['failed'];
+
+            if ($itemAborted) {
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8).
+                // 멈춘 항목은 중단 안내가 대신하므로 실패 항목 목록에 올리지 않는다(같은 프로세스 경로와 같은 모양).
+                $total['aborted'] = true;
+                $total['skipped'] = count($items) - $index - 1;
+                break;
+            }
+
             array_push($total['failed_items'], ...$outcome['failed_items']);
         }
 
@@ -440,7 +467,7 @@ class ExecuteBundledUpdatesCommand extends Command
      * @param  array<int, mixed>  $plugins  플러그인 항목
      * @param  array<int, mixed>  $templates  템플릿 항목
      * @param  array<int, mixed>  $langPacks  언어팩 항목
-     * @return array{success: int, failed: int, failed_items: array<int, array<string, mixed>>} 집계
+     * @return array{success: int, failed: int, failed_items: array<int, array<string, mixed>>, skipped: int, aborted: bool, abort_reported: bool} 집계
      */
     private function runItemsInProcess(array $modules, array $plugins, array $templates, array $langPacks): array
     {
@@ -458,6 +485,10 @@ class ExecuteBundledUpdatesCommand extends Command
             $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
             Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => $type, 'id' => $id, 'error' => $e->getMessage()]);
         };
+        // 잠금 저장소 장애로 일괄 업데이트를 멈췄는지 — 처리한 항목 수로 남은(건너뛴) 항목 수를 센다
+        $aborted = false;
+        $attempted = 0;
+        $totalItems = count(self::flattenItems($modules, $plugins, $templates, $langPacks));
 
         // 모듈·플러그인은 한 목록으로 서로의 의존 순서를 따른다(순환 경고는 handle() 이 한 번 낸다)
         foreach (self::orderedModulesAndPlugins($modules, $plugins)['ordered'] as $node) {
@@ -465,6 +496,7 @@ class ExecuteBundledUpdatesCommand extends Command
             $id = (string) ($entry['identifier'] ?? '');
             $strategy = (string) ($entry['strategy'] ?? 'overwrite');
             $type = $node['type'];
+            $attempted++;
             $this->line($type === 'module'
                 ? __('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy])
                 : __('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
@@ -475,24 +507,37 @@ class ExecuteBundledUpdatesCommand extends Command
                 $this->lineLayoutSyncSummary($result);
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
+            } catch (ExtensionOperationLockUnavailableException $e) {
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                $failed++;
+                $aborted = true;
+                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => $type, 'id' => $id]);
+                break;
             } catch (\Throwable $e) {
                 $fail($type, $id, $strategy, $e);
             }
             gc_collect_cycles();
         }
 
-        foreach ($templates as $entry) {
+        foreach ($aborted ? [] : $templates as $entry) {
             $id = (string) ($entry['identifier'] ?? '');
             $strategy = (string) ($entry['strategy'] ?? 'overwrite');
             if ($id === '') {
                 continue;
             }
+            $attempted++;
             $this->line(__('extensions.commands.bundled_update.running_items.template', ['identifier' => $id, 'strategy' => $strategy]));
             try {
                 $result = $templateManager->updateTemplate($id, true, null, $strategy, 'bundled');
                 $this->lineLayoutSyncSummary($result);
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
+            } catch (ExtensionOperationLockUnavailableException $e) {
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                $failed++;
+                $aborted = true;
+                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'template', 'id' => $id]);
+                break;
             } catch (\Throwable $e) {
                 $fail('template', $id, $strategy, $e);
             }
@@ -503,23 +548,31 @@ class ExecuteBundledUpdatesCommand extends Command
         // 모듈 서비스 프로바이더(바인딩)가 옛 판으로 등록돼 있어, 팩 활성화가 부르는 모듈 시더 재실행이 새 판 클래스의 새
         // 바인딩을 못 찾아 실패한다(새 클레임 사유의 일본어 이름이 빈 채 남은 W3 실측). 새 프로세스를 띄울 수 없으면 종전처럼
         // 여기서 돈다.
-        if (self::langPackPhaseNeedsFreshProcess($modules, $plugins, $templates, $langPacks)) {
+        // 언어팩 단계 자식이 중단을 알렸으면 그 자식이 이미 안내했다 — 여기서 다시 알리지 않는다
+        $abortReportedByChild = false;
+        if (! $aborted && self::langPackPhaseNeedsFreshProcess($modules, $plugins, $templates, $langPacks)) {
             $isolated = $this->runLangPackPhaseInFreshProcess($langPacks);
             if ($isolated !== null) {
                 $success += $isolated['success'];
                 $failed += $isolated['failed'];
                 array_push($failedItems, ...$isolated['failed_items']);
+                $attempted += count($langPacks) - $isolated['skipped'];
+                if ($isolated['aborted']) {
+                    $aborted = true;
+                    $abortReportedByChild = true;
+                }
                 $langPacks = [];
             } else {
                 $this->warn(__('extensions.commands.bundled_update.lang_pack_phase_in_process'));
             }
         }
 
-        foreach ($langPacks as $entry) {
+        foreach ($aborted ? [] : $langPacks as $entry) {
             $id = (string) ($entry['identifier'] ?? '');
             if ($id === '') {
                 continue;
             }
+            $attempted++;
             $this->line(__('extensions.commands.bundled_update.running_items.lang_pack', ['identifier' => $id]));
             try {
                 $pack = $langPackService->findByIdentifier($id);
@@ -528,12 +581,25 @@ class ExecuteBundledUpdatesCommand extends Command
                 }
                 $langPackService->performUpdate($pack, true);
                 $success++;
+            } catch (ExtensionOperationLockUnavailableException $e) {
+                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
+                $failed++;
+                $aborted = true;
+                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'lang_pack', 'id' => $id]);
+                break;
             } catch (\Throwable $e) {
                 $fail('lang_pack', $id, null, $e);
             }
         }
 
-        return ['success' => $success, 'failed' => $failed, 'failed_items' => $failedItems];
+        return [
+            'success' => $success,
+            'failed' => $failed,
+            'failed_items' => $failedItems,
+            'skipped' => $aborted ? max(0, $totalItems - $attempted) : 0,
+            'aborted' => $aborted,
+            'abort_reported' => $abortReportedByChild,
+        ];
     }
 
     /**
@@ -558,7 +624,7 @@ class ExecuteBundledUpdatesCommand extends Command
      * 자식 출력은 그대로 이어 보이고 결과 표식 줄만 받아 집계한다. 환경 변수(`G7_UPDATE_IN_PROGRESS` 등)는 그대로 넘긴다.
      *
      * @param  array<int, mixed>  $langPacks  언어팩 항목
-     * @return array{success: int, failed: int, failed_items: array<int, array<string, mixed>>}|null 실행했으면 집계, 프로세스를 띄울 수 없으면 null
+     * @return array{success: int, failed: int, failed_items: array<int, array<string, mixed>>, skipped: int, aborted: bool}|null 실행했으면 집계, 프로세스를 띄울 수 없으면 null
      */
     private function runLangPackPhaseInFreshProcess(array $langPacks): ?array
     {
@@ -572,13 +638,15 @@ class ExecuteBundledUpdatesCommand extends Command
             $items = self::flattenItems([], [], [], $langPacks);
             $reason = __('extensions.commands.bundled_update.item_process_aborted', ['code' => $run['exit_code']]);
 
-            return ['success' => 0, 'failed' => count($items), 'failed_items' => array_map(fn (array $item) => $item + ['reason' => $reason, 'exit_code' => $run['exit_code']], $items)];
+            return ['success' => 0, 'failed' => count($items), 'failed_items' => array_map(fn (array $item) => $item + ['reason' => $reason, 'exit_code' => $run['exit_code']], $items), 'skipped' => 0, 'aborted' => false];
         }
 
         return [
             'success' => (int) ($run['payload']['success'] ?? 0),
             'failed' => (int) ($run['payload']['failed'] ?? 0),
             'failed_items' => is_array($run['payload']['failed_items'] ?? null) ? array_values($run['payload']['failed_items']) : [],
+            'skipped' => (int) ($run['payload']['skipped'] ?? 0),
+            'aborted' => (bool) ($run['payload']['aborted'] ?? false),
         ];
     }
 

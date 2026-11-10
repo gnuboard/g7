@@ -19,6 +19,7 @@ use App\Services\LayoutExtensionService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\File;
 use Mockery;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -29,6 +30,8 @@ use Tests\TestCase;
  */
 class ModuleManagerUpdateTest extends TestCase
 {
+    use FakesGithubReleases;
+
     private string $modulesPath;
 
     private ModuleRepositoryInterface|Mockery\MockInterface $moduleRepository;
@@ -43,6 +46,9 @@ class ModuleManagerUpdateTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
 
         $this->modulesPath = base_path('modules');
 

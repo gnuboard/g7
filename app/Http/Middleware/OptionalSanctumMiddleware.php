@@ -25,6 +25,25 @@ use Symfony\Component\HttpFoundation\Response;
 class OptionalSanctumMiddleware
 {
     /**
+     * 만료 토큰을 실은 요청 표지 (요청 속성 이름).
+     *
+     * 만료 토큰은 비회원으로 통과시키지만(로그인 화면 등 공개 접근 유지), 그 요청이 「본인 확인」에서 막히면 권한 없음(403)이 아니라
+     * 세션 만료(401)로 알려야 화면이 재로그인 흐름을 탄다 — 그 판정에 쓴다 (#883 후속).
+     */
+    public const EXPIRED_TOKEN_ATTRIBUTE = 'g7.auth.expired_token';
+
+    /**
+     * 이 요청이 만료된 토큰을 실었는지(비회원으로 통과한 경우) 판정합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool 만료 토큰을 실었으면 true
+     */
+    public static function hadExpiredToken(Request $request): bool
+    {
+        return $request->attributes->get(self::EXPIRED_TOKEN_ATTRIBUTE) === true;
+    }
+
+    /**
      * 요청 처리
      *
      * @param  Request  $request  HTTP 요청
@@ -52,7 +71,9 @@ class OptionalSanctumMiddleware
 
             // 만료 시간 확인 (만료된 토큰은 guest로 통과)
             if ($accessToken->expires_at && $accessToken->expires_at->isPast()) {
-                // 토큰 만료 → guest로 통과 (로그인 페이지 접근 허용)
+                // 토큰 만료 → guest로 통과 (로그인 페이지 접근 허용). 본인 확인 실패를 세션 만료로 알리도록 표지를 남긴다
+                $request->attributes->set(self::EXPIRED_TOKEN_ATTRIBUTE, true);
+
                 return $next($request);
             }
 

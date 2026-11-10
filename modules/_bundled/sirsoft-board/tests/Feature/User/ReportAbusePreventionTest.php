@@ -416,6 +416,38 @@ class ReportAbusePreventionTest extends ModuleTestCase
         $this->assertNotEquals(422, $response->status());
     }
 
+    /**
+     * 다른 칸 검증에 실패한 신고는 응답 뒤 선점한 쿨타임 자리를 반납한다 (#161 F7) — 쿨타임 규칙은 검증 시점에 자리를 원자적으로
+     * 잡으므로, 반납하지 않으면 사유를 빠뜨려 422 를 받은 신고자가 고쳐 다시 올려도 쿨타임에 막힌다.
+     *
+     * @scenario case=cooldown
+     *
+     * @effects report_cooldown_claim_released_when_validation_fails
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function failed_report_validation_releases_cooldown_claim(): void
+    {
+        // Given: 쿨타임 60초 설정
+        $this->mockSettings['spam_security']['report_cooldown_seconds'] = 60;
+        $this->mockBoardSettingsService();
+        $url = "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/99999/reports";
+
+        // When: 상세 사유를 빠뜨려 422 — 신고 유형 칸의 쿨타임 규칙은 이미 자리를 잡았다
+        $this->actingAs($this->reporter, 'sanctum')
+            ->postJson($url, ['reason_type' => ReportReasonType::Spam->value, 'reason_detail' => ''])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['reason_detail'])
+            ->assertJsonMissingValidationErrors(['reason_type']);
+
+        // Then: 응답 뒤 자리가 반납돼, 고쳐 다시 올린 신고는 쿨타임에 막히지 않는다
+        $this->assertNull(Cache::get("g7:module.sirsoft-board:report_cooldown_{$this->board->slug}_{$this->reporter->id}"));
+
+        $response = $this->actingAs($this->reporter, 'sanctum')->postJson($url, $this->validReportData());
+        $this->assertNotEquals(422, $response->status(), '반납된 자리 덕분에 쿨타임 검증을 통과한다');
+    }
+
     // ==========================================
     // 헬퍼 메서드
     // ==========================================

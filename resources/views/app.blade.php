@@ -92,6 +92,10 @@
                 'consentInitial' => $consentInitial ?? null,
                 // routes/custom.php 로 등록된 개발자 화면 GET 주소(#792) — 엔진 라우터가 이 주소로는 전체 페이지 이동한다
                 'customRoutes' => $customRoutes ?? ['user' => [], 'admin' => []],
+                // 최근 검색어 범위(범위 id → {max_count}) — G7Core.searchHistory 가 선언 여부·비회원 보관 개수를 판정한다(기능을 끄면 빈 객체)
+                'searchScopes' => (object) ($searchScopes ?? []),
+                // 브라우저 탭 제목 규칙 계산 값 — 엔진 DocumentTitle 이 검색엔진 제목과 같은 규칙으로 document.title 을 정한다
+                'seoTitle' => $seoTitle ?? null,
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
                 // 미빌드 상태 대비 file_exists 가드.

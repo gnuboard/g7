@@ -204,4 +204,5 @@ return [
         'declaration_invalid_type' => ':model のエクスポート宣言 :column の type が正しくありません。',
         'no_rows' => '現在の条件に合致する行がないため、再度リクエストしませんでした。一覧から期間または検索条件を変更して新たにリクエストしてください。',
     ],
+    'imported_review_invalid_field' => '移行レビューの入力値が正しくありません: :field',
 ];

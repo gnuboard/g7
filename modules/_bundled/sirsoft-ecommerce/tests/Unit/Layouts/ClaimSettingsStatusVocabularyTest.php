@@ -4,7 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Layouts;
 
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 설정 클레임 탭의 신청 가능 상태 어휘 ↔ 서버 게이트 파리티
@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 효과 요약(마커 아님 — 평문): settings_claim_status_vocabulary_matches_server_gate
  */
-class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
+class ClaimSettingsStatusVocabularyTest extends PureTestCase
 {
     /** 클레임 정책 카드를 담은 레이아웃 파셜 */
     private const POLICY_PARTIAL = __DIR__.'/../../../resources/layouts/admin/partials/admin_ecommerce_settings/_claim_policy_section.json';

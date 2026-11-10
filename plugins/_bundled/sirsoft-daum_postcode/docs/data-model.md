@@ -49,7 +49,7 @@ _Enum 이 없습니다._
 <!-- @generated:enums END -->
 
 <!-- @intent START -->
-없습니다. 설정의 `display_mode`(`layer` / `popup`)만 닫힌 어휘를 갖는데, 설정 스키마의 `enum`
+없습니다. 설정의 `display_mode_pc`(`popup` / `layer` / `inline`)·`display_mode_mobile`(`inline` / `fullscreen`)만 닫힌 어휘를 갖는데, 설정 스키마의 `enum`
 타입으로 선언되어 있어 별도 PHP Enum 을 두지 않았습니다.
 
 이 값을 코드에서 분기로 비교하는 자리가 프론트 핸들러 한 곳뿐이라 어휘가 갈라질 여지가

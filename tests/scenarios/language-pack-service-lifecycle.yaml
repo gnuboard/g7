@@ -38,6 +38,7 @@ axes:
     - uninstalled_bundled_slot_taken
     - list_merges_uninstalled
     - list_filter_uninstalled
+    - perform_update_locked
 
 effects:
   - activate_promotes_pack_to_active
@@ -54,6 +55,7 @@ effects:
   - downgrade_guard_respects_force
   - uninstalled_bundled_packs_listed
   - failed_update_restores_previous_active_status
+  - language_pack_lifecycle_locked
 
 test_files:
   - tests/Unit/Services/LanguagePack/LanguagePackServiceTest.php

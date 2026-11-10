@@ -6,7 +6,9 @@ use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Support\ConfigCacheHelper;
+use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -157,7 +159,10 @@ class GeoIpDatabaseService
                     'database_path' => $finalPath,
                     'file_size_bytes' => $finalSize,
                     'elapsed_seconds' => $elapsed,
+                    // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                     'last_updated_at' => date('c', File::lastModified($finalPath)),
+                    // 고급 탭 「최근 갱신」 표시용 — 보는 사람 시간대
+                    'last_updated_at_formatted' => TimezoneHelper::toUserDateTimeString(Carbon::createFromTimestamp(File::lastModified($finalPath))),
                 ],
             ];
 
@@ -187,6 +192,7 @@ class GeoIpDatabaseService
             'exists' => $exists,
             'database_path' => $finalPath,
             'file_size_bytes' => $exists ? File::size($finalPath) : 0,
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'last_updated_at' => $exists ? date('c', File::lastModified($finalPath)) : null,
         ];
     }
@@ -386,6 +392,7 @@ class GeoIpDatabaseService
     {
         try {
             $current = $this->configRepository->getCategory('geoip');
+            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             $current['last_updated_at'] = now()->toIso8601String();
             $this->configRepository->saveCategory('geoip', $current);
 

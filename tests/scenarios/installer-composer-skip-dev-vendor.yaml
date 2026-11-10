@@ -49,6 +49,7 @@ effects:
   - installer_detects_dev_vendor_from_installed_json
   - installer_treats_missing_installed_json_as_unknown
   - installer_shim_matches_core_composer_install_info
+  - installer_reports_no_dev_packages_for_no_dev_vendor
   # 재사용 분기 — 경고하되 설치는 계속하고, 캐시를 정리한다
   - installer_warns_and_keeps_dev_vendor
   - installer_clears_compiled_cache_on_reuse_path

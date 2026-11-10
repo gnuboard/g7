@@ -6,6 +6,7 @@ use App\Extension\UpgradeContext;
 use App\Support\ExtensionStoragePath;
 use App\Upgrades\Data\Ext\Plugins\SirsoftDaumPostcode\V1_1_0\Migrations\ResetOutOfRangePopupSize;
 use Illuminate\Support\Facades\File;
+use Tests\Support\UpgradeFiles;
 use Tests\TestCase;
 
 // audit:allow test-extension-base-class reason: 설정 파일(전역 페이크 settings 디스크)만 쓰는 업그레이드 스텝 테스트라 DB 가 필요 없다 — PluginTestCase 의 RefreshDatabase(migrate:fresh)는 로컬 MySQL OOM 규율(mem:migrate-fresh-ddl-crashes-local-mysql)에 걸린다
@@ -35,7 +36,7 @@ class ResetOutOfRangePopupSizeTest extends TestCase
         parent::setUp();
 
         // DataMigration 은 AbstractUpgradeStep 이 동적으로 require 하므로 일반 autoload 대상이 아니다.
-        require_once base_path('plugins/_bundled/sirsoft-daum_postcode/upgrades/data/1.1.0/migrations/01_ResetOutOfRangePopupSize.php');
+        UpgradeFiles::requireOnce(base_path('plugins/_bundled/sirsoft-daum_postcode/upgrades/data/1.1.0/migrations/01_ResetOutOfRangePopupSize.php'));
 
         $this->path = ExtensionStoragePath::plugin('sirsoft-daum_postcode', 'settings').'/setting.json';
         File::delete($this->path);

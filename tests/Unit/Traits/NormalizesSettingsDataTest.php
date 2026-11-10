@@ -3,7 +3,7 @@
 namespace Tests\Unit\Traits;
 
 use App\Traits\NormalizesSettingsData;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 트레이트 검증용 더미 클래스 (protected 메서드 노출)
@@ -13,11 +13,11 @@ class NormalizesSettingsDataDummy
     use NormalizesSettingsData;
 
     /**
-     * 트레이트의 전체 설정 정규화(normalizeSettingsData)를 시험에서 부를 수 있게 드러낸다.
+     * 카테고리 묶음 전체 설정을 트레이트의 normalizeSettingsData() 로 정규화한다.
      *
-     * @param  array  $settings  저장된 설정 값
-     * @param  array  $defaults  defaults 스키마
-     * @return array 스키마 타입으로 정규화한 설정
+     * @param  array  $settings  카테고리별로 묶인 저장 설정 값
+     * @param  array  $defaults  카테고리별 기본값 스키마
+     * @return array 정규화된 설정
      */
     public function normalize(array $settings, array $defaults): array
     {
@@ -25,11 +25,11 @@ class NormalizesSettingsDataDummy
     }
 
     /**
-     * 트레이트의 카테고리 단위 정규화(normalizeCategoryData)를 시험에서 부를 수 있게 드러낸다.
+     * 한 카테고리의 설정을 트레이트의 normalizeCategoryData() 로 정규화한다.
      *
-     * @param  array  $settings  저장된 카테고리 설정 값
-     * @param  array  $defaults  카테고리 defaults 스키마
-     * @return array 스키마 타입으로 정규화한 카테고리 설정
+     * @param  array  $settings  카테고리 하나의 저장 설정 값
+     * @param  array  $defaults  그 카테고리의 기본값 스키마
+     * @return array 정규화된 카테고리 설정
      */
     public function normalizeCategory(array $settings, array $defaults): array
     {
@@ -44,12 +44,12 @@ class NormalizesSettingsDataDummy
  * 숫자 문자열을 통과시키되 캐스트하지 않음) 조회 시 defaults 스키마의 스칼라 타입으로
  * 정규화되는지 검증한다. 정규화가 없으면 Carbon 등 strict 타입 경계에서 TypeError 가 난다.
  */
-class NormalizesSettingsDataTest extends TestCase
+class NormalizesSettingsDataTest extends PureTestCase
 {
     private NormalizesSettingsDataDummy $dummy;
 
     /**
-     * 트레이트를 노출한 더미 객체를 만든다.
+     * 트레이트의 protected 메서드를 노출하는 더미 인스턴스를 준비한다.
      *
      * @return void 반환값 없음
      */
@@ -64,7 +64,7 @@ class NormalizesSettingsDataTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
-     * 기본값이 정수인 키에 저장된 숫자 문자열이 정수로 캐스트되는지 확인한다.
+     * 기본값이 int 인 키에 숫자 문자열이 저장돼 있으면 int 로 바꿔 돌려준다.
      *
      * @effects settings_read_returns_schema_scalar_type
      *
@@ -81,9 +81,7 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 앞에 0 이 붙은 숫자 문자열도 기본값이 정수이면 정수로 캐스트되는지 확인한다.
-     *
-     * @scenario value_shape=scalar_int
+     * 앞자리 0 이 붙은 숫자 문자열("007")도 int 기본값이면 7 로 바꾼다.
      *
      * @effects settings_read_returns_schema_scalar_type
      *
@@ -100,7 +98,7 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 전체 정규화가 카테고리 아래 설정까지 내려가 숫자 문자열을 정수로 캐스트하는지 확인한다.
+     * 카테고리 묶음 전체를 정규화할 때도 각 카테고리 안의 숫자 문자열이 int 로 바뀐다.
      *
      * @effects settings_read_returns_schema_scalar_type
      *
@@ -122,9 +120,7 @@ class NormalizesSettingsDataTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
-     * 기본값이 실수인 키에 저장된 소수 문자열이 실수로 캐스트되는지 확인한다.
-     *
-     * @scenario value_shape=scalar_float
+     * 기본값이 float 인 키에 소수 문자열이 저장돼 있으면 float 로 바꾼다.
      *
      * @effects settings_read_returns_schema_scalar_type
      *
@@ -141,9 +137,7 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 기본값이 실수이면 정수 모양의 문자열도 실수로 캐스트되는지 확인한다.
-     *
-     * @scenario value_shape=scalar_float
+     * 기본값이 float 이면 정수 문자열("2")도 int 가 아닌 float(2.0)으로 바꾼다.
      *
      * @effects settings_read_returns_schema_scalar_type
      *
@@ -164,11 +158,9 @@ class NormalizesSettingsDataTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
-     * 통화 목록처럼 인덱스 배열 항목 안의 숫자 문자열이 첫 항목 기본값의 타입으로 캐스트되는지 확인한다.
+     * 인덱스 배열 항목(통화 목록)은 첫 기본 항목 스키마로 모든 항목의 숫자 문자열을 캐스트한다.
      *
-     * @scenario value_shape=indexed_array_item
-     *
-     * @effects numeric_strings_inside_nested_settings_are_cast
+     * @effects settings_read_returns_schema_scalar_type
      *
      * @return void 반환값 없음
      */
@@ -195,11 +187,9 @@ class NormalizesSettingsDataTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
-     * 기본값이 정수여도 숫자가 아닌 문자열은 그대로 두는지 확인한다.
+     * int 기본값이어도 숫자가 아닌 문자열은 캐스트하지 않고 그대로 둔다.
      *
-     * @scenario value_shape=untouched
-     *
-     * @effects non_castable_values_are_left_untouched
+     * @effects settings_read_leaves_non_castable_values_untouched
      *
      * @return void 반환값 없음
      */
@@ -214,11 +204,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 빈 문자열은 숫자로 캐스트하지 않고 그대로 두는지 확인한다.
+     * 빈 문자열은 0 으로 바꾸지 않고 그대로 둔다.
      *
-     * @scenario value_shape=untouched
-     *
-     * @effects non_castable_values_are_left_untouched
+     * @effects settings_read_leaves_non_castable_values_untouched
      *
      * @return void 반환값 없음
      */
@@ -233,11 +221,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * null 값은 캐스트하지 않고 그대로 두는지 확인한다.
+     * null 값은 캐스트하지 않고 null 로 둔다.
      *
-     * @scenario value_shape=untouched
-     *
-     * @effects non_castable_values_are_left_untouched
+     * @effects settings_read_leaves_non_castable_values_untouched
      *
      * @return void 반환값 없음
      */
@@ -252,11 +238,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 기본값이 불리언인 키의 문자열 1 은 정수로 바뀌지 않는지 확인한다.
+     * 기본값이 bool 인 키는 숫자 캐스트 대상이 아니어서 문자열 "1" 이 그대로 남는다.
      *
-     * @scenario value_shape=untouched
-     *
-     * @effects non_castable_values_are_left_untouched
+     * @effects settings_read_leaves_non_castable_values_untouched
      *
      * @return void 반환값 없음
      */
@@ -273,11 +257,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 기본값이 문자열인 키는 숫자처럼 보이는 값도 문자열로 유지하는지 확인한다.
+     * 기본값이 문자열이면 숫자처럼 보이는 값("007")도 문자열 그대로 유지한다.
      *
-     * @scenario value_shape=untouched
-     *
-     * @effects non_castable_values_are_left_untouched
+     * @effects settings_read_leaves_non_castable_values_untouched
      *
      * @return void 반환값 없음
      */
@@ -293,11 +275,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * defaults 에 없는 키의 값은 손대지 않는지 확인한다.
+     * 기본값 스키마에 없는 키는 숫자 문자열이어도 그대로 둔다.
      *
-     * @scenario value_shape=untouched
-     *
-     * @effects non_castable_values_are_left_untouched
+     * @effects settings_read_leaves_non_castable_values_untouched
      *
      * @return void 반환값 없음
      */
@@ -312,11 +292,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 이미 정수인 값은 정수 그대로 남는지 확인한다.
+     * 이미 int 로 저장된 값은 그대로 int 로 돌려준다(비회귀 기준선).
      *
-     * @scenario value_shape=untouched
-     *
-     * @effects non_castable_values_are_left_untouched
+     * @effects settings_read_returns_schema_scalar_type
      *
      * @return void 반환값 없음
      */
@@ -331,9 +309,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 기본값이 다국어 맵이고 저장값이 문자열이면 기존처럼 로케일마다 같은 값을 가진 맵으로 바뀌는지 확인한다.
+     * 기본값이 다국어 배열이고 저장값이 문자열이면 기존처럼 모든 로케일에 그 문자열을 채운 배열로 바꾼다.
      *
-     * @effects multilingual_settings_are_not_broken_by_normalization
+     * @effects settings_read_preserves_multilingual_conversion
      *
      * @return void 반환값 없음
      */
@@ -353,11 +331,9 @@ class NormalizesSettingsDataTest extends TestCase
     // ──────────────────────────────────────────────
 
     /**
-     * 카테고리 아래 한 단계 더 깊은 연관 배열 그룹 안의 숫자 문자열도 캐스트되는지 확인한다.
+     * 카테고리 아래 연관 배열 하위 그룹(마일리지)의 숫자 문자열도 int·float 로 바꾼다.
      *
-     * @scenario value_shape=associative_group
-     *
-     * @effects numeric_strings_inside_nested_settings_are_cast
+     * @effects settings_read_returns_schema_scalar_type
      *
      * @return void 반환값 없음
      */
@@ -375,11 +351,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 여러 단계로 중첩된 연관 배열 그룹도 재귀로 내려가 캐스트되는지 확인한다.
+     * 여러 단계로 중첩된 연관 배열 그룹도 재귀로 내려가 숫자 문자열을 캐스트한다.
      *
-     * @scenario value_shape=associative_group
-     *
-     * @effects numeric_strings_inside_nested_settings_are_cast
+     * @effects settings_read_returns_schema_scalar_type
      *
      * @return void 반환값 없음
      */
@@ -394,9 +368,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 그룹 재귀가 다국어 맵을 만나도 기본값이 문자열이라 숫자 모양 값을 캐스트하지 않는지 확인한다.
+     * 다국어 맵은 연관 배열이어도 기본값이 문자열이라 그룹 재귀에서 숫자 캐스트되지 않는다.
      *
-     * @effects multilingual_settings_are_not_broken_by_normalization
+     * @effects settings_read_preserves_multilingual_conversion
      *
      * @return void 반환값 없음
      */
@@ -412,11 +386,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * defaults 에 없는 그룹은 안의 값까지 그대로 두는지 확인한다.
+     * 기본값 스키마에 대응 그룹이 없는 연관 배열은 그대로 둔다.
      *
-     * @scenario value_shape=untouched
-     *
-     * @effects non_castable_values_are_left_untouched
+     * @effects settings_read_leaves_non_castable_values_untouched
      *
      * @return void 반환값 없음
      */
@@ -431,11 +403,9 @@ class NormalizesSettingsDataTest extends TestCase
     }
 
     /**
-     * 인덱스 배열 항목 안에 다시 들어 있는 연관 그룹의 숫자 문자열도 캐스트되는지 확인한다.
+     * 인덱스 배열 항목 안의 연관 그룹(limits)에 있는 숫자 문자열도 int 로 바꾼다.
      *
-     * @scenario value_shape=indexed_array_item
-     *
-     * @effects numeric_strings_inside_nested_settings_are_cast
+     * @effects settings_read_returns_schema_scalar_type
      *
      * @return void 반환값 없음
      */

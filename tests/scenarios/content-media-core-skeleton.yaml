@@ -1,0 +1,91 @@
+feature: 본문 미디어 코어 골격 — 어댑터 계약·공용 훅·행 디스크·내용 판정 단일화 (#887)
+
+description: |
+  게시판·페이지·쇼핑몰이 따로 갖던 본문 미디어 흐름(업로드·저장 동기화·서명·서빙·정리)을 코어 골격
+  `App\Support\ContentMedia\AbstractContentMediaService` 로 모으고, 확장(모듈·플러그인)은 어댑터 계약
+  `App\Contracts\ContentMedia\ContentMediaStore` 만 구현한다. 확정 규칙을 가짜 어댑터(모듈 1·플러그인 1)로 잠근다.
+  - 공용 훅 core.content_media.before_upload → filter_upload_file(돌려준 파일 재판정) → after_upload, before_delete 는 영구 삭제 직전에만.
+  - 저장 동기화 순서는 연결 → 복제 → 제거, 복제분도 문서당 개수에 든다. 복제는 볼 수 있거나 본인 임시 행(비회원은 소유 증명)만.
+  - 응답 서명은 이 문서 소유 해시만(관리자 증거 열람만 signAll), 공개 문서·봇 렌더는 정식 주소. 캐시는 아무나 볼 수 있을 때만 public.
+  - 모든 파일 접근은 행에 기록된 디스크(`RowDiskStorage`), 설정에 없는 디스크는 기본 저장소로 물러난다.
+  - 재생 가능 MIME 은 `ContentMediaKind` 한 곳에서 만들고(값 불변), 내용 판정은 `FileContentSniffer` 한 입구(첨부 판정 결과 불변).
+
+axes:
+  case: [upload, filter_rejudge, sync, removal, present, serve, prune, target, register, context, row_disk, sniffer, playable_mime_parity]
+  extension: [module, plugin]
+
+exclusions:
+  - { case: removal, extension: plugin, reason: "제거 실행은 어댑터 정책(handleRemoved)과 골격 영구 삭제 한 경로 — 확장 종류와 무관해 모듈로 대표" }
+  - { case: prune, extension: plugin, reason: "정리 흐름은 어댑터 staleRows 와 골격 한 경로 — 확장 종류와 무관해 모듈로 대표" }
+  - { case: target, extension: module, reason: "표준 계약 응답 도우미는 같은 코드 — 플러그인 주소(api/plugins)로 대표" }
+  - { case: register, extension: module, reason: "한 시험에서 모듈·플러그인 어댑터를 함께 등록해 확인한다(표지는 플러그인)" }
+  - { case: row_disk, extension: plugin, reason: "행 디스크 도우미는 StorageInterface 만 받는다 — 확장 종류 무관" }
+  - { case: sniffer, extension: plugin, reason: "내용 판정 입구는 파일만 받는다 — 확장 종류 무관" }
+  - { case: playable_mime_parity, extension: plugin, reason: "MIME 단일 출처는 코어 상수 대조 — 확장 종류 무관" }
+
+effects:
+  - hooks_fire_in_order
+  - context_object_passed
+  - temp_row_created
+  - file_at_final_path
+  - meta_shape_from_adapter
+  - guest_owner_hash_kept
+  - temp_key_required
+  - upload_headroom_enforced
+  - filtered_file_rejudged
+  - rejected_filter_stores_nothing
+  - filtered_file_stored
+  - non_file_filter_result_ignored
+  - sync_order_link_clone_remove
+  - clone_replaces_hash
+  - soft_removal_without_hook
+  - unviewable_not_cloned
+  - foreign_temp_not_linked
+  - guest_own_temp_cloned
+  - clones_count_toward_limit
+  - nothing_changed_on_limit
+  - clone_reads_row_disk
+  - before_delete_on_purge
+  - file_deleted_after_commit
+  - kept_row_not_counted
+  - owned_only_signed
+  - sign_all_for_evidence
+  - public_document_canonical
+  - normalize_strips_signature
+  - bot_render_canonical
+  - signed_passes_temp
+  - unsigned_temp_denied
+  - unviewable_denied
+  - missing_not_found
+  - cache_public_only_for_anyone
+  - cache_private_otherwise
+  - serve_reads_row_disk
+  - prune_dry_run_counts_only
+  - prune_fires_before_delete
+  - prune_deletes_file_and_row
+  - target_shape_from_adapter
+  - target_null_when_nothing_accepted
+  - target_endpoint_denies_without_permission
+  - serve_route_registered
+  - context_immutable_copies
+  - context_rejects_unknown_extension_type
+  - member_owns_by_id
+  - guest_owns_by_hash_only
+  - context_array_hides_guest_hash
+  - default_for_empty_or_same
+  - fallback_for_unknown_disk
+  - other_disk_resolved
+  - real_content_mime
+  - extension_same_as_guess
+  - spoofed_name_detected
+  - content_mime_ignores_name
+  - playable_list_unchanged
+  - playable_list_derived_from_kinds
+  - image_kind_subset_of_raster
+
+test_files:
+  - tests/Unit/Support/ContentMedia/AbstractContentMediaServiceTest.php
+  - tests/Unit/Support/ContentMedia/ContentMediaContextTest.php
+  - tests/Unit/Support/ContentMedia/PlayableMimeSingleSourceTest.php
+  - tests/Unit/Extension/Storage/RowDiskStorageTest.php
+  - tests/Unit/Support/Files/FileContentSnifferTest.php

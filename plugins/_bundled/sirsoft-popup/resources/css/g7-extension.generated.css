@@ -498,13 +498,6 @@
     visibility: hidden;
   }
 
-  .g7pp-page-header {
-    margin-bottom: calc(.25rem * 6);
-    justify-content: space-between;
-    align-items: center;
-    display: flex;
-  }
-
   .g7pp-form-label {
     margin-bottom: calc(.25rem * 1);
     font-size: .875rem;
@@ -742,13 +735,6 @@
     border-color: oklch(37.3% .034 259.733);
   }
 
-  .g7pp-modal-footer-buttons {
-    margin-top: calc(.25rem * 6);
-    justify-content: flex-end;
-    gap: calc(.25rem * 3);
-    display: flex;
-  }
-
   .g7pp-spinner-sm {
     height: calc(.25rem * 4);
     width: calc(.25rem * 4);
@@ -774,25 +760,6 @@
     .g7pp-grid-2col-responsive {
       grid-template-columns: repeat(2,minmax(0,1fr));
     }
-  }
-
-  .g7pp-page-title {
-    font-size: 1.25rem;
-    line-height: var(--tw-leading,calc(1.75 / 1.25));
-    --tw-font-weight: 600;
-    font-weight: 600;
-    color: oklch(21% .034 264.665);
-  }
-
-  @media (min-width:40rem) {
-    .g7pp-page-title {
-      font-size: 1.5rem;
-      line-height: var(--tw-leading,calc(2 / 1.5));
-    }
-  }
-
-  .g7pp-page-title:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    color: #fff;
   }
 
   .g7pp-sticky-footer-buttons {
@@ -851,30 +818,12 @@
     background-color: oklch(21% .034 264.665);
   }
 
-  .g7pp-admin-page-content-responsive {
-    background-color: oklch(98.5% .002 247.839);
-    min-height: 100vh;
-    padding: calc(.25rem * 4);
-  }
-
-  @media (min-width:40rem) {
-    .g7pp-admin-page-content-responsive {
-      padding: calc(.25rem * 6);
-    }
-  }
-
-  @media (min-width:64rem) {
-    .g7pp-admin-page-content-responsive {
-      padding: calc(.25rem * 8);
-    }
-  }
-
-  .g7pp-admin-page-content-responsive:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    background-color: oklch(21% .034 264.665);
-  }
-
   .g7pp-hidden {
     display: none;
+  }
+
+  .gpp\:\[\&_\.btn\]\:w-full .g7pp-btn {
+    width: 100%;
   }
 }
 
@@ -883,14 +832,6 @@
   justify-content: space-between;
   align-items: center;
   display: flex;
-}
-
-@media (max-width:640px) {
-  .g7pp-page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
 }
 
 @media (max-width:640px) {

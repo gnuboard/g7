@@ -166,6 +166,9 @@ interface LayoutRepositoryInterface
     /**
      * extends를 가진 자식 레이아웃 조회
      *
+     * `extends` 칸 또는 본문 최상위 `extends` 가 부모 이름과 정확히 같은 행을 돌려준다
+     * (템플릿 자기 레이아웃은 칸을 비우고 본문으로만 상속을 선언한다).
+     *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $extendsName  extends 이름
      * @return Collection 자식 레이아웃 컬렉션

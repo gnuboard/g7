@@ -59,6 +59,10 @@
 화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
 
 폭 미디어를 품은 의미 클래스 사본(`bizppurio-grid-3col-responsive`·`bizppurio-grid-2col-responsive`·`bizppurio-page-title`·`bizppurio-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="bizppurio:grid bizppurio:grid-cols-1 bizppurio:gap-4 bizppurio:items-start"` 에 `<responsive on="1024-" class="bizppurio:grid bizppurio:grid-cols-3 bizppurio:gap-4 bizppurio:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`bizppurio:mb-4` 등)을 직접 줍니다.
+
+신청일·동기화일 칸은 응답의 `*_date_formatted`(보는 사람 시간대 `Y-m-d`)를 씁니다 — 행 하단 요약처럼 `MM-DD`
+만 필요하면 그 값의 `.slice(5)` 를 씁니다. ISO 원문(`requested_at` 등)을 잘라 쓰면 UTC 날짜가 보여 한국 시간
+새벽 9시 전 신청분이 전날로 표시됩니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

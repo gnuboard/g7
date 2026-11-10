@@ -83,6 +83,115 @@ class ExtensionScheduleSyncHelperTest extends TestCase
     }
 
     /**
+     * 옛 형식 선언 1건을 등록부 행 속성으로 바꿉니다(옛 형식 정규화 → 기본값 채움 — 동기화가 거치는 두 단계).
+     *
+     * @param  array<string, mixed>  $definition  옛 형식 getSchedules() 항목
+     * @param  ExtensionOwnerType  $owner  소유 타입
+     * @return array<string, mixed> 등록부 행 속성
+     */
+    private function legacyRowAttributes(array $definition, ExtensionOwnerType $owner): array
+    {
+        $out = $this->helper->normalizeLegacySchedules([$definition], $owner, 'i161-ext');
+        $this->assertCount(1, $out);
+
+        return $this->helper->normalizeDefinition($out[0]);
+    }
+
+    /**
+     * 확장 예약 작업은 지정하지 않아도 중복 실행 방지(1440분 뒤 만료)·한 서버에서만 실행이 걸린다(#161 F3) — 길어진 매시
+     * 작업이 다음 회차와 겹치거나, 다중 서버에서 같은 작업이 서버 수만큼 돌았다. 모듈·플러그인 모두 같다.
+     *
+     * 7.1.5 는 routes/console.php 등록 블록이 이 기본값을 걸었다. 7.2.0 은 선언을 등록부(schedules) 행으로 옮기므로
+     * 옛 형식 정규화가 같은 기본값을 행 속성으로 채운다.
+     *
+     * @scenario case=ext_schedule_default
+     *
+     * @effects extension_schedule_defaults_to_overlap_guards
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_schedule_defaults_to_without_overlapping_and_one_server(): void
+    {
+        foreach ([ExtensionOwnerType::Module, ExtensionOwnerType::Plugin] as $owner) {
+            $row = $this->legacyRowAttributes(['command' => 'i161-ext:hourly', 'schedule' => 'hourly'], $owner);
+
+            $this->assertSame(1440, $row['without_overlapping'], "{$owner->value}: 기본으로 중복 실행 방지(잠금은 1440분 뒤 만료)");
+            $this->assertTrue($row['on_one_server'], "{$owner->value}: 기본으로 한 서버에서만 실행");
+        }
+    }
+
+    /**
+     * `without_overlapping => false` 면 중복 실행 방지를 걸지 않는다 — 겹쳐 돌아도 되는 짧은 작업의 선택지다. 한 서버 실행은
+     * 그대로 남는다.
+     *
+     * @scenario case=ext_schedule_overlap_opt_out
+     *
+     * @effects extension_schedule_overlap_guard_opt_out
+     *
+     * @return void 반환값 없음
+     */
+    public function test_without_overlapping_false_opts_out(): void
+    {
+        foreach ([ExtensionOwnerType::Module, ExtensionOwnerType::Plugin] as $owner) {
+            $row = $this->legacyRowAttributes(
+                ['command' => 'i161-ext:free', 'schedule' => 'everyMinute', 'without_overlapping' => false],
+                $owner,
+            );
+
+            $this->assertSame(0, $row['without_overlapping'], "{$owner->value}: 중복 실행 방지를 끈다");
+            $this->assertTrue($row['on_one_server'], "{$owner->value}: 한 서버 실행은 그대로");
+        }
+    }
+
+    /**
+     * `without_overlapping` 에 분 단위 정수를 주면 그 시간 뒤 잠금이 만료된다 — 비정상 종료가 하루 동안 다음 실행을 막지 않게
+     * 작업 길이에 맞춘다.
+     *
+     * @scenario case=ext_schedule_overlap_minutes
+     *
+     * @effects extension_schedule_overlap_expiry_minutes
+     *
+     * @return void 반환값 없음
+     */
+    public function test_without_overlapping_minutes_sets_expiry(): void
+    {
+        $module = $this->legacyRowAttributes(
+            ['command' => 'i161-ext:short', 'schedule' => '*/5 * * * *', 'without_overlapping' => 10],
+            ExtensionOwnerType::Module,
+        );
+        $this->assertSame(10, $module['without_overlapping']);
+        $this->assertSame('*/5 * * * *', $module['expression']);
+
+        $plugin = $this->legacyRowAttributes(
+            ['command' => 'i161-ext:short', 'schedule' => 'hourly', 'without_overlapping' => 55],
+            ExtensionOwnerType::Plugin,
+        );
+        $this->assertSame(55, $plugin['without_overlapping']);
+    }
+
+    /**
+     * `on_one_server => false` 면 서버마다 실행한다 — 서버별 로컬 정리 작업의 선택지다. 중복 실행 방지는 그대로 남는다.
+     *
+     * @scenario case=ext_schedule_one_server_opt_out
+     *
+     * @effects extension_schedule_one_server_opt_out
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_one_server_false_opts_out(): void
+    {
+        foreach ([ExtensionOwnerType::Module, ExtensionOwnerType::Plugin] as $owner) {
+            $row = $this->legacyRowAttributes(
+                ['command' => 'i161-ext:local', 'schedule' => 'daily', 'on_one_server' => false],
+                $owner,
+            );
+
+            $this->assertFalse($row['on_one_server'], "{$owner->value}: 한 서버 실행을 끈다");
+            $this->assertSame(1440, $row['without_overlapping'], "{$owner->value}: 중복 실행 방지는 그대로");
+        }
+    }
+
+    /**
      * 첫 동기화 → 운영자 수정 → 재동기화: 수정은 보존, 선언에서 빠진 행은 정리, 직접 등록 행은 그대로.
      *
      * @scenario declaration_shape=new_schema, owner=module, sync_run=after_declaration_removed

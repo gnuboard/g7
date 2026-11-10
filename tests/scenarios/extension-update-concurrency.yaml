@@ -7,8 +7,13 @@ description: |
   화면은 409 를 실패가 아닌 안내로 보인다(버튼은 풀어 둔다 — CLI 가 업데이트 중이면 창을 닫을 수 있어야 한다).
   업데이트할 것이 없으면 응답 문구가 「업데이트할 내용이 없습니다」이고, 화면 성공 토스트는 서버 문구를 띄운다.
 
+  #161(7.1.5): 잠금 저장소가 오류를 내면 잠금 없이 진행하던 것(fail-open)을 거절(503, errors.operation_lock_unavailable)로 바꾸고,
+  같은 잠금을 설치·활성화·비활성화·제거와 언어팩·코어 업데이트로 넓혔다(겹치면 409, errors.operation_in_progress). 같은 프로세스의
+  재진입은 합류하고, 진행 중에는 단계마다 잠금을 늘린다. 번들 일괄 업데이트는 저장소 장애를 만나면 첫 항목에서 멈춘다. 관리자 화면의
+  켜기/끄기·템플릿 활성화 409 는 「진행 중」이면 강제·충돌 창 대신 안내 토스트를 띄운다.
+
 axes:
-  case: [lock_held_manager, lock_released_after_failure, lock_held_api, no_update_api, modal_409_and_message]
+  case: [lock_held_manager, lock_released_after_failure, lock_held_api, no_update_api, modal_409_and_message, lock_store_down_manager, lock_store_down_api, lifecycle_lock_held, modal_409_discriminator, card_toggle_pending, bulk_abort, reload_extensions_delegation]
 
 effects:
   - concurrent_update_rejected_before_any_step
@@ -16,7 +21,39 @@ effects:
   - concurrent_update_api_responds_409
   - no_update_response_message_says_nothing_to_update
   - update_modal_treats_409_as_notice_and_shows_server_message
+  # #161
+  - lock_store_error_refuses_operation
+  - lock_store_error_api_503_without_raw_error
+  - lifecycle_rejected_409_while_same_extension_locked
+  - lifecycle_503_when_lock_store_down
+  - zip_install_lock_spans_pending_move
+  - reentrant_lock_joins_and_releases_at_depth_zero
+  - heartbeat_refreshes_lock_and_touches_row
+  - heartbeat_reacquires_lost_lock
+  - stuck_judgement_unavailable_when_store_down
+  - cache_clear_preserves_held_locks
+  - core_update_refused_while_running
+  - bulk_update_in_process_aborts_at_first_lock_store_error
+  - language_pack_lifecycle_locked
+  - update_modal_shows_503_lock_unavailable_as_error
+  - lifecycle_409_in_progress_shows_info_toast_without_force_modal
+  - lifecycle_409_legacy_contract_preserved
+  - lifecycle_409_in_progress_toast_before_refetch
+  - card_toggle_keeps_value_until_server_confirms
+  - card_toggle_follows_server_value_after_work
+  - toggle_default_behavior_preserved
+  - card_toggle_holds_until_post_success_work_done
+  - extension_asset_reload_failure_is_silent
+  - extension_state_resync_delegates_to_template_app
 
 test_files:
   - tests/Feature/Extension/ExtensionUpdateConcurrencyTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-update-concurrency.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-operation-in-progress.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/ExtensionCardGrid.toggle-pending.test.tsx
+  - tests/Playwright/specs/admin/extension-card-toggle-pending.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-list-action-gates.test.tsx
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.reloadExtensions.test.ts
+  - tests/Unit/Extension/ExtensionOperationLockTest.php
+  - tests/Feature/Console/CoreUpdateLockTest.php
+  - tests/Unit/Services/LanguagePack/LanguagePackServiceTest.php

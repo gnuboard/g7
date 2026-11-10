@@ -20,12 +20,9 @@ use PHPUnit\Framework\Attributes\Test;
  *
  * 여기서 단언하는 것은 "검색이 무엇을 찾는가" 가 아니라 **"어떤 입력에도 화면이 죽지 않는가"** 다.
  *
- * @scenario board-search-keyword-sanitization
- *
- * @effects boolean_mode_operator_does_not_500,
- *          html_like_keyword_does_not_500,
- *          operator_only_keyword_returns_empty,
- *          normal_keyword_still_matches
+ * 시나리오 매니페스트(마커 아님 — 평문): tests/scenarios/board-search-keyword-sanitization.yaml.
+ * 효과 5종(연산자·HTML 형태·구문 낱말 한도 초과 검색어의 500 차단, 연산자만 입력 시 빈 결과,
+ * 정상 검색어 보존)은 각 테스트 메서드가 자기 조합과 함께 마킹한다.
  */
 class PostSearchKeywordSanitizationTest extends BoardTestCase
 {
@@ -41,6 +38,10 @@ class PostSearchKeywordSanitizationTest extends BoardTestCase
 
     /**
      * 테스트 사전 준비를 수행합니다.
+     *
+     * 비회원 기본 권한을 주고, 목록 검색 대상이 될 공개 게시글 하나를 만든다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -59,7 +60,11 @@ class PostSearchKeywordSanitizationTest extends BoardTestCase
     /**
      * BOOLEAN MODE 연산자를 포함한 검색어가 500 을 내지 않는지 확인
      *
+     * @scenario keyword=boolean_operator, search_field=title_content
+     *
      * @effects boolean_mode_operator_does_not_500
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function boolean_mode_operators_do_not_break_search(): void
@@ -76,7 +81,11 @@ class PostSearchKeywordSanitizationTest extends BoardTestCase
      *
      * `<script>` 는 `<` `>` 가 BOOLEAN MODE 연산자라 정제 없이는 파싱 오류가 난다.
      *
+     * @scenario keyword=html_like, search_field=title_content
+     *
      * @effects html_like_keyword_does_not_500
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function html_like_keyword_does_not_break_search(): void
@@ -87,11 +96,35 @@ class PostSearchKeywordSanitizationTest extends BoardTestCase
     }
 
     /**
+     * 구문 낱말 한도를 넘는 긴 검색어가 500 을 내지 않는지 확인
+     *
+     * ngram 파서에서 공백 없는 한글 130자는 낱말 129개 구문이 되어 InnoDB 한도(128)를 넘는다.
+     * 정제기가 토큰을 한도 안으로 자르지 않으면 MATCH 가 오류를 내고 목록이 500 이 된다.
+     *
+     * @scenario keyword=over_phrase_limit, search_field=title_content
+     *
+     * @effects long_keyword_over_phrase_limit_does_not_500
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function long_keyword_over_phrase_word_limit_does_not_break_search(): void
+    {
+        $response = $this->searchPosts(str_repeat('가', 150));
+
+        $response->assertStatus(200);
+    }
+
+    /**
      * 연산자만 입력하면 오류 대신 빈 결과가 나오는지 확인
      *
      * 정제 후 남는 토큰이 없으면 "찾을 것이 없다" 이지 "오류" 가 아니다.
      *
+     * @scenario keyword=operator_only, search_field=title_content
+     *
      * @effects operator_only_keyword_returns_empty
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function operator_only_keyword_returns_empty_result(): void
@@ -109,7 +142,11 @@ class PostSearchKeywordSanitizationTest extends BoardTestCase
      * 찾을 수 없다. 그래서 "정제가 정상 검색어를 뭉개지 않는다" 는 명제는 정제기 자체의
      * 출력으로 확인하고, 실제 매칭은 아래 LIKE 경로 테스트가 담당한다.
      *
+     * @scenario keyword=normal, search_field=title_content
+     *
      * @effects normal_keyword_still_matches
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function sanitizer_preserves_normal_keyword_tokens(): void
@@ -138,7 +175,11 @@ class PostSearchKeywordSanitizationTest extends BoardTestCase
      *
      * 정제 변경이 목록 검색 전체를 망가뜨리지 않았음을 실제 매칭으로 확인한다.
      *
+     * @scenario keyword=normal, search_field=author
+     *
      * @effects normal_keyword_still_matches
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function like_path_search_still_matches(): void

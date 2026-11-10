@@ -4,7 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Models;
 
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 주문의 「결제 이후」 판정과 주문 상품 정가 규칙의 단일 원천
@@ -13,7 +13,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 직접 비교), 주문 상품 정가는 주문 상세 리소스와 클레임 비교 카드가 서로 다른 대체 규칙을 썼다 — 상품 정가가 없는
  * 주문에서 주문 상세는 판매 단가를, 클레임 카드는 옵션 조정액만(0 + 조정액)을 정가로 그려 같은 주문의 두 화면 값이 갈렸다.
  */
-class OrderPaymentStageAndListPriceRuleTest extends ModuleTestCase
+class OrderPaymentStageAndListPriceRuleTest extends PureTestCase
 {
     /**
      * 결제 전 상태와 취소는 결제 이후가 아니고, 결제완료부터 구매확정까지는 결제 이후다.

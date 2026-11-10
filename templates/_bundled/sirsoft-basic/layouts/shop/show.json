@@ -23,15 +23,15 @@
                 "qna"
             ],
             "vars": {
-                "product_name": "{{$localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}",
-                "product_description": "{{$localized(product.data.meta_description) ?? $localized(product.data.short_description) ?? $localized(product.data.description) ?? ''}}",
+                "product_name": "{{$localized(product.data.meta_title) || $localized(product.data.name) || ''}}",
+                "product_description": "{{$localized(product.data.meta_description) || $localized(product.data.short_description) || $localized(product.data.description) || ''}}",
                 "site_name": "$core_settings:general.site_name",
                 "shopBase": "$module_settings:sirsoft-ecommerce:basic_info.route_path"
             },
             "og": {
                 "type": "product",
-                "title": "{{_seo.product.title ?? $localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}",
-                "description": "{{_seo.product.description ?? $localized(product.data.meta_description) ?? $localized(product.data.description) ?? ''}}"
+                "title": "{{_seo.product.title || $localized(product.data.meta_title) || $localized(product.data.name) || ''}}",
+                "description": "{{_seo.product.description || $localized(product.data.meta_description) || $localized(product.data.description) || ''}}"
             }
         }
     },

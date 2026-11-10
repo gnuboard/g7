@@ -8,11 +8,11 @@
             "position": "append_child",
             "components": [
                 {
-                    "comment": "가입폼 결제 통화 선택 (A4 / D-LOGIN-CUR — 이커머스 설치 시에만). 기본값=세션 통화(>locale 추정>기본통화). name 바인딩으로 registerForm 에 자동 포함 → /api/auth/register 제출.",
+                    "comment": "가입폼 결제 통화 선택 (A4 / D-LOGIN-CUR — 이커머스 설치 시에만). 기본값=세션 통화(>locale 추정>기본통화). name 바인딩으로 registerForm 에 자동 포함 → /api/auth/register 제출.\n         고를 수 있는 통화(기본 통화 또는 환율이 잡힌 통화)가 둘 이상일 때만 묻는다 — 하나뿐이면 칸을 그리지 않고, 가입 뒤 통화는\n         기본 통화 지정 리스너가 정한다(2026-11-03, 원화만 쓰는 쇼핑몰에서 선택지 1개짜리 칸이 떴다).",
                     "id": "ext_register_currency",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies}}",
+                    "if": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).length > 1}}",
                     "children": [
                         {
                             "type": "basic",

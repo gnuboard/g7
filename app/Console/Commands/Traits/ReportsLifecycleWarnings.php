@@ -64,6 +64,25 @@ trait ReportsLifecycleWarnings
     }
 
     /**
+     * 경고 표의 사유 칸 글자를 돌려줍니다 — 확장 선언 형식 오류 항목은 다시 실행할 일이 아니라는 안내를 덧붙인다.
+     *
+     * @param  array<string, mixed>  $warning  경고 항목
+     * @return string 사유 칸 글자
+     */
+    private static function lifecycleWarningMessageCell(array $warning): string
+    {
+        $message = (string) ($warning['message'] ?? '');
+        if (! LifecycleWarnings::isDeclarationError($warning)) {
+            return $message;
+        }
+
+        // 안내 문장이 없는 옛 언어팩이면 키 글자를 붙이지 않고 사유만 보인다
+        $hint = LifecycleWarnings::reason('extensions.warnings.declaration_hint', [], '');
+
+        return $hint === '' ? $message : $message.' — '.$hint;
+    }
+
+    /**
      * 명령을 실행하고, 실행 중 쌓인 경고가 있으면 출력한 뒤 종료코드 1 을 돌려줍니다.
      *
      * @param  InputInterface  $input  콘솔 입력
@@ -92,7 +111,7 @@ trait ReportsLifecycleWarnings
             : $this->info(__('extensions.warnings.completed_with_notices', ['count' => count($added)]));
         $this->table(
             [__('extensions.warnings.column_step'), __('extensions.warnings.column_target'), __('extensions.warnings.column_message')],
-            array_map(fn (array $w) => [$w['step'], $w['target'], $w['message']], $added),
+            array_map(fn (array $w) => [$w['step'], $w['target'], self::lifecycleWarningMessageCell($w)], $added),
         );
 
         // 표지는 「작업은 끝났고 경고만 있다」는 뜻이다 — 본 명령이 실패로 끝났으면 찍지 않아야 부르는 쪽이 실패로 판정한다

@@ -2,6 +2,7 @@
  * 생성 파일 — 손으로 고치지 않는다.
  * scripts/extension-css/convert-layout-classes.mjs 가 템플릿 의미 클래스 정의를 복사해 만든다.
  * 템플릿이 같은 이름을 덮을 수 있도록 가장 낮은 칸(@layer g7-extension)에 둔다.
+ * 다만 템플릿에서 층 밖(@layer 미소속)이던 규칙은 유틸리티를 이기던 우선순위를 지키려고 층 밖에 둔다.
  */
 @layer g7-extension {
   @supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))) {
@@ -217,13 +218,6 @@
 
   .totp-admin-card-accordion>.totp-row-stack {
     margin-top: calc(.25rem * 6);
-  }
-
-  .totp-page-header {
-    margin-bottom: calc(.25rem * 6);
-    justify-content: space-between;
-    align-items: center;
-    display: flex;
   }
 
   .totp-form-label {
@@ -493,25 +487,6 @@
     }
   }
 
-  .totp-page-title {
-    font-size: 1.25rem;
-    line-height: var(--tw-leading,calc(1.75 / 1.25));
-    --tw-font-weight: 600;
-    font-weight: 600;
-    color: oklch(21% .034 264.665);
-  }
-
-  @media (min-width:40rem) {
-    .totp-page-title {
-      font-size: 1.5rem;
-      line-height: var(--tw-leading,calc(2 / 1.5));
-    }
-  }
-
-  .totp-page-title:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    color: #fff;
-  }
-
   .totp-page-description {
     margin-top: calc(.25rem * 1);
     font-size: .875rem;
@@ -532,14 +507,13 @@
   .totp-admin-page-content:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
     background-color: oklch(21% .034 264.665);
   }
+}
 
-  @media (max-width:640px) {
-    .totp-page-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-  }
+/* 템플릿에서 층 밖이던 의미 규칙 — 확장 유틸리티 뒤에서 이기도록 층 밖에 둔다 */
+.totp-flex-between {
+  justify-content: space-between;
+  align-items: center;
+  display: flex;
 }
 
 @property --tw-border-style {
@@ -614,4 +588,9 @@
   syntax: "*";
   inherits: false;
   initial-value: 0 0 #0000;
+}
+
+/* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
+i:is(.totp\:leading-none, .totp\:text-xl) {
+  line-height: 1;
 }

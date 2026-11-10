@@ -29,7 +29,8 @@ class KcpIdentityResource extends BaseApiResource
 
         return [
             'method' => __('sirsoft-verification_nhnkcp::messages.card.method_value'),
-            'verified_at' => $verifiedAt?->format('Y-m-d H:i:s'),
+            // 화면 값 — 보는 사람 시간대
+            'verified_at' => $this->formatDateTimeStringForUser($verifiedAt),
             'name_masked' => $this->maskName((string) $this->resource->name),
             'birthday_masked' => $this->maskBirthday($birthday),
             'phone_masked' => $this->maskPhone((string) $this->resource->phone),

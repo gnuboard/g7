@@ -127,6 +127,7 @@ class ArchiveCommand extends Command
      */
     private function handleDay(ArchiveService $service, ArchiveCatchUpService $catchUp, bool $dryRun): int
     {
+        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $yesterday = Carbon::parse(AnalyticsClock::today())->subDay()->toDateString();
 
         $run = $service->archiveDay($yesterday, [

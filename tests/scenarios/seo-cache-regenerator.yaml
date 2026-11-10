@@ -1,0 +1,27 @@
+feature: SEO 캐시 단건 재생성 — 콘텐츠 저장 뒤 상세 화면 검색엔진 HTML 을 지원 로케일마다 다시 그려 저장한다
+
+description: |
+  SeoCacheRegenerator 는 URL 하나를 지원 로케일마다 SeoRenderer 로 그려 캐시에 넣는다(레이아웃명 포함).
+  렌더러가 null 을 돌려주거나 예외를 던진 로케일은 건너뛰고 나머지를 계속한다. 데이터 소스가 일시 장애
+  (시간 초과·연결 오류·5xx)로 대체값을 쓴 렌더(요청 속성 seo_render_degraded)는 데워 두지 않는다 — 데이터 없는
+  화면이 캐시 수명 동안 나가지 않게 봇 미스가 다시 그리도록 둔다. 렌더 동안 바꾼 앱 로케일은 되돌린다.
+
+test_files:
+  - tests/Unit/Seo/SeoCacheRegeneratorTest.php
+
+axes:
+  case:
+    - render_success
+    - render_null
+    - render_degraded
+    - multi_locale
+    - render_exception
+    - partial_locale_failure
+
+effects:
+  - regenerator_stores_rendered_html
+  - regenerator_skips_null_render
+  - degraded_render_not_cached
+  - regenerator_renders_every_supported_locale
+  - regenerator_survives_render_exception
+  - regenerator_restores_app_locale

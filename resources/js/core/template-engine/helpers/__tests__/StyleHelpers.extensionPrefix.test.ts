@@ -1,5 +1,5 @@
 /**
- * 확장 CSS 접두 빌드 앞글자 해석 (engine-v1.87.0)
+ * 확장 CSS 접두 빌드 앞글자 해석 (engine-v1.93.0)
  *
  * 확장은 자기 CSS 를 `{letters}:utility`(예 `ecommerce:px-2`) 클래스로 공급한다. className 을 Tailwind
  * 이름으로 해석하는 코어 코드(`mergeClasses`)는 앞글자를 떼고 읽어야 확장 클래스를 템플릿 클래스와 같은

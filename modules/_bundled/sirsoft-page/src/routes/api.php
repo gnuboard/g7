@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Page\Http\Controllers\Admin\PageAttachmentController;
+use Modules\Sirsoft\Page\Http\Controllers\Admin\PageContentMediaController;
 use Modules\Sirsoft\Page\Http\Controllers\Admin\PageController;
 use Modules\Sirsoft\Page\Http\Controllers\User\PublicPageAttachmentController;
+use Modules\Sirsoft\Page\Http\Controllers\User\PublicPageContentMediaController;
 use Modules\Sirsoft\Page\Http\Controllers\User\PublicPageController;
 
 /*
@@ -119,6 +121,21 @@ Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'
         ->name('destroy');
 });
 
+// 본문 미디어 업로드 (#883) — 관리자 페이지 편집기 본문 이미지·동영상·오디오. 등록·수정 화면이 같이 쓰므로 어느 권한으로도(OR)
+Route::prefix('admin/content-media')->middleware(['auth:sanctum', 'throttle:60,1'])->name('admin.content-media.')->group(function () {
+    Route::post('/', [PageContentMediaController::class, 'upload'])
+        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
+        ->name('upload');
+});
+
+// 편집기 본문 미디어 업로드 계약 — 표준 계약 엔드포인트(#887). 폼을 열 때마다 받으므로 조회 상한은 일반 관리자 조회와 같게 둔다.
+// 권한은 업로드와 같다(등록·수정 어느 쪽이든). 옛 길 `GET admin/attachments/settings` 의 `content_media` 도 같은 값을 싣는다
+Route::prefix('admin/content-media')->middleware(['auth:sanctum', 'throttle:600,1'])->name('admin.content-media.')->group(function () {
+    Route::get('/target', [PageContentMediaController::class, 'target'])
+        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
+        ->name('target');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Public Page Routes (공개 페이지 조회)
@@ -139,6 +156,11 @@ Route::prefix('pages')->middleware(['optional.sanctum', 'throttle:600,1'])->name
     Route::get('/attachment/{hash}/preview', [PublicPageAttachmentController::class, 'preview'])
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.preview');
+
+    // 본문 미디어 서빙 (#883) — 게이트는 「발행 또는 열람권 또는 서명」. /{slug} 보다 먼저 등록
+    Route::get('/content-media/{hash}', [PublicPageContentMediaController::class, 'show'])
+        ->where('hash', '[a-zA-Z0-9]{12}')
+        ->name('content-media.show');
 
     // 발행된 페이지 조회 (슬러그 기반)
     Route::get('/{slug}', [PublicPageController::class, 'show'])

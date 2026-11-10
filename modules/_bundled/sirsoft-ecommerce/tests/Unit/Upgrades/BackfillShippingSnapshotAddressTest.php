@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 배송지 스냅샷 백필 마이그레이션 테스트 (S2c)
@@ -30,14 +31,24 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
 {
     private const MIGRATION_NS = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\BackfillShippingSnapshotAddress';
 
+    /**
+     * 오토로드 밖에 있는 1.3.0 배송지 스냅샷 백필 마이그레이션 파일을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         // DataMigration 클래스는 오토로드 밖 — 직접 로드
-        require_once dirname(__DIR__, 3).'/upgrades/data/1.3.0/migrations/04_BackfillShippingSnapshotAddress.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3).'/upgrades/data/1.3.0/migrations/04_BackfillShippingSnapshotAddress.php');
     }
 
+    /**
+     * 검증 대상 배송지 스냅샷 백필 마이그레이션 인스턴스를 새로 만든다.
+     *
+     * @return object BackfillShippingSnapshotAddress 인스턴스
+     */
     private function migration(): object
     {
         $class = self::MIGRATION_NS;
@@ -45,6 +56,11 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         return new $class;
     }
 
+    /**
+     * 1.1.1 → 1.3.0 업그레이드 단계를 나타내는 컨텍스트를 만든다.
+     *
+     * @return UpgradeContext 1.3.0 단계 업그레이드 컨텍스트
+     */
     private function context(): UpgradeContext
     {
         return new UpgradeContext(
@@ -93,6 +109,15 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         return json_decode((string) $raw, true) ?: [];
     }
 
+    /**
+     * 배송지가 빈 스냅샷은 주문 배송지 행의 국가 코드·우편번호로 채워진다.
+     *
+     * @scenario case=empty_address_filled
+     *
+     * @effects empty_address_filled_from_order_shipping_address
+     *
+     * @return void 반환값 없음
+     */
     public function test_empty_address_is_filled_from_the_order_shipping_address(): void
     {
         $order = $this->makeOrder(ShippingPolicySnapshot::make([['product_option_id' => 1]], []));
@@ -105,6 +130,15 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         $this->assertSame('63000', $snapshot['address']['zipcode']);
     }
 
+    /**
+     * 배송지를 채우는 동안 스냅샷의 항목 목록은 그대로 보존된다.
+     *
+     * @scenario case=empty_address_filled
+     *
+     * @effects snapshot_items_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_items_are_preserved(): void
     {
         $items = [['product_option_id' => 7, 'policy_id' => 3]];
@@ -115,6 +149,15 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         $this->assertSame($items, $this->storedSnapshot($order)['items']);
     }
 
+    /**
+     * 이미 배송지가 있는 스냅샷은 주문 배송지로 덮어쓰지 않는다.
+     *
+     * @scenario case=existing_address
+     *
+     * @effects existing_address_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_existing_address_is_left_untouched(): void
     {
         $existing = ['country_code' => 'US', 'zipcode' => '10001'];
@@ -125,6 +168,15 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         $this->assertSame($existing, $this->storedSnapshot($order)['address']);
     }
 
+    /**
+     * 두 번째 실행은 첫 실행 결과의 스냅샷을 더 바꾸지 않는다.
+     *
+     * @scenario case=rerun
+     *
+     * @effects rerun_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_running_twice_changes_nothing_further(): void
     {
         $order = $this->makeOrder(ShippingPolicySnapshot::make([], []));
@@ -137,6 +189,15 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         $this->assertSame($first, $this->storedSnapshot($order));
     }
 
+    /**
+     * 배송지 행이 없는 주문은 건너뛰어 빈 배송지와 항목 목록이 그대로 남는다.
+     *
+     * @scenario case=unresolvable_address
+     *
+     * @effects order_without_address_row_skipped
+     *
+     * @return void 반환값 없음
+     */
     public function test_order_without_a_shipping_address_row_is_skipped(): void
     {
         $order = Order::factory()->create([
@@ -151,6 +212,15 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         $this->assertSame([['product_option_id' => 1]], $snapshot['items']);
     }
 
+    /**
+     * 배송지 행은 있으나 국가 코드가 비면 확정할 수 없는 주소로 보고 배송지를 비운 채 둔다.
+     *
+     * @scenario case=unresolvable_address
+     *
+     * @effects missing_country_code_left_unresolved
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_country_code_is_treated_as_unresolvable(): void
     {
         $order = $this->makeOrder(
@@ -165,6 +235,12 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
 
     /**
      * 국내 우편번호가 비면 해외 우편번호로 떨어진다 — 클레임 경로 폴백과 같은 규칙이다.
+     *
+     * @scenario case=postal_code_fallback
+     *
+     * @effects intl_postal_code_fallback_applied
+     *
+     * @return void 반환값 없음
      */
     public function test_international_postal_code_is_used_when_zipcode_is_empty(): void
     {
@@ -181,6 +257,15 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         $this->assertSame('10001', $snapshot['address']['zipcode']);
     }
 
+    /**
+     * 국내·해외 우편번호가 모두 없으면 채운 배송지의 우편번호는 null 이 된다.
+     *
+     * @scenario case=postal_code_fallback
+     *
+     * @effects zipcode_null_when_no_postal_code
+     *
+     * @return void 반환값 없음
+     */
     public function test_zipcode_is_null_when_neither_postal_code_exists(): void
     {
         $order = $this->makeOrder(
@@ -193,6 +278,15 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
         $this->assertNull($this->storedSnapshot($order)['address']['zipcode']);
     }
 
+    /**
+     * 스냅샷 자체가 null 인 주문은 백필이 새 스냅샷을 만들지 않고 null 로 둔다.
+     *
+     * @scenario case=null_snapshot
+     *
+     * @effects null_snapshot_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_null_snapshot_orders_are_not_touched(): void
     {
         $order = $this->makeOrder(null);
@@ -209,6 +303,12 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
      *
      * 형태 정규화는 1.0.5 스텝의 책임이다 — 여기서 모양까지 바꾸면 그 스텝을 통과한 저장소와
      * 통과하지 않은 저장소에서 결과가 갈린다.
+     *
+     * @scenario case=legacy_shape
+     *
+     * @effects legacy_snapshot_shape_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_legacy_shaped_snapshot_keeps_its_shape(): void
     {
@@ -228,6 +328,12 @@ class BackfillShippingSnapshotAddressTest extends ModuleTestCase
      *
      * 이 수렴이 백필의 목적이다 — 두 경로가 갈리면 취소 가능 금액(D19)의 ① 축과
      * 클레임 청구액이 서로 다른 전제 위에 서게 된다.
+     *
+     * @scenario case=read_path_convergence
+     *
+     * @effects refund_and_claim_paths_converge
+     *
+     * @return void 반환값 없음
      */
     public function test_both_read_paths_converge_after_the_backfill(): void
     {

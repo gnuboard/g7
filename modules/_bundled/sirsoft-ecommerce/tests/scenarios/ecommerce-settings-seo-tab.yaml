@@ -1,0 +1,18 @@
+feature: 이커머스 환경설정 SEO 탭 레이아웃 계약
+
+description: |
+  관리자 이커머스 환경설정 「SEO」 탭(`resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html`)의 구조·폼 바인딩
+  (`seo.*`)·다국어 키를 잠근다. 1.3.4 부터 상품·분류·검색 제목 틀의 입력 예시(placeholder)는 쇼핑몰명을 넣지 않는다 —
+  코어 7.1.5 의 제목 규칙이 사이트 이름을 「타이틀 접미사」로 붙이고, 같은 규칙이 방문자 브라우저 탭 제목에도 쓰인다.
+
+  축 `case` 는 시험 하나하나다(레이아웃 정적 계약이라 조합 축이 없다).
+
+axes:
+  case: [seo_tab_01, seo_tab_02, seo_tab_03, seo_tab_04, seo_tab_05, seo_tab_06, seo_tab_07, seo_tab_08, seo_tab_09, seo_tab_10, seo_tab_11, seo_tab_12, seo_tab_13, seo_tab_14, seo_tab_15, seo_tab_16, seo_tab_17, seo_tab_18, seo_tab_19, seo_tab_20, seo_tab_21, seo_tab_22, seo_tab_23, seo_tab_24, seo_tab_25, seo_tab_26, seo_tab_27, seo_tab_28, seo_tab_29, seo_tab_30, seo_tab_31, seo_tab_32, seo_tab_33, seo_tab_34, seo_tab_35, seo_tab_36, seo_tab_37, seo_tab_38, seo_tab_39, seo_tab_40, seo_tab_41, seo_tab_42, seo_tab_43]
+
+effects:
+  - seo_tab_layout_contract_holds             # 탭 구조·바인딩·다국어 키 계약이 유지된다
+  - seo_title_placeholder_without_shop_name   # 상품·분류·검색 제목 틀 예시에 쇼핑몰명이 없고 화면 변수만 있다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/ecommerceSettingsSeoTab.test.tsx

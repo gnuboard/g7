@@ -15,6 +15,11 @@ return [
     |   type   : list | screen | write | batch  (필수)
     |   label  : 표시용 설명 (선택)
     |
+    | type=boot — 요청 1건을 새 PHP 프로세스에서 처음부터 처리하는 부팅 비용
+    |   uri         : 요청 경로 (GET, 쿼리스트링 포함 가능)
+    |   runs        : 측정 회차 (기본 20, 첫 회는 버림. --runs 를 주면 그 값)
+    |   permissions : 선언하면 이 권한만 가진 임시 관리자 토큰으로 요청한다 (계측 뒤 삭제)
+    |
     | type=list — 목록 SELECT 비용 (전체 컬럼 / 목록 컬럼 / 키 컬럼 3축)
     |   table          : 대상 테이블 (필수)
     |   columns        : 목록이 실제로 select 하는 컬럼. ['*'] 는 "응답 계약상 전 컬럼
@@ -101,6 +106,22 @@ return [
             'route' => 'api.admin.users.index',
             'query' => ['per_page' => 20],
             'permissions' => ['core.users.read'],
+        ],
+
+        // --- 요청 부팅 (boot) -------------------------------------------------
+        // 확장 API 의 부팅 비용은 그 확장이 getBenchmarkProfiles() 로 선언한다(코어는 확장 경로를 모른다).
+
+        'boot_consent' => [
+            'type' => 'boot',
+            'label' => '가벼운 공개 API 부팅 (동의 항목)',
+            'uri' => '/api/consent',
+        ],
+
+        'boot_admin_plugins' => [
+            'type' => 'boot',
+            'label' => '관리자 플러그인 목록 API 부팅 (인증)',
+            'uri' => '/api/admin/plugins',
+            'permissions' => ['core.plugins.read'],
         ],
 
         // --- 배치 작업 (batch) ------------------------------------------------

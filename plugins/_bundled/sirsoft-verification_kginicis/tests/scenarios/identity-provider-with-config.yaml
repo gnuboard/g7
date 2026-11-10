@@ -1,0 +1,18 @@
+feature: KG이니시스 본인인증 프로바이더 withConfig() 복제
+
+description: |
+  InicisIdentityProvider::withConfig() 는 생성자 매개변수 순서(gateway·mapping·record·cache·config)를 지켜 새 인스턴스를 만든다.
+  원본과 같은 cache 인스턴스와 게이트웨이·저장소 의존성을 그대로 넘기고, config 만 원본 위에 병합한다.
+  cache 자리에 config 가 들어가던 잠복 타입 불일치 회귀를 막는다.
+
+axes:
+  case: [clone_instance, dependency_preservation, config_merge]
+
+effects:
+  - with_config_returns_provider_instance
+  - with_config_preserves_cache_instance
+  - with_config_merges_config_over_original
+  - with_config_keeps_gateway_and_repositories
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Unit/Identity/InicisIdentityProviderWithConfigTest.php

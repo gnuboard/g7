@@ -2,7 +2,7 @@
  * E2E: 레이아웃 외부 스크립트 신뢰 출처 허용목록 (배포 번들 기준, KVE-2026-1915)
  *
  * 배경: B-2 원격 스크립트 차단이 same-origin 이 아닌 모든 스크립트를 무조건 막아
- * 번들 확장(CKEditor5 cdn.ckeditor.com, Daum 우편번호 t1.daumcdn.net)의 CDN 스크립트까지
+ * 번들 확장(CKEditor5 cdn.ckeditor.com, 다음 우편번호 t1.kakaocdn.net)의 CDN 스크립트까지
  * 깨뜨렸다. 확장이 manifest(`trusted_script_hosts`)로 선언한 호스트를 코어가 집계해
  * `window.G7Config.trustedScriptHosts` 로 노출하고, 런타임 스크립트 로더가 그 목록만
  * 예외로 허용하도록 고쳤다.
@@ -22,7 +22,7 @@
  * 우회 문자열 형태와 무관하게 origin 으로 판정된다.
  *
  * 시나리오 축(case)·효과는 매니페스트 tests/scenarios/trusted-script-hosts.yaml 참조.
- * 각 test 의 `// @scenario case=…` 라인 마커가 축 조합을, `// @effects …` 가 효과를 커버한다.
+ * 각 test 의 시나리오 라인 마커가 축 조합을, 효과 라인 마커가 효과를 커버한다.
  *
  * 효과 목록을 이 파일 레벨에 몰아 적지 않는다 — 커버리지 룰은 마커 레벨을 구분하지 않으므로,
  * 파일 레벨 목록이 있으면 해당 test 를 지워도 효과가 "언급됨" 으로 집계돼 삭제가 무증상 green
@@ -68,7 +68,7 @@ test.describe('레이아웃 외부 스크립트 신뢰 출처 허용목록', () 
         niceActive: has('sirsoft-pay_nicepayments'),
         kcpActive: has('sirsoft-pay_nhnkcp'),
         hasCkeditorHost: hosts.includes('cdn.ckeditor.com'),
-        hasDaumHost: hosts.includes('t1.daumcdn.net'),
+        hasDaumHost: hosts.includes('t1.kakaocdn.net'),
         hasKginicisHosts:
           hosts.includes('stdpay.inicis.com') && hosts.includes('stgstdpay.inicis.com'),
         hasTossHost: hosts.includes('js.tosspayments.com'),

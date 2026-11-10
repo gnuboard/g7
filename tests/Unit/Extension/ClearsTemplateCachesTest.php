@@ -27,6 +27,11 @@ class ClearsTemplateCachesTest extends TestCase
      */
     private object $traitUser;
 
+    /**
+     * trait 을 쓰는 익명 클래스를 만들고, 캐시 스토어 메모와 캐시를 비워 버전 검증의 출발점을 깨끗이 맞춘다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,16 +42,31 @@ class ClearsTemplateCachesTest extends TestCase
             use ClearsTemplateCaches;
 
             // protected 메서드를 public으로 노출
+            /**
+             * protected incrementExtensionCacheVersion() 을 테스트에서 호출할 수 있게 노출한다.
+             *
+             * @return void 반환값 없음
+             */
             public function callIncrementExtensionCacheVersion(): void
             {
                 $this->incrementExtensionCacheVersion();
             }
 
+            /**
+             * protected clearAllTemplateLanguageCaches() 를 테스트에서 호출할 수 있게 노출한다.
+             *
+             * @return void 반환값 없음
+             */
             public function callClearAllTemplateLanguageCaches(): void
             {
                 $this->clearAllTemplateLanguageCaches();
             }
 
+            /**
+             * protected clearAllTemplateRoutesCaches() 를 테스트에서 호출할 수 있게 노출한다.
+             *
+             * @return void 반환값 없음
+             */
             public function callClearAllTemplateRoutesCaches(): void
             {
                 $this->clearAllTemplateRoutesCaches();
@@ -64,6 +84,14 @@ class ClearsTemplateCachesTest extends TestCase
 
     /**
      * 캐시 버전 증가 테스트
+     *
+     * 버전을 올리면 호출 전후 사이의 현재 타임스탬프가 버전으로 기록되는지 검증한다.
+     *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
+     * @effects extension_cache_version_is_timestamp_and_monotonic
+     *
+     * @return void 반환값 없음
      */
     public function test_increment_extension_cache_version(): void
     {
@@ -80,6 +108,14 @@ class ClearsTemplateCachesTest extends TestCase
 
     /**
      * 캐시 버전 연속 증가 테스트
+     *
+     * 같은 초에 연달아 올려도 두 번째 버전이 첫 번째보다 작아지지 않는지 검증한다.
+     *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
+     * @effects extension_cache_version_is_timestamp_and_monotonic
+     *
+     * @return void 반환값 없음
      */
     public function test_increment_extension_cache_version_multiple_times(): void
     {
@@ -87,8 +123,7 @@ class ClearsTemplateCachesTest extends TestCase
         $this->traitUser->callIncrementExtensionCacheVersion();
         $firstVersion = ClearsTemplateCaches::getExtensionCacheVersion();
 
-        // 1초 대기 (time() 기반이므로)
-        sleep(1);
+        // 기다리지 않는다 — 버전은 max(time(), 현재+1) 이라 같은 초에도 줄지 않는다
 
         // 두 번째 증가
         $this->traitUser->callIncrementExtensionCacheVersion();
@@ -105,6 +140,12 @@ class ClearsTemplateCachesTest extends TestCase
      * 반환하여 모든 자원 URL 이 `?v=0` 으로 수렴 → 과거 `?v=0` 에 immutable 로 박힌
      * 구버전 에셋이 stale 고착("Unknown action handler" 회귀). 이제 키가 없으면
      * 새 `time()` 버전을 생성·저장·반환해 프론트가 새 URL 로 요청하도록 한다.
+     *
+     * @scenario trigger=self_heal, publish_state=unpublished, environment=production, process_user=web
+     *
+     * @effects missing_cache_version_regenerates_valid_version
+     *
+     * @return void 반환값 없음
      */
     public function test_get_extension_cache_version_regenerates_when_not_set(): void
     {
@@ -128,6 +169,12 @@ class ClearsTemplateCachesTest extends TestCase
      * 회귀 가드 (버그 ②): `php artisan cache:clear` 가 `ext.cache_version` 키를 함께
      * 삭제하면 0 이 내려가 자원 URL 이 `?v=0` 으로 붕괴하던 결함. 이제 키가 비어도
      * 다음 조회에서 새 유효 버전을 재생성하므로 stale 고착이 발생하지 않는다.
+     *
+     * @scenario trigger=manual_command, publish_state=unpublished, environment=production, process_user=web
+     *
+     * @effects missing_cache_version_regenerates_valid_version
+     *
+     * @return void 반환값 없음
      */
     public function test_version_survives_cache_clear(): void
     {
@@ -145,6 +192,14 @@ class ClearsTemplateCachesTest extends TestCase
 
     /**
      * getExtensionCacheVersion 정적 메서드가 캐시된 값 반환
+     *
+     * 코어 네임스페이스 키에 저장된 버전을 그대로 읽어 돌려주는지 검증한다.
+     *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
+     * @effects extension_cache_version_uses_core_namespace
+     *
+     * @return void 반환값 없음
      */
     public function test_get_extension_cache_version_returns_cached_value(): void
     {
@@ -166,6 +221,12 @@ class ClearsTemplateCachesTest extends TestCase
      * 회귀 방지: 과거 resolveExtensionCache() 가 컨테이너의 CacheInterface
      * 바인딩을 그대로 사용해, 선행 모듈/플러그인 테스트가 남긴 PluginCacheDriver
      * 바인딩 때문에 `g7:plugin:` 네임스페이스로 읽혀 버전을 0 으로 오인하던 결함.
+     *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
+     * @effects extension_cache_version_uses_core_namespace
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_cache_version_uses_core_namespace_despite_rebound_cache_interface(): void
     {
@@ -196,6 +257,12 @@ class ClearsTemplateCachesTest extends TestCase
      * 이전 버전 캐시는 TTL 로 자연 만료.
      *
      * 본 테스트는 현재 동작(호출 호환성 유지, 버전 카운터 증가)을 검증한다.
+     *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
+     * @effects legacy_template_cache_clear_is_no_op
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_all_template_language_caches_is_no_op_but_triggers_version_bump(): void
     {
@@ -224,6 +291,15 @@ class ClearsTemplateCachesTest extends TestCase
         );
     }
 
+    /**
+     * clearAllTemplateRoutesCaches() 가 예외 없이 호출되되 레거시 라우트 캐시를 직접 지우지 않는 no-op 인지 검증한다.
+     *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
+     * @effects legacy_template_cache_clear_is_no_op
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_all_template_routes_caches_is_no_op(): void
     {
         $identifier = 'test-template-'.uniqid();
@@ -256,6 +332,12 @@ class ClearsTemplateCachesTest extends TestCase
      * 활성/비활성 템플릿 구분은 더 이상 trait 수준에서 다루지 않으며
      * (레거시 테스트가 기대한 "활성만 삭제" 로직은 제거되었음),
      * 실제 무효화는 모든 프론트엔드 요청이 새 버전 파라미터를 사용하게 함으로써 이루어진다.
+     *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
+     * @effects extension_cache_version_is_timestamp_and_monotonic
+     *
+     * @return void 반환값 없음
      */
     public function test_increment_extension_cache_version_is_actual_invalidation_mechanism(): void
     {
@@ -296,7 +378,11 @@ class ClearsTemplateCachesTest extends TestCase
      * (715파일·40MB)를 재생성하고 전 방문자의 자산 URL 을 바꿨다. 재생성은 `cache:clear` 나
      * 스토어 소실 때만 일어나야 한다.
      *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
      * @effects cache_version_key_does_not_expire
+     *
+     * @return void 반환값 없음
      */
     public function test_version_key_survives_two_days(): void
     {
@@ -321,7 +407,11 @@ class ClearsTemplateCachesTest extends TestCase
     /**
      * 영구 TTL 상수는 `put(…, 0)`(forget) 도, 기본 TTL 도 아닌 명시 양수여야 한다.
      *
+     * @scenario trigger=lifecycle, publish_state=published, environment=production, process_user=web
+     *
      * @effects cache_version_key_does_not_expire
+     *
+     * @return void 반환값 없음
      */
     public function test_persistent_ttl_constant_is_positive_and_longer_than_default(): void
     {
@@ -339,7 +429,11 @@ class ClearsTemplateCachesTest extends TestCase
      * 산출물은 옛 버전에 남았다 — "캐시 버전 갱신 → 게시" 단일 지점 규율의 유일한 구멍.
      * 스케줄 GC 가 바로 그 첫 호출자라 매일 재현됐다.
      *
+     * @scenario trigger=self_heal, publish_state=unpublished, environment=production, process_user=web
+     *
      * @effects regenerate_path_schedules_publish
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_path_schedules_static_publish(): void
     {

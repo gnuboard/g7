@@ -108,6 +108,40 @@ Last-Modified: Wed, 15 Jul 2026 00:00:00 GMT
 
 **필터가 MIME 을 바꿀 때** 인라인(래스터 이미지)과 내려받기 중 어느 쪽으로 낼지는 필터 훅 `core.attachment.before_download` 를 지난 행의 MIME 으로 한 번만 정합니다. 응답의 `Content-Type` 도 그 MIME 입니다. 구독자가 SVG 행을 `image/png` 로 바꾸면 인라인(`nosniff`)으로 나가고, 썸네일은 파일 머리로 다시 판정해 만들지 않습니다(`bypass:not-raster`). 래스터 행을 `image/svg+xml` 로 바꾸면 내려받기(`attachment`, CSP, `nosniff`)입니다. 7.2.0 전에는 서비스가 필터 전 MIME 으로, 컨트롤러가 필터 뒤 MIME 으로 따로 골라 두 판정이 갈렸습니다.
 
+#### 다운로드 판정 필터 `core.attachment.filter_can_download` (7.1.5)
+
+코어는 확장을 모릅니다. 확장이 만든 첨부 행을 이 주소로 내보내도 되는지는 **원 리소스 권한 확인** 원칙에 따라 그 행을 만든 확장이 답합니다 — 행이 붙은 원 리소스(글·문서·상품 등)를 요청한 사람이 볼 수 있으면 내보내고, 볼 수 없으면 막습니다. 해시를 안다는 것만으로 비공개 리소스의 파일이 나가지 않게 하려는 장치입니다.
+
+| 항목 | 내용 |
+| --- | --- |
+| 종류 | filter (`AttachmentService::CAN_DOWNLOAD_FILTER`) |
+| 인자 | `($verdict, Attachment $attachment, ?User $user)` — `$verdict` 의 초기값은 `null`, `$user` 는 요청한 회원(비로그인이면 `null`) |
+| 반환 | `null` = 의견 없음(기존 흐름 그대로) · `false` = 거부(403 `attachment.access_denied`) · `true` = 허용 |
+| 호출 위치 | `AttachmentService::getFileInfo()`·`download()` 가 같은 도우미로 호출합니다. 이미지가 아닌 파일은 두 메서드를 차례로 거치므로 한 요청에서 두 번 불릴 수 있습니다 — 리스너는 부작용 없이 판정만 하세요 |
+| 허용 뒤 흐름 | `true`·`null` 이어도 기존 흐름을 그대로 탑니다 — 내려받기(`download()`)는 기능 권한(`core.attachment.download` 권한 훅) → `core.attachment.before_download_action`(본인인증 가드 등) → `core.attachment.before_download` 필터, 래스터 이미지 인라인 서빙(`getFileInfo()`)은 기능 권한 → `core.attachment.before_download` 필터만(`before_download_action` 은 발화하지 않음) |
+
+리스너 작성 규칙:
+
+- 자기 행(`source_type` 이 자기 종류이고 `source_identifier` 가 자기 식별자)에만 `true`/`false` 를 돌려주고, 그 밖의 행은 받은 `$verdict` 를 그대로 돌려줍니다. 남의 행에 답하지 않습니다.
+- 판정은 그 행이 붙은 원 리소스의 열람 권한으로 합니다(예: 글 읽기 권한·비밀글·공개 여부). 첨부 행만 보고 판단하지 않습니다.
+- 리스너가 없는 행(회원 아바타·사이트 로고·기본 OG 이미지·게시판 반응 아이콘 등)은 `null` 이 되어 지금처럼 공개로 서빙됩니다.
+
+```php
+HookManager::addFilter('core.attachment.filter_can_download', function ($verdict, Attachment $attachment, ?User $user) {
+    if ($attachment->source_identifier !== 'vendor-module') {
+        return $verdict; // 남의 행 — 의견 없음 그대로
+    }
+
+    // 원 리소스(이 행이 붙은 문서)의 열람 권한으로 답한다
+    return app(DocumentService::class)->canView($attachment->attachmentable_id, $user);
+});
+```
+
+코어 일반 규칙(필터보다 먼저 적용, 리스너가 뒤집지 못함):
+
+- 행의 `source_type` 이 `module`·`plugin` 이고 `source_identifier` 의 확장이 비활성이거나 설치돼 있지 않으면 403 입니다. 그 확장의 판정 리스너가 꺼져 있어 원 리소스 권한을 확인할 수 없기 때문입니다. 확장을 다시 켜면 종전처럼 서빙됩니다.
+- 코어 `attachments` 표에는 임시 업로드(저장 전 업로드) 개념이 없습니다. 편집기 본문 미디어처럼 저장 전 업로드가 필요한 확장은 자기 첨부 표에 두고 자기 서빙 라우트로 내보냅니다([본문 미디어](../../extension/content-media.md)).
+
 
 
 ### GET /api/favicon/{hash}

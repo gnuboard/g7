@@ -315,7 +315,7 @@ describe('링크 판정·병합 규칙 — navigationLinks (G7Core.navigation �
  *
  * 링크 컴포넌트가 그리는 href 는 브라우저 주소라 마운트 접두사를 품는다(`/g7/board/free/2849`). 종전에는 그 값을
  * 접두사째 라우트에 대조해 미등록으로 읽고, 폴백 openWindow `_self` 로 문서 전체를 다시 불렀다(루트 설치는 SPA).
- * 이제 접두사를 벗겨 대조하고 Router 가 히스토리에 실을 때 다시 붙인다 — 이중 접두 없이 한 번. (engine-v1.87.0)
+ * 이제 접두사를 벗겨 대조하고 Router 가 히스토리에 실을 때 다시 붙인다 — 이중 접두 없이 한 번. (engine-v1.93.0)
  */
 describe('하위 폴더 배치 — 링크 href 유래 navigate 는 접두사를 벗겨 SPA 이동한다', () => {
   let registry: ComponentRegistry;

@@ -1,0 +1,45 @@
+feature: 이커머스 본문 미디어 저장소 — 범용 첨부 표 ecommerce_attachments 의 보존 계약 (#887)
+
+description: |
+  상품 설명·상품 공통 정보 본문 미디어의 저장소를 개발 중 전용 표 `ecommerce_content_media` 에서 게시판·페이지와 같은 모양의
+  이 모듈 범용 첨부 표 `ecommerce_attachments`(collection=content_media, 소유 종류=attachmentable_type, 소유자=attachmentable_id,
+  임시 키=temp_key, 종류=MIME 판정, path=모듈 저장소 카테고리 `content-media` 기준 `{owner_type}/Y/m/d/{uuid}.ext`)로 옮겼고,
+  흐름은 코어 골격(AbstractContentMediaService + EcommerceContentMediaStore)이 돌린다. 코어 공용 첨부 표·코어 공개 다운로드와는
+  관계없다(코어 다운로드는 404). 바깥 계약은 그대로다 — 업로드 응답(id·hash·kind·서명 url), 표준 계약 엔드포인트
+  `GET admin/content-media/target`(200 계약 / 소유 종류별 권한 없으면 403 / 받는 종류가 없으면 null), 정책(상품 진열 탭 규칙 →
+  없으면 상품 이미지 규칙, 동영상·오디오는 코어 「본문 콘텐츠」 스위치), 같은 임시 키 업로드 상한(문서당 최대 ×2), 저장 시
+  문서당 최대, 서명 만료, 이미지 인라인·동영상 인라인 재생 헤더. 응답 캐시는 아무나 볼 수 있을 때(전시 중 상품·공통 정보)만
+  public 이고 미공개 상품·임시 행은 private 다. 본문에서 빠진 미디어는 소프트 삭제된 채 빠진 지 보존기간(기본 2일)이 지나면
+  임시 상품 이미지 정리 명령이 행·파일을 지운다. 업로드 1건은 코어 공용 훅 before_upload·after_upload 를 한 번씩, 영구 삭제는
+  before_delete 를 발화한다(소프트 삭제는 발화 안 함). 범용 첨부 표 마이그레이션은 재실행 안전하다.
+
+axes:
+  case: [storage, serve, policy, limit, removed, hooks]
+
+effects:
+  - stored_in_ecommerce_attachments
+  - upload_response_shape_kept
+  - scope_excludes_other_collections
+  - core_download_does_not_serve_content_media
+  - expired_signature_refused
+  - image_served_inline
+  - response_signed_only_when_not_public
+  - hidden_product_served_to_product_reader
+  - unpublished_product_media_cache_private
+  - public_media_cache_public
+  - upload_fires_core_hooks_once
+  - before_delete_only_on_permanent_delete
+  - target_endpoint_standard_shape
+  - video_needs_core_switch
+  - video_served_playable_inline
+  - policy_falls_back_to_product_image_rules
+  - upload_target_null_when_nothing_accepted
+  - upload_headroom_enforced
+  - sync_limit_enforced
+  - removed_media_file_pruned_after_retention
+  - removed_media_kept_within_retention
+  - kind_from_mime
+  - create_migration_rerun_safe
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ContentMediaStorageTest.php

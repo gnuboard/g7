@@ -41,6 +41,9 @@ effects:
   # 명령 출력 (7.1.1 출시 전)
   - update_command_reports_stuck_before_no_update
   - force_update_recovery_output_tells_how_to_reactivate
+  # #161 — 잠금 저장소 장애 시 판정 불가(정리하지 않음), 진행 중 하트비트
+  - stuck_judgement_unavailable_when_store_down
+  - heartbeat_refreshes_lock_and_touches_row
 
 test_files:
   - tests/Feature/Extension/InProgressExtensionListingTest.php

@@ -3,7 +3,6 @@
 namespace App\Extension\Helpers;
 
 use App\Enums\ExtensionStatus;
-use App\Exceptions\ExtensionOperationInProgressException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -15,7 +14,10 @@ use Illuminate\Support\Facades\Log;
  * 업데이트·활성화로 빠져나올 수 없었다 — 사이트는 503, DB 를 직접 고쳐야 했다(7.1.1 출시 전 실측).
  *
  * 고착 판정: 업데이트 잠금({@see ExtensionOperationLock})이 비어 있고, 행의 마지막 갱신이 잠금 유지 시간보다 오래됐다. 잠금은
- * 프로세스가 죽어도 그 시간이 지나면 풀리므로, 둘 다 만족하면 그 업데이트를 하고 있는 프로세스는 없다.
+ * 프로세스가 죽어도 그 시간이 지나면 풀리므로, 둘 다 만족하면 그 업데이트를 하고 있는 프로세스는 없다. 진행 중인 업데이트는
+ * 단계마다 잠금을 늘리고 행 `updated_at` 을 갱신한다(하트비트, 7.1.5) — 10분 넘게 걸리는 업데이트도 고착으로 보지 않는다.
+ * 잠금 저장소가 오류를 내 잠금이 비었는지 알 수 없으면 고착으로 보지 않는다(정리하지 않는다) — 진행 중인 업데이트를 되돌리는
+ * 쪽이 더 위험하다(#161).
  *
  * 되돌릴 상태: 업데이트 흐름이 직전 상태를 따로 남기지 않으므로 `inactive` 로 둔다 — 사이트 503 해소가 우선이고 운영자가 다시
  * 켤 수 있다(결정 — 새 컬럼·마이그레이션을 만들지 않는다).
@@ -77,13 +79,8 @@ final class StuckUpdateRecovery
             return false;
         }
 
-        try {
-            ExtensionOperationLock::acquire($type, $identifier)->release();
-        } catch (ExtensionOperationInProgressException) {
-            return false;
-        }
-
-        return true;
+        // 저장소에만 묻는다(잡았다가 바로 푼다) — 판정 불가(null)면 고착이 아니다: 목록이 깨지지 않고 정리 단추도 나오지 않는다
+        return ExtensionOperationLock::isFree($type, $identifier) === true;
     }
 
     /**
@@ -93,7 +90,7 @@ final class StuckUpdateRecovery
      * @param  string  $identifier  확장 식별자
      * @param  object  $record  확장 행 (`status`, `updated_at`)
      * @param  callable(array<string, mixed>): mixed  $update  행 갱신 함수 (Repository 의 updateByIdentifier 위임)
-     * @param  bool  $lockHeld  호출한 쪽이 이미 업데이트 잠금을 잡았는지 (업데이트 진입점)
+     * @param  bool  $lockHeld  호출한 쪽이 이미 작업 잠금을 잡았는지 (업데이트·활성화 진입점)
      * @return string|null 되돌린 상태 (고착이 아니면 null)
      */
     public static function recover(string $type, string $identifier, object $record, callable $update, bool $lockHeld = false): ?string
@@ -102,13 +99,9 @@ final class StuckUpdateRecovery
             return null;
         }
 
-        // 잠금을 잡을 수 있어야 그 업데이트를 하는 프로세스가 없다 — 판정 뒤 바로 풀어 이어지는 작업이 다시 잡게 한다.
-        if (! $lockHeld) {
-            try {
-                ExtensionOperationLock::acquire($type, $identifier)->release();
-            } catch (ExtensionOperationInProgressException) {
-                return null;
-            }
+        // 잠금이 비어 있어야 그 업데이트를 하는 프로세스가 없다 — 판정할 수 없으면(저장소 오류) 정리하지 않는다.
+        if (! $lockHeld && ExtensionOperationLock::isFree($type, $identifier) !== true) {
+            return null;
         }
 
         $restored = ExtensionStatus::Inactive->value;

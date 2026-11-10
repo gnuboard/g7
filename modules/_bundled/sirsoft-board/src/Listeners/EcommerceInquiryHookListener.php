@@ -665,6 +665,9 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             return 0;
         }
         $this->attachmentService->purgeByPostIds($postIds);
+        // 파일 삭제 실패로 남은 본문 미디어 행도 골격으로 지워 core.content_media.before_delete 를 거치게 한다 —
+        // 아래 일괄 영구 삭제는 남은 일반 첨부 행만 지운다 (#887)
+        $this->attachmentService->purgeContentMediaByPostIds($postIds);
 
         $deleted = $this->postRepository->forceDeleteWithRepliesByIds($board->id, $ids);
 

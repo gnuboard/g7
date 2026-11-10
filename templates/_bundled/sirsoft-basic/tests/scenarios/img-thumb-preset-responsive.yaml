@@ -13,7 +13,7 @@ description: |
   - 편집기 미리보기(ResponsiveProvider overrideWidth + isEditMode): 창 폭이 아니라 기기 폭을 따르고, 창을 줄여도 바뀌지 않는다.
   - 창 크기 변경: 실제 resize 이벤트(150ms 디바운스) 뒤 일반 노드·반복 안 자식이 다시 그려진다.
     반복하는 노드 자신의 responsive props 도 폭이 바뀐 뒤 따라간다. 첫 렌더 폭에서만 맞고 폭이 바뀌면 낡은 값이 남던
-    엔진 결함(`DynamicRenderer` 반복 렌더 useMemo 의존성에 병합된 정의가 없었다)은 engine-v1.89.0 에서 고쳐졌고,
+    엔진 결함(`DynamicRenderer` 반복 렌더 useMemo 의존성에 병합된 정의가 없었다)은 engine-v1.94.0 에서 고쳐졌고,
     그 재현 시험(창 resize 1280→500→1280, 편집기 기기 1280→390)은 green 이다.
   이 템플릿에는 셀을 직접 그리는 복합 컴포넌트가 없어 셀 렌더 경로는 관리자 템플릿 매니페스트
   (`templates/_bundled/sirsoft-admin_basic/tests/scenarios/img-thumb-preset-responsive.yaml`)가 본다. 봇 화면의 같은 규칙은

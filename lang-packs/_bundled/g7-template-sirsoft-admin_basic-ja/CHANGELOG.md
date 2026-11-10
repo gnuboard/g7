@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.2.0] - 2026-11-01
+## [1.2.0] - 2026-11-10
 
 ### Added
 
@@ -58,6 +58,22 @@
 - 스케줄 관리 화면에서 없어진 문구 10건(옛 통계 카드·모듈 필터·점검 모드 필터·일괄 실행 등)을 정리했습니다.
 - 환경설정 SEO 탭에서 없어진 사이트맵 생성 주기·시각 입력 문구 6건을 정리했습니다.
 - 스케줄 관리 화면에서 쓰지 않게 된 문구(옛 필터 이름공간·일괄 버튼·쪽당 개수 개별 키 등)와 SEO 탭의 옛 사이트맵 링크 문구를 정리했습니다.
+
+## [1.1.4] - 2026-11-10
+
+### Added
+
+- 관리자 기본 템플릿 1.1.5 의 레이아웃 편집기 상태 이름 「상품 진열 탭」(`editor.state.tab.product_display` 「商品陳列タブ」)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 환경설정 > 개인정보 「최근 검색어」 카드 문구(`admin.settings.privacy.search_history.*`, 대상 행·창 제목 `targets.rows|title.search_history`)와 확장 경고 단계 이름(`search_scopes`)의 일본어 번역을 추가했습니다.
+- 회원 상세·수정 「최근 검색어」 구획 문구(`users.detail.tabs.search_history_info`·`users.detail.search_history.*` 「最近の検索語」 등)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 확장 작업 경고 결과 창에서 확장 선언 오류를 알리는 문구(`admin.extensions.lifecycle_warnings.declaration_title`·`declaration_summary`·`declaration_description`·`declaration_hint`)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 모듈·플러그인·템플릿 업데이트 창 「새 버전이 요구하는 확장을 먼저 확인하세요」 경고 상자 문구(`extensions.update_modal.requirements_*`)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 사진 확대 창 화면 읽기 이름(`common.lightbox.*` — 창 이름 「画像の拡大表示」·닫기·이전·다음·확대·전체 화면·「{total}枚中{index}枚目」)의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.5 의 환경설정 「본문 콘텐츠」 탭 문구(`admin.settings.tabs.content` 「本文コンテンツ」·`admin.settings.content.*` — 허용 기능(「許可する機能」 — 「動画アップロードの許可」·「音声アップロードの許可」 등)·추가 태그·외부 영상 서비스·서비스 추가 창·주소 유효 시간, 레이아웃 편집기 모달 이름 `admin.modal_label.admin_settings.embed_provider_form_modal` 「外部動画サービスの追加・編集」)의 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 관리자 기본 템플릿 1.1.5 의 환경설정 > SEO 「타이틀 접미사」 안내(`admin.settings.seo.meta_title_suffix_hint`) 일본어 문구를 코어 7.1.5 제목 규칙(검색엔진·브라우저 탭 공통, `{site_name}`, 빈 값이면 「 - サイト名」)에 맞게 고쳤습니다.
 
 ## [1.1.3] - 2026-11-01
 

@@ -3,8 +3,8 @@
 namespace Modules\Sirsoft\Board\Tests\Unit\Listeners;
 
 use Modules\Sirsoft\Board\Listeners\Ckeditor5ReferenceSourcesListener;
-use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\PureTestCase;
 
 /**
  * 게시판 참조 소스 등록 리스너 테스트
@@ -12,10 +12,14 @@ use PHPUnit\Framework\Attributes\Test;
  * 이 리스너가 빠지면 게시글에만 쓰이는 이미지가 "미참조" 로 판정돼 자동 정리 대상이 되므로,
  * 구독 형식(filter)과 append 계약을 회귀로 고정합니다.
  */
-class Ckeditor5ReferenceSourcesListenerTest extends ModuleTestCase
+class Ckeditor5ReferenceSourcesListenerTest extends PureTestCase
 {
     /**
+     * 리스너가 CKEditor5 참조 소스 훅을 filter 형식으로 구독하고 addBoardSources 로 처리하는지 검증한다.
+     *
      * @effects reference_source_listener_subscribes_as_filter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_subscribes_to_the_reference_source_filter_hook(): void
@@ -28,7 +32,11 @@ class Ckeditor5ReferenceSourcesListenerTest extends ModuleTestCase
     }
 
     /**
+     * 기존 참조 소스를 지우지 않고 게시글 본문(board_posts.content) 소스를 덧붙이는지 검증한다.
+     *
      * @effects reference_source_listener_appends_without_dropping
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_appends_board_sources_while_preserving_existing_ones(): void
@@ -45,6 +53,8 @@ class Ckeditor5ReferenceSourcesListenerTest extends ModuleTestCase
      * 선언 형태가 계약(table/columns)을 지켜야 플러그인 판정부가 해석할 수 있다.
      *
      * @effects reference_source_listener_schema_contract
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function appended_sources_follow_the_declared_schema(): void

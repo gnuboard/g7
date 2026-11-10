@@ -1,7 +1,7 @@
 // e2e:allow 실제 엔진 구조(TemplateApp·renderTemplate·DynamicRenderer·DataSourceManager·G7CoreGlobals)에 하네스 레이아웃을 올려 오류 경계의 재설정을 잰다 — 브라우저 확인은 관리자 히어로섹션 관리에서 미리보기 응답을 깨뜨린 뒤 위치 탭만 바꿔 「컴포넌트 로드 실패」 박스가 사라지는지 본다
 /**
  * @file DynamicRenderer.errorBoundaryRouteReset.test.tsx
- * @description 컴포넌트 오류 경계는 화면의 경로·쿼리가 바뀌면 다시 그려 본다 (engine-v1.87.0)
+ * @description 컴포넌트 오류 경계는 화면의 경로·쿼리가 바뀌면 다시 그려 본다 (engine-v1.93.0)
  *
  * 노드마다 감싸는 `ComponentErrorBoundary` 는 렌더 오류를 잡으면 「컴포넌트 로드 실패」 박스를 그리고, 되돌리는 경로가 없었다.
  * 같은 레이아웃 안에서 SPA 로 쿼리만(`navigate replace` → `updateQueryParams`) 또는 경로만 바뀌면 노드가 다시 마운트되지 않으므로
@@ -171,7 +171,7 @@ async function mount(position: string): Promise<{ app: any; go: (path: string, p
     return { app, go };
 }
 
-describe('[case:components-misc-error-boundary-route-reset] 컴포넌트 오류 경계는 경로·쿼리가 바뀌면 다시 그려 본다 (engine-v1.87.0)', { timeout: 60_000 }, () => {
+describe('[case:components-misc-error-boundary-route-reset] 컴포넌트 오류 경계는 경로·쿼리가 바뀌면 다시 그려 본다 (engine-v1.93.0)', { timeout: 60_000 }, () => {
     let consoleError: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {

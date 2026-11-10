@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Psr\Log\AbstractLogger;
+use Tests\Support\UpgradeFiles;
 
 /**
  * 탈퇴 회원에게 남은 마일리지 소멸(1.3.1 DataMigration) 테스트
@@ -37,8 +38,8 @@ class ForfeitWithdrawnMemberMileageTest extends ModuleTestCase
     {
         parent::setUp();
 
-        require_once dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.1/migrations/01_ForfeitWithdrawnMemberMileage.php';
+        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.1/migrations/01_ForfeitWithdrawnMemberMileage.php');
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_1\\Migrations\\ForfeitWithdrawnMemberMileage';
         $this->migration = new $class;

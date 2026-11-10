@@ -77,7 +77,7 @@ class BannerActivityLogListenerTest extends PluginTestCase
     }
 
     /**
-     * [case:backend-68] 일괄 비노출 기록은 변경 시점 스냅숏으로 남긴다 — 리스너는 큐에서 늦게 돌아, 그 사이 배너가 지워지거나 다시 고쳐져도
+     * [case:backend-69] 일괄 비노출 기록은 변경 시점 스냅숏으로 남긴다 — 리스너는 큐에서 늦게 돌아, 그 사이 배너가 지워지거나 다시 고쳐져도
      * 건마다 그때의 위치·이름과 사용 여부 변경(켬 → 끔)이 남아야 한다.
      *
      * @scenario surface=bulk_status_logged_from_snapshot

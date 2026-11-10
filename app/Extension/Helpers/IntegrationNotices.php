@@ -108,9 +108,28 @@ final class IntegrationNotices
 
             $manifest = json_decode(File::get($manifestPath), true);
 
-            return is_array($manifest) ? self::fromIntegrations($manifest['integrations'] ?? []) : [];
+            return is_array($manifest) ? self::forManifest($manifest) : [];
         } catch (\Throwable $e) {
             Log::warning('연동 안내 수집 실패 — 안내 없이 진행합니다', ['manifest' => $manifestPath, 'error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
+    /**
+     * 읽어 둔 manifest 배열의 연동 선언을 검사합니다 — 업데이트 전 창(새 판 manifest)과 업데이트 뒤 안내가 같은 판정을 쓴다.
+     *
+     * 안내 수집 실패가 목록·생명주기 결과를 깨뜨리지 않도록 예외는 로그만 남기고 빈 목록을 돌려준다.
+     *
+     * @param  array<string, mixed>  $manifest  manifest 배열 (module.json·plugin.json·template.json 내용)
+     * @return list<array{type: string, identifier: string, name: string, state: string, required_version: string, installed_version: string|null, message: string}> 안내 항목
+     */
+    public static function forManifest(array $manifest): array
+    {
+        try {
+            return self::fromIntegrations($manifest['integrations'] ?? []);
+        } catch (\Throwable $e) {
+            Log::warning('연동 안내 수집 실패 — 안내 없이 진행합니다', ['identifier' => $manifest['identifier'] ?? null, 'error' => $e->getMessage()]);
 
             return [];
         }

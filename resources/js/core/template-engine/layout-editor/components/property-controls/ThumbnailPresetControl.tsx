@@ -16,7 +16,7 @@
  * (삭제·사용 중지된 규격)이면 그 이름을 「현재 사용 안 함」 항목으로 남겨 값이 조용히 사라진 것처럼 보이지
  * 않게 한다. 데이터 연결 값(`{{…}}`) 보호는 ControlRenderer 의 공용 게이트(`useBoundValueGuard`)가 맡는다.
  *
- * @since engine-v1.89.0
+ * @since engine-v1.94.0
  */
 
 import React from 'react';

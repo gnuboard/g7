@@ -74,4 +74,42 @@ return [
             ],
         ],
     ],
+
+    // Recent searches (/api/me/search-history · admin Settings > Privacy "Recent searches" card, 7.1.5)
+    'history' => [
+        // Core reserved search scope names — the scope column of the admin Settings > Privacy "Recent searches" card.
+        'scopes' => [
+            'core_site' => 'Site search',
+        ],
+
+        // Scope owner column — scopes defined by the core.
+        'owner_core' => 'Core',
+
+        // /api/me/search-history response messages.
+        'messages' => [
+            'list_success' => 'Recent searches loaded.',
+            'record_success' => 'Search saved.',
+            'record_skipped' => 'The search was not saved.',
+            'delete_success' => 'Search deleted.',
+            'not_found' => 'Search not found.',
+            'clear_success' => 'All recent searches deleted.',
+            'merge_success' => 'Recent searches from this browser were merged.',
+            'auto_save_on' => 'Search auto-save turned on.',
+            'auto_save_off' => 'Search auto-save turned off.',
+            'failed' => 'Could not process recent searches.',
+        ],
+
+        // Request validation — field names and messages.
+        'attributes' => [
+            'scope' => 'search scope',
+            'keyword' => 'search term',
+            'items' => 'searches to merge',
+            'searched_at' => 'search time',
+            'auto_save' => 'auto-save',
+        ],
+        'validation' => [
+            'scope_unknown' => 'This search scope is not available.',
+            'items_max' => 'You can merge up to :max searches at a time.',
+        ],
+    ],
 ];

@@ -1457,6 +1457,9 @@
           "created_at": "2026-06-03 14:22:10"
         }
       },
+      "content_media_target": {
+        "data": null
+      },
       "settings": {
         "data": {
           "notification_channels": [

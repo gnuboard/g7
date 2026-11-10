@@ -78,7 +78,8 @@
       "replied": "返信完了",
       "not_replied": "未返信"
     },
-    "quantity_value": "{{count}}個"
+    "quantity_value": "{{count}}個",
+    "imported": "移行"
   },
   "detail": {
     "purchase_info": {

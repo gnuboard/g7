@@ -32,6 +32,16 @@ class DeferredJoinCallSiteContractTest extends TestCase
     /** 스캔 대상 루트 (저장소 상대) */
     private const SCAN_ROOTS = ['app', 'modules/_bundled', 'plugins/_bundled'];
 
+    /** 순회 단계에서 통째로 건너뛰는 디렉터리 — 소스가 아닌 의존성·빌드 산출물 */
+    private const PRUNED_DIRS = ['node_modules', 'vendor', 'dist', '.git', 'storage', 'tests'];
+
+    /**
+     * 스캔 결과 캐시 — 데이터 프로바이더는 테스트 탐색 때 메서드마다 불리므로(3개 테스트가 공유) 한 번만 스캔한다.
+     *
+     * @var array<string, array{0: string, 1: int, 2: string}>|null
+     */
+    private static ?array $callSites = null;
+
     /**
      * 지연 조인 호출처를 스캔해 돌려줍니다.
      *
@@ -39,6 +49,10 @@ class DeferredJoinCallSiteContractTest extends TestCase
      */
     public static function callSiteProvider(): array
     {
+        if (self::$callSites !== null) {
+            return self::$callSites;
+        }
+
         // tests/Unit/Repositories/Concerns → 저장소 루트
         $root = dirname(__DIR__, 4);
         $cases = [];
@@ -50,8 +64,12 @@ class DeferredJoinCallSiteContractTest extends TestCase
                 continue;
             }
 
+            // 확장 디렉터리의 node_modules 등은 수만 파일이라, 다 내려간 뒤 거르지 않고 순회 단계에서 가지를 친다
             $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS)
+                new \RecursiveCallbackFilterIterator(
+                    new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS),
+                    static fn (\SplFileInfo $entry): bool => ! ($entry->isDir() && in_array($entry->getFilename(), self::PRUNED_DIRS, true))
+                )
             );
 
             foreach ($iterator as $file) {
@@ -79,7 +97,7 @@ class DeferredJoinCallSiteContractTest extends TestCase
             }
         }
 
-        return $cases;
+        return self::$callSites = $cases;
     }
 
     /**
@@ -181,14 +199,16 @@ class DeferredJoinCallSiteContractTest extends TestCase
     }
 
     /**
-     * 호출처 쿼리에 with 나 withCount 를 붙였다면 지연 조인 호출에 relations 나 withCount 인자가 함께 넘어가는지 확인한다.
+     * 호출을 감싼 메서드가 쿼리에 with()/withCount() 를 붙였다면 relations:/withCount: 인자로도 넘기는지 검사한다.
+     *
+     * @scenario relations=eager_load
      *
      * @effects call_sites_pass_relations_as_argument
      *
-     * @param  string  $file  호출처 파일 경로
-     * @param  int  $line  호출처 줄 번호
-     * @param  string  $args  지연 조인 호출의 인자 원문
-     * @param  string  $body  호출처를 감싼 메서드 본문
+     * @param  string  $file  호출처 파일의 저장소 상대 경로
+     * @param  int  $line  호출이 위치한 줄번호
+     * @param  string  $args  호출 인자 텍스트
+     * @param  string  $body  호출 인자를 뺀 감싸는 메서드 본문
      * @return void 반환값 없음
      */
     #[DataProvider('callSiteWithMethodBodyProvider')]
@@ -211,13 +231,15 @@ class DeferredJoinCallSiteContractTest extends TestCase
     }
 
     /**
-     * 지연 조인 호출처마다 비어 있지 않은 columns 인자를 명시하는지 확인한다.
+     * 모든 지연 조인 호출처가 columns: 를 명시하고 빈 컬럼 목록을 넘기지 않는지 검사한다.
+     *
+     * @scenario columns=pruned
      *
      * @effects every_call_site_declares_columns
      *
-     * @param  string  $file  호출처 파일 경로
-     * @param  int  $line  호출처 줄 번호
-     * @param  string  $args  지연 조인 호출의 인자 원문
+     * @param  string  $file  호출처 파일의 저장소 상대 경로
+     * @param  int  $line  호출이 위치한 줄번호
+     * @param  string  $args  호출 인자 텍스트
      * @return void 반환값 없음
      */
     #[DataProvider('callSiteProvider')]
@@ -237,13 +259,15 @@ class DeferredJoinCallSiteContractTest extends TestCase
     }
 
     /**
-     * 지연 조인 호출처마다 비어 있지 않은 sort 인자를 명시하는지 확인한다.
+     * 모든 지연 조인 호출처가 sort: 를 명시하고 빈 정렬 스펙을 넘기지 않는지 검사한다.
+     *
+     * @scenario sort_column=indexed_non_key
      *
      * @effects every_call_site_declares_non_empty_sort
      *
-     * @param  string  $file  호출처 파일 경로
-     * @param  int  $line  호출처 줄 번호
-     * @param  string  $args  지연 조인 호출의 인자 원문
+     * @param  string  $file  호출처 파일의 저장소 상대 경로
+     * @param  int  $line  호출이 위치한 줄번호
+     * @param  string  $args  호출 인자 텍스트
      * @return void 반환값 없음
      */
     #[DataProvider('callSiteProvider')]
@@ -263,9 +287,11 @@ class DeferredJoinCallSiteContractTest extends TestCase
     }
 
     /**
-     * 호출처 스캔이 적어도 한 곳을 찾아 위 계약 검사들이 빈 데이터로 무력화되지 않는지 확인한다.
+     * 호출처 스캔이 최소 한 건을 찾아 위 계약 검사가 빈 데이터로 무력화되지 않는지 확인한다.
      *
-     * @effects call_site_scan_finds_at_least_one_call_site
+     * @scenario columns=all
+     *
+     * @effects every_call_site_declares_columns, every_call_site_declares_non_empty_sort, call_site_scan_finds_at_least_one_call_site
      *
      * @return void 반환값 없음
      */

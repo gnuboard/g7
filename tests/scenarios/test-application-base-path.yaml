@@ -1,0 +1,20 @@
+feature: 테스트 프로세스 격리 — 앱 기준 경로·실행 시간 상한 (#862)
+
+description: |
+  파일 목록으로 여러 테스트를 한 PHPUnit 프로세스에서 돌리므로, 한 테스트가 남긴 프로세스 전역 상태가
+  뒤 테스트를 연쇄로 무너뜨리지 않아야 한다.
+  - 테스트 앱은 Composer 로더 등록 순서로 기준 경로를 추론하지 않고 저장소 루트에서 부팅한다. 확장 vendor
+    오토로더가 맨 앞에 등록돼도(업그레이드 단계를 실제로 돌리는 테스트 등) 뒤 테스트가 확장 폴더의
+    bootstrap/app.php 를 찾다 실패하지 않는다.
+  - 시험 대상 코드가 건 실행 시간 상한(set_time_limit)은 다음 테스트로 넘어가지 않는다.
+
+axes:
+  case: [foreign_loader_first, limit_set_by_code_under_test]
+
+effects:
+  - test_app_boots_from_repository_root
+  - time_limit_not_inherited_by_next_test
+
+test_files:
+  - tests/Unit/Testing/TestApplicationBasePathTest.php
+  - tests/Unit/Testing/TestProcessTimeLimitResetTest.php

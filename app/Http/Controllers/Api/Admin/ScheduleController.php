@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Enums\ScheduleDispatchMode;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleType;
+use App\Exceptions\ScheduleAlreadyRunningException;
 use App\Exceptions\ScheduleExecutionException;
+use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Schedule\BulkDeleteScheduleRequest;
 use App\Http\Requests\Schedule\BulkUpdateScheduleStatusRequest;
@@ -177,8 +179,11 @@ class ScheduleController extends AdminBaseController
     {
         try {
             $history = $this->scheduleService->runNow($schedule, Auth::id());
+        } catch (ScheduleAlreadyRunningException|ScheduleRunLockUnavailableException $e) {
+            // 「중복 실행 방지」 스케줄이 이미 실행 중(409)이거나 실행 잠금 저장소 오류(503) — #161 F4
+            return $this->error($e->getMessageKey(), $e->getStatusCode());
         } catch (ScheduleExecutionException $e) {
-            // 소유 확장 비활성·앞선 실행이 잠금 중 — 실행 자체를 시작하지 않았다
+            // 소유 확장 비활성 — 실행 자체를 시작하지 않았다
             return $this->error('schedule.run_failed', 422, ['general' => [$e->getMessage()]]);
         } catch (Exception $e) {
             return $this->error('schedule.run_failed', 500, $e->getMessage());

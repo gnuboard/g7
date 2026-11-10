@@ -7,6 +7,8 @@ use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Enums\AttachmentSourceType;
 use App\Extension\HookManager;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Models\Attachment;
@@ -41,6 +43,13 @@ class AttachmentService
 
     /** 첨부 서빙 라우트 이름 — route 범위 본인인증 정책의 대상 */
     public const DOWNLOAD_ROUTE = 'api.attachment.download';
+
+    /**
+     * 다운로드 가능 판정 필터 — `(null, Attachment $attachment, ?User $user)` → `null`(의견 없음) | `true`(허용) | `false`(거부, 403).
+     *
+     * 확장은 자기가 만든 행(`source_identifier`)에 대해서만, 그 행이 붙은 원 리소스의 열람 권한으로 답한다. 코어는 확장을 모른다.
+     */
+    public const CAN_DOWNLOAD_FILTER = 'core.attachment.filter_can_download';
 
     /**
      * AttachmentService 생성자
@@ -104,6 +113,7 @@ class AttachmentService
         // 파일명 확장자는 사용자가 임의로 바꿀 수 있어 저장 확장자의 근거가 될 수 없다.
         $extension = strtolower($file->extension() ?: $file->getClientOriginalExtension());
         $storedFilename = Str::uuid().($extension !== '' ? '.'.$extension : '');
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $datePath = date('Y/m/d');
         $path = "{$datePath}/{$storedFilename}";
 
@@ -423,6 +433,8 @@ class AttachmentService
             return null;
         }
 
+        $this->assertDownloadAllowed($attachment, $user);
+
         // 기능 레벨 권한 체크 (permission_hooks)
         // → 'core.attachment.download' 훅에 권한이 매핑되어 있으면 체크
         // → 미매핑 시 모든 사용자 허용
@@ -618,6 +630,8 @@ class AttachmentService
             return null;
         }
 
+        $this->assertDownloadAllowed($attachment, $user);
+
         // 기능 레벨 권한 체크 (permission_hooks)
         HookManager::checkHookPermission('core.attachment.download', $user);
 
@@ -664,6 +678,57 @@ class AttachmentService
             // 썸네일 헬퍼가 쓸 원본 정보 — 권한 검사를 지난 행에서만 만든다(래스터가 아니면 null)
             'thumbnail_source' => CoreAttachmentSourceProvider::sourceFor($attachment),
         ];
+    }
+
+    /**
+     * 코어 다운로드(`download`·`getFileInfo`)로 내보내도 되는 행인지 판정합니다 (#887).
+     *
+     * 1. 코어 일반 규칙: 행을 만든 확장(`source_type` 이 module·plugin 이고 `source_identifier`)이 비활성·미설치면 거부한다 —
+     *    그 확장의 권한 판정(리스너)이 꺼져 있어 원 리소스 권한을 확인할 수 없다. 리스너가 이 규칙을 뒤집지는 못한다.
+     * 2. 필터 `core.attachment.filter_can_download`: `false` 면 거부, `true`·`null`(의견 없음)이면 기존 흐름(기능 권한 →
+     *    `before_download_action` → `before_download`)을 그대로 탄다. 리스너가 없는 행(회원 아바타·사이트 로고·OG 이미지·
+     *    게시판 반응 아이콘 등)은 `null` 이라 종전처럼 서빙된다.
+     *
+     * @param  Attachment  $attachment  첨부파일
+     * @param  mixed  $user  요청한 사용자 (null이면 비로그인)
+     * @return void 반환값 없음
+     *
+     * @throws AuthorizationException 다운로드를 거부할 때 (403)
+     */
+    private function assertDownloadAllowed(Attachment $attachment, mixed $user): void
+    {
+        if ($this->isOwnedByInactiveExtension($attachment)) {
+            throw new AuthorizationException(__('attachment.access_denied'));
+        }
+
+        $verdict = HookManager::applyFilters(self::CAN_DOWNLOAD_FILTER, null, $attachment, $user);
+
+        if ($verdict === false) {
+            throw new AuthorizationException(__('attachment.access_denied'));
+        }
+    }
+
+    /**
+     * 행을 만든 확장이 비활성(또는 미설치)인지 — 코어·출처 미기록 행은 해당 없음.
+     *
+     * 활성 여부는 확장 매니저의 활성 식별자 목록(요청 메모·상태 캐시)으로 본다.
+     *
+     * @param  Attachment  $attachment  첨부파일
+     * @return bool 만든 확장이 꺼져 있으면 true
+     */
+    private function isOwnedByInactiveExtension(Attachment $attachment): bool
+    {
+        $identifier = (string) ($attachment->source_identifier ?? '');
+
+        if ($identifier === '') {
+            return false;
+        }
+
+        return match ($attachment->source_type) {
+            AttachmentSourceType::Module => ! in_array($identifier, ModuleManager::getActiveModuleIdentifiers(), true),
+            AttachmentSourceType::Plugin => ! in_array($identifier, PluginManager::getActivePluginIdentifiers(), true),
+            default => false,
+        };
     }
 
     /**

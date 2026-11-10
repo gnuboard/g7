@@ -201,6 +201,7 @@ class ApiDocSampleService implements ApiDocSampleSeeder
      * @param  string  $domain  도메인 그룹명
      * @param  class-string  $model  모델 FQCN
      * @param  Model|null  $record  대표 레코드
+     * @return void 반환값 없음
      */
     private function putSimpleIdDomain(array &$map, string $domain, string $model, $record): void
     {
@@ -275,6 +276,7 @@ class ApiDocSampleService implements ApiDocSampleSeeder
         }
 
         return Order::factory()->forUser($actor)->create([
+            // audit:allow datetime-display-user-timezone reason: E2E·API 문서 시드 식별자 — 기계값
             'order_number' => 'APIDOC-'.now()->format('Ymd').'-000001',
         ]);
     }

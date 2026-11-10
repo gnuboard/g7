@@ -3,6 +3,8 @@
 namespace Tests\Feature\Extension;
 
 use App\Extension\Exceptions\ExtensionSeederFailedException;
+use App\Extension\Helpers\ExtensionPendingHelper;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookCacheManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -13,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Mockery;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -32,6 +35,8 @@ use Tests\TestCase;
  */
 class InstallSeederProviderTest extends TestCase
 {
+    use FakesGithubReleases;
+
     private const ID = 'zztest-seedprov';
 
     /** 앞 설치가 남긴 활성 폴더 재현용 식별자 — 이 시험 밖에서 클래스가 읽힌 적이 없어야 해서 따로 둔다 */
@@ -51,13 +56,18 @@ class InstallSeederProviderTest extends TestCase
     {
         parent::setUp();
 
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
+
         putenv('ZZTEST_SEEDPROV_MODE=ok');
 
         foreach (['modules', 'plugins'] as $type) {
             $this->cleanupExtension($type);
-            File::copyDirectory(
+            FilePermissionHelper::copyDirectory(
                 base_path("tests/Fixtures/Extension/SeederProvider/{$type}/".self::ID),
                 base_path("{$type}/_pending/".self::ID),
+                null,
+                ExtensionPendingHelper::EXCLUDED_DIRECTORIES,
             );
         }
 
@@ -165,9 +175,11 @@ class InstallSeederProviderTest extends TestCase
         $this->assertTrue($manager->installModule(self::ID));
 
         putenv('ZZTEST_SEEDPROV_MODE=throw');
-        File::copyDirectory(
+        FilePermissionHelper::copyDirectory(
             base_path('tests/Fixtures/Extension/SeederProvider/modules/'.self::ID),
             base_path('modules/_pending/'.self::ID),
+            null,
+            ExtensionPendingHelper::EXCLUDED_DIRECTORIES,
         );
 
         try {
@@ -280,9 +292,11 @@ class InstallSeederProviderTest extends TestCase
         $this->assertTrue($manager->installPlugin(self::ID));
 
         putenv('ZZTEST_SEEDPROV_MODE=throw');
-        File::copyDirectory(
+        FilePermissionHelper::copyDirectory(
             base_path('tests/Fixtures/Extension/SeederProvider/plugins/'.self::ID),
             base_path('plugins/_pending/'.self::ID),
+            null,
+            ExtensionPendingHelper::EXCLUDED_DIRECTORIES,
         );
 
         try {

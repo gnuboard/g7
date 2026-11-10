@@ -25,7 +25,6 @@
       --tw-ring-offset-width: 0px;
       --tw-ring-shadow: 0 0 #0000;
       --tw-shadow: 0 0 #0000;
-      --tw-shadow-color: initial;
     }
   }
 
@@ -422,132 +421,6 @@
     margin-top: calc(.25rem * 6);
   }
 
-  .sl-select-dropdown {
-    z-index: 50;
-    margin-top: calc(.25rem * 2);
-    border-radius: 1rem;
-    border-style: var(--tw-border-style);
-    border-width: 1px;
-    border-color: oklch(92.8% .006 264.531);
-    background-color: #fff;
-    --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color,#0000001a), 0 4px 6px -4px var(--tw-shadow-color,#0000001a);
-    width: 100%;
-    box-shadow: var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow);
-    position: absolute;
-    overflow: hidden;
-  }
-
-  .sl-select-dropdown:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    border-color: oklch(44.6% .03 256.802);
-    background-color: oklch(27.8% .033 256.848);
-  }
-
-  .sl-select-dropdown.sl-hidden {
-    display: none;
-  }
-
-  .sl-multi-select-dropdown {
-    z-index: 50;
-    margin-top: calc(.25rem * 2);
-    min-width: calc(.25rem * 64);
-    border-radius: .75rem;
-    border-style: var(--tw-border-style);
-    border-width: 1px;
-    border-color: oklch(92.8% .006 264.531);
-    background-color: #fff;
-    --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color,#0000001a), 0 4px 6px -4px var(--tw-shadow-color,#0000001a);
-    box-shadow: var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow);
-    position: absolute;
-  }
-
-  .sl-multi-select-dropdown:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    border-color: oklch(37.3% .034 259.733);
-    background-color: oklch(27.8% .033 256.848);
-  }
-
-  .sl-multi-select-dropdown.sl-hidden {
-    display: none;
-  }
-
-  .sl-select-ghost-dropdown {
-    z-index: 50;
-    margin-top: calc(.25rem * 1);
-    min-width: calc(.25rem * 32);
-    border-radius: .5rem;
-    border-style: var(--tw-border-style);
-    border-width: 1px;
-    border-color: oklch(92.8% .006 264.531);
-    background-color: #fff;
-    padding-block: calc(.25rem * 1);
-    --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color,#0000001a), 0 4px 6px -4px var(--tw-shadow-color,#0000001a);
-    box-shadow: var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow);
-    position: absolute;
-  }
-
-  .sl-select-ghost-dropdown:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    border-color: oklch(37.3% .034 259.733);
-    background-color: oklch(27.8% .033 256.848);
-  }
-
-  .sl-select-ghost-dropdown.sl-hidden {
-    display: none;
-  }
-
-  .sl-searchable-dropdown-dropdown {
-    z-index: 50;
-    margin-top: calc(.25rem * 2);
-    border-radius: 1rem;
-    border-style: var(--tw-border-style);
-    border-width: 1px;
-    border-color: oklch(92.8% .006 264.531);
-    background-color: #fff;
-    --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color,#0000001a), 0 4px 6px -4px var(--tw-shadow-color,#0000001a);
-    width: 100%;
-    min-width: 280px;
-    box-shadow: var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow);
-    position: absolute;
-    overflow: hidden;
-  }
-
-  .sl-searchable-dropdown-dropdown:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    border-color: oklch(44.6% .03 256.802);
-    background-color: oklch(27.8% .033 256.848);
-  }
-
-  .sl-searchable-dropdown-dropdown.sl-hidden {
-    display: none;
-  }
-
-  .sl-tree-expand-btn {
-    height: calc(.25rem * 6);
-    width: calc(.25rem * 6);
-    color: oklch(55.1% .027 264.364);
-    border-radius: .25rem;
-    justify-content: center;
-    align-items: center;
-    display: flex;
-  }
-
-  @media (hover:hover) {
-    .sl-tree-expand-btn:hover {
-      background-color: oklch(96.7% .003 264.542);
-    }
-  }
-
-  .sl-tree-expand-btn:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    color: oklch(70.7% .022 261.325);
-  }
-
-  @media (hover:hover) {
-    .sl-tree-expand-btn:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-      background-color: oklch(37.3% .034 259.733);
-    }
-  }
-
-  .sl-tree-expand-btn.sl-hidden {
-    visibility: hidden;
-  }
-
   .sl-form-label {
     margin-bottom: calc(.25rem * 1);
     font-size: .875rem;
@@ -801,13 +674,6 @@
     color: oklch(87.2% .01 258.338);
   }
 
-  .sl-modal-footer-buttons {
-    margin-top: calc(.25rem * 6);
-    justify-content: flex-end;
-    gap: calc(.25rem * 3);
-    display: flex;
-  }
-
   .sl-spinner-sm {
     height: calc(.25rem * 4);
     width: calc(.25rem * 4);
@@ -833,19 +699,6 @@
 
   .sl-form-sub-label:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
     color: oklch(87.2% .01 258.338);
-  }
-
-  .sl-grid-3col-responsive {
-    align-items: flex-start;
-    gap: calc(.25rem * 4);
-    grid-template-columns: repeat(1,minmax(0,1fr));
-    display: grid;
-  }
-
-  @media (min-width:64rem) {
-    .sl-grid-3col-responsive {
-      grid-template-columns: repeat(3,minmax(0,1fr));
-    }
   }
 
   .sl-text-error-soft {
@@ -887,25 +740,6 @@
     }
   }
 
-  .sl-page-title {
-    font-size: 1.25rem;
-    line-height: var(--tw-leading,calc(1.75 / 1.25));
-    --tw-font-weight: 600;
-    font-weight: 600;
-    color: oklch(21% .034 264.665);
-  }
-
-  @media (min-width:40rem) {
-    .sl-page-title {
-      font-size: 1.5rem;
-      line-height: var(--tw-leading,calc(2 / 1.5));
-    }
-  }
-
-  .sl-page-title:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    color: #fff;
-  }
-
   .sl-sticky-footer-buttons {
     bottom: calc(.25rem * 0);
     z-index: 10;
@@ -939,38 +773,16 @@
     background-color: oklch(21% .034 264.665);
   }
 
-  .sl-admin-page-content-responsive {
-    background-color: oklch(98.5% .002 247.839);
-    min-height: 100vh;
-    padding: calc(.25rem * 4);
-  }
-
-  @media (min-width:40rem) {
-    .sl-admin-page-content-responsive {
-      padding: calc(.25rem * 6);
-    }
-  }
-
-  @media (min-width:64rem) {
-    .sl-admin-page-content-responsive {
-      padding: calc(.25rem * 8);
-    }
-  }
-
-  .sl-admin-page-content-responsive:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    background-color: oklch(21% .034 264.665);
-  }
-
   .sl-data-grid-cell :is(.sl\:wrap-anywhere,.sl\:break-words,.sl-break-all,.sl\:wrap-break-word) {
     white-space: normal;
   }
 
-  .sl-hidden {
-    display: none;
-  }
-
   .sl-break-all {
     word-break: break-all;
+  }
+
+  .sl\:\[\&_\.btn\]\:w-full .sl-btn {
+    width: 100%;
   }
 }
 
@@ -1096,11 +908,6 @@
   syntax: "*";
   inherits: false;
   initial-value: 0 0 #0000;
-}
-
-@property --tw-shadow-color {
-  syntax: "*";
-  inherits: false;
 }
 
 /* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */

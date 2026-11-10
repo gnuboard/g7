@@ -32,10 +32,10 @@ class BenchCommand extends Command
 
     protected $signature = 'g7:bench
         {--profile=* : 계측할 프로파일 키 (짧은 키 또는 출처/키 형태). 다중 지정 가능}
-        {--axis= : 축 단위 실행 (list|screen|write|batch)}
+        {--axis= : 축 단위 실행 (list|screen|write|batch|boot)}
         {--all : 등록된 모든 프로파일 실행}
         {--offsets=0,20000,50000,99980 : 측정할 OFFSET 목록 (쉼표 구분, list 축)}
-        {--runs=3 : 측정 횟수 (첫 회는 버림)}
+        {--runs=3 : 측정 횟수 (첫 회는 버림. boot 축은 미지정 시 프로파일 기본값 20)}
         {--per-page=20 : 목록/화면 1페이지 건수}
         {--seed=0 : 계측 전 합성 행 시딩 건수 (0 = 시딩 안 함, list 축)}
         {--fresh : 시딩 전에 대상 테이블을 비움 (운영 환경에서는 거부)}
@@ -235,6 +235,7 @@ class BenchCommand extends Command
             allowWrite: (bool) $this->option('allow-write'),
             asUser: $asUser === '' ? null : $asUser,
             perPage: max(1, (int) $this->option('per-page')),
+            runsExplicit: $this->input->hasParameterOption('--runs'),
         );
     }
 
@@ -385,6 +386,7 @@ class BenchCommand extends Command
 
         $path = $given !== ''
             ? $given
+            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             : storage_path(self::REPORT_DIR.'/bench-'.now()->format('Ymd-His').'.md');
 
         $directory = dirname($path);

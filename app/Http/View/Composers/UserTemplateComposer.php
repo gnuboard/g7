@@ -13,8 +13,10 @@ use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionCssContract;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
+use App\Seo\SeoTitleRuleExporter;
 use App\Services\FrontendConfigService;
 use App\Services\TemplateService;
+use App\Support\SearchScopes;
 use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
@@ -130,5 +132,25 @@ class UserTemplateComposer
         $view->with('customRoutes', $this->frontendConfigService->customRoutes());
         $view->with('websocketConfig', $this->frontendConfigService->websocket());
         $view->with('frontendLocale', $this->frontendConfigService->locale());
+        // 최근 검색어 범위(범위 id → 보관 개수) — 엔진 G7Core.searchHistory 가 선언 여부·비회원 보관 개수를 판정한다 (7.1.5)
+        $view->with('searchScopes', SearchScopes::forFrontend());
+        // 브라우저 탭 제목 규칙 계산 값 — 엔진이 검색엔진 제목과 같은 규칙으로 document.title 을 정한다 (engine-v1.86.0)
+        $view->with('seoTitle', $this->collectSeoTitleRule());
+    }
+
+    /**
+     * 브라우저 탭 제목 규칙 계산 값을 모읍니다.
+     *
+     * 실패하면 null 을 돌려준다 — 엔진은 값이 없으면 탭 제목을 바꾸지 않는다(종전 동작: 사이트 이름).
+     *
+     * @return array<string, mixed>|null 제목 규칙 계산 값
+     */
+    private function collectSeoTitleRule(): ?array
+    {
+        try {
+            return app(SeoTitleRuleExporter::class)->export();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

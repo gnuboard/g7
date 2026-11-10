@@ -3,7 +3,7 @@
 namespace Tests\Unit\Search;
 
 use App\Search\SearchPagePolicy;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 검색 커서 적용 판정 계약 테스트 (#519)
@@ -13,7 +13,7 @@ use Tests\TestCase;
  *
  * @scenario navigation=keyset_cursor
  */
-class SearchPagePolicyTest extends TestCase
+class SearchPagePolicyTest extends PureTestCase
 {
     /** 검사에 쓰는 정렬 선언 (도메인이 제공하는 형태) */
     private const SORT_MAP = [

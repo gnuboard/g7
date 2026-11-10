@@ -1,0 +1,18 @@
+feature: HookManager 내부 범용 브로드캐스트 이벤트(GenericBroadcastEvent)
+
+description: |
+  GenericBroadcastEvent 는 생성자에 받은 채널명·이벤트명·payload 를 그대로 브로드캐스트 계약으로 노출한다.
+  채널은 PrivateChannel 하나(private- 접두사), 이벤트명은 broadcastAs(), payload 는 broadcastWith() 로 돌려주며
+  payload 를 생략하면 빈 배열이어야 한다.
+
+axes:
+  case: [channel, event_name, payload]
+
+effects:
+  - broadcast_on_returns_single_private_channel
+  - broadcast_as_returns_given_event_name
+  - broadcast_with_returns_given_payload
+  - omitted_payload_defaults_to_empty_array
+
+test_files:
+  - tests/Unit/Events/GenericBroadcastEventTest.php

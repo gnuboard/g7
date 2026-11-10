@@ -232,7 +232,7 @@ API 에러 발생
 | 변수 | 설명 |
 |------|------|
 | `{{error.status}}` | HTTP 상태 코드 |
-| `{{error.message}}` | 에러 메시지 (번역됨). 서버 응답의 `message`, 없으면 현재 언어의 기본 안내 — 응답이 왔으면 `core.errors.api_request_failed`, 응답 자체가 없으면 `core.errors.network_request_failed` (engine-v1.87.0) |
+| `{{error.message}}` | 에러 메시지 (번역됨). 서버 응답의 `message`, 없으면 현재 언어의 기본 안내 — 응답이 왔으면 `core.errors.api_request_failed`, 응답 자체가 없으면 `core.errors.network_request_failed` (engine-v1.93.0) |
 | `{{error.errors}}` | 필드별 에러 (422) |
 | `{{error.data}}` | 전체 응답 데이터 |
 

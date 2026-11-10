@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\MessageBizppurio\Tests\Unit\Services;
 
 use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkPayloadMapper;
-use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * AlimtalkPayloadMapper — 카카오 상세조회 응답 → 발송 API content.at 변환 + 변수 치환 검증 (B안 5-2).
@@ -12,15 +12,26 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * (message/button.url_mobile/…)로 변환하고, 각 필드의 #{var} 를 알림 data 로 치환한다.
  * 빈/부재 필드는 payload 에 넣지 않는다(방어적).
  */
-class AlimtalkPayloadMapperTest extends PluginTestCase
+class AlimtalkPayloadMapperTest extends PureTestCase
 {
+    /**
+     * 검증 대상 매퍼 인스턴스를 새로 만든다.
+     *
+     * @return AlimtalkPayloadMapper 매퍼 인스턴스
+     */
     private function mapper(): AlimtalkPayloadMapper
     {
         return new AlimtalkPayloadMapper;
     }
 
     /**
+     * 본문(templateContent)의 #{var} 를 알림 data 로 치환해 message 로 돌려준다.
+     *
+     * @scenario template_state=approved
+     *
      * @effects snapshot_content_substituted_with_notification_data
+     *
+     * @return void 반환값 없음
      */
     public function test_본문의_변수를_치환해_message로_반환한다(): void
     {
@@ -33,7 +44,13 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
     }
 
     /**
+     * 웹링크 버튼을 발송 필드(type·url_mobile·url_pc)로 바꾸고 URL 변수를 치환하며 카카오 필드명은 남기지 않는다.
+     *
+     * @scenario template_state=approved
+     *
      * @effects snapshot_buttons_mapped_to_dispatch_button_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_웹링크_버튼을_발송형식으로_변환하고_url변수를_치환한다(): void
     {
@@ -63,7 +80,13 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
     }
 
     /**
+     * 앱링크·전화·플러그인 버튼의 고유 필드를 scheme_android·scheme_ios·tel_number·plugin_id 로 매핑한다.
+     *
+     * @scenario template_state=approved
+     *
      * @effects snapshot_buttons_mapped_to_dispatch_button_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_앱링크_전화_플러그인_버튼_필드를_매핑한다(): void
     {
@@ -86,6 +109,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('PLUG_1', $buttons[2]['plugin_id']);
     }
 
+    /**
+     * quickReplies 를 발송 형식 quickreply(name·type·url_mobile)로 변환한다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects snapshot_quick_replies_mapped_to_quickreply
+     *
+     * @return void 반환값 없음
+     */
     public function test_quick_replies를_quickreply로_변환한다(): void
     {
         $result = $this->mapper()->map(
@@ -104,6 +136,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('https://m.shop', $qr['url_mobile']);
     }
 
+    /**
+     * templateTitle·templateHeader 를 변수 치환해 extra.title·extra.header 로 매핑한다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects snapshot_emphasis_fields_mapped_and_substituted
+     *
+     * @return void 반환값 없음
+     */
     public function test_title_header를_치환해_매핑한다(): void
     {
         $result = $this->mapper()->map(
@@ -119,6 +160,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('주문 안내', $result['extra']['header']);
     }
 
+    /**
+     * templateItem 목록·요약과 templateItemHighlight 를 item·itemhighlight 로 매핑하며 변수를 치환한다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects snapshot_emphasis_fields_mapped_and_substituted
+     *
+     * @return void 반환값 없음
+     */
     public function test_item과_itemhighlight를_매핑하고_치환한다(): void
     {
         $result = $this->mapper()->map(
@@ -140,6 +190,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('홍길동님', $result['extra']['itemhighlight']['title']);
     }
 
+    /**
+     * templateRepresentLink 를 extra.link(url_mobile·url_pc)로 변환하고 변수를 치환한다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects snapshot_represent_link_mapped_to_link
+     *
+     * @return void 반환값 없음
+     */
     public function test_대표링크를_link로_변환하고_치환한다(): void
     {
         $result = $this->mapper()->map(
@@ -157,6 +216,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('https://shop/X1', $result['extra']['link']['url_pc']);
     }
 
+    /**
+     * 원문 http:// 접두어 뒤 변수값이 완전 URL 이면 접두어를 떼어 프로토콜 중복을 막는다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects url_protocol_prefix_deduplicated_for_absolute_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_원문에_프로토콜_접두어가_있고_변수값도_완전url이면_중복을_제거한다(): void
     {
         // 결함② — 카카오 콘솔에 `http://#{action_url}` 로 등록된 버튼. action_url 자체가
@@ -178,6 +246,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         );
     }
 
+    /**
+     * 원문 접두어가 https:// 인 경우에도 완전 URL 변수값이면 접두어 중복을 제거한다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects url_protocol_prefix_deduplicated_for_absolute_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_원문_접두어가_https이고_변수값도_https이면_중복을_제거한다(): void
     {
         // 실제 카카오 콘솔 등록값(관리자 화면 상세조회 스크린샷 확인, 2026-07-24) —
@@ -199,6 +276,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         );
     }
 
+    /**
+     * 원문에 프로토콜 접두어가 없으면 변수값 URL 을 손대지 않고 그대로 쓴다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects url_kept_when_no_duplicate_protocol
+     *
+     * @return void 반환값 없음
+     */
     public function test_원문에_프로토콜_접두어가_없으면_변수값을_그대로_둔다(): void
     {
         // 가이드 문서 원안(#{action_url} 만 등록)대로면 애초에 중복이 없으므로 손대지 않는다.
@@ -215,6 +301,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('https://ehkim.gnuboard.net/login', $result['extra']['button'][0]['url_mobile']);
     }
 
+    /**
+     * 변수값이 프로토콜 없는 상대경로면 원문 접두어가 필요한 부분이므로 유지한다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects url_kept_when_no_duplicate_protocol
+     *
+     * @return void 반환값 없음
+     */
     public function test_원문_접두어가_있어도_변수값이_상대경로면_접두어를_유지한다(): void
     {
         // 변수값 자체가 프로토콜을 포함하지 않는 경우(상대경로 등) 접두어는 진짜로 필요한
@@ -232,6 +327,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('http:///foo', $result['extra']['button'][0]['url_mobile']);
     }
 
+    /**
+     * 대표링크도 버튼과 같은 규칙으로 프로토콜 접두어 중복을 제거한다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects url_protocol_prefix_deduplicated_for_absolute_value, snapshot_represent_link_mapped_to_link
+     *
+     * @return void 반환값 없음
+     */
     public function test_대표링크도_프로토콜_중복을_제거한다(): void
     {
         // mapLinkFields(대표링크)도 mapButtons 와 동일 규칙을 공유해야 한다.
@@ -246,6 +350,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('https://ehkim.gnuboard.net/login', $result['extra']['link']['url_mobile']);
     }
 
+    /**
+     * data 에 없는 변수는 원문 #{key} 를 그대로 두고 프로토콜 중복 방어도 개입하지 않는다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects unresolved_variable_kept_verbatim
+     *
+     * @return void 반환값 없음
+     */
     public function test_변수가_data에_없으면_원문을_유지한다(): void
     {
         // data 에 없는 변수는 원문(#{key}) 유지 정책 — 프로토콜 중복 방어 로직이 이 정책을
@@ -263,6 +376,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame('http://#{unknown_var}', $result['extra']['button'][0]['url_mobile']);
     }
 
+    /**
+     * 본문만 있는 템플릿은 extra 를 빈 배열로 둔다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects absent_or_empty_fields_omitted_from_extra
+     *
+     * @return void 반환값 없음
+     */
     public function test_부재_필드는_extra에_넣지_않는다(): void
     {
         // 본문만 있는 단순 템플릿 → extra 는 비어야 한다.
@@ -272,6 +394,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertSame([], $result['extra']);
     }
 
+    /**
+     * 빈 버튼 배열이면 extra 에 button 키를 만들지 않는다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects absent_or_empty_fields_omitted_from_extra
+     *
+     * @return void 반환값 없음
+     */
     public function test_빈_버튼배열은_extra에_button을_만들지_않는다(): void
     {
         $result = $this->mapper()->map(
@@ -282,6 +413,15 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
         $this->assertArrayNotHasKey('button', $result['extra']);
     }
 
+    /**
+     * substituteText 공개 진입점이 대체 SMS·SMS 단독 본문 같은 임의 텍스트의 변수를 치환한다.
+     *
+     * @scenario template_state=approved
+     *
+     * @effects substitute_text_replaces_variables_in_arbitrary_text
+     *
+     * @return void 반환값 없음
+     */
     public function test_substitute_text는_임의_텍스트의_변수를_치환한다(): void
     {
         // 대체 SMS·SMS 단독 본문(sms_body)이 이 공개 진입점으로 치환된다 (#597 §3.5).
@@ -294,7 +434,13 @@ class AlimtalkPayloadMapperTest extends PluginTestCase
     }
 
     /**
+     * 등록 페이로드 형태의 승인 스냅샷을 그대로 소비해 모든 필드를 발송 형식으로 옮기고 등록 전용 메타는 싣지 않는다.
+     *
+     * @scenario template_state=approved
+     *
      * @effects snapshot_content_substituted_with_notification_data, snapshot_buttons_mapped_to_dispatch_button_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_등록_페이로드_형태의_승인_스냅샷을_그대로_소비한다(): void
     {

@@ -12,6 +12,8 @@ description: |
       읽지 않는다. ZIP·GitHub 설치는 설치 전 중복 확인에서 번들 사본을 선언하므로, 설치 뒤 재등록이 활성 사본을 읽으면
       설치는 끝났는데 응답이 500 이 됐다(#712 실측).
     - 아직 선언되지 않은 진입 클래스는 재등록이 그대로 읽는다.
+    - 확장 자체 vendor 오토로더(ComposerAutoloaderInit…)도 같다 — 다른 경로 사본이 먼저 선언했으면 재등록이 다시 읽지
+      않는다(#159: 진입 파일이 자체 vendor 를 부르는 확장의 명령줄 설치가 마지막 단계에서 치명 오류로 죽었다).
 
 axes:
   ext_type: [module, plugin]
@@ -21,11 +23,14 @@ effects:
   - bundled_preview_reads_bundled_copy_without_redeclare
   - runtime_autoload_skips_entry_declared_from_other_copy
   - runtime_autoload_still_loads_undeclared_entry
+  - vendor_autoloader_not_redeclared
 
 test_files:
   - tests/Unit/Extension/BundledInstanceRedeclarationGuardTest.php
   - tests/Unit/Extension/RuntimeAutoloadEntryRedeclareTest.php
 
 notes:
-  - 큐 워커 부팅용 사본(CoreServiceProvider::registerExtensionAutoload)도 같은 판정(ExtensionManager::isEntryClassDeclared)을 쓴다. 부팅 시점에는 진입 클래스가 아직 없어 판정이 항상 false 라 별도 테스트를 두지 않는다.
+  - 진입점 미등록 부팅 폴백(CoreServiceProvider::registerExtensionAutoload)은 ExtensionManager::registerExtensionAutoload 에 위임해 같은 판정(isEntryClassDeclared·vendor 오토로더 선언 확인)을 쓴다(#159). 부팅 시점에는 진입 클래스가 아직 없어 판정이 항상 false 라 위임 여부만 소스로 잠근다(extension-install-autoload.yaml).
   - 실제 확장으로 짜면 테스트 부트스트랩이 같은 경로를 먼저 읽어 가드를 지워도 통과한다 — 두 사본을 갖는 임시 확장을 쓴다.
+  - vendor 오토로더 재선언은 프로세스를 끝내므로 RunInSeparateProcess 로 잰다.
+  - 설치 판정의 manifest 전용 조회·소스 classmap·코어 로더 선택·eval __DIR__ 계약은 extension-install-autoload.yaml 이 소유한다.

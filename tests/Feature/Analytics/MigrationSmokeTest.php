@@ -4,6 +4,7 @@ namespace Tests\Feature\Analytics;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\Support\TestingSchema\StructureChecksum;
 use Tests\TestCase;
 
 /**
@@ -36,7 +37,9 @@ class MigrationSmokeTest extends TestCase
         'analytics_stats_daily' => ['uq_analytics_stats_daily', 'idx_analytics_stats_daily_date'],
         'analytics_dimension_stats' => ['uq_analytics_dimension_stats', 'idx_analytics_dimension_stats_dim'],
         'analytics_salts' => [],
-        'analytics_archive_runs' => ['idx_analytics_archive_runs_type', 'idx_analytics_archive_runs_status'],
+        // 실행 주체 인덱스는 뒤 마이그레이션(2026_09_28_000001)이 더한다 — 예전엔 같은 클래스의 왕복 시험이 이 인덱스를
+        // 지운 채 끝나 빠진 목록으로도 통과했다
+        'analytics_archive_runs' => ['idx_analytics_archive_runs_type', 'idx_analytics_archive_runs_status', 'idx_analytics_archive_runs_type_trigger_started'],
         'analytics_collect_failures' => ['idx_analytics_collect_failures_occurred', 'idx_analytics_collect_failures_reason'],
     ];
 
@@ -54,6 +57,38 @@ class MigrationSmokeTest extends TestCase
     }
 
     /**
+     * 11표를 만든 뒤 그 표를 고친 뒤 마이그레이션을 순서대로 돌려줍니다(예: 실행 이력 표의 실행 주체 인덱스).
+     *
+     * 왕복은 표를 지웠다 다시 만들므로 뒤 마이그레이션이 더한 인덱스·컬럼이 빠진다 — 끝에서 이것들도 다시 올려야
+     * 시작 전 구조로 돌아온다.
+     *
+     * @param  array<int, string>  $creates  11표를 만드는 마이그레이션 파일
+     * @return array<int, string> 파일 경로
+     */
+    private function followUpMigrationFiles(array $creates): array
+    {
+        $files = array_filter(
+            glob(database_path('migrations/*.php')) ?: [],
+            function (string $file) use ($creates): bool {
+                if (in_array($file, $creates, true) || strcmp(basename($file), basename(end($creates))) <= 0) {
+                    return false;
+                }
+                $source = (string) file_get_contents($file);
+                foreach (self::TABLES as $table) {
+                    if (str_contains($source, "'{$table}'")) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        );
+        sort($files);
+
+        return array_values($files);
+    }
+
+    /**
      * 11표를 역순으로 내리고 순서대로 다시 올려도 같은 표가 남는다.
      *
      * @scenario visit_state=new
@@ -67,32 +102,46 @@ class MigrationSmokeTest extends TestCase
         $files = $this->migrationFiles();
         $this->assertCount(11, $files);
 
-        foreach (self::TABLES as $table) {
-            $this->assertTrue(Schema::hasTable($table), $table.' 이 시작 시점에 없다');
+        // 테스트 스키마는 실행 사이에 재사용된다 — 끝날 때 구조가 시작 전과 같아야 다음 실행이 전체 재생(약 50초)으로 가지 않는다
+        $database = DB::connection()->getDatabaseName();
+        $before = StructureChecksum::compute(DB::connection(), $database);
+
+        try {
+            foreach (self::TABLES as $table) {
+                $this->assertTrue(Schema::hasTable($table), $table.' 이 시작 시점에 없다');
+            }
+
+            foreach (array_reverse($files) as $file) {
+                (require $file)->down();
+            }
+
+            foreach (self::TABLES as $table) {
+                $this->assertFalse(Schema::hasTable($table), $table.' 이 down() 뒤에도 남아 있다');
+            }
+
+            foreach ($files as $file) {
+                (require $file)->up();
+            }
+
+            foreach (self::TABLES as $table) {
+                $this->assertTrue(Schema::hasTable($table), $table.' 이 up() 뒤에 없다');
+            }
+
+            // hasTable 가드 — 이미 있는 표에 up() 을 다시 불러도 예외가 없다.
+            foreach ($files as $file) {
+                (require $file)->up();
+            }
+
+            $this->assertTrue(Schema::hasTable('analytics_visits'));
+        } finally {
+            // 중간 단언이 실패해도 내린 표를 다시 올린다(up() 은 hasTable 가드라 이미 있는 표는 건너뛴다).
+            // 그 표를 고친 뒤 마이그레이션도 다시 올린다 — 빠지면 인덱스가 사라진 채 끝난다(2026-11-03 실측)
+            foreach ([...$files, ...$this->followUpMigrationFiles($files)] as $file) {
+                (require $file)->up();
+            }
         }
 
-        foreach (array_reverse($files) as $file) {
-            (require $file)->down();
-        }
-
-        foreach (self::TABLES as $table) {
-            $this->assertFalse(Schema::hasTable($table), $table.' 이 down() 뒤에도 남아 있다');
-        }
-
-        foreach ($files as $file) {
-            (require $file)->up();
-        }
-
-        foreach (self::TABLES as $table) {
-            $this->assertTrue(Schema::hasTable($table), $table.' 이 up() 뒤에 없다');
-        }
-
-        // hasTable 가드 — 이미 있는 표에 up() 을 다시 불러도 예외가 없다.
-        foreach ($files as $file) {
-            (require $file)->up();
-        }
-
-        $this->assertTrue(Schema::hasTable('analytics_visits'));
+        $this->assertSame($before, StructureChecksum::compute(DB::connection(), $database), '왕복 뒤 테스트 DB 구조가 시작 전과 달라졌다');
     }
 
     /**

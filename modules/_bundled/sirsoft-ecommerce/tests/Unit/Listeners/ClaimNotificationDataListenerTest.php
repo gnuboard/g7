@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
@@ -508,5 +509,30 @@ class ClaimNotificationDataListenerTest extends ModuleTestCase
 
         $fromSnapshot = $this->listener->extractData($this->emptyResult(), 'return_collecting', [$collecting->fresh(), ['status' => 'collecting', 'tracking_lines' => 'SNAPSHOT-LINE']]);
         $this->assertSame('SNAPSHOT-LINE', $fromSnapshot['data']['tracking_lines']);
+    }
+
+    /**
+     * 반송 기한 날짜는 사이트 시간대 날짜다 — 알림을 만든 요청자(관리자)의 시간대가 UTC 여도 바뀌지 않는다.
+     *
+     * 회귀(#160): 요청자 시간대(user_timezone)로 찍어, 관리자가 처리하면 관리자 시간대 날짜가 고객 알림에 들어갔다.
+     *
+     * @scenario surface=collection_due_date
+     *
+     * @effects notification_dates_use_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_collection_due_date_uses_the_site_timezone_not_the_requester(): void
+    {
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+        app()->instance('user_timezone', 'UTC');
+
+        $exchange = $this->requestedExchange();
+        // UTC 11-03 16:00 = 서울 11-04 01:00
+        $exchange->forceFill(['collection_due_at' => Carbon::parse('2026-11-03 16:00:00', 'UTC')])->save();
+
+        $result = $this->listener->extractData($this->emptyResult(), 'exchange_requested', [$exchange->fresh()]);
+
+        $this->assertSame('2026-11-04', $result['data']['collection_due_date']);
     }
 }

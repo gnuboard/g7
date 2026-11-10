@@ -778,7 +778,7 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 |------|------|--------------|
 | `version` | 레이아웃 스키마 버전 | 자식 → 부모 → "1.0.0" |
 | `layout_name` | 레이아웃 식별자 | 자식 → 부모 → "" |
-| `meta` | 메타 정보 | 자식이 부모를 덮어씀 |
+| `meta` | 메타 정보 | 키 단위로 자식이 부모를 덮어씀 (`seo`·`scroll_restoration` 은 하위 키까지 깊게 병합) |
 | `data_sources` | 데이터 소스 | 부모 + 자식 (ID 중복 불가) |
 | `components` | 컴포넌트 트리 | 슬롯 교체 병합 |
 | `modals` | 모달 컴포넌트 | ID 기반 병합 (자식 우선) |
@@ -828,7 +828,28 @@ Partial은 PHP의 include와 동일하게 "단순 문자열 삽입"입니다.
 
 자식이 `enabled: false` 지정 시 → SEO 비활성화 (자식 우선)
 
+레이아웃 편집기 페이지 설정([기본 정보]·[검색엔진] 탭)으로 저장하면 이 화면이 직접 적은 SEO 키와 베이스와 값이 달라진
+키만 화면 레이아웃에 남는다(`data_sources` 는 베이스에 없는 항목만). 베이스에서 물려받은 값을 그대로 두면 저장하지 않아,
+그 뒤 베이스의 SEO 를 바꾸면 이 화면에도 반영된다(engine-v1.85.0 — 종전에는 병합본을 통째로 저장해 베이스 값이 화면 값으로
+굳었다). 같은 병합 규칙상 베이스가 준 키를 화면에서 지우는 것은 표현할 수 없다 — 바꾸려면 값을 덮어쓴다.
+
 > 상세: [seo-system.md](../backend/seo-system.md)
+
+### meta.scroll_restoration 병합 규칙 (engine-v1.85.0)
+
+베이스 레이아웃(`_user_base`·`_admin_base` 등)의 `meta.scroll_restoration` 은 레이아웃 편집기에서 고치는 「템플릿 기본값」이다. 화면 레이아웃은 바꿀 키만 적는다 — 서버(`LayoutService`)가 베이스 → 화면 순서로 깊게 병합한다.
+
+| 키 | 병합 전략 |
+|----|----------|
+| 스칼라 (`mode`·`on_reload`·`wait`·`timeout_ms`) | 자식 우선 |
+| `snapshot` (객체) | 하위 키 단위로 자식 우선 (`enabled`·`ttl_seconds`·`revalidate`·`item_key`·`state`). `snapshot.state`(상태 경로 배열)는 `containers` 처럼 통째로 바꾼다 |
+| `containers` (선택자 배열) | 자식이 적으면 통째로 바꾼다 (인덱스별로 섞지 않는다). 빈 배열 `[]` 도 「이 화면은 안쪽 영역 없음」이라는 지정이다 |
+
+- 베이스: `{ "mode": "restore", "containers": ["#admin-main"], "snapshot": { "ttl_seconds": 300 } }`
+- 화면: `{ "mode": "top", "snapshot": { "revalidate": false } }`
+- 결과: `{ "mode": "top", "containers": ["#admin-main"], "snapshot": { "ttl_seconds": 300, "revalidate": false } }`
+
+3단계 이상 상속도 같은 규칙으로 누적된다. 병합 결과 위에 엔진이 template.json 값·엔진 기본값을 깔고, 이동 액션의 `returnScroll` 을 마지막에 덮는다 — 키 표와 적용 순서는 [layout-json.md](layout-json.md#metascroll_restoration-뒤로-가기와-새로고침-스크롤-복원).
 
 #### 데이터소스 initLocal의 `_merge` 옵션 (engine-v1.18.0+)
 

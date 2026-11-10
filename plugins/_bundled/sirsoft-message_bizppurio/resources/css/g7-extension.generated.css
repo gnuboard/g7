@@ -882,28 +882,6 @@
     background-color: oklch(27.8% .033 256.848);
   }
 
-  .bizppurio-admin-page-content-responsive {
-    background-color: oklch(98.5% .002 247.839);
-    min-height: 100vh;
-    padding: calc(.25rem * 4);
-  }
-
-  @media (min-width:40rem) {
-    .bizppurio-admin-page-content-responsive {
-      padding: calc(.25rem * 6);
-    }
-  }
-
-  @media (min-width:64rem) {
-    .bizppurio-admin-page-content-responsive {
-      padding: calc(.25rem * 8);
-    }
-  }
-
-  .bizppurio-admin-page-content-responsive:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    background-color: oklch(21% .034 264.665);
-  }
-
   .bizppurio-data-grid-cell :is(.bizppurio\:wrap-anywhere,.bizppurio\:break-words,.bizppurio-break-all,.bizppurio\:wrap-break-word) {
     white-space: normal;
   }
@@ -914,6 +892,10 @@
 
   .bizppurio-break-all {
     word-break: break-all;
+  }
+
+  .bizppurio\:\[\&_\.btn\]\:w-full .bizppurio-btn {
+    width: 100%;
   }
 }
 

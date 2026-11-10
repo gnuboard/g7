@@ -87,7 +87,7 @@ function isDynamicCachePath(path: string): boolean {
 }
 
 /**
- * 바인딩 캐시 세대 표지 — 화면 전환이 새 화면의 데이터 문맥에 싣는 세대 번호의 키다 (engine-v1.89.0, #869).
+ * 바인딩 캐시 세대 표지 — 화면 전환이 새 화면의 데이터 문맥에 싣는 세대 번호의 키다 (engine-v1.94.0, #869).
  *
  * 영구 캐시와 렌더 사이클 캐시는 컨텍스트와 무관한 키(경로 글자)를 쓴다. 화면 전환은 새 화면을 그리기 직전에 둘을 비우는데
  * (engine-v1.82.1), 응답을 기다리는 동안 전역 상태가 바뀌면 떠나는 화면의 다시 그리기가 startTransition 으로 예약되고, 그 렌더가
@@ -96,7 +96,7 @@ function isDynamicCachePath(path: string): boolean {
  * 그 번호를 싣는다. 다른 세대 번호를 실은 문맥의 평가는 캐시를 읽지도 쓰지도 않는다. 표지가 없는 문맥(편집기 미리보기·단독 사용)은
  * 종전과 같다. 심볼 키라 객체 펼치기로 자식 문맥에 따라가고 `Object.keys`·식 평가의 변수 목록에는 나타나지 않는다.
  *
- * @since engine-v1.89.0
+ * @since engine-v1.94.0
  */
 export const BINDING_CACHE_EPOCH: unique symbol = Symbol.for('g7.bindingCacheEpoch');
 
@@ -271,12 +271,12 @@ export class DataBindingEngine {
   private cache: Map<string, CacheEntry> = new Map();
 
   /**
-   * 지금 캐시 세대 번호 — 0 이면 세대를 연 적이 없다 (engine-v1.89.0, {@link BINDING_CACHE_EPOCH})
+   * 지금 캐시 세대 번호 — 0 이면 세대를 연 적이 없다 (engine-v1.94.0, {@link BINDING_CACHE_EPOCH})
    */
   private cacheEpoch = 0;
 
   /**
-   * 엔진 인스턴스를 넘어 겹치지 않는 세대 번호 발급기 (engine-v1.89.0)
+   * 엔진 인스턴스를 넘어 겹치지 않는 세대 번호 발급기 (engine-v1.94.0)
    */
   private static epochSequence = 0;
 
@@ -403,7 +403,7 @@ export class DataBindingEngine {
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string },
   ): string {
     const opts = { ...this.defaultOptions, ...options };
-    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.94.0, BINDING_CACHE_EPOCH)
     if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
     const devTools = getDevTools();
 
@@ -633,7 +633,7 @@ export class DataBindingEngine {
     trackingInfo?: ExpressionTrackingInfo,
   ): unknown {
     const opts = { ...this.defaultOptions, ...options };
-    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.94.0, BINDING_CACHE_EPOCH)
     if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
     const devTools = getDevTools();
     const pipeStartTime = devTools?.isEnabled() ? performance.now() : 0;
@@ -737,7 +737,7 @@ export class DataBindingEngine {
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string },
   ): T {
     const opts = { ...this.defaultOptions, ...options };
-    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.94.0, BINDING_CACHE_EPOCH)
     if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
     const devTools = getDevTools();
     const startTime = devTools?.isEnabled() ? performance.now() : 0;
@@ -1259,14 +1259,14 @@ export class DataBindingEngine {
   }
 
   /**
-   * 바인딩 캐시의 새 세대를 엽니다 — 캐시를 비우고 새 세대 번호를 돌려줍니다 (engine-v1.89.0, #869).
+   * 바인딩 캐시의 새 세대를 엽니다 — 캐시를 비우고 새 세대 번호를 돌려줍니다 (engine-v1.94.0, #869).
    *
    * 화면 전환이 새 화면을 그리기 직전에 부르고, 돌려받은 번호를 새 화면 데이터 문맥의 {@link BINDING_CACHE_EPOCH} 에 싣는다. 그 뒤
    * 늦게 처리된 떠나는 화면의 렌더(앞 세대 번호를 실은 문맥)는 캐시를 읽지도 쓰지도 않는다. 번호는 엔진 인스턴스를 넘어 겹치지 않는다
    * (언어 전환으로 엔진을 새로 띄워도 앞 엔진의 문맥 번호와 같아지지 않게).
    *
    * @returns 새 세대 번호
-   * @since engine-v1.89.0
+   * @since engine-v1.94.0
    */
   public startCacheEpoch(): number {
     this.clearCache();
@@ -1277,7 +1277,7 @@ export class DataBindingEngine {
   }
 
   /**
-   * 문맥이 지금과 다른 캐시 세대의 것인지 (engine-v1.89.0) — 표지가 없으면 false(종전처럼 캐시를 쓴다).
+   * 문맥이 지금과 다른 캐시 세대의 것인지 (engine-v1.94.0) — 표지가 없으면 false(종전처럼 캐시를 쓴다).
    *
    * 세대를 연 적이 없는 엔진(번역 매개변수 파이프를 평가하는 전역 싱글턴, 편집기 미리보기 등 화면 전환에 참여하지 않는 인스턴스)은
    * 판정하지 않는다 — 렌더 문맥은 늘 세대 번호를 실으므로, 판정하면 그런 엔진의 평가가 화면 안에서도 늘 캐시를 건너뛴다.

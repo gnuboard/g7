@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use ReflectionMethod;
+use Tests\Concerns\FakesGithubReleases;
 use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
 
@@ -25,6 +26,7 @@ use Tests\TestCase;
  */
 class ModuleMenuSyncTest extends TestCase
 {
+    use FakesGithubReleases;
     use ProtectsExtensionDirectories;
     use RefreshDatabase;
 
@@ -41,6 +43,9 @@ class ModuleMenuSyncTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
+        $this->fakeGithubReleases();
 
         // 이전 세션에서 남은 좀비 디렉토리 정리
         $activePath = base_path('modules/sirsoft-board');

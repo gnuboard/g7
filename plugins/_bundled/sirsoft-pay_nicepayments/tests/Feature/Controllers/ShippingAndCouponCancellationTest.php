@@ -69,7 +69,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         // HookArgumentSerializer PHP 8.1 enum 직렬화 버그 우회
         Queue::fake();
 
-        // 자동 환불(auto_advance_refund)로 취소하므로 환불 실행 권한도 필요하다(#764 서버 권한 정리)
+        // 「환불까지 한 번에」(auto_advance_refund) 는 환불 실행 권한이 있어야 한다 — 없으면 컨트롤러가 403.
         $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update', 'sirsoft-ecommerce.claims.execute-refund']);
         $this->createCancelSequences();
 

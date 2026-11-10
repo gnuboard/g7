@@ -179,9 +179,13 @@ class SeriesService
     private function bucketOf(string $unit): callable
     {
         return fn (Carbon $date): string => match ($unit) {
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             'week' => $date->copy()->startOfWeek()->toDateString(),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             'month' => $date->format('Y-m-01'),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             'year' => $date->format('Y-01-01'),
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             default => $date->toDateString(),
         };
     }
@@ -203,6 +207,7 @@ class SeriesService
         // 비교하므로(`$from` 도 날짜 문자열을 파싱한다) 양쪽이 같은 기준이어야 한다.
         $boundary = Carbon::now(AnalyticsClock::siteTimezone())
             ->subDays(max(1, $config->hourlyRetentionDays))
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             ->toDateString();
 
         return Carbon::parse($boundary);
@@ -241,6 +246,7 @@ class SeriesService
 
         return $this->aggregate(
             $rows,
+            // audit:allow datetime-display-user-timezone reason: DB 시각 원값을 같은 기준의 집계 키로 정규화 — 기계값
             fn ($row): string => Carbon::parse($row->hour_start)->format('Y-m-d H:00:00'),
             $this->hourKeys($from, $to),
         );
@@ -293,6 +299,7 @@ class SeriesService
         $keys = [];
 
         for ($hour = Carbon::parse($from.' 00:00:00', $timezone); $hour->lessThanOrEqualTo($end); $hour->addHour()) {
+            // audit:allow datetime-display-user-timezone reason: DB 시각 원값을 같은 기준의 집계 키로 정규화 — 기계값
             $keys[] = $hour->format('Y-m-d H:00:00');
         }
 

@@ -186,11 +186,11 @@ await G7Core.dispatch({
 |--------|------|--------|
 | `on(eventName, callback)` | 이벤트 구독 | 구독 해제 함수 |
 | `emit(eventName, data?)` | 이벤트 발생 | `Promise<any[]>` |
-| `off(eventName, callback)` | 그 콜백의 구독만 해제 (engine-v1.87.0) | `void` |
+| `off(eventName, callback)` | 그 콜백의 구독만 해제 (engine-v1.93.0) | `void` |
 | `off(eventName)` | 그 이벤트의 구독 **전부** 제거 — 폐지 예정, 구독이 있으면 경고 | `void` |
 | `clear()` | 모든 이벤트의 구독 제거 — 구독이 있으면 경고 | `void` |
 
-> **콜백 없는 `off(eventName)`·`clear()` 는 폐지 예정입니다 (engine-v1.87.0).** 같은 이벤트를 다른 컴포넌트·확장도 구독하고 있으면 그 구독까지 끊깁니다. 지금은 구독이 1개 이상일 때 콘솔에 `[G7] componentEvent.off("…") 가 콜백 없이 호출되어 구독 N개를 모두 지웠습니다` 경고를 내고 종전대로 모두 지웁니다. 자기 구독은 `on()` 이 돌려준 해제 함수나 `off(eventName, callback)` 으로 지우세요. `off(eventName, callback)` 의 `callback` 은 `on()` 에 넘긴 것과 같은 함수 참조여야 합니다.
+> **콜백 없는 `off(eventName)`·`clear()` 는 폐지 예정입니다 (engine-v1.93.0).** 같은 이벤트를 다른 컴포넌트·확장도 구독하고 있으면 그 구독까지 끊깁니다. 지금은 구독이 1개 이상일 때 콘솔에 `[G7] componentEvent.off("…") 가 콜백 없이 호출되어 구독 N개를 모두 지웠습니다` 경고를 내고 종전대로 모두 지웁니다. 자기 구독은 `on()` 이 돌려준 해제 함수나 `off(eventName, callback)` 으로 지우세요. `off(eventName, callback)` 의 `callback` 은 `on()` 에 넘긴 것과 같은 함수 참조여야 합니다.
 
 ### 사용 예시
 
@@ -210,7 +210,7 @@ const results = await G7Core.componentEvent.emit('triggerUpload:logo_uploader');
 // 구독 해제 (권장)
 unsubscribe();
 
-// 콜백 참조로 해제 — 같은 이벤트의 다른 구독자는 그대로 받는다 (engine-v1.87.0)
+// 콜백 참조로 해제 — 같은 이벤트의 다른 구독자는 그대로 받는다 (engine-v1.93.0)
 const onSelected = (data) => console.log(data.file);
 G7Core.componentEvent.on('fileSelected', onSelected);
 G7Core.componentEvent.off('fileSelected', onSelected);
@@ -601,13 +601,13 @@ const token = G7Core.api.isSameOriginUrl(endpoint) ? G7Core.api.getToken() : nul
 | `isInitialized()` | 초기화 상태 확인 | `boolean` |
 | `getSubscriptionCount()` | 현재 구독(콜백) 수 | `number` |
 
-### 구독 키와 같은 채널·이벤트 다중 구독 (engine-v1.87.0)
+### 구독 키와 같은 채널·이벤트 다중 구독 (engine-v1.93.0)
 
 - 같은 `channel`·`event` 를 여러 화면·확장이 구독해도 각자 수신합니다. 브로드캐스트 리스너는 채널·이벤트당 하나만 걸리고, 이벤트가 오면 등록된 콜백을 모두 부릅니다. 한 콜백이 예외를 던져도 다른 구독자는 받습니다.
 - `subscribe()` 는 구독마다 다른 키(`admin.dashboard:stats.updated#3` 형태)를 돌려줍니다. 키는 형식에 기대지 말고 받은 그대로 보관했다가 `unsubscribe()` 에 넘기세요. 같은 채널·이벤트의 마지막 구독이 해제될 때만 브로드캐스트 리스너가 해제됩니다.
 - `getSubscriptionCount()` 는 구독(콜백) 단위로 셉니다. 같은 채널·이벤트를 둘이 구독하면 2입니다.
 - `leaveChannel(channel)` 은 채널명이 **정확히 같은** 구독만 정리합니다(종전에는 `channel:` 로 시작하는 키를 모두 지워 `a` 를 떠나면 `a:b` 채널 구독도 지워졌습니다). 같은 채널을 다른 화면·확장도 듣고 있으면 그 구독도 함께 끊기므로, 자기 구독만 정리할 때는 `unsubscribe(key)` 를 쓰세요.
-- **폐지 예정**: `unsubscribe('channel:event')` 처럼 `#번호` 없는 키를 직접 만들어 넘기면 그 채널·이벤트의 구독을 **모두** 지우고 콘솔에 `[G7] WebSocket 구독 해제에 채널·이벤트 키(…)를 넘겨 …` 경고를 냅니다. engine-v1.87.0 이전에는 `subscribe()` 가 이 형식을 돌려줬으므로, 키를 직접 조립하던 코드는 `subscribe()` 의 반환값을 쓰도록 바꾸세요.
+- **폐지 예정**: `unsubscribe('channel:event')` 처럼 `#번호` 없는 키를 직접 만들어 넘기면 그 채널·이벤트의 구독을 **모두** 지우고 콘솔에 `[G7] WebSocket 구독 해제에 채널·이벤트 키(…)를 넘겨 …` 경고를 냅니다. engine-v1.93.0 이전에는 `subscribe()` 가 이 형식을 돌려줬으므로, 키를 직접 조립하던 코드는 `subscribe()` 의 반환값을 쓰도록 바꾸세요.
 
 ### 사용 예시
 

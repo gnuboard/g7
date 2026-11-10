@@ -645,7 +645,7 @@ localStorage에서 선호 통화를 로드하여 전역 상태(`_global.preferre
 
 장바구니 키를 초기화합니다. localStorage에 있으면 로드, 없으면 API를 통해 발급합니다.
 
-발급 요청은 3초(`INIT_CART_KEY_MAX_WAIT_MS`)까지만 기다린다. 이 핸들러는 바탕 레이아웃 init 에서 돌아 엔진이 첫 화면 전에 기다리므로, 요청이 보류되면 키 없이(`_global.cartKey = null`) 먼저 끝내 첫 화면을 막지 않는다. 늦게 온 키는 그때 localStorage 에 저장하고 `_global.cartKey` 에 싣는다(#869). 엔진도 init 대기 전체에 8초 상한을 둔다(engine-v1.89.0).
+발급 요청은 3초(`INIT_CART_KEY_MAX_WAIT_MS`)까지만 기다린다. 이 핸들러는 바탕 레이아웃 init 에서 돌아 엔진이 첫 화면 전에 기다리므로, 요청이 보류되면 키 없이(`_global.cartKey = null`) 먼저 끝내 첫 화면을 막지 않는다. 늦게 온 키는 그때 localStorage 에 저장하고 `_global.cartKey` 에 싣는다(#869). 엔진도 init 대기 전체에 8초 상한을 둔다(engine-v1.94.0).
 
 ```html
 <init>

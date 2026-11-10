@@ -4,7 +4,7 @@ namespace Tests\Unit\Support;
 
 use App\Support\IpAccessMatcher;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * IP 접근 제한 판정 규약을 고정합니다.
@@ -15,7 +15,7 @@ use Tests\TestCase;
  *
  * 축 조합은 각 테스트 메서드의 @scenario 주석이 담당한다.
  */
-class IpAccessMatcherTest extends TestCase
+class IpAccessMatcherTest extends PureTestCase
 {
     /**
      * 허용 목록 항목의 형식 사례를 제공합니다.

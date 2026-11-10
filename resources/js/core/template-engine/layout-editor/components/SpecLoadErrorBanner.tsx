@@ -12,7 +12,7 @@
  * `background: '#f8fafc'`, `color: '#0f172a'`), 툴바 펼침 상자(EditorToolbar.tsx `background: '#ffffff'`)가 고정이고,
  * 편집기 안의 다크 처리는 미리보기 내용(PreviewCanvas.tsx `.g7le-preview-dark`)에만 있다. 틀이 다크를 따르게 되면 함께 짝을 넣는다.
  *
- * @since engine-v1.89.0
+ * @since engine-v1.94.0
  */
 
 import React from 'react';

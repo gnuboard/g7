@@ -3,7 +3,7 @@
 namespace Tests\Unit\Repositories;
 
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 페이지네이션 정렬의 **전순서(total order) 보장** 회귀 가드.
@@ -23,15 +23,29 @@ use Tests\TestCase;
  * 덧붙이므로 이 규율을 이미 만족한다. 손으로 `orderBy` 를 조립한 뒤 `paginate()` 하는 지점만
  * 위험하다 — 그 지점을 소스에서 도출해 전수 검사한다(손으로 나열하지 않는다).
  */
-class PaginationKeyTiebreakTest extends TestCase
+class PaginationKeyTiebreakTest extends PureTestCase
 {
+    /** 순회 단계에서 통째로 건너뛰는 디렉터리 — 소스가 아닌 의존성·빌드 산출물·테스트·문서 */
+    private const PRUNED_DIRS = ['vendor', 'node_modules', 'tests', 'docs', 'dist', '.git', 'storage'];
+
     /**
-     * 검사 대상 Repository 파일 목록.
+     * 스캔 결과 캐시 — 데이터 프로바이더는 탐색 때 불릴 때마다 저장소를 다시 훑지 않게 한 번만 계산한다.
      *
-     * @return array<string, array{0: string}>
+     * @var array<string, array{0: string}>|null
+     */
+    private static ?array $repositoryFiles = null;
+
+    /**
+     * 코어 app/Repositories 와 번들 모듈·플러그인에서 *Repository.php 파일을 찾아 검사 대상 목록을 만든다.
+     *
+     * @return array<string, array{0: string}> 루트 기준 상대 경로 => [절대 경로] 데이터셋
      */
     public static function repositoryFileProvider(): array
     {
+        if (self::$repositoryFiles !== null) {
+            return self::$repositoryFiles;
+        }
+
         // 데이터 프로바이더는 앱 부팅 전에 평가되므로 base_path() 를 쓸 수 없다.
         $root = dirname(__DIR__, 3);
 
@@ -48,8 +62,12 @@ class PaginationKeyTiebreakTest extends TestCase
                 continue;
             }
 
+            // 확장의 node_modules 등은 수만 파일이라, 다 내려간 뒤 거르지 않고 순회 단계에서 가지를 친다
             $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
+                new \RecursiveCallbackFilterIterator(
+                    new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+                    static fn (\SplFileInfo $entry): bool => ! ($entry->isDir() && in_array($entry->getFilename(), self::PRUNED_DIRS, true))
+                )
             );
 
             foreach ($iterator as $file) {
@@ -69,9 +87,19 @@ class PaginationKeyTiebreakTest extends TestCase
 
         ksort($cases);
 
-        return $cases;
+        return self::$repositoryFiles = $cases;
     }
 
+    /**
+     * paginate()·simplePaginate() 를 부르는 Repository 메서드는 정렬 끝에 고유 키를 덧붙이거나 트레이트·면제 사유를 갖는다.
+     *
+     * @scenario case=repository_source_scan
+     *
+     * @effects paginated_query_ends_with_unique_key_tiebreak, trait_sorted_lists_skip_manual_check, reasoned_exemption_skips_check
+     *
+     * @param  string  $path  검사할 Repository 파일 절대 경로
+     * @return void 반환값 없음
+     */
     #[DataProvider('repositoryFileProvider')]
     public function test_페이지네이션_메서드는_고유키_타이브레이크를_갖는다(string $path): void
     {

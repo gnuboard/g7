@@ -314,7 +314,7 @@
 
 ### loginHandoff
 
-외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 코어가 발급한 **로그인 인계 코드**를 교환해 로그인합니다(engine-v1.85.0+).
+외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 코어가 발급한 **로그인 인계 코드**를 교환해 로그인합니다(engine-v1.91.0+).
 확장이 회원을 `/login?login_handoff={코드}` 로 보내면 로그인 화면이 진입 시 이 액션을 실행합니다. 서버가 계정 잠금·회원 상태·
 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, **반환값은 `login` 과 키 단위로 같습니다** —
 로그인 화면은 `login` 의 성공 분기를 그대로 씁니다(명명 액션으로 두고 두 액션이 함께 부르는 것을 권장).
@@ -543,7 +543,7 @@
 
 1. 액션이 트리거되면 `confirm` 속성이 있는지 확인
 2. `{{}}` 바인딩을 풀고, `$t:` 접두사가 있으면 다국어 번역 수행
-3. 풀린 문구가 비었으면(빈 문자열·공백) 확인 창 없이 핸들러 실행 (engine-v1.86.0)
+3. 풀린 문구가 비었으면(빈 문자열·공백) 확인 창 없이 핸들러 실행 (engine-v1.92.0)
 4. 문구가 있으면 `window.confirm(message)` 호출
 5. 사용자가 "확인" → 핸들러 실행
 6. 사용자가 "취소" → 핸들러 실행 중단 (아무 동작 없음)
@@ -618,13 +618,13 @@
 <on type="click">
   <switch on="{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}">
     <case when="popup">
-      <call-external constructor="daum.Postcode" method="open"/>
+      <call-external constructor="kakao.Postcode" method="open"/>
     </case>
     <case when="layer">
-      <call-external-embed constructor="daum.Postcode"/>
+      <call-external-embed constructor="kakao.Postcode"/>
     </case>
     <default>
-      <call-external-embed constructor="daum.Postcode"/>
+      <call-external-embed constructor="kakao.Postcode"/>
     </default>
   </switch>
 </on>
@@ -642,15 +642,15 @@
   "cases": {
     "popup": {
       "handler": "callExternal",
-      "params": { "constructor": "daum.Postcode", "method": "open" }
+      "params": { "constructor": "kakao.Postcode", "method": "open" }
     },
     "layer": {
       "handler": "callExternalEmbed",
-      "params": { "constructor": "daum.Postcode" }
+      "params": { "constructor": "kakao.Postcode" }
     },
     "default": {
       "handler": "callExternalEmbed",
-      "params": { "constructor": "daum.Postcode" }
+      "params": { "constructor": "kakao.Postcode" }
     }
   }
 }
@@ -1411,7 +1411,7 @@ same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/
 
 ```html
 <on type="click">
-  <load-script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script">
+  <load-script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script">
     <field name="onLoad">
       <field name="handler" value="setState"/>
       <field name="params">
@@ -1429,7 +1429,7 @@ same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/
   "type": "click",
   "handler": "loadScript",
   "params": {
-    "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+    "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
     "id": "daum_postcode_script"
   },
   "onLoad": {
@@ -1510,7 +1510,7 @@ same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/
 
 ```html
 <on type="click">
-  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="open">
+  <call-external constructor="kakao.Postcode" callbackEvent="postcode:complete" method="open">
     <field name="args">
       <field name="oncomplete" :value="true"/>
     </field>
@@ -1525,7 +1525,7 @@ same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/
   "type": "click",
   "handler": "callExternal",
   "params": {
-    "constructor": "daum.Postcode",
+    "constructor": "kakao.Postcode",
     "args": { "oncomplete": true },
     "callbackEvent": "postcode:complete",
     "method": "open"
@@ -1537,7 +1537,7 @@ same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/
 
 | 필드 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
-| `constructor` | string | - | 호출할 생성자 경로 (필수, 예: "daum.Postcode") |
+| `constructor` | string | - | 호출할 생성자 경로 (필수, 예: "kakao.Postcode") |
 | `args` | object | {} | 생성자에 전달할 인자 객체 |
 | `method` | string | - | 인스턴스 생성 후 호출할 메서드 (예: "open") |
 | `methodArgs` | array | [] | 메서드에 전달할 인자 배열 |
@@ -1550,7 +1550,7 @@ same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/
 
 ```html
 <on type="click">
-  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete">
+  <call-external constructor="kakao.Postcode" callbackEvent="postcode:complete">
     <field name="args">
       <field name="oncomplete" :value="true"/>
     </field>
@@ -1564,7 +1564,7 @@ same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/
 {
   "handler": "callExternal",
   "params": {
-    "constructor": "daum.Postcode",
+    "constructor": "kakao.Postcode",
     "args": {
       "oncomplete": true
     },
@@ -1576,7 +1576,7 @@ same-origin 경로는 레이아웃에 **접두사 없이**(`/api/plugins/assets/
 위 설정은 다음과 동일합니다:
 
 ```javascript
-new daum.Postcode({
+new kakao.Postcode({
   oncomplete: (data) => {
     G7Core.componentEvent.emit('postcode:complete', data);
   }
@@ -1620,7 +1620,7 @@ new daum.Postcode({
 
 ```html
 <on type="click">
-  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="embed" embedTarget="#postcode_container">
+  <call-external constructor="kakao.Postcode" callbackEvent="postcode:complete" method="embed" embedTarget="#postcode_container">
     <field name="args">
       <field name="oncomplete" :value="true"/>
     </field>
@@ -1634,7 +1634,7 @@ new daum.Postcode({
 {
   "handler": "callExternal",
   "params": {
-    "constructor": "daum.Postcode",
+    "constructor": "kakao.Postcode",
     "args": { "oncomplete": true },
     "callbackEvent": "postcode:complete",
     "method": "embed",
@@ -1648,8 +1648,8 @@ new daum.Postcode({
 ```html
 <button data-ref="search_address_button">
   <on type="click">
-    <load-script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode"/>
-    <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="open">
+    <load-script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode"/>
+    <call-external constructor="kakao.Postcode" callbackEvent="postcode:complete" method="open">
       <field name="args">
         <field name="oncomplete" :value="true"/>
       </field>
@@ -1680,14 +1680,14 @@ new daum.Postcode({
         {
           "handler": "loadScript",
           "params": {
-            "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+            "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
             "id": "daum_postcode"
           }
         },
         {
           "handler": "callExternal",
           "params": {
-            "constructor": "daum.Postcode",
+            "constructor": "kakao.Postcode",
             "args": { "oncomplete": true },
             "callbackEvent": "postcode:complete",
             "method": "open"

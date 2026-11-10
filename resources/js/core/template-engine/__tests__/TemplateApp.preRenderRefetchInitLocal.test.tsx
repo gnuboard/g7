@@ -1,7 +1,7 @@
 // e2e:allow 실제 엔진 구조(TemplateApp.handleRouteChange·renderTemplate·DynamicRenderer·DataSourceManager·ActionDispatcher)에 하네스 레이아웃을 올려 SPA 전환과 첫 진입의 첫 렌더 상태를 견준다 — 브라우저 축은 총괄의 번들 재빌드 뒤 매트릭스가 덮는다
 /**
  * @file TemplateApp.preRenderRefetchInitLocal.test.tsx
- * @description 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.89.0)
+ * @description 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.94.0)
  *
  * 첫 렌더 전 다시 받기는 두 자리에서 난다 — 레이아웃 init_actions 안의 `refetchDataSource`, 그리고 다른 화면으로 옮길 때
  * 새 화면 상태를 세운 뒤로 미룬 blocking onSuccess 안의 다시 받기. 다시 받기는 그 소스의 initLocal 을 `_localInit` 으로
@@ -206,7 +206,7 @@ async function mount(first: RouteSpec): Promise<{ app: any; go: (r: RouteSpec) =
     return { app, go };
 }
 
-describe('[case:state-global-pre-render-refetch-initlocal-lost-on-spa] 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.89.0)', () => {
+describe('[case:state-global-pre-render-refetch-initlocal-lost-on-spa] 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.94.0)', () => {
     afterEach(async () => {
         try { engine.destroyTemplate(); } catch { /* 정리 */ }
         delete (window as any).__templateApp;

@@ -78,9 +78,11 @@ trait FormatsBoardDate
 
         // 표준형: MM-DD (올해) → YY-MM-DD (지난해 이전)
         if ($userCarbon->year === $now->year) {
+            // audit:allow datetime-display-user-timezone reason: 이미 보는 사람 시간대 Carbon(toUserCarbon) — 표시 형식만 지정
             return $userCarbon->format('m-d');
         }
 
+        // audit:allow datetime-display-user-timezone reason: 이미 보는 사람 시간대 Carbon(toUserCarbon) — 표시 형식만 지정
         return $userCarbon->format('y-m-d');
     }
 

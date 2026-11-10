@@ -3,6 +3,8 @@
 return [
     'fetch_success' => 'スケジュールリストを閲覧しました。',
     'fetch_failed' => 'スケジュールリスト閲覧に失敗しました。',
+    'already_running' => 'このスケジュールはすでに実行中です（重複実行防止）。終了後にもう一度実行してください。',
+    'run_lock_unavailable' => 'スケジュール実行のロックストア（キャッシュ）が使用できないため、実行しませんでした。',
     'create_success' => 'スケジュールが作成されました。',
     'create_failed' => 'スケジュール作成に失敗しました。',
     'update_success' => 'スケジュールが編集されました。',
@@ -32,7 +34,6 @@ return [
     'artisan_not_allowed' => 'この Artisan コマンドはセキュリティ上の理由からスケジュール実行できません。',
     'owned_not_deletable' => 'コア・拡張が登録したタスクは削除できません。実行を止めるには無効にしてください。',
     'owner_inactive' => 'このスケジュールを所有する拡張が無効のため実行できません。拡張を有効にしてから再度お試しください。',
-    'already_running' => 'このスケジュールはすでに実行中です。前の実行が終わってから再度お試しください。',
     'job_not_found' => 'Job クラスが見つかりません: :class',
     'artisan_command_failed' => 'Artisan コマンドが終了コード :code で終了しました。',
     'job_not_allowed' => '許可されていない Job クラスです。セキュリティ許可リストに登録された Job のみスケジュールとして実行できます。',

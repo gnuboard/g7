@@ -60,6 +60,7 @@ effects:
   - none_form_falls_back_to_icon         # 마크 없는 수단은 Icon 폴백 렌더
   # iOS 게이팅
   - server_ua_sets_is_ios                # DetectDevice 미들웨어가 UA 로 appConfig.isIos 설정
+  - server_ua_classifies_mobile_or_pc    # DeviceDetector 가 UA 로 mobile/pc 기기 종류 판정
   - is_ios_flows_to_global_appconfig     # appConfig.isIos 가 _global.appConfig 로 전달
   - client_corrects_ipados_desktop_ua    # 부트스트랩이 iPadOS 데스크탑 UA 를 클라 신호로 보정
   - applepay_shown_on_ios                # iOS 기기에서 애플페이 버튼 노출

@@ -1,7 +1,7 @@
 // e2e:allow 실제 엔진 구조(TemplateApp.handleRouteChange·refetchDataSource·updateQueryParams·renderTemplate·DynamicRenderer·ActionDispatcher)에 하네스 레이아웃을 올려 응답 반영 커밋마다 입력칸 값을 잰다 — 브라우저 확인은 내 정보 수정 비밀번호 확인 칸에서 본인 정보 응답을 입력 도중에 풀어 본다
 /**
  * @file TemplateApp.progressiveInitLocalSiblingInput.test.tsx
- * @description initLocal 응답이 입력 도중 도착해도 같은 화면의 다른 `_local` 칸에 친 글자가 지워지지 않는다 (engine-v1.87.0)
+ * @description initLocal 응답이 입력 도중 도착해도 같은 화면의 다른 `_local` 칸에 친 글자가 지워지지 않는다 (engine-v1.93.0)
  *
  * 입력칸의 `set-state target="local"` 은 저장소 A 에 쓰고 B 에는 render:false 로 미러한다. 그래서 데이터 컨텍스트에 남은
  * B 사본(`currentDataContext._global._local`)은 마지막 루트 다시 그리기 때 값이다. initLocal 을 실은 갱신
@@ -178,7 +178,7 @@ async function mount(): Promise<{ app: any; go: (r: { path: string; layout: stri
 /** 친 뒤에 그려진 값 가운데 친 값과 다른 것 — 응답 반영 커밋이 칸을 다른 값으로 그렸는지 본다 */
 const driftAfter = (testid: string, from: number, typed: string): string[] => (committed[testid] ?? []).slice(from).filter((v) => v !== typed);
 
-describe('[case:state-global-progressive-initlocal-sibling-input] initLocal 응답이 입력 도중 와도 형제 `_local` 칸의 글자를 지우지 않는다 (engine-v1.87.0)', () => {
+describe('[case:state-global-progressive-initlocal-sibling-input] initLocal 응답이 입력 도중 와도 형제 `_local` 칸의 글자를 지우지 않는다 (engine-v1.93.0)', () => {
     afterEach(async () => {
         releaseAll();
         (window as any).__templateApp?.cancelEarlySpinnerTimer?.();

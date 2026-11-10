@@ -2,7 +2,7 @@
 
 namespace Modules\Gnuboard7\HelloModule\Tests\Unit\Layouts;
 
-use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 메모 목록 화면의 페이지 번호 파라미터 테스트.
@@ -14,7 +14,7 @@ use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
  *
  * @scenario-manifest tests/scenarios/memo-list-page-param.yaml
  */
-class MemoListPageParamTest extends ModuleTestCase
+class MemoListPageParamTest extends PureTestCase
 {
     /**
      * 레이아웃 원본(.g7.html)과 짝 JSON 의 memos 데이터 소스 page 파라미터를 돌려줍니다.

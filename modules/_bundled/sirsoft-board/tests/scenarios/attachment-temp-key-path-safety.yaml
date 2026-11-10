@@ -11,7 +11,7 @@ description: |
       임시 첨부 0개여도 정리 실행 · 드라이버 경로 재검증 부재
 
   계층 결정:
-    - 요청: ValidatesTempKey 트레잇 — temp_key 는 UUID 만 (화면은 $uuid() 로 발급)
+    - 요청: ValidatesTempKey 트레잇 — temp_key 는 UUID, 또는 7.0.x 화면 꼴 temp_<시각>_<36진수 소문자> 만
     - 서비스: 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리, 없으면 아무것도 지우지 않음
     - 업로드: 글도 키도 없는 업로드는 서버가 UUID 키를 만든다 (빈 세그먼트 경로 방지)
     - 드라이버 가드(코어 storage-path-guard 시나리오)가 최후 방어선
@@ -22,12 +22,14 @@ description: |
 
 axes:
   entry_point: [post_store, upload]
-  temp_key_shape: [uuid, path_traversal]
+  temp_key_shape: [uuid, legacy, path_traversal]
 
 effects:
   - traversal_temp_key_rejected_with_422
   - sibling_module_storage_survives
   - uuid_temp_key_accepted
+  # 7.0.x 기본 템플릿 복사본의 임시 키(temp_<시각>_<36진수>)도 받는다 — 템플릿 호환 대장 결정 「호환 처리」(2026-11-08)
+  - legacy_temp_key_accepted
   - empty_temp_link_deletes_nothing
   - owned_temp_attachments_moved_and_temp_dir_cleaned
   # 임시 디렉토리 정리는 부수 작업 — 실패해도 옮긴 첨부의 연결과 글 저장은 끝까지 간다(#703 실측).

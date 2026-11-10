@@ -85,7 +85,9 @@ trait NotificationContentBehavior
      * 변수를 치환하여 제목과 본문을 반환합니다.
      *
      * {key} 형식의 변수를 실제 값으로 치환합니다. 언어별 값(`{로케일: 문자열}`)은 같은 로케일로 고른다
-     * (`NotificationVariables`) — 틀만 받는 사람 언어이고 값은 요청 언어로 고정되던 문제를 막는다.
+     * (`NotificationVariables`, 없으면 사이트 기본 언어 → 영어) — 틀만 받는 사람 언어이고 값은 요청 언어로 고정되던 문제를 막는다.
+     * 알림 데이터는 발송 시점에 한 번 만들어 모든 수신자에게 쓰므로, 번역 문구는 `LocalizedValue::translateAll()` 묶음으로
+     * 넘겨야 수신자 언어로 나간다.
      *
      * @param  array  $data  key => value 변수 맵 (값은 문자열·숫자 또는 언어별 값)
      * @param  string|null  $locale  로케일 (null이면 현재 앱 로케일)

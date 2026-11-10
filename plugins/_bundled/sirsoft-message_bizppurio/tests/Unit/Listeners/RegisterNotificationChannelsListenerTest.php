@@ -4,7 +4,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Tests\Unit\Listeners;
 
 use App\Services\PluginSettingsService;
 use Plugins\Sirsoft\MessageBizppurio\Listeners\RegisterNotificationChannelsListener;
-use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * 채널 등록 리스너 단위 테스트.
@@ -14,7 +14,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * @scenario readiness_state=ready
  */
-class RegisterNotificationChannelsListenerTest extends PluginTestCase
+class RegisterNotificationChannelsListenerTest extends PureTestCase
 {
     /**
      * 설정값 맵으로 PluginSettingsService 를 대체한 리스너를 만든다.

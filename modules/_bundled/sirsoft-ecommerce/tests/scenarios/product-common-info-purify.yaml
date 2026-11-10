@@ -1,0 +1,22 @@
+feature: 상품 공통 정보 저장 정화 — 상품 설명과 같은 규칙 (#887)
+
+description: |
+  상품 공통 정보 본문(HTML 모드)을 저장할 때 로케일마다 상품 설명과 같은 저장 정화(PurifiesHtml content 프로필 — 코어
+  ContentHtmlPolicy::forStorage())를 거친다. 스크립트·이벤트 속성·javascript: 주소·이 사이트 서빙 주소가 아닌 미디어는 지우고,
+  코어 「본문 콘텐츠」 후보(그림 캡션·업로드 동영상·오디오·외부 영상)·운영자 추가 태그는 후보 스위치와 무관하게 남기며,
+  문단 안 미디어·인라인 태그는 넣은 자리에 남기고, 모르는 서비스 외부 영상도 원문 그대로 둔다. 모드를 보내지 않은 수정은
+  저장된 모드를 따르고, 텍스트 모드 본문은 손대지 않는다. 종전에는 공통 정보 본문을 정화 없이 저장했다.
+
+axes:
+  case: [create_html, update]
+
+effects:
+  - script_removed
+  - inline_position_kept
+  - unknown_embed_kept
+  - switches_ignored_on_store
+  - update_uses_stored_mode
+  - text_mode_untouched
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ProductCommonInfoPurifyTest.php

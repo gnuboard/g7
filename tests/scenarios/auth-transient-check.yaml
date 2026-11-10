@@ -1,4 +1,4 @@
-feature: 인증 확인이 서버 일시 오류(5xx)나 네트워크 오류를 받으면 로그인 안 됨으로 보지 않는다 (engine-v1.89.0)
+feature: 인증 확인이 서버 일시 오류(5xx)나 네트워크 오류를 받으면 로그인 안 됨으로 보지 않는다 (engine-v1.94.0)
 
 description: |
   개발 서버에서 라우트 캐시를 다시 만드는 순간(`bootstrap/cache/routes-v7.php` 가 잠깐 없음) `GET /api/admin/auth/user` 가

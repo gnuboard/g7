@@ -33,6 +33,7 @@ import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7Co
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
 // 운영 화면 편집 진입 단추 — 편집기 lazy 번들이 아니라 메인 번들에 둔다(일반 렌더 화면에 붙는다, #869)
 import { EditEntryFabHost } from './template-engine/layout-editor/components/EditEntryFabHost';
+import { documentTitle } from './routing/DocumentTitle';
 import { loadScriptWithRetry } from './template-engine/networkResilience';
 // LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
 // (layout-editor.min.js)로 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
@@ -711,7 +712,7 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
                 return modalRenderer;
               })
               ),  // ParentContextProvider 종료
-              // 운영 화면 편집 진입 단추 — 모달 묶음 뒤 고정 키 형제라 앞 형제의 키·순서를 바꾸지 않는다 (engine-v1.89.0, #869)
+              // 운영 화면 편집 진입 단추 — 모달 묶음 뒤 고정 키 형제라 앞 형제의 키·순서를 바꾸지 않는다 (engine-v1.94.0, #869)
               React.createElement(EditEntryFabHost, {
                 key: '__g7_edit_entry_fab',
                 templateIdentifier: state.templateId || '',
@@ -946,7 +947,7 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
                     return modalRenderer;
                   })
                 ),  // ParentContextProvider 종료
-                // 운영 화면 편집 진입 단추 — renderTemplate 과 같은 키·자리여야 재렌더 때 내려갔다 붙지 않는다 (engine-v1.89.0, #869)
+                // 운영 화면 편집 진입 단추 — renderTemplate 과 같은 키·자리여야 재렌더 때 내려갔다 붙지 않는다 (engine-v1.94.0, #869)
                 React.createElement(EditEntryFabHost, {
                   key: '__g7_edit_entry_fab',
                   templateIdentifier: state.templateId || '',
@@ -971,6 +972,13 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
       startTransition(() => {
         doRender();
       });
+    }
+
+    // 브라우저 탭 제목 — 받은 데이터로 다시 계산한다. 이 화면 레이아웃에 연결된 동안만 쓴다(앞 화면의 늦은 데이터 무시) (engine-v1.86.0)
+    try {
+      documentTitle.recompute(state.currentLayoutJson, state.currentDataContext);
+    } catch (titleError) {
+      logger.warn('탭 제목 계산 실패', titleError);
     }
 
     logger.log('템플릿 데이터 업데이트 완료');

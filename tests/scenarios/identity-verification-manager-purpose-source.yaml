@@ -1,0 +1,19 @@
+feature: 본인인증 목적(purpose)의 선언 출처 보존
+
+description: |
+  IdentityVerificationManager::getAllPurposes() 가 각 목적이 어느 출처에서 선언됐는지 source_type·source_identifier 로
+  돌려주는 계약을 지킨다(#297). 코어 기본 4종은 core, 모듈·플러그인 선언은 module·plugin 과 확장 식별자,
+  출처 없이 등록된 목적은 admin 이며, 모듈이 코어 목적을 덮어쓰면 출처도 모듈로 바뀐다.
+
+axes:
+  case: [core, module, plugin, admin, override]
+
+effects:
+  - core_purposes_tagged_core_source
+  - module_declared_purpose_tagged_module_source
+  - plugin_declared_purpose_tagged_plugin_source
+  - unsourced_purpose_defaults_to_admin
+  - module_override_replaces_core_source
+
+test_files:
+  - tests/Unit/Extension/IdentityVerificationManagerPurposeSourceTest.php

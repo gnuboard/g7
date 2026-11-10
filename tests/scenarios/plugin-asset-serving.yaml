@@ -1,0 +1,40 @@
+feature: 플러그인 자산(JS·CSS·이미지·글꼴) 공개 서빙
+
+description: |
+  활성 플러그인의 자산을 공개 API 로 내려준다. 경로 탈출·허용되지 않은 확장자는 막고, 응답에는 MIME·ETag·
+  환경별 캐싱 헤더를 싣는다. 파일이 있어도 플러그인이 비활성이면 404 로 끝나고, 경로 검증 실패는 JSON 422 다.
+  소스맵 거부는 production-sourcemap-exposure 가 다룬다.
+
+axis_notes:
+  case: |
+    serve 는 활성 플러그인의 정상 서빙, missing 은 비활성 플러그인·없는 파일(404), traversal 은 경로 탈출·절대 경로·NULL 바이트
+    차단, file_type 은 확장자 화이트리스트, caching 은 ETag·304·환경별 캐시 헤더, nested_path 는 하위 경로다.
+    route 는 플러그인 자산 라우트가 등록되어 있는지다.
+
+axes:
+  case: [serve, missing, traversal, file_type, caching, route, nested_path]
+
+effects:
+  - plugin_asset_serves_js_file_from_active_plugin
+  - plugin_asset_serves_css_file_from_active_plugin
+  - plugin_asset_returns_404_for_inactive_plugin
+  - plugin_asset_returns_404_for_nonexistent_file
+  - plugin_asset_blocks_path_traversal_attack
+  - plugin_asset_blocks_path_traversal_with_backslash
+  - plugin_asset_blocks_url_encoded_path_traversal
+  - plugin_asset_blocks_windows_absolute_path
+  - plugin_asset_blocks_linux_absolute_path
+  - plugin_asset_blocks_null_byte_attack
+  - plugin_asset_blocks_disallowed_file_types
+  - plugin_asset_blocks_various_disallowed_file_types
+  - plugin_asset_allows_all_whitelisted_file_types
+  - plugin_asset_sets_caching_headers
+  - plugin_asset_generates_etag_header
+  - plugin_asset_returns_304_when_etag_matches
+  - plugin_asset_applies_immutable_caching_in_production
+  - plugin_asset_applies_no_cache_in_development
+  - plugin_asset_plugin_route_is_accessible
+  - plugin_asset_handles_nested_path
+
+test_files:
+  - tests/Feature/Plugin/PluginAssetServingTest.php

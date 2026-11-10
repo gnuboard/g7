@@ -35,7 +35,7 @@ class PerItemAbilitiesTest extends TestCase
     private User $otherUser;
 
     /**
-     * 매니저 역할(사용자 수정 삭제 권한 self 스코프)과 매니저, 일반 사용자를 만듭니다.
+     * 테스트 환경을 준비합니다.
      *
      * @return void 반환값 없음
      */
@@ -97,15 +97,14 @@ class PerItemAbilitiesTest extends TestCase
     }
 
     /**
-     * self 스코프에서 본인 행은 수정 권한이 true 이고, 삭제 권한은 본인 계정 규칙으로 false 다.
+     * self 스코프에서 본인 행은 abilities가 true를 반환한다.
      *
-     * 수정 가능 여부는 G7 역할/퍼미션/스코프 시스템이 평가하므로 managerUser(is_super=false, self 스코프 보유)는
-     * 본인 행에 can_update=true. 삭제는 스코프와 관계없이 관리자 화면에서 본인 계정을 지울 수 없으므로
-     * (UserService::deleteUser 와 같은 판정) can_delete=false.
+     * 수정은 self 스코프로 허용된다. 삭제는 권한이 있어도 본인 계정이면 관리자 화면에서 막는다 —
+     * 서버(UserService::deleteUser)와 같은 판정이라 can_delete=false 다.
      *
-     * @scenario scope=self, row=own, wrap=single
+     * @scenario case=self_scope_allows_own_row
      *
-     * @effects self_scope_own_row_updatable_not_deletable
+     * @effects self_scope_allows_own_row
      *
      * @return void 반환값 없음
      */
@@ -126,9 +125,9 @@ class PerItemAbilitiesTest extends TestCase
     /**
      * self 스코프에서 타인 행은 abilities가 false를 반환한다.
      *
-     * @scenario scope=self, row=other, wrap=single
+     * @scenario case=self_scope_denies_other_row
      *
-     * @effects self_scope_other_row_denied
+     * @effects self_scope_denies_other_row
      *
      * @return void 반환값 없음
      */
@@ -149,9 +148,9 @@ class PerItemAbilitiesTest extends TestCase
     /**
      * null 스코프(전체)에서는 타인 행도 abilities가 true를 반환한다.
      *
-     * @scenario scope=all, row=other, wrap=single
+     * @scenario case=null_scope_allows_all_rows
      *
-     * @effects all_scope_other_row_allowed
+     * @effects null_scope_allows_all_rows
      *
      * @return void 반환값 없음
      */
@@ -180,9 +179,9 @@ class PerItemAbilitiesTest extends TestCase
     /**
      * toListArray 반환값에 is_owner 필드가 포함된다.
      *
-     * @scenario scope=self, row=own, wrap=single
+     * @scenario case=to_list_array_includes_is_owner
      *
-     * @effects list_array_has_is_owner
+     * @effects to_list_array_includes_is_owner
      *
      * @return void 반환값 없음
      */
@@ -200,9 +199,9 @@ class PerItemAbilitiesTest extends TestCase
     /**
      * toListArray 반환값에 abilities 필드가 포함된다.
      *
-     * @scenario scope=self, row=own, wrap=single
+     * @scenario case=to_list_array_includes_abilities
      *
-     * @effects list_array_has_abilities
+     * @effects to_list_array_includes_abilities
      *
      * @return void 반환값 없음
      */
@@ -222,9 +221,9 @@ class PerItemAbilitiesTest extends TestCase
     /**
      * getEffectiveScopeForPermission 캐싱이 동작한다.
      *
-     * @scenario scope=self, row=own, wrap=single
+     * @scenario case=effective_scope_caching
      *
-     * @effects effective_scope_cached
+     * @effects effective_scope_caching
      *
      * @return void 반환값 없음
      */
@@ -247,9 +246,9 @@ class PerItemAbilitiesTest extends TestCase
     /**
      * 권한이 없는 사용자는 abilities가 모두 false다.
      *
-     * @scenario scope=none, row=own, wrap=single
+     * @scenario case=user_without_permission_gets_all_false
      *
-     * @effects no_permission_all_false
+     * @effects user_without_permission_gets_all_false
      *
      * @return void 반환값 없음
      */
@@ -274,9 +273,9 @@ class PerItemAbilitiesTest extends TestCase
      * $this->resource가 Model이 아닌 UserResource가 됨.
      * resolveAbilitiesFromMap이 중첩된 JsonResource를 풀어서 Model을 찾아야 한다.
      *
-     * @scenario scope=self, row=own|other, wrap=collection
+     * @scenario case=collection_double_wrap_resolves_scope_correctly
      *
-     * @effects collection_double_wrap_resolves_scope
+     * @effects collection_double_wrap_resolves_scope_correctly
      *
      * @return void 반환값 없음
      */
@@ -309,9 +308,9 @@ class PerItemAbilitiesTest extends TestCase
     /**
      * UserResource를 이중으로 래핑해도 abilities가 올바르게 반환된다.
      *
-     * @scenario scope=self, row=other, wrap=double
+     * @scenario case=double_wrapped_resource_returns_correct_abilities
      *
-     * @effects double_wrap_resolves_abilities
+     * @effects double_wrapped_resource_returns_correct_abilities
      *
      * @return void 반환값 없음
      */

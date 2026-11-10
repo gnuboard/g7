@@ -925,13 +925,6 @@
     color: oklch(87.2% .01 258.338);
   }
 
-  .page-modal-footer-buttons {
-    margin-top: calc(.25rem * 6);
-    justify-content: flex-end;
-    gap: calc(.25rem * 3);
-    display: flex;
-  }
-
   .page-spinner-sm {
     height: calc(.25rem * 4);
     width: calc(.25rem * 4);
@@ -1012,27 +1005,6 @@
     background-color: oklch(27.8% .033 256.848);
   }
 
-  .page-admin-page-content-responsive-fluid {
-    background-color: oklch(98.5% .002 247.839);
-    padding: calc(.25rem * 4);
-  }
-
-  @media (min-width:40rem) {
-    .page-admin-page-content-responsive-fluid {
-      padding: calc(.25rem * 6);
-    }
-  }
-
-  @media (min-width:64rem) {
-    .page-admin-page-content-responsive-fluid {
-      padding: calc(.25rem * 8);
-    }
-  }
-
-  .page-admin-page-content-responsive-fluid:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    background-color: oklch(21% .034 264.665);
-  }
-
   .page-admin-page-content-fluid {
     background-color: oklch(98.5% .002 247.839);
     padding: calc(.25rem * 6);
@@ -1077,6 +1049,10 @@
 
   .page-hidden {
     display: none;
+  }
+
+  .page\:\[\&_\.btn\]\:w-full .page-btn {
+    width: 100%;
   }
 }
 

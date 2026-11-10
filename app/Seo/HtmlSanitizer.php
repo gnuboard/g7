@@ -2,6 +2,7 @@
 
 namespace App\Seo;
 
+use App\Support\Content\ContentHtmlPolicy;
 use App\Thumbnails\ThumbnailUrl;
 use Illuminate\Support\Facades\Log;
 
@@ -120,6 +121,13 @@ class HtmlSanitizer
     }
 
     /**
+     * 이번 정화에서 코어 「본문 콘텐츠」 규칙이 켠 후보 태그(그림 캡션·업로드 동영상·오디오·외부 영상) — 제거·언랩 목록에서 뺀다 (#883).
+     *
+     * @var array<int, string>
+     */
+    private array $policyTags = [];
+
+    /**
      * 사용자 작성 HTML 을 정화해 반환합니다.
      *
      * 파싱에 실패하면 정화되지 않은 HTML 을 내보내지 않고 전체를 이스케이프합니다
@@ -157,9 +165,14 @@ class HtmlSanitizer
                 return e($html);
             }
 
+            // 본문 콘텐츠 규칙(#883): 켜진 후보 태그는 지우지 않고, 정화 뒤 마무리(미디어 출처 검사·속성 허용 목록·외부 영상은 링크로)를
+            // 코어 공용 규칙이 한다 — 봇 화면은 사람 화면보다 보수적이라 iframe 대신 링크를 내보낸다
+            $policy = ContentHtmlPolicy::current();
+            $this->policyTags = $policy->allowedExtraTags();
+
             $this->cleanNode($root);
 
-            return $this->innerHtml($document, $root);
+            return $policy->finalize($this->innerHtml($document, $root), 'bot');
         } catch (\Throwable $e) {
             Log::warning('봇 화면 HTML 정화 실패 — 전체 이스케이프로 대체', [
                 'error' => $e->getMessage(),
@@ -210,13 +223,13 @@ class HtmlSanitizer
     {
         $tag = strtolower($element->tagName);
 
-        if (in_array($tag, self::DROP_WITH_CONTENT, true)) {
+        if (in_array($tag, self::DROP_WITH_CONTENT, true) && ! in_array($tag, $this->policyTags, true)) {
             $element->parentNode?->removeChild($element);
 
             return;
         }
 
-        if (in_array($tag, self::UNWRAP_KEEP_CONTENT, true)) {
+        if (in_array($tag, self::UNWRAP_KEEP_CONTENT, true) && ! in_array($tag, $this->policyTags, true)) {
             $this->cleanNode($element);
             $this->unwrap($element);
 

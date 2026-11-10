@@ -116,6 +116,13 @@
             "section"
         ]
     },
+    "scroll_restoration": {
+        "mode": "restore",
+        "on_reload": true,
+        "wait": "height",
+        "timeout_ms": 5000,
+        "containers": ["#right_content_area"]
+    },
     "error_config": {
         "layouts": {
             "401": "errors/401",

@@ -1,0 +1,20 @@
+feature: 본인인증 purpose 레지스트리 병합
+
+description: |
+  IdentityVerificationManager 는 코어 기본 purpose(signup·password_reset·self_update·sensitive_action)를 갖고,
+  확장이 getIdentityPurposes() 로 선언한 purpose 를 registerDeclaredPurposes()/registerPurpose() 로 병합한다.
+  같은 키는 등록한 정의가 덮어쓰고, 빈 키·배열이 아닌 정의는 버린다. hasPurpose() 는 레지스트리 상태를 그대로 반영한다.
+
+axes:
+  case: [core_defaults, extension_registration, core_override, invalid_payload]
+
+effects:
+  - core_default_purposes_present
+  - declared_purposes_merged_with_core
+  - single_purpose_registered
+  - registered_purpose_overrides_core_entry
+  - invalid_purpose_entries_ignored
+  - has_purpose_reflects_registry_state
+
+test_files:
+  - tests/Unit/Extension/IdentityVerificationManagerPurposeRegistryTest.php

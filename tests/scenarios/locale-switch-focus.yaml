@@ -1,4 +1,4 @@
-feature: 언어 전환(엔진을 내리고 같은 화면을 새로 마운트) 뒤 포커스가 body 로 빠지지 않고 전환 직전 요소로 돌아온다 (engine-v1.89.0)
+feature: 언어 전환(엔진을 내리고 같은 화면을 새로 마운트) 뒤 포커스가 body 로 빠지지 않고 전환 직전 요소로 돌아온다 (engine-v1.94.0)
 
 description: |
   TemplateApp.changeLocale 은 destroyTemplate 뒤 같은 화면을 다시 그려 포커스가 body 로 빠진다. 언어 메뉴 부품은 부품 훅

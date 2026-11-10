@@ -929,7 +929,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 페이지의 버전 이력 목록을 조회합니다. `{page}` 는 페이지 ID 입니다. 각 항목은 그 시점의 `title`·`content`·`content_mode`·`seo_meta` 스냅샷과 `version` 번호·`changes_summary`(변경 요약)·`creator`(작성자)를 담습니다. 편집 화면의 버전 이력 패널에서 과거 버전 목록을 보여 주는 데이터 소스입니다. 미존재 404, 스코프 밖 403.
+**설명** 페이지의 버전 이력 목록을 조회합니다. `{page}` 는 페이지 ID 입니다. 각 항목은 그 시점의 `title`·`content`·`content_mode`·`seo_meta` 스냅샷과 `version` 번호·`changes_summary`(변경 요약)·`creator`(작성자)를 담습니다. 편집 화면의 버전 이력 패널에서 과거 버전 목록을 보여 주는 데이터 소스입니다. 미발행 페이지면 `content` 안의 본문 미디어 주소 가운데 이 페이지가 소유한 것만 서명 주소로 바꿔 내보냅니다(페이지 상세 응답과 같은 규칙 — 관리자 화면의 미디어 요청에는 인증 헤더가 없다, #887). 미존재 404, 스코프 밖 403.
 
 
 ### GET /api/modules/sirsoft-page/admin/pages/{page}/versions/{versionId}
@@ -1122,7 +1122,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 페이지를 특정 버전 시점으로 복원합니다. `{page}` 는 페이지 ID, `{versionId}` 는 복원 대상 버전 ID 입니다. `PageService::restoreVersion()` 이 그 버전의 내용을 현재 페이지에 반영하고(복원 자체도 새 버전으로 적재), 복원된 `PageResource` 를 반환합니다. 편집 화면 버전 이력 패널의 "이 버전으로 복원" 액션에 사용합니다. 미존재 404, 스코프 밖 403. `{versionId}`는 경로의 `{page}`에 속한 버전이어야 합니다 — 다른 페이지의 버전 ID를 지정하면 `versions.show` 와 동일하게 404를 반환합니다.
+**설명** 페이지를 특정 버전 시점으로 복원합니다. `{page}` 는 페이지 ID, `{versionId}` 는 복원 대상 버전 ID 입니다. `PageService::restoreVersion()` 이 그 버전의 내용을 현재 페이지에 반영하고(복원 자체도 새 버전으로 적재), 복원된 `PageResource` 를 반환합니다. 편집 화면 버전 이력 패널의 "이 버전으로 복원" 액션에 사용합니다. 미존재 404, 스코프 밖 403. `{versionId}`는 경로의 `{page}`에 속한 버전이어야 합니다 — 다른 페이지의 버전 ID를 지정하면 `versions.show` 와 동일하게 404를 반환합니다. 복원 본문도 저장과 같이 본문 미디어를 정규화·동기화합니다(#887) — 그 버전이 참조하던 본문 미디어는 버전 참조 덕에 남아 있어 그대로 이어지고, 다른 페이지 소유 본문 미디어가 섞여 있으면 볼 수 있을 때 이 페이지 소유로 복제해 본문 주소를 바꿉니다. 복제할 것까지 세어 문서당 최대를 넘으면 `422`(`errors.code = content_media_limit_exceeded`)로 복원 전체가 되돌아갑니다.
 
 
 ### GET /api/modules/sirsoft-page/pages/attachment/{hash}

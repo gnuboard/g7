@@ -1,0 +1,26 @@
+feature: 페이지 본문 미디어 — 관리자 편집기 본문 이미지·동영상·오디오 (#883 4단계)
+
+description: |
+  `page_attachments` 의 `collection = content_media`. 파일은 처음부터 `content-media/Y/m/d/` 에 두고 행은 임시(page_id=null +
+  임시 키)다. 페이지 저장 트랜잭션 안에서 본문(로케일마다)이 참조한 것만 잇고, 빠진 것은 어느 버전도 참조하지 않을 때만
+  지운다(행 + 커밋 뒤 파일 — #887 G5, 버전이 참조하면 페이지에 붙인 채 둔다). 첨부
+  연결(파일 이동)·첨부 목록·첨부 개수는 본문 미디어를 빼고 본다. 서빙 게이트는 「발행 또는 열람권 또는 서명」, 응답 본문은
+  미발행일 때만 서명한다(발행 페이지는 정식 주소).
+
+axes:
+  case: [sync, serve_gate, reserved_collection, fallback_follows_core]
+
+effects:
+  - referenced_linked
+  - attachment_link_skips_content_media
+  - removed_kept_while_version_references
+  - signed_query_stripped
+  - unpublished_requires_signature
+  - published_public
+  - present_signs_only_unpublished
+  - content_media_not_counted_as_attachment
+  - video_follows_core_switch_without_page_rule
+  - serve_honours_range
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaTest.php

@@ -78,7 +78,8 @@
       "replied": "Replied",
       "not_replied": "Not Replied"
     },
-    "quantity_value": "{{count}}"
+    "quantity_value": "{{count}}",
+    "imported": "Imported"
   },
   "detail": {
     "purchase_info": {

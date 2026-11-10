@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\Koreaexim\Tests\Unit\Services;
 use Plugins\Sirsoft\Koreaexim\Enums\RateType;
 use Plugins\Sirsoft\Koreaexim\Enums\RunStatus;
 use Plugins\Sirsoft\Koreaexim\Services\ExchangeRateCalculator;
-use Plugins\Sirsoft\Koreaexim\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * 수출입은행 고시 환율의 교차 환산 계산기 검증
@@ -13,7 +13,7 @@ use Plugins\Sirsoft\Koreaexim\Tests\PluginTestCase;
  * 효과 요약(마커 아님 — 평문): 교차 환율 산출, 잘못된 고시 값의 기존 환율 보존.
  *   각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
  */
-class ExchangeRateCalculatorTest extends PluginTestCase
+class ExchangeRateCalculatorTest extends PureTestCase
 {
     /**
      * 기본통화와 환율 종류 및 값과 정밀도 조합별 환산 결과를 검증합니다.

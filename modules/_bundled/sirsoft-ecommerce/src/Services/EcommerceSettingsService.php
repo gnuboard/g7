@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
 use App\Extension\HookManager;
@@ -434,6 +435,11 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         CurrencySettingsCache::clear();
 
         $this->flushResolvedCaches();
+
+        // 관련 상품 순서·캐시 만료를 바꾸면 이미 골라 둔 목록을 비운다 — 두지 않으면 옛 순서가 만료 때까지 남는다.
+        if (is_array($settings['product_display'] ?? null)) {
+            app(CacheInterface::class)->flushTags([ProductService::RELATED_CACHE_TAG]);
+        }
 
         return $success;
     }

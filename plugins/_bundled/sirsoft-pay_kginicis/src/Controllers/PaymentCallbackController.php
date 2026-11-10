@@ -984,6 +984,7 @@ class PaymentCallbackController
             'tid' => $tid,
             'vbank_name' => $pgResponse['vactBankName'] ?? null,
             'vbank_number' => $pgResponse['VACT_Num'] ?? null,
+            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             'vbank_due_at' => $vbankDueAt?->toDateTimeString(),
         ]);
     }

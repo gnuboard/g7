@@ -20,7 +20,7 @@ interface MileageBalanceRepositoryInterface
      *
      * @param  int  $userId  회원 ID
      * @param  string|null  $currency  통화 코드 (null 시 전체 통화)
-     * @return array 잔액 배열 (available/pending/total_earned/total_used/expiring_soon/expiring_date/by_currency)
+     * @return array 잔액 배열 (available/pending/total_earned/total_used/expiring_soon/expiring_date/expiring_date_formatted/by_currency)
      */
     public function getCachedBalance(int $userId, ?string $currency = null): array;
 

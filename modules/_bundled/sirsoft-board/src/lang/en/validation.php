@@ -316,6 +316,20 @@ return [
 
     // Field attributes
     'attributes' => [
+        'content_media' => [
+            'file' => 'content media file',
+            'temp_key' => 'temporary key',
+            'post_id' => 'post number',
+        ],
+        // Content media policy sub-fields (#883) — :kind is the core media kind name (Image, Video, Audio)
+        'content_media_policy' => [
+            'policy' => 'Content Media Policy',
+            'max_per_document' => 'Max Content Media per Document',
+            'kind' => ':kind Content Media Settings',
+            'enabled' => ':kind Content Media Enabled',
+            'max_size_mb' => ':kind Max File Size (MB)',
+            'extensions' => ':kind Allowed Extensions',
+        ],
         'board_ids' => 'board order',
         'bulk_members' => [
             'apply_all' => 'Target Boards Scope',
@@ -578,6 +592,10 @@ return [
     ],
 
     // Attachment validation
+    'content_media' => [
+        'temp_key_required' => 'Uploading content media requires a temporary key (UUID). Reload the page and try again.',
+    ],
+
     'attachment' => [
         'file' => [
             'required' => 'File is required.',
@@ -592,6 +610,7 @@ return [
         'file_mimes' => 'File type is not allowed.',
         'post_id_required' => 'Post ID is required.',
         'post_id_invalid' => 'Invalid post ID.',
+        'collection_reserved' => 'Files cannot be uploaded to this attachment collection.',
         'max_count_exceeded' => 'Maximum number of files (:max) exceeded.',
         'extension_not_allowed' => 'File extension is not allowed: :extension',
         // Reorder validation messages

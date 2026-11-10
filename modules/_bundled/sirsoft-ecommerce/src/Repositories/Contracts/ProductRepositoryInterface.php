@@ -8,6 +8,7 @@ use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 
 /**
@@ -200,6 +201,14 @@ interface ProductRepositoryInterface
     public function find(int $id): ?Product;
 
     /**
+     * ID로 상품 조회 — 휴지통에 든(소프트 삭제된) 상품 포함
+     *
+     * @param  int  $id  상품 ID
+     * @return Product|null 상품 모델 또는 null
+     */
+    public function findWithTrashed(int $id): ?Product;
+
+    /**
      * 상품 다중 필드 일괄 업데이트
      *
      * @param  array  $ids  상품 ID 배열
@@ -227,6 +236,19 @@ interface ProductRepositoryInterface
      * @return Collection 인기 상품 컬렉션
      */
     public function getPopularProducts(int $limit = 10): Collection;
+
+    /**
+     * 관련 상품 ID 조회 — 대표 분류(하위 포함) → 그 상위 분류 → … 단계로 채운다
+     *
+     * 지금 상품은 빼고, 앞 단계에서 고른 상품은 다시 고르지 않는다. 대표 분류가 없으면 첫 분류를 쓰고,
+     * 분류가 없으면 빈 배열이다.
+     *
+     * @param  Product  $product  기준 상품
+     * @param  RelatedProductOrder  $order  단계 안 순서
+     * @param  int  $limit  최대 개수
+     * @return array<int, int> 단계·순서대로 정렬된 상품 ID
+     */
+    public function getRelatedProductIds(Product $product, RelatedProductOrder $order, int $limit): array;
 
     /**
      * 신상품 조회 (최신 등록순)

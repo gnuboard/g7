@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\VerificationKginicis\Tests\Unit\Services;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Plugins\Sirsoft\VerificationKginicis\Services\InicisGateway;
-use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * InicisGateway::validateAuthUrl 의 목적지 위조 차단 검증.
@@ -14,10 +14,15 @@ use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
  * 서버-서버 STEP3 POST 의 목적지가 된다. host 를 완전 일치로 검증하지 않으면 공격자가
  * 내부망 주소나 자신의 서버로 요청을 유도해 SSRF 및 본인인증 결과 위조가 가능하다.
  */
-class InicisGatewayValidateAuthUrlTest extends PluginTestCase
+class InicisGatewayValidateAuthUrlTest extends PureTestCase
 {
     private InicisGateway $gateway;
 
+    /**
+     * 검증 대상 InicisGateway 인스턴스를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,7 +33,12 @@ class InicisGatewayValidateAuthUrlTest extends PluginTestCase
     /**
      * 이니시스 표준 도메인은 통과한다.
      *
+     * @scenario case=official_domain
+     *
+     * @effects official_inicis_auth_url_accepted
+     *
      * @param  string  $url  검증 대상 authRequestUrl
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('validAuthUrlProvider')]
@@ -44,7 +54,13 @@ class InicisGatewayValidateAuthUrlTest extends PluginTestCase
      * 표준 도메인으로 위장한 URL 은 모두 거부한다.
      *
      * @param  string  $url  검증 대상 authRequestUrl
+     *
+     * @scenario case=forged_destination
+     *
+     * @effects forged_auth_url_rejected
+     *
      * @param  string  $reason  차단 사유 (실패 메시지용)
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('forgedAuthUrlProvider')]
@@ -59,7 +75,7 @@ class InicisGatewayValidateAuthUrlTest extends PluginTestCase
     /**
      * 정상 authRequestUrl 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 케이스 이름별 [정상 URL]
      */
     public static function validAuthUrlProvider(): array
     {
@@ -73,7 +89,7 @@ class InicisGatewayValidateAuthUrlTest extends PluginTestCase
     /**
      * 위조 authRequestUrl 목록 — 접두사 매칭 우회 벡터 전수.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 케이스 이름별 [위조 URL, 차단 사유]
      */
     public static function forgedAuthUrlProvider(): array
     {

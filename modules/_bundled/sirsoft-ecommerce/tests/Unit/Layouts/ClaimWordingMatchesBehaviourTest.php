@@ -2,7 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Layouts;
 
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 운영자가 읽는 안내 문구 ↔ 실제 동작·형제 어휘 대조
@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 효과 요약(마커 아님 — 평문): order_list_claim_filter_vocabulary_matches_server_gate
  */
-class ClaimWordingMatchesBehaviourTest extends ModuleTestCase
+class ClaimWordingMatchesBehaviourTest extends PureTestCase
 {
     /**
      * 모듈 루트 경로를 반환합니다.
@@ -67,9 +67,9 @@ class ClaimWordingMatchesBehaviourTest extends ModuleTestCase
      * 취소 건이 조용히 사라지고, 귀책 + 취소유형만 고르면 결과가 영구 0건인데 안내는
      * 그 반대를 약속한다.
      *
-     * @scenario claim_axis=type_status
+     * @scenario claim_axis=fault_and_date
      *
-     * @effects order_list_claim_filter_vocabulary_matches_server_gate
+     * @effects order_list_claim_filter_hint_states_fault_excludes_cancellations
      *
      * @return void 반환값 없음
      */
@@ -114,9 +114,9 @@ class ClaimWordingMatchesBehaviourTest extends ModuleTestCase
      *
      * 기준은 ko 다 — ko 가 세 자리에 같은 낱말을 쓰는 한, 나머지 로케일도 그래야 한다.
      *
-     * @scenario claim_axis=type_status
+     * @scenario claim_axis=fault_and_date
      *
-     * @effects order_list_claim_filter_vocabulary_matches_server_gate
+     * @effects claim_fault_wording_is_one_word_per_locale_across_siblings
      *
      * @return void 반환값 없음
      */

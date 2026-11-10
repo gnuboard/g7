@@ -4,6 +4,8 @@ return [
     // 메시지
     'fetch_success' => '스케줄 목록을 조회했습니다.',
     'fetch_failed' => '스케줄 목록 조회에 실패했습니다.',
+    'already_running' => '이 스케줄이 이미 실행 중입니다(중복 실행 방지). 끝난 뒤 다시 실행하세요.',
+    'run_lock_unavailable' => '스케줄 실행 잠금 저장소(캐시)를 쓸 수 없어 실행하지 않았습니다.',
     'create_success' => '스케줄이 생성되었습니다.',
     'create_failed' => '스케줄 생성에 실패했습니다.',
     'update_success' => '스케줄이 수정되었습니다.',
@@ -33,7 +35,6 @@ return [
     'artisan_not_allowed' => '이 Artisan 명령은 보안상 스케줄로 실행할 수 없습니다.',
     'owned_not_deletable' => '코어·확장이 등록한 작업은 삭제할 수 없습니다. 실행을 멈추려면 비활성으로 바꾸세요.',
     'owner_inactive' => '이 스케줄을 소유한 확장이 비활성 상태라 실행할 수 없습니다. 확장을 활성화한 뒤 다시 시도하세요.',
-    'already_running' => '이 스케줄은 이미 실행 중입니다. 앞선 실행이 끝난 뒤 다시 시도하세요.',
     'job_not_found' => 'Job 클래스를 찾을 수 없습니다: :class',
     'artisan_command_failed' => 'Artisan 명령이 종료 코드 :code 로 끝났습니다.',
     'job_not_allowed' => '허용되지 않은 Job 클래스입니다. 보안 허용목록에 등록된 Job 만 스케줄로 실행할 수 있습니다.',

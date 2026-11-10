@@ -14,8 +14,8 @@
  */
 import { test, expect, authenticatePage } from '../fixtures/auth';
 
-/** 자체 제공 대상이 아닌 외부 호스트 (서비스 SDK — manifest 에 사유와 함께 선언됨) */
-const SERVICE_SDK_HOSTS = new Set(['t1.daumcdn.net']);
+/** 자체 제공 대상이 아닌 외부 호스트 (서비스 SDK — manifest 에 사유와 함께 선언됨, 우편번호는 카카오 주소와 옛 주소) */
+const SERVICE_SDK_HOSTS = new Set(['t1.kakaocdn.net', 't1.daumcdn.net']);
 
 /**
  * 페이지가 실제로 요청한 URL 을 수집합니다.

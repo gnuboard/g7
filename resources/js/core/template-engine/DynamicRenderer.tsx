@@ -1,3 +1,4 @@
+// e2e:allow _localInit 은퇴 슬롯 미적용(engine-v1.88.0) — 전환 경합 경로라 Chrome MCP 실제 키 재실측과 DynamicRenderer.localInitStaleScreenReapply 시험으로 잠근다.
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -44,7 +45,7 @@ import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { useTransitionState, useIdleTransitionState } from './TransitionContext';
 import { transitionManager } from './TransitionManager';
-import { getLocalInitTracking, markLocalInitConsumed, registerTrackChangesRoot, resolveLocalInitAction, shouldResetHasChanges } from './localInitSlot';
+import { getLocalInitTracking, isLocalInitRetired, markLocalInitConsumed, registerTrackChangesRoot, resolveLocalInitAction, shouldResetHasChanges } from './localInitSlot';
 import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
 import { shallowObjectEqual } from '../hooks/useControllableState';
@@ -79,7 +80,7 @@ const SELF_RENDERED_SCAN_MAX_DEPTH = 24;
  *
  * @param v 칸 값
  * @returns 비교용 글자
- * @since engine-v1.89.0
+ * @since engine-v1.94.0
  */
 function autoBindingDisplayText(v: any): string {
   if (v !== null && typeof v === 'object') {
@@ -102,7 +103,7 @@ const NO_RESPONSIVE_MAPS: ReadonlyArray<Record<string, any>> = Object.freeze([])
  * @param props 원문 props (바인딩 전)
  * @param selfRenderedKeys 컴포넌트가 직접 그리는 키
  * @returns responsive 맵 목록 (없으면 공용 빈 배열)
- * @since engine-v1.89.0
+ * @since engine-v1.94.0
  */
 function collectSelfRenderedResponsiveMaps(
   props: Record<string, any> | undefined,
@@ -658,11 +659,11 @@ interface ErrorBoundaryProps {
   componentName?: string;
   fallback?: React.ReactNode;
   /**
-   * 렌더 문맥의 `route` — 오류 상태일 때 값이 바뀌면 자식을 다시 그린다 (engine-v1.87.0).
+   * 렌더 문맥의 `route` — 오류 상태일 때 값이 바뀌면 자식을 다시 그린다 (engine-v1.93.0).
    * 렌더 문맥의 객체를 그대로 넘긴다(새 객체를 만들지 않는다).
    */
   route?: unknown;
-  /** 렌더 문맥의 `query` — `route` 와 같은 계약 (engine-v1.87.0) */
+  /** 렌더 문맥의 `query` — `route` 와 같은 계약 (engine-v1.93.0) */
   query?: unknown;
 }
 
@@ -672,11 +673,11 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
-  /** 마지막으로 본 `route`·`query` 참조 — 오류가 난 렌더의 값이 남는다 (engine-v1.87.0) */
+  /** 마지막으로 본 `route`·`query` 참조 — 오류가 난 렌더의 값이 남는다 (engine-v1.93.0) */
   route?: unknown;
   query?: unknown;
   /**
-   * 커밋 뒤 다시 그려 볼 오류인지 (engine-v1.87.0) — 경로·쿼리가 바뀐 오류, 화면이 데이터를 받는 중(`transitionManager.getIsPending()`)에
+   * 커밋 뒤 다시 그려 볼 오류인지 (engine-v1.93.0) — 경로·쿼리가 바뀐 오류, 화면이 데이터를 받는 중(`transitionManager.getIsPending()`)에
    * 난 실패. 다시 그리기는 렌더 중이 아니라 커밋 뒤(받기가 끝났으면 곧바로, 아니면 받기 끝 알림 때) 전환 갱신으로 한다.
    */
   provisional?: boolean;
@@ -688,7 +689,7 @@ interface ErrorBoundaryState {
  * @param route 렌더 문맥의 route
  * @param query 렌더 문맥의 query
  * @returns 비교용 문자열(직렬화하지 못하면 null — 그때는 참조가 바뀐 것을 변경으로 본다)
- * @since engine-v1.87.0
+ * @since engine-v1.93.0
  */
 function routeQueryKey(route: unknown, query: unknown): string | null {
   try {
@@ -704,7 +705,7 @@ function routeQueryKey(route: unknown, query: unknown): string | null {
  * 렌더링 중 발생하는 에러를 캐치하여 에러 UI를 표시합니다.
  * 전체 페이지가 깨지는 것을 방지하고, 해당 컴포넌트만 에러 상태로 표시합니다.
  *
- * 오류 상태는 화면의 경로·쿼리(렌더 문맥 `route`·`query`)가 오류 때와 달라지면 풀고 자식을 다시 그린다 (engine-v1.87.0).
+ * 오류 상태는 화면의 경로·쿼리(렌더 문맥 `route`·`query`)가 오류 때와 달라지면 풀고 자식을 다시 그린다 (engine-v1.93.0).
  * 같은 레이아웃 안의 SPA 이동(쿼리만 바꾸는 탭 전환, 같은 레이아웃의 다른 경로)은 노드를 다시 마운트하지 않아, 종전에는
  * 새 화면의 데이터가 정상이어도 「컴포넌트 로드 실패」 박스가 새로고침 전까지 남았다.
  * - 정상 경계는 손대지 않는다 — 참조만 기록하고 자식을 다시 마운트하지 않는다.
@@ -766,7 +767,7 @@ class ComponentErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundary
   }
 
   /**
-   * 「커밋 뒤 다시 그림」 오류 상태면 받기가 끝났을 때 곧바로, 아니면 받기 끝 알림 때 다시 그린다 (engine-v1.87.0).
+   * 「커밋 뒤 다시 그림」 오류 상태면 받기가 끝났을 때 곧바로, 아니면 받기 끝 알림 때 다시 그린다 (engine-v1.93.0).
    * 정상 경계·확정 오류 경계는 구독하지 않는다.
    */
   private syncPendingWatch(): void {
@@ -1529,7 +1530,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     componentPath,
     layoutKey,
   }) => {
-    // 번역 문맥이 빠진 렌더러는 부모 렌더러의 렌더 환경에서 이어받는다 (engine-v1.89.0, #869).
+    // 번역 문맥이 빠진 렌더러는 부모 렌더러의 렌더 환경에서 이어받는다 (engine-v1.94.0, #869).
     // 컴포넌트가 배열 prop 의 정의를 엔진 렌더러로 직접 그릴 때(Modal 고정 하단 등) 번역 문맥을 못 넘기면, 식 안의 `$t:` 를 풀다가
     // getTranslation 이 templateId 를 구조 분해하며 던져 그 칸이 「컴포넌트 로드 실패」 로 그려졌다. 정의를 skipBindingKeys 로 원문 그대로
     // 넘기게 되면서(부모가 미리 풀지 않음) 드러났다
@@ -1882,6 +1883,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // - 전역 해시 추적으로 동일 데이터 중복 적용 방지
       // - componentId 기반 키로 컴포넌트별 독립 추적
 
+      // 화면 전환으로 은퇴한 앞 화면 슬롯은 적용하지 않는다 — 새 화면이 그려지기 전 앞 화면 트리가 다시 그려지며 새로 붙는
+      // 렌더러가 그 슬롯을 적용하면 앞 화면 폼이 새 화면 _local 에 남는다 (@since engine-v1.88.0, localInitSlot.resetLocalInitTracking)
+      if (isLocalInitRetired(dataContext._localInit)) {
+        lastProcessedInitRef.current = dataContext._localInit;
+        return;
+      }
+
       if (dataContext._localInit && typeof dataContext._localInit === 'object') {
         // _forceLocalInit 플래그를 제외한 데이터만 로컬 상태에 병합
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -2070,7 +2078,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 생기면, 정의 전체를 지켜보는 반복 항목 렌더가 구간이 그대로인데도 항목 전부를 다시 그린다.
      * `type: "iterator"` 변환은 responsive 를 그대로 두므로 원본 정의의 responsive 로 판정해도 같다.
      *
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     const matchedResponsiveKey = useMemo(
       () => (componentDef.responsive ? responsiveManager.getMatchingKey(componentDef.responsive, responsiveWidth) : null),
@@ -2129,7 +2137,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     /**
      * 컴포넌트가 직접 그리는 셀 정의 안의 responsive 맵 (props 가 바뀔 때만 다시 모은다)
      *
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     const selfRenderedResponsiveMaps = useMemo(() => {
       const componentSkipKeys: string[] = registry.getMetadata(effectiveComponentDef.name)?.skipBindingKeys || [];
@@ -2149,7 +2157,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 변경에는 같은 문자열이라 다시 그리지 않는다. 셀을 폭 없는 메모로 만들어 두는 컴포넌트는 스스로 `useResponsive` 를
      * 구독해야 한다(docs/frontend/responsive-layout.md 「셀의 responsive 와 다시 그리기」).
      *
-     * @since engine-v1.89.0
+     * @since engine-v1.94.0
      */
     const selfRenderedResponsiveBand = useMemo(
       () => (selfRenderedResponsiveMaps.length === 0
@@ -2310,7 +2318,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         && dataContext._localInit !== lastProcessedInitRef.current;
       let localState: Record<string, any>;
       if (hasUnappliedInit && dataContext._local) {
-        // @since engine-v1.87.0: 페이지 루트는 이 렌더에서 렌더 시점의 저장소 B 를 쓴다.
+        // @since engine-v1.93.0: 페이지 루트는 이 렌더에서 렌더 시점의 저장소 B 를 쓴다.
         // dataContext._local 은 마지막으로 `_global` 을 실은 루트 다시 그리기 때의 B 사본이다. 입력칸의 setState·자동바인딩은
         // B 에 render:false 로 쓰므로 사본에 닿지 않고, 데이터 소스 initLocal 갱신(progressive·다시 받기·쿼리 갱신)은
         // `_global` 없이 `_localInit` 만 싣는다. 그래서 A 를 뺀 이 렌더가 늦은 사본을 그려, 같은 화면의 다른 `_local` 칸
@@ -2726,7 +2734,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
 
       return result;
-      // condition: 편집기가 condition 만 바꾼 정의를 끼우면(props·if 는 그대로) 종전에는 이전 판정을 그대로 썼다 (engine-v1.89.0)
+      // condition: 편집기가 condition 만 바꾼 정의를 끼우면(props·if 는 그대로) 종전에는 이전 판정을 그대로 썼다 (engine-v1.94.0)
     }, [effectiveComponentDef.if, effectiveComponentDef.condition, effectiveComponentDef.conditions, extendedDataContext, bindingEngine, effectiveComponentDef.id]);
 
     /**
@@ -3037,7 +3045,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 2. 다국어 번역 ($t:key) - 재귀적 처리
      * 3. 액션 바인딩 (onClick 등)
      */
-    /** 정의에 자식이 있는지 — resolvedProps 가 컴포넌트 문맥 전달 여부를 정할 때 읽는다 (engine-v1.89.0) */
+    /** 정의에 자식이 있는지 — resolvedProps 가 컴포넌트 문맥 전달 여부를 정할 때 읽는다 (engine-v1.94.0) */
     const hasChildDefinitions = !!(effectiveComponentDef.children && effectiveComponentDef.children.length > 0);
 
     const resolvedProps = useMemo(() => {
@@ -3338,7 +3346,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       effectiveComponentDef.id,
       // 이 메모가 읽는 정의 필드 전부 — 편집기가 props 참조는 그대로 두고 아래 필드만 바꾼 정의를 끼우면 종전에는
       // 이전 결과(컴포넌트 문맥 전달 여부·component_layout·skipBindingKeys)를 그대로 썼다. children 은 개수 유무만 읽으므로
-      // 불리언으로 지켜본다(같은 구간 폭 변경·데이터 갱신마다 새 배열이 와도 다시 계산하지 않게) (engine-v1.89.0)
+      // 불리언으로 지켜본다(같은 구간 폭 변경·데이터 갱신마다 새 배열이 와도 다시 계산하지 않게) (engine-v1.94.0)
       effectiveComponentDef.name,
       effectiveComponentDef.type,
       effectiveComponentDef.slot,
@@ -3808,7 +3816,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // 항목 정의는 병합 정의 **전체**를 복사한다(위 componentDefWithoutIteration). 종전에는
       // iteration·children·id 만 지켜봐서, 폭이 바뀌어 반복 노드 자신의 responsive props·text·if 만
       // 달라지면 항목이 이전 구간 값을 그대로 썼다. 병합 정의는 분기 키가 바뀔 때만 새 객체가 된다.
-      // @since engine-v1.89.0
+      // @since engine-v1.94.0
       effectiveComponentDef,
       dataContext,
       extendedDataContext,
@@ -4369,7 +4377,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      */
     const autoBindingFlushedForNavRef = useRef(false);
     /**
-     * 이 칸의 마지막 대기 쓰기에 change 동작(onChange)이 붙어 있었는지 (engine-v1.89.0, #869).
+     * 이 칸의 마지막 대기 쓰기에 change 동작(onChange)이 붙어 있었는지 (engine-v1.94.0, #869).
      *
      * 동작이 없는 칸의 쓰기는 경로를 바꿀 수 없다 — 그 칸의 「이미 쓴」 대기 값을 다른 경로의 렌더가 만났다면 그 쓰기를 확정하는 렌더가
      * 커밋되기 전에 다른 곳에서 경로가 바뀐 것이다. 입력 중 렌더러는 칸을 다시 그리지 않아(칸 지역 표시값만 친 값) 칸이 받은 value 는
@@ -4379,7 +4387,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      */
     const autoBindingWriteHadChangeActionRef = useRef(false);
     /**
-     * 칸이 마지막으로 커밋된 렌더에서 받은 value 의 표시 글자 (engine-v1.89.0, #869).
+     * 칸이 마지막으로 커밋된 렌더에서 받은 value 의 표시 글자 (engine-v1.94.0, #869).
      *
      * 입력 중에는 렌더러가 칸을 다시 그리지 않아 칸은 친 값을 지역 표시값으로만 든다. 대기 값을 「다른 값으로 다시 쓰였다」고 보고 버릴 때
      * 새 값이 이 글자와 같으면 React 가 바꿀 것이 없어 칸이 따라오지 않는다(화면 ≠ 상태) — 그때만 버림 기록을 남겨 다시 마운트한다.
@@ -4813,7 +4821,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // 옮기면 여기서 보인다 — 이미 옛 경로에서 실행된 쓰기라 버리기만 한다(engine-v1.79.0 과 같음). 기록하면 입력 중인 칸이
           // 다시 마운트돼 포커스·조합이 끊긴다
           // engine-v1.83.0: 다른 화면으로 가는 navigate 가 앞당겨 쓴 대기 값도 같다(autoBindingFlushedForNavRef)
-          // engine-v1.89.0: change 동작이 없는 칸의 쓴 대기 값도 같다 — 그 쓰기는 경로를 바꿀 수 없으므로 확정 렌더 전에 다른 곳에서 경로가
+          // engine-v1.94.0: change 동작이 없는 칸의 쓴 대기 값도 같다 — 그 쓰기는 경로를 바꿀 수 없으므로 확정 렌더 전에 다른 곳에서 경로가
           // 바뀐 것이고, 칸은 앞 화면 입력을 지역 표시값으로 들고 있다(autoBindingWriteHadChangeActionRef)
           if (autoBindingDebounceTimerRef.current !== null || autoBindingFlushedForNavRef.current || !autoBindingWriteHadChangeActionRef.current) {
             autoBindingDroppedPendingRef.current = { value: autoBindingPendingValueRef.current };
@@ -4856,7 +4864,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               const rewritten = (liveValue !== undefined && String(liveValue ?? '') !== pendingText)
                 || (seen !== null && !seen.has(currentText));
               if (rewritten) {
-                // engine-v1.89.0 (#869): 새 값이 칸이 마지막으로 받은 value 와 같으면 칸이 따라오지 않는다 — 쓰기를 확정하는 렌더보다
+                // engine-v1.94.0 (#869): 새 값이 칸이 마지막으로 받은 value 와 같으면 칸이 따라오지 않는다 — 쓰기를 확정하는 렌더보다
                 // 같은 칸을 되돌리는 쓰기(주소만 바꾼 이동의 다시 받기 initLocal 등)가 먼저 커밋되면, 칸이 받은 value 는 입력 전 값 그대로라
                 // 되돌린 값과 같아 친 값이 칸에 남았다. 그때만 버림 기록을 남겨 다시 마운트한다. 새 값이 받은 value 와 다르면(포맷팅 등)
                 // React 가 칸을 바꾸므로 종전대로 두어 입력 중인 칸의 포커스를 지킨다
@@ -4969,7 +4977,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     }, [propsWithAutoBinding]);
 
     /**
-     * 커밋된 렌더에서 칸이 받은 value 를 기억한다 (engine-v1.89.0 — autoBindingCommittedValueRef 참조). 무조건 호출 훅.
+     * 커밋된 렌더에서 칸이 받은 value 를 기억한다 (engine-v1.94.0 — autoBindingCommittedValueRef 참조). 무조건 호출 훅.
      */
     useLayoutEffect(() => {
       const committed = (propsWithAutoBinding as any)?.value;
@@ -5059,7 +5067,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
          */
         // 규칙은 반복 컨텍스트(renderItemChildren)의 확장점과 공유한다 (engine-v1.73.0).
         // 평가·번역을 마친 props 로 만든다 — 반복 컨텍스트는 처음부터 평가한 props 를 넘겼는데 이 경로만 원본을 넘겨,
-        // className·data-*·aria-* 의 `{{…}}` 가 식 원문 그대로 붙었다(게시판 관리자 글 상세 본문 래퍼, engine-v1.87.0).
+        // className·data-*·aria-* 의 `{{…}}` 가 식 원문 그대로 붙었다(게시판 관리자 글 상세 본문 래퍼, engine-v1.93.0).
         const host = buildExtensionPointHostProps(stableResolvedProps);
 
         return (
@@ -5099,7 +5107,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         }),
         // 셀 정의 responsive 의 구간 판정 — 레지스트리가 모든 컴포넌트를 React.memo 로 감싸므로 요소만 새로 만들어서는
         // 다시 그려지지 않는다. 이 값이 구간 경계에서만 바뀌어 memo 비교를 깨고, 폭을 구독하지 않는 컴포넌트도 셀을 새 폭으로
-        // 다시 그린다. 셀 responsive 가 없으면 싣지 않는다. basic·layout 은 아래에서 `__` 키를 걸러낸다 (engine-v1.89.0)
+        // 다시 그린다. 셀 responsive 가 없으면 싣지 않는다. basic·layout 은 아래에서 `__` 키를 걸러낸다 (engine-v1.94.0)
         ...(selfRenderedResponsiveBand !== '' && {
           __responsiveBand: selfRenderedResponsiveBand,
         }),
@@ -5322,7 +5330,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       componentPath,
       // cellChildren이 있는 컴포넌트가 _remountKeys 변경 시 리렌더링되도록 의존성 추가
       dataContext._global?._remountKeys,
-      // 셀 정의 responsive 의 구간이 바뀌면 요소를 새로 만들어, 폭을 구독하지 않는 컴포넌트도 셀을 다시 그리게 한다 (engine-v1.89.0)
+      // 셀 정의 responsive 의 구간이 바뀌면 요소를 새로 만들어, 폭을 구독하지 않는 컴포넌트도 셀을 다시 그리게 한다 (engine-v1.94.0)
       selfRenderedResponsiveBand,
     ]);
 
@@ -5483,7 +5491,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       const innerClassList: string[] = [];
 
       for (const cls of classes) {
-        // 확장 접두 빌드 클래스(`ecommerce:col-span-2`)도 같은 뜻으로 판정한다 (engine-v1.87.0)
+        // 확장 접두 빌드 클래스(`ecommerce:col-span-2`)도 같은 뜻으로 판정한다 (engine-v1.93.0)
         const bare = splitExtensionClassPrefix(cls).rest;
         const isGridItemClass = gridItemPatterns.some(pattern => pattern.test(bare));
         if (isGridItemClass) {

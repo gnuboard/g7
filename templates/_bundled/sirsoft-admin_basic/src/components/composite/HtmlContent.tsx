@@ -1,3 +1,4 @@
+// audit:allow seo-renderer-parity-sync #883 표시 규칙을 코어 「본문 콘텐츠」(G7Core.contentPolicy)로 옮겼다 — 봇 정화기 HtmlSanitizer 도 같은 ContentHtmlPolicy 로 후보 태그를 살리고 마무리한다(외부 영상은 봇에 링크)
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
@@ -165,17 +166,38 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     // 섀도 루트를 만들지 않아 본문에서 쓸 곳이 없는 속성이다.
     const withoutShadowRoot = (list: unknown) =>
       Array.isArray(list) ? list.filter((name) => name !== 'shadowroot' && name !== 'shadowrootmode') : list;
-    const fragment = DOMPurify.sanitize(actualContent, {
+    const inertConfig = {
       ...config,
       ...(config.ADD_ATTR !== undefined ? { ADD_ATTR: withoutShadowRoot(config.ADD_ATTR) } : {}),
       ...(config.ALLOWED_ATTR !== undefined ? { ALLOWED_ATTR: withoutShadowRoot(config.ALLOWED_ATTR) } : {}),
-      RETURN_DOM: false,
-      RETURN_DOM_FRAGMENT: true,
-      RETURN_TRUSTED_TYPE: false,
-    }) as unknown as DocumentFragment;
+    };
+    // 코어 「본문 콘텐츠」 규칙(G7Core.contentPolicy, engine-v1.90.0)이 있으면 그 규칙으로 정화한다 — 켜진 후보(그림 캡션·업로드 동영상·
+    // 오디오·외부 영상)를 살리고 외부 영상은 정해진 플레이어 iframe 으로 바꾼다. prop 으로 덧붙인 금지는 규칙으로 풀 수 없다.
+    // 규칙이 없으면(옛 코어) 종전 경로다 (#883)
+    const policySanitized = (window as any)?.G7Core?.contentPolicy?.sanitize?.(DOMPurify, actualContent, {
+      ...inertConfig,
+      FORBID_TAGS: [...defaultConfig.FORBID_TAGS],
+      G7_KEEP_FORBID_TAGS: purifyConfig?.FORBID_TAGS || [],
+    });
+    // 고칠 그릇은 어느 경로든 비활성 문서의 요소다. 규칙 경로는 문자열을 돌려준다 — 이미 정화된 결과이므로 다시 정화하지 않고
+    // (플레이어 iframe 이 지워진다) 비활성 문서(DOMParser)로 읽은 body 를 쓴다. 규칙이 없으면 DOMPurify 조각을 그 조각과 같은
+    // 문서의 요소에 담는다.
+    let holder: HTMLElement;
+    if (typeof policySanitized === 'string') {
+      holder = new DOMParser().parseFromString(`<!DOCTYPE html><body>${policySanitized}`, 'text/html').body;
+    } else {
+      const fragment = DOMPurify.sanitize(actualContent, {
+        ...inertConfig,
+        RETURN_DOM: false,
+        RETURN_DOM_FRAGMENT: true,
+        RETURN_TRUSTED_TYPE: false,
+      }) as unknown as DocumentFragment;
+      holder = fragment.ownerDocument.createElement('div');
+      holder.appendChild(fragment);
+    }
 
     // target="_blank" 링크에 rel 속성 추가 (보안) — 외부(http·https) 링크에 rel 이 없을 때만
-    fragment.querySelectorAll('a[href]').forEach((anchor) => {
+    holder.querySelectorAll('a[href]').forEach((anchor) => {
       const href = anchor.getAttribute('href') ?? '';
       if ((href.startsWith('http://') || href.startsWith('https://')) && !anchor.hasAttribute('rel')) {
         anchor.setAttribute('rel', 'noopener noreferrer');
@@ -184,16 +206,13 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
 
     // 정화 뒤 이미지 표시 처리 — 썸네일·srcset·지연 로딩, 링크 밖 이미지의 확대 보기 표식(저장 본문은 그대로).
     // 봇 화면 짝은 HtmlSanitizer::sanitizeContent 다.
-    decorateContentImages(fragment, {
+    decorateContentImages(holder, {
       imageSizes,
       zoomable,
       zoomLabel: (alt: string) => (alt !== '' ? t('common.zoom_image_named', { name: alt }) : t('common.zoom_image')),
     });
 
-    // 직렬화는 조각과 같은 비활성 문서의 요소에 담아 한 번만 한다
-    const holder = fragment.ownerDocument.createElement('div');
-    holder.appendChild(fragment);
-
+    // 직렬화는 그 그릇에서 한 번만 한다
     return holder.innerHTML;
   }, [actualContent, isEmpty, isHtml, purifyConfig, imageSizes, zoomable]);
 

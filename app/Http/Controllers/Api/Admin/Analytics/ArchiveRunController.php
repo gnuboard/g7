@@ -113,6 +113,7 @@ class ArchiveRunController extends AdminBaseController
         }
 
         $date = $runType === ArchiveRunType::Day->value
+            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             ? Carbon::parse(AnalyticsClock::today())->subDay()->toDateString()
             : AnalyticsClock::today();
 

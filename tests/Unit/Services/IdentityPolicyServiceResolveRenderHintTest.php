@@ -9,7 +9,7 @@ use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\IdentityPolicy;
 use App\Services\IdentityPolicyService;
 use Mockery;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * IdentityPolicyService::resolveRenderHint 의 fallback 분기 정합성 회귀 차단.
@@ -23,14 +23,28 @@ use Tests\TestCase;
  * 실질 동작 결과는 수정 전후 동일 (Manager 의 0번 우선순위는 미등록 provider 를 매치하지
  * 않으므로 fallback chain 결과가 같음). 정합성 차원의 회귀 차단 목적.
  */
-class IdentityPolicyServiceResolveRenderHintTest extends TestCase
+class IdentityPolicyServiceResolveRenderHintTest extends PureTestCase
 {
+    /**
+     * Mockery 기대치를 검증·정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
     }
 
+    /**
+     * 정책 provider 가 미등록이면 fallback 분기가 정책의 provider_id 를 resolveForPurpose 두 번째 인자로 넘긴다.
+     *
+     * @scenario call_mode=mode_b_policy, provider_id_state=unregistered, purpose=signup
+     *
+     * @effects policy_render_hint_fallback_passes_provider_id_to_manager
+     *
+     * @return void 반환값 없음
+     */
     public function test_fallback_branch_passes_policy_provider_id_to_manager(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
@@ -60,6 +74,15 @@ class IdentityPolicyServiceResolveRenderHintTest extends TestCase
         $this->assertSame('text_code', $hint);
     }
 
+    /**
+     * 정책에 provider_id 가 없으면 has() 를 거치지 않고 fallback 분기가 null 을 넘겨 기존 우선순위를 따른다.
+     *
+     * @scenario call_mode=mode_b_policy, provider_id_state=null_unspecified, purpose=signup
+     *
+     * @effects null_provider_id_preserves_legacy_priority_chain
+     *
+     * @return void 반환값 없음
+     */
     public function test_fallback_branch_passes_null_when_policy_has_no_provider_id(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
@@ -87,6 +110,15 @@ class IdentityPolicyServiceResolveRenderHintTest extends TestCase
         $this->assertSame('text_code', $hint);
     }
 
+    /**
+     * 정책 provider 가 등록돼 있으면 그 provider 의 렌더 힌트를 돌려주고 resolveForPurpose 는 호출하지 않는다.
+     *
+     * @scenario call_mode=mode_b_policy, provider_id_state=valid_registered_supported, purpose=signup
+     *
+     * @effects policy_render_hint_first_branch_short_circuits_when_provider_registered
+     *
+     * @return void 반환값 없음
+     */
     public function test_first_branch_returns_provider_hint_without_fallback(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
@@ -115,6 +147,10 @@ class IdentityPolicyServiceResolveRenderHintTest extends TestCase
 
     /**
      * protected resolveRenderHint 를 reflection 으로 직접 호출합니다.
+     *
+     * @param  IdentityPolicyService  $service  검증 대상 서비스
+     * @param  IdentityPolicy  $policy  렌더 힌트를 해석할 정책
+     * @return string|null 해석된 렌더 힌트 (없으면 null)
      */
     private function invokeResolveRenderHint(IdentityPolicyService $service, IdentityPolicy $policy): ?string
     {

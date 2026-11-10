@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\Koreaexim\Tests\Unit\Upgrades;
 use App\Extension\UpgradeContext;
 use App\Models\Schedule;
 use App\Support\ExtensionStoragePath;
-use App\Upgrades\Data\Ext\Plugins\SirsoftKoreaexim\V1_0_2\Migrations\MoveUpdateTimeToSchedule;
+use App\Upgrades\Data\Ext\Plugins\SirsoftKoreaexim\V1_1_0\Migrations\MoveUpdateTimeToSchedule;
 use Cron\CronExpression;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\File;
 use Plugins\Sirsoft\Koreaexim\Tests\PluginTestCase;
 
 /**
- * 1.0.2 업그레이드 스텝 — 갱신 시각 설정을 스케줄 관리의 정기 갱신 행으로 이관
+ * 1.1.0 업그레이드 스텝 — 갱신 시각 설정을 스케줄 관리의 정기 갱신 행으로 이관
  *
  * 이관이 틀리면 기설치본이 저장해 둔 갱신 시각이 업데이트 직후 11:30 으로 돌아가거나(옮기지 않음), 운영자가
  * 스케줄 관리에서 이미 바꾼 시각을 옛 설정값이 덮는다(표식 무시). 둘 다 오류·로그 없이 갱신 시각만 바뀐다.
@@ -33,7 +33,7 @@ class MoveUpdateTimeToScheduleTest extends PluginTestCase
         parent::setUp();
 
         // 업그레이드 마이그레이션은 오토로드되지 않는다 — 실행 시점과 같은 방식으로 싣는다.
-        require_once __DIR__.'/../../../upgrades/data/1.0.2/migrations/01_MoveUpdateTimeToSchedule.php';
+        require_once __DIR__.'/../../../upgrades/data/1.1.0/migrations/01_MoveUpdateTimeToSchedule.php';
 
         $this->path = ExtensionStoragePath::plugin('sirsoft-koreaexim', 'settings').'/setting.json';
     }
@@ -175,8 +175,8 @@ class MoveUpdateTimeToScheduleTest extends PluginTestCase
         (new MoveUpdateTimeToSchedule)->run(
             new UpgradeContext(
                 fromVersion: '1.0.0',
-                toVersion: '1.0.2',
-                currentStep: '1.0.2',
+                toVersion: '1.1.0',
+                currentStep: '1.1.0',
                 logChannel: 'extension-upgrade',
             )
         );

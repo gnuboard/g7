@@ -6,6 +6,7 @@ use App\Contracts\Extension\ConsentProviderInterface;
 use App\Exceptions\PhpExtensionUnavailableException;
 use App\Extension\Consent\ConsentManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\Settings\EmbedProviderPreviewRequest;
 use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
 use App\Http\Requests\Settings\PrivacyPreviewRequest;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
@@ -26,10 +27,12 @@ use App\Services\FaviconService;
 use App\Services\OutboundProxyTester;
 use App\Services\PasswordExpiryService;
 use App\Services\Queue\QueueWorkerRegistry;
+use App\Services\SearchHistoryService;
 use App\Services\SettingsService;
 use App\Services\TrustedProxyProbe;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
+use App\Support\SearchScopes;
 use App\Support\ThumbnailDiskOptions;
 use App\Support\TrustedProxyDiagnostic;
 use App\Thumbnails\ImageProcessorResolver;
@@ -58,6 +61,7 @@ class SettingsController extends AdminBaseController
      * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      * @param  QueueWorkerRegistry  $queueWorkerRegistry  큐 워커 등록·상태 (#139)
      * @param  TrustedProxyProbe  $trustedProxyProbe  신뢰 프록시 사전 검사
+     * @param  SearchHistoryService  $searchHistoryService  최근 검색어 서비스 (개인정보 탭 범위 메타, 7.1.5)
      */
     public function __construct(
         private SettingsService $settingsService,
@@ -69,7 +73,8 @@ class SettingsController extends AdminBaseController
         private DormantAccountService $dormantAccountService,
         private PasswordExpiryService $passwordExpiryService,
         private QueueWorkerRegistry $queueWorkerRegistry,
-        private TrustedProxyProbe $trustedProxyProbe
+        private TrustedProxyProbe $trustedProxyProbe,
+        private SearchHistoryService $searchHistoryService
     ) {
         parent::__construct();
     }
@@ -91,6 +96,8 @@ class SettingsController extends AdminBaseController
      * - `thumbnail_disk_options`: 썸네일 저장 위치 선택지 `{public: [{id, label}], gated: [{id, label}]}` — label 은 로케일 맵 (#869)
      * - `thumbnail_server_defaults`: 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓸 값 — `.env` G7_THUMBNAIL_* 가 있으면 그 값,
      *   없으면 기본값. 화면은 이 값을 칸의 placeholder 로 보인다 (#869)
+     * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
+     * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -118,6 +125,8 @@ class SettingsController extends AdminBaseController
             'thumbnail_engine_available' => app(ImageProcessorResolver::class)->resolve() !== null,
             'thumbnail_disk_options' => app(ThumbnailDiskOptions::class)->all(),
             'thumbnail_server_defaults' => array_map('intval', (array) config('core.thumbnail_server_defaults', [])),
+            'search_scopes' => $this->searchHistoryService->settingsMeta(),
+            'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
         ];
     }
 
@@ -183,6 +192,11 @@ class SettingsController extends AdminBaseController
         $thumbnailRows = app(ThumbnailPresetSettings::class)->presentRows();
         $settings['upload']['thumbnail_presets'] = $thumbnailRows;
         $settings['upload']['thumbnail_presets_rows'] = $thumbnailRows;
+
+        // 최근 검색어 범위 행(7.1.5) — 지금 선언된 범위마다 한 행, 선언 순서, 적용값으로 채운다(새로 켠 확장은 선언값).
+        if (isset($settings['privacy']) && is_array($settings['privacy'])) {
+            $settings['privacy'][SearchScopes::SETTINGS_ROWS_KEY] = SearchScopes::presentRows($settings['privacy'][SearchScopes::SETTINGS_ROWS_KEY] ?? []);
+        }
 
         $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
         $settings['_meta'] = $this->buildSettingsMeta();
@@ -352,6 +366,26 @@ class SettingsController extends AdminBaseController
         // 200 으로 결과를 돌려주고 판정은 페이로드의 `verdict` 가 말한다
         // (아웃바운드 프록시 연결 테스트와 같은 규약).
         return $this->success('settings.trusted_proxy_probe_'.$result['verdict'], $result);
+    }
+
+    /**
+     * 외부 영상 서비스 추가 창의 예시 주소 확인 — 꺼낸 id 와 만들어질 플레이어 주소 (#883).
+     *
+     * 저장하지 않는다. 형식이 틀리면(검증 위반) 필드별 문구도 함께 돌려줘 창이 저장 전에 알려 줄 수 있게 한다.
+     *
+     * @param  EmbedProviderPreviewRequest  $request  검증된 요청
+     * @return JsonResponse `{matched, id, player_url, errors}`
+     */
+    public function embedProviderPreview(EmbedProviderPreviewRequest $request): JsonResponse
+    {
+        $preview = $this->settingsService->previewEmbedProvider((array) $request->validated('provider'), (string) $request->validated('sample_url'));
+
+        return $this->success('common.success', [
+            'matched' => $preview['matched'],
+            'id' => $preview['id'],
+            'player_url' => $preview['player_url'],
+            'errors' => (object) $preview['errors'],
+        ]);
     }
 
     /**

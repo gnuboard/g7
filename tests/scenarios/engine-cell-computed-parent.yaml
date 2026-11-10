@@ -1,4 +1,4 @@
-feature: 반복 셀·확장 행 안의 _computed 가 부모 컴포넌트의 최신 계산값을 본다 (engine-v1.86.0)
+feature: 반복 셀·확장 행 안의 _computed 가 부모 컴포넌트의 최신 계산값을 본다 (engine-v1.92.0)
 
 description: |
   DataGrid 셀(`cellChildren`·`subRowChildren`)은 `G7Core.renderItemChildren`, 확장 행(`expandChildren`)은 `G7Core.renderExpandContent`

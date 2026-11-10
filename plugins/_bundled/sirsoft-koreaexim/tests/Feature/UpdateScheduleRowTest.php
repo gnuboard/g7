@@ -14,7 +14,7 @@ use Plugins\Sirsoft\Koreaexim\Services\RateRunService;
 use Plugins\Sirsoft\Koreaexim\Tests\PluginTestCase;
 
 /**
- * 정기 갱신 시각의 원천 = 스케줄 관리의 정기 갱신 행 (1.0.2)
+ * 정기 갱신 시각의 원천 = 스케줄 관리의 정기 갱신 행 (1.1.0)
  *
  * 운영자가 스케줄 관리에서 정기 갱신 cron 을 바꾸면 상태 화면의 다음 실행 시각과 재시도 시작 시각이 함께 따라가야
  * 한다. 옛 설정(`update_time`)을 계속 읽으면 화면은 11:30 을 말하는데 실제로는 다른 시각에 돌고, 재시도는 정기

@@ -1,4 +1,4 @@
-// e2e:allow 엔진 변경(engine-v1.86.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
+// e2e:allow 엔진 변경(engine-v1.92.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -27,6 +27,7 @@ import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { AuthManager, AuthType, LoginResult } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { getConsentRuntime } from '../consent';
+import { getSearchHistoryRuntime } from '../searchHistory';
 import { getErrorHandlingResolver } from '../error';
 import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
@@ -43,6 +44,7 @@ import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcP
 import { basePrefix, stripBasePrefix, withBasePrefix } from '../support/assetUrl';
 import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback, isOffSiteNavTarget } from '../support/navPolicy';
 import { armLeaveGuardBypass, runWithLeaveGuardBypass } from '../routing/LeaveGuard';
+import { notifyScreenScroll, runWithReturnScroll } from '../routing/ScrollMemory';
 import {
   applyQueryValues,
   getEventAnchor,
@@ -113,7 +115,7 @@ function collectSetStateEmptyObjectNullTree(target: unknown, payload: Record<str
 const TOAST_DEDUPE_WINDOW_MS = 3000;
 
 /**
- * 오류 처리기 실행 깊이 상한 (engine-v1.89.0).
+ * 오류 처리기 실행 깊이 상한 (engine-v1.94.0).
  *
  * 실패한 동작의 오류 처리기(errorHandling·onError·레이아웃/템플릿/시스템 기본값)는 `executeAction` 으로 실행되고, 그 처리기의
  * 실패는 같은 catch 갈래에서 다시 오류 처리기를 고른다. 처리기에 자기 정의가 없으면 시스템 기본(`toast`)이 다시 골라지므로, 그
@@ -201,6 +203,9 @@ const PREVIEW_SUPPRESSED_HANDLERS: ReadonlySet<string> = new Set([
     // 간접 네비게이션 — 페이지 리로드 또는 리다이렉트 유발
     'refresh',          // window.location.reload()
     'logout',           // 로그아웃 후 로그인 페이지로 리다이렉트
+
+    // 사용자 데이터 쓰기 — 미리보기에서 검색창을 눌러 본 것이 실제 최근 검색어로 남으면 안 된다 (engine-v1.87.0)
+    'recordSearchKeyword',
 ]);
 
 /**
@@ -216,7 +221,7 @@ const PREVIEW_SUPPRESSED_LAYOUT_FEATURES: ReadonlySet<string> = new Set([
 ]);
 
 // ============================================================================
-// 엔진 핸들러 이름 — 소유권 경고의 기준 (engine-v1.87.0)
+// 엔진 핸들러 이름 — 소유권 경고의 기준 (engine-v1.93.0)
 // ============================================================================
 
 /**
@@ -226,11 +231,11 @@ const PREVIEW_SUPPRESSED_LAYOUT_FEATURES: ReadonlySet<string> = new Set([
  */
 export const ENGINE_HANDLER_SOURCE = 'engine';
 
-/** `registerDefaultHandlers` 의 모든 등록에 넘기는 옵션 — 등록자를 엔진으로 표시한다 (engine-v1.87.0) */
+/** `registerDefaultHandlers` 의 모든 등록에 넘기는 옵션 — 등록자를 엔진으로 표시한다 (engine-v1.93.0) */
 const ENGINE_DEFAULT_HANDLER_OPTIONS = { category: 'built-in', source: ENGINE_HANDLER_SOURCE } as const;
 
 /**
- * `registerDefaultHandlers` 가 Map 에 등록하는 엔진 기본 핸들러 18종과 DevTools 설명.
+ * `registerDefaultHandlers` 가 Map 에 등록하는 엔진 기본 핸들러 19종과 DevTools 설명.
  *
  * 기본 등록·DevTools 메타·소유권 경고가 모두 이 한 목록에서 나온다. 종전 DevTools 메타 배열은
  * 따로 손으로 적혀 5종(scrollIntoView·reloadExtensions·reloadModuleHandlers·reloadPluginHandlers·suppress)이
@@ -256,11 +261,12 @@ export const ENGINE_MAP_HANDLER_META: ReadonlyArray<{ name: string; description:
   { name: 'updateOptionField', description: '상품 옵션 필드를 인라인 수정합니다' },
   { name: 'setLocale', description: '언어를 변경합니다 (DB 저장 + UI 리렌더링)' },
   { name: 'refreshConsent', description: '방문자 동의 상태를 다시 조회합니다' },
+  { name: 'recordSearchKeyword', description: '검색창 제출 검색어를 최근 검색어에 기록합니다' },
   { name: 'suppress', description: '오류 전파를 의도적으로 막는 빈 핸들러입니다' },
 ];
 
 /**
- * 엔진이 Map 에 등록하는 기본 핸들러 이름 18종 — 다른 등록자가 같은 이름으로 등록하면 기본 동작이 덮인다.
+ * 엔진이 Map 에 등록하는 기본 핸들러 이름 19종 — 다른 등록자가 같은 이름으로 등록하면 기본 동작이 덮인다.
  *
  * @since engine-v1.83.0
  */
@@ -361,7 +367,7 @@ export type ActionType =
   | 'loginTwoFactorResend' // 2단계 인증 코드 재발송
   | 'loginPasswordChange' // 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
   | 'loginPasswordChangePostpone' // 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
-  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.85.0)
+  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.91.0)
   | 'logout' // 로그아웃
   | 'setState' // 상태 변경
   | 'setError' // 에러 상태 설정
@@ -747,7 +753,7 @@ export interface ActionContext {
   /**
    * 오류 처리기 실행 깊이 — 실패한 동작의 오류 처리기를 실행할 때 1 씩 늘려 싣는다. 하위 동작은 컨텍스트를 펼쳐 받으므로
    * 오류 처리기 안쪽 동작(sequence·onSuccess)도 같은 깊이다. {@link MAX_ERROR_HANDLER_DEPTH} 에 닿은 실패는 오류 처리기를
-   * 다시 고르지 않는다(engine-v1.89.0).
+   * 다시 고르지 않는다(engine-v1.94.0).
    */
   errorHandlerDepth?: number;
   /**
@@ -881,13 +887,13 @@ export class ActionDispatcher {
   private customHandlers: Map<string, ActionHandler> = new Map();
 
   /**
-   * 핸들러 이름 → 등록자(`registerHandler` 의 `source`, 없으면 `'unknown'`) (engine-v1.87.0)
+   * 핸들러 이름 → 등록자(`registerHandler` 의 `source`, 없으면 `'unknown'`) (engine-v1.93.0)
    *
    * 다른 주인의 이름을 덮는 등록을 경고하는 기준이다.
    */
   private handlerSources: Map<string, string> = new Map();
 
-  /** 이미 낸 소유권 경고의 (이름, 등록자) 키 — 같은 쌍은 1회만 경고한다 (engine-v1.87.0) */
+  /** 이미 낸 소유권 경고의 (이름, 등록자) 키 — 같은 쌍은 1회만 경고한다 (engine-v1.93.0) */
   private warnedHandlerPairs: Set<string> = new Set();
 
   /** 기본 컨텍스트 */
@@ -1455,6 +1461,9 @@ export class ActionDispatcher {
         }
       }
 
+      // 화면이 직접 옮기는 스크롤 — 뒤로 가기 복원이 이 위치를 덮지 않게 알린다 (@since engine-v1.85.0)
+      notifyScreenScroll();
+
       // scrollContainer가 지정된 경우 해당 컨테이너 내에서만 스크롤
       if (scrollContainer) {
         const container = document.querySelector(scrollContainer) as HTMLElement | null;
@@ -1548,32 +1557,26 @@ export class ActionDispatcher {
         logger.warn('reloadExtensions: TemplateApp.reloadExtensionState unavailable');
       }
 
-      // 2. 선택적으로 모듈/플러그인 에셋 동적 로드/제거
+      // 2. 선택적으로 모듈/플러그인 에셋 동적 로드/제거 — 보조 작업이라 실패는 로그만 남긴다.
+      //
+      // executeAction 을 거치지 않고 등록 핸들러를 직접 부른다. executeAction 은 실패를 오류 처리기(기본: 토스트)로
+      // 먼저 넘긴 뒤 던지므로, 아래 catch 가 삼키기 전에 내부 문구 「Failed to execute action: reloadPluginHandlers」가
+      // 화면에 떴다 — 켜자마자 다시 끄거나 라우트 캐시를 다시 굽는 사이 자산이 404·500 이면(#882 실측). 켜기·끄기 자체는
+      // 이미 끝났고 자산은 다음 새로고침에 다시 붙으므로 알릴 일이 아니다.
       const { moduleInfo, pluginInfo } = action.params || {};
-      if (moduleInfo) {
-        try {
-          await this.executeAction(
-            {
-              handler: 'reloadModuleHandlers',
-              params: action.params,
-            } as ActionDefinition,
-            context
-          );
-        } catch (error) {
-          logger.error('reloadExtensions: reloadModuleHandlers failed', error);
+      const assetReloads: Array<[unknown, string]> = [
+        [moduleInfo, 'reloadModuleHandlers'],
+        [pluginInfo, 'reloadPluginHandlers'],
+      ];
+      for (const [info, handlerName] of assetReloads) {
+        const assetHandler = info ? this.customHandlers.get(handlerName) : undefined;
+        if (!assetHandler) {
+          continue;
         }
-      }
-      if (pluginInfo) {
         try {
-          await this.executeAction(
-            {
-              handler: 'reloadPluginHandlers',
-              params: action.params,
-            } as ActionDefinition,
-            context
-          );
+          await assetHandler({ handler: handlerName, params: action.params } as ActionDefinition, context);
         } catch (error) {
-          logger.error('reloadExtensions: reloadPluginHandlers failed', error);
+          logger.error(`reloadExtensions: ${handlerName} failed`, error);
         }
       }
 
@@ -2425,6 +2428,22 @@ export class ActionDispatcher {
       await runtime.refresh();
     }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
+    // recordSearchKeyword: 검색창 제출 때 최근 검색어를 기록한다 (engine-v1.87.0)
+    // 회원은 서버(/api/me/search-history), 비회원은 브라우저(localStorage g7_search_history)에 둔다. 범위(scope)가
+    // 선언되지 않았거나(확장 꺼짐·기능 꺼짐) 검색어가 비었거나 자동 저장을 껐거나 관리자 화면(런타임 없음)이면
+    // 아무것도 하지 않는다. 실패해도 던지지 않는다 — 같은 시퀀스의 다음 동작(검색 이동)을 막으면 안 된다.
+    // 주소에 검색어를 직접 넣은 검색은 이 핸들러를 거치지 않으므로 기록되지 않는다.
+    //
+    // @example <record-search-keyword scope="core.site" keyword="{{_local.searchQuery}}"/>
+    // 바인딩(`{{…}}`)은 디스패처가 이미 풀어서 넘긴다(커스텀 핸들러 경로의 resolvedParams).
+    this.registerHandler('recordSearchKeyword', async (action: ActionDefinition) => {
+      const params = (action.params ?? {}) as Record<string, unknown>;
+      const runtime = getSearchHistoryRuntime();
+      if (!runtime || typeof params.scope !== 'string') return false;
+
+      return runtime.record(params.scope, params.keyword);
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
+
     // suppress: 에러 전파를 의도적으로 방지하는 no-op 핸들러
     // 데이터소스/apiCall의 errorHandling에서 특정 에러 코드를 상위 레벨로 전파하지 않을 때 사용
     // 예: 비회원의 /api/auth/user 401은 정상 동작이므로 레이아웃 errorHandling으로 전파 방지
@@ -2444,7 +2463,7 @@ export class ActionDispatcher {
     const devTools = getDevTools();
     if (!devTools?.isEnabled()) return;
 
-    // 기본 등록과 같은 한 목록(ENGINE_MAP_HANDLER_META)에서 읽는다 — 종전 손 목록은 5종이 빠져 있었다 (engine-v1.87.0)
+    // 기본 등록과 같은 한 목록(ENGINE_MAP_HANDLER_META)에서 읽는다 — 종전 손 목록은 5종이 빠져 있었다 (engine-v1.93.0)
     for (const handler of ENGINE_MAP_HANDLER_META) {
       devTools.trackHandlerRegistration(handler.name, 'built-in', handler.description, ENGINE_HANDLER_SOURCE);
     }
@@ -2586,7 +2605,7 @@ export class ActionDispatcher {
           linkHref,
         };
 
-        // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.86.0, resolveConfirmMessage)
+        // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.92.0, resolveConfirmMessage)
         if (action.confirm) {
           const message = this.resolveConfirmMessage(action.confirm, context.data);
 
@@ -3416,7 +3435,7 @@ export class ActionDispatcher {
         return { success: false, error: actionError };
       }
 
-      // 오류 처리기 안에서 다시 실패한 것이 상한에 닿았으면 오류 처리기를 다시 고르지 않는다 (engine-v1.89.0,
+      // 오류 처리기 안에서 다시 실패한 것이 상한에 닿았으면 오류 처리기를 다시 고르지 않는다 (engine-v1.94.0,
       // MAX_ERROR_HANDLER_DEPTH) — 처리기가 매번 같은 이유로 실패하면 기본 처리기를 끝없이 다시 실행했다
       const errorHandlerDepth = context.errorHandlerDepth ?? 0;
       if (errorHandlerDepth >= MAX_ERROR_HANDLER_DEPTH) {
@@ -3564,7 +3583,7 @@ export class ActionDispatcher {
       // 붙여 준 주소) 전체 주소와 같이 벗긴다. 벗기지 않으면 접두사째 라우트에 대조해 미등록으로 읽고, 폴백 openWindow
       // `_self` 로 문서 전체를 다시 불렀다(루트 설치는 같은 클릭이 SPA). 경계 없는 `/g7abc` 와 이미 벗겨진 경로는
       // `stripBasePrefix` 가 그대로 두고, 히스토리에 실을 때는 Router 가 `withBasePrefix` 로 한 번 붙인다.
-      // 사이트 밖 판정(`//`·스킴)은 벗기기 전에 먼저 돈다 — 벗긴 결과가 `//host` 면 아래 같은 판정이 이동을 막는다 (engine-v1.87.0)
+      // 사이트 밖 판정(`//`·스킴)은 벗기기 전에 먼저 돈다 — 벗긴 결과가 `//host` 면 아래 같은 판정이 이동을 막는다 (engine-v1.93.0)
       target = stripBasePrefix(target);
     }
     // 다른 화면으로 가기 전에 대기 중인 디바운스 입력을 반영한다 — 이벤트 액션 경로는 이미 그렇게 하지만
@@ -3643,7 +3662,7 @@ export class ActionDispatcher {
     // 미래 다른 overlay 시스템(modal/drawer/tooltip 등)은 각자 독립 키 이름 사용 권장.
     if (params.replace === true) {
       // replace 는 폴백 판정을 건너뛰므로 사이트 밖 판정을 여기서도 먼저 한다 — 종전에는 `//host` 를
-      // replaceState 에 넘겨 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.87.0)
+      // replaceState 에 넘겨 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.93.0)
       if (isOffSiteNavTarget(finalPath)) {
         logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
         return;
@@ -3697,7 +3716,7 @@ export class ActionDispatcher {
     }
 
     // 사이트 밖 목적지는 SPA 이동(`pushState`)으로 갈 수 없다 — 폴백을 끈(`fallback: false`) 이동이나 라우트가
-    // 아직 없는 부팅 단계도 여기서 멈춘다. 종전에는 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.87.0)
+    // 아직 없는 부팅 단계도 여기서 멈춘다. 종전에는 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.93.0)
     if (isOffSiteNavTarget(finalPath)) {
       logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
       return;
@@ -3714,9 +3733,11 @@ export class ActionDispatcher {
     // bypassLeaveGuard: 저장 성공 뒤 이동 등은 레이아웃 이탈 가드를 묻지 않는다 — 문맥의 navigate 래퍼가 옵션을
     // 버려도 닿도록 동기 범위로 감싼다 (engine-v1.82.0)
     const navigateFn = context.navigate;
-    const started = params.bypassLeaveGuard === true
+    // returnScroll: 이 이동으로 떠나는 화면에 뒤로 가기로 돌아올 때의 스크롤 동작(restore·top·none·선택자).
+    // 라우터가 이탈 가드를 통과한 뒤에만 그 항목에 붙인다 — 문맥의 navigate 래퍼가 옵션을 버려도 닿게 동기 범위로 감싼다 (engine-v1.85.0)
+    const started = runWithReturnScroll(params.returnScroll, () => (params.bypassLeaveGuard === true
       ? runWithLeaveGuardBypass(() => navigateFn(finalPath, { replace: params.replace === true, bypassLeaveGuard: true }))
-      : navigateFn(finalPath, { replace: params.replace === true });
+      : navigateFn(finalPath, { replace: params.replace === true })));
 
     // 이탈 가드에서 머무르기를 골랐다 — 화면이 그대로이므로 스크롤도 옮기지 않는다 (engine-v1.82.0)
     if (started === false) {
@@ -3775,7 +3796,7 @@ export class ActionDispatcher {
     const pathname = finalPath.split('?')[0];
     // 사이트 밖 목적지(`//host`·백슬래시·제어 문자 변형·스킴)는 대조하지 않고 미등록으로 본다 — 라우터 대조는
     // 연속 슬래시를 접어(engine-v1.84.0) `//evil/board/x` 를 `*/board/:slug` 에 맞춰 버리고, 그러면 폴백의
-    // 같은 출처 게이트를 건너뛰어 `pushState` 가 교차 출처 SecurityError 를 던졌다 (engine-v1.87.0)
+    // 같은 출처 게이트를 건너뛰어 `pushState` 가 교차 출처 SecurityError 를 던졌다 (engine-v1.93.0)
     if (!isOffSiteNavTarget(pathname) && router.match(pathname)) {
       // 현재 템플릿에 등록된 경로 — 정상 navigate
       return null;
@@ -3876,6 +3897,8 @@ export class ActionDispatcher {
     if (effective === 'preserve') {
       return;
     }
+    // 화면이 직접 옮기는 스크롤 — 진행 중인 뒤로 가기 복원이 이 위치를 덮지 않게 알린다 (@since engine-v1.85.0)
+    notifyScreenScroll();
 
     // 기본값 'instant' — CSS scroll-behavior: smooth 가 전역 적용된 환경에서도
     // 페이지 전환 시 즉시 스크롤되도록 'auto' 대신 'instant' 사용.
@@ -4694,7 +4717,7 @@ export class ActionDispatcher {
       if (!response.ok) {
         const errorData = responseData || {};
         // 서버 메시지가 없으면(빈 본문·errors 만 있는 422·JSON 아닌 응답) 다국어 안내를 쓴다 — 오류 문맥을 만들 때
-        // 번역된다. 종전 영어 문구(`API call failed: …`)는 한국어 화면에도 그대로 토스트로 떴다 (engine-v1.87.0)
+        // 번역된다. 종전 영어 문구(`API call failed: …`)는 한국어 화면에도 그대로 토스트로 떴다 (engine-v1.93.0)
         const failureMessage = errorData.message || '$t:core.errors.api_request_failed';
 
         // API 응답 데이터를 포함한 에러 객체 생성
@@ -4770,7 +4793,7 @@ export class ActionDispatcher {
    * 서버가 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, 반환 모양도 `login` 액션과
    * 같다 — 로그인 화면은 같은 `onSuccess` 분기(2단계 인증 블록·비밀번호 변경 블록·휴면 해제 안내)를 그대로 쓴다.
    *
-   * @param target 인증 타입 (admin 또는 user — admin 은 관리자 인계 경로로 교환한다, engine-v1.86.0)
+   * @param target 인증 타입 (admin 또는 user — admin 은 관리자 인계 경로로 교환한다, engine-v1.92.0)
    * @param params 요청 파라미터 (body에 code 포함)
    * @param context 액션 컨텍스트
    * @since engine-v1.83.0
@@ -4790,7 +4813,7 @@ export class ActionDispatcher {
 
     const authType = this.resolveAuthType(target);
     // ApiClient 는 baseURL 이 '/api' 이므로 globalHeaders 패턴 매칭용 경로에 '/api' 를 붙인다 — `login` 과 같은
-    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다. 관리자 인계는 관리자 경로로 교환한다(engine-v1.86.0).
+    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다. 관리자 인계는 관리자 경로로 교환한다(engine-v1.92.0).
     const endpoint = authType === 'admin'
       ? '/api/auth/admin/login/handoff'
       : '/api/auth/login/handoff';
@@ -8674,7 +8697,7 @@ export class ActionDispatcher {
       },
     };
 
-    // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.86.0, resolveConfirmMessage)
+    // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.92.0, resolveConfirmMessage)
     if (action.confirm) {
       const message = this.resolveConfirmMessage(action.confirm, mergedContext.data);
 
@@ -8717,7 +8740,7 @@ export class ActionDispatcher {
   }
 
   /**
-   * 동작의 `confirm` 문구를 풀어 번역한 결과를 반환합니다 (engine-v1.86.0).
+   * 동작의 `confirm` 문구를 풀어 번역한 결과를 반환합니다 (engine-v1.92.0).
    *
    * 풀린 문구가 비었으면(빈 문자열·공백 — 문자열 보간이 null·undefined 를 빈 문자열로 푼다) null 을 돌려 확인창을 띄우지
    * 않는다 — 조건에 따라 묻는 식(`{{hasToken ? '$t:…' : ''}}`)이 묻지 않을 때 빈 확인창이 떴다(종전에는 식 원문의 유무로 판정).
@@ -8740,7 +8763,7 @@ export class ActionDispatcher {
    * 커스텀 액션 핸들러를 등록합니다.
    *
    * 같은 이름이면 마지막 등록이 이긴다(종전 동작 그대로). 다만 다른 주인의 이름을 덮는 경우는
-   * `[G7]` 접두 `console.warn` 으로 드러낸다 — 디버그 모드와 무관하게, (이름, 등록자) 쌍마다 1회 (engine-v1.87.0, D3·D4):
+   * `[G7]` 접두 `console.warn` 으로 드러낸다 — 디버그 모드와 무관하게, (이름, 등록자) 쌍마다 1회 (engine-v1.93.0, D3·D4):
    *
    * - switch 가 직접 처리하는 이름(`ENGINE_SWITCH_HANDLERS`) — 등록해도 호출되지 않는다
    * - 엔진 기본 핸들러(`ENGINE_MAP_HANDLERS`)를 엔진이 아닌 쪽이 덮음
@@ -8783,7 +8806,7 @@ export class ActionDispatcher {
   /**
    * 커스텀 액션 핸들러를 제거합니다.
    *
-   * 엔진 기본 핸들러를 엔진이 아닌 쪽이 지우면 `[G7]` 경고를 낸다. 해제 동작 자체는 그대로다 (engine-v1.87.0).
+   * 엔진 기본 핸들러를 엔진이 아닌 쪽이 지우면 `[G7]` 경고를 낸다. 해제 동작 자체는 그대로다 (engine-v1.93.0).
    * switch 가 처리하는 이름은 Map 을 지워도 엔진 동작이 바뀌지 않으므로 경고 대상이 아니다.
    *
    * @param name 핸들러 이름
@@ -8822,7 +8845,7 @@ export class ActionDispatcher {
   }
 
   /**
-   * 핸들러 이름 소유권 경고를 판정해 냅니다 (engine-v1.87.0).
+   * 핸들러 이름 소유권 경고를 판정해 냅니다 (engine-v1.93.0).
    *
    * 여러 사유가 겹치면 한 건으로 묶는다 — (이름, 등록자) 쌍마다 1회.
    *

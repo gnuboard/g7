@@ -1,0 +1,23 @@
+feature: 페이지 본문 미디어 — 다른 페이지의 본문 미디어를 쓴 페이지 저장 시 새 페이지 소유로 복제 (#887)
+
+description: |
+  페이지 저장 동기화(`PageContentMediaService::syncWithContent`)가 본문(로케일마다)에서 다른 페이지 소유 본문 미디어(또는 요청자가
+  다른 임시 키로 올린 임시 행)를 찾으면, 저장하는 사람이 원본을 볼 수 있을 때(발행된 페이지 또는 열람권 `sirsoft-page.pages.read`)만
+  파일을 복사해 이 페이지 소유의 새 행·새 해시로 만들고 본문을 바꿔 다시 저장한다. 버전 스냅샷은 동기화 뒤에 저장해 바뀐 본문을
+  담는다. 볼 수 없으면 주소를 그대로 둔다. 응답 본문(미발행)은 그 페이지가 소유한 해시만 서명하고, 복제되지 않은 다른 페이지
+  해시는 정식 주소로 둔다(원본 페이지의 게이트를 따른다 — #887 G8). 원본 페이지가 본문에서 미디어를 빼도 원본 행은 버전 참조로
+  남고(G5) 사본도 남는다. 원본 행이 실제로 사라지는 것은 원본 페이지 삭제 때이고, 그때도 사본은 남는다.
+
+axes:
+  case: [readable_source, source_dropped_media, unreadable_source, foreign_unsigned]
+
+effects:
+  - copied_to_new_owner
+  - content_and_version_rewritten
+  - survives_source_removal
+  - unreadable_not_copied
+  - only_owned_hashes_signed
+  - source_kept_by_version_and_copy_survives
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaCloneTest.php

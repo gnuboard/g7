@@ -59,7 +59,9 @@ class ConfigCacheHelperTest extends TestCase
     }
 
     /**
-     * 설치된 운영 환경의 rebuild() 는 config:clear 뒤 config:cache 를 다시 만든다.
+     * 설치된 운영 환경의 rebuild() 는 먼저 지우지 않고 config:cache 를 임시 경로로 돌려 굽는다 — 실제 파일은 굽는 내내
+     * 남는다(#882: 지운 뒤 굽는 사이 들어온 요청이 비캐시 부팅·반쯤 쓰인 파일을 만났다). 굽기가 아무것도 만들지 못하면
+     * (여기서는 명령을 대역으로 바꿔 파일이 생기지 않는다) 그때 config:clear 로 낡은 캐시를 지운다.
      *
      * @scenario case=installed
      *
@@ -67,29 +69,32 @@ class ConfigCacheHelperTest extends TestCase
      *
      * @return void 반환값 없음
      */
-    public function test_rebuild_clears_then_caches_when_installed(): void
+    public function test_rebuild_caches_into_temp_path_then_clears_stale_only_on_failure_when_installed(): void
     {
         // 비-testing 환경 + 설치 완료 상태 강제
         app()->detectEnvironment(fn () => 'production');
         config(['app.installer_completed' => true]);
+        $realPath = app()->getCachedConfigPath();
 
         $calls = [];
-        Artisan::shouldReceive('call')->andReturnUsing(function ($command) use (&$calls) {
+        $pathDuringCache = null;
+        Artisan::shouldReceive('call')->andReturnUsing(function ($command) use (&$calls, &$pathDuringCache) {
             $calls[] = $command;
+            if ($command === 'config:cache') {
+                $pathDuringCache = app()->getCachedConfigPath();
+            }
 
             return 0;
         });
 
         ConfigCacheHelper::rebuild();
 
-        // config:clear 가 config:cache 보다 먼저 (stale 제거 후 재생성).
-        $this->assertContains('config:clear', $calls);
-        $this->assertContains('config:cache', $calls);
-        $this->assertLessThan(
-            array_search('config:cache', $calls, true),
-            array_search('config:clear', $calls, true),
-            'config:clear 는 config:cache 보다 먼저 실행되어야 합니다.'
-        );
+        $this->assertSame(['config:cache', 'config:clear'], $calls, '먼저 굽고, 구운 파일이 없을 때만 낡은 캐시를 지워야 합니다.');
+        $this->assertNotNull($pathDuringCache);
+        $this->assertNotSame($realPath, $pathDuringCache, '굽는 동안 출력 경로가 임시 파일로 돌려져야 합니다.');
+        $this->assertSame(dirname($realPath), dirname($pathDuringCache), '임시 파일은 실제 파일과 같은 폴더여야 바꿔 끼울 수 있습니다.');
+        $this->assertSame($realPath, app()->getCachedConfigPath(), '굽기가 끝나면 출력 경로가 되돌아와야 합니다.');
+        $this->assertFileDoesNotExist($pathDuringCache, '임시 파일이 남으면 안 됩니다.');
     }
 
     /**

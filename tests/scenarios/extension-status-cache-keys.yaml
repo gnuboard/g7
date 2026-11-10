@@ -1,0 +1,21 @@
+feature: 확장 상태·버전 캐시 키 이관 (g7:core:ext.* 접두사)
+
+description: |
+  CachesModuleStatus / CachesPluginStatus / CachesTemplateStatus / ClearsTemplateCaches 네 trait 의
+  상태·버전 캐시가 코어 캐시 드라이버를 통해 새 키 접두사(g7:core:ext.*)를 쓰고, 무효화 시 관련 키를
+  모두 지우며, 확장 캐시 버전이 단조 증가하고 키가 사라지면 0 이 아닌 새 버전을 재생성하는지 지킨다.
+
+axes:
+  case: [module_status, plugin_status, template_status, cache_version]
+
+effects:
+  - status_cache_key_uses_core_ext_prefix
+  - status_cache_returns_stored_identifiers
+  - module_status_invalidation_clears_active_and_installed
+  - plugin_status_invalidation_clears_active_and_installed
+  - template_status_invalidation_clears_all_four_keys
+  - extension_cache_version_increments_monotonically
+  - extension_cache_version_regenerated_when_missing
+
+test_files:
+  - tests/Unit/Cache/Migration/ExtensionStatusCacheTest.php

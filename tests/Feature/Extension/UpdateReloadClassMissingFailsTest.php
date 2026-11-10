@@ -4,7 +4,9 @@ namespace Tests\Feature\Extension;
 
 use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
+use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionUpdateJournal;
+use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Vendor\VendorMode;
@@ -147,7 +149,7 @@ class UpdateReloadClassMissingFailsTest extends TestCase
     {
         $source = $this->tempDir('src-'.$identifier);
         $this->newVersionSources[$identifier] = $source;
-        File::copyDirectory(base_path("{$type}/{$identifier}"), $source);
+        FilePermissionHelper::copyDirectory(base_path("{$type}/{$identifier}"), $source, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
 
         $manifest = json_decode(File::get("{$source}/{$manifestFile}"), true);
         $manifest['version'] = '1.0.1';

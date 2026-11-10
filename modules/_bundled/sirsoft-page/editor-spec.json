@@ -21,6 +21,43 @@
           "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip"
         }
       },
+      "contentMediaTarget": {
+        "comment": "작성 화면 편집기의 본문 미디어 업로드 계약(GET admin/content-media/target, #887). 받는 종류가 없거나 올릴 권한이 없으면 data 가 null 이다.",
+        "data": {
+          "version": 1,
+          "endpoint": "/api/modules/sirsoft-page/admin/content-media",
+          "fileField": "file",
+          "fields": {},
+          "headers": {},
+          "response": {
+            "urlPath": "data.url",
+            "idPath": "data.id",
+            "kindPath": "data.kind"
+          },
+          "mediaUrlPattern": "/api/modules/sirsoft-page/pages/content-media/(?<hash>[A-Za-z0-9]{12})",
+          "policy": {
+            "image": {
+              "enabled": true,
+              "maxSizeMb": 10,
+              "extensions": ["jpg", "jpeg", "png", "gif", "webp"],
+              "mimeTypes": ["image/jpeg", "image/png", "image/gif", "image/webp"]
+            },
+            "video": {
+              "enabled": false,
+              "maxSizeMb": 10,
+              "extensions": ["mp4", "webm", "ogv"],
+              "mimeTypes": ["video/mp4", "video/webm", "video/ogg"]
+            },
+            "audio": {
+              "enabled": false,
+              "maxSizeMb": 10,
+              "extensions": ["mp3", "m4a", "ogg", "oga", "wav"],
+              "mimeTypes": ["audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav"]
+            },
+            "maxPerDocument": 30
+          }
+        }
+      },
       "createAbility": {
         "comment": "작성 화면(등록 모드)의 등록 권한 확인. 목록 API 를 1건만 받아 abilities.can_create 만 쓴다 — 편집기에서는 입력 가능한 작성 화면으로 보인다.",
         "data": {

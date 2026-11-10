@@ -1,4 +1,4 @@
-feature: 오류 처리기 자신의 실패는 오류 처리 재진입 상한에서 끝난다 (engine-v1.89.0)
+feature: 오류 처리기 자신의 실패는 오류 처리 재진입 상한에서 끝난다 (engine-v1.94.0)
 
 description: |
   실패한 동작의 오류 처리기(errorHandling, onError, 레이아웃/템플릿/시스템 기본값)는 ActionDispatcher.executeAction 으로 실행되고,

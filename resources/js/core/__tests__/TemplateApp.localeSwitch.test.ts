@@ -49,7 +49,7 @@ vi.mock('../template-engine', async () => {
       reactRoot: null,
       currentLayoutJson: null,
       currentDataContext: { _global: {} },
-      // startCacheEpoch: 화면 전환이 바인딩 캐시 새 세대를 연다 (engine-v1.89.0, BINDING_CACHE_EPOCH)
+      // startCacheEpoch: 화면 전환이 바인딩 캐시 새 세대를 연다 (engine-v1.94.0, BINDING_CACHE_EPOCH)
       bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startCacheEpoch: vi.fn(() => 1), startRenderCycle: vi.fn() },
     }),
   };

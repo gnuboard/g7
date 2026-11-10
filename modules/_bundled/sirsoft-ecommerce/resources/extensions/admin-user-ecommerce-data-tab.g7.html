@@ -95,6 +95,19 @@
       </div>
     </div>
   </div>
+        <!-- 최근 상품 검색어 — 회원이 상품 검색창(범위 `sirsoft-ecommerce.products`)에 남긴 검색어. 저장은 코어 최근 검색어가
+             하고 값은 코어 회원 상세 응답의 `search_history.scopes` 에 범위 id 로 실려 온다 — 이 모듈의 회원 데이터라 코어 본문이
+             아니라 이 탭에 둔다. 범위가 응답에 없으면(검색어 기능이 없는 옛 코어) 블록을 세우지 않는다. 0건이어도 자리는 남긴다. -->
+        <div data-ref="ecommerce_search_history" data-if="{{!!(user?.data?.search_history?.scopes ?? {})['sirsoft-ecommerce.products']}}" class="ecommerce:mb-4">
+          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2">$t:sirsoft-ecommerce.admin.user_ecommerce_data.search_history · $t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{((user?.data?.search_history?.scopes ?? {})['sirsoft-ecommerce.products']?.items ?? []).length}}</span>
+          <span data-ref="ecommerce_search_history_empty" data-if="{{((user?.data?.search_history?.scopes ?? {})['sirsoft-ecommerce.products']?.items ?? []).length === 0}}" class="ecommerce:block ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.user_ecommerce_data.search_history_empty</span>
+          <ul data-ref="ecommerce_search_history_list" data-if="{{((user?.data?.search_history?.scopes ?? {})['sirsoft-ecommerce.products']?.items ?? []).length > 0}}" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:divide-y ecommerce:divide-gray-200 ecommerce:dark:divide-gray-700">
+            <li data-each="history in (user?.data?.search_history?.scopes ?? {})['sirsoft-ecommerce.products']?.items ?? []" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:gap-3 ecommerce:py-1.5">
+              <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:break-all ecommerce-break-all">{{history.keyword}}</span>
+              <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:whitespace-nowrap">{{history.searched_at ?? '-'}}</span>
+            </li>
+          </ul>
+        </div>
         <div data-ref="ecommerce_data_links" class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
           <a href="/admin/ecommerce/wishlists?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_wishlists" data-testid="user-wishlists-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
             <on type="click">

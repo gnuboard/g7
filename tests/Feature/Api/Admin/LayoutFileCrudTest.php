@@ -520,6 +520,39 @@ class LayoutFileCrudTest extends TestCase
     }
 
     /**
+     * 본문으로만 상속하는 화면(설치된 템플릿 화면처럼 `extends` 칸이 빈 행)도 부모 삭제를 막는다.
+     *
+     * 칸만 보면 공통 레이아웃을 지워도 막히지 않아, 그것을 상속하던 화면들이 부모를 잃고 열리지 않는다.
+     *
+     * @scenario operation=delete, target=layout
+     *
+     * @effects code_editor_shows_what_blocks_a_delete
+     *
+     * @return void 반환값 없음
+     */
+    public function test_blocks_deleting_a_parent_referenced_only_by_content_extends(): void
+    {
+        $this->makeLayout('probe_base');
+        $child = $this->makeLayout('probe_child');
+        $child->content = [
+            'layout_name' => 'probe_child',
+            'version' => '1.0.0',
+            'extends' => 'probe_base',
+            'slots' => ['content' => [['type' => 'basic', 'name' => 'Div']]],
+        ];
+        $child->extends = null;
+        $child->save();
+
+        $response = $this->withHeaders($this->headers($this->editorToken))
+            ->deleteJson($this->base().'/probe_base?confirm=1');
+
+        $response->assertStatus(422)
+            ->assertJsonPath('errors.reason', 'layouts.errors.delete_blocked_by_reference');
+        $this->assertSame('probe_child', $response->json('errors.references.0.name'));
+        $this->assertSame('extends', $response->json('errors.references.0.kind'));
+    }
+
+    /**
      * 다른 레이아웃이 partial 로 참조하는 조각은 삭제가 막히고, 응답에 참조하는 레이아웃과 참조 종류가 실린다.
      *
      * @scenario operation=delete, target=layout

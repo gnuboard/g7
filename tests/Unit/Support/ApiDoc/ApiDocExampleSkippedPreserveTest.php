@@ -3,7 +3,7 @@
 namespace Tests\Unit\Support\ApiDoc;
 
 use App\Support\ApiDoc\ApiDocScaffolder;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 실측 제외 엔드포인트의 손으로 쓴 예시 보존 테스트
@@ -15,7 +15,7 @@ use Tests\TestCase;
  *
  * @scenario-manifest tests/scenarios/apidoc-examples-skipped-preserve.yaml
  */
-class ApiDocExampleSkippedPreserveTest extends TestCase
+class ApiDocExampleSkippedPreserveTest extends PureTestCase
 {
     /** 실측 제외 마커 */
     private const SKIP_MARKER = '<!-- 실측 제외: http-403 — 응답 예시는 사람이 작성하세요. -->';

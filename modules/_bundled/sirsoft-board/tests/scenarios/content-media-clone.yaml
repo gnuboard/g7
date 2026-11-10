@@ -1,0 +1,43 @@
+feature: 게시판 본문 미디어 — 다른 글의 본문 미디어를 쓴 글 저장 시 새 글 소유로 복제 (#887)
+
+description: |
+  글 저장 동기화(`PostContentMediaService::syncWithContent` → 코어 골격 `AbstractContentMediaService::syncWithContent`)가
+  본문에서 다른 글 소유 본문 미디어(다른 게시판 포함) 또는 요청자 본인이 다른 임시 키로 올린 임시 행을 찾으면, 저장하는
+  사람이 원본을 서명 없이 받을 수 있을 때(원본 글이 속한 게시판의 글 읽기 권한 또는 게시판 관리 + 삭제·비밀·블라인드 게이트)만
+  파일을 복사해 이 글 소유의 새 행·새 해시로 만들고 본문 주소를 이 게시판 주소로 바꿔 다시 저장한다. 임시 행은 회원이면 본인
+  업로드, 비회원이면 업로드 소유 쿠키 해시가 맞을 때만 복제한다. 볼 수 없으면 주소를 그대로 두고, 글 응답은 이 글 소유 해시만
+  서명하므로 그 미디어는 원본 글의 게이트를 따른다. 복제할 것도 문서당 최대 개수에 든다. 이미 이 글 소유인 것·같은 미디어를
+  두 번 쓴 것은 다시 복제하지 않는다. 복제 재저장이 있어도 글 작성·수정은 한 번으로 기록된다(after_* 1회·활동 로그 1건).
+
+axes:
+  case:
+    - readable_source
+    - unreadable_source
+    - limit
+    - already_owned
+    - other_board_readable
+    - other_board_unreadable
+    - guest_cookie_match
+    - guest_cookie_mismatch
+    - owned_signing
+    - record_once
+
+effects:
+  - copied_to_new_owner
+  - content_rewritten
+  - duplicate_ref_single_copy
+  - survives_source_removal
+  - unreadable_not_copied
+  - foreign_hash_not_signed
+  - clones_counted_in_limit
+  - owned_not_copied
+  - other_board_copied_into_this_board
+  - content_rewritten_to_this_board
+  - other_board_unreadable_not_copied
+  - guest_temp_copied_with_matching_cookie
+  - guest_temp_not_copied_without_matching_cookie
+  - only_owned_hashes_signed
+  - clone_resave_recorded_once
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostContentMediaCloneTest.php

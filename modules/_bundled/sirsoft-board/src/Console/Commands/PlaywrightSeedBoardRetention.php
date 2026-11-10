@@ -161,6 +161,7 @@ class PlaywrightSeedBoardRetention extends Command
                 'recent_guest_post_id' => $guestRecent,
                 'guest_comment_id' => $guestComment,
                 'guest_author_name' => self::GUEST_NAME,
+                // audit:allow datetime-display-user-timezone reason: E2E·API 문서 시드 식별자 — 기계값
                 'created_at' => $old->toDateTimeString(),
             ];
         });

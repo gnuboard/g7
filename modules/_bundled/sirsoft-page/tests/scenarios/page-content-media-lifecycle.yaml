@@ -1,0 +1,24 @@
+feature: 페이지 본문 미디어 수명 — 페이지 삭제·임시 정리 (#887)
+
+description: |
+  페이지를 지우면 본문 미디어(`page_attachments.collection = content_media`)도 일반 첨부처럼 파일과 행을 함께 지운다.
+  첨부 목록 조회는 본문 미디어를 빼므로 페이지 삭제가 따로 지나야 하고, 빠뜨리면 행은 외래키 연쇄로 사라져도 파일이
+  영구히 남는다. 파일은 커밋된 뒤에 지워(StorageTransaction::deleteAfterCommit) 삭제가 되돌아가면 파일도 남는다.
+  저장하지 않고 나간 임시 본문 미디어(page_id=null + 임시 키)는 `sirsoft-page:prune-temp-attachments` 가 보존기간 뒤
+  파일과 함께 지운다. 정리로 비워진 날짜 디렉터리(`content-media/Y/m/d`)는 그 행의 디스크에서 지우고, 다른 파일이 남은
+  디렉터리는 남긴다(본문 미디어 정리를 코어 골격으로 옮긴 #887 뒤에도 유지).
+
+axes:
+  case: [page_deleted, delete_rolled_back, temp_pruned]
+
+effects:
+  - page_delete_removes_media_file
+  - page_delete_removes_media_row
+  - rollback_keeps_media_file
+  - stale_temp_media_pruned
+  - fresh_temp_media_kept
+  - emptied_date_directory_removed
+  - date_directory_with_files_kept
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaLifecycleTest.php

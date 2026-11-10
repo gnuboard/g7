@@ -3,14 +3,14 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\DTO;
 
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * AdjustmentResult DTO 취소 차단 판정 테스트
  *
  * isCancelBlocked()/hasActualPayment() 의 실결제 게이트 + 추가결제 판정을 검증합니다.
  */
-class AdjustmentResultTest extends ModuleTestCase
+class AdjustmentResultTest extends PureTestCase
 {
     /**
      * 스냅샷을 받아 AdjustmentResult 를 구성합니다.
@@ -44,6 +44,12 @@ class AdjustmentResultTest extends ModuleTestCase
 
     /**
      * 실결제 0원(미입금·운영자 0원 결제완료)이면 재계산금액이 커져도 차단하지 않습니다.
+     *
+     * @scenario payment_state=operator_zero_paid, coupon=min_order_broken
+     *
+     * @effects cancel_block_gated_by_actual_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_not_blocked_when_no_actual_payment_even_if_recalc_exceeds(): void
     {
@@ -62,6 +68,12 @@ class AdjustmentResultTest extends ModuleTestCase
 
     /**
      * 실결제 주문에서 재계산금액이 원 결제금액을 초과하면 차단합니다.
+     *
+     * @scenario payment_state=card_paid, verify_stage=api_response
+     *
+     * @effects cancel_block_gated_by_actual_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_when_actual_payment_and_recalc_exceeds(): void
     {
@@ -79,6 +91,12 @@ class AdjustmentResultTest extends ModuleTestCase
 
     /**
      * 실결제 주문에서 재계산금액이 원 결제금액 이하이면 차단하지 않습니다.
+     *
+     * @scenario payment_state=card_paid, item_selection=multi_partial_qty
+     *
+     * @effects cancel_block_gated_by_actual_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_not_blocked_when_actual_payment_and_recalc_within(): void
     {
@@ -95,6 +113,12 @@ class AdjustmentResultTest extends ModuleTestCase
 
     /**
      * 재계산금액이 원 결제금액과 같으면(증감 없음) 차단하지 않습니다.
+     *
+     * @scenario payment_state=card_paid
+     *
+     * @effects cancel_block_gated_by_actual_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_not_blocked_when_equal(): void
     {
@@ -111,6 +135,14 @@ class AdjustmentResultTest extends ModuleTestCase
 
     /**
      * 포인트가 이중 계산되지 않습니다(결제+포인트 합산 일관성).
+     *
+     * 결제+포인트 합계가 늘면 차단하고, 줄면(환불 발생) 허용하는지 두 방향으로 확인합니다.
+     *
+     * @scenario payment_state=points_used
+     *
+     * @effects cancel_block_no_points_double_count
+     *
+     * @return void 반환값 없음
      */
     public function test_points_are_not_double_counted(): void
     {
@@ -137,6 +169,12 @@ class AdjustmentResultTest extends ModuleTestCase
 
     /**
      * 반올림 오차(epsilon 0.01) 이내 차이는 차단하지 않습니다.
+     *
+     * @scenario payment_state=card_paid
+     *
+     * @effects cancel_block_epsilon_rounding
+     *
+     * @return void 반환값 없음
      */
     public function test_epsilon_rounding_difference_not_blocked(): void
     {
@@ -153,6 +191,12 @@ class AdjustmentResultTest extends ModuleTestCase
 
     /**
      * has_actual_payment 신호가 없으면(스냅샷 미설정) 기본 false 로 허용 측에 둡니다.
+     *
+     * @scenario payment_state=unpaid_dbank
+     *
+     * @effects cancel_block_gated_by_actual_payment
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_signal_defaults_to_no_actual_payment(): void
     {

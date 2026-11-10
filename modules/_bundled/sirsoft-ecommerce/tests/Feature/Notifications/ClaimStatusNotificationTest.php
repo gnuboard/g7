@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Carbon\Carbon;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -394,6 +395,8 @@ class ClaimStatusNotificationTest extends ModuleTestCase
     /**
      * 선교환의 발송중 알림은 발행 시점의 운송장 줄과 반송 기한 안내(`advance_exchange_notice`)를 스냅샷으로 싣는다.
      *
+     * @scenario surface=advance_exchange_notice
+     *
      * @effects advance_redelivering_notification_carries_the_due_notice
      *
      * @return void 반환값 없음
@@ -417,7 +420,9 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         }, 1);
 
         // 서울 기준으로는 이미 다음 날인 UTC 저녁 — 안내 날짜가 UTC 날짜로 새면 하루 어긋난다(Chrome 실측 A-4).
-        app()->instance('user_timezone', 'Asia/Seoul');
+        // 안내 날짜는 사이트 시간대(#160 D1) — 처리한 관리자의 시간대가 UTC 여도 서울 날짜가 나와야 한다.
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+        app()->instance('user_timezone', 'UTC');
         Carbon::setTestNow(Carbon::parse('2026-09-24 20:00:00', 'UTC'));
 
         $service->transition($exchange, ExchangeStatusEnum::REDELIVERING, [
@@ -431,6 +436,36 @@ class ClaimStatusNotificationTest extends ModuleTestCase
         // 기한은 발송 시각 + 14일(UTC 2026-10-08 20:00) — 서울 날짜 2026-10-09 로 안내한다.
         $this->assertStringContainsString('2026-10-09', (string) ($snapshots[0]['advance_exchange_notice'] ?? ''));
         Carbon::setTestNow();
+    }
+
+    /**
+     * 회수 지연 알림의 반송 기한(`collection_due_date`)은 사이트 날짜다 — 요청자 시간대가 UTC 여도 서울 날짜가 나와야 한다.
+     *
+     * @scenario surface=collection_due_date
+     *
+     * @effects notification_dates_use_site_timezone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_collection_overdue_notification_carries_the_site_due_date(): void
+    {
+        $exchange = $this->requestedExchange();
+        // 서울로는 이미 다음 날 01:00 인 UTC 16:00 — UTC 날짜로 새면 2026-11-03 이 된다.
+        $exchange->forceFill(['collection_due_at' => Carbon::parse('2026-11-03 16:00:00', 'UTC')])->save();
+
+        $snapshots = [];
+        HookManager::addAction(ClaimNotificationHooks::forStatus(ClaimTypeEnum::EXCHANGE->value, 'collection_overdue'), function ($claim, $snapshot = []) use (&$snapshots) {
+            $snapshots[] = $snapshot;
+        }, 1);
+
+        config(['app.default_user_timezone' => 'Asia/Seoul']);
+        app()->instance('user_timezone', 'UTC');
+
+        app(ClaimStatusNotificationListener::class)->handleCollectionOverdue($exchange, 2);
+
+        $this->assertCount(1, $snapshots);
+        $this->assertSame('2026-11-04', $snapshots[0]['collection_due_date'] ?? null);
+        $this->assertSame('2', $snapshots[0]['overdue_days'] ?? null);
     }
 
     /**

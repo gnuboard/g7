@@ -31,9 +31,14 @@ return [
     // `seo:generate-sitemap` コマンド出力
     'console' => [
         'generate_sitemap' => [
+            'already_running' => 'サイトマップをすでに生成中のため、今回の実行はスキップします。',
+            'lock_unavailable' => 'サイトマップ生成のロックストア（キャッシュ）が使用できないため、実行しませんでした。',
             'invalid_mode' => '無効なモードです。許可: :allowed',
             'generated' => 'サイトマップを生成しました。(モード: :mode)',
             'dispatched' => 'サイトマップ生成をキューにディスパッチしました。(モード: :mode)',
         ],
     ],
+
+    // 管理画面のブラウザタブタイトル接尾辞 — 画面タイトルの後ろに付く({site_name} はサイト名)
+    'admin_title_suffix' => ' - {site_name} 管理画面',
 ];

@@ -5,7 +5,7 @@ namespace Tests\Unit\Support;
 use App\Support\OutboundUrlValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * outbound URL 검증 유틸 테스트.
@@ -13,7 +13,7 @@ use Tests\TestCase;
  * 접두사 매칭 우회(userinfo `@`, 접미사 확장)와 내부망 타격(사설/루프백/링크로컬 IP,
  * 내부 도메인)을 전수 매트릭스로 차단 검증한다.
  */
-class OutboundUrlValidatorTest extends TestCase
+class OutboundUrlValidatorTest extends PureTestCase
 {
     /** 본인인증 게이트웨이 화이트리스트 (실사용 값) */
     private const HOSTS = ['kssa.inicis.com', 'fcsa.inicis.com'];
@@ -21,9 +21,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 화이트리스트 host 와 완전 일치하는 URL 은 통과한다.
      *
-     * @scenario host_form=ascii, target=public, entry_point=validator_unit
-     *
-     * @effects whitelisted_host_must_match_exactly
+     * @effects whitelist_exact_host_match_allowed
      *
      * @param  string  $url  검증 대상 URL
      * @return void 반환값 없음
@@ -38,9 +36,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 화이트리스트를 우회하려는 URL 은 모두 차단한다.
      *
-     * @scenario host_form=ascii, target=public, entry_point=validator_unit
-     *
-     * @effects whitelisted_host_must_match_exactly
+     * @effects whitelist_bypass_variants_rejected, userinfo_disguised_host_is_rejected
      *
      * @param  string  $url  검증 대상 URL
      * @param  string  $reason  차단 사유 (실패 메시지용)
@@ -59,16 +55,9 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 공개 인터넷 URL 은 통과한다.
      *
+     * @effects public_ascii_domain_still_allowed, non_standard_port_public_url_still_allowed, public_ipv4_literal_still_allowed, public_ipv6_literal_still_allowed, public_ipv6_literal_with_port_still_allowed
+     *
      * @param  string  $url  검증 대상 URL
-     *
-     * @scenario host_form=ascii, target=public, entry_point=validator_unit
-     * @scenario host_form=ip_literal_v4, target=public, entry_point=validator_unit
-     * @scenario host_form=ip_literal_v6, target=public, entry_point=validator_unit
-     *
-     * @effects public_ascii_domain_still_allowed, non_standard_port_public_url_still_allowed,
-     *   public_ipv4_literal_still_allowed, public_ipv6_literal_still_allowed,
-     *   public_ipv6_literal_with_port_still_allowed
-     *
      * @return void 반환값 없음
      */
     #[Test]
@@ -84,15 +73,10 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 내부망을 가리키는 URL 은 모두 차단한다.
      *
+     * @effects ascii_internal_targets_are_denied, userinfo_disguised_host_is_rejected
+     *
      * @param  string  $url  검증 대상 URL
      * @param  string  $reason  차단 사유 (실패 메시지용)
-     *
-     * @scenario host_form=ascii, target=loopback_or_private, entry_point=validator_unit
-     * @scenario host_form=ip_literal_v4, target=loopback_or_private, entry_point=validator_unit
-     * @scenario host_form=ip_literal_v6, target=loopback_or_private, entry_point=validator_unit
-     *
-     * @effects userinfo_disguised_host_is_rejected
-     *
      * @return void 반환값 없음
      */
     #[Test]
@@ -108,7 +92,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * scheme 기본값은 https 전용 — http 는 옵트인해야 통과한다.
      *
-     * @effects whitelist_check_defaults_to_https_only
+     * @effects https_only_by_default_http_requires_opt_in
      *
      * @return void 반환값 없음
      */
@@ -122,7 +106,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 화이트리스트 검증은 기본적으로 명시 포트를 거부한다.
      *
-     * @effects whitelist_check_rejects_explicit_ports_by_default
+     * @effects whitelist_rejects_explicit_port_by_default
      *
      * @return void 반환값 없음
      */
@@ -136,7 +120,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * host 단독 판정도 동일한 내부망 차단 규칙을 따른다.
      *
-     * @effects bare_host_judgement_uses_the_same_internal_rules
+     * @effects bare_host_judged_with_same_internal_rules
      *
      * @return void 반환값 없음
      */
@@ -157,19 +141,10 @@ class OutboundUrlValidatorTest extends TestCase
      * 도메인으로 승인되지만, libcurl/libidn2 는 UTS#46 정규화로 `localhost` 에 연결한다.
      * 검증 시점과 연결 시점의 호스트가 달라지는 이 간극이 SSRF 통로다.
      *
+     * @effects ideographic_full_stop_u3002_maps_to_ascii_dot, fullwidth_full_stop_uff0e_maps_to_ascii_dot, halfwidth_ideographic_stop_uff61_maps_to_ascii_dot, normalized_loopback_is_denied, normalized_private_range_is_denied, mixed_case_variant_is_denied_after_lowercasing, trailing_dot_is_stripped_before_comparison
+     *
      * @param  string  $url  검증 대상 URL
      * @param  string  $reason  차단 사유 (실패 메시지용)
-     *
-     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=validator_unit
-     * @scenario host_form=fullwidth_dot_uff0e, target=loopback_or_private, entry_point=validator_unit
-     * @scenario host_form=halfwidth_dot_uff61, target=loopback_or_private, entry_point=validator_unit
-     * @scenario host_form=trailing_dot, target=loopback_or_private, entry_point=validator_unit
-     *
-     * @effects ideographic_full_stop_u3002_maps_to_ascii_dot, fullwidth_full_stop_uff0e_maps_to_ascii_dot,
-     *   halfwidth_ideographic_stop_uff61_maps_to_ascii_dot, normalized_loopback_is_denied,
-     *   normalized_private_range_is_denied, mixed_case_variant_is_denied_after_lowercasing,
-     *   trailing_dot_is_stripped_before_comparison
-     *
      * @return void 반환값 없음
      */
     #[Test]
@@ -185,14 +160,9 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 정규화가 정당한 국제화 도메인(IDN)까지 막지는 않는다.
      *
-     * @param  string  $url  검증 대상 URL
-     *
-     * @scenario host_form=unicode_u_label, target=public, entry_point=validator_unit
-     * @scenario host_form=punycode_a_label, target=public, entry_point=validator_unit
-     * @scenario host_form=trailing_dot, target=public, entry_point=validator_unit
-     *
      * @effects real_internationalized_domain_still_allowed, punycode_a_label_still_allowed
      *
+     * @param  string  $url  검증 대상 URL
      * @return void 반환값 없음
      */
     #[Test]
@@ -211,7 +181,7 @@ class OutboundUrlValidatorTest extends TestCase
      * 유니코드 점으로 화이트리스트 host 뒤에 라벨을 덧붙이는 우회(`kssa.inicis.com。evil.example`)
      * 는 차단하고, 정규화 후 완전 일치하는 표기는 허용한다.
      *
-     * @effects whitelist_comparison_uses_the_normalized_host
+     * @effects whitelist_comparison_uses_normalized_host
      *
      * @return void 반환값 없음
      */
@@ -235,11 +205,7 @@ class OutboundUrlValidatorTest extends TestCase
      * 이 메서드가 정규화의 SSoT 다 — 검증기 밖 소비자(PG 콜백 URL 접미사 대조 등)가
      * 같은 규칙을 재사용해야 판정이 갈리지 않는다.
      *
-     * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=validator_unit
-     * @scenario host_form=punycode_a_label, target=public, entry_point=validator_unit
-     *
-     * @effects normalize_host_is_the_single_normalization_point,
-     *   idn_conversion_failure_denies_instead_of_passing_through
+     * @effects normalize_host_is_the_single_normalization_point, idn_conversion_failure_denies_instead_of_passing_through
      *
      * @return void 반환값 없음
      */
@@ -270,7 +236,7 @@ class OutboundUrlValidatorTest extends TestCase
      * `evil.example／.gateway.example` 이 접미사 검사를 통과하는데, 연결 계층은
      * `evil.example` 에 접속한다. 정규화가 이 간극을 없앤다.
      *
-     * @effects whitelist_comparison_uses_the_normalized_host
+     * @effects suffix_match_requires_normalized_host
      *
      * @return void 반환값 없음
      */
@@ -289,7 +255,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 유니코드 점 변종으로 내부 주소를 가리키는 URL 목록.
      *
-     * @return array<string, array{string, string}> 사례 이름을 키로 한 URL 과 그 정규화 호스트
+     * @return array<string, array{string, string}> 케이스명 => [URL, 차단 사유] 데이터셋
      */
     public static function idnInternalUrlProvider(): array
     {
@@ -325,7 +291,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 정규화 후에도 통과해야 하는 정당한 국제화 도메인 목록.
      *
-     * @return array<string, array{string}> 사례 이름을 키로 한 통과해야 할 국제화 도메인 URL
+     * @return array<string, array{string}> 케이스명 => [URL] 데이터셋
      */
     public static function legitimateIdnUrlProvider(): array
     {
@@ -342,7 +308,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 화이트리스트 통과 URL 목록.
      *
-     * @return array<string, array{string}> 사례 이름을 키로 한 화이트리스트 통과 URL
+     * @return array<string, array{string}> 케이스명 => [URL] 데이터셋
      */
     public static function allowedHostUrlProvider(): array
     {
@@ -358,7 +324,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 화이트리스트 차단 URL 목록 (우회 벡터 전수).
      *
-     * @return array<string, array{string, string}> 사례 이름을 키로 한 차단 URL 과 우회 방식
+     * @return array<string, array{string, string}> 케이스명 => [URL, 차단 사유] 데이터셋
      */
     public static function blockedHostUrlProvider(): array
     {
@@ -385,7 +351,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 공개 인터넷 URL 목록.
      *
-     * @return array<string, array{string}> 사례 이름을 키로 한 공개 인터넷 URL
+     * @return array<string, array{string}> 케이스명 => [URL] 데이터셋
      */
     public static function publicUrlProvider(): array
     {
@@ -406,7 +372,7 @@ class OutboundUrlValidatorTest extends TestCase
     /**
      * 내부망 차단 URL 목록 (SSRF 표적 전수).
      *
-     * @return array<string, array{string, string}> 사례 이름을 키로 한 내부망 URL 과 그 표적 설명
+     * @return array<string, array{string, string}> 케이스명 => [URL, 차단 사유] 데이터셋
      */
     public static function internalUrlProvider(): array
     {

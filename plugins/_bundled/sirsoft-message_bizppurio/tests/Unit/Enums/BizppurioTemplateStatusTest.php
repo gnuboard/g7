@@ -3,18 +3,21 @@
 namespace Plugins\Sirsoft\MessageBizppurio\Tests\Unit\Enums;
 
 use Plugins\Sirsoft\MessageBizppurio\Enums\BizppurioTemplateStatus;
-use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * BizppurioTemplateStatus — kapi serviceStatus 환원 매핑과 상태 판정 헬퍼 검증 (#597 §3.4).
  */
-class BizppurioTemplateStatusTest extends PluginTestCase
+class BizppurioTemplateStatusTest extends PureTestCase
 {
     /**
      * kapi serviceStatus 코드 → 우리 상태 매핑 전수 검증.
-     */
-    /**
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
      * @effects status_enum_maps_kapi_service_status_vocabulary
+     *
+     * @return void 반환값 없음
      */
     public function test_service_status_매핑_전수(): void
     {
@@ -30,9 +33,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * 알 수 없는 코드는 null — 동기화 호출측이 상태를 덮어쓰지 않고 건너뛴다.
-     */
-    /**
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
      * @effects unknown_service_status_does_not_overwrite_state
+     *
+     * @return void 반환값 없음
      */
     public function test_미지의_service_status는_null(): void
     {
@@ -41,6 +47,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * serviceStatus 필드가 있으면 유도 없이 그대로 사용한다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
+     * @effects detail_service_status_field_takes_precedence
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도는_service_status_필드를_우선한다(): void
     {
@@ -54,6 +66,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * block 플래그는 최우선으로 BLK 를 유도한다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
+     * @effects detail_derivation_follows_flag_and_inspection_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도_block은_blk(): void
     {
@@ -66,6 +84,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * dormant 플래그는 DMT 를 유도한다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
+     * @effects detail_derivation_follows_flag_and_inspection_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도_dormant는_dmt(): void
     {
@@ -78,6 +102,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * inspectionStatus REQ(검수중)는 REQ 를 유도한다.
+     *
+     * @scenario content_variant=ba_none, transition=draft_to_requested
+     *
+     * @effects detail_derivation_follows_flag_and_inspection_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도_inspection_re_q는_req(): void
     {
@@ -89,6 +119,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * inspectionStatus REJ(반려)는 REJ 를 유도한다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_rejected
+     *
+     * @effects detail_derivation_follows_flag_and_inspection_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도_inspection_re_j는_rej(): void
     {
@@ -100,6 +136,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * 승인(APR) + status S(중지)는 STP 를 유도한다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
+     * @effects detail_derivation_follows_flag_and_inspection_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도_ap_r_상태_s는_stp(): void
     {
@@ -111,6 +153,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * 승인(APR) + status A(정상)는 ACT 를 유도한다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
+     * @effects detail_derivation_follows_flag_and_inspection_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도_ap_r_상태_a는_act(): void
     {
@@ -122,6 +170,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * 승인(APR) + status R(발송전)은 RDY 를 유도한다.
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
+     * @effects detail_derivation_follows_flag_and_inspection_priority
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도_ap_r_상태_r은_rdy(): void
     {
@@ -133,6 +187,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * 판정 조건이 하나도 성립하지 않으면 기본값 REG(등록)를 유도한다.
+     *
+     * @scenario content_variant=ba_none, transition=draft_to_requested
+     *
+     * @effects detail_derivation_defaults_to_reg
+     *
+     * @return void 반환값 없음
      */
     public function test_상세_유도_기본값은_reg(): void
     {
@@ -145,6 +205,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * isApproved 는 Approved 상태만 true 다 (발송 게이트 근거).
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_approved
+     *
+     * @effects is_approved_true_only_for_approved_status
+     *
+     * @return void 반환값 없음
      */
     public function test_is_approved는_승인만_true(): void
     {
@@ -160,6 +226,12 @@ class BizppurioTemplateStatusTest extends PluginTestCase
 
     /**
      * allowsContentEdit 는 Draft·Rejected 만 true 다 (kapi update/delete 허용 상태, 부록 A-4).
+     *
+     * @scenario content_variant=ba_none, transition=requested_to_rejected
+     *
+     * @effects content_edit_locked_outside_draft_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_allows_content_edit는_draft와_rejected만_true(): void
     {

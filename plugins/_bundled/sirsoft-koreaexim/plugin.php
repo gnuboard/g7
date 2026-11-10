@@ -65,7 +65,7 @@ class Plugin extends AbstractPlugin
      * 정기 갱신·재시도·이력 정리 스케줄을 선언합니다.
      *
      * 정기 갱신 시각은 한국시간 11:30 고정 선언이다 — 운영자는 관리자 > 스케줄 관리의 이 행에서 바꾸고
-     * (플러그인 설정의 갱신 시각 칸은 1.0.2 에서 없어졌다), 바꾼 값은 갱신 뒤에도 보존된다.
+     * (플러그인 설정의 갱신 시각 칸은 1.1.0 에서 없어졌다), 바꾼 값은 갱신 뒤에도 보존된다.
      * 상태 화면의 다음 실행 시각과 재시도 시작 시각도 이 행을 읽는다(UpdateScheduleResolver).
      * 재시도·이력 정리는 사이트 시간대 기준이다.
      *
@@ -170,8 +170,8 @@ class Plugin extends AbstractPlugin
             // 받는 사람은 관리자 역할뿐이다 — 운영자 수신 알림
             'audience' => 'staff',
             'variables' => [
-                ['key' => 'app_name', 'description' => '사이트명'],
                 ['key' => 'name', 'description' => '수신자(관리자) 이름'],
+                ['key' => 'app_name', 'description' => '사이트 이름'],
                 ['key' => 'status_label', 'description' => '실패 유형'],
                 ['key' => 'message', 'description' => '인증키를 제외한 상세 실패 사유'],
                 ['key' => 'search_date', 'description' => '한국시간 기준 조회일'],

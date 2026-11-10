@@ -14,6 +14,10 @@ NHN KCP 표준결제(Standard Pay)를 `sirsoft-ecommerce` 에 연결하는 어�
 
 이 플러그인도 결제 상태 자체는 소유하지 않습니다 — 주문·결제 테이블은 `sirsoft-ecommerce`
 소유이고, 이 플러그인은 "그 상태를 KCP CLI/SOAP API 와 어떻게 주고받는가"만 책임집니다.
+
+날짜·시각은 DB·결제 메타에 UTC 로 저장하고, 관리자 결제조회 응답(`cancelled_at`·`refunded_at`·에스크로
+`registered_at`)에서만 보는 사람 시간대로 바꿉니다. KCP 규격값(가상계좌 `vcnt_expire_term`·요청 시각)과
+휴대폰 환불의 「같은 달」 판정은 PG·통신사 규칙이라 한국 시간으로 둡니다.
 <!-- @intent END -->
 
 ## 계층 지도

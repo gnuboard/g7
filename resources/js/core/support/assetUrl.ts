@@ -648,7 +648,7 @@ function hasBasePrefix(path: string, prefix: string): boolean {
  * 둘(스크립트 src 판정 · 브라우저 이동 판정)이므로 이 파일이 그 SSoT 다 — 사본을
  * 만들면 한쪽만 강화됐을 때 다른 쪽이 조용한 우회로가 된다.
  *
- * @since engine-v1.86.0
+ * @since engine-v1.92.0
  * @param value 원본 주소 문자열
  * @returns 정규화된 주소
  */

@@ -86,7 +86,7 @@ class StorePostRequest extends FormRequest
             // user_id는 Controller에서 Auth::id()로 자동 설정되므로 검증하지 않음
             'author_name' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:4'],
-            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID 형식만 — 저장 경로에 들어간다)
+            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID·7.0.x 화면 꼴만 — 저장 경로에 들어간다, ValidatesTempKey)
             'temp_key' => $this->tempKeyRules(),
         ];
 

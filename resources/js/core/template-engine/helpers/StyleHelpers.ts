@@ -263,7 +263,7 @@ const CONFLICTING_CLASS_GROUPS: Record<string, string[]> = {
  *
  * @param token - 클래스 토큰 1개
  * @returns `{ prefix, rest }` — prefix 는 `ecommerce:` 형태(없으면 빈 문자열), rest 는 나머지
- * @since engine-v1.87.0
+ * @since engine-v1.93.0
  */
 export function splitExtensionClassPrefix(token: string): { prefix: string; rest: string } {
   const colon = token.indexOf(':');

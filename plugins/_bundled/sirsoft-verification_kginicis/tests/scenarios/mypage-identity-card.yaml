@@ -1,0 +1,18 @@
+feature: KG이니시스 마이페이지 본인인증 카드 API
+
+description: |
+  GET /api/plugins/sirsoft-verification_kginicis/me/identity/inicis — 인증한 회원에게 가린 PII 만 돌려주고,
+  DI·CI·평문은 응답에 싣지 않는다. 인증 시각(verified_at)은 재인증 시각이 우선하며 보는 사람 시간대 문자열이다(#160).
+
+axes:
+  case: [unauthenticated, no_record, masked_pii, re_verified_precedence, no_raw_leak]
+
+effects:
+  - unauthenticated_request_is_rejected
+  - user_without_record_receives_null_data
+  - verified_user_receives_masked_fields
+  - verified_at_uses_viewer_timezone
+  - response_excludes_identity_identifiers
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Controllers/MyInicisIdentityShowControllerTest.php

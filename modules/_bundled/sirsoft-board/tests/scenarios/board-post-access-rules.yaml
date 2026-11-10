@@ -44,6 +44,10 @@ effects:
   - second_post_rejected_when_cooldown_active
   - cooldown_is_isolated_per_user
   - cooldown_rejection_returns_422_with_errors
+  - concurrent_post_requests_claim_cooldown_atomically   # 쿨다운 자리는 검증 시점에 원자적으로 선점 — 동시 두 요청 중 하나만 통과(#161 F7)
+  - concurrent_comment_requests_claim_cooldown_atomically   # 댓글 쿨다운도 같은 선점 — 글 쿨다운과 키가 달라 서로 막지 않음(#161 F7)
+  - failed_post_validation_releases_cooldown_claim       # 다른 칸 검증에 실패한 요청은 응답 뒤 자리를 반납, 성공한 작성은 쿨다운 유지
+  - cooldown_cache_error_does_not_block_posting          # 쿨다운 캐시 오류는 기록 후 통과(fail-open)
   - store_returns_token_and_expires_at
   - consume_valid_token_returns_true
   - consume_token_is_one_time_use
@@ -54,6 +58,7 @@ effects:
   - regular_user_does_not_see_post_action_logs
   - manager_sees_blind_reason_in_comment_action_logs
   - regular_user_does_not_see_comment_action_logs
+  - action_log_time_uses_viewer_timezone          # 처리 이력 시각(UTC 저장)은 보는 사람 시간대로 표시(#160)
   - comment_counts_update_immediately_without_queue_worker
   - multiple_comments_accumulate_count
   - comment_delete_decrements_counts_immediately

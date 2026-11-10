@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Broadcasting\BroadcastChannelRegistrar;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Permission;
 use App\Models\Role;
@@ -25,6 +26,10 @@ class BroadcastingAuthTest extends TestCase
 
     /**
      * 웹소켓 OFF 시 broadcasting/auth 가 403 을 반환하는지 테스트합니다.
+     *
+     * @effects channel_auth_returns_403_when_toggle_off
+     *
+     * @return void 반환값 없음
      */
     public function test_broadcasting_auth_returns_403_when_websocket_disabled(): void
     {
@@ -43,6 +48,10 @@ class BroadcastingAuthTest extends TestCase
 
     /**
      * 비인증 요청은 401 을 반환하는지 테스트합니다 (회귀 방지).
+     *
+     * @effects channel_auth_returns_401_when_unauthenticated
+     *
+     * @return void 반환값 없음
      */
     public function test_broadcasting_auth_returns_401_without_authentication(): void
     {
@@ -62,6 +71,10 @@ class BroadcastingAuthTest extends TestCase
      * 채널 인증 콜백이 없는 임의 채널이므로 403(인증 통과 후 채널 권한 거부)을 받는다.
      * 핵심은 토글 가드(broadcasting.default='null')에 의한 사전 403 이 아님을 구분하는 것 —
      * Broadcast::auth 단계까지 도달함을 검증한다.
+     *
+     * @effects channel_auth_passes_toggle_guard_when_on_and_authenticated
+     *
+     * @return void 반환값 없음
      */
     public function test_broadcasting_auth_passes_toggle_guard_when_enabled(): void
     {
@@ -85,6 +98,10 @@ class BroadcastingAuthTest extends TestCase
      *
      * broadcasting/auth HTTP 엔드포인트는 이 하네스에서 서명 응답을 낼 수 없어(권한 유무와 무관하게 403)
      * 인증 여부를 구분하지 못하므로, 등록된 채널 콜백을 직접 호출해 인가 로직을 검증한다.
+     *
+     * @effects channel_callback_authorizes_by_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_channel_authorizes_user_with_settings_read(): void
     {
@@ -97,6 +114,10 @@ class BroadcastingAuthTest extends TestCase
 
     /**
      * Sitemap 진행상황 채널: core.settings.read 권한 미보유 시 거부.
+     *
+     * @effects channel_callback_authorizes_by_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_channel_rejects_user_without_permission(): void
     {
@@ -120,6 +141,10 @@ class BroadcastingAuthTest extends TestCase
      *
      *   채널 정의(`routes/channels.php`)는 `App\Providers\BroadcastServiceProvider` 가
      *   `require` 로 계속 로드하므로 인가 콜백은 그대로 살아 있다 — 아래 채널 테스트가 그 증거다.
+     *
+     * @effects only_gated_auth_route_is_registered
+     *
+     * @return void 반환값 없음
      */
     public function test_only_the_gated_api_broadcasting_auth_route_is_registered(): void
     {
@@ -158,8 +183,13 @@ class BroadcastingAuthTest extends TestCase
      * 채널 정의(`routes/channels.php`)가 여전히 로드되어야 한다.
      *
      * `withRouting(channels: ...)` 인자를 제거했으므로 채널 등록은 전적으로
-     * `BroadcastServiceProvider::boot()` 의 `require` 에 달려 있다. 이 로드가 사라지면
+     * `BroadcastChannelRegistrar::ensureRegistered()`(인가 라우트가 호출, #860 전에는
+     * `BroadcastServiceProvider::boot()` 의 `require`)에 달려 있다. 이 로드가 사라지면
      * 예외 없이 **모든 private 채널 구독이 403** 이 된다 — 콜백이 없는 채널은 거부되기 때문.
+     *
+     * @effects channel_definitions_registered_for_auth
+     *
+     * @return void 반환값 없음
      */
     public function test_channel_definitions_are_loaded_by_broadcast_service_provider(): void
     {
@@ -180,6 +210,12 @@ class BroadcastingAuthTest extends TestCase
      */
     private function channelCallback(string $channel): \Closure
     {
+        // 채널은 부팅이 아니라 인가 라우트가 등록기로 등록한다(#860) — 웹소켓을 켠 상태로 같은 경로를 거친다
+        if (config('broadcasting.default') === 'null') {
+            Config::set('broadcasting.default', 'log');
+        }
+        app(BroadcastChannelRegistrar::class)->ensureRegistered();
+
         $broadcaster = app(Factory::class)->connection();
 
         $ref = new \ReflectionClass($broadcaster);

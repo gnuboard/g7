@@ -228,4 +228,7 @@ return [
         'declaration_missing_personal' => 'Export declaration :column of :model is missing "personal".',
         'declaration_invalid_type' => 'Export declaration :column of :model has an invalid "type".',
     ],
+
+    // Imported review (no member/order) input error
+    'imported_review_invalid_field' => 'Invalid imported review input: :field',
 ];

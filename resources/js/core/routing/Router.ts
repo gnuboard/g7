@@ -10,6 +10,13 @@ import {
   installLeaveGuardUnloadListener,
   requestLeave,
 } from './LeaveGuard';
+import {
+  captureBeforeLeave,
+  consumePendingReturnScroll,
+  installScrollMemory,
+  markScrollNavigation,
+  syncCommittedScrollEntry,
+} from './ScrollMemory';
 
 const logger = createLogger('Router');
 
@@ -116,6 +123,8 @@ export class Router {
     this.committedHistoryIndex = currentHistoryEntryIndex();
     this.initPopstateListener();
     installLeaveGuardUnloadListener();
+    // 뒤로/앞으로 가기·새로고침 스크롤 복원 — 브라우저 기본 복원을 끄고 항목별 위치를 기억한다 (engine-v1.85.0)
+    installScrollMemory();
   }
 
   /**
@@ -132,11 +141,13 @@ export class Router {
    * 확정 화면의 주소를 같은 자리에서 곧바로 다시 쌓는다(`pushState`). 화면은 다시 그리지 않는다 (engine-v1.82.0)
    *
    * 이탈을 허락한 뒤 그 주소가 서버의 개발자 화면(routes/custom.php) 주소면 엔진이 그리지 않고 페이지를 다시
-   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.85.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
+   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.91.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
    * 패턴이 없으면 종전과 같다.
    */
   private handlePopState = (): void => {
     const targetIndex = currentHistoryEntryIndex();
+    // 떠나는 화면의 내부 스크롤 영역 위치를 남긴다 — 창 위치는 scroll 이벤트가 이미 남겼다 (engine-v1.85.0)
+    captureBeforeLeave(undefined, true);
     const bypass = consumeArmedLeaveGuardBypass();
     if (!requestLeave(currentUrl(), { bypass, fromPath: this.getCommittedUrl() })) {
       this.restoreBlockedPopState(targetIndex);
@@ -154,6 +165,8 @@ export class Router {
 
     this.committedUrl = currentUrl();
     this.committedHistoryIndex = targetIndex;
+    // 돌아온 항목 — 화면을 다시 그린 뒤 TemplateApp 이 기억한 위치로 되돌린다 (engine-v1.85.0)
+    markScrollNavigation('pop');
     this.navigateToCurrentPath();
   };
 
@@ -171,6 +184,8 @@ export class Router {
     // base-path:allow 확정 주소는 브라우저에서 읽은 값이라 접두사를 이미 품고 있다(currentUrl·Navigation API).
     window.history.pushState({}, '', this.getCommittedUrl());
     this.committedHistoryIndex = currentHistoryEntryIndex();
+    // 다시 쌓은 항목이 지금 화면이다 — 스크롤 기억도 그 항목에 이어 쓴다 (engine-v1.85.0)
+    syncCommittedScrollEntry();
   }
 
   /**
@@ -445,7 +460,7 @@ export class Router {
 
       // 인증 상태가 없거나 타입이 다른 경우에만 API 호출
       // 방금(부팅 preloadAuth 등) 재시도 끝에 「확인 불가」로 끝났으면 다시 묻지 않는다 — 같은 장애에 재시도를 한 번 더 하면
-      // 백지가 두 배로 길어진다. 유효 시간은 AuthManager.UNAVAILABLE_REUSE_MS (설계 확정 2026-11-08, engine-v1.89.0)
+      // 백지가 두 배로 길어진다. 유효 시간은 AuthManager.UNAVAILABLE_REUSE_MS (설계 확정 2026-11-08, engine-v1.94.0)
       if (!isAuthenticated && !authManager.isRecentlyUnavailable(authType)) {
         isAuthenticated = await authManager.checkAuth(authType);
       }
@@ -457,7 +472,7 @@ export class Router {
       }
 
       // 서버 일시 오류(5xx·네트워크)로 인증 여부를 알 수 없다 — 유효한 토큰을 가진 사람을 로그인 화면으로 보내지 않는다.
-      // 받는 쪽(TemplateApp 의 중립 오류 화면)이 없으면 종전처럼 로그인으로 보낸다(빈 화면으로 멈추지 않게) (engine-v1.89.0)
+      // 받는 쪽(TemplateApp 의 중립 오류 화면)이 없으면 종전처럼 로그인으로 보낸다(빈 화면으로 멈추지 않게) (engine-v1.94.0)
       if (
         !isAuthenticated
         && authManager.getLastCheckStatus(authType) === 'unavailable'
@@ -547,6 +562,9 @@ export class Router {
       return false;
     }
 
+    // 떠나는 화면의 위치와, 이동 액션이 맡긴 돌아올 때 동작(`returnScroll`)을 그 항목에 남긴다 (engine-v1.85.0)
+    captureBeforeLeave(consumePendingReturnScroll());
+
     // 이미 navigate가 진행 중이면 대기열에 추가
     if (this.isNavigating) {
       this.pendingNavigation = path;
@@ -567,7 +585,7 @@ export class Router {
    */
   private async executeNavigation(path: string): Promise<void> {
     // 서버의 개발자 화면(routes/custom.php) 주소는 엔진이 그리지 않는다 — 전체 페이지 이동으로 서버에 넘긴다
-    // (#792 W6, engine-v1.85.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
+    // (#792 W6, engine-v1.91.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
     if (isCustomRoutePath(path)) {
       logger.log(`navigate to custom route — full page load: ${path}`);
       this.pendingNavigation = null;
@@ -584,6 +602,8 @@ export class Router {
       // 보는 주소**이므로 접두사를 붙인다 — 붙이지 않으면 하위 폴더 배치에서 주소창이
       // 사이트 밖을 가리키게 되고, 그 상태로 새로고침하면 설치 밖으로 나간다.
       window.history.pushState({}, '', withBasePrefix(path));
+      // 새 항목 — 복원하지 않는다(도착 위치는 navigate 액션의 `scroll` 이 정한다) (engine-v1.85.0)
+      markScrollNavigation('push');
       // 같은 레이아웃으로 쿼리만 바뀌는 이동에서도 `:mergeQuery` 링크가 새 주소로 다시 그려지게 알린다 (engine-v1.82.1)
       notifyLocationReplaced();
       this.committedUrl = currentUrl();

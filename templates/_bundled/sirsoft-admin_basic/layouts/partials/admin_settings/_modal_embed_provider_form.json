@@ -1,0 +1,654 @@
+{
+    "comment": "e2e:allow 커밋 전 점검 후속(2026-11-09) — 편집기 정적 라벨(editor_label)과 입력 변경 동작 설명 주석만 더했다. 굽기 JSON 은 meta·comment 외 무변경. 창 동작은 5단계 브라우저 실측분 그대로.\n  외부 영상 서비스 추가·수정 겸용 창 (#883) —본문 콘텐츠 탭의 「서비스 추가」와 각 행의 「수정」이 연다. 어느 쪽인지는\n  전역 `embed_provider_form_modal.row_index` 로 갈린다(null = 추가, 숫자 = 그 행 수정).\n\n  이 창은 서버에 저장하지 않는다 — 서비스 목록은 설정 폼의 한 배열이고, 저장은 화면 하단 「저장」이 본문 콘텐츠 탭 전체를 보낸다.\n  형식 검사(https·{id} 한 번·호스트 * 자리·이 사이트 주소 금지·식별자 중복)는 저장할 때 서버가 하고, 여기서는 빈 칸만 막는다.\n  「예시 주소 확인」은 저장 때와 같은 서버 컴파일 규칙으로 꺼낸 id 와 만들어질 플레이어 주소를 보여 준다(저장하지 않음).\n\n  적용은 IP 접근 제한 규칙 창과 같이 폼에 두 번 쓴다 — 저장이 읽는 자리(`_local.form…`, target global)와 화면이 읽는 자리\n  (`$parent._local…`). 한쪽만 쓰면 표에는 보이는데 저장 본문에 실리지 않는다. 단추는 본문 맨 아래 줄에 둔다(고정 하단은 창을 연\n  시점의 상태를 읽는다).",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 > 본문 콘텐츠 탭 외부 영상 서비스 추가·수정 모달. _global.embed_provider_form_modal 단일 진실",
+        "editor_label": "$t:admin.modal_label.admin_settings.embed_provider_form_modal"
+    },
+    "id": "embed_provider_form_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "{{(_global.embed_provider_form_modal?.row_index ?? null) === null ? '$t:admin.settings.content.embed.modal.create_title' : '$t:admin.settings.content.embed.modal.edit_title'}}",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "id": "embed_provider_trust_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm"
+                            },
+                            "text": "$t:admin.settings.content.embed.modal.trust_notice"
+                        }
+                    ]
+                },
+                {
+                    "id": "embed_provider_form_error",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.embed_provider_form_modal?.error}}",
+                    "props": {
+                        "className": "alert-danger"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-error-strong"
+                            },
+                            "text": "$t:admin.settings.content.embed.modal.required"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.modal.name"
+                                },
+                                {
+                                    "id": "embed_provider_name_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "이름 — 입력마다 전역 창 상태에만 담는다(설정 폼은 「적용」 때 한 번 고친다). 고치기 시작하면 지난 「적용」의 빈 칸 안내는 지운다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "embed_provider_form_modal.form.name": "{{$event.target.value}}",
+                                                "embed_provider_form_modal.error": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{_global.embed_provider_form_modal?.form?.name ?? ''}}",
+                                        "placeholder": "$t:admin.settings.content.embed.modal.name_placeholder",
+                                        "maxLength": 40
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.modal.id"
+                                },
+                                {
+                                    "id": "embed_provider_id_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "식별자 — 앞뒤 공백을 떼고 소문자로 맞춰 담는다(형식·중복은 저장 때 서버가 본다). 고치면 지난 「적용」의 빈 칸 안내는 지운다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "embed_provider_form_modal.form.id": "{{$event.target.value.trim().toLowerCase()}}",
+                                                "embed_provider_form_modal.error": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{_global.embed_provider_form_modal?.form?.id ?? ''}}",
+                                        "placeholder": "chzzk_clip",
+                                        "maxLength": 32
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.modal.id_hint"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.settings.content.embed.modal.url_patterns"
+                        },
+                        {
+                            "id": "embed_provider_patterns_input",
+                            "type": "basic",
+                            "name": "Textarea",
+                            "actions": [
+                                {
+                                    "comment": "주소 형식 — 줄 단위 원문을 그대로 담고 「적용」·예시 확인 때 배열로 쪼갠다. 형식이 바뀌면 지난 예시 확인 결과는 낡았으므로 지운다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "embed_provider_form_modal.form.url_patterns_text": "{{$event.target.value}}",
+                                        "embed_provider_form_modal.preview": null,
+                                        "embed_provider_form_modal.error": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "rows": "3",
+                                "value": "{{_global.embed_provider_form_modal?.form?.url_patterns_text ?? ''}}",
+                                "placeholder": "https://chzzk.naver.com/clips/{id}",
+                                "className": "font-mono"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:admin.settings.content.embed.modal.url_patterns_hint"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.settings.content.embed.modal.player_url"
+                        },
+                        {
+                            "id": "embed_provider_player_input",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "플레이어 주소 — 바뀌면 지난 예시 확인 결과(만들어질 플레이어 주소)가 낡았으므로 지우고, 빈 칸 안내도 지운다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "embed_provider_form_modal.form.player_url": "{{$event.target.value}}",
+                                        "embed_provider_form_modal.preview": null,
+                                        "embed_provider_form_modal.error": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "value": "{{_global.embed_provider_form_modal?.form?.player_url ?? ''}}",
+                                "placeholder": "https://chzzk.naver.com/embed/clip/{id}",
+                                "className": "font-mono"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:admin.settings.content.embed.modal.player_url_hint"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.modal.id_rule"
+                                },
+                                {
+                                    "id": "embed_provider_id_rule_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "식별자 규칙 — 같은 주소에서 꺼내는 id 가 달라지므로 지난 예시 확인 결과는 지운다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "embed_provider_form_modal.form.id_rule": "{{$event.target.value}}",
+                                                "embed_provider_form_modal.preview": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "autoBinding": false,
+                                        "value": "{{_global.embed_provider_form_modal?.form?.id_rule ?? 'alnum_dash'}}",
+                                        "options": [
+                                            {
+                                                "value": "alnum_dash",
+                                                "label": "$t:admin.settings.content.embed.modal.id_rules.alnum_dash"
+                                            },
+                                            {
+                                                "value": "alnum",
+                                                "label": "$t:admin.settings.content.embed.modal.id_rules.alnum"
+                                            },
+                                            {
+                                                "value": "digits",
+                                                "label": "$t:admin.settings.content.embed.modal.id_rules.digits"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.modal.aspect"
+                                },
+                                {
+                                    "id": "embed_provider_aspect_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "화면 비율 — 플레이어 틀 모양만 정하고 id 추출과는 무관하므로 예시 확인 결과는 그대로 둔다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "embed_provider_form_modal.form.aspect": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "autoBinding": false,
+                                        "value": "{{_global.embed_provider_form_modal?.form?.aspect ?? '16:9'}}",
+                                        "options": [
+                                            {
+                                                "value": "16:9",
+                                                "label": "16:9"
+                                            },
+                                            {
+                                                "value": "9:16",
+                                                "label": "9:16"
+                                            },
+                                            {
+                                                "value": "4:3",
+                                                "label": "4:3"
+                                            },
+                                            {
+                                                "value": "1:1",
+                                                "label": "1:1"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.settings.content.embed.modal.allow"
+                        },
+                        {
+                            "id": "embed_provider_allow_input",
+                            "type": "composite",
+                            "name": "TagInput",
+                            "actions": [
+                                {
+                                    "comment": "허용 기능 — 태그 입력이 준 배열을 통째로 담는다(목록 밖 값은 고를 수 없다)",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "embed_provider_form_modal.form.allow": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_global.embed_provider_form_modal?.form?.allow ?? []}}",
+                                "isMulti": true,
+                                "isClearable": false,
+                                "options": [
+                                    {
+                                        "value": "fullscreen",
+                                        "label": "fullscreen"
+                                    },
+                                    {
+                                        "value": "autoplay",
+                                        "label": "autoplay"
+                                    },
+                                    {
+                                        "value": "encrypted-media",
+                                        "label": "encrypted-media"
+                                    },
+                                    {
+                                        "value": "picture-in-picture",
+                                        "label": "picture-in-picture"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "embed_provider_sample",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.settings.content.embed.modal.sample"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "id": "embed_provider_sample_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "예시 주소 — 저장되지 않는 확인용 값이다. 바뀌면 지난 확인 결과는 다른 주소의 것이 되므로 지운다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "embed_provider_form_modal.sample_url": "{{$event.target.value}}",
+                                                "embed_provider_form_modal.preview": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{_global.embed_provider_form_modal?.sample_url ?? ''}}",
+                                        "placeholder": "https://chzzk.naver.com/clips/abc123",
+                                        "className": "input font-mono flex-1 min-w-0"
+                                    }
+                                },
+                                {
+                                    "id": "embed_provider_sample_check",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "예시 주소 확인 — 저장 때와 같은 서버 컴파일 규칙으로 꺼낸 id·플레이어 주소를 받는다(저장하지 않음)",
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/settings/content/embed-preview",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": "{{({ provider: { url_patterns: (_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').split('\\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: (_global.embed_provider_form_modal?.form?.player_url ?? '').trim(), id_rule: _global.embed_provider_form_modal?.form?.id_rule ?? 'alnum_dash' }, sample_url: (_global.embed_provider_form_modal?.sample_url ?? '').trim() })}}"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "embed_provider_form_modal.preview": "{{response.data}}"
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "embed_provider_form_modal.preview": "{{({ matched: false, id: null, player_url: null, errors: error.errors ?? {} })}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-3 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.content.embed.modal.sample_check"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "embed_provider_preview_ok",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.embed_provider_form_modal?.preview?.matched === true}}",
+                            "props": {
+                                "className": "alert-success"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.modal.preview_id|id={{_global.embed_provider_form_modal?.preview?.id ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-mono break-all"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.modal.preview_player|url={{_global.embed_provider_form_modal?.preview?.player_url ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "embed_provider_preview_fail",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.embed_provider_form_modal?.preview && _global.embed_provider_form_modal?.preview?.matched !== true}}",
+                            "props": {
+                                "className": "alert-danger"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm"
+                                    },
+                                    "text": "$t:admin.settings.content.embed.modal.preview_no_match"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "iteration": {
+                                        "source": "Object.values(_global.embed_provider_form_modal?.preview?.errors ?? {}).flat()",
+                                        "item_var": "message"
+                                    },
+                                    "props": {
+                                        "className": "text-sm"
+                                    },
+                                    "text": "{{message}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "embed_provider_form_footer",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "embed_provider_form_modal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "id": "embed_provider_apply_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "적용 — 빈 칸(이름·식별자·주소 형식·플레이어 주소)이 있으면 막고, 아니면 목록 사본에 넣거나 바꿔 폼에 두 번 쓰고 닫는다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "if": "{{!(_global.embed_provider_form_modal?.form?.name ?? '').trim() || !(_global.embed_provider_form_modal?.form?.id ?? '').trim() || !(_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').trim() || !(_global.embed_provider_form_modal?.form?.player_url ?? '').trim()}}",
+                                    "params": {
+                                        "target": "global",
+                                        "embed_provider_form_modal.error": true
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "if": "{{!!(_global.embed_provider_form_modal?.form?.name ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.id ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.player_url ?? '').trim()}}",
+                                    "params": {
+                                        "target": "global",
+                                        "_local.form.content.embed_custom_providers": "{{(_global.embed_provider_form_modal.row_index ?? null) === null ? [...(_global.embed_provider_form_modal.providers ?? []), { id: _global.embed_provider_form_modal.form.id.trim(), name: _global.embed_provider_form_modal.form.name.trim(), enabled: _global.embed_provider_form_modal.form.enabled !== false, url_patterns: _global.embed_provider_form_modal.form.url_patterns_text.split('\\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: _global.embed_provider_form_modal.form.player_url.trim(), id_rule: _global.embed_provider_form_modal.form.id_rule, aspect: _global.embed_provider_form_modal.form.aspect, allow: _global.embed_provider_form_modal.form.allow ?? [] }] : (_global.embed_provider_form_modal.providers ?? []).map((p, i) => i === _global.embed_provider_form_modal.row_index ? { id: _global.embed_provider_form_modal.form.id.trim(), name: _global.embed_provider_form_modal.form.name.trim(), enabled: _global.embed_provider_form_modal.form.enabled !== false, url_patterns: _global.embed_provider_form_modal.form.url_patterns_text.split('\\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: _global.embed_provider_form_modal.form.player_url.trim(), id_rule: _global.embed_provider_form_modal.form.id_rule, aspect: _global.embed_provider_form_modal.form.aspect, allow: _global.embed_provider_form_modal.form.allow ?? [] } : p)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "if": "{{!!(_global.embed_provider_form_modal?.form?.name ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.id ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.player_url ?? '').trim()}}",
+                                    "params": {
+                                        "target": "$parent._local.form.content.embed_custom_providers",
+                                        "value": "{{(_global.embed_provider_form_modal.row_index ?? null) === null ? [...(_global.embed_provider_form_modal.providers ?? []), { id: _global.embed_provider_form_modal.form.id.trim(), name: _global.embed_provider_form_modal.form.name.trim(), enabled: _global.embed_provider_form_modal.form.enabled !== false, url_patterns: _global.embed_provider_form_modal.form.url_patterns_text.split('\\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: _global.embed_provider_form_modal.form.player_url.trim(), id_rule: _global.embed_provider_form_modal.form.id_rule, aspect: _global.embed_provider_form_modal.form.aspect, allow: _global.embed_provider_form_modal.form.allow ?? [] }] : (_global.embed_provider_form_modal.providers ?? []).map((p, i) => i === _global.embed_provider_form_modal.row_index ? { id: _global.embed_provider_form_modal.form.id.trim(), name: _global.embed_provider_form_modal.form.name.trim(), enabled: _global.embed_provider_form_modal.form.enabled !== false, url_patterns: _global.embed_provider_form_modal.form.url_patterns_text.split('\\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: _global.embed_provider_form_modal.form.player_url.trim(), id_rule: _global.embed_provider_form_modal.form.id_rule, aspect: _global.embed_provider_form_modal.form.aspect, allow: _global.embed_provider_form_modal.form.allow ?? [] } : p)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "if": "{{!!(_global.embed_provider_form_modal?.form?.name ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.id ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.player_url ?? '').trim()}}",
+                                    "params": {
+                                        "target": "$parent._local.hasChanges",
+                                        "value": true
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "embed_provider_form_modal",
+                                    "if": "{{!!(_global.embed_provider_form_modal?.form?.name ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.id ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').trim() && !!(_global.embed_provider_form_modal?.form?.player_url ?? '').trim()}}"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.settings.content.embed.modal.apply"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

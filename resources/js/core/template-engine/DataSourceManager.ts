@@ -704,7 +704,7 @@ export interface DataSourceResult {
    * 미뤄 둔 onSuccess 실행 함수 — `deferOnSuccess` 로 받았고 성공 처리가 돌 응답일 때만 있다(errorCondition·실패·fallback 은 없음).
    * 호출부가 새 화면 상태를 세운 뒤 부른다. 받기를 시작한 경로 세대가 지났으면 실행하지 않는다.
    *
-   * @since engine-v1.89.0
+   * @since engine-v1.94.0
    */
   runOnSuccess?: () => Promise<void>;
 }
@@ -1441,7 +1441,7 @@ export class DataSourceManager {
    * @param options fetch 옵션
    *   - ignoreAutoFetch: true면 auto_fetch: false인 소스도 강제 fetch (refetchDataSource 용)
    *   - deferOnSuccess: true면 onSuccess 를 돌리지 않고 결과의 `runOnSuccess` 로 넘긴다 — 다른 화면으로 옮기는 전환의 blocking 받기는
-   *     아직 앞 화면 상태 위라, 거기서 돌린 `_local` 쓰기·다시 받기가 뒤이은 상태 초기화와 렌더 문맥 재구성에 버려진다 (engine-v1.89.0, #869)
+   *     아직 앞 화면 상태 위라, 거기서 돌린 `_local` 쓰기·다시 받기가 뒤이은 상태 초기화와 렌더 문맥 재구성에 버려진다 (engine-v1.94.0, #869)
    */
   async fetchDataSourcesWithResults(
     sources: DataSource[],
@@ -1560,7 +1560,7 @@ export class DataSourceManager {
               }
             };
 
-            // 호출부가 새 화면 상태를 세운 뒤 돌린다 (engine-v1.89.0)
+            // 호출부가 새 화면 상태를 세운 뒤 돌린다 (engine-v1.94.0)
             if (options?.deferOnSuccess) {
               return {
                 id: source.id,
@@ -1968,7 +1968,9 @@ export class DataSourceManager {
       const hasToken = AuthManager.getInstance().isAuthenticated();
 
       // auth_mode: 'required'이고 토큰이 없으면 요청 스킵 (fallback 사용)
-      // 토큰 없이 ApiClient로 요청하면 401 → onUnauthorized → 로그인 리다이렉트 발생
+      // 보내 봐야 무토큰 401 이 확실한 요청이다. engine-v1.88.2 부터 ApiClient 는 무토큰 401 에 로그인 이동을
+      // 하지 않지만, 요청 자체를 줄이려고 건너뛰기는 유지한다. optional 데이터소스의 무토큰 401(fetch 경로)은
+      // 이동 없이 errorHandling 체인(레이아웃 `on-code code="401"` 처리기)으로 간다.
       if (authMode === 'required' && !hasToken) {
         logger.log(`[DataSourceManager] Skipping ${source.id}: auth_mode is 'required' but no token available`);
         if (devTools?.isEnabled()) {

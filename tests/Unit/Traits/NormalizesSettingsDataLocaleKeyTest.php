@@ -3,14 +3,14 @@
 namespace Tests\Unit\Traits;
 
 use App\Traits\NormalizesSettingsData;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * 설정 정규화 — 문자표기·숫자 지역 로케일 키의 다국어 기본값 인식 (#148)
  *
  * 종전 키 패턴(`[a-z]{2,3}(-[A-Z]{2})?`)이 `zh-Hant`·`es-419` 를 거부해 다국어 변환이 `[$value]` 로 깨졌다.
  */
-class NormalizesSettingsDataLocaleKeyTest extends TestCase
+class NormalizesSettingsDataLocaleKeyTest extends PureTestCase
 {
     /**
      * 트레이트의 protected 정규화 메서드를 노출하는 객체를 만듭니다.

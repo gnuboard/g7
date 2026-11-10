@@ -174,7 +174,20 @@ class SeoMiddleware
 
         // 캐시 저장 (레이아웃명 포함 — invalidateByLayout 동작을 위해 필수)
         $layoutName = $request->attributes->get('seo_layout_name', '');
-        $this->cacheManager->putWithLayout($cacheUrl, $locale, $html, $layoutName);
+        $degraded = $request->attributes->get('seo_render_degraded', []);
+
+        // 데이터 소스가 일시 장애(시간 초과·서버 오류)로 대체값을 쓴 렌더는 이번 봇에게만 보내고 저장하지 않는다 —
+        // 저장하면 데이터 없는 화면이 캐시 수명 동안 나간다. 다음 미스가 다시 그린다.
+        if ($degraded === []) {
+            $this->cacheManager->putWithLayout($cacheUrl, $locale, $html, $layoutName);
+        } else {
+            Log::warning('[SEO] Degraded render not cached', [
+                'url' => $cacheUrl,
+                'locale' => $locale,
+                'layout' => $layoutName,
+                'data_sources' => $degraded,
+            ]);
+        }
 
         $this->recordStat($ip, fn () => $this->statsService->recordMiss(
             $cacheUrl,

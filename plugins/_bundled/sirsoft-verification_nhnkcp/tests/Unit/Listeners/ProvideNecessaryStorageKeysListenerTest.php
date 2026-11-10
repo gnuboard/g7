@@ -4,7 +4,7 @@ namespace Plugins\Sirsoft\VerificationNhnkcp\Tests\Unit\Listeners;
 
 use App\Extension\HookManager;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\ProvideNecessaryStorageKeysListener;
-use Plugins\Sirsoft\VerificationNhnkcp\Tests\PluginTestCase;
+use Tests\PureTestCase;
 
 /**
  * 개인정보 동의 플러그인에 필수 저장 키를 제공하는 리스너 검증
@@ -18,7 +18,7 @@ use Plugins\Sirsoft\VerificationNhnkcp\Tests\PluginTestCase;
  * 효과 요약(마커 아님 — 평문): 필터 훅 구독, 다른 키를 지우지 않고 덧붙이기, 저장 코드와 키 이름 일치,
  *   동의 플러그인 클래스 미참조. 각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
  */
-class ProvideNecessaryStorageKeysListenerTest extends PluginTestCase
+class ProvideNecessaryStorageKeysListenerTest extends PureTestCase
 {
     /** @var string 동의 플러그인이 소유한 계약 훅 */
     private const HOOK = 'sirsoft-gdpr.necessary_storage.filter_provided_keys';

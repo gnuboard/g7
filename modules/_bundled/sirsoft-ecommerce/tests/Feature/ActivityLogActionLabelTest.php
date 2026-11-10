@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature;
 use App\Extension\ExtensionManager;
 use Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\PureTestCase;
 
 /**
  * 이커머스 모듈의 ActivityLog action 라벨 영역 분리 회귀 차단 (이슈 #317).
@@ -18,8 +18,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 5단계 매커니즘 자체의 동작 검증은 코어 ModuleActionLabelIsolationTest 가 담당.
  */
-class ActivityLogActionLabelTest extends ModuleTestCase
+class ActivityLogActionLabelTest extends PureTestCase
 {
+    /**
+     * 주문 활동 로그 리스너의 FQCN 이 ExtensionManager 에서 'sirsoft-ecommerce' 식별자로 해석된다.
+     *
+     * @scenario origin_type=module
+     *
+     * @effects extension_manager_resolves_modules_namespace_to_kebab_identifier
+     *
+     * @return void 반환값 없음
+     */
     public function test_listener_fqcn_resolves_to_ecommerce_identifier(): void
     {
         $listenerClass = OrderActivityLogListener::class;
@@ -30,6 +39,15 @@ class ActivityLogActionLabelTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 로그 대상 모델인 Order 의 FQCN 이 'sirsoft-ecommerce' 로 해석되어 loggable_type 으로 출처를 찾을 수 있다.
+     *
+     * @scenario origin_type=module, loggable_state=model_with_module_fqcn
+     *
+     * @effects extension_origin_resolved_from_loggable_type_fqcn
+     *
+     * @return void 반환값 없음
+     */
     public function test_loggable_model_fqcn_resolves_to_ecommerce_identifier(): void
     {
         $this->assertSame(
@@ -38,6 +56,15 @@ class ActivityLogActionLabelTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 모듈 한국어 activity_log 언어 파일의 action 배열에 이커머스·클레임 전용 마지막 세그먼트 라벨이 비어 있지 않게 정의돼 있다.
+     *
+     * @scenario origin_type=module, module_lang_state=last_segment_defined, locale=ko
+     *
+     * @effects module_lang_action_labels_defined_for_module_origin
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_lang_action_array_includes_module_specific_last_segments_ko(): void
     {
         $langFile = __DIR__.'/../../src/lang/ko/activity_log.php';
@@ -58,6 +85,15 @@ class ActivityLogActionLabelTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 모듈 영어 activity_log 언어 파일의 action 배열에도 이커머스·클레임 전용 마지막 세그먼트 라벨이 비어 있지 않게 정의돼 있다.
+     *
+     * @scenario origin_type=module, module_lang_state=last_segment_defined, locale=en
+     *
+     * @effects module_lang_action_labels_defined_for_module_origin
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_lang_action_array_includes_module_specific_last_segments_en(): void
     {
         $langFile = __DIR__.'/../../src/lang/en/activity_log.php';

@@ -1,6 +1,6 @@
 // e2e:allow 단위·레이아웃 시험 파일 — 실화면 측정은 같은 엔진 변경의 브라우저 매트릭스
 /**
- * 회귀: 동작의 `confirm` 식이 빈 값으로 풀려도 빈 확인창이 떴다 (engine-v1.86.0)
+ * 회귀: 동작의 `confirm` 식이 빈 값으로 풀려도 빈 확인창이 떴다 (engine-v1.92.0)
  *
  * `confirm="{{has_token ? '$t:…reissue_confirm' : ''}}"` 처럼 조건에 따라 확인을 묻는 식은, 디스패처가 **식 원문**의
  * 유무(`if (action.confirm)`)로 판정해 결과가 `''` 여도 `confirm('')` 을 불렀다(SSO 첫 SCIM 토큰 발급의 빈 확인창).

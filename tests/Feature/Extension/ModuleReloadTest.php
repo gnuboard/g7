@@ -5,7 +5,7 @@ namespace Tests\Feature\Extension;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use ReflectionMethod;
-use Tests\TestCase;
+use Tests\PureTestCase;
 
 /**
  * Test-4: 확장 업데이트 시 클래스 캐싱 회피 메커니즘(`evalFreshModule` / `evalFreshPlugin`,
@@ -18,8 +18,17 @@ use Tests\TestCase;
  * 실제 eval 동작 자체는 모듈 파일을 디스크에 두고 호출해야 하므로 여기서는 "존재/시그니처" 계약만
  * 검증한다. 회귀 시 업데이트 경로 A (확장) 가 조용히 파손될 수 있으므로 중요하다.
  */
-class ModuleReloadTest extends TestCase
+class ModuleReloadTest extends PureTestCase
 {
+    /**
+     * ModuleManager 에 reloadModule(필수 1개 moduleName)과 evalFreshModule(필수 3개)이 그대로 남아 있는지 검증한다.
+     *
+     * @scenario case=module_manager
+     *
+     * @effects module_reload_methods_exist_with_signature
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_manager_has_reload_and_evalfresh_methods(): void
     {
         $this->assertTrue(
@@ -44,6 +53,15 @@ class ModuleReloadTest extends TestCase
         );
     }
 
+    /**
+     * PluginManager 에 reloadPlugin(필수 1개)과 evalFreshPlugin 이 그대로 남아 있는지 검증한다.
+     *
+     * @scenario case=plugin_manager
+     *
+     * @effects plugin_reload_methods_exist_with_signature
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_manager_has_reload_and_evalfresh_methods(): void
     {
         $this->assertTrue(
