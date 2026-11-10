@@ -36,7 +36,7 @@ describe('히어로섹션 목록 화면', () => {
   it('위치 탭은 위치 레지스트리를 도는 링크이고, 누르면 선택 묶음을 비운 뒤 그 주소로 간다 — 등록되지 않은 위치 탭은 표식을 단다', () => {
     const tab = findById(list, 'position_tab_{{tab.key}}')!;
     expect(tab.name).toBe('A');
-    expect(tab.iteration.source).toContain('position_settings?.data?.positions');
+    expect(evaluateBinding(tab.iteration.source, {}, evaluateComputed(list as any, { position_settings: positionSettings() }))).toEqual(positionSettings().data.positions);
     expect(tab.iteration.item_var).toBe('tab');
     expect(tab.props.href).toBe('/admin/plugins/sirsoft-hero_section/banners?position={{tab.key}}');
     expect(json(tab.props['aria-current'] ?? tab.props.ariaCurrent)).toContain("'page'");
@@ -676,5 +676,27 @@ describe('관리 화면 배너 이미지의 썸네일 규격 (#869)', () => {
     const reorder = findById(list, 'hero_reorder_modal')!;
     expect((reorder.props.footer as Array<Record<string, any>>).some((node) => node.props?.['data-testid'] === 'hero-reorder-save')).toBe(true);
     expect(collect(reorder.children ?? [], (node) => node.props?.['data-testid'] === 'hero-reorder-save')).toHaveLength(0);
+  });
+});
+
+// @scenario case=admin_placement_list
+describe('[case:components-misc-hero-position-settings-invalid-response] 완료된 잘못된 위치 정보는 재시도로 복구한다', () => {
+  const invalid = [
+    ['null 응답', null],
+    ['data null', { data: null }],
+    ['빈 위치 배열', { data: { positions: [] } }],
+    ['현재 위치 정의 누락', { data: { positions: [{ key: 'home_hero', dynamic: false }] } }],
+    ['위치 배열 형식 오류', { data: { positions: {} } }],
+  ] as const;
+  // @scenario case=admin_placement_list
+  it.each(invalid)('%s이면 정적 화면을 열지 않고 다시 받기를 보인다', (_name, settings) => {
+    const scope = { query: { position: 'board_hero' }, position_settings: settings, _global: {} };
+    const computed = evaluateComputed(list as any, scope);
+    expect(computed.positionsReady).toBe(false);
+    const visible = (id: string) => evaluateBinding(findById(list, id)!.if, scope, computed);
+    expect(visible('positions_loading')).toBe(false);
+    expect(visible('positions_failed')).toBe(true);
+    for (const id of ['preview_card', 'slider_card', 'filter_bar', 'hero_banner_datagrid']) expect(visible(id), id).toBe(false);
+    expect(actionsOf(findById(list, 'positions_retry'), 'refetchDataSource')[0].params.dataSourceId).toBe('position_settings');
   });
 });

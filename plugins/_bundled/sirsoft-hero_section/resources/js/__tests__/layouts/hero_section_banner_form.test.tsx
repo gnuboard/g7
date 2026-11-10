@@ -321,7 +321,7 @@ describe('배너 등록·수정 화면', () => {
       { key: 'home_hero', label_key: 'sirsoft-hero_section.admin.position.home_hero', label: null, registered: true, dynamic: false, target: null },
       { key: 'board_hero', label_key: 'sirsoft-hero_section.admin.position.board_hero', label: null, registered: true, dynamic: true, target: { type: 'board', label_key: 'sirsoft-hero_section.admin.target.board', label: null } },
     ] } };
-    const computedOf = (state: any) => evaluateComputed(form as any, { _local: state, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
+    const computedOf = (state: any) => evaluateComputed(form as any, { _local: { ...state, form: { position: 'home_hero', ...state.form } }, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
     const evaluate = (expr: string, state: any) => Function('_local', '_computed', `return (${expr})`)(state, computedOf(state));
     const isDisabled = (state: any) => evaluate(disabledExpr, state);
     const reasonIds = ['save_reason_settings', 'save_reason_uploading', 'save_reason_target', 'save_reason_pc_image', 'save_reason_pc_video'];
@@ -535,5 +535,27 @@ describe('배너 등록·수정 화면', () => {
     const c = (position: string) => evaluateComputed(form as any, { _local: { form: { position }, formTargetResults: found }, query: {}, position_settings: settings, banner: undefined, form_target_info: undefined });
     expect(c('board_hero').formTargetOptions.map((o: any) => o.value)).toEqual(['2']);
     expect(c('product_hero').formTargetOptions).toEqual([]);
+  });
+});
+
+// @scenario case=admin_form_position_target
+describe('[case:components-misc-hero-position-settings-invalid-response] 수정 폼은 위치 정보를 확인한 뒤 저장한다', () => {
+  const invalid = [
+    ['null 응답', null],
+    ['data null', { data: null }],
+    ['빈 위치 배열', { data: { positions: [] } }],
+    ['현재 위치 정의 누락', { data: { positions: [{ key: 'home_hero', dynamic: false }] } }],
+    ['위치 배열 형식 오류', { data: { positions: {} } }],
+  ] as const;
+  // @scenario case=admin_form_position_target
+  it.each(invalid)('%s이면 대상 키를 잃는 저장을 막고 다시 받기를 보인다', (_name, settings) => {
+    const scope = { _local: { form: { position: 'board_hero', target_key: '9', images: { pc: { id: 1 } } } }, position_settings: settings, banner: undefined, form_target_info: undefined };
+    const computed = evaluateComputed(form as any, scope);
+    expect(computed.formReady).toBe(false);
+    expect(computed.settingsFailed).toBe(true);
+    expect(evaluateBinding(findById(form, 'footer_save_button')!.props.disabled, scope, computed)).toBe(true);
+    expect(evaluateBinding(findById(form, 'save_reason_settings_failed')!.if, scope, computed)).toBe(true);
+    expect(evaluateBinding(findById(form, 'save_reason_settings_loading')!.if, scope, computed)).toBe(false);
+    expect(actionsOf(findById(form, 'save_reason_settings_retry'), 'refetchDataSource')[0].params.dataSourceId).toBe('position_settings');
   });
 });

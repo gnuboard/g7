@@ -52,6 +52,7 @@ axes:
     - slot_hints_static_only
     - target_key_migration_roundtrip
     - admin_target_picker
+    # 위치 정보: 미수신/정상/HTTP실패/200-null/빈배열/현재위치누락/형식오류 → 다시 받기
     - admin_placement_list
     - admin_form_position_target
     - dynamic_fragments_pass_route_target

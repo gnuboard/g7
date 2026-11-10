@@ -5,7 +5,7 @@
   오른쪽 미리보기는 저장 전 입력값과 별도로 고른 콘텐츠 언어를 사용자 슬라이더로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자
   화면을 떠나지 않게 미리보기 자리로 바꾼다. 위치는 위치 레지스트리 목록에서 고르고, 동적 위치(게시판마다·상품마다 등)면 대상도 고른다 —
   위치를 바꾸면 대상을 비운다(대상 키는 위치마다 다른 공간이다). 등록은 목록에서 보던 위치·대상(`query.position`·`query.target`)으로 시작한다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지
-  않는다), 기간 안내는 서버 기준 시각과 사이트 시간대로 계산하며 실제 노출 상태는 서버가 판정한다. -->
+  않는다), 기간 안내는 서버 기준 시각과 사이트 시간대로 계산하며 실제 노출 상태는 서버가 판정한다. 위치 정보가 응답돼도 선택한 위치 정의가 없으면 저장을 잠그고 다시 받기를 제공한다. -->
 <layout name="hero_section_banner_form" version="1.0.0" extends="_admin_base">
   <meta leave_guard="{{_local.hasChanges === true}}" title="{{route.id ? '$t:sirsoft-hero_section.admin.form.edit_title' : '$t:sirsoft-hero_section.admin.form.create_title'}}"/>
   <!-- 수정 진입일 때만 원본을 받아 폼에 한 번 심는다(initLocal). 성공 콜백에서 폼을 다시 쓰지 않는다 — 재조회가 손댄 값을 덮고 「고친 것 있음」 을 되살리지 않게 -->
@@ -120,10 +120,11 @@
   <computed name="mediaType">{{_local.form?.media_type === 'video' ? 'video' : 'image'}}</computed>
   <computed name="videoUploading">{{_computed.mediaType === 'video' &amp;&amp; (_local.pcVideoUploadBlocked || _local.mobileVideoUploadBlocked)}}</computed>
   <computed name="videoMissing">{{_computed.mediaType === 'video' &amp;&amp; !_local.form?.videos?.pc}}</computed>
-  <computed name="formPositions">{{(position_settings?.data?.positions ?? []).filter(p =&gt; p.registered !== false || p.key === _local.form?.position)}}</computed>
-  <computed name="formReady">{{Array.isArray(position_settings?.data?.positions)}}</computed>
-  <computed name="settingsFailed">{{!_computed.formReady &amp;&amp; _global?.heroPositionSettingsFailed === true}}</computed>
-  <computed name="formDef">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === _local.form?.position) ?? null}}</computed>
+  <computed name="positionDefs">{{Array.isArray(position_settings?.data?.positions) ? position_settings.data.positions : []}}</computed>
+  <computed name="formPositions">{{_computed.positionDefs.filter(p =&gt; p.registered !== false || p.key === _local.form?.position)}}</computed>
+  <computed name="formDef">{{_computed.positionDefs.find(p =&gt; p.key === _local.form?.position) ?? null}}</computed>
+  <computed name="formReady">{{!!_computed.formDef}}</computed>
+  <computed name="settingsFailed">{{!_computed.formReady &amp;&amp; (_global?.heroPositionSettingsFailed === true || position_settings !== undefined)}}</computed>
   <computed name="formDynamic">{{_computed.formDef?.dynamic === true}}</computed>
   <computed name="formTargetTypeLabel">{{_computed.formDef?.target ? (_computed.formDef.target.label ?? $t(_computed.formDef.target.label_key)) : ''}}</computed>
   <computed name="targetUnpicked">{{_computed.formDynamic &amp;&amp; !_local.form?.target_key}}</computed>
@@ -781,7 +782,7 @@
               <set-state target="local" previewLocale="{{$args[0]}}"/>
             </on>
           </sirsoft-hero_section.hero-preview-language>
-          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="form_preview" draft="{{_local.form}}" localeNames="{{_global.appConfig?.localeNames ?? null}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}" defaultLocale="{{position_settings?.data?.editor?.default_locale}}" settings="{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (position_settings?.data?.positions ?? []).find(p =&gt; p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content' })}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_local.form?.position ?? 'home_hero'}}" emptyText="$t:sirsoft-hero_section.admin.form.preview.empty">
+          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="form_preview" draft="{{_local.form}}" localeNames="{{_global.appConfig?.localeNames ?? null}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}" defaultLocale="{{position_settings?.data?.editor?.default_locale}}" settings="{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (_computed.positionDefs).find(p =&gt; p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content' })}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_local.form?.position ?? 'home_hero'}}" emptyText="$t:sirsoft-hero_section.admin.form.preview.empty">
             <on type="change" event="onContentLocaleChange">
               <!-- 미리보기 안에서 바꾼 콘텐츠 언어를 언어 고르기와 맞춘다 -->
               <set-state target="local" previewLocale="{{$args[0]}}"/>

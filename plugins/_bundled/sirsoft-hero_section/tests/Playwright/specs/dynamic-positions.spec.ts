@@ -277,3 +277,55 @@ test('관리자: 수정 화면은 위치 설정이 오기 전에 저장을 막�
   expect(response.status()).toBe(200);
   expect(response.request().postDataJSON().target_key).toBe(BOARD.event.id);
 });
+
+/** HTTP 성공도 내용이 없으면 위치를 판정할 수 없다 — 정상 응답 재시도를 양성 대조로 둔다. */
+const unusablePositionSettings = [
+  ['루트 null', null],
+  ['data null', { success: true, data: null }],
+  ['빈 배열', { success: true, data: { positions: [] } }],
+  ['현재 위치 누락', { success: true, data: { positions: [{ key: 'home_hero', registered: true, dynamic: false }] } }],
+  ['배열 형식 오류', { success: true, data: { positions: {} } }],
+] as const;
+
+for (const [shape, payload] of unusablePositionSettings) {
+  // @scenario case=admin_placement_list
+  test(`관리자: 위치 설정 ${shape} 응답은 목록을 열지 않고 다시 받기로 복구한다`, async ({ page, managerToken }) => {
+    await authenticatePage(page, managerToken);
+    await page.route(`**${API}/admin/position-settings*`, (route) => route.fulfill({ status: 200, json: payload }));
+    await page.goto(`${ADMIN_LIST}?position=board_hero`);
+    await expect(page.getByText('위치 정보를 받지 못했습니다. 다시 받기를 눌러 주세요.', { exact: true })).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByText('위치 정보를 불러오는 중입니다', { exact: true })).toHaveCount(0);
+    await expect(page.locator('table')).toHaveCount(0);
+    await expect(page.locator('section[aria-labelledby="hero_preview_heading"]')).toHaveCount(0);
+    await expect(page.locator('section[aria-labelledby="hero_slider_heading"]')).toHaveCount(0);
+    await page.unroute(`**${API}/admin/position-settings*`);
+    await page.getByRole('button', { name: '다시 받기', exact: true }).click();
+    await expect(page.locator('section[aria-labelledby="hero_target_list_heading"]')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole('button', { name: '다시 받기', exact: true })).toHaveCount(0);
+  });
+
+  // @scenario case=admin_form_position_target
+  // @effects test_data_cleaned_up
+  test(`관리자: 위치 설정 ${shape} 응답은 수정 저장을 막고 복구 뒤 대상 키를 보존한다`, async ({ page, request, managerToken, created }) => {
+    const title = uniqueTitle('빈 설정 복구');
+    const id = await createBanner(request, managerToken, { position: 'board_hero', target_key: BOARD.event.id, title: { ko: title } });
+    created.push(id);
+    await authenticatePage(page, managerToken);
+    await page.route(`**${API}/admin/position-settings*`, (route) => route.fulfill({ status: 200, json: payload }));
+    await page.goto(`${ADMIN_LIST}/${id}/edit?position=board_hero&target=${BOARD.event.id}`);
+    const save = page.locator('#footer_save_button');
+    await expect(page.getByText('위치 정보를 받지 못해 저장할 수 없습니다', { exact: false })).toBeVisible({ timeout: 60_000 });
+    await expect(save).toBeDisabled();
+    await expect(page.locator('input[name="title[ko]"]')).toHaveValue(title);
+    await page.locator('input[name="title[ko]"]').fill(`${title} 수정`);
+    await page.unroute(`**${API}/admin/position-settings*`);
+    await page.getByRole('button', { name: '다시 받기', exact: true }).click();
+    await expect(save).toBeEnabled({ timeout: 60_000 });
+    await expect(page.locator('input[name="title[ko]"]')).toHaveValue(`${title} 수정`);
+    const put = page.waitForResponse((r) => r.url().endsWith(`${API}/admin/banners/${id}`) && r.request().method() === 'PUT');
+    await save.click();
+    const response = await put;
+    expect(response.status()).toBe(200);
+    expect(response.request().postDataJSON().target_key).toBe(BOARD.event.id);
+  });
+}

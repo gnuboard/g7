@@ -3,7 +3,7 @@
   URL 쿼리라 새로고침·뒤로 가기·주소 공유에도 같은 조건이 다시 열린다. 확장이 꺼져 등록되지 않은 위치에 배너가 남았으면 끝에 그 탭이 보이고,
   그 탭에서는 목록 확인·수정·삭제만 된다. 위쪽에 지금 노출 중인 배너 미리보기와 그 위치의 슬라이더 설정, 아래쪽에 표·일괄 작업·순서 변경 창이 있다.
   노출 상태 필터·정렬은 서버가 기간 조건으로 처리한다(화면에서 거르지 않는다). 선택 묶음은 위치·필터·쪽이 바뀌면 비운다 —
-  다른 위치 배너가 일괄 작업에 섞이지 않게. -->
+  다른 위치 배너가 일괄 작업에 섞이지 않게. 위치 응답이 끝나도 현재 위치 정의가 없으면 정적 화면으로 추정하지 않고 다시 받기를 제공한다. -->
 <layout name="hero_section_banner_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-hero_section.admin.title" description="$t:sirsoft-hero_section.admin.description"/>
   <!-- 배너 목록 — 쿼리가 바뀌면 다시 받는다 -->
@@ -64,9 +64,11 @@
       <set-state target="global" :heroPositionSettingsFailed="false"/>
     </success>
   </data-source>
+  <computed name="positionDefs">{{Array.isArray(position_settings?.data?.positions) ? position_settings.data.positions : []}}</computed>
   <computed name="currentPosition">{{query.position || 'home_hero'}}</computed>
-  <computed name="currentDef">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === (query.position || 'home_hero')) ?? null}}</computed>
-  <computed name="positionsReady">{{Array.isArray(position_settings?.data?.positions)}}</computed>
+  <computed name="currentDef">{{(_computed.positionDefs).find(p =&gt; p.key === (query.position || 'home_hero')) ?? null}}</computed>
+  <computed name="positionsReady">{{!!_computed.currentDef}}</computed>
+  <computed name="positionsFailed">{{!_computed.positionsReady &amp;&amp; (_global?.heroPositionSettingsFailed === true || position_settings !== undefined)}}</computed>
   <computed name="isDynamic">{{_computed.currentDef?.dynamic === true}}</computed>
   <computed name="isUnregistered">{{_computed.currentDef?.registered === false}}</computed>
   <computed name="currentTarget">{{_computed.isDynamic ? (query.target || '') : ''}}</computed>
@@ -83,7 +85,7 @@
   <computed name="placementCount">{{_computed.isDynamic ? (banners?.data?.statistics?.targets?.[_computed.currentTarget] ?? 0) : (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0)}}</computed>
   <computed name="targetOptions">{{[...(_computed.selectedTarget ? [{value: _computed.selectedTarget.key, label: _computed.selectedTarget.label ?? $t('sirsoft-hero_section.admin.target.missing_label', {key: _computed.selectedTarget.key})}] : []), ...(_local.targetSearchResults ?? []).filter(o =&gt; o.position === _computed.currentPosition &amp;&amp; o.value !== query.target)]}}</computed>
   <computed name="sitePath">{{_computed.isDynamic ? (_computed.selectedTarget?.site_url ?? '') : (position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? '')}}</computed>
-  <computed name="currentSettings">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots'} }}</computed>
+  <computed name="currentSettings">{{(_computed.positionDefs).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false, pagination: 'dots'} }}</computed>
   <init-local>
     <field name="filter">
       <field name="search" value=""/>
@@ -151,7 +153,7 @@
       <!-- 위치 탭 — 위치 레지스트리 순서(정적 → 동적 → 제3 확장)대로, 배너가 남은 등록되지 않은 위치는 끝에 붙는다. 다른 위치로 가는 것은 화면 이동이라
         링크다(가운데 클릭·새 탭 가능). 건수는 서버 통계. 위치를 옮기면 대상(`target`)을 떼어 낸다 — 대상은 위치마다 다르다 -->
       <nav data-ref="position_tabs" aria-label="$t:sirsoft-hero_section.admin.position.tabs_label" class="hs:flex hs:flex-wrap hs:items-center hs:gap-2 hs:mb-2">
-        <a data-ref="position_tab_{{tab.key}}" data-each="tab in {{position_settings?.data?.positions ?? []}}" href="/admin/plugins/sirsoft-hero_section/banners?position={{tab.key}}" aria-current="{{_computed.currentPosition === tab.key ? 'page' : undefined}}" class="hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === tab.key ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : (tab.registered === false ? 'hs:bg-white hs:text-amber-700 hs:border-amber-300 hs:border-dashed hs:dark:bg-gray-800 hs:dark:text-amber-300 hs:dark:border-amber-600' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600')}}">
+        <a data-ref="position_tab_{{tab.key}}" data-each="tab in {{_computed.positionDefs}}" href="/admin/plugins/sirsoft-hero_section/banners?position={{tab.key}}" aria-current="{{_computed.currentPosition === tab.key ? 'page' : undefined}}" class="hs:px-4 hs:py-2 hs:rounded-lg hs:text-sm hs:font-medium hs:border {{_computed.currentPosition === tab.key ? 'hs:bg-blue-600 hs:text-white hs:border-blue-600 hs:dark:bg-blue-500 hs:dark:border-blue-500' : (tab.registered === false ? 'hs:bg-white hs:text-amber-700 hs:border-amber-300 hs:border-dashed hs:dark:bg-gray-800 hs:dark:text-amber-300 hs:dark:border-amber-600' : 'hs:bg-white hs:text-gray-700 hs:border-gray-300 hs:dark:bg-gray-800 hs:dark:text-gray-300 hs:dark:border-gray-600')}}">
           <on type="click">
             <!-- 그 위치로 — 앞 위치에서 고른 배너가 새 위치 목록의 일괄 작업에 섞이지 않게 선택을 비우고 링크 주소로 옮긴다 -->
             <sequence>
@@ -167,8 +169,8 @@
       </nav>
       <p class="hs:text-xs hs:text-gray-500 hs:dark:text-gray-400 hs:mb-6">$t:sirsoft-hero_section.admin.position.hint</p>
       <!-- 위치 설정을 받는 중·받지 못함 — 이 응답 전에는 지금 위치가 동적인지 몰라 화면 틀을 그리지 않는다 -->
-      <p data-ref="positions_loading" data-if="{{!_computed.positionsReady &amp;&amp; _global?.heroPositionSettingsFailed !== true}}" role="status" class="hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.position.loading</p>
-      <div data-ref="positions_failed" data-if="{{!_computed.positionsReady &amp;&amp; _global?.heroPositionSettingsFailed === true}}" role="alert" class="hs-alert-warning hs:mb-6">
+      <p data-ref="positions_loading" data-if="{{!_computed.positionsReady &amp;&amp; !_computed.positionsFailed}}" role="status" class="hs:py-6 hs:text-center hs:text-sm hs:text-gray-500 hs:dark:text-gray-400">$t:sirsoft-hero_section.admin.position.loading</p>
+      <div data-ref="positions_failed" data-if="{{_computed.positionsFailed}}" role="alert" class="hs-alert-warning hs:mb-6">
         <icon name="triangle-exclamation" class="hs:text-xl hs:text-amber-600 hs:dark:text-amber-400 hs:flex-shrink-0"/>
         <p class="hs:text-sm hs:text-yellow-800 hs:dark:text-yellow-200">$t:sirsoft-hero_section.admin.position.load_failed</p>
         <button type="button" data-ref="positions_retry" class="hs-btn hs-btn-secondary">
